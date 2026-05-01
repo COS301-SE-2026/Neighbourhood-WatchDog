@@ -1,0 +1,19 @@
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+*.env
+
+# Keep example files
+!*.example
+
+
+# Python
+backend/__pycache__/
+backend/*.py[cod]
+backend/*$py.class
+backend/.venv/
+ai/.venv/
+backend/env/
+backend/.pytest_cache/
