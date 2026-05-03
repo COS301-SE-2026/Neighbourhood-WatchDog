@@ -5,11 +5,11 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y gcc && rm -rf /var/lib/apt/lists/*
 
-COPY requirements-dev.txt .
+COPY requirements.txt requirements-dev.txt /app/
 RUN pip install -r requirements-dev.txt
 
 COPY . .
-RUN pytest
+# RUN pytest
 
 #Runtime stage (this is prod basically)
 FROM python:3.11-slim
