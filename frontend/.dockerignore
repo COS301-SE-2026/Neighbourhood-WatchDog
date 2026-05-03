@@ -3,3 +3,6 @@ node_modules
 .git
 .gitignore
 .env.local
+.env
+dist
+.DS_Store

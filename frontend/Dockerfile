@@ -2,7 +2,7 @@
 FROM node:20-slim AS builder
 WORKDIR /app
 
-RUN npm install -g pnpm 
+RUN npm install -g pnpm
 
 COPY package.json pnpm-lock.yaml /app/
 RUN pnpm install --frozen-lockfile
@@ -10,8 +10,17 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
 
+#Development stage
+FROM node:20-slim AS development
+WORKDIR /app
+RUN npm install -g pnpm
+COPY package.json pnpm-lock.yaml /app/
+RUN pnpm install --frozen-lockfile
+EXPOSE 3000
+CMD ["pnpm", "dev"]
+
 #Runtime stage
-FROM node:20-slim
+FROM node:20-slim AS production
 WORKDIR /app
 RUN npm install -g pnpm
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/
