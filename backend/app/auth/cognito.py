@@ -20,7 +20,7 @@ def verify_token(token: str) -> dict:
         jwks = get_jwks()
 
         rsa_key = None
-        for key in jwk["keys"]:
+        for key in jwks["keys"]:
             if key["kid"] == unverified_header["kid"]:
                 rsa_key = key
                 break
