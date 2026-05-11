@@ -2,7 +2,8 @@ import uuid
 from sqlalchemy import Column, String, ForeignKey, CheckConstraint, text
 from sqlalchemy.dialects.postgresql import UUID, TIMESTAMPTZ
 from sqlalchemy.orm import relationship
-from db.base import Base
+from app.core.database import Base
+
 
 class AlertStatus(str, enum.Enum):
     OPEN = "OPEN"

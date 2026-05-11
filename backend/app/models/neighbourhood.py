@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import Column, Text, text
 from sqlalchemy.dialects.postgresql import UUID, TIMESTAMPTZ
 from sqlalchemy.orm import relationship
-from db.base import Base
+from app.core.database import Base
 
 class Neighbourhood(Base):
     __tablename__ = "neighbourhood"

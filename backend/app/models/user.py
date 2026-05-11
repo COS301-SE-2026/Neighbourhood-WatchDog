@@ -5,11 +5,11 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 class UserRole(str, Enum):
-    SYSTEM_ADMIN = "system_admin"
-    RESIDENT = "resident"
-    NEIGH_ADMIN = "neigh_admin"
-    PROP_ADMIN = "prop_admin"
-    USER = "user"
+    SYSTEM_ADMIN = "SYSTEM_ADMIN"
+    RESIDENT = "RESIDENT"
+    NEIGH_ADMIN = "NEIGH_ADMIN"
+    PROP_ADMIN = "PROP_ADMIN"
+    USER = "USER"
 
 class User(Base):
     __tablename__ = "users"

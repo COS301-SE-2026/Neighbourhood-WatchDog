@@ -4,7 +4,7 @@ import uuid
 from sqlalchemy import (Column, ForeignKey, Text, Enum, text)
 from sqlalchemy.dialects.postgresql import (UUID, TIMESTAMPTZ, INET, JSONB)
 from sqlalchemy.orm import relationship
-from db.base import Base
+from app.core.database import Base
 
 class AuditAction(str, enum.Enum):
     LOGIN = "LOGIN"

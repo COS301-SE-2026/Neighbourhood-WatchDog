@@ -1,12 +1,18 @@
+import enum
 import uuid
 
 from geoalchemy2 import Geometry
 from sqlalchemy import Column, ForeignKey, Text, Enum, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from db.base import Base
-from models.enums import SensitivityLevel
+from app.core.database import Base
 
+class SensitivityLevel(str, enum):
+    LOW = "LOW"
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    CRITICAL = "CRITICAL"
+    
 
 class GeospatialZone(Base):
     __tablename__ = "geospatial_zone"
