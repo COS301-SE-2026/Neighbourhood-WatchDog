@@ -37,5 +37,6 @@ class AuditLog(Base):
 
 
     user = relationship("User", back_populates="audit_logs")
+    
 
 

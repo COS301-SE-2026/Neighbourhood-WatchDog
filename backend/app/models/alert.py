@@ -4,7 +4,6 @@ from sqlalchemy.dialects.postgresql import UUID, TIMESTAMPTZ
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
-
 class AlertStatus(str, enum.Enum):
     OPEN = "OPEN"
     ACKNOWLEDGED = "ACKNOWLEDGED"

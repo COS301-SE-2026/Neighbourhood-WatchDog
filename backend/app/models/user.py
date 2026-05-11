@@ -19,3 +19,4 @@ class User(Base):
     role = Column(SQLEnum(UserRole), nullable=False)
     created_at = Column(DateTime, default=func.now())
 
+
