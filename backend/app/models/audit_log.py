@@ -23,6 +23,7 @@ class AuditAction(str, enum.Enum):
     UPDATE_CAMERA_VISIBILITY = "UPDATE CAMERA VISIBILITY"
     CONFIGURE_ALERT_THRESHOLD = "CONFIGURE ALERT THRESHOLD"
 
+
 class AuditLog(Base):
     __tablename__ = "audit_log"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

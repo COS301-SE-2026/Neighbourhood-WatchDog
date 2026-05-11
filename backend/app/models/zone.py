@@ -30,3 +30,4 @@ class GeospatialZone(Base):
     neighbourhood = relationship("Neighbourhood", back_populates="zones")
 
     
+    

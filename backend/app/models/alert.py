@@ -31,3 +31,4 @@ class Alert(Base):
             name="check_resolved_fields"
         ),
     )
+    
