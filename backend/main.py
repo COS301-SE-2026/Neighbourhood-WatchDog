@@ -5,8 +5,11 @@ from app.auth.middleware import AuthMiddleware
 from app.api.controllers.auth import router as auth_router
 from slowapi.middleware import SlowAPIMiddleware
 from app.auth.rate_limiter import limiter
+from app.core.database import engine, Base
+import app.models
 
 configure_logging()
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title=config.app_name)
 app.add_middleware(AuthMiddleware)

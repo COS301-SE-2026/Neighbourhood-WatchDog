@@ -3,6 +3,8 @@ from enum import Enum
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum as SQLEnum
 from sqlalchemy.sql import func
 from app.core.database import Base
+from sqlalchemy.dialects.postgresql import UUID
+
 
 class UserRole(str, Enum):
     SYSTEM_ADMIN = "SYSTEM_ADMIN"
@@ -13,7 +15,7 @@ class UserRole(str, Enum):
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True)
     email = Column(String, unique=True)
     cognito_sub = Column(String)
     role = Column(SQLEnum(UserRole), nullable=False)

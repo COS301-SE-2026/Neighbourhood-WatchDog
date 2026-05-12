@@ -1,4 +1,4 @@
-import enum
+from enum import Enum as PyEnum
 import uuid
 
 from geoalchemy2 import Geometry
@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
-class SensitivityLevel(str, enum):
+class SensitivityLevel(str, PyEnum):
     LOW = "LOW"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"

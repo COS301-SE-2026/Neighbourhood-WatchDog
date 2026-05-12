@@ -1,12 +1,13 @@
-import enum
+from enum import Enum as PyEnum
 import uuid
 
-from sqlalchemy import (Column, ForeignKey, Text, Enum, text)
-from sqlalchemy.dialects.postgresql import (UUID, TIMESTAMPTZ, INET, JSONB)
+from sqlalchemy import Column, ForeignKey, Text, Enum, text
+from sqlalchemy.dialects.postgresql import UUID, INET, JSONB
+from sqlalchemy import TIMESTAMP
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
-class AuditAction(str, enum.Enum):
+class AuditAction(str, PyEnum):
     LOGIN = "LOGIN"
     LOGOUT = "LOGOUT"
     REGISTER_CAMERA = "REGISTER CAMERA"
@@ -28,16 +29,16 @@ class AuditLog(Base):
     __tablename__ = "audit_log"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    action = Column(Enum(AuditAction, name="audit_action"), nullable=False)
+    action = Column(Enum(AuditAction), nullable=False)
     target_entity_type = Column(Text, nullable=True)
     target_entity_id = Column(UUID(as_uuid=True), nullable=True)
     ip_address = Column(INET, nullable=False)
-    timestamp = Column(TIMESTAMPTZ, nullable=False, server_default=text("now()"))
-    metadata = Column(JSONB, nullable=True)
+    timestamp = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    # metadata = Column(JSONB, nullable=True)
     extra_metadata = Column("metadata", JSONB, nullable=True)
 
 
     user = relationship("User", back_populates="audit_logs")
-    
+
 
 

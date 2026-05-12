@@ -1,7 +1,8 @@
 import uuid
 
 from sqlalchemy import Column, ForeignKey, Integer, text, CheckConstraint
-from sqlalchemy.dialects.postgresql import UUID, TIMESTAMPTZ
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import TIMESTAMP
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -15,8 +16,8 @@ class RetentionPolicy(Base):
     hot_seconds      = Column(Integer, nullable=False)
     warm_seconds     = Column(Integer, nullable=False)
     cold_seconds     = Column(Integer, nullable=False)
-    created_at       = Column(TIMESTAMPTZ, nullable=False, server_default=text("now()"))
-    updated_at       = Column(TIMESTAMPTZ, nullable=False, server_default=text("now()"), onupdate=text("now()"))
+    created_at       = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    updated_at       = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"), onupdate=text("now()"))
 
     neighbourhood = relationship("Neighbourhood", back_populates="retention_policies")
     camera        = relationship("Camera", back_populates="retention_policy")
