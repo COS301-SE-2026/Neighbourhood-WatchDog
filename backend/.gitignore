@@ -6,6 +6,8 @@
 # Virtual environments
 .venv
 venv/
+backend/.venv/
+ai/.venv/
 ENV/
 env/
 
