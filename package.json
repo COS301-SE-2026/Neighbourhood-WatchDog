@@ -2,6 +2,6 @@
   "name": "neighbourhood-watchdog",
   "version": "1.0.0",
   "scripts": {
-    "test": "cd frontend && pnpm test && cd ../backend && python -m pytest tests/backend && cd ../../tests/e2e && pnpm test"
+    "test": "cd frontend && pnpm test && cd ../tests/backend && python -m pytest && cd ../../tests/e2e && pnpm test"
   }
 }
