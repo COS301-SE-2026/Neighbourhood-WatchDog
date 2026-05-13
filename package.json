@@ -1,0 +1,7 @@
+{
+  "name": "neighbourhood-watchdog",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "cd frontend && pnpm test && cd ../backend && python -m pytest tests/backend"
+  }
+}
