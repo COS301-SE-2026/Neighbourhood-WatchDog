@@ -3,10 +3,9 @@ from app.models.property import PropertyTypeEnum, Property
 
 class CreatePropertyReq(BaseModel):
     address: str
-    propertyType: PropertyTypeEnum
+    property_type: PropertyTypeEnum
     
-
 class CreatePropertyRes(BaseModel):
-    status: str 
+    status: int 
     message: str | None = None
     data: Property | None = None
