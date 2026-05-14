@@ -17,5 +17,5 @@ async def create_property(req: CreatePropertyReq, db: DbSession):
     return CreatePropertyRes(
         201,
         "Property Created Successful",
-        property
+        newProperty
     )
