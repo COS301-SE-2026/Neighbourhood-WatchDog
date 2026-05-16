@@ -4,7 +4,7 @@ import uuid
 from app.core.database import Base
 from sqlalchemy import Column, ForeignKey, String, text, Enum as SAEnum, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID
-
+from sqlalchemy.orm import relationship
 
 class CameraVisibility(str, Enum):
     PUBLIC = "PUBLIC"
@@ -22,3 +22,5 @@ class Camera(Base):
     location = Column(String, nullable=False)
     rtsp_url = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+
+    camera = relationship("Camera", back_populates="alerts")
