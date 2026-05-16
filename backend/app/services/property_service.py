@@ -9,6 +9,16 @@ from sqlalchemy.exc import IntegrityError
 from uuid import UUID
 
 async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims: dict, db: DbSession) -> Property :
+    
+    if not addr or addr is None:
+        raise HTTPException(400, "No address or empty address field.")
+
+    if not prop_type:
+        raise HTTPException(400, "No property type given")
+    
+    if not claims:
+        raise HTTPException(401, "Not authenticated")
+
     new_property = Property(
         address = addr,
         property = prop_type
