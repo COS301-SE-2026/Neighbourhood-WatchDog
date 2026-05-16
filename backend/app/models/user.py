@@ -1,6 +1,5 @@
-from datetime import datetime
 from enum import Enum
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum as SQLEnum
+from sqlalchemy import Column, String, DateTime, Enum as SQLEnum
 from sqlalchemy.sql import func
 from app.core.database import Base
 from sqlalchemy.dialects.postgresql import UUID

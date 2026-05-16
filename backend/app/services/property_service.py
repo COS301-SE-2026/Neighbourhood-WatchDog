@@ -1,21 +1,40 @@
 from fastapi import HTTPException
 from app.core.database import DbSession
 from app.schemas.property import CreatePropertyReq
-from app.models.property import Property
+from sqlalchemy import select
+from app.models.user import User
+from app.models.property import Property, PropertyTypeEnum
+from app.models.property_user import PropertyUser
 from sqlalchemy.exc import IntegrityError
+from uuid import UUID
 
-async def create_property_handler(req: CreatePropertyReq, db: DbSession) -> Property :
-    newProperty = Property(
-        address = req.address,
-        property = req.property_type
+async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims: dict, db: DbSession) -> Property :
+    new_property = Property(
+        address = addr,
+        property = prop_type
     )
 
     try:
-        db.add(newProperty)
+        # get user
+        stmt = select(User).where(User.cognito_sub == claims['sub'])
+        user = db.execute(stmt).scalar_one_or_none()
+
+        # add prop
+        db.add(new_property)
+        db.flush()
+
+        #set user to prop admin
+        new_property_user = PropertyUser(
+            user.id,
+            new_property.id,
+            True
+        )
+        db.add(new_property_user)
         db.flush()
         db.commit()
+
     except IntegrityError as e:
         db.rollback()
         raise HTTPException(500, "Failed to add to property database")
 
-    return newProperty
+    return new_property
