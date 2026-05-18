@@ -283,3 +283,33 @@ class TestCreateNeighbourhood:
             assert self.mock_db.refresh.call_count == 1
             assert self.mock_db.commit.call_count == 0
             assert self.mock_db.rollback.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_prop_user_not_found(self):
+        with patch('app.services.neighbourhood_service.Neighbourhood') as MockNeighbourhood:
+            
+            MockNeighbourhood.return_value = self.mock_neighbourhood
+
+            #we overriding it again for the same reason as above
+            self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+                self.mock_property,
+                None
+            ]
+
+            with pytest.raises(HTTPException) as exception:
+                await create_neighbourhood_handler(
+                    name = "Name",
+                    location = "Location",
+                    property_id = uuid4(),
+                    db = self.mock_db,
+                    claims = self.claims,
+                )
+
+            assert exception.value.status_code == 403
+            assert exception.value.detail == "User does not have access to this property"
+
+            assert self.mock_db.add.call_count == 1
+            assert self.mock_db.flush.call_count == 1
+            assert self.mock_db.refresh.call_count == 1
+            assert self.mock_db.commit.call_count == 0
+            assert self.mock_db.rollback.call_count == 1
