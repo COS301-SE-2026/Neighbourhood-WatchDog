@@ -4,6 +4,8 @@ from uuid import UUID
 from app.schemas.neighbourhood import NeighbourhoodRes
 from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property
+from app.models.user import User
+from app.models.property_user import PropertyUser
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 
@@ -37,11 +39,23 @@ async def create_neighbourhood_handler(name: str, loc: str, property_id: UUID, d
         db.flush()
 
          #linking prop to neighbourhood 
-
-        #TODO make sure to check that there is a record in the property_users table that links the user and the property
         stmt = select(Property).where(Property.id == property_id)
         property = db.execute(stmt).scalar_one_or_none()
 
+        if not property:
+            raise HTTPException(404, "Property not found")
+
+
+        stmt = select(PropertyUser).where(PropertyUser.property_id == property_id)
+        prop_user = db.execute(stmt).scalar_one_or_none()
+
+        if not prop_user:
+            raise HTTPException(403, "User does not have access to this property")
+
+
+        if (prop_user.user.cognito_sub != claims['sub']):
+            raise HTTPException(403, "This user does not live in the property they are trying to add to the neighbourhood they are creating")
+        
         property.neighbourhood_id = newNeighbourhood.id
 
         db.flush()
@@ -49,4 +63,7 @@ async def create_neighbourhood_handler(name: str, loc: str, property_id: UUID, d
 
     except IntegrityError as e:
         db.rollback()
-        HTTPException(500, "Failed to add neighbourhood", )
+        HTTPException(500, "Failed to add neighbourhood")
+    except HTTPException as he:
+        db.rollback()
+        raise he
