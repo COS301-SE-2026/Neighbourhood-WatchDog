@@ -1,16 +1,20 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from app.schemas.property import NonEmptyString
 from app.models.camera import CameraVisibilityEnum
-from uuid import uuid4
+from uuid import UUID
 from datetime import datetime
+import re
 
 class RegisterCameraReq(BaseModel):
     rtsp_url: NonEmptyString
-    property_id: uuid4
+    location: NonEmptyString
+    visibility: CameraVisibilityEnum
+    property_id: UUID
 
 class CameraRes(BaseModel):
-    property_id: uuid4
-    neighbourhood_id: uuid4
+    id: UUID
+    property_id: UUID
+    neighbourhood_id: UUID
     visibility: CameraVisibilityEnum
     location: NonEmptyString
     rtsp_url: NonEmptyString
