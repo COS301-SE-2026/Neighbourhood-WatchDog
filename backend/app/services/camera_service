@@ -1,0 +1,6 @@
+from app.schemas.camera import RegisterCameraReq, CameraRes
+from app.core.database import DbSession
+
+async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims: dict) -> CameraRes:
+    pass
+
