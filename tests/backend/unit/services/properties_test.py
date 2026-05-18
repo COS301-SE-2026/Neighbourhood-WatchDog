@@ -7,7 +7,7 @@ from app.models.property import PropertyTypeEnum
 from uuid import uuid4
 
 # create_property_handler tests
-class TestCreateProper:
+class TestCreateProperty:
     def setup_method(self):
         """Runs before each test method"""
         self.mock_db = Mock()
@@ -24,7 +24,7 @@ class TestCreateProper:
         self.claims = {"sub": "cognito-sub-123"}
 
     @pytest.mark.asyncio
-    async def test_happy_case(self): 
+    async def test_happy_path(self): 
         with patch('app.services.property_service.Property') as MockProperty, \
             patch('app.services.property_service.PropertyUser') as MockPropertyUser:
             #create the vars and whatnot

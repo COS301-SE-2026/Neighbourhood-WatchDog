@@ -1,13 +1,14 @@
 from fastapi import HTTPException
 from app.core.database import DbSession
 from uuid import UUID
-from app.schemas.neighbourhood import NeighbourhoodRes
+from app.schemas.neighbourhood import NeighbourhoodRes, CreateNeighbourhoodRes
 from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property
 from app.models.user import User
 from app.models.property_user import PropertyUser
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
+import random
 
 async def create_neighbourhood_handler(name: str, loc: str, property_id: UUID, db: DbSession, claims: dict):
     """Creates the neighbourhood
@@ -30,13 +31,14 @@ async def create_neighbourhood_handler(name: str, loc: str, property_id: UUID, d
 
     try: 
         #add the neighbourhood   
-        newNeighbourhood = Neighbourhood(
+        new_neighbourhood = Neighbourhood(
             name = name,
             location = loc,
         )
 
-        db.add(newNeighbourhood)
+        db.add(new_neighbourhood)
         db.flush()
+        db.refresh(new_neighbourhood)
 
          #linking prop to neighbourhood 
         stmt = select(Property).where(Property.id == property_id)
@@ -56,10 +58,26 @@ async def create_neighbourhood_handler(name: str, loc: str, property_id: UUID, d
         if (prop_user.user.cognito_sub != claims['sub']):
             raise HTTPException(403, "This user does not live in the property they are trying to add to the neighbourhood they are creating")
         
-        property.neighbourhood_id = newNeighbourhood.id
+        property.neighbourhood_id = new_neighbourhood.id
 
         db.flush()
         db.commit()
+
+        #TODO add the join code stuff when ange is done with the join neighbourhood part
+
+        neighbourhood_res = NeighbourhoodRes(
+            id = new_neighbourhood.id,
+            name = new_neighbourhood.name,
+            location = new_neighbourhood.location,
+            join_code = "neighbourhood1",
+            created_at = new_neighbourhood.created_at
+        )
+
+        return CreateNeighbourhoodRes(
+            201,
+            "Neighbourhood created successfully!",
+            neighbourhood_res
+        )
 
     except IntegrityError as e:
         db.rollback()
