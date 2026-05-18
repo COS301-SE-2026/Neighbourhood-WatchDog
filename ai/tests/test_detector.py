@@ -26,7 +26,10 @@ unique_ids = set()
 for result in results:
     for box in result.boxes:
         if int(box.cls[0]) == PERSON_CLASS and box.id is not None:
+            track_id = int(box.id[0])
+            confidence = float(box.conf[0])
             unique_ids.add(int(box.id[0]))
+            print(f"Track ID: {track_id} --- Confidence: {confidence:.2f}")
 
 print(f"Human Count: {len(unique_ids)}")
 print("Done")
