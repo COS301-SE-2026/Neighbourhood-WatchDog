@@ -1,4 +1,5 @@
 import pytest, pytest_asyncio
+from fastapi import HTTPException
 from unittest.mock import Mock, patch
 from app.services.neighbourhood_service import create_neighbourhood_handler
 from uuid import uuid4
@@ -60,4 +61,74 @@ class TestCreateNeighbourhood:
             assert self.mock_db.flush.call_count == 2
             assert self.mock_db.commit.call_count == 1
             assert self.mock_db.refresh.call_count == 1
+            assert self.mock_db.rollback.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_happy_path(self):
+        with patch('app.services.neighbourhood_service.Neighbourhood') as MockNeighbourhood:
+            
+            MockNeighbourhood.return_value = self.mock_neighbourhood
+
+            neighbourhood = await create_neighbourhood_handler(
+                name = "Test name",
+                location = "second location",
+                property_id = uuid4(),
+                db = self.mock_db,
+                claims = self.claims,
+            )
+
+            assert neighbourhood is not None
+            assert neighbourhood.id == self.mock_neighbourhood.id
+            assert neighbourhood.name == self.mock_neighbourhood.name
+
+            assert self.mock_db.add.call_count == 1
+            assert self.mock_db.flush.call_count == 2
+            assert self.mock_db.commit.call_count == 1
+            assert self.mock_db.refresh.call_count == 1
+            assert self.mock_db.rollback.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_no_name_entered(self):
+        with patch('app.services.neighbourhood_service.Neighbourhood') as MockNeighbourhood:
+            
+            MockNeighbourhood.return_value = self.mock_neighbourhood
+
+            with pytest.raises(HTTPException) as exception:
+                await create_neighbourhood_handler(
+                    name = "",
+                    location = "second location",
+                    property_id = uuid4(),
+                    db = self.mock_db,
+                    claims = self.claims,
+                )
+
+            assert exception.value == 400
+
+            assert self.mock_db.add.call_count == 0
+            assert self.mock_db.flush.call_count == 0
+            assert self.mock_db.commit.call_count == 0
+            assert self.mock_db.refresh.call_count == 0
+            assert self.mock_db.rollback.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_name_none(self):
+        with patch('app.services.neighbourhood_service.Neighbourhood') as MockNeighbourhood:
+            
+            MockNeighbourhood.return_value = self.mock_neighbourhood
+
+            with pytest.raises(HTTPException) as exception:
+                await create_neighbourhood_handler(
+                    name = None,
+                    location = "second location",
+                    property_id = uuid4(),
+                    db = self.mock_db,
+                    claims = self.claims,
+                )
+
+            assert exception.value == 400
+
+            assert self.mock_db.add.call_count == 0
+            assert self.mock_db.flush.call_count == 0
+            assert self.mock_db.commit.call_count == 0
+            assert self.mock_db.refresh.call_count == 0
             assert self.mock_db.rollback.call_count == 0

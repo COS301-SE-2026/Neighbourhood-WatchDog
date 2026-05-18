@@ -46,7 +46,9 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
 
         if not property:
             raise HTTPException(404, "Property not found")
-
+        
+        #TODO figure out how to test the above line ^ 
+        # - should I not mock property or should I mock it as None
 
         stmt = select(PropertyUser).where(PropertyUser.property_id == property_id)
         prop_user = db.execute(stmt).scalar_one_or_none()
