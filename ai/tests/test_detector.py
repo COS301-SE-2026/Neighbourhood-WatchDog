@@ -6,7 +6,7 @@ results = model.track(source="ai/tests/footage/clear-presence.mp4",
                 verbose=False, 
                 stream=True, 
                 conf=0.6, 
-                iou=0.5,
+                iou=0.3,
                 tracker="bytetrack.yaml",
                 persist=True)
 
