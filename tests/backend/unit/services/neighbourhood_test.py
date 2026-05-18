@@ -132,3 +132,51 @@ class TestCreateNeighbourhood:
             assert self.mock_db.commit.call_count == 0
             assert self.mock_db.refresh.call_count == 0
             assert self.mock_db.rollback.call_count == 0
+    
+    @pytest.mark.asyncio
+    async def test_empty_location(self):
+        with patch('app.services.neighbourhood_service.Neighbourhood') as MockNeighbourhood:
+            
+            MockNeighbourhood.return_value = self.mock_neighbourhood
+
+            with pytest.raises(HTTPException) as exception:
+                await create_neighbourhood_handler(
+                    name = "Name",
+                    location = "",
+                    property_id = uuid4(),
+                    db = self.mock_db,
+                    claims = self.claims,
+                )
+
+            assert exception.value.status_code == 400
+            assert exception.value.detail == "No neighbourhood locationation given"
+
+            assert self.mock_db.add.call_count == 0
+            assert self.mock_db.flush.call_count == 0
+            assert self.mock_db.commit.call_count == 0
+            assert self.mock_db.refresh.call_count == 0
+            assert self.mock_db.rollback.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_empty_location(self):
+        with patch('app.services.neighbourhood_service.Neighbourhood') as MockNeighbourhood:
+            
+            MockNeighbourhood.return_value = self.mock_neighbourhood
+
+            with pytest.raises(HTTPException) as exception:
+                await create_neighbourhood_handler(
+                    name = "Name",
+                    location = None,
+                    property_id = uuid4(),
+                    db = self.mock_db,
+                    claims = self.claims,
+                )
+
+            assert exception.value.status_code == 400
+            assert exception.value.detail == "No neighbourhood locationation given"
+
+            assert self.mock_db.add.call_count == 0
+            assert self.mock_db.flush.call_count == 0
+            assert self.mock_db.commit.call_count == 0
+            assert self.mock_db.refresh.call_count == 0
+            assert self.mock_db.rollback.call_count == 0
