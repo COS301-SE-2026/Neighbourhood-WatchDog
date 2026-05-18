@@ -102,7 +102,7 @@ class TestCreateNeighbourhood:
                     claims = self.claims,
                 )
 
-            assert exception.value == 400
+            assert exception.value.status_code == 400
 
             assert self.mock_db.add.call_count == 0
             assert self.mock_db.flush.call_count == 0
@@ -125,7 +125,7 @@ class TestCreateNeighbourhood:
                     claims = self.claims,
                 )
 
-            assert exception.value == 400
+            assert exception.value.status_code == 400
 
             assert self.mock_db.add.call_count == 0
             assert self.mock_db.flush.call_count == 0
