@@ -313,3 +313,31 @@ class TestCreateNeighbourhood:
             assert self.mock_db.refresh.call_count == 1
             assert self.mock_db.commit.call_count == 0
             assert self.mock_db.rollback.call_count == 1
+
+    #TODO possibly refactor this code once you merge with Zaman
+    
+    @pytest.mark.asyncio
+    async def test_prop_user_not_found(self):
+        with patch('app.services.neighbourhood_service.Neighbourhood') as MockNeighbourhood:
+            
+            MockNeighbourhood.return_value = self.mock_neighbourhood
+
+            self.claims = {"sub": "cognito-sub"}
+
+            with pytest.raises(HTTPException) as exception:
+                await create_neighbourhood_handler(
+                    name = "Name",
+                    location = "Location",
+                    property_id = uuid4(),
+                    db = self.mock_db,
+                    claims = self.claims,
+                )
+
+            assert exception.value.status_code == 403
+            assert exception.value.detail == "This user does not live in the property they are trying to add to the neighbourhood they are creating"
+
+            assert self.mock_db.add.call_count == 1
+            assert self.mock_db.flush.call_count == 1
+            assert self.mock_db.refresh.call_count == 1
+            assert self.mock_db.commit.call_count == 0
+            assert self.mock_db.rollback.call_count == 1
