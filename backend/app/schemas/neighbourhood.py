@@ -7,7 +7,7 @@ class CreateNeighbourhoodReq(BaseModel):
     location: str
     property_id: UUID
 
-class NeighbourhoodRes():
+class NeighbourhoodRes(BaseModel):
     id: UUID
     name: str
     location: str   

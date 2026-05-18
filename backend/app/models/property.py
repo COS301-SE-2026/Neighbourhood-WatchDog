@@ -20,4 +20,4 @@ class Property(Base):
     property_type = Column(SAEnum(PropertyTypeEnum, name="property_type"), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
-    neighbourhood = relationship(Neighbourhood, foreign_keys=[neighbourhood_id], nullable=True)
+    neighbourhood = relationship("Neighbourhood", foreign_keys=[neighbourhood_id])

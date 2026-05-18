@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 import random
 
-async def create_neighbourhood_handler(name: str, loc: str, property_id: UUID, db: DbSession, claims: dict):
+async def create_neighbourhood_handler(name: str, location: str, property_id: UUID, db: DbSession, claims: dict):
     """Creates the neighbourhood
         Makes the user who called the function the neighbourhood admin
         Adds the user's property to the neighbourhood
@@ -19,8 +19,8 @@ async def create_neighbourhood_handler(name: str, loc: str, property_id: UUID, d
     if not name or name == "":
         raise HTTPException(400, "No neighbourhood name given.")
 
-    if not loc or loc == "":
-        raise HTTPException(400, "No neighbourhood location given")
+    if not location or location == "":
+        raise HTTPException(400, "No neighbourhood locationation given")
     
     if not property_id:
         raise HTTPException(400, "No property id given to link the neighbourhood to")
@@ -33,7 +33,7 @@ async def create_neighbourhood_handler(name: str, loc: str, property_id: UUID, d
         #add the neighbourhood   
         new_neighbourhood = Neighbourhood(
             name = name,
-            location = loc,
+            location = location,
         )
 
         db.add(new_neighbourhood)
