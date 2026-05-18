@@ -3,7 +3,8 @@ from enum import Enum
 from app.core.database import Base
 from sqlalchemy import Column, ForeignKey, String, text, Enum as SAEnum, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID
-
+from sqlalchemy.orm import relationship
+from app.models.neighbourhood import Neighbourhood
 
 class PropertyTypeEnum(str, Enum):
     PRIVATE = "PRIVATE"
@@ -18,3 +19,5 @@ class Property(Base):
     address = Column(String, nullable=False)
     property_type = Column(SAEnum(PropertyTypeEnum, name="property_type"), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+
+    neighbourhood = relationship(Neighbourhood, foreign_keys=[neighbourhood_id], nullable=True)

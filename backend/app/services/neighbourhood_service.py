@@ -13,6 +13,19 @@ async def create_neighbourhood_handler(name: str, loc: str, property_id: UUID, d
         Adds the user's property to the neighbourhood
         Generate the join code """
 
+    if not name or name == "":
+        raise HTTPException(400, "No neighbourhood name given.")
+
+    if not loc or loc == "":
+        raise HTTPException(400, "No neighbourhood location given")
+    
+    if not property_id or property_id == "":
+        raise HTTPException(400, "No property id given to link the neighbourhood to")
+    
+    if not claims:
+        raise HTTPException(401, "Not authenticated")
+
+
     try: 
         #add the neighbourhood   
         newNeighbourhood = Neighbourhood(
@@ -20,13 +33,13 @@ async def create_neighbourhood_handler(name: str, loc: str, property_id: UUID, d
             location = loc,
         )
 
-        db.add()
+        db.add(newNeighbourhood)
         db.flush()
 
          #linking prop to neighbourhood 
 
         #TODO make sure to check that there is a record in the property_users table that links the user and the property
-        stmt = select(Property).where(Property.id == UUID)
+        stmt = select(Property).where(Property.id == property_id)
         property = db.execute(stmt).scalar_one_or_none()
 
         property.neighbourhood_id = newNeighbourhood.id

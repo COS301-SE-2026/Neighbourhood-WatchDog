@@ -10,7 +10,7 @@ from uuid import UUID
 
 async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims: dict, db: DbSession) -> Property :
     
-    if not addr or addr is None:
+    if not addr or addr == "":
         raise HTTPException(400, "No address or empty address field.")
 
     if not prop_type:

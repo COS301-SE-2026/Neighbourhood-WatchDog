@@ -16,5 +16,3 @@ class Neighbourhood(Base):
     users   = relationship("User", back_populates="neighbourhood")
     cameras = relationship("Camera", back_populates="neighbourhood")
     zones   = relationship("Zone", back_populates="neighbourhood")
-    
-    
