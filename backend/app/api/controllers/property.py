@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from app.schemas.property import CreatePropertyReq, CreatePropertyRes
 from app.services.property_service import create_property_handler
 from app.auth.dependencies import get_current_user
