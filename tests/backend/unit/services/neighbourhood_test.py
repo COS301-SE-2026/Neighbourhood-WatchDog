@@ -1,5 +1,6 @@
 import pytest, pytest_asyncio
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
+from app.services.neighbourhood_services import create_neighbourhood_handler
 from uuid import uuid4
 
 class TestCreateNeighbourhood:
@@ -34,4 +35,4 @@ class TestCreateNeighbourhood:
         with patch('app.services.neighbourhood_servie.Neighbourhoood') as MockNeighbourhood, \
         patch('app.services.neighbourhood_service.PropertyUser') as MockPropertyUser:
             
-            mock_prop = Mock()
+            mock_neighbourhood = Mock()

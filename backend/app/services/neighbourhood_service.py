@@ -65,18 +65,12 @@ async def create_neighbourhood_handler(name: str, loc: str, property_id: UUID, d
 
         #TODO add the join code stuff when ange is done with the join neighbourhood part
 
-        neighbourhood_res = NeighbourhoodRes(
+        return NeighbourhoodRes(
             id = new_neighbourhood.id,
             name = new_neighbourhood.name,
             location = new_neighbourhood.location,
             join_code = "neighbourhood1",
             created_at = new_neighbourhood.created_at
-        )
-
-        return CreateNeighbourhoodRes(
-            201,
-            "Neighbourhood created successfully!",
-            neighbourhood_res
         )
 
     except IntegrityError as e:
