@@ -230,7 +230,7 @@ class TestCreateNeighbourhood:
             assert self.mock_db.rollback.call_count == 0
 
     @pytest.mark.asyncio
-    async def test_location_none(self):
+    async def test_db_none(self):
         with patch('app.services.neighbourhood_service.Neighbourhood') as MockNeighbourhood:
             
             MockNeighbourhood.return_value = self.mock_neighbourhood
@@ -252,3 +252,34 @@ class TestCreateNeighbourhood:
             assert self.mock_db.commit.call_count == 0
             assert self.mock_db.refresh.call_count == 0
             assert self.mock_db.rollback.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_property_not_found(self):
+        with patch('app.services.neighbourhood_service.Neighbourhood') as MockNeighbourhood:
+            
+            MockNeighbourhood.return_value = self.mock_neighbourhood
+
+            #overriding it coz it's not a parameter directly passed into the function
+            self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+                None,  # Property not found
+                self.mock_property_user
+            ]
+
+
+            with pytest.raises(HTTPException) as exception:
+                await create_neighbourhood_handler(
+                    name = "Name",
+                    location = "Location",
+                    property_id = uuid4(),
+                    db = self.mock_db,
+                    claims = self.claims,
+                )
+
+            assert exception.value.status_code == 404
+            assert exception.value.detail == "Property not found"
+
+            assert self.mock_db.add.call_count == 1
+            assert self.mock_db.flush.call_count == 1
+            assert self.mock_db.refresh.call_count == 1
+            assert self.mock_db.commit.call_count == 0
+            assert self.mock_db.rollback.call_count == 1
