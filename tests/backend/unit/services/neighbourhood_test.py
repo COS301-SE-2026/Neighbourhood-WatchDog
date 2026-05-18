@@ -158,7 +158,7 @@ class TestCreateNeighbourhood:
             assert self.mock_db.rollback.call_count == 0
 
     @pytest.mark.asyncio
-    async def test_empty_location(self):
+    async def test_location_none(self):
         with patch('app.services.neighbourhood_service.Neighbourhood') as MockNeighbourhood:
             
             MockNeighbourhood.return_value = self.mock_neighbourhood
@@ -174,6 +174,78 @@ class TestCreateNeighbourhood:
 
             assert exception.value.status_code == 400
             assert exception.value.detail == "No neighbourhood locationation given"
+
+            assert self.mock_db.add.call_count == 0
+            assert self.mock_db.flush.call_count == 0
+            assert self.mock_db.commit.call_count == 0
+            assert self.mock_db.refresh.call_count == 0
+            assert self.mock_db.rollback.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_no_property_id(self):
+        with patch('app.services.neighbourhood_service.Neighbourhood') as MockNeighbourhood:
+            
+            MockNeighbourhood.return_value = self.mock_neighbourhood
+
+            with pytest.raises(HTTPException) as exception:
+                await create_neighbourhood_handler(
+                    name = "Name",
+                    location = "Second lo",
+                    property_id = None,
+                    db = self.mock_db,
+                    claims = self.claims,
+                )
+
+            assert exception.value.status_code == 400
+            assert exception.value.detail == "No property id given to link the neighbourhood to"
+
+            assert self.mock_db.add.call_count == 0
+            assert self.mock_db.flush.call_count == 0
+            assert self.mock_db.commit.call_count == 0
+            assert self.mock_db.refresh.call_count == 0
+            assert self.mock_db.rollback.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_no_claims(self):
+        with patch('app.services.neighbourhood_service.Neighbourhood') as MockNeighbourhood:
+            
+            MockNeighbourhood.return_value = self.mock_neighbourhood
+
+            with pytest.raises(HTTPException) as exception:
+                await create_neighbourhood_handler(
+                    name = "Name",
+                    location = "Second lo",
+                    property_id = uuid4(),
+                    db = self.mock_db,
+                    claims = None,
+                )
+
+            assert exception.value.status_code == 401
+            assert exception.value.detail == "Not authenticated"
+
+            assert self.mock_db.add.call_count == 0
+            assert self.mock_db.flush.call_count == 0
+            assert self.mock_db.commit.call_count == 0
+            assert self.mock_db.refresh.call_count == 0
+            assert self.mock_db.rollback.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_location_none(self):
+        with patch('app.services.neighbourhood_service.Neighbourhood') as MockNeighbourhood:
+            
+            MockNeighbourhood.return_value = self.mock_neighbourhood
+
+            with pytest.raises(HTTPException) as exception:
+                await create_neighbourhood_handler(
+                    name = "Name",
+                    location = "Location",
+                    property_id = uuid4(),
+                    db = None,
+                    claims = self.claims,
+                )
+
+            assert exception.value.status_code == 500
+            assert exception.value.detail == "No database session"
 
             assert self.mock_db.add.call_count == 0
             assert self.mock_db.flush.call_count == 0

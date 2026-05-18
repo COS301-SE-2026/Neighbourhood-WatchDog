@@ -25,6 +25,9 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
     if not property_id:
         raise HTTPException(400, "No property id given to link the neighbourhood to")
     
+    if not db:
+        raise HTTPException(500, "No database session")
+
     if not claims:
         raise HTTPException(401, "Not authenticated")
 
