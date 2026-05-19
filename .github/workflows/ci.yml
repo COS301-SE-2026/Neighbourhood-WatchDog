@@ -1,9 +1,3 @@
-# the jobs:
-# - Linting
-# - Testing
-# - Build and compilation
-# - Security Scans 
-
 name: ci
 on:
   push:
