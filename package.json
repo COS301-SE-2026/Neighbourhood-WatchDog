@@ -2,9 +2,9 @@
   "name": "neighbourhood-watchdog",
   "version": "1.0.0",
   "scripts": {
-    "setup": "pnpm setup:python && pnpm install && pnpm setup:backend && pnpm setup:ai",
-    "setup:dev": "pnpm setup:python && pnpm install && pnpm setup:backend:dev && pnpm setup:ai",
-    "setup:python": "python3 -m venv venv",
+    "setup": "pnpm setup:python && pnpm install && pnpm setup:backend",
+    "setup:dev": "pnpm setup:python && pnpm install && pnpm setup:backend:dev",
+    "setup:python": "python3.11 -m venv venv",
     "setup:backend": "cd backend && . ../venv/bin/activate && pip install -r requirements.txt",
     "setup:backend:dev": "cd backend && . ../venv/bin/activate && pip install -r requirements.txt -r requirements-dev.txt",
     "setup:ai": "cd ai && . ../venv/bin/activate && pip install -r requirements.txt",

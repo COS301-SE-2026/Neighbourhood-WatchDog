@@ -2,7 +2,7 @@ from enum import Enum as PyEnum
 import uuid
 
 from geoalchemy2 import Geometry
-from sqlalchemy import Column, ForeignKey, Text, Enum, text
+from sqlalchemy import Column, ForeignKey, Text, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base

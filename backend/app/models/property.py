@@ -4,7 +4,6 @@ from app.core.database import Base
 from sqlalchemy import Column, ForeignKey, String, text, Enum as SAEnum, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.models.neighbourhood import Neighbourhood
 
 class PropertyTypeEnum(str, Enum):
     PRIVATE = "PRIVATE"

@@ -1,12 +1,10 @@
 from fastapi import HTTPException
 from app.core.database import DbSession
-from app.schemas.property import CreatePropertyReq
 from sqlalchemy import select
 from app.models.user import User
 from app.models.property import Property, PropertyTypeEnum
 from app.models.property_user import PropertyUser
 from sqlalchemy.exc import IntegrityError
-from uuid import UUID
 
 async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims: dict, db: DbSession) -> Property :
     
@@ -44,7 +42,7 @@ async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims
         db.flush()
         db.commit()
 
-    except IntegrityError as e:
+    except IntegrityError:
         db.rollback()
         raise HTTPException(500, "Failed to add to property database")
 

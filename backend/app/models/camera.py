@@ -1,5 +1,4 @@
 from enum import Enum
-import uuid
 
 from app.core.database import Base
 from sqlalchemy import Column, ForeignKey, String, text, Enum as SAEnum, TIMESTAMP

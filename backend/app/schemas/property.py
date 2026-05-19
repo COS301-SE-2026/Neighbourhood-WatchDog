@@ -1,6 +1,6 @@
 from pydantic import BaseModel, StringConstraints
 from typing import Annotated
-from app.models.property import PropertyTypeEnum, Property
+from app.models.property import PropertyTypeEnum
 from uuid import UUID
 from datetime import datetime
 
