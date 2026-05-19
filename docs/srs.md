@@ -6,6 +6,68 @@ It is no secret that the world we live in is an unsafe place. Neighbourhood Watc
 
 ## User Stories
 
+### E1: Identity & Access Management
+
+- **US-01**: As a new resident, I want to create an account using my email so that I can join my neighbourhood and start using the platform.
+- **US-02**: As a registered user, I want to log in with a one-time verification code in addition to my password so that my account stays secure even if my password is compromised.
+- **US-03**: As a logged-in user, I want to sign out of the platform so that my account is not accessible to anyone else using my device.
+- **US-04**: As a system admin, I want to view a complete, read-only audit log of all user activity so that I can investigate any suspicious behaviour or access disputes.
+
+### E2: Neighbourhood & Property Management
+
+- **US-05**: As a resident, I want to create a new neighbourhood so that I can group my neighbours together and manage shared camera coverage.
+- **US-06**: As a resident, I want to join an existing neighbourhood using a join code so that I can access its shared cameras and alerts.
+- **US-07**: As a neighbourhood admin, I want to approve or deny requests from people wanting to join my neighbourhood so that only verified residents gain access.
+- **US-08**: As a resident, I want to create a property and link it to my neighbourhood so that I can associate my home's cameras with the right community.
+- **US-09**: As a neighbourhood admin, I want to assign and change roles for neighbourhood members so that each person only has access to what they need.
+
+### E3: Camera Registration & Management
+
+- **US-10**: As a resident, I want to register my home camera on the platform so that its footage can be monitored and analysed for security incidents.
+- **US-11**: As a resident, I want to edit my camera's details or temporarily disable it so that I can keep the system up to date without fully removing the camera.
+- **US-12**: As a resident, I want to permanently remove a camera I no longer own so that it stops appearing on the platform entirely.
+- **US-13**: As a security officer, I want to draw detection zones on a camera view and set a confidence threshold so that I only get alerted about activity in areas that actually matter.
+
+### E4: Video Ingestion & Live Streaming
+
+- **US-14**: As a security officer, I want to see live video feeds from all neighbourhood cameras on my dashboard so that I can monitor multiple areas at once without switching between screens.
+- **US-15**: As a security officer, I want to click on a camera feed and view it full screen so that I can inspect footage more closely when something looks suspicious.
+- **US-16**: As a resident, I want to view live feeds from my own cameras on my dashboard so that I can keep an eye on my property from anywhere.
+
+### E5: AI Detection & Behaviour Classification
+
+- **US-17**: As a resident, I want the system to automatically detect when a person appears in a restricted zone on my camera so that I am alerted without having to watch the feed myself.
+- **US-18**: As a security officer, I want the system to classify what a detected person is doing so that I can understand the severity of a situation at a glance without reviewing the footage first.
+- **US-19**: As a security officer, I want the system to keep track of the same person across multiple frames using a consistent ID so that I can follow their movement without piecing together separate alerts manually.
+
+### E6: Alert Management
+
+- **US-20**: As a security officer, I want to see new alerts appear on my dashboard instantly without refreshing so that I can respond to incidents as they happen.
+- **US-21**: As a security officer, I want to acknowledge an alert so that my team can see that someone is already handling it and avoid duplicated responses.
+- **US-22**: As a security officer, I want to watch the video clip that triggered an alert so that I can judge whether the situation requires a physical response.
+- **US-23**: As a security officer, I want to browse and filter past alerts so that I can review incidents that happened while I was off duty.
+- **US-24**: As a resident, I want to receive a WhatsApp message and email when a high-severity alert is triggered on my camera so that I am notified even when I am not watching the dashboard.
+- **US-25**: As a neighbourhood admin, I want to broadcast a critical alert to all neighbourhood members so that everyone can take precautions during a serious security incident.
+
+### E7: Analytics & Risk Intelligence
+
+- **US-26**: As a neighbourhood admin, I want to see charts showing how frequently alerts are occurring across the neighbourhood so that I can identify problem areas and times.
+- **US-27**: As a neighbourhood admin, I want to see an overall risk score for my neighbourhood so that I can understand at a glance whether security has been getting better or worse over time.
+- **US-28**: As a neighbourhood admin, I want to see how quickly alerts are being acknowledged so that I can identify response time problems and address them.
+- **US-29**: As a neighbourhood admin, I want to see incident trends over time so that I can spot recurring patterns and take preventative action before problems escalate.
+
+### E8: Autonomous Patrol Assistance
+
+- **US-30**: As a security officer, I want the system to automatically follow a suspicious individual across cameras and show me their movement path so that I can respond without losing track of them.
+- **US-31**: As a security officer, I want to receive a situational brief summarising everything the system knows about a tracked individual so that I can brief my team quickly without reviewing hours of footage.
+
+### E9: Predictive Risk Scoring
+
+- **US-32**: As a neighbourhood admin, I want to see predictions of which time windows and camera zones are at highest risk so that I can schedule patrols proactively rather than just reacting to incidents.
+- **US-33**: As a security officer, I want to be notified when a zone's predicted risk level rises significantly so that I can increase my attention to that area before an incident actually occurs.
+
+---
+
 ## Functional Requirements
 
 #### R1: Video Ingestion
@@ -360,6 +422,24 @@ It is no secret that the world we live in is an unsafe place. Neighbourhood Watc
 - On success, a 200 is returned with a pre-signed S3 URL valid for 15 minutes.
 - Access is scoped to the user’s neighbourhood; requesting footage from another neighbourhood’s alert returns a 403.
 - The view event is written to the audit log with `alertId` as `targetId` and `target_type` as `Alert`.
+
+---
+
+## Use Cases
+
+![Use Cases P1 - UCD1](images/Use%20Cases%20P1%20-%20UCD1.png)
+
+![Use Cases P1 - UCD2](images/Use%20Cases%20P1%20-%20UCD2.png)
+
+![Use Case P2 - UCD3](images/Use%20Case%20P2%20-%20UCD3.png)
+
+![Use Case P2 - UCD4](images/Use%20Case%20P2%20-%20UCD4.png)
+
+![Use Case P2 - UCD5](images/Use%20Case%20P2%20-%20UCD5.png)
+
+![Use Case P3 - UCD6](images/Use%20Case%20P3%20-%20UCD6.png)
+
+![Use Case P3 - UCD7](images/Use%20Case%20P3%20-%20UCD7.png)
 
 ---
 
