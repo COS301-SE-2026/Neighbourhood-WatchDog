@@ -43,22 +43,18 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
         db.flush()
         db.refresh(new_neighbourhood)
 
-         #linking prop to neighbourhood 
+         #linking prop to neighbourhood 1
         stmt = select(Property).where(Property.id == property_id)
         property = db.execute(stmt).scalar_one_or_none()
 
         if not property:
             raise HTTPException(404, "Property not found")
-        
-        #TODO figure out how to test the above line ^ 
-        # - should I not mock property or should I mock it as None
 
         stmt = select(PropertyUser).where(PropertyUser.property_id == property_id)
         prop_user = db.execute(stmt).scalar_one_or_none()
 
         if not prop_user:
             raise HTTPException(403, "User does not have access to this property")
-
 
         if (prop_user.user.cognito_sub != claims['sub']):
             raise HTTPException(403, "This user does not live in the property they are trying to add to the neighbourhood they are creating")
