@@ -1,4 +1,4 @@
-import pytest, pytest_asyncio
+import pytest
 from fastapi import HTTPException
 from unittest.mock import Mock, patch
 from app.services.neighbourhood_service import create_neighbourhood_handler
@@ -38,30 +38,6 @@ class TestCreateNeighbourhood:
         self.mock_db.rollback = Mock()
 
         self.claims = {"sub": "cognito-sub-123"}
-
-    @pytest.mark.asyncio
-    async def test_happy_path(self):
-        with patch('app.services.neighbourhood_service.Neighbourhood') as MockNeighbourhood:
-            
-            MockNeighbourhood.return_value = self.mock_neighbourhood
-
-            neighbourhood = await create_neighbourhood_handler(
-                name = "Test name",
-                location = "second location",
-                property_id = uuid4(),
-                db = self.mock_db,
-                claims = self.claims,
-            )
-
-            assert neighbourhood is not None
-            assert neighbourhood.id == self.mock_neighbourhood.id
-            assert neighbourhood.name == self.mock_neighbourhood.name
-
-            assert self.mock_db.add.call_count == 1
-            assert self.mock_db.flush.call_count == 2
-            assert self.mock_db.commit.call_count == 1
-            assert self.mock_db.refresh.call_count == 1
-            assert self.mock_db.rollback.call_count == 0
 
     @pytest.mark.asyncio
     async def test_happy_path(self):

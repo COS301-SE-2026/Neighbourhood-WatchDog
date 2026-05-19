@@ -1,14 +1,12 @@
 from fastapi import HTTPException
 from app.core.database import DbSession
 from uuid import UUID
-from app.schemas.neighbourhood import NeighbourhoodRes, CreateNeighbourhoodRes
+from app.schemas.neighbourhood import NeighbourhoodRes
 from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property
-from app.models.user import User
 from app.models.property_user import PropertyUser
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
-import random
 
 async def create_neighbourhood_handler(name: str, location: str, property_id: UUID, db: DbSession, claims: dict):
     """Creates the neighbourhood
@@ -74,7 +72,7 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
             created_at = new_neighbourhood.created_at
         )
 
-    except IntegrityError as e:
+    except IntegrityError:
         db.rollback()
         HTTPException(500, "Failed to add neighbourhood")
     except HTTPException as he:
