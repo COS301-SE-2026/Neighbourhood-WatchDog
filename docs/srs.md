@@ -8,7 +8,360 @@ It is no secret that the world we live in is an unsafe place. Neighbourhood Watc
 
 ## Functional Requirements
 
+#### R1: Video Ingestion
+    R1.1: Stream Acceptance
+        R1.1.1: The system shall accept live video streams from IP cameras.
+        R1.1.2: The system shall accept simulated video feeds (such as pre-recorded video files). 
+        R1.1.3: The system shall support multiple simultaneous incoming streams.
+    R1.2: Stream Relay
+        R1.2.1: The system shall relay incoming camera streams, decoupling the cameras from downstream services.
+        R1.2.2: The system shall allow multiple services to consume the same camera stream simultaneously without connecting directly to the camera.
+        R1.2.3 The system shall output each relayed stream in an HTTP Live Streaming (HLS) format for a browser-based preview.
+    R1.3: Frame Extraction       
+        R1.3.1: The system shall extract frames from incoming video streams.
+        R1.3.2: Extracted frames shall be pushed to a queue for distribution to AI processing workers.
+    R1.4: Format Conversion
+        R1.4.1: The system shall support format conversion and re-encoding across different camera types and input sources.
+
+#### R2: AI Detection Processing
+    R2.1: Human Presence Detection
+        R2.1.1: The system shall detect the presence of humans within defined camera zones. 
+        R2.1.2: Video frames shall be preprocessed before analysis to improve detection accuracy.
+        R2.1.3: A detection event shall be generated for each confirmed human presence, containing a confidence score, timestamp, and camera identifier. 
+        R2.1.4: Detection frames shall be processed asynchronously to ensure continuous camera monitoring without interruption.
+    R2.2: Scored (Emergency-Rating) Detection Events
+        R2.2.1: Severity rating (LOW, MEDIUM, HIGH, or CRITICAL) will be assigned to each detection event based on its confidence score and detected behaviour type.
+        R2.2.2: Alert record to be triggered only when a detection event's confidence score exceeds a configurable threshold.
+        R2.2.3: All triggered alert records will be displayed on the monitoring dashboard in real time and persisted.
+    R2.3: Behaviour Classification
+        R2.3.1: Classify detected behaviour into predefined categories: loitering, perimeter scanning, unusual movement patterns, weapon detected, fall detected and unconscious/unresponsive detected.
+        R2.3.2: The system shall use an individual's movement patterns across consecutive frames as input for behaviour classification.
+        R2.3.3: The system shall support model improvement using provided CCTV datasets to improve accuracy for the target environment. 
+    R2.4: Tracking (DeepSort)
+        R2.4.1: Assign a persistent tracking ID to each detected individual across multiple video frames.
+        R2.4.2: Maintain tracking continuity for individuals moving across multiple cameras.
+        R2.4.3: The system shall use tracking data to generate a movement path summary per individual for the autonomous patrol assistance feature.
+#### R3: Alert and Event Management
+    R3.1: Alert triggering
+        R3.1.1: Shall show the user a real-time alert on the dashboard when an event occurs (e.g. weapon detected, loitering, person detected in restricted area, etc.)
+        R3.1.2: Shall show the user an alert containing information about the event, such as the time, classification, severity and location of the event, and the confidence score.
+    R3.2: Alert logging (record) and history
+        R3.2.1: The footage that triggered the alert should be saved and timestamped so that the user can review it later.
+        R3.2.2: Shall allow user to view footage of alerts.
+        R3.2.3 Access to the recordings will be scoped by the same role-based permissions as the access to the video stream.
+    R3.3: Notifications
+        R3.3.1: Notify the user via WhatsApp and Email when an alert is triggered providing important information about the event (e.g. time).
+        R3.3.2 Other users in the neighbourhood should be alerted when there is a severe alert.
+#### R4: User/Access Control
+    R4.1 Scoped permissions
+        R4.1.1 The system should categorise video feeds by 3 different visibilities: public, restricted and private. Restricted video feeds are those which residents have selected to make viewable by security officers.
+        R4.1.2 Security officers and neighbourhood admins may view all public, and restricted video streams
+        R4.1.3 Residents may view their own private and restricted video streams of cameras on their own property and all public streams. 
+        R4.1.4 System admin may see all public video streams.
+    R4.2 Select visibility of video feeds
+        R4.2.1 Shall allow residents to choose which cameras’ streams will be public, restricted or private.
+        R4.2.2 Shall allow neighbourhood admins to add camera streams that will be public
+    R4.3 Multi-Factor Authentication
+        R4.3.1 Will require all users to log in using Multi-Factor Authentication methods.
+    R4.4 Audit Trail
+        R4.4.1 Log all user activity for  audit purposes.
+
+#### R5: Dashboard
+    R5.1: Live Alert Feed
+        R5.1.1: The dashboard shall display incoming alerts in real-time without requiring a page refresh.
+        R5.1.2: Each alert displayed shall include the camera name, detection type, severity, confidence score, and timestamp.
+        R5.1.3: The dashboard shall allow a user to acknowledge an alert, updating its status accordingly.
+        R5.1.4: The dashboard shall visually distinguish between unacknowledged, acknowledged, and resolved alerts.
+    R5.2: Camera Status Display
+        R5.2.1: The dashboard shall display the online and/or offline status of each registered camera.
+        R5.2.2: The dashboard shall update camera status indicators in real-time.
+    R5.3: Live Stream Preview
+        R5.3.1: The dashboard shall display a live stream preview for each camera.
+        R5.3.2: The dashboard shall allow a user to select and enlarge a specific camera feed for closer inspection.
+    R5.4: Incident History
+        R5.4.1: The dashboard shall provide a view of all past alerts, filterable by camera, detection type, date, and status.
+        R5.4.2: The dashboard shall allow a user to view the footage clip associated with a historical event.
+    R5.5: Administrative Configuration
+        R5.5.1: The dashboard shall allow an administrator to register and remove cameras.
+        R5.5.2: The dashboard shall allow a user to define and configure restricted zones per camera upon camera registration.
+        R5.5.3: The dashboard shall allow a security officer or neighbourhood administrator to set the confidence threshold for alert triggering.
+    R5.6: Responsiveness
+        R5.6.1: The dashboard shall be accessible and functional on both desktop and mobile browsers.
+
+#### R6 Analytics and Reporting
+    R6.1 Risk Scoring
+        R6.1.1 The system shall calculate a risk score for each neighbourhood based on historical incident data and alert frequency.
+        R6.1.2 The system shall integrate incident severity levels and time into the risk score calculations.
+        R6.1.3 Update the risk score of zones and neighbourhoods weekly.
+        R6.1.4 The system shall classify risk scores into High, Medium and Low risk
+        R6.1.5 The system shall maintain historical risk score records for analysis of trends.
+    R6.2 Alert Frequency Dashboard
+        R6.2.1 Combine alert data over configurable time intervals
+        R6.2.2 The system shall allow a user to group alerts by time period, camera or zone, property and severity
+        R6.2.3 Display alert frequency by selected filters using graph visualizations
+        R6.2.4 Update dashboard when new alerts are recorded.
+    R6.3 Response Time Metrics 
+        R6.3.1 Record timestamp when an alert is generated and when the security officer marks the alert as acknowledged indicating that it has been dealt with.
+        R6.3.2 Generate metrics on the average response times in a neighbourhood
+    R6.4 Incident Trend Analysis
+        R6.4.1 Generate and show aggregate incident data over time
+        R6.4.2 Group incidents based on time period, location and incident type.
+        R6.4.3 Identify increases in incident frequency over time
+        R6.4.4 Identify recurring incident patterns
+        R6.4.5 Use graphical representation for incident trends
+        R6.4.6 Allow user to filter incident trends based on date ranges and incident types
+
+#### R7 User Registration
+    R7.1 User Registration
+        R7.1.1 Allow new resident to register an account
+        R7.1.2 Shall verify the resident’s email address by sending an OTP to the user’s email address.
+    R7.2 Neighbourhood Creation
+        R7.2.1 Allow a resident to create a new neighbourhood 
+        R7.2.2 System create a unique join code for distribution
+    R7.3 Neighbourhood Association
+        R7.3.1 User can select or provide neighbourhood identifier to register for neighborhood
+        R7.3.2 User can enter a code to enter a specific neighbourhood
+        R7.3.3 User can request to join a neighbourhood
+        R7.3.4 Admin User able to accept or deny requests to join neighbourhoods
+    R7.4 Camera Registration
+        R7.4.1 Allow user to register a new camera
+            R7.4.1.1 User must select a privacy type for the camera
+            R7.4.1.2 User may select a name and location for camera
+        R7.4.2 Allow user edit properties of camera
+            R7.4.2.1 User able to change name and location
+            R7.4.2.2 Disable camera permanently or temporarily
+            R7.4.2.3 Allowed to deregister the camera
+        R7.4.3 System will associate the camera to a property
+    R7.5 User Authentication
+        R7.5.1 User signing in with extra verification of OTP activating a new session
+        R7.5.2 Allow user to sign out terminating active session
+
+#### R8 Property Management
+    R8.1 Property Creation
+        R8.1.1 A resident may create a new property and they will become the property admin for that property.
+        R8.1.2 A user can request to add a property to a neighbourhoods.
+        R8.1.3 The neighbourhood admin may approve or reject the request to a neighbourhood.
+    R8.2 Property Membership Management
+        R8.2.1 Property admin may invite residents to a property (people that live there as well). 
+        R8.2.2 Property admin may remove residents from a property.
+        R8.2.3 Residents can leave property voluntarily.
+        R8.2.4 Residents shall receive a notification when invited to a property and be able to accept or decline the invitation.
+    R8.3 Property Ownership and Control
+        R8.3.1 Property admin may transfer property admin ownership to another user (when moving out).
+        R8.3.2 A resident who is part of a property is allowed to request ownership of a property.
+    R8.4 Property-Camera Association
+        R8.4.1 Associate Cameras with the property
+        R8.4.2 Admin can manage cameras within property
+
+#### R9 Security Management
+    R9.1 Company Registration
+        R9.1.1 Security System allows the company to register an account 
+        R9.1.2 Email verification before activating the company account
+    R9.2 Security Personnel Management
+        R9.2.1 Company is able to register multiple security personnel accounts 
+        R9.2.2 Company has overview of security personnel
+        R9.2.3 Company can allocate personnel to neighbourhoods they joined.
+        R9.2.4 Company able to deallocate personnel from neighbourhoods
+        R9.2.5 Company can see all incidents the personnel have responded to.
+    R9.3 Neighbourhood association
+        R9.3.1 Companies can view all public camera feeds within neighbourhood
+        R9.3.2 System allows companies to view all restricted cameras
+        R9.3.3 Can view active alerts of neighbourhoods
+        R9.3.4 Can view all neighbourhoods they have joined and the personnel allocated to the neighbourhoods
+        R9.3.5 View incident history of neighbourhoods 
+        R9.3.6 View all invites to neighbourhoods
+	    R9.3.6.1 Company can choose to view the neighbourhood and its details
+	    R9.3.6.2 Company is able to accept or decline requests to join the neighbourhoods
+
+    R9.4 Security Response Management
+        R9.4.1 View all alerts that have been dispatched
+        R9.4.2 Change the status of the alerts list the alsert statuss here
+        R9.4.3 View respondees of the alert
+        R9.4.4 View the timeline of the alert and the state changes
+
+
 ## API Service Contracts
+
+### 1. Camera Registration Service
+
+**Description:** Allows a user (Neighbourhood Administrator / Resident) to register a camera on their property, validate the stream, and make it available for live preview on the dashboard.
+
+**Inputs:**
+- `streamUrl` (string) – Real-Time-Stream-Protocol (RTSP) URL of the stream
+- `ipAddress` (string) – IP address of the camera device
+- `cameraName` (string) – A human-readable label for the camera
+- `location` (string) – Physical location description (e.g. "Backyard")
+- `privacyType` (enum: PUBLIC | RESTRICTED | PRIVATE) – Visibility setting for the stream
+
+**Outputs:**
+- `cameraId` (UUID) – Unique identifier assigned to the registered camera
+- `status` (enum: ONLINE | OFFLINE | ERROR) – Initial connection status after registration
+- `hlsStreamUrl` (string) – HTTP Live Stream (HLS) URL for browser-based live preview
+
+**Usage / Interaction Rules:**
+- Client will send a POST request to `/cameras/register` with the inputs in JSON format.
+- The user must be authenticated with a Neighbourhood Admin or Resident role; else a 401 status code is returned.
+- On submission, the system attempts to connect to the RTSP stream; if the connection fails, the camera is marked as OFFLINE.
+- If the streamUrl is already registered in the neighbourhood, a 409 status code is returned.
+- On success, a 201 status code is returned with the cameraId and its hlsStreamUrl.
+
+---
+
+### 2. Video Ingestion and Human Detection Service
+
+**Description:** Ingests an active camera stream, extracts frames, and runs YOLOv8 detection to determine whether a human is present within the camera’s defined zone.
+
+**Inputs:**
+- `cameraId` (UUID) – Identifier of the camera stream to process
+- `frameInterval` (integer) – Interval in seconds between frame extractions
+- `confidenceThreshold` (float, 0-1) – The minimum confidence score for a detection to be recorded
+- `zoneBoundary` (JSON) – Coordinates of the restricted zone to apply as mask, protecting "privatized" areas
+
+**Outputs:**
+- `detectionEventId` (UUID) – Unique identifier for the detection event
+- `cameraId` (UUID) – Camera that produced the detection
+- `timeStamp` (datetime) – Time the frame was captured
+- `humanDetected` (boolean) – Whether a human was found within the zone
+- `confidenceScore` (float) – Model confidence score for the detection
+- `thumbnailUrl` (string) – URL of the annotated frame thumbnail
+
+**Usage / Interaction Rules:**
+- This service is triggered internally by the Celery Worker pipeline. It is not directly called by the client.
+- Frames are extracted from the MediaMTX relay using FFmpeg and published to a Kafka topic for processing by the Celery Workers.
+- OpenCV applies the zoneBoundary mask before passing the frame to YOLOv8; detections outside the zone are discarded.
+- On a valid detection, the event is saved to the database, and the annotated thumbnail is uploaded to the cloud object storage.
+- If the camera stream is unavailable, the worker logs the failure and skips the frame without crashing.
+
+---
+
+### 3. Alert Display Service
+
+**Description:** Delivers real-time alerts to the monitoring dashboard and exposes camera status indicators, ensuring Security Officers have immediate situational awareness.
+
+**Inputs:**
+- `detectionEventId` (UUID) – The detection event that triggered the alert
+- `userId` (UUID) – The authenticated user requesting the dashboard feed
+- `filters` (object, optional) – Optional filters: `{ cameraId, severityLevel, status }`
+
+**Outputs:**
+- `alertId` (UUID) – Unique identifier for the alert
+- `cameraName` (string) – Name of the camera that triggered the alert
+- `detectionType` (enum: HUMAN_PRESENCE | LOITERING | WEAPON_DETECTED | PERIMETER_SCAN) – Classification of the detection
+- `severityLevel` (enum: LOW | MEDIUM | HIGH | CRITICAL) – Severity rating of the alert
+- `confidenceScore` (float) – Confidence score of the underlying detection
+- `timestamp` (datetime) – Time the alert was generated
+- `status` (enum: OPEN | ACKNOWLEDGED | RESOLVED) – Current alert status
+
+**Usage / Interaction Rules:**
+- Alerts are pushed to the dashboard in real-time via WebSocket; the client subscribes on dashboard load.
+- The client connects to `ws://<host>/ws/alerts` with a valid auth token; unauthenticated connections are rejected with a 401.
+- Role-based filtering is applied server-side: a Resident only receives alerts for cameras in their neighbourhood; a Security Officer receives all alerts within their neighbourhood.
+- Camera status indicators are polled from MediaMTX every 10 seconds and broadcast to all connected dashboard clients.
+- A Security Officer can acknowledge an alert by sending a PATCH request to `/alerts/{alertId}/status` with `{ "status": "ACKNOWLEDGED" }`; the update is broadcast to all connected clients immediately.
+
+---
+
+### 4. User Registration Service
+
+**Description:** Allows a new user to create an account, verify their identity, and gain access to the system.
+
+**Inputs:**
+- `name` (string) – Full name of the user
+- `email` (string) – Email address used as the unique identifier
+- `password` (string) – User’s chosen password
+- `role` (enum: NEIGHBOURHOOD_ADMIN | SECURITY_OFFICER | RESIDENT) – Requested role
+
+**Outputs:**
+- `userId` (UUID) – Unique identifier assigned to the new user
+- `email` (string) – Confirmed email address of the registered user
+- `otpSent` (boolean) – Confirms whether the OTP verification email was dispatched
+
+**Usage / Interaction Rules:**
+- Client sends a POST request to `/auth/register` with inputs in JSON format.
+- If the email is already registered, a 409 is returned.
+- On submission, an OTP is sent to the provided email; the account is inactive until OTP is verified.
+- Client sends a POST request to `/auth/verify-otp` with `{ "email": "...", "otp": "..." }` to activate the account.
+- If the OTP is incorrect or expired, a 401 is returned.
+- On successful verification, a 201 is returned and the user can log in.
+- Passwords must meet minimum complexity requirements; a 422 is returned if validation fails.
+
+---
+
+### 5. User Login Service
+
+**Description:** Authenticates a user via email and password, enforces MFA for user roles, and returns an access token for subsequent authenticated requests.
+
+**Inputs:**
+- `email` (string) – Registered email address of the user
+- `password` (string) – User’s password
+- `mfaCode` (string, optional) – Time-based One-Time Password (TOTP) code required for user roles
+
+**Outputs:**
+- `accessToken` (string) – JWT token used for authenticated requests
+- `refreshToken` (string) – Token used to obtain a new access token on expiry
+- `expiresAt` (datetime) – Time at which the access token becomes invalid
+- `role` (enum: SYSTEM_ADMIN | NEIGHBOURHOOD_ADMIN | SECURITY_OFFICER | RESIDENT) – Role of the authenticated user
+
+**Usage / Interaction Rules:**
+- Client sends a POST request to `/auth/login` with inputs in JSON format.
+- If credentials are invalid, a 401 is returned; the failed attempt is written to the audit log.
+- If the user’s role is SYSTEM_ADMIN, NEIGHBOURHOOD_ADMIN, RESIDENT, or SECURITY_OFFICER, MFA is required; a 403 is returned if mfaCode is absent or incorrect.
+- On success, a 200 is returned with accessToken and refreshToken.
+- The login event is written to the audit log with `mfa_used` and `success` in metadata.
+- Access token expiry is 15 minutes; clients must use refreshToken to obtain a new one via POST `/auth/refresh`.
+
+---
+
+### 6. Alert Acknowledgement Service
+
+**Description:** Allows a Security Officer to acknowledge an open alert, updating its status and reflecting the change across all connected dashboard clients in real-time.
+
+**Inputs:**
+- `alertId` (UUID) – Unique identifier of the alert being acknowledged
+- `userId` (UUID) – Identifier of the Security Officer performing the acknowledgement
+
+**Outputs:**
+- `alertId` (UUID) – Identifier of the updated alert
+- `status` (enum: ACKNOWLEDGED) – Updated alert status
+- `acknowledgedBy` (UUID) – User ID of the Security Officer who acknowledged the alert
+- `acknowledgedAt` (datetime) – Timestamp of the acknowledgement
+
+**Usage / Interaction Rules:**
+- Client sends a PATCH request to `/alerts/{alertId}/status` with `{ "status": "ACKNOWLEDGED" }` in JSON format.
+- Caller must be authenticated with a Security Officer role or higher; a 403 is returned otherwise.
+- If the alert does not exist, a 404 is returned.
+- If the alert is already ACKNOWLEDGED or RESOLVED, a 409 is returned.
+- On success, a 200 is returned and the status change is broadcast to all connected dashboard clients via WebSocket.
+- The acknowledgement is written to the audit log with `previous_status` and `new_status` in metadata.
+
+---
+
+### 7. Historical Alert Footage Service
+
+**Description:** Allows a Security Officer to retrieve and view the footage clip associated with a past alert from the incident history view.
+
+**Inputs:**
+- `alertId` (UUID) – Unique identifier of the alert whose footage is being requested
+- `userId` (UUID) – Identifier of the user requesting the footage
+
+**Outputs:**
+- `alertId` (UUID) – Identifier of the alert
+- `footageUrl` (string) – Pre-signed S3 URL to the footage clip
+- `timestamp` (datetime) – Time the footage was recorded
+- `expiresAt` (datetime) – Time at which the pre-signed URL expires
+- `detectionType` (enum: HUMAN_PRESENCE | LOITERING | WEAPON_DETECTED | PERIMETER_SCAN) – Classification of the detection that triggered the alert
+
+**Usage / Interaction Rules:**
+- Client sends a GET request to `/alerts/{alertId}/footage`.
+- Caller must be authenticated with a Security Officer role or higher; a 403 is returned otherwise.
+- If the alert does not exist, a 404 is returned.
+- If the footage clip has not yet been uploaded (e.g. upload still in progress), a 202 is returned with `{ "message": "footage not yet available" }`.
+- If the footage has been archived to cold storage, a 202 is returned with `{ "message": "footage being retrieved from archive" }`.
+- On success, a 200 is returned with a pre-signed S3 URL valid for 15 minutes.
+- Access is scoped to the user’s neighbourhood; requesting footage from another neighbourhood’s alert returns a 403.
+- The view event is written to the audit log with `alertId` as `targetId` and `target_type` as `Alert`.
+
+---
 
 ## Domain Model
 
