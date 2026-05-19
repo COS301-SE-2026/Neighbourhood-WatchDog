@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 
 def annotate_frame(frame: np.ndarray, tracks: list) -> np.ndarray:
@@ -26,3 +27,19 @@ def annotate_frame(frame: np.ndarray, tracks: list) -> np.ndarray:
             (0, 255, 0), 
             2
         )
+    
+    #drawing timestamp
+    sast_now = datetime.now(ZoneInfo("Africa/Johannesburg"))
+    timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S SAST")
+
+    cv2.putText(
+        annotated,
+        timestamp, 
+        (10, 30),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (255, 255, 255),
+        2
+    )
+
+    return annotated
