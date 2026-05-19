@@ -4,6 +4,7 @@ os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 import cv2
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
+from ai.pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
 
 model = YOLO('ai/pipeline/models/weights/yolov8n.pt')
 
@@ -64,6 +65,7 @@ while True:
     # DeepSORT tracking with appearance re-ID
     tracks = tracker.update_tracks(detections, frame=frame)
 
+    tracks_for_thumbnail = []
     for track in tracks:
         if not track.is_confirmed():
             continue
@@ -71,6 +73,17 @@ while True:
         unique_ids.add(track_id)
         conf = f"{track.det_conf:.2f}" if track.det_conf is not None else "N/A"
         print(f"Track ID: {track_id} --- Confidence: {conf}")
+
+        left, top, right, bottom = track.to_ltrb()
+        tracks_for_thumbnail.append({
+            "track_id": track_id,
+            "confidence": float(track.det_conf) if track.det_conf is not None else 0.0,
+            "bbox": [left, top, right, bottom],
+        })
+
+    annotated = annotate_frame(frame, tracks_for_thumbnail)
+    _ = encode_frame_as_jpeg(annotated)
+    cv2.imshow("Annotated", annotated)
 
     # 'q' to quit
     if cv2.waitKey(1) & 0xFF == ord('q'):
