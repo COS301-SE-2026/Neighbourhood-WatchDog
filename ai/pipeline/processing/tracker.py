@@ -23,7 +23,7 @@ class Detector:
         )
 
     def process_frame(self, frame) -> list:
-        results = self.model.track(
+        results = self.model.predict(
             frame,
             verbose=False, 
             conf=self.conf, 
@@ -35,8 +35,8 @@ class Detector:
 
         detections = []
         for box in results[0].boxes:
-            if int(box.cls[0]) == PERSON_CLASS and box.id is not None:
-                x1, y1, x2, y2 = box.xyxy[0].tolist
+            if int(box.cls[0]) == PERSON_CLASS:
+                x1, y1, x2, y2 = box.xyxy[0].tolist()
                 confidence = float(box.conf[0])
                 detections.append((
                     [x1, y1, x2-x1, y2-y1],
