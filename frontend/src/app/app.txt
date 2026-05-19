@@ -1,0 +1,31 @@
+This is where all the routes go!
+All the redirect end up going in here:
+
+/app
+  /page.tsx                  → Landing page (login button)
+  /callback
+    page.tsx                → Handles Cognito redirect
+  /dashboard
+    page.tsx                → Protected page (after login)
+  /layout.tsx              → Global layout (navbar etc.)
+
+/components
+  LoginButton.tsx          → UI button
+  Navbar.tsx               → Optional
+  ProtectedRoute.tsx       → Wrapper (later improvement)
+
+/lib
+  auth.ts                  → login/logout/token helpers
+  cognito.ts              → Cognito config constants
+  api.ts                  → FastAPI request helper
+
+/hooks
+  useAuth.ts              → (optional) auth state hook
+
+/middleware.ts            → route protection (later stage)
+
+/styles
+  globals.css             → Tailwind base styles
+
+/public
+  images/

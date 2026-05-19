@@ -1,0 +1,4 @@
+This directory will store the modified UI elements
+/components/ui - stores all the basic ui elements (no smart things)
+/components/features - adapts the basic elements and connects it to the TS functions
+/components/features/auth - stores all the feature elements for the auth features
