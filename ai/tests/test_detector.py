@@ -12,7 +12,7 @@ tracker = DeepSort(
     n_init=2,             # require 2 consecutive detections to confirm a track
     max_iou_distance=0.7,
     embedder="mobilenet", # appearance model for re-identification
-    embedder_gpu=True     # set False if no GPU available
+    embedder_gpu=False     # set False if no GPU available
 )
 
 # original url (stream 1)
@@ -48,7 +48,7 @@ while True:
     results = model.predict(
         frame,
         verbose=False,
-        conf=0.45,
+        conf=0.6,
         iou=0.3,
         imgsz=640,
     )
