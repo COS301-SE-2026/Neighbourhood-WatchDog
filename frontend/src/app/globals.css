@@ -1,26 +1,46 @@
-@import "tailwindcss";
-
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* PRIMARY */
+  --color-command-navy: #1D2A5E;
+  --color-alert-blue: #3B5EDE;
+  --color-sky-blue: #5B8DEF;
+  --color-steel: #2C3E6B;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* NEUTRALS */
+  --color-white: #FFFFFF;
+  --color-fog: #F4F6FA;
+  --color-mist: #D0D7E8;
+  --color-ink: #1A1A2E;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+  /* SEMANTIC */
+  --color-threat-red: #DC2626;
+  --color-caution-amber: #D97706;
+  --color-safe-green: #16A34A;
+  --color-info-blue: #0284C7;
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* SEMANTIC TOKENS */
+  --background: var(--color-ink);
+  --foreground: var(--color-white);
+
+  --surface-primary: var(--color-command-navy);
+  --surface-secondary: var(--color-steel);
+
+  --border: var(--color-mist);
+
+  --text-primary: var(--color-white);
+  --text-secondary: var(--color-fog);
+  --text-muted: #B8C2DA;
+
+  --interactive-primary: var(--color-alert-blue);
+  --interactive-hover: var(--color-sky-blue);
+
+  --success: var(--color-safe-green);
+  --warning: var(--color-caution-amber);
+  --danger: var(--color-threat-red);
+  --info: var(--color-info-blue);
+
+  /* SHADOWS */
+  --shadow-sm: 0 1px 3px rgba(29,42,94,0.08);
+  --shadow-md: 0 4px 12px rgba(29,42,94,0.12);
+  --shadow-lg: 0 8px 24px rgba(29,42,94,0.16);
+  --shadow-alert: 0 0 0 3px rgba(220,38,38,0.30);
 }
