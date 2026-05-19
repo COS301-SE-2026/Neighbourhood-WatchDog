@@ -43,3 +43,9 @@ def annotate_frame(frame: np.ndarray, tracks: list) -> np.ndarray:
     )
 
     return annotated
+
+
+
+def encode_frame_as_jpeg(frame: np.ndarray) -> bytes:
+    _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+    return buffer.tobytes()
