@@ -1,5 +1,8 @@
 import uuid
 from fastapi import Header, HTTPException, status
+from fastapi import Depends
+from fastapi.security import HTTPBearer
+from app.auth.cognito import verify_token
 
 # default mock identity
 # TODO: remove mock when Cognito is live
