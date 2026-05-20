@@ -2,7 +2,7 @@
 
 import { InfoCard } from "@/components/info-card";
 import { ListCard } from "@/components/list-card";
-import { DialogBox } from "@/components/add-camera-dialogue";
+import { AddCameraDialogBox } from "@/components/add-camera-dialogue";
 import { useCameras } from "@/hooks/use-camera";
 import { useState } from "react";
 
@@ -45,7 +45,7 @@ export default function PropertyPage(){
         onDelete={deleteCamera}
       />
     </div>
-    <DialogBox
+    <AddCameraDialogBox
       open={cameraDialogOpen}
       onOpenChange={setCameraDialogOpen}
       onCameraAdded={addCamera}
