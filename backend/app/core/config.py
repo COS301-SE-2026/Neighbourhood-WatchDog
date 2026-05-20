@@ -17,5 +17,4 @@ class Config(BaseSettings):
 
     frontend_url: str
 
-
 config = Config()

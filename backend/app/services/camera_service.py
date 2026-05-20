@@ -21,7 +21,9 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
     if not property_id:
         raise HTTPException(400, "Property ID is missing")
     
-    rtsp_url_pattern = r"^rtsp://[a-zA-Z0-9\-._~%!$&'()*+,;=:@/]+$"
+    rtsp_url_pattern = r"^rtsp:\/\/(?:([^:\s]+):([^@\s]+)@)?([^\/\s:]+)(?::(\d+))?(\/[^\s]*)?$"
+
+    #check that the camera does not already exist
 
     if not rtsp_url or rtsp_url == "":
         raise HTTPException(400, "RTSP URL is missing")
