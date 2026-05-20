@@ -3,6 +3,7 @@ from sqlalchemy import Column, String, DateTime, Enum as SQLEnum
 from sqlalchemy.sql import func
 from app.core.database import Base
 from sqlalchemy.dialects.postgresql import UUID
+from uuid import uuid4
 
 
 class UserRole(str, Enum):
@@ -14,10 +15,12 @@ class UserRole(str, Enum):
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(UUID(as_uuid=True), primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     email = Column(String, unique=True)
+    first_name = Column(String)
+    last_name = Column(String)
     cognito_sub = Column(String)
-    role = Column(SQLEnum(UserRole), nullable=False)
+    role = Column(SQLEnum(UserRole), nullable=False, default=UserRole.RESIDENT)
     created_at = Column(DateTime, default=func.now())
 
 
