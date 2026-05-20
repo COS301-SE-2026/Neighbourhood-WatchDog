@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar"
+import HideSidebar from "@/components/hide-sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import "./globals.css";
 
@@ -30,8 +30,8 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col">
         <TooltipProvider>
           <SidebarProvider>
-            <AppSidebar />
-            <main>
+             <HideSidebar /> {/*Check if the current layout is allowed to have a sidebar */}
+            <main className="flex-1">
               {children}
             </main>
           </SidebarProvider>
