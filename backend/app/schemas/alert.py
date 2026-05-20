@@ -1,25 +1,22 @@
 from datetime import datetime
 from uuid import UUID
+from typing import Optional
 from pydantic import BaseModel
 
 
 class AlertCreate(BaseModel):
-    track_id: int
-    alert_type: str = "human_presence"
+    camera_id: UUID
+    detection_type: str = "HUMAN_PRESENCE"
     confidence: float
-    camera_id: str
     timestamp: datetime
-    bbox: list[float] = []  # [x, y, w, h]
+    thumbnail_url: Optional[str] = None
 
 
 class AlertResponse(BaseModel):
     id: UUID
-    track_id: int
-    alert_type: str
-    confidence: float
-    camera_id: str
-    timestamp: datetime
-    bbox: list[float]
+    camera_id: UUID
+    detection_event_id: UUID
+    status: str
     created_at: datetime
 
     class Config:
