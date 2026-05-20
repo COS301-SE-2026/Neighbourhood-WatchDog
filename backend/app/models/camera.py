@@ -2,7 +2,6 @@ from enum import Enum
 
 from app.core.database import Base
 from sqlalchemy import Column, ForeignKey, String, text, Enum as SAEnum, TIMESTAMP
-from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -27,4 +26,3 @@ class Camera(Base):
     detection_events = relationship("DetectionEvent", back_populates="camera")
     neighbourhood = relationship("Neighbourhood", back_populates="cameras")
     retention_policy = relationship("RetentionPolicy", back_populates="camera", uselist=False)
-    camera = relationship("Camera", back_populates="alerts")
