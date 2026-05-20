@@ -28,7 +28,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem className="text-white font-extrabold">
-            Neighbourhood WatchDog
+            <h1>Neighbourhood WatchDog</h1>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>  
