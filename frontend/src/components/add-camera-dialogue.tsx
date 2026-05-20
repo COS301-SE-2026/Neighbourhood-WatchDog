@@ -14,20 +14,34 @@ import {
 import { Field, FieldGroup } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { CameraInput, Camera } from "@/lib/validators/camera"
+import { useState } from "react"
 
 interface DialogBoxProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onCameraAdded: (camera: any) => void
+  propertyId: string
 }
 
-export function DialogBox({ open, onOpenChange }: DialogBoxProps) {
+export function DialogBox({ open, onOpenChange, onCameraAdded, propertyId }: DialogBoxProps) {
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setErrors({})
+  }
+
+  const formData = new FormData(e.currentTarget)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <form>
+      <form onSubmit={handleSubmit}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Add camera</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl font-bold">Add camera</DialogTitle>
+            <DialogDescription >
               Enter the details of your camera.
             </DialogDescription>
           </DialogHeader>
@@ -43,6 +57,18 @@ export function DialogBox({ open, onOpenChange }: DialogBoxProps) {
             <Field>
               <Label htmlFor="rtsp-1">RTSP URL</Label>
               <Input id="rtsp-1" name="rtsp_url" defaultValue="rtsp://" />
+            </Field>
+            <Field>
+              <Label htmlFor="visibility-1">Visibility</Label>
+              <select
+                id="visibility-1"
+                name="visibility"
+                defaultValue="private"
+                className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="PUBLIC">Public</option>
+                <option value="PRIVATE">Private</option>
+              </select>
             </Field>
           </FieldGroup>
           <DialogFooter>
