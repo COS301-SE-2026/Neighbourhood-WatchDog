@@ -20,6 +20,21 @@ async def create_user(
     # so pretty much on every protected endpoint
     # that way if the user does not already exist they will be created 
 
+    if email is None or email == "":
+        raise HTTPException(400, "Email missing. Create user unsuccessful")
+
+    if first_name is None or first_name == "":
+        raise HTTPException(400, "First name missing. Create user unsuccessful")
+
+    if last_name is None or last_name == "":
+        raise HTTPException(400, "Last name missing. Create user unsuccessful")
+
+    if cognito_sub is None or cognito_sub == "":
+        raise HTTPException(400, "Cognito sub missing. Create user unsuccessful")
+
+    if db is None:
+        raise HTTPException(500, "Database session missing. Create user unsuccessful")
+
     try:
         # Make sure that the user does not user already exists
         stmt = select(User).where(User.email == email)
