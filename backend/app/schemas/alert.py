@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 from pydantic import BaseModel
 
 
@@ -12,7 +13,7 @@ class AlertCreate(BaseModel):
 
 
 class AlertResponse(BaseModel):
-    id: int
+    id: UUID
     track_id: int
     alert_type: str
     confidence: float
