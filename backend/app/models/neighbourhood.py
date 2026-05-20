@@ -13,6 +13,6 @@ class Neighbourhood(Base):
     location = Column(Text, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
-    users   = relationship("User", back_populates="neighbourhood")
     cameras = relationship("Camera", back_populates="neighbourhood")
-    zones   = relationship("Zone", back_populates="neighbourhood")
+    zones   = relationship("GeospatialZone", back_populates="neighbourhood")
+    retention_policies = relationship("RetentionPolicy", back_populates="neighbourhood")

@@ -3,6 +3,7 @@ from enum import Enum
 from app.core.database import Base
 from sqlalchemy import Column, ForeignKey, String, Float, Boolean, text, Enum as SAEnum, TIMESTAMP, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 
 
 class DetectionType(str, Enum):
@@ -22,6 +23,8 @@ class DetectionEvent(Base):
     confidence_score = Column(Float, nullable=False)
     thumbnail_url = Column(String, nullable=True)
     processed = Column(Boolean, nullable=False, server_default="false")
+
+    alerts = relationship("Alert", back_populates="detection_event")
 
     __table_args__ = (
         CheckConstraint("confidence_score BETWEEN 0 AND 1", name="ck_confidence_score_range"),

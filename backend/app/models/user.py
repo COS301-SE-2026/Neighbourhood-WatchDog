@@ -1,6 +1,7 @@
 from enum import Enum
 from sqlalchemy import Column, String, DateTime, Enum as SQLEnum
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from app.core.database import Base
 from sqlalchemy.dialects.postgresql import UUID
 from uuid import uuid4
@@ -22,5 +23,8 @@ class User(Base):
     cognito_sub = Column(String)
     role = Column(SQLEnum(UserRole), nullable=False, default=UserRole.RESIDENT)
     created_at = Column(DateTime, default=func.now())
+
+    resolved_alerts = relationship("Alert", back_populates="resolver")
+    audit_logs = relationship("AuditLog", back_populates="user")
 
 
