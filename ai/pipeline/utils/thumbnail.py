@@ -30,7 +30,7 @@ def annotate_frame(frame: np.ndarray, tracks: list) -> np.ndarray:
     
     #drawing timestamp
     sast_now = datetime.now(ZoneInfo("Africa/Johannesburg"))
-    timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S SAST")
+    timestamp = sast_now.strftime("%Y-%m-%d %H:%M:%S SAST")
 
     cv2.putText(
         annotated,
