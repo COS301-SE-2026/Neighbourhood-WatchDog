@@ -49,6 +49,7 @@
 }
 
 :root {
+  /* Tailwind defaults */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -73,7 +74,7 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
+  --sidebar: #1D2A5E;
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
@@ -81,6 +82,59 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* WatchDog Design System Tokens */
+  /* Colour - Brand */
+  --color-navy: #1D2A5E;
+  --color-blue: #3B5EDE;
+  --color-sky: #5B8DEF;
+  --color-steel: #2C3E6B;
+
+  /* Colour - Neutral */
+  --color-white: #FFFFFF;
+  --color-fog: #F4F6FA;
+  --color-mist: #D0D7E8;
+  --color-ink: #1A1A2E;
+  --color-body: #2E3A5C;
+
+  /* Colour - Semantic */
+  --color-threat: #DC2626;
+  --color-caution: #D97706;
+  --color-safe: #16A34A;
+  --color-info: #0284C7;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', Consolas, monospace;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-8: 48px;
+  --space-10: 64px;
+  --space-12: 96px;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Motion */
+  --motion-fast: 100ms ease-out;
+  --motion-normal: 200ms ease-in-out;
+  --motion-slow: 350ms ease-in-out;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(29, 42, 94, 0.08);
+  --shadow-md: 0 4px 12px rgba(29, 42, 94, 0.12);
+  --shadow-lg: 0 8px 24px rgba(29, 42, 94, 0.16);
+  --shadow-alert: 0 0 0 3px rgba(220, 38, 38, 0.30);
 }
 
 .dark {
@@ -107,7 +161,7 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
+  --sidebar: #1D2A5E;
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.985 0 0);
