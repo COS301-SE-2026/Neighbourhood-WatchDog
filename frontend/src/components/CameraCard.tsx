@@ -1,12 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
-function CameraCard({ name, status }: { name: string; status: "online" | "offline" }) {
+export default function CameraCard({ name, status }: { name: string; status: "online" | "offline" }) {
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between p-4">
                 <CardTitle className="text-sm font-medium">{name}</CardTitle>
-                <Badge variant={status === "online" ? "default" : "destructive"}>
+                <Badge variant={status === "online" ? "success" : "destructive"}>
                     {status}
                 </Badge>
             </CardHeader>
