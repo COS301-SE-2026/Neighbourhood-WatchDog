@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
+    <html lang="en" className={`${jetbrainsMono.variable} ${inter.variable} h-full`}>
       <body className="min-h-screen flex flex-col">
         <TooltipProvider>
           <SidebarProvider>
