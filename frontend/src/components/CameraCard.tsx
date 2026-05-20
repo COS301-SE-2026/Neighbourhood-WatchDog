@@ -10,7 +10,7 @@ interface CameraCardProps {
 }
 
 export default function CameraCard({ name, status, rtspUrl }: CameraCardProps) {
-    const streamUrl = rtspUrl ? `http://localhost:8000/stream?url=${encodeURIComponent(rtspUrl)}` : null;
+    const streamUrl = rtspUrl ? `http://localhost:8001/stream?url=${encodeURIComponent(rtspUrl)}` : null;
 
     return (
         <Card>
