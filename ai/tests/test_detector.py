@@ -3,7 +3,7 @@ os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
 import cv2
 import httpx
-from datetime import datetime
+from datetime import datetime, timezone
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from ai.pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
@@ -95,7 +95,7 @@ while True:
                     "camera_id": CAMERA_ID,
                     "detection_type": "HUMAN_PRESENCE",
                     "confidence": track.det_conf,
-                    "timestamp": datetime.now(datetime.timezone.utc).isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 })
                 print(f"Alert sent for Track ID: {track_id}")
             except Exception as e:
