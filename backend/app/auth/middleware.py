@@ -7,7 +7,7 @@ from fastapi import HTTPException
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         #Checking the origin
-        public_routes = ["/health", "/docs", "/openapi.json"]
+        public_routes = ["/health", "/docs", "/openapi.json", "/stream"]
 
         if not request.url.path in public_routes:
             if not request.headers.get("Authorization"):
