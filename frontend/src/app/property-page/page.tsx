@@ -3,11 +3,14 @@
 import { InfoCard } from "@/components/info-card";
 import { ListCard } from "@/components/list-card";
 import { DialogBox } from "@/components/add-camera-dialogue";
+import { useCameras } from "@/hooks/use-camera";
 import { useState } from "react";
 
+const PROPERTY_ID = "550e8400-e29b-41d4-a716-446655440000" // TODO: Get from URL params or props
 
 export default function PropertyPage(){
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false)
+  const { cameras, addCamera, deleteCamera } = useCameras([])
 
   return (
     <>
@@ -37,12 +40,17 @@ export default function PropertyPage(){
 
       <ListCard
         title="Cameras"
-        items={[{ id: "1", name: "Backyard" }]}
+        items={cameras.map(c => ({ id: c.id, name: c.location }))}
         onAdd={() => setCameraDialogOpen(true)}
-        onDelete={(id) => console.log("Delete", id)}
+        onDelete={deleteCamera}
       />
     </div>
-    <DialogBox open={cameraDialogOpen} onOpenChange={setCameraDialogOpen} />
+    <DialogBox
+      open={cameraDialogOpen}
+      onOpenChange={setCameraDialogOpen}
+      onCameraAdded={addCamera}
+      propertyId={PROPERTY_ID}
+    />
     </>
   )
 }

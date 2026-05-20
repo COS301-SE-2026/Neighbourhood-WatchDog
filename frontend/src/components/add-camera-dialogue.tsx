@@ -14,7 +14,8 @@ import {
 import { Field, FieldGroup } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { CameraInput, Camera } from "@/lib/validators/camera"
+import { useCameras } from "@/hooks/use-camera"
+import { CameraInput, Camera, cameraInputSchema } from "@/lib/validators/camera"
 import { useState } from "react"
 
 interface DialogBoxProps {
@@ -28,28 +29,56 @@ export function DialogBox({ open, onOpenChange, onCameraAdded, propertyId }: Dia
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setErrors({})
+  
+    const formData = new FormData(e.currentTarget)
+    
+    const rtsp_url = formData.get("rtsp_url") as string
+    const location = formData.get("location") as string
+    const visibility = formData.get("visibility") as "PRIVATE" | "PUBLIC"
+
+    const rawData: CameraInput = {
+      rtsp_url,
+      location,
+      visibility,
+      property_id: propertyId
+    }
+
+    const result = cameraInputSchema.safeParse(rawData)
+    if (!result.success){
+      // TODO: Add the validation errors to tell user whats wrong
+      setErrors({...errors, validate: "Invalid data"})
+      return
+    }
+
+    //if the code gets here it means that the validation has passed.
+    const data: CameraInput = result.data
+    try {  
+      setLoading(true)
+      await onCameraAdded(result.data)  // This calls the hook's addCamera
+      onOpenChange(false)  // Close dialog on success
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to add camera"
+      setErrors({ submit: message })
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const formData = new FormData(e.currentTarget)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <form onSubmit={handleSubmit}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Add camera</DialogTitle>
-            <DialogDescription >
-              Enter the details of your camera.
-            </DialogDescription>
-          </DialogHeader>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold">Add camera</DialogTitle>
+          <DialogDescription >
+            Enter the details of your camera.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
           <FieldGroup>
-            <Field>
-              <Label htmlFor="name-1">Name</Label>
-              <Input id="name-1" name="name" defaultValue="Camera 1" />
-            </Field>
             <Field>
               <Label htmlFor="location-1">Location</Label>
               <Input id="location-1" name="location" defaultValue="Backyard" />
@@ -63,7 +92,7 @@ export function DialogBox({ open, onOpenChange, onCameraAdded, propertyId }: Dia
               <select
                 id="visibility-1"
                 name="visibility"
-                defaultValue="private"
+                defaultValue="PRIVATE"
                 className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="PUBLIC">Public</option>
@@ -77,8 +106,8 @@ export function DialogBox({ open, onOpenChange, onCameraAdded, propertyId }: Dia
             </DialogClose>
             <Button type="submit">Add camera</Button>
           </DialogFooter>
-        </DialogContent>
-      </form>
+        </form>
+      </DialogContent>
     </Dialog>
   )
 }

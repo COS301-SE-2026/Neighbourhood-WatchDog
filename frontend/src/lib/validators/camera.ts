@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-//make sure these correspond to the backend
+//make sure these correspond to the backend schema and whatnot
 export const cameraInputSchema = z.object({
   rtsp_url: z.string().min(1, 'RTSP URL is required').pipe(z.url({ error: 'Must be valid RTSP URL' })),
   location: z.string().min(1, 'Location is required'),
