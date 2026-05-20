@@ -6,7 +6,7 @@ import cv2
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-router = APIRouter()
+router = APIRouter(prefix="/stream", tags=["stream"])
 
 def mjpeg_generator(rtsp_url: str):
     
@@ -27,7 +27,7 @@ def mjpeg_generator(rtsp_url: str):
     finally:
         cap.release()
 
-@router.get("/stream")
+@router.get("/")
 def stream(url: str):
     return StreamingResponse(
         mjpeg_generator(url),

@@ -9,7 +9,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         #Checking the origin
         public_routes = ["/health", "/docs", "/openapi.json", "/stream"]
 
-        if not request.url.path in public_routes:
+        if not any(request.url.path.startswith(route) for route in public_routes):
             if not request.headers.get("Authorization"):
                 raise HTTPException(status_code=401, detail="No Authorization header")
 
