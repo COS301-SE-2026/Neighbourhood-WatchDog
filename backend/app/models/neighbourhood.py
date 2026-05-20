@@ -13,7 +13,7 @@ class Neighbourhood(Base):
     join_code = Column(Text, unique=True, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
-    users   = relationship("User", back_populates="neighbourhood")
+    users = relationship("User", back_populates="neighbourhood")
     cameras = relationship("Camera", back_populates="neighbourhood")
     zones   = relationship("GeospatialZone", back_populates="neighbourhood")
     join_requests = relationship(
