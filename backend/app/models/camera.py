@@ -22,6 +22,7 @@ class Camera(Base):
     rtsp_url = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
-    neighbourhood = relationship("Neighbourhood", back_populates="cameras")
     alerts = relationship("Alert", back_populates="camera")
-    retention_policy = relationship("RetentionPolicy", back_populates="camera")
+    detection_events = relationship("DetectionEvent", back_populates="camera")
+    neighbourhood = relationship("Neighbourhood", back_populates="cameras")
+    retention_policy = relationship("RetentionPolicy", back_populates="camera", uselist=False)
