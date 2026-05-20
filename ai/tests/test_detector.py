@@ -22,7 +22,7 @@ tracker = DeepSort(
 # url = "rtsp://Intrepid:password1234@192.168.1.126:554/stream1"
 
 # url with stream 2, to lower resolution stream
-url = "rtsp://Intrepid:password1234@192.168.1.126:554/stream2"
+url = "rtsp://Intrepid:password1234@10.76.19.58:554/stream2"
 
 BACKEND_URL = "http://localhost:8000/api/alerts"
 CAMERA_ID = "" #we need to add a camera uuid here
@@ -48,7 +48,7 @@ while True:
         break
 
     frame_count += 1
-    if frame_count % 3 != 0:
+    if frame_count % 2 != 0:
         continue
 
     # YOLO detection only (no built-in tracker)
