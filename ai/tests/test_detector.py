@@ -2,6 +2,8 @@ import os
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
 import cv2
+import httpx
+from datetime import datetime
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from ai.pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
@@ -22,6 +24,9 @@ tracker = DeepSort(
 # url with stream 2, to lower resolution stream
 url = "rtsp://Intrepid:password1234@192.168.1.126:554/stream2"
 
+BACKEND_URL = "http://localhost:8000/api/alerts"
+CAMERA_ID = "" #we need to add a camera uuid here
+
 cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
 
 if not cap.isOpened():
@@ -32,6 +37,7 @@ print("Stream opened successfully")
 
 PERSON_CLASS = 0
 unique_ids = set()
+alerted_ids = set()
 frame_count = 0
 
 while True:
@@ -80,6 +86,20 @@ while True:
             "confidence": float(track.det_conf) if track.det_conf is not None else 0.0,
             "bbox": [left, top, right, bottom],
         })
+
+        # send alert only once per new person
+        if track_id not in alerted_ids and track.det_conf is not None:
+            alerted_ids.add(track_id)
+            try:
+                httpx.post(BACKEND_URL, json={
+                    "camera_id": CAMERA_ID,
+                    "detection_type": "HUMAN_PRESENCE",
+                    "confidence": track.det_conf,
+                    "timestamp": datetime.now(datetime.timezone.utc).isoformat(),
+                })
+                print(f"Alert sent for Track ID: {track_id}")
+            except Exception as e:
+                print(f"Failed to send alert: {e}")
 
     annotated = annotate_frame(frame, tracks_for_thumbnail)
     _ = encode_frame_as_jpeg(annotated)
