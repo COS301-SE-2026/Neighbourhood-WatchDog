@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation"
 import { AppSidebar } from "@/components/app-sidebar"
 
-const HIDE_PATHS = ["/login-page", "/auth", "/public", "/signup-page"]
+const HIDE_PATHS = ["/login-page", "/auth", "/public", "/signup-page", "/forgotpassword-page"]
 
 export default function HideSidebar() {
   const pathname = usePathname() ?? ""
