@@ -1,11 +1,61 @@
-from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBearer
-from app.auth.cognito import verify_token
+import uuid
+from fastapi import Header, HTTPException, status
 
-security = HTTPBearer()
+# default mock identity
+# TODO: remove mock when Cognito is live
+# change these to test different baseline states without touching headers
 
-async def get_current_user(credentials = Depends(security)) -> dict:
-    """Extract and verify JWT, return user claims"""
-    token = credentials.credentials
-    claims = verify_token(token)
+MOCK_SUB = "00000000-0000-0000-0000-000000000001"
+MOCK_EMAIL = "dev@local.test"
+MOCK_ROLE = "RESIDENT"
+MOCK_NEIGHBOURHOOD_ID: str | None = None  # None = user has no neighbourhood yet
+
+# mock claims for now, real Cognito later
+async def get_current_user(
+    x_mock_role: str | None = Header(default=None),
+    x_mock_sub: str | None = Header(default=None),
+    x_mock_neighbourhood_id: str | None = Header(default=None),
+) -> dict:
+    role = x_mock_role or MOCK_ROLE
+    sub = x_mock_sub or MOCK_SUB
+    neighbourhood_id = x_mock_neighbourhood_id or MOCK_NEIGHBOURHOOD_ID
+ 
+    valid_roles = {
+        "RESIDENT",
+        "NEIGHBOURHOOD_ADMIN",
+        "SECURITY_OFFICER",
+        "SYSTEM_ADMIN",
+    }
+    if role not in valid_roles:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"X-Mock-Role must be one of {sorted(valid_roles)}",
+        )
+ 
+    try:
+        uuid.UUID(sub)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="X-Mock-Sub must be a valid UUID",
+        )
+ 
+    claims: dict = {
+        "sub": sub,
+        "email": MOCK_EMAIL,
+        "custom:role": role,
+    }
+
+    # only include neighbourhood_id if it's set
+    if neighbourhood_id:
+        try:
+            uuid.UUID(neighbourhood_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="X-Mock-Neighbourhood-Id must be a valid UUID",
+            )
+        claims["custom:neighbourhood_id"] = neighbourhood_id
+ 
     return claims
+ 
