@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import "./globals.css";
 
 const inter = Inter({
@@ -25,15 +26,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
-      <body className="min-h-full flex flex-col">
-        <SidebarProvider>
-          <AppSidebar />
-          <main>
-            <SidebarTrigger />
-            {children}
-          </main>
-        </SidebarProvider>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
+      <body className="min-h-screen flex flex-col">
+        <TooltipProvider>
+          <SidebarProvider>
+            <AppSidebar />
+            <main>
+              {children}
+            </main>
+          </SidebarProvider>
+        </TooltipProvider>
       </body>
     </html>
   );
