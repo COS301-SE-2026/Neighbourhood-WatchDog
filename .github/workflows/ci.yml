@@ -1,13 +1,13 @@
 name: ci
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
 
 jobs:
 
-  lint:
+  backend-lint:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,6 +24,29 @@ jobs:
       
       - name: Format using ruff
         run: ruff format --check
+
+  frontend-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - name: Install frontend dependencies
+        run: pnpm install
+      
+      - name: Run ESLint
+        run: cd frontend && pnpm lint 
 
   tests:
     runs-on: ubuntu-latest
