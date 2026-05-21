@@ -20,6 +20,7 @@ services:
 
   redis: 
     image: redis:7-alpine
+    platform: linux/amd64
     container_name: redis_cache
     restart: always
     ports:
@@ -70,6 +71,7 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      - /app/.next
     depends_on:
       - backend
 

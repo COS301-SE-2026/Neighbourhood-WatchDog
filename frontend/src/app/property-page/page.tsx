@@ -10,7 +10,7 @@ const PROPERTY_ID = "550e8400-e29b-41d4-a716-446655440000" // TODO: Get from URL
 
 export default function PropertyPage(){
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false)
-  const { cameras, addCamera, deleteCamera } = useCameras([])
+  const { cameras, addCamera, deleteCamera } = useCameras(PROPERTY_ID)
 
   return (
     <>

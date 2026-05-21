@@ -3,14 +3,14 @@
 import { CreatePropertyDialog } from "@/components/create-property-dialogue";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { CreatePropertyReq } from "@/lib/validators/property";
+import { PropertyRes } from "@/lib/validators/property";
 
 export default function Test() {
   const [open, setOpen] = useState(false);
 
-  const handlePropertyAdded = (property: CreatePropertyReq) => {
+  const handlePropertyAdded = (property: PropertyRes) => {
     console.log("Property created:", property)
-    alert(`Property created!\n\nAddress: ${property.address}\nType: ${property.propertyType}`);
+    alert(`Property created!\n\nAddress: ${property.address}\nType: ${property.property_type}`);
   };
 
   return (
