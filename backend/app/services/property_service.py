@@ -6,6 +6,7 @@ from app.models.property import Property, PropertyTypeEnum
 from app.models.property_user import PropertyUser
 from sqlalchemy.exc import IntegrityError
 from uuid import UUID
+from typing import List
 
 async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims: dict, db: DbSession) -> Property:
     
@@ -48,3 +49,29 @@ async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims
         raise HTTPException(500, "Failed to add to property database")
 
     return new_property
+
+
+async def get_user_properties_handler(claims: dict, db: DbSession) -> List[Property]:
+    """Fetch all properties owned by the current user"""
+
+    if not claims:
+        raise HTTPException(401, "Not authenticated")
+
+    try:
+        #get user by cognito_sub
+        stmt = select(User).where(User.cognito_sub == claims['sub'])
+        user = db.execute(stmt).scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(404, "User not found")
+
+        #get all properties for this user
+        stmt = select(Property).join(PropertyUser).where(PropertyUser.user_id == user.id)
+        properties = db.execute(stmt).scalars().all()
+
+        return properties
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Failed to fetch properties: {str(e)}")

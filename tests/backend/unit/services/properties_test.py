@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 import pytest
 from unittest.mock import Mock, patch
-from app.services.property_service import create_property_handler
+from app.services.property_service import create_property_handler, get_user_properties_handler
 from app.models.property import PropertyTypeEnum
 from uuid import uuid4
 
