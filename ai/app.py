@@ -28,6 +28,9 @@ app.add_middleware(
 model = YOLO("pipeline/models/weights/yolov8n.pt")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
+CAMERA_ID = "40000000-0000-0000-0000-000000000001"
+NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001"
+
 def annotated_mjpeg(rtsp_url: str):
     tracker = DeepSort(
         max_age=70,
@@ -81,9 +84,12 @@ def annotated_mjpeg(rtsp_url: str):
                     logger.info(f"New person detected - Track ID: {track_id}, Confidence: {track.det_conf:.2f}")
                     try:
                         httpx.post(f"{BACKEND_URL}/alerts/", json={
+                            "camera_id": CAMERA_ID,
+                            "neighbourhood_id": NEIGHBOURHOOD_ID,
                             "detection_type": "HUMAN_PRESENCE",
                             "confidence": float(track.det_conf),
                             "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "thumbnail_url": None,
                         })
                         logger.info(f"Alert sent for Track ID: {track_id}")
                     except Exception as e:

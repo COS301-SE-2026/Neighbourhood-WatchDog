@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from app.core.database import DbSession
 from app.models.camera import Camera
 from app.schemas.alert import AlertRes
+from app.api.controllers.alert import broadcast
 
 
 async def create_alert(db: Session, data: AlertCreate):
@@ -34,6 +35,15 @@ async def create_alert(db: Session, data: AlertCreate):
         db.add(alert)
         db.commit()
         db.refresh(alert)
+
+        
+        await broadcast(str(data.neighbourhood_id), {
+            "event": "new_alert",
+            "alert_id": str(alert.id),
+            "camera_id": str(data.camera_id),
+            "detection_type": data.detection_type,
+            "confidence": data.confidence,
+        })
 
         return alert
     except Exception as e:

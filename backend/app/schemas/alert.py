@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 class AlertCreate(BaseModel):
     camera_id: Optional[UUID] = None
+    neighbourhood_id: Optional[UUID] = None
     detection_type: str = "HUMAN_PRESENCE"
     confidence: float
     timestamp: datetime
