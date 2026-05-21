@@ -39,6 +39,15 @@ class TestCreateNeighbourhood:
         self.mock_db.flush = Mock()
         self.mock_db.rollback = Mock()
 
+        # Mock db.refresh to set id and created_at on the neighbourhood object
+        def mock_refresh(obj):
+            if hasattr(obj, 'id') and obj.id is None:
+                obj.id = uuid4()
+            if hasattr(obj, 'created_at') and obj.created_at is None:
+                obj.created_at = datetime.now()
+
+        self.mock_db.refresh = Mock(side_effect=mock_refresh)
+
         self.claims = {"sub": "cognito-sub-123"}
 
     @pytest.mark.asyncio
