@@ -17,7 +17,7 @@ export default function Page() {
 
   const handleSignUp = async () => {
     try {
-      // basic safety check (prevents dumb errors)
+      // basic safety check 
       if (password !== confirmPassword) {
         alert("Passwords do not match");
         return;
