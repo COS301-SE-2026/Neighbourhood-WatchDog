@@ -75,6 +75,14 @@ def annotated_mjpeg(rtsp_url: str):
 
                 if track_id not in alerted_ids and track.det_conf is not None:
                     alerted_ids.add(track_id)
+                    try:
+                        httpx.post(f"{BACKEND_URL}/alerts/", json={
+                            "detection_type": "HUMAN_PRESENCE",
+                            "confidence": float(track.det_conf),
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                        })
+                    except Exception as e:
+                        print(f"Failed to send alert: {e}")
 
             annotated = annotate_frame(frame, tracks_for_thumbnail)
             jpeg_bytes = encode_frame_as_jpeg(annotated)
