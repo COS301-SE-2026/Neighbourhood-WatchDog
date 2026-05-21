@@ -1,13 +1,45 @@
+from sqlalchemy.orm import Session
+from app.models.alert import Alert
+from app.models.detection_event import DetectionEvent
+from app.schemas.alert import AlertCreate
+from fastapi import HTTPException
 from uuid import UUID
 
-from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.core.database import DbSession
-from app.models.alert import Alert
 from app.models.camera import Camera
 from app.schemas.alert import AlertRes
+
+
+async def create_alert(db: Session, data: AlertCreate):
+    try:
+        detection_event = DetectionEvent(
+            camera_id=data.camera_id,
+            frame_timestamp=data.timestamp,
+            detection_type=data.detection_type,
+            confidence_score=data.confidence,
+            thumbnail_url=data.thumbnail_url,
+            processed=False,
+        )
+        db.add(detection_event)
+        db.flush()
+
+        alert = Alert(
+            camera_id=data.camera_id,
+            detection_event_id=detection_event.id,
+            status="OPEN",
+        )
+        db.add(alert)
+        db.commit()
+        db.refresh(alert)
+
+        return alert
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create alert: {str(e)}")
+
 
 
 def _build_alert_res(alert: Alert) -> AlertRes:

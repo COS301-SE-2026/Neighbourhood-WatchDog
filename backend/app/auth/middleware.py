@@ -12,7 +12,7 @@ def _normalize_origin(value: str | None) -> str | None:
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         #Checking the origin
-        public_routes = ["/health", "/docs", "/openapi.json"]
+        public_routes = ["/health", "/docs", "/openapi.json", "/stream"]
 
         # Allow preflight requests without auth
         # TODO: remove this later

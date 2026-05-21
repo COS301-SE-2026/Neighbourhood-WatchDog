@@ -25,7 +25,7 @@ interface DialogBoxProps {
   propertyId: string
 }
 
-export function DialogBox({ open, onOpenChange, onCameraAdded, propertyId }: DialogBoxProps) {
+export function AddCameraDialogBox({ open, onOpenChange, onCameraAdded, propertyId }: DialogBoxProps) {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
 
@@ -57,7 +57,7 @@ export function DialogBox({ open, onOpenChange, onCameraAdded, propertyId }: Dia
     const data: CameraInput = result.data
     try {  
       setLoading(true)
-      await onCameraAdded(result.data)  // This calls the hook's addCamera
+      await onCameraAdded(result.data) 
       onOpenChange(false)  // Close dialog on success
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to add camera"
@@ -97,6 +97,7 @@ export function DialogBox({ open, onOpenChange, onCameraAdded, propertyId }: Dia
               >
                 <option value="PUBLIC">Public</option>
                 <option value="PRIVATE">Private</option>
+                <option value="RESTRICTED">RESTRICTED</option>
               </select>
             </Field>
           </FieldGroup>
