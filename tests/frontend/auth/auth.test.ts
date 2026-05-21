@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 
-import { setSession, getAccessToken, logout } from "../../../frontend/src/lib/auth/cognito";
-
+import { setSession, getAccessToken, logout, login } from "../../../frontend/src/lib/auth/cognito";
+jest.mock("amazon-cognito-identity-js");
 //TEST SET SESSION
 describe("setSession", () => {
   beforeEach(() => {
@@ -35,4 +35,16 @@ test("clears localStorage", () => {
 
   expect(localStorage.getItem("accessToken")).toBeNull();
   expect(localStorage.getItem("idToken")).toBeNull();
+});
+
+test("login returns access and id tokens", async () => {
+  const result = await login(
+    "test@example.com",
+    "Password123!"
+  );
+
+  expect(result).toEqual({
+    accessToken: "mock-access-token",
+    idToken: "mock-id-token",
+  });
 });
