@@ -11,7 +11,7 @@ from ai.pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
 model = YOLO('ai/pipeline/models/weights/yolov8n.pt')
 
 tracker = DeepSort(
-    max_age=70,           # keep lost tracks for 70 frames before deleting
+    max_age=220,           # keep lost tracks for 70 frames before deleting
     n_init=2,             # require 2 consecutive detections to confirm a track
     max_iou_distance=0.7,
     embedder="mobilenet", # appearance model for re-identification
@@ -22,7 +22,7 @@ tracker = DeepSort(
 # url = "rtsp://Intrepid:password1234@192.168.1.126:554/stream1"
 
 # url with stream 2, to lower resolution stream
-url = "rtsp://Intrepid:password1234@10.76.19.58:554/stream2"
+url = "rtsp://Intrepid:password1234@172.20.10.2:554/stream2"
 
 BACKEND_URL = "http://localhost:8000/api/alerts"
 CAMERA_ID = "" #we need to add a camera uuid here
