@@ -33,3 +33,15 @@ def stream(url: str):
         mjpeg_generator(url),
         media_type="multipart/x-mixed-replace; boundary=frame"
     )
+
+
+@router.get("/health")
+def stream_health(url: str):
+    cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
+    try:
+        is_available = cap.isOpened()
+        if is_available:
+            is_available = cap.grab()
+        return {"available": bool(is_available)}
+    finally:
+        cap.release()
