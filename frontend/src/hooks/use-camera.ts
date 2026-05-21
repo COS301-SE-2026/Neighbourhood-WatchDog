@@ -1,11 +1,31 @@
-import { addCamera as apiAddCamera, deleteCamera as apiDeleteCamera } from "@/lib/api/camera"
-import { useState, useCallback } from "react"
+import { addCamera as apiAddCamera, deleteCamera as apiDeleteCamera, fetchCameras as apiFetchCameras } from "@/lib/api/camera"
+import { useState, useCallback, useEffect } from "react"
 import { Camera, CameraInput } from "@/lib/validators/camera"
 
-export function useCameras(initialCameras: Camera[] = []) {
+export function useCameras(propertyId: string, initialCameras: Camera[] = []) {
   const [cameras, setCameras] = useState(initialCameras)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!propertyId) return
+
+    const loadCameras = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const fetchedCameras = await apiFetchCameras(propertyId)
+        setCameras(fetchedCameras)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to load cameras'
+        setError(message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void loadCameras()
+  }, [propertyId])
 
   const addCamera = useCallback(async (data: CameraInput) => {
     setLoading(true)
