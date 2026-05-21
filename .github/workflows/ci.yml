@@ -38,13 +38,11 @@ jobs:
           cache: 'pnpm'
       
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-      
+        run: npm install -g pnpm@8
+
       - name: Install frontend dependencies
         run: pnpm install
-      
+
       - name: Run ESLint
         run: cd frontend && pnpm lint 
 
@@ -62,9 +60,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+        run: npm install -g pnpm@8
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
@@ -103,9 +99,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+        run: npm install -g pnpm@8
 
       - name: Install frontend dependencies
         run: pnpm install
