@@ -15,10 +15,10 @@ export const CreatePropertyReqSchema = z.object({
 export const PropertyResSchema = z.object({
   property_id: z
     .string()
-    .uuid("Property ID must be a valid UUID"),
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "Property ID must be a valid UUID"),
   neighbourhood_id: z
     .string()
-    .uuid("Neighbourhood ID must be a valid UUID")
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "Neighbourhood ID must be a valid UUID")
     .nullable(),
   address: z
     .string({ message: "Address is required" })

@@ -9,9 +9,10 @@ class TestCreateNeighbourhood:
     def setup_method(self):
         self.mock_db = Mock()
 
-        #mock the property 
+        #mock the property
         self.mock_property = Mock()
         self.mock_property.id = uuid4()
+        self.mock_property.neighbourhood_id = None
 
         #mock the prop user 
         self.mock_property_user = Mock()

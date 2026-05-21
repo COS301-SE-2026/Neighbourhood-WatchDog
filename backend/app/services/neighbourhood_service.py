@@ -58,6 +58,9 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
         if not property:
             raise HTTPException(404, "Property not found")
 
+        if property.neighbourhood_id is not None:
+            raise HTTPException(400, "Property is already part of another neighbourhood")
+
         stmt = select(PropertyUser).where(PropertyUser.property_id == property_id)
         prop_user = db.execute(stmt).scalar_one_or_none()
 

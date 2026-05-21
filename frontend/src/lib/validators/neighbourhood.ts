@@ -3,11 +3,11 @@ import { z } from "zod";
 export const CreateNeighbourhoodReqSchema = z.object({
   name: z.string().min(1, "Name is required"),
   location: z.string().min(1, "Location is required"),
-  property_id: z.uuid(),
+  property_id: z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "Invalid UUID format"),
 });
 
 export const NeighbourhoodResSchema = z.object({
-  id: z.uuid(),
+  id: z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "Invalid UUID format"),
   name: z.string().min(1),
   location: z.string().min(1),
   join_code: z.string().min(1),

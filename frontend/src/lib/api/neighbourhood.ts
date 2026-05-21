@@ -11,3 +11,22 @@ export async function addNeighbourhood(data: CreateNeighbourhoodReq): Promise<Ne
   if (!result.data) throw new Error(result.message || 'No data returned')
   return result.data
 }
+
+export async function getNeighbourhoods(): Promise<NeighbourhoodRes[]> {
+  return apiCall<NeighbourhoodRes[]>('/neighbourhood/list', {
+    method: 'GET',
+  })
+}
+
+export async function getNeighbourhood(id: string): Promise<NeighbourhoodRes> {
+  return apiCall<NeighbourhoodRes>(`/neighbourhood/${id}`, {
+    method: 'GET',
+  })
+}
+
+export async function joinNeighbourhood(joinCode: string): Promise<NeighbourhoodRes> {
+  return apiCall<NeighbourhoodRes>('/neighbourhood/join', {
+    method: 'POST',
+    body: { join_code: joinCode },
+  })
+}

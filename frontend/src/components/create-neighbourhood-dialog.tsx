@@ -16,7 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { apiCall } from "@/lib/api/client"
 import { addNeighbourhood } from "@/lib/api/neighbourhood"
 
 const PROPERTY_ID = "30000000-0000-0000-0000-000000000001"
@@ -44,43 +43,27 @@ export function CreateNeighbourhoodDialog(
     const location = formData.get("location") as string
 
     const validatedStuff = CreateNeighbourhoodReqSchema.safeParse({
-      name,
-      location,
-      PROPERTY_ID
+      name: name,
+      location: location,
+      property_id: PROPERTY_ID
     })
 
     if (!validatedStuff.success) {
-      
       const newErrors: Record<string, string> = {}
       validatedStuff.error.issues.forEach((issue) => {
-      
         const path = issue.path[0] as string
         newErrors[path] = issue.message
-      
       })
       
       setErrors(newErrors)
       setLoading(false)
       return
-
     }
 
     try {
       const response = await addNeighbourhood(validatedStuff.data)
-      // TODO: Get property_id from user context or props
-      // const response = await fetch("/api/neighbourhoods", {
-      //   method:,
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     ...validation.data,
-      //     property_id: propertyId,
-      //   }),
-      // })
-      // const result = await response.json()
-      // if (result.data) {
-      //   onNeighbourhoodAdded(result.data)
-      //   onOpenChange(false)
-      // }
+      onNeighbourhoodAdded(response)
+      onOpenChange(false)
     } catch (error) {
       setErrors({ submit: "Failed to create neighbourhood" })
     } finally {
@@ -107,16 +90,16 @@ export function CreateNeighbourhoodDialog(
           )}
           <FieldGroup>
             <Field>
-              <Label htmlFor="name">Neighbourhood Name</Label>
-              <Input id="name" name="name" defaultValue="" placeholder="e.g., Westwood Heights" />
+              <Label htmlFor="name-1">Neighbourhood Name</Label>
+              <Input id="name-1" name="name" defaultValue="" placeholder="e.g., Westwood Heights" />
               {errors["name"] && (
                 <p className="text-sm text-red-500 text-xs mt-0.5">{errors["name"]}</p>
               )}
             </Field>
 
             <Field>
-              <Label htmlFor="location">Location</Label>
-              <Input id="location" name="location" defaultValue="" placeholder="e.g., Johannesburg, Gauteng" />
+              <Label htmlFor="location-1">Location</Label>
+              <Input id="location-1" name="location" defaultValue="" placeholder="e.g., Johannesburg, Gauteng" />
               {errors["location"] && (
                 <p className="text-sm text-red-500 text-xs mt-0.5">{errors["location"]}</p>
               )}
