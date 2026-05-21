@@ -6,23 +6,78 @@ export const PropertyTypeEnum = z.enum([
 ]);
 
 export const CreatePropertyReqSchema = z.object({
-  address: z.string().min(1),
-  property_type: PropertyTypeEnum,
+  address: z
+    .string({ message: "Address is required" })
+    .nonempty("Address cannot be empty"),
+  propertyType: PropertyTypeEnum,
 });
 
 export const PropertyResSchema = z.object({
-  user_id: z.uuid(),
-  neighbourhood_id: z.uuid().nullable(),
-  address: z.string().min(1),
-  property_type: z.string().min(1),
-  created_at: z.coerce.date(),
+  userId: z
+    .uuid("User ID must be a valid UUID"),
+  neighbourhoodId: z
+    .uuid("Neighbourhood ID must be a valid UUID")
+    .nullable(),
+  address: z
+    .string({ message: "Address is required" })
+    .nonempty("Address cannot be empty"),
+  propertyType: z
+    .string({ message: "Property type is required" })
+    .nonempty("Property type cannot be empty"),
+  createdAt: z
+    .coerce
+    .date()
+    .default(() => new Date()),
 });
 
 export const CreatePropertyResSchema = z.object({
-  status: z.number().int(),
-  message: z.string().nullable().optional(),
+  status: z
+    .number({ message: "Status code is required" })
+    .int("Status must be an integer"),
+  message: z
+    .string({ message: "Message must be a string" })
+    .nullable()
+    .optional(),
   data: PropertyResSchema.nullable().optional(),
 });
+
+const SOUTH_AFRICAN_PROVINCES = [
+  "Eastern Cape",
+  "Free State",
+  "Gauteng",
+  "KwaZulu-Natal",
+  "Limpopo",
+  "Mpumalanga",
+  "Northern Cape",
+  "North West",
+  "Western Cape",
+] as const;
+
+type SouthAfricanProvince = typeof SOUTH_AFRICAN_PROVINCES[number];
+
+export const AddressSchema = z.object({
+  "address-line-1": z
+    .string()
+    .min(5, "Address line 1 must be at least 5 characters")
+    .max(100, "Address line 1 must be less than 100 characters"),
+  
+  "address-line-2": z
+    .string()
+    .max(100, "Address line 2 must be less than 100 characters")
+    .optional()
+    .or(z.literal("")),
+  
+  city: z
+    .string()
+    .min(2, "City must be at least 2 characters")
+    .max(50, "City must be less than 50 characters"),
+  
+  province: z.enum(SOUTH_AFRICAN_PROVINCES as readonly [SouthAfricanProvince, ...SouthAfricanProvince[]]),
+  
+  location: z.string().length(4).regex(/^\d+$/)
+});
+
+export type Address = z.infer<typeof AddressSchema>;
 
 // Types
 export type CreatePropertyReq = z.infer<typeof CreatePropertyReqSchema>;

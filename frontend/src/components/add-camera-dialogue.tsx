@@ -97,6 +97,7 @@ export function AddCameraDialogBox({ open, onOpenChange, onCameraAdded, property
               >
                 <option value="PUBLIC">Public</option>
                 <option value="PRIVATE">Private</option>
+                <option value="RESTRICTED">RESTRICTED</option>
               </select>
             </Field>
           </FieldGroup>
