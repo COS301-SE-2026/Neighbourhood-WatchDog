@@ -1,6 +1,6 @@
 "use client";
 
-import { SignupCard } from "../../components/auth-components/signup-card";
+import { SignupCard } from "../../../components/auth-components/signup-card";
 
 export default function Page() {
   return (
