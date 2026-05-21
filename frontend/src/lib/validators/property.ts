@@ -74,7 +74,7 @@ export const AddressSchema = z.object({
   
   province: z.enum(SOUTH_AFRICAN_PROVINCES as readonly [SouthAfricanProvince, ...SouthAfricanProvince[]]),
   
-  location: z.string().length(4).regex(/^\d+$/)
+  zipCode: z.string().length(4).regex(/^\d+$/, "Must have 4 characters and consist of strings")
 });
 
 export type Address = z.infer<typeof AddressSchema>;

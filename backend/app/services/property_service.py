@@ -5,8 +5,9 @@ from app.models.user import User
 from app.models.property import Property, PropertyTypeEnum
 from app.models.property_user import PropertyUser
 from sqlalchemy.exc import IntegrityError
+from uuid import UUID
 
-async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims: dict, db: DbSession) -> Property :
+async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims: dict, db: DbSession) -> tuple[Property, UUID]:
     
     if not addr or addr == "":
         raise HTTPException(400, "No address or empty address field.")
@@ -19,7 +20,7 @@ async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims
 
     new_property = Property(
         address = addr,
-        property = prop_type
+        property_type = prop_type
     )
 
     #TODO deal with cases where the property type is public (for now it does not really matter what it is)
@@ -46,4 +47,4 @@ async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims
         db.rollback()
         raise HTTPException(500, "Failed to add to property database")
 
-    return new_property
+    return new_property, user.id

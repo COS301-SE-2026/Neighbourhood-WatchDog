@@ -18,6 +18,7 @@ import { Field, FieldGroup } from "./ui/field"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { CreatePropertyReq, AddressSchema, CreatePropertyReqSchema } from "@/lib/validators/property"
+import { addProperty } from "@/lib/api/property"
 
 
 interface CreatePropertyDialogAttributes {
@@ -52,11 +53,14 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
     try {
       const validatedAddr = AddressSchema.parse(address)
 
-      const addrValues = Object.values(validatedAddr).filter(value => value !== "") 
-                                                // filter ^here is to remove the empty address line 2 that is optional
+      const addrValues = Object.values(validatedAddr).filter(value => value !== "")
       const singleLineAdd = addrValues.join("\n")
-      const validatedCreatePropSchema = CreatePropertyReqSchema.parse(singleLineAdd)
+      const validatedCreatePropSchema = CreatePropertyReqSchema.parse({
+        address: singleLineAdd,
+        propertyType: "PRIVATE"
+      })
 
+      await addProperty(validatedCreatePropSchema)
       onPropertyAdded(validatedCreatePropSchema)
       onOpenChange(false)
       e.currentTarget.reset()
@@ -82,7 +86,7 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
             {loading && <Spinner className="mr-2 h-4 w-4 animate-spin" />}
-            {loading ? "Creating..." : "Create Property"}            
+            {loading ? "Creating..." : "Create Property"}
           </DialogTitle>
           <DialogDescription >
             Enter the details of your property
