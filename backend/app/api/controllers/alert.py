@@ -49,6 +49,18 @@ async def broadcast(neighbourhood_id: str, message: dict) -> None:
 async def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
     return await alert_service.create_alert(db, alert)
 
+@router.post("/dev/broadcast")
+async def dev_broadcast_alert(data: dict):
+    """Dev-only: broadcast alert without DB. Remove before production."""
+    neighbourhood_id = data.get("neighbourhood_id", "10000000-0000-0000-0000-000000000001")
+    await broadcast(str(neighbourhood_id), {
+        "event": "new_alert",
+        "camera_id": data.get("camera_id", "unknown"),
+        "detection_type": data.get("detection_type", "HUMAN_PRESENCE"),
+        "confidence": data.get("confidence", 0.0),
+    })
+    return {"status": "broadcasted"}
+
 @router.get(
     "/{neighbourhood_id}",
     response_model=ListAlertsRes,

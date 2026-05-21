@@ -83,7 +83,7 @@ def annotated_mjpeg(rtsp_url: str):
                     alerted_ids.add(track_id)
                     logger.info(f"New person detected - Track ID: {track_id}, Confidence: {track.det_conf:.2f}")
                     try:
-                        httpx.post(f"{BACKEND_URL}/alerts/", json={
+                        httpx.post(f"{BACKEND_URL}/alerts/dev/broadcast", json={
                             "camera_id": CAMERA_ID,
                             "neighbourhood_id": NEIGHBOURHOOD_ID,
                             "detection_type": "HUMAN_PRESENCE",
