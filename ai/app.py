@@ -8,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
+import httpx
+from datetime import datetime, timezone
 
 app = FastAPI(title="WatchDog AI Service")
 
@@ -21,7 +23,7 @@ app.add_middleware(
 )
 
 model = YOLO("pipeline/models/weights/yolov8n.pt")
-
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 def annotated_mjpeg(rtsp_url: str):
     tracker = DeepSort(
