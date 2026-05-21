@@ -19,23 +19,34 @@ declare module 'amazon-cognito-identity-js' {
     userSub: string
   }
 
+  export interface CognitoUserAttributeData {
+    Name: string
+    Value: string
+  }
+
+  export interface AuthenticationCallbacks {
+    onSuccess?: (session: CognitoUserSession) => void
+    onFailure?: (error: Error) => void
+    newPasswordRequired?: (userAttributes: Record<string, string>, requiredAttributes: string[]) => void
+  }
+
   export class CognitoUserPool {
     constructor(data: ICognitoUserPoolData)
     getCurrentUser(): CognitoUser | null
     getCurrentUserSync(): CognitoUser | null
-    signUp(username: string, password: string, userAttributes: any[], validationData: any[], callback: (err: Error | null, result?: ISignUpResult) => void): void
+    signUp(username: string, password: string, userAttributes: CognitoUserAttributeData[], validationData: CognitoUserAttributeData[], callback: (err: Error | null, result?: ISignUpResult) => void): void
   }
 
   export class CognitoUser {
     getUsername(): string
     getAuthenticationFlowType(): string
-    authenticateUser(authenticationDetails: AuthenticationDetails, callbacks: any): void
+    authenticateUser(authenticationDetails: AuthenticationDetails, callbacks: AuthenticationCallbacks): void
     getUserAttributes(callback: (err: Error | null, attributes?: CognitoUserAttribute[]) => void): void
     getSession(callback: (err: Error | null, session?: CognitoUserSession) => void): void
     signOut(): void
     changePassword(oldPassword: string, newPassword: string, callback: (err: Error | null) => void): void
     confirmRegistration(code: string, forceAliasCreation: boolean, callback: (err: Error | null, result?: string) => void): void
-    completeNewPasswordChallenge(newPassword: string, userAttributes: any, callbacks: any): void
+    completeNewPasswordChallenge(newPassword: string, userAttributes: Record<string, string>, callbacks: AuthenticationCallbacks): void
   }
 
   export class AuthenticationDetails {
@@ -62,6 +73,6 @@ declare module 'amazon-cognito-identity-js' {
   }
 
   export class CognitoIdentityServiceProvider {
-    constructor(config: any)
+    constructor(config: Record<string, unknown>)
   }
 }
