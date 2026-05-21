@@ -6,13 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 
 interface CameraCardProps {
     name: string;
-    status: "online" | "offline";
     rtspUrl?: string;
 }
 
 export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
     const streamUrl = rtspUrl ? `http://localhost:8001/stream?url=${encodeURIComponent(rtspUrl)}` : null;
     const streamHealthUrl = rtspUrl ? `http://localhost:8001/stream/health?url=${encodeURIComponent(rtspUrl)}` : null
+
     const [streamHealth, setStreamHealth] = useState<{ url: string | null; available: boolean; error: boolean }>({
         url: null,
         available: false,
@@ -25,38 +25,24 @@ export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
     })
 
     useEffect(() => {
-        if (!streamHealthUrl) {
-            return
-        }
+        if (!streamHealthUrl) return
 
         const controller = new AbortController()
 
         const checkStreamHealth = async () => {
             try {
                 const response = await fetch(streamHealthUrl, { signal: controller.signal })
-                if (!response.ok) {
-                    throw new Error("Health check failed")
-                }
-
+                if (!response.ok) throw new Error("Health check failed")
                 const data = await response.json()
-                setStreamHealth({
-                    url: streamUrl,
-                    available: Boolean(data.available),
-                    error: false,
-                })
+                setStreamHealth({ url: streamUrl, available: Boolean(data.available), error: false })
             } catch {
                 if (!controller.signal.aborted) {
-                    setStreamHealth({
-                        url: streamUrl,
-                        available: false,
-                        error: true,
-                    })
+                    setStreamHealth({ url: streamUrl, available: false, error: true })
                 }
             }
         }
 
         void checkStreamHealth()
-
         return () => controller.abort()
     }, [streamHealthUrl, streamUrl])
 
@@ -81,20 +67,8 @@ export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
                         src={streamUrl}
                         alt={`Live feed: ${name}`}
                         className={streamImage.error ? "hidden" : "w-full h-full object-cover rounded-md"}
-                        onLoad={() => {
-                            setStreamImage({
-                                url: streamUrl,
-                                loaded: true,
-                                error: false,
-                            })
-                        }}
-                        onError={() => {
-                            setStreamImage({
-                                url: streamUrl,
-                                loaded: false,
-                                error: true,
-                            })
-                        }}
+                        onLoad={() => setStreamImage({ url: streamUrl, loaded: true, error: false })}
+                        onError={() => setStreamImage({ url: streamUrl, loaded: false, error: true })}
                     />
                     {!(streamHealth.url === streamUrl && streamHealth.available && !streamHealth.error && streamImage.url === streamUrl && streamImage.loaded && !streamImage.error) && (
                         <span className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
@@ -103,12 +77,10 @@ export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
                     )}
                 </>
             ) : (
-                <span className="text-xs text-muted-foreground">
-                    No stream configured
-                </span>
+                <span className="text-xs text-muted-foreground">No stream configured</span>
             )}
         </div>
-    );
+    )
 
     return (
         <Dialog>

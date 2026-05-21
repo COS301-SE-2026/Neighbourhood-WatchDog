@@ -15,8 +15,18 @@ interface NewCameraCardProps {
 export function NewCameraCard({ onClose, onAcknowledge }: NewCameraCardProps) {
   const [cameraLocation, setCameraLocation] = useState("");
   const [rtspUrl, setRtspUrl] = useState("");
+  const [touched, setTouched] = useState({ cameraLocation: false, rtspUrl: false });
+
+  const errors = {
+    cameraLocation: touched.cameraLocation && cameraLocation.trim() === "",
+    rtspUrl: touched.rtspUrl && rtspUrl.trim() === "",
+  };
+
+  const isValid = cameraLocation.trim() !== "" && rtspUrl.trim() !== "";
 
   const handleSubmit = () => {
+    setTouched({ cameraLocation: true, rtspUrl: true });
+    if (!isValid) return;
     onAcknowledge({ cameraLocation, rtspUrl });
   };
 
@@ -45,8 +55,12 @@ export function NewCameraCard({ onClose, onAcknowledge }: NewCameraCardProps) {
               placeholder="Enter Camera Location"
               value={cameraLocation}
               onChange={(e) => setCameraLocation(e.target.value)}
-              className="bg-gray-50 border-gray-200"
+              onBlur={() => setTouched((t) => ({ ...t, cameraLocation: true }))}
+              className={`bg-gray-50 border-gray-200 ${errors.cameraLocation ? "border-red-500 focus-visible:ring-red-400" : ""}`}
             />
+            {errors.cameraLocation && (
+              <p className="text-xs text-red-500">Camera location is required.</p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -58,13 +72,18 @@ export function NewCameraCard({ onClose, onAcknowledge }: NewCameraCardProps) {
               placeholder="Enter RTSP URL"
               value={rtspUrl}
               onChange={(e) => setRtspUrl(e.target.value)}
-              className="bg-gray-50 border-gray-200"
+              onBlur={() => setTouched((t) => ({ ...t, rtspUrl: true }))}
+              className={`bg-gray-50 border-gray-200 ${errors.rtspUrl ? "border-red-500 focus-visible:ring-red-400" : ""}`}
             />
+            {errors.rtspUrl && (
+              <p className="text-xs text-red-500">RTSP URL is required.</p>
+            )}
           </div>
 
           <Button
             onClick={handleSubmit}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-full font-medium"
+            disabled={!isValid}
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-full font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Acknowledge
           </Button>
