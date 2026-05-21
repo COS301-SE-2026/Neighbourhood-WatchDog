@@ -1,8 +1,7 @@
-// Minimal manual mock for amazon-cognito-identity-js used by tests
 class CognitoUserPool {
   constructor() {}
   signUp(email, password, attributes, validationData, callback) {
-    // simulate success (synchronous for tests)
+    // simulate success 
     callback(null, { user: { username: email } });
   }
 }
@@ -27,7 +26,7 @@ class CognitoUser {
   }
 
   authenticateUser(authDetails, callbacks) {
-    // simulate successful authentication (synchronous for tests)
+    // simulate successful authentication
     const result = {
       getAccessToken: () => ({ getJwtToken: () => 'mock-access-token' }),
       getIdToken: () => ({ getJwtToken: () => 'mock-id-token' }),
@@ -38,7 +37,7 @@ class CognitoUser {
   }
 }
 
-module.exports = {
+module.exports = {//Stuff we need to mock
   CognitoUserPool,
   CognitoUser,
   AuthenticationDetails,
