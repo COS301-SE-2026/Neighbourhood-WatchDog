@@ -8,6 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
+import httpx
+from datetime import datetime, timezone
+import logging
+
+logger = logging.getLogger("watchdog.ai")
 
 app = FastAPI(title="WatchDog AI Service")
 
@@ -21,7 +26,10 @@ app.add_middleware(
 )
 
 model = YOLO("pipeline/models/weights/yolov8n.pt")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
+CAMERA_ID = "40000000-0000-0000-0000-000000000001"
+NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001"
 
 def annotated_mjpeg(rtsp_url: str):
     tracker = DeepSort(
@@ -37,6 +45,7 @@ def annotated_mjpeg(rtsp_url: str):
         return
 
     frame_count = 0
+    alerted_ids = set()
     try:
         while True:
             ret, frame = cap.read()
@@ -62,12 +71,29 @@ def annotated_mjpeg(rtsp_url: str):
             for track in tracks:
                 if not track.is_confirmed():
                     continue
+                track_id = track.track_id
                 left, top, right, bottom = track.to_ltrb()
                 tracks_for_thumbnail.append({
                     "track_id": track.track_id,
                     "confidence": float(track.det_conf) if track.det_conf is not None else 0.0,
                     "bbox": [left, top, right, bottom],
                 })
+
+                if track_id not in alerted_ids and track.det_conf is not None:
+                    alerted_ids.add(track_id)
+                    logger.info(f"New person detected - Track ID: {track_id}, Confidence: {track.det_conf:.2f}")
+                    try:
+                        httpx.post(f"{BACKEND_URL}/alerts/dev/broadcast", json={
+                            "camera_id": CAMERA_ID,
+                            "neighbourhood_id": NEIGHBOURHOOD_ID,
+                            "detection_type": "HUMAN_PRESENCE",
+                            "confidence": float(track.det_conf),
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "thumbnail_url": None,
+                        })
+                        logger.info(f"Alert sent for Track ID: {track_id}")
+                    except Exception as e:
+                        logger.error(f"Failed to send alert for Track ID {track_id}: {e}")
 
             annotated = annotate_frame(frame, tracks_for_thumbnail)
             jpeg_bytes = encode_frame_as_jpeg(annotated)

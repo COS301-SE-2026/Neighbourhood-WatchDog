@@ -23,3 +23,7 @@ class RegisterCameraRes(BaseModel):
     status: int
     message: NonEmptyString | None = None
     data: CameraRes | None = None
+
+class CamerasRes(BaseModel):
+    status: int
+    data: list[CameraRes] = []

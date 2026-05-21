@@ -11,6 +11,7 @@ from app.api.controllers.neighbourhood import router as neighbourhood_router
 from app.api.controllers.camera import router as camera_router
 from app.api.controllers.users import router as users_router
 from app.api.controllers.alerts import router as alerts_router
+from app.api.controllers.alert import router as alert_router
 from app.api.controllers.stream import router as stream_router
 from slowapi.middleware import SlowAPIMiddleware
 from app.auth.rate_limiter import limiter
@@ -39,6 +40,7 @@ app.include_router(neighbourhood_router)
 app.include_router(camera_router)
 app.include_router(users_router)
 app.include_router(alerts_router)
+app.include_router(alert_router)
 app.include_router(stream_router)
 
 @app.get("/health")
