@@ -1,5 +1,11 @@
 "use client"
 import CameraCard from "@/components/CameraCard"
+
+import { useAlerts } from "@/hooks/use-alerts"
+import { toast } from "sonner"
+import { useEffect } from "react"
+
+
 import { NewCameraCard } from "@/components/new-camera-card"
 import { useState } from "react"
 import { Plus } from "lucide-react"
@@ -20,6 +26,16 @@ const initialCameras: Camera[] = [
 ]
 
 export default function Dashboard() {
+
+    const { alerts, connected } = useAlerts("10000000-0000-0000-0000-000000000001");
+
+    useEffect(() => {
+        if (alerts.length === 0) return;
+        const latest = alerts[0];
+        toast.warning("Human Detected", {
+            description: `Camera ${latest.camera_id} - Confidence: ${(latest.confidence! * 100).toFixed(0)}%`,
+        });
+    }, [alerts]);
 
     const [showCard, setShowCard] = useState(false);
     const [cameras, setCameras] = useState<Camera[]>(initialCameras);
