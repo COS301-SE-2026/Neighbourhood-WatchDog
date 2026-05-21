@@ -31,7 +31,7 @@ export default function Dashboard() {
                 <CameraCard name="Camera 1 - Backyard" status="offline" />
                 {/* <CameraCard name="Camera 2 - Bedroom 1" status="online" /> */}
 
-                <CameraCard name="Camera 2 - Office Room 1" status="online" rtspUrl="rtsp://Intrepid:password1234@10.76.19.58:554/stream2"/>
+                <CameraCard name="Camera 2 - Office Room 1" status="online" rtspUrl="rtsp://Intrepid:password1234@172.20.10.2:554/stream2"/>
                 <CameraCard name="Camera 5 - Living Room" status="online" />
                 <CameraCard name="Camera 3 - Bedroom 2" status="online" />
                 <CameraCard name="Camera 4 - Kitchen" status="online" />

@@ -2,7 +2,7 @@ import os
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
 import cv2
-from fastapi import FastAPI, Query
+from fastapi import APIRouter, FastAPI, Query
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
@@ -10,6 +10,8 @@ from deep_sort_realtime.deepsort_tracker import DeepSort
 from pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
 
 app = FastAPI(title="WatchDog AI Service")
+
+stream_router = APIRouter(prefix="/stream", tags=["stream"])
 
 app.add_middleware(
     CORSMiddleware,
@@ -78,13 +80,25 @@ def annotated_mjpeg(rtsp_url: str):
         cap.release()
 
 
-@app.get("/stream")
+@stream_router.get("")
 def stream_annotated(url: str = Query(..., description="RTSP URL")):
     return StreamingResponse(
         annotated_mjpeg(url),
         media_type="multipart/x-mixed-replace; boundary=frame",
     )
 
+@stream_router.get("/health")
+def stream_health(url: str = Query(..., description="RTSP URL")):
+    cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
+    available = cap.isOpened()
+    if available:
+        ret, _ = cap.read()
+        available = ret
+    cap.release()
+    return {"available": available, "url": url}
+
+
+app.include_router(stream_router)
 
 @app.get("/health")
 def health():
