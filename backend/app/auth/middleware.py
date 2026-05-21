@@ -6,7 +6,7 @@ from app.core.config import config
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         #Checking the origin
-        public_routes = ["/health", "/docs", "/openapi.json"]
+        public_routes = ["/health", "/docs", "/openapi.json", "/stream"]
 
         # Allow preflight requests without auth
         # TODO: remove this later
@@ -15,7 +15,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             self._add_cors_headers(response)
             return response
 
-        if not request.url.path in public_routes:
+        if not any(request.url.path.startswith(route) for route in public_routes):
             if not request.headers.get("Authorization"):
                 response = JSONResponse({"detail": "No Authorization header"}, status_code=401)
                 self._add_cors_headers(response)

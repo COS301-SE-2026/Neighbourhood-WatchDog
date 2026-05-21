@@ -31,7 +31,7 @@ export default function RootLayout({
         <TooltipProvider>
           <SidebarProvider>
              <HideSidebar /> {/*Check if the current layout is allowed to have a sidebar */}
-            <main className="flex-1">
+            <main className="flex-1 w-full">
               {children}
             </main>
           </SidebarProvider>
