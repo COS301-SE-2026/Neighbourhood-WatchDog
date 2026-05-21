@@ -13,5 +13,10 @@
     "dev:backend": "cd backend && . .venv/bin/activate && uvicorn main:app --port 8000 --reload",
     "dev:frontend": "cd frontend && pnpm dev",
     "dev:ai": "cd ai && . .venv/bin/activate && python tests/test_detector.py"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.11"
   }
 }
