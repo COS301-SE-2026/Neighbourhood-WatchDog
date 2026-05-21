@@ -7,6 +7,7 @@ from app.api.controllers.property import router as property_router
 from app.api.controllers.neighbourhood import router as neighbourhood_router
 from app.api.controllers.camera import router as camera_router
 from app.api.controllers.alerts import router as alerts_router
+from app.api.controllers.stream import router as stream_router
 from slowapi.middleware import SlowAPIMiddleware
 from app.auth.rate_limiter import limiter
 from app.core.database import engine, Base
@@ -30,6 +31,7 @@ app.include_router(property_router)
 app.include_router(neighbourhood_router)
 app.include_router(camera_router)
 app.include_router(alerts_router)
+app.include_router(stream_router)
 
 @app.get("/health")
 def health_check():
