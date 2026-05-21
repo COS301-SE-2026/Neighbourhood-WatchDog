@@ -571,82 +571,200 @@ TUCEW: The Security Officer can accept or reject the invitation to join the neig
 
 ![Architectural Diagram](images/NWD.drawio.svg)
 
-## Architectural Requirements:
-    
-### Quality requirements
-
+## Architectural Requirements
+ 
+### Quality Requirements
+ 
+The quality requirements are derived directly from the non-functional requirements and drive the architectural decisions made in this system.
+ 
+#### Performance
+ 
+- The system shall ingest and process video streams with a latency of less than 4 ms from capture to dashboard display.
+- The system shall support up to 100 concurrent video streams without frame loss.
+- AI detection processing shall complete within 1 second per frame.
+- Alerts shall appear on the dashboard within 2 seconds of detection.
+- Notifications shall be delivered within 5 seconds of alert generation.
+#### Scalability
+ 
+- The system shall scale to support 1000+ cameras per neighbourhood.
+- AI workers and streaming services shall support horizontal scaling independently of one another.
+- The frame queue shall support a burst load of at least 10,000 frames per minute.
+#### Security
+ 
+- All video streams and API communication shall use TLS 1.2+ encryption.
+- Multi-Factor Authentication shall be enforced for all users.
+- Role-Based Access Control shall restrict access to video streams and recordings based on user role.
+- User sessions shall expire after 15 minutes of inactivity.
+- All user actions shall be logged to an append-only audit trail.
+#### Accuracy
+ 
+- Human detection accuracy shall be at least 60%.
+- Behaviour classification accuracy shall be at least 80%.
+#### Reliability
+ 
+- The system shall maintain 99% uptime.
+- Video ingestion failures on one stream shall not affect other active streams.
+- The system shall recover from service failure within 2 minutes.
+- The detection pipeline shall guarantee no loss of critical alert events.
+#### Usability
+ 
+- Users shall be able to interpret and respond to alerts within 5 seconds of viewing.
+- The dashboard shall update in real time without manual refresh.
+- The system shall be fully usable on desktop and mobile browsers.
+#### Maintainability
+ 
+- The system shall use a modular architecture with clearly separated subsystems.
+- AI models shall be updatable without system downtime.
+- Code shall maintain greater than 70% test coverage.
+#### Compatibility
+ 
+- The system shall support IP cameras from different manufacturers with different video formats.
+- Video output shall comply with HLS standards for browser playback.
+- The dashboard shall support the latest versions of major browsers including Chrome and Firefox.
+#### Auditability
+ 
+- All detection events, alerts, and user actions shall be logged.
+- Audit logs shall be retained for at least 90 days.
+- Audit logs shall support filtering by user, time, and action type.
+#### Data Retention and Storage
+ 
+- Alert-triggered video clips shall be stored for up to 90 days.
+- Storage systems shall support retrieval of video footage within 3 seconds.
+#### Compliance
+ 
+- The system shall comply with the Protection of Personal Information Act (POPIA).
+- Personal data shall be collected for specific, lawful purposes and shall not be retained longer than necessary.
+- Users shall be informed that video surveillance is in operation.
+- The system shall support data subject access requests.
+- All personal data shall be stored securely and protected against unauthorised access or breaches.
+---
+ 
 ### Architectural Patterns
-
+ 
+#### Microservices Architecture
+ 
+Neighbourhood WatchDog is structured as a set of independently deployable microservices, each responsible for a single bounded context. The six primary subsystems — Video Ingestion, AI Detection, Alert Management, User and Access Control, the Monitoring Dashboard, and Data Storage — are deployed as separate containerised services. This allows each subsystem to be scaled, updated, and maintained independently without affecting the others. For example, AI detection workers can be scaled horizontally during high-traffic periods without redeploying the dashboard or authentication services.
+ 
+#### Event-Driven Architecture
+ 
+The AI detection pipeline is built around an event-driven model. When FFmpeg extracts a frame from a camera stream, it publishes the frame to a Kafka topic. Celery workers consume from this topic asynchronously, process the frame through YOLOv8 and DeepSORT, and publish a detection event if a person is confirmed. The alert service then consumes detection events and publishes alerts to the dashboard via WebSocket. This decoupling ensures that no single service blocks another, and that bursts in camera activity are absorbed by the Kafka queue rather than propagating as latency spikes downstream.
+ 
+#### Layered Architecture (within the Dashboard)
+ 
+The monitoring dashboard follows a layered architecture internally: a presentation layer (React components), a state management layer (handling WebSocket subscriptions and alert state), and a data access layer (API calls to the FastAPI backend). This separation keeps UI concerns isolated from data fetching logic and makes the dashboard easier to test and maintain.
+ 
+#### Repository Pattern (Data Access)
+ 
+All database access is abstracted behind repository classes in the FastAPI backend. No route handler interacts with PostgreSQL directly — it calls a repository method which encapsulates the query logic. This makes it straightforward to swap or mock the database layer during testing and keeps business logic out of SQL queries.
+ 
+---
+ 
 ### Design Patterns
-
+ 
+#### Observer Pattern
+ 
+The real-time alert delivery system is built on the Observer pattern. The dashboard WebSocket connection acts as a subscriber. When a detection event produces an alert, the alert service notifies all subscribed dashboard clients immediately. This allows multiple Security Officers to receive the same alert simultaneously without polling.
+ 
+#### Strategy Pattern
+ 
+Behaviour classification in the AI pipeline uses the Strategy pattern. Each behaviour type — loitering, perimeter scanning, weapon detection, fall detection — is implemented as a separate classification strategy. The classifier selects the appropriate strategy at runtime based on the detection event type. This makes it straightforward to add new behaviour types without modifying existing classification logic.
+ 
+#### Factory Pattern
+ 
+The video stream handler uses a Factory pattern to instantiate the correct stream reader based on the input source type. A local video file, an RTSP stream, and a simulated feed are all handled by different implementations of a common interface. The factory selects the correct implementation at runtime based on the camera configuration, keeping the rest of the pipeline unaware of the source type.
+ 
+#### Middleware Pattern
+ 
+The FastAPI backend uses a middleware chain for cross-cutting concerns. Authentication verification, audit logging, and request timing are all implemented as middleware layers that wrap every incoming request. This keeps route handlers focused on business logic and ensures concerns like audit logging are applied consistently without being duplicated across every endpoint.
+ 
+---
+ 
 ### Constraints
-
+ 
+#### Budget
+ 
+The project operates within a budget of R5,000 provided by EPI-USE Africa. All infrastructure choices are constrained to AWS Free Tier instances and student credits. GPU-accelerated inference instances are not available within this budget; the AI pipeline must perform acceptably on standard CPU instances (t3.medium or equivalent). GPU acceleration may be introduced in later sprints if student credits allow.
+ 
+#### Timeline
+ 
+The project runs from April 2026 to October 2026 across four demo milestones. Architectural decisions must favour simplicity and deliverability within two-week sprints over theoretical optimality. Features that cannot be delivered within the sprint cadence are deferred to later milestones.
+ 
+#### Hardware
+ 
+The system is constrained to a Tapo IP camera for live stream testing during development. The camera outputs H.264 video at 640×360 via RTSP stream2. The system must function correctly on this hardware during Demo 1. Support for additional camera manufacturers and resolutions is a later sprint concern.
+ 
+#### Datasets
+ 
+The AI pipeline is constrained to the following datasets provided by the client for model training and evaluation: the CCTV Action Recognition Dataset, Real Time Anomaly Detection in CCTV Surveillance, CCTV Weapon Dataset, CCTV Knife Detection Dataset, and CCTV Incident Dataset for Fall and Lying Down Detection. No external datasets may be used without client approval.
+ 
+#### Regulatory
+ 
+The system must comply with the Protection of Personal Information Act (POPIA). This constrains how video footage and personal data are stored, retained, and accessed. Footage may not be retained longer than 90 days. Users must be informed that surveillance is in operation. Data subject access requests must be supported. These constraints directly inform the retention policy configuration, audit logging requirements, and neighbourhood-level data isolation enforced through PostgreSQL row-level security.
+ 
+#### Platform
+ 
+The system must be delivered as a responsive web application accessible via desktop and mobile browsers. A native mobile application is out of scope for the current project. The dashboard must function on the latest versions of Chrome and Firefox as a minimum.
+ 
+#### Team
+ 
+The system is developed by a team of five third-year Computer Science students. Architectural decisions must account for the team's existing skill set. Technologies requiring significant upskilling — such as real-time video processing and Kafka stream management — are introduced incrementally across sprints rather than all at once, and foundational upskilling is prioritised before Sprint 1 development begins.
+ 
+---
+ 
 ## Technology Requirements
-Frontend				
-Next.js and TailwindCSS:
-Next.js provides server-side rendering for fast initial page loads and reloads, which is important for a security dashboard where operators need to see things almost immediately. TailwindCSS removes the need to write and maintain custom CSS files.
-						
-WebSocket:
-Allows for two-way communication between the server and the browser when the server pushes alerts to the browser without needing to refresh, and for when the operator acknowledges or responds to the alert.
-
-HLS.js:
-Handles live-stream preview and playback of recorded footage in the dashboard. Plays RTSP-sourced streams in the browser over standard HTTP. No plugins or additional infrastructure are required. MediaMTX outputs HLS natively; no extra conversion step is needed
-
-
-Backend
-FastAPI:
-The entire AI pipeline runs in Python, so using FastAPI keeps the backend in the same language, eliminating the need for a separate microservice overhead. Moreover, FastAPI handles many simultaneous camera frame events concurrently without threads blocking each other.
-
-Redis
-When multiple cameras detect events simultaneously, the backend needs a buffer to absorb the spike without dropping events or overwhelming the AI workers. Redis acts as that buffer. Detection events are pushed to a Redis queue and processed by Celery workers at a controlled rate. Also used for session caching to reduce database load on repeated auth checks.
-						
-Celery:
-AI processing jobs should not block the API. Celery runs background tasks asynchronously. Frame analysis, alert generation, footage retention cleanup, and scheduled reports all run as Celery tasks. Uses Redis as the message broker, so no additional queue infrastructure is needed
-
-Auth
-AWS Cognito
-The system needs role-based access control. AWS Cognito is the natural choice since the project is fully hosted on AWS and it integrates natively with EC2, RDS, and S3 without additional configuration. Free tier supports up to 50,000 monthly active users. RBAC is handled via Cognito User Pools and Groups, and MFA is supported out of the box. Keeping auth within AWS also means one less external account and billing relationship to manage.
-
-AI/ML Pipeline
-YOLOv8 (Ultralytics)
-The system must detect human presence within defined zones and identify potential intrusions. YOLOv8 is the current industry standard for real-time object detection, offering the best balance of speed and accuracy. It runs fast enough for near-real-time frame analysis on both GPU and modern CPU, and supports fine-tuning on custom datasets — necessary given the constrained CCTV datasets provided.
-
-DeepSORT
-Autonomous patrol assistance mode requires tracking an individual across multiple cameras and generating a movement path summary. DeepSORT is a multi-object tracking algorithm that pairs directly with YOLO detections, assigning persistent IDs to detected persons across frames and camera feeds.
-
-PyTorch + OpenCV
-Work as a unit in the detection pipeline. OpenCV handles all image processing, PyTorch runs the AI. OpenCV extracts frames from the video stream, resizes and preprocesses them for model input, applies zone masks to define restricted areas, and annotates output frames with bounding boxes. PyTorch powers the actual inference and handles fine-tuning of detection models on the provided CCTV datasets (Action Recognition, Weapon, Knife, Fall & Lying Down). YOLOv8 and DeepSORT both run on PyTorch under the hood.
-
-Video Ingestion
-FFmpeg
-The system must ingest both live RTSP streams from cameras and recorded video files. FFmpeg handles format conversion, frame extraction, and re- encoding across a wide range of camera types and input sources. Both live RTSP streams and recorded video files.
-
-MediaMTX
-Acts as an RTSP relay server sitting between cameras and the backend. Rather than each backend service connecting directly to cameras — which creates tight coupling and limits how many consumers can access a stream — MediaMTX receives camera streams once and distributes them to multiple subscribers. Outputs HLS natively, feeding directly into HLS.js for dashboard stream preview.
-
-
-Database
-PostgreSQL (AWS RDS)
-Handles all structured data, such as user accounts, roles, alert logs, audit trails, camera configurations, and incident records. PostgreSQL is mature, open-source, and has row-level security built in, which directly supports the neighbourhood isolation requirement (no cross-neighbourhood data access). Runs as a managed instance on AWS RDS. There is, therefore, no database server to operate or patch.
-
-Object Storage
-AWS S3
-Video clips and snapshots generated by the AI pipeline need object storage because relational databases are not suited for binary media files. S3 is fully cloud-hosted with no infrastructure to manage, and integrates natively with the rest of the AWS stack. S3 also supports tiered storage (S3 Standard for recent footage, S3 Glacier for archival) with configurable retention policies per camera. The free tier includes 5GB storage, which is sufficient for early prototype development.	
-
-
-DevOps					
-Docker and Docker Compose
-All services are containerised with Docker for consistent and reproducible deployments. Docker Compose defines and runs the full multi-container stack with a single command. It deploys directly to EC2 instances without additional orchestration tooling.
-
-AWS EC2
-Provides the virtual machines that host all containerised services. Two EC2 instances cover the full stack: one for the application services (FastAPI, Redis, Celery) and one for AI inference and MediaMTX. Both run on standard CPU instances (t3.medium or equivalent) covered under the AWS Free Tier or student credits, thus keeping the project within the R5 000 budget. GPU acceleration can be introduced later if inference throughput requires it. GitHub Actions handles automated deployment to EC2 on each push to main.
-
-
-Monitoring
-AWS CloudWatch
-It is built into AWS at no extra cost, and it covers uptime alerts, basic health checks, log aggregation, and resource usage dashboards.
-
-
-Cloud
-AWS
-Single cloud provider for all infrastructure to avoid cross-cloud egress costs. EC2, RDS, and S3 map directly to the project's infrastructure needs. Standard EC2 CPU instances (t3.medium) are sufficient for prototype scale and are covered under the AWS Free Tier and student credits, keeping compute costs within the R5 000 budget.
+ 
+### Frontend
+ 
+**Next.js and TailwindCSS:** Next.js provides server-side rendering for fast initial page loads and reloads, which is important for a security dashboard where operators need to see things almost immediately. TailwindCSS removes the need to write and maintain custom CSS files.
+ 
+**WebSocket:** Allows for two-way communication between the server and the browser when the server pushes alerts to the browser without needing to refresh, and for when the operator acknowledges or responds to the alert.
+ 
+**HLS.js:** Handles live-stream preview and playback of recorded footage in the dashboard. Plays RTSP-sourced streams in the browser over standard HTTP. No plugins or additional infrastructure are required. MediaMTX outputs HLS natively; no extra conversion step is needed.
+ 
+### Backend
+ 
+**FastAPI:** The entire AI pipeline runs in Python, so using FastAPI keeps the backend in the same language, eliminating the need for a separate microservice overhead. Moreover, FastAPI handles many simultaneous camera frame events concurrently without threads blocking each other.
+ 
+**Redis:** When multiple cameras detect events simultaneously, the backend needs a buffer to absorb the spike without dropping events or overwhelming the AI workers. Redis acts as that buffer. Detection events are pushed to a Redis queue and processed by Celery workers at a controlled rate. Also used for session caching to reduce database load on repeated auth checks.
+ 
+**Celery:** AI processing jobs should not block the API. Celery runs background tasks asynchronously. Frame analysis, alert generation, footage retention cleanup, and scheduled reports all run as Celery tasks. Uses Redis as the message broker, so no additional queue infrastructure is needed.
+ 
+### Auth
+ 
+**AWS Cognito:** The system needs role-based access control. AWS Cognito is the natural choice since the project is fully hosted on AWS and it integrates natively with EC2, RDS, and S3 without additional configuration. Free tier supports up to 50,000 monthly active users. RBAC is handled via Cognito User Pools and Groups, and MFA is supported out of the box. Keeping auth within AWS also means one less external account and billing relationship to manage.
+ 
+### AI/ML Pipeline
+ 
+**YOLOv8 (Ultralytics):** The system must detect human presence within defined zones and identify potential intrusions. YOLOv8 is the current industry standard for real-time object detection, offering the best balance of speed and accuracy. It runs fast enough for near-real-time frame analysis on both GPU and modern CPU, and supports fine-tuning on custom datasets — necessary given the constrained CCTV datasets provided.
+ 
+**DeepSORT:** Autonomous patrol assistance mode requires tracking an individual across multiple cameras and generating a movement path summary. DeepSORT is a multi-object tracking algorithm that pairs directly with YOLO detections, assigning persistent IDs to detected persons across frames and camera feeds.
+ 
+**PyTorch + OpenCV:** Work as a unit in the detection pipeline. OpenCV handles all image processing, PyTorch runs the AI. OpenCV extracts frames from the video stream, resizes and preprocesses them for model input, applies zone masks to define restricted areas, and annotates output frames with bounding boxes. PyTorch powers the actual inference and handles fine-tuning of detection models on the provided CCTV datasets. YOLOv8 and DeepSORT both run on PyTorch under the hood.
+ 
+### Video Ingestion
+ 
+**FFmpeg:** The system must ingest both live RTSP streams from cameras and recorded video files. FFmpeg handles format conversion, frame extraction, and re-encoding across a wide range of camera types and input sources. Both live RTSP streams and recorded video files are supported.
+ 
+**MediaMTX:** Acts as an RTSP relay server sitting between cameras and the backend. Rather than each backend service connecting directly to cameras — which creates tight coupling and limits how many consumers can access a stream — MediaMTX receives camera streams once and distributes them to multiple subscribers. Outputs HLS natively, feeding directly into HLS.js for dashboard stream preview.
+ 
+### Database
+ 
+**PostgreSQL (AWS RDS):** Handles all structured data, such as user accounts, roles, alert logs, audit trails, camera configurations, and incident records. PostgreSQL is mature, open-source, and has row-level security built in, which directly supports the neighbourhood isolation requirement (no cross-neighbourhood data access). Runs as a managed instance on AWS RDS.
+ 
+### Object Storage
+ 
+**AWS S3:** Video clips and snapshots generated by the AI pipeline need object storage because relational databases are not suited for binary media files. S3 is fully cloud-hosted with no infrastructure to manage, and integrates natively with the rest of the AWS stack. S3 also supports tiered storage (S3 Standard for recent footage, S3 Glacier for archival) with configurable retention policies per camera.
+ 
+### DevOps
+ 
+**Docker and Docker Compose:** All services are containerised with Docker for consistent and reproducible deployments. Docker Compose defines and runs the full multi-container stack with a single command. It deploys directly to EC2 instances without additional orchestration tooling.
+ 
+**AWS EC2:** Provides the virtual machines that host all containerised services. Two EC2 instances cover the full stack: one for the application services (FastAPI, Redis, Celery) and one for AI inference and MediaMTX. Both run on standard CPU instances (t3.medium or equivalent) covered under the AWS Free Tier or student credits. GitHub Actions handles automated deployment to EC2 on each push to main.
+ 
+### Monitoring
+ 
+**AWS CloudWatch:** Built into AWS at no extra cost, covering uptime alerts, basic health checks, log aggregation, and resource usage dashboards.
+ 
+### Cloud
+ 
+**AWS:** Single cloud provider for all infrastructure to avoid cross-cloud egress costs. EC2, RDS, and S3 map directly to the project's infrastructure needs. Standard EC2 CPU instances (t3.medium) are sufficient for prototype scale and are covered under the AWS Free Tier and student credits, keeping compute costs within the R5,000 budget.
