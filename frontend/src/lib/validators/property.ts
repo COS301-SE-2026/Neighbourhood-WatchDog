@@ -13,21 +13,22 @@ export const CreatePropertyReqSchema = z.object({
 });
 
 export const PropertyResSchema = z.object({
-  userId: z
-    .uuid("User ID must be a valid UUID"),
-  neighbourhoodId: z
+  property_id: z
+    .string()
+    .uuid("Property ID must be a valid UUID"),
+  neighbourhood_id: z
+    .string()
     .uuid("Neighbourhood ID must be a valid UUID")
     .nullable(),
   address: z
     .string({ message: "Address is required" })
     .nonempty("Address cannot be empty"),
-  propertyType: z
+  property_type: z
     .string({ message: "Property type is required" })
     .nonempty("Property type cannot be empty"),
-  createdAt: z
-    .coerce
-    .date()
-    .default(() => new Date()),
+  created_at: z
+    .string()
+    .datetime(),
 });
 
 export const CreatePropertyResSchema = z.object({

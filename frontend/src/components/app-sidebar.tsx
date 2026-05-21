@@ -16,7 +16,7 @@ import {
 } from "lucide-react"
 
 import { CreatePropertyDialog } from "./create-property-dialogue"
-import { CreatePropertyReq } from "@/lib/validators/property"
+import { useEffect } from "react"
 
 import {
   Sidebar,
@@ -36,14 +36,9 @@ import {
 } from "@/components/ui/tooltip"
 
 import { cn } from "@/lib/utils"
+import { useProperties, type Property } from "@/hooks/use-properties"
 
 // Types
-
-type Property = {
-  id: string
-  name: string
-  address: string
-}
 
 type NavChild = {
   id: string
@@ -61,43 +56,6 @@ type NavItem = {
 // Data
 
 const USERNAME = "John Doe"
-
-const PROPERTIES: Property[] = [
-  { id: "p1", name: "Oakwood Estate",   address: "14 Oakwood Ave" },
-  { id: "p2", name: "Sunset Heights",  address: "7 Sunset Blvd"  },
-  { id: "p3", name: "Riverview Close", address: "3 Riverview Rd" },
-]
-
-  //NAV_ITEMS arr used for nav tiles in the sidebar.
- // To add a new tile: push a new entry here.
- 
-const NAV_ITEMS: NavItem[] = [
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    icon: <LayoutDashboard className="h-4 w-4 shrink-0" />,
-    children: PROPERTIES.map((p) => ({
-      id: p.id,
-      label: p.name,
-      icon: <Home className="h-3.5 w-3.5 shrink-0" />,
-    })),
-  },
-  {
-    id: "alerts",
-    label: "Alerts",
-    icon: <Bell className="h-4 w-4 shrink-0" />,
-  },
-  {
-    id: "reports",
-    label: "Reports",
-    icon: <FileText className="h-4 w-4 shrink-0" />,
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    icon: <Settings className="h-4 w-4 shrink-0" />,
-  },
-]
 
 // Logo
 //TODO: Consider which logo we should use
@@ -180,6 +138,7 @@ function NavTile({
   isExpanded: boolean
   onAddProperty?: () => void
 }) {
+
   const isActive = activeItem === item.id
   const isOpen   = isActive && !!item.children
 
@@ -278,6 +237,7 @@ function NavTile({
 
 export function AppSidebar() {
   const { state, setOpen } = useSidebar()
+  const { properties, addProperty } = useProperties()
 
   // pinned = sidebar is locked open; unpinned = hover-to-expand mode
   const [pinned, setPinned] = React.useState(true)
@@ -285,9 +245,36 @@ export function AppSidebar() {
 
   const isExpanded = state === "expanded"
 
-  const handlePropertyAdded = (property: CreatePropertyReq) => {
-    // TODO add the newly created prop to the list of properties
+  const NAV_ITEMS: NavItem[] = [
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      icon: <LayoutDashboard className="h-4 w-4 shrink-0" />,
+      children: properties.map((p) => ({
+        id: p.property_id,
+        label: p.address,
+        icon: <Home className="h-3.5 w-3.5 shrink-0" />,
+      })),
+    },
+    {
+      id: "alerts",
+      label: "Alerts",
+      icon: <Bell className="h-4 w-4 shrink-0" />,
+    },
+    {
+      id: "reports",
+      label: "Reports",
+      icon: <FileText className="h-4 w-4 shrink-0" />,
+    },
+    {
+      id: "settings",
+      label: "Settings",
+      icon: <Settings className="h-4 w-4 shrink-0" />,
+    },
+  ]
 
+  const handlePropertyAdded = (property: Property) => {
+    addProperty(property)
     setDialogOpen(false)
   }
 

@@ -17,14 +17,14 @@ import { useState } from "react"
 import { Field, FieldGroup } from "./ui/field"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { CreatePropertyReq, AddressSchema, CreatePropertyReqSchema } from "@/lib/validators/property"
+import { CreatePropertyReq, AddressSchema, CreatePropertyReqSchema, PropertyRes } from "@/lib/validators/property"
 import { addProperty } from "@/lib/api/property"
 
 
 interface CreatePropertyDialogAttributes {
 open: boolean
   onOpenChange: (open: boolean) => void
-  onPropertyAdded: (property: CreatePropertyReq) => void //TODO make the zod thing for this so to avoid using any coz linter is gonna complain if I use any
+  onPropertyAdded: (property: PropertyRes) => void
 }
 
 export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: CreatePropertyDialogAttributes) {
@@ -71,8 +71,8 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
         return;
       }
 
-      await addProperty(validatedCreateProp.data)
-      onPropertyAdded(validatedCreateProp.data)
+      const createdProperty = await addProperty(validatedCreateProp.data)
+      onPropertyAdded(createdProperty)
       onOpenChange(false)
       e.currentTarget?.reset()
 
