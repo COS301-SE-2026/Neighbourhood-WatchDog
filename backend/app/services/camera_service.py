@@ -10,16 +10,44 @@ from uuid import UUID
 import re
 
 async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims: dict) -> CameraRes:
-    ...
-    return CameraRes(
-        id=new_camera.id,
-        property_id=new_camera.property_id,
-        neighbourhood_id=new_camera.neighbourhood_id,
-        rtsp_url=new_camera.rtsp_url,
-        visibility=new_camera.visibility,
-        location=new_camera.location,
-        created_at=new_camera.created_at
-    )
+    if not db:
+        raise HTTPException(500, "No database session")
+    if not claims:
+        raise HTTPException(401, "Not authenticated")
+
+    try:
+        stmt = select(Property).where(Property.id == req.property_id)
+        property_obj = db.execute(stmt).scalar_one_or_none()
+
+        if not property_obj:
+            raise HTTPException(404, "Property not found")
+
+        new_camera = Camera(
+            property_id=req.property_id,
+            neighbourhood_id=property_obj.neighbourhood_id,
+            rtsp_url=req.rtsp_url,
+            visibility=req.visibility,
+            location=req.location,
+        )
+        db.add(new_camera)
+        db.commit()
+
+        return CameraRes(
+            id=new_camera.id,
+            property_id=new_camera.property_id,
+            neighbourhood_id=new_camera.neighbourhood_id,
+            rtsp_url=new_camera.rtsp_url,
+            visibility=new_camera.visibility,
+            location=new_camera.location,
+            created_at=new_camera.created_at,
+        )
+
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(500, "Could not register camera")
+    except HTTPException as he:
+        db.rollback()
+        raise he
 
 async def list_cameras_handler(property_id: str, db: DbSession, claims: dict) -> CamerasRes:
     if not db:
