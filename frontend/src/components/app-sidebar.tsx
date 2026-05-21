@@ -37,6 +37,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import { useProperties, type Property } from "@/hooks/use-properties"
+import { useAppView } from "@/components/app-view-context"
 
 // Types
 
@@ -123,7 +124,7 @@ function PinToggle({
 
 function NavTile({
   item,
-  activeItem,
+  activeSection,
   activeChild,
   onSelect,
   onChildSelect,
@@ -131,7 +132,7 @@ function NavTile({
   onAddProperty, // TODO: if we decide to let the user add proeprties from elsewhere then we gotta remove this
 }: {
   item: NavItem
-  activeItem: string | null
+  activeSection: string
   activeChild: string | null
   onSelect: (id: string) => void
   onChildSelect: (id: string) => void
@@ -139,7 +140,7 @@ function NavTile({
   onAddProperty?: () => void
 }) {
 
-  const isActive = activeItem === item.id
+  const isActive = activeSection === item.id
   const isOpen   = isActive && !!item.children
 
   const button = (
@@ -238,6 +239,7 @@ function NavTile({
 export function AppSidebar() {
   const { state, setOpen } = useSidebar()
   const { properties, addProperty } = useProperties()
+  const { section, propertyId, setSection, setPropertyView } = useAppView()
 
   // pinned = sidebar is locked open; unpinned = hover-to-expand mode
   const [pinned, setPinned] = React.useState(true)
@@ -299,17 +301,12 @@ export function AppSidebar() {
     if (!pinned) setOpen(false)
   }
 
-  const [activeItem,  setActiveItem]  = React.useState<string | null>("dashboard")
-  const [activeChild, setActiveChild] = React.useState<string | null>(null)
-
   const handleSelect = (id: string) => {
-    const item = NAV_ITEMS.find((n) => n.id === id)
-    if (!item?.children) {
-      setActiveItem(id)
-      setActiveChild(null)
-      return
-    }
-    setActiveItem((prev) => (prev === id ? null : id))
+    setSection(id as typeof section)
+  }
+
+  const handleChildSelect = (id: string) => {
+    setPropertyView(id)
   }
 
   return (
@@ -365,10 +362,10 @@ export function AppSidebar() {
               <NavTile
                 key={item.id}
                 item={item}
-                activeItem={activeItem}
-                activeChild={activeChild}
+                activeSection={section}
+                activeChild={propertyId}
                 onSelect={handleSelect}
-                onChildSelect={setActiveChild}
+                onChildSelect={handleChildSelect}
                 isExpanded={isExpanded}
                 onAddProperty={item.id === "dashboard" ? () => setDialogOpen(true) : undefined}
               />

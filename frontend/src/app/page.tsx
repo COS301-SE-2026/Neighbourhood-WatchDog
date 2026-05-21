@@ -1,7 +1,7 @@
-import Image from "next/image";
+import { AppShell } from "@/components/app-shell"
 
 export default function Home() {
   return (
-    <></>
+    <AppShell />
   );
 }
