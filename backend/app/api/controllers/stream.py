@@ -1,10 +1,9 @@
 import os
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
-
-
 import cv2
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
+
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
 router = APIRouter(prefix="/stream", tags=["stream"])
 

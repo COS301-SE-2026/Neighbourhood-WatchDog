@@ -1,6 +1,4 @@
 import os
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
-
 import cv2
 from fastapi import APIRouter, FastAPI, Query
 from fastapi.responses import StreamingResponse
@@ -8,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
+
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
 app = FastAPI(title="WatchDog AI Service")
 

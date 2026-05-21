@@ -1,8 +1,8 @@
 import os
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
-
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
+
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
 
 PERSON_CLASS = 0
