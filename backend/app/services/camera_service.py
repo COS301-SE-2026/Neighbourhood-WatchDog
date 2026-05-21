@@ -91,3 +91,9 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
     except HTTPException as he:
         db.rollback()
         raise he
+    
+
+
+async def list_cameras_handler(property_id, db, claims):
+    """TODO: implement"""
+    return []
