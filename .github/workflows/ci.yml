@@ -83,6 +83,9 @@ jobs:
       - name: Install E2E dependencies
         run: cd tests/e2e && pnpm install
 
+      - name: Install Playwright browsers
+        run: cd tests/e2e && pnpm exec playwright install
+
       - name: Run E2E tests
         run: cd tests/e2e && pnpm test
 
