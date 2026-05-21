@@ -1,4 +1,4 @@
-import {z } from "zod"
+import { z } from "zod"
 
 export const PropertyTypeEnum = z.enum([
   "PRIVATE",
@@ -15,10 +15,10 @@ export const CreatePropertyReqSchema = z.object({
 export const PropertyResSchema = z.object({
   property_id: z
     .string()
-    .uuid("Property ID must be a valid UUID"),
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "Property ID must be a valid UUID"),
   neighbourhood_id: z
     .string()
-    .uuid("Neighbourhood ID must be a valid UUID")
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "Neighbourhood ID must be a valid UUID")
     .nullable(),
   address: z
     .string({ message: "Address is required" })
@@ -78,10 +78,49 @@ export const AddressSchema = z.object({
   "postal-code": z.string().length(4).regex(/^\d+$/, "Must have 4 characters and consist of strings")
 });
 
+export const UserSummarySchema = z.object({
+  id: z.string()
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i),
+  email: z.email(),
+  first_name: z.string().nullable().optional(),
+  last_name: z.string().nullable().optional(),
+});
+
+export const CameraSummarySchema = z.object({
+  id: z.string()
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i),
+  location: z.string(),
+  visibility: z.string(),
+  created_at: z.coerce.date(),
+});
+
+export const NeighbourhoodSummarySchema = z.object({
+  id: z.string()
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i),
+  name: z.string(),
+  location: z.string(),
+  join_code: z.string(),
+  created_at: z.coerce.date(),
+});
+
+export const PropertyDetailedResSchema = z.object({
+  property_id: z.string()
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i),
+  address: z.string(),
+  property_type: z.string(),
+  created_at: z.coerce.date(),
+  users: z.array(UserSummarySchema),
+  neighbourhood: NeighbourhoodSummarySchema.nullable(),
+  cameras: z.array(CameraSummarySchema),
+});
+
 export type Address = z.infer<typeof AddressSchema>;
 
-// Types
 export type CreatePropertyReq = z.infer<typeof CreatePropertyReqSchema>;
 export type PropertyRes = z.infer<typeof PropertyResSchema>;
 export type CreatePropertyRes = z.infer<typeof CreatePropertyResSchema>;
 export type PropertyType = z.infer<typeof PropertyTypeEnum>;
+export type UserSummary = z.infer<typeof UserSummarySchema>;
+export type CameraSummary = z.infer<typeof CameraSummarySchema>;
+export type NeighbourhoodSummary = z.infer<typeof NeighbourhoodSummarySchema>;
+export type PropertyDetailedRes = z.infer<typeof PropertyDetailedResSchema>;

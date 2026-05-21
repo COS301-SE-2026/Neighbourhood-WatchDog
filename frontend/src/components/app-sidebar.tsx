@@ -54,7 +54,7 @@ type NavItem = {
   children?: NavChild[]
 }
 
-// Data
+//data
 
 const USERNAME = "John Doe"
 

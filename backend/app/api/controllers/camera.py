@@ -12,12 +12,10 @@ router = APIRouter(prefix="/camera", tags=["cameras"])
 
 
 @router.post("/register-camera")
-async def register_camera(
-    req: RegisterCameraReq,
-    db: DbSession,
-    claims: dict = Depends(get_current_user),
-) -> RegisterCameraRes:
-    require_role(["Resident"])
+async def register_camera(req: RegisterCameraReq, db: DbSession, claims: dict = Depends(get_current_user)):
+    """Creates a new camera and links it to the property of the user."""
+    
+    require_role(claims, ['Resident'])
     new_camera = await register_camera_handler(req, db, claims)
 
     return RegisterCameraRes(
