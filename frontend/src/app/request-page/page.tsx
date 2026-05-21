@@ -74,6 +74,16 @@ function ErrorBanner({
   );
 }
 
+function ActionErrorBanner({
+  message,
+  onDismiss,
+}: {
+  message: string;
+  onDismiss: () => void;
+}) {
+  return <ErrorBanner message={message} onDismiss={onDismiss} />;
+}
+
 type FetchState = {
   requests: JoinRequest[];
   loading: boolean;
@@ -119,6 +129,7 @@ export default function JoinRequestsPage() {
     initialFetchState,
   );
   const [activeFilter, setActiveFilter] = useState<FilterValue>("PENDING");
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Incrementing this triggers a re-fetch without needing a stable callback ref.
   const [fetchTick, setFetchTick] = useState(0);
@@ -158,13 +169,35 @@ export default function JoinRequestsPage() {
   }, [fetchTick]);
 
   const handleApprove = useCallback(async (id: string) => {
-    const updated = await resolveJoinRequest(id, "APPROVE");
-    dispatch({ type: "UPDATE_REQUEST", payload: updated });
+    setActionError(null);
+    try {
+      const updated = await resolveJoinRequest(id, "APPROVE");
+      dispatch({ type: "UPDATE_REQUEST", payload: updated });
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Failed to approve join request.",
+      );
+    }
   }, []);
 
   const handleDeny = useCallback(async (id: string) => {
-    const updated = await resolveJoinRequest(id, "DENY");
-    dispatch({ type: "UPDATE_REQUEST", payload: updated });
+    setActionError(null);
+    try {
+      const updated = await resolveJoinRequest(id, "DENY");
+      dispatch({ type: "UPDATE_REQUEST", payload: updated });
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Failed to deny join request.",
+      );
+    }
   }, []);
 
   const filtered = useMemo(
@@ -178,12 +211,7 @@ export default function JoinRequestsPage() {
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
 
   return (
-    <div
-      className="w-full flex flex-col items-center px-8 py-10 bg-[#1D2A5E] min-h-full"
-      style={{
-        fontFamily: "var(--font-sans, 'Inter', system-ui, sans-serif)",
-      }}
-    >
+    <div className="w-full flex flex-col items-center px-8 py-10 bg-[#1D2A5E] min-h-full font-sans">
       <div className="w-full max-w-2xl">
         <header className="mb-6 text-center">
           <h1 className="text-[32px] font-bold leading-10 text-white">
@@ -206,6 +234,13 @@ export default function JoinRequestsPage() {
           <ErrorBanner
             message={error}
             onDismiss={() => dispatch({ type: "DISMISS_ERROR" })}
+          />
+        )}
+
+        {actionError && (
+          <ActionErrorBanner
+            message={actionError}
+            onDismiss={() => setActionError(null)}
           />
         )}
 
