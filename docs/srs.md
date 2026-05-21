@@ -2,7 +2,7 @@
 
 ## Introduction
 
-It is no secret that the world we live in is an unsafe place. Neighbourhood WatchDog aims to help keep our neighbourhoods safe in this unsafe world. This system uses AI to detect suspicious activity on camera systems in order to help prevent crime and respond to crime quickly.
+Rising crime rates in South African communities have highlighted the need for smarter, more proactive security solutions. Neighbourhood WatchDog is a centralised, AI-assisted security platform designed to enhance safety within residential neighbourhoods. The system integrates with existing CCTV infrastructure and applies real-time computer vision techniques, including object detection and behavioural classification, to identify suspicious activity such as loitering, perimeter scanning, and unauthorised presence. By delivering actionable alerts to residents and security personnel in real time, Neighbourhood WatchDog aims to reduce response times and strengthen community-driven crime prevention efforts.
 
 ## User Stories
 
