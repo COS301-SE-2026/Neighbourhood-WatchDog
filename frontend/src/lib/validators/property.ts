@@ -9,7 +9,7 @@ export const CreatePropertyReqSchema = z.object({
   address: z
     .string({ message: "Address is required" })
     .nonempty("Address cannot be empty"),
-  propertyType: PropertyTypeEnum,
+  property_type: PropertyTypeEnum,
 });
 
 export const PropertyResSchema = z.object({
@@ -74,7 +74,7 @@ export const AddressSchema = z.object({
   
   province: z.enum(SOUTH_AFRICAN_PROVINCES as readonly [SouthAfricanProvince, ...SouthAfricanProvince[]]),
   
-  zipCode: z.string().length(4).regex(/^\d+$/, "Must have 4 characters and consist of strings")
+  "postal-code": z.string().length(4).regex(/^\d+$/, "Must have 4 characters and consist of strings")
 });
 
 export type Address = z.infer<typeof AddressSchema>;

@@ -40,40 +40,62 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
 
     const address = {
       "address-line-1": formData.get("address-line-1") as string,
-      "address-line-2": formData.get("address-line-1") as string,
+      "address-line-2": formData.get("address-line-2") as string,
       city: formData.get("city") as string,
       province: formData.get("province") as string,
-      location: formData.get("location") as string
+      "postal-code": formData.get("postal-code") as string
     }
+
 
     const property = "PRIVATE" 
     //TODO: consider whether to change hthis in the future. 
     // client said that we don't need to worry about public properties for now
 
     try {
+
       const validatedAddr = AddressSchema.parse(address)
+      
 
       const addrValues = Object.values(validatedAddr).filter(value => value !== "")
       const singleLineAdd = addrValues.join("\n")
-      const validatedCreatePropSchema = CreatePropertyReqSchema.parse({
+      
+      console.log(singleLineAdd)
+      
+      const validatedCreateProp = CreatePropertyReqSchema.safeParse({
         address: singleLineAdd,
-        propertyType: "PRIVATE"
+        property_type: property
       })
 
-      await addProperty(validatedCreatePropSchema)
-      onPropertyAdded(validatedCreatePropSchema)
+      if (!validatedCreateProp.success){
+        alert("FLOPPED"); // this should never appear coz the other validations should pass before this one
+        return;
+      }
+
+      await addProperty(validatedCreateProp.data)
+      onPropertyAdded(validatedCreateProp.data)
       onOpenChange(false)
       e.currentTarget.reset()
 
     } catch (error) {
+
       if (error instanceof z.ZodError) {
+        console.log("zod error", error)
+
         const fieldErrors: Record<string, string> = {}
         error.issues.forEach((err) => {
           const path = err.path.join(".")
           fieldErrors[path] = err.message
         })
+
         setErrors(fieldErrors)
+
+      } else {
+
+        console.error("Failed to create property:", error)
+        setErrors({ submit: error instanceof Error ? error.message : "Failed to create property" })
+      
       }
+
     } finally {
       setLoading(false)
     }   
@@ -93,13 +115,15 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-
+          {errors.submit && (
+            <p className="text-sm text-red-500 mb-4">{errors.submit}</p>
+          )}
           <FieldGroup>
             <Field>
               <Label htmlFor="add-line-1">Address Line 1 (Street address)</Label>
               <Input id="add-line-1" name="address-line-1" defaultValue="" />
               {errors["address-line-1"] && (
-                <p className="text-sm text-red-500 mt-1">{errors["address-line-1"]}</p>
+                <p className="text-sm text-red-500 text-xs mt-0.5">{errors["address-line-1"]}</p>
               )}
             </Field>
 
@@ -107,7 +131,7 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
               <Label htmlFor="add-line-2">Address Line 2 (Apartment, suite, unit, building etc.)</Label>
               <Input id="add-line-2" name="address-line-2" defaultValue="" />
               {errors["address-line-2"] && (
-                <p className="text-sm text-red-500 mt-1">{errors["address-line-2"]}</p>
+                <p className="text-sm text-red-500 text-xs mt-0.5">{errors["address-line-2"]}</p>
               )}
             </Field>
 
@@ -115,7 +139,7 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
               <Label htmlFor="city-1">City</Label>
               <Input id="city-1" name="city" defaultValue="" />
               {errors["city"] && (
-                <p className="text-sm text-red-500 mt-1">{errors["city"]}</p>
+                <p className="text-sm text-red-500 text-xs mt-0.5">{errors["city"]}</p>
               )}
             </Field>
 
@@ -139,15 +163,15 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
                 <option value="Western Cape">Western Cape</option>
               </select>
               {errors["province"] && (
-                <p className="text-sm text-red-500 mt-1">{errors["province"]}</p>
+                <p className="text-sm text-red-500 text-xs mt-0.5">{errors["province"]}</p>
               )}
             </Field>
 
             <Field>
-              <Label htmlFor="location-1">Location/Postal Code</Label>
-              <Input id="location-1" name="location" defaultValue="" />
-              {errors["location"] && (
-                <p className="text-sm text-red-500 mt-1">{errors["location"]}</p>
+              <Label htmlFor="postal-code-1">Postal Code</Label>
+              <Input id="postal-code-1" name="postal-code" defaultValue="" />
+              {errors["postal-code"] && (
+                <p className="text-sm text-red-500 text-xs mt-0.5">{errors["postal-code"]}</p>
               )}
             </Field>
             

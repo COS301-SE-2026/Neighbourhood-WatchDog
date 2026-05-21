@@ -286,7 +286,8 @@ export function AppSidebar() {
   const isExpanded = state === "expanded"
 
   const handlePropertyAdded = (property: CreatePropertyReq) => {
-    // setPropCreated(true)
+    // TODO add the newly created prop to the list of properties
+
     setDialogOpen(false)
   }
 
@@ -330,7 +331,7 @@ export function AppSidebar() {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* ── Header ─────────────────────────────────────────────────────── */}
+      {/* Header */}
       <SidebarHeader className="px-3 py-3">
         <SidebarMenu>
           <SidebarMenuItem>
