@@ -118,7 +118,7 @@ export function RequestCard({ request, onApprove, onDeny }: RequestCardProps) {
   return (
     <Card
       className={[
-        "flex items-center gap-4 px-4 py-3 rounded-xl border transition-all duration-150",
+        "flex flex-col items-center gap-3 px-4 py-4 rounded-xl border transition-all duration-150",
         "bg-[#2C3E6B] border-[#2C3E6B]",
         isPending ? "hover:border-[#3B5EDE]/50" : "opacity-70 hover:opacity-90",
       ]
@@ -146,7 +146,7 @@ export function RequestCard({ request, onApprove, onDeny }: RequestCardProps) {
       </div>
 
       {/* Info */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 text-center">
         <p className="text-[14px] font-semibold text-white truncate leading-snug">
           {request.user_name}
         </p>
