@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   AlertCard,
   type Alert,
@@ -19,7 +19,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { SlidersHorizontal, RefreshCw } from "lucide-react";
+import { SlidersHorizontal, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import {
+  fetchAlerts,
+  acknowledgeAlert,
+  normaliseAlert,
+  getAuthToken,
+  WS_BASE,
+} from "@/lib/api/alert";
 
 const ALL_SEVERITIES: AlertSeverity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "RESOLVED"];
@@ -49,9 +56,83 @@ function EmptyState() {
   );
 }
 
-export default function AlertsPage() {
-  const [alerts, setAlerts] = useState<Alert[]>(MOCK_ALERTS);
-  const [refreshKey, setRefreshKey] = useState(0);
+function ErrorState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
+      <p className="text-[15px] font-semibold text-red-400">
+        Failed to load alerts
+      </p>
+      <p className="text-xs text-white/40 max-w-xs">{message}</p>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={onRetry}
+        className="border-[#2C3E6B] text-[#D0D7E8] hover:bg-[#2C3E6B] hover:text-white text-xs"
+      >
+        Try again
+      </Button>
+    </div>
+  );
+}
+
+type FetchState = {
+  alerts: Alert[];
+  loading: boolean;
+  error: string | null;
+};
+
+type FetchAction =
+  | { type: "FETCH_START" }
+  | { type: "FETCH_SUCCESS"; payload: Alert[] }
+  | { type: "FETCH_ERROR"; payload: string }
+  | { type: "UPDATE_ALERT"; payload: Alert }
+  | { type: "PREPEND_ALERT"; payload: Alert };
+
+const initialFetchState: FetchState = {
+  alerts: [],
+  loading: true,
+  error: null,
+};
+
+function fetchReducer(state: FetchState, action: FetchAction): FetchState {
+  switch (action.type) {
+    case "FETCH_START":
+      return { ...state, loading: true, error: null };
+    case "FETCH_SUCCESS":
+      return { alerts: action.payload, loading: false, error: null };
+    case "FETCH_ERROR":
+      return { ...state, loading: false, error: action.payload };
+    case "PREPEND_ALERT":
+      if (state.alerts.some((a) => a.id === action.payload.id)) return state;
+      return { ...state, alerts: [action.payload, ...state.alerts] };
+    case "UPDATE_ALERT":
+      return {
+        ...state,
+        alerts: state.alerts.map((a) =>
+          a.id === action.payload.id ? action.payload : a,
+        ),
+      };
+  }
+}
+interface Props {
+  neighbourhoodId: string;
+}
+
+export default function AlertsPage({ neighbourhoodId }: Props) {
+  const [{ alerts, loading, error }, dispatch] = useReducer(
+    fetchReducer,
+    initialFetchState,
+  );
+  const [wsConnected, setWsConnected] = useState(false);
+
+  const [fetchTick, setFetchTick] = useState(0);
+
   const [selectedSeverities, setSelectedSeverities] = useState<
     Set<AlertSeverity>
   >(new Set(ALL_SEVERITIES));
@@ -59,17 +140,125 @@ export default function AlertsPage() {
     new Set(["NEW", "ACKNOWLEDGED"]),
   );
 
-  const handleAcknowledge = useCallback(async (id: string) => {
-    setAlerts((prev) =>
-      prev.map((a) =>
-        a.id === id ? { ...a, status: "ACKNOWLEDGED" as AlertStatus } : a,
-      ),
-    );
+  function triggerRefresh() {
+    dispatch({ type: "FETCH_START" });
+    setFetchTick((t) => t + 1);
+  }
+
+  const wsRef = useRef<WebSocket | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
-  function handleRefresh() {
-    setAlerts(MOCK_ALERTS);
-    setRefreshKey((k) => k + 1);
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetchAlerts(neighbourhoodId, controller.signal)
+      .then((data) => {
+        if (!mountedRef.current) return;
+        dispatch({ type: "FETCH_SUCCESS", payload: data });
+      })
+      .catch((err: unknown) => {
+        if (!mountedRef.current) return;
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        dispatch({
+          type: "FETCH_ERROR",
+          payload: err instanceof Error ? err.message : "Unknown error",
+        });
+      });
+
+    return () => controller.abort();
+  }, [neighbourhoodId, fetchTick]);
+
+  useEffect(() => {
+    const token = getAuthToken();
+    const url = `${WS_BASE}/alerts/${neighbourhoodId}/ws${token ? `?token=${token}` : ""}`;
+    let unmounted = false;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function connect() {
+      if (unmounted) return;
+
+      const ws = new WebSocket(url);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        if (mountedRef.current) setWsConnected(true);
+      };
+
+      ws.onclose = () => {
+        if (mountedRef.current) setWsConnected(false);
+        if (!unmounted) {
+          reconnectTimer = setTimeout(connect, 3_000);
+        }
+      };
+
+      ws.onerror = () => ws.close();
+
+      ws.onmessage = (e) => {
+        if (!mountedRef.current) return;
+        try {
+          const msg = JSON.parse(e.data as string) as {
+            event: string;
+            payload?: Record<string, unknown>;
+          };
+
+          if (msg.event === "ping") return;
+
+          if (msg.event === "alert.new" && msg.payload) {
+            dispatch({
+              type: "PREPEND_ALERT",
+              payload: normaliseAlert(msg.payload),
+            });
+          }
+
+          if (msg.event === "alert.acknowledged" && msg.payload) {
+            dispatch({
+              type: "UPDATE_ALERT",
+              payload: normaliseAlert(msg.payload),
+            });
+          }
+        } catch {
+          // Ignore
+        }
+      };
+    }
+
+    connect();
+
+    return () => {
+      unmounted = true;
+      if (reconnectTimer !== null) clearTimeout(reconnectTimer);
+      const ws = wsRef.current;
+      if (ws) {
+        ws.onclose = null;
+        ws.close();
+      }
+    };
+  }, [neighbourhoodId]);
+
+  async function handleAcknowledge(id: string) {
+    const original = alerts.find((a) => a.id === id);
+    if (!original) return;
+
+    dispatch({
+      type: "UPDATE_ALERT",
+      payload: { ...original, status: "ACKNOWLEDGED" },
+    });
+
+    try {
+      await acknowledgeAlert(id);
+    } catch (err) {
+      if (mountedRef.current) {
+        dispatch({ type: "UPDATE_ALERT", payload: original });
+      }
+      console.error("Acknowledge failed:", err);
+    }
   }
 
   const filtered = useMemo(
@@ -84,7 +273,6 @@ export default function AlertsPage() {
     [alerts, selectedSeverities, selectedStatuses],
   );
 
-  // active = user has deviated from the default (new + acknowledged, all severities)
   const hasActiveFilters =
     selectedSeverities.size < ALL_SEVERITIES.length ||
     !selectedStatuses.has("NEW") ||
@@ -97,13 +285,7 @@ export default function AlertsPage() {
   ).length;
 
   return (
-    // TooltipProvider wraps the tree because AlertCard uses Radix tooltips internally
     <TooltipProvider>
-      {/*
-        Using w-full + flex here so this page fills whatever space the parent layout
-        gives it (i.e. the content area to the right of the sidebar), rather than
-        trying to be min-h-screen and centering against the full viewport width.
-      */}
       <div
         className="w-full flex flex-col items-center px-8 py-10 bg-[#1D2A5E] min-h-full"
         style={{
@@ -112,9 +294,25 @@ export default function AlertsPage() {
       >
         <div className="w-full max-w-2xl">
           <header className="mb-6 text-center">
-            <h1 className="text-[32px] font-bold leading-10 text-white">
-              Alerts
-            </h1>
+            <div className="flex items-center justify-center gap-2">
+              <h1 className="text-[32px] font-bold leading-10 text-white">
+                Alerts
+              </h1>
+              <span
+                title={
+                  wsConnected
+                    ? "Live updates connected"
+                    : "Live updates disconnected"
+                }
+                aria-label={wsConnected ? "Live" : "Offline"}
+              >
+                {wsConnected ? (
+                  <Wifi className="h-4 w-4 text-[#16A34A] mt-1" />
+                ) : (
+                  <WifiOff className="h-4 w-4 text-white/30 mt-1" />
+                )}
+              </span>
+            </div>
 
             {(newCount > 0 || criticalCount > 0) && (
               <div
@@ -135,13 +333,8 @@ export default function AlertsPage() {
             )}
           </header>
 
-          {/*
-            rounded-2xl needs to be paired with overflow-hidden carefully — overflow-hidden
-            clips the corners but also clips box-shadows and focus rings on children.
-            Instead we let the card round its own corners and handle inner border-radius
-            on the toolbar/list sections manually.
-          */}
           <Card className="bg-[#2C3E6B]/40 border-[#2C3E6B] rounded-2xl">
+            {/* Toolbar */}
             <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#2C3E6B] rounded-t-2xl">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -233,21 +426,34 @@ export default function AlertsPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleRefresh}
+                onClick={triggerRefresh}
+                disabled={loading}
                 className="text-[#5B8DEF] hover:text-white hover:bg-[#2C3E6B] transition-colors text-xs"
                 aria-label="Refresh alerts"
               >
-                <RefreshCw key={refreshKey} className="h-3.5 w-3.5 mr-1.5" />
+                <RefreshCw
+                  className={`h-3.5 w-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`}
+                />
                 Refresh
               </Button>
             </div>
 
+            {/* Alert list */}
             <section
               aria-label="Alert list"
               aria-live="polite"
               className="p-4 rounded-b-2xl"
             >
-              {filtered.length === 0 ? (
+              {loading && alerts.length === 0 ? (
+                <div className="flex items-center justify-center py-20">
+                  <RefreshCw className="h-5 w-5 animate-spin text-[#5B8DEF]" />
+                </div>
+              ) : error ? (
+                <ErrorState
+                  message={error}
+                  onRetry={() => setFetchTick((t) => t + 1)}
+                />
+              ) : filtered.length === 0 ? (
                 <EmptyState />
               ) : (
                 <div className="space-y-3">
