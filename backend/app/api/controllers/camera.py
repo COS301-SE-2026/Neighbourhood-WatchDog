@@ -1,24 +1,30 @@
-from fastapi import APIRouter, Depends
-from app.schemas.camera import RegisterCameraReq, RegisterCameraRes, CamerasRes
-from app.services.camera_service import register_camera_handler, list_cameras_handler
-from app.auth.dependencies import get_current_user
-from app.core.database import DbSession
-from app.auth.rbac import require_role
+from pydantic import BaseModel
+from app.schemas.property import NonEmptyString
+from app.models.camera import CameraVisibilityEnum
+from uuid import UUID
+from datetime import datetime
 
-router = APIRouter(prefix="/camera", tags=["cameras"])
+class RegisterCameraReq(BaseModel):
+    rtsp_url: NonEmptyString
+    location: NonEmptyString
+    visibility: CameraVisibilityEnum
+    property_id: UUID
 
-@router.post("/register-camera")
-async def register_camera(req: RegisterCameraReq, db: DbSession, claims: dict = Depends(get_current_user)):
-    require_role(['Resident'])
-    new_camera = await register_camera_handler(req, db, claims)
+class CameraRes(BaseModel):
+    id: UUID
+    property_id: UUID
+    neighbourhood_id: UUID
+    visibility: CameraVisibilityEnum
+    location: NonEmptyString
+    rtsp_url: NonEmptyString
+    created_at: datetime
 
-    return RegisterCameraRes(
-        status=201,
-        message="Camera Created Successfully",
-        data=new_camera
-    )
+class RegisterCameraRes(BaseModel):
+    status: int
+    message: NonEmptyString | None = None
+    data: CameraRes | None = None
 
-@router.get("/property/{property_id}")
-async def get_property_cameras(property_id: str, db: DbSession, claims: dict = Depends(get_current_user)):
-    require_role(['Resident'])
-    return await list_cameras_handler(property_id, db, claims)
+class CamerasRes(BaseModel):
+    status: int
+    message: NonEmptyString | None = None
+    data: list[CameraRes] = []
