@@ -1,7 +1,13 @@
 /// <reference types="jest" />
 
-import { setSession, getAccessToken, logout, login, signUp } from "../../../frontend/src/lib/auth/cognito";
-jest.mock("amazon-cognito-identity-js");
+// Apply mock before importing the module under test so the mock is used during
+// module initialization (the code creates CognitoUserPool at module load).
+// Explicitly load the manual mock file so Jest uses it for the Cognito module
+jest.mock("amazon-cognito-identity-js", () => require("../../../frontend/__mocks__/amazon-cognito-identity-js.js"));
+// Require the module after mocking so the manual mock in __mocks__ is used
+const { setSession, getAccessToken, logout, login, signUp } = require("../../../frontend/src/lib/auth/cognito");
+
+
 //TEST SET SESSION
 describe("setSession", () => {
   beforeEach(() => {
@@ -56,6 +62,6 @@ test("signup returns created user", async () => {
     "Test User",
     "123 Main Street"
   );
-
-  expect(result).toBeDefined();
+  // The manual mock returns an object like { username: email }
+  expect(result).toHaveProperty('username', 'test@example.com');
 });

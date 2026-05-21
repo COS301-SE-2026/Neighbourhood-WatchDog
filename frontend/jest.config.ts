@@ -13,6 +13,13 @@ const config: Config = {
   coverageDirectory: '../tests/frontend/coverage',
   coverageProvider: 'v8',
 
+  // Include repo-level tests directory so Jest discovers tests placed outside
+  // the frontend package (e.g., /tests/frontend/...)
+  roots: ["<rootDir>/../tests/frontend", "<rootDir>/src"],
+
+  // Ensure modules can be resolved from the frontend package and the repository root
+  moduleDirectories: ["node_modules", "<rootDir>/node_modules", "<rootDir>/../node_modules"],
+
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
 
   transform: {
@@ -25,8 +32,9 @@ const config: Config = {
   },
 
   testMatch: [
-    '../tests/frontend/**/__tests__/**/*.test.[jt]s?(x)',
-    '../tests/frontend/**/?(*.)+(spec|test).[jt]s?(x)',
+    // '../tests/frontend/**/__tests__/**/*.test.[jt]s?(x)',
+    // '../tests/frontend/**/?(*.)+(spec|test).[jt]s?(x)',
+    "<rootDir>/../tests/frontend/**/*.test.ts",
   ],
 };
 
