@@ -13,6 +13,7 @@ import {
   FileText,
   Settings,
   ClipboardClock,
+  KeyRound,
 } from "lucide-react";
 
 import {
@@ -94,6 +95,11 @@ const NAV_ITEMS: NavItem[] = [
     id: "reports",
     label: "Reports",
     icon: <FileText className="h-4 w-4 shrink-0" />,
+  },
+  {
+    id: "joinNeighbourhood",
+    label: "Join Neighbourhood",
+    icon: <KeyRound className="h-4 w-4 shrink-0" />,
   },
   {
     id: "settings",
