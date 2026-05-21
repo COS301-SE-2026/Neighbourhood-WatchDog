@@ -9,6 +9,10 @@ const config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: "var(--font-inter, 'Inter', system-ui, -apple-system, sans-serif)",
+        mono: "var(--font-jetbrains-mono, 'JetBrains Mono', Consolas, monospace)",
+      },
       colors: {
         // Brand colors
         navy: "var(--color-navy)",

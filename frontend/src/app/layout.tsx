@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
+import { Inter, JetBrains_Mono } from "next/font/google";
+import { SidebarProvider } from "@/components/ui/sidebar"
+import HideSidebar from "@/components/hide-sidebar"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
 });
 
@@ -25,15 +26,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="min-h-full flex flex-col">
-        <SidebarProvider>
-          <AppSidebar />
-          <main className="flex-1 w-full">
-            <SidebarTrigger />
-            {children}
-          </main>
-        </SidebarProvider>
+    <html lang="en" className={`${jetbrainsMono.variable} ${inter.variable} h-full`}>
+      <body className="min-h-screen flex flex-col">
+        <TooltipProvider>
+          <SidebarProvider>
+             <HideSidebar /> {/*Check if the current layout is allowed to have a sidebar */}
+            <main className="flex-1 w-full">
+              {children}
+            </main>
+          </SidebarProvider>
+        </TooltipProvider>
       </body>
     </html>
   );

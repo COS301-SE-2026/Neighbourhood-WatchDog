@@ -3,7 +3,6 @@ from app.schemas.property import NonEmptyString
 from app.models.camera import CameraVisibilityEnum
 from uuid import UUID
 from datetime import datetime
-import re
 
 class RegisterCameraReq(BaseModel):
     rtsp_url: NonEmptyString

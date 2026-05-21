@@ -27,7 +27,7 @@ class GeospatialZone(Base):
         server_default=SensitivityLevel.MEDIUM.value
     )
 
-    neighbourhood = relationship("Neighbourhood", back_populates="zones")
+    neighbourhood = relationship("Neighbourhood", back_populates="zones", foreign_keys=[neighbourhood_id])
 
     
     
