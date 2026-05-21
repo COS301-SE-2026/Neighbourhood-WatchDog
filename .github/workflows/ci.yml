@@ -80,6 +80,9 @@ jobs:
       - name: Run frontend tests
         run: cd frontend && pnpm test
 
+      - name: Install E2E dependencies
+        run: cd tests/e2e && pnpm install
+
       - name: Run E2E tests
         run: cd tests/e2e && pnpm test
 
