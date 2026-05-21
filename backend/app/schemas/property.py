@@ -11,7 +11,7 @@ class CreatePropertyReq(BaseModel):
     property_type: PropertyTypeEnum
 
 class PropertyRes(BaseModel):
-    user_id: UUID
+    property_id: UUID
     neighbourhood_id: UUID | None
     address: NonEmptyString
     property_type: PropertyTypeEnum

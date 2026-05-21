@@ -12,7 +12,11 @@ import {
   Bell,
   FileText,
   Settings,
+  Plus,
 } from "lucide-react"
+
+import { CreatePropertyDialog } from "./create-property-dialogue"
+import { useEffect } from "react"
 
 import {
   Sidebar,
@@ -32,14 +36,9 @@ import {
 } from "@/components/ui/tooltip"
 
 import { cn } from "@/lib/utils"
+import { useProperties, type Property } from "@/hooks/use-properties"
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type Property = {
-  id: string
-  name: string
-  address: string
-}
+// Types
 
 type NavChild = {
   id: string
@@ -54,50 +53,12 @@ type NavItem = {
   children?: NavChild[]
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+// Data
 
 const USERNAME = "John Doe"
 
-const PROPERTIES: Property[] = [
-  { id: "p1", name: "Oakwood Estate",   address: "14 Oakwood Ave" },
-  { id: "p2", name: "Sunset Heights",  address: "7 Sunset Blvd"  },
-  { id: "p3", name: "Riverview Close", address: "3 Riverview Rd" },
-]
-
-/**
- * NAV_ITEMS drives every navigation tile in the sidebar.
- * To add a new tile: push a new entry here — no JSX changes needed.
- */
-const NAV_ITEMS: NavItem[] = [
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    icon: <LayoutDashboard className="h-4 w-4 shrink-0" />,
-    children: PROPERTIES.map((p) => ({
-      id: p.id,
-      label: p.name,
-      icon: <Home className="h-3.5 w-3.5 shrink-0" />,
-    })),
-  },
-  {
-    id: "alerts",
-    label: "Alerts",
-    icon: <Bell className="h-4 w-4 shrink-0" />,
-  },
-  {
-    id: "reports",
-    label: "Reports",
-    icon: <FileText className="h-4 w-4 shrink-0" />,
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    icon: <Settings className="h-4 w-4 shrink-0" />,
-  },
-]
-
-// ─── Logo ─────────────────────────────────────────────────────────────────────
-
+// Logo
+//TODO: Consider which logo we should use
 function WatchdogLogo({ size = 28 }: { size?: number }) {
   return (
     <svg
@@ -123,7 +84,7 @@ function WatchdogLogo({ size = 28 }: { size?: number }) {
   )
 }
 
-// ─── Pin Button ───────────────────────────────────────────────────────────────
+// Pin Button
 
 function PinToggle({
   pinned,
@@ -152,13 +113,13 @@ function PinToggle({
         </button>
       </TooltipTrigger>
       <TooltipContent side="right">
-        {pinned ? "Unpin — hover to expand" : "Pin sidebar open"}
+        {pinned ? "Unpin: hover to expand" : "Pin sidebar open"}
       </TooltipContent>
     </Tooltip>
   )
 }
 
-// ─── NavTile ──────────────────────────────────────────────────────────────────
+// NavTile
 
 function NavTile({
   item,
@@ -167,6 +128,7 @@ function NavTile({
   onSelect,
   onChildSelect,
   isExpanded,
+  onAddProperty, // TODO: if we decide to let the user add proeprties from elsewhere then we gotta remove this
 }: {
   item: NavItem
   activeItem: string | null
@@ -174,7 +136,9 @@ function NavTile({
   onSelect: (id: string) => void
   onChildSelect: (id: string) => void
   isExpanded: boolean
+  onAddProperty?: () => void
 }) {
+
   const isActive = activeItem === item.id
   const isOpen   = isActive && !!item.children
 
@@ -231,7 +195,7 @@ function NavTile({
                   "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-xs font-medium",
                   "transition-colors duration-100",
                   activeChild === child.id
-                    ? "bg-[#1D2A5E] text-white shadow-[inset_0_0_0_1px_rgba(91,141,239,0.25)]"
+                    ? "bg-navy text-white shadow-[inset_0_0_0_1px_rgba(91,141,239,0.25)]"
                     : "text-white/55 hover:bg-white/8 hover:text-white/90"
                 )}
               >
@@ -245,21 +209,74 @@ function NavTile({
               </button>
             </li>
           ))}
+          {item.id === "dashboard" && onAddProperty && (
+            <li>
+              <button
+                onClick={onAddProperty}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-xs font-medium",
+                  "transition-colors duration-100",
+                  "text-white/55 hover:bg-white/8 hover:text-white/90"
+                  //this is temporary: use the variables when we refactor the whole thing's CSS
+                )}
+              >
+                <span className="shrink-0 text-white/40">
+                  <Plus className="h-3.5 w-3.5" />
+                </span>
+                <span className="truncate">Add Property</span>
+              </button>
+            </li>
+          )}
         </ul>
       )}
     </SidebarMenuItem>
   )
 }
 
-// ─── AppSidebar ───────────────────────────────────────────────────────────────
+// AppSidebar
 
 export function AppSidebar() {
   const { state, setOpen } = useSidebar()
+  const { properties, addProperty } = useProperties()
 
   // pinned = sidebar is locked open; unpinned = hover-to-expand mode
   const [pinned, setPinned] = React.useState(true)
+  const [dialogOpen, setDialogOpen] = React.useState(false)
 
   const isExpanded = state === "expanded"
+
+  const NAV_ITEMS: NavItem[] = [
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      icon: <LayoutDashboard className="h-4 w-4 shrink-0" />,
+      children: properties.map((p) => ({
+        id: p.property_id,
+        label: p.address,
+        icon: <Home className="h-3.5 w-3.5 shrink-0" />,
+      })),
+    },
+    {
+      id: "alerts",
+      label: "Alerts",
+      icon: <Bell className="h-4 w-4 shrink-0" />,
+    },
+    {
+      id: "reports",
+      label: "Reports",
+      icon: <FileText className="h-4 w-4 shrink-0" />,
+    },
+    {
+      id: "settings",
+      label: "Settings",
+      icon: <Settings className="h-4 w-4 shrink-0" />,
+    },
+  ]
+
+  const handlePropertyAdded = (property: Property) => {
+    addProperty(property)
+    setDialogOpen(false)
+  }
 
   // When the user toggles the pin:
   // - Pinning: lock it open
@@ -301,7 +318,7 @@ export function AppSidebar() {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* ── Header ─────────────────────────────────────────────────────── */}
+      {/* Header */}
       <SidebarHeader className="px-3 py-3">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -311,7 +328,7 @@ export function AppSidebar() {
                 <WatchdogLogo size={28} />
               </div>
 
-              {/* Wordmark + pin — visible when expanded */}
+              {/* Wordmark + pin will be visible when bar i s expanded */}
               {isExpanded && (
                 <>
                   <div className="flex-1 min-w-0">
@@ -340,7 +357,7 @@ export function AppSidebar() {
         <div className="mt-3 h-px bg-white/10" />
       </SidebarHeader>
 
-      {/* ── Content ────────────────────────────────────────────────────── */}
+
       <SidebarContent className="px-2 py-2">
         <SidebarGroup>
           <SidebarMenu>
@@ -353,13 +370,19 @@ export function AppSidebar() {
                 onSelect={handleSelect}
                 onChildSelect={setActiveChild}
                 isExpanded={isExpanded}
+                onAddProperty={item.id === "dashboard" ? () => setDialogOpen(true) : undefined}
               />
             ))}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
 
-      {/* ── Footer ─────────────────────────────────────────────────────── */}
+      <CreatePropertyDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onPropertyAdded={handlePropertyAdded}
+      />
+
       <SidebarFooter className="px-3 py-3">
         <div className="h-px bg-white/10 mb-3" />
         <SidebarMenu>

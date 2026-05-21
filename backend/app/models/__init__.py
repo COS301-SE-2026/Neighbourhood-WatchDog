@@ -6,6 +6,7 @@ from app.models.detection_event import *
 from app.models.neighbourhood import *
 from app.models.neighbourhood_join_request import *
 from app.models.property import *
+from app.models.property_user import *
 from app.models.retention_policy import *
 from app.models.user_property import *
 from app.models.zone import *
