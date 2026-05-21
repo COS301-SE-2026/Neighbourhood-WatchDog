@@ -22,7 +22,7 @@ import { addProperty } from "@/lib/api/property"
 
 
 interface CreatePropertyDialogAttributes {
-open: boolean
+  open: boolean
   onOpenChange: (open: boolean) => void
   onPropertyAdded: (property: PropertyRes) => void
 }
