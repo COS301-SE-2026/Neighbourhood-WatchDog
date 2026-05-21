@@ -39,6 +39,7 @@ def annotated_mjpeg(rtsp_url: str):
         return
 
     frame_count = 0
+    alerted_ids = set()
     try:
         while True:
             ret, frame = cap.read()
@@ -64,12 +65,16 @@ def annotated_mjpeg(rtsp_url: str):
             for track in tracks:
                 if not track.is_confirmed():
                     continue
+                track_id = track.track_id
                 left, top, right, bottom = track.to_ltrb()
                 tracks_for_thumbnail.append({
                     "track_id": track.track_id,
                     "confidence": float(track.det_conf) if track.det_conf is not None else 0.0,
                     "bbox": [left, top, right, bottom],
                 })
+
+                if track_id not in alerted_ids and track.det_conf is not None:
+                    alerted_ids.add(track_id)
 
             annotated = annotate_frame(frame, tracks_for_thumbnail)
             jpeg_bytes = encode_frame_as_jpeg(annotated)
