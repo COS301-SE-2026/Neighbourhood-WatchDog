@@ -32,7 +32,7 @@ export default function Dashboard() {
     useEffect(() => {
         if (alerts.length === 0) return;
         const latest = alerts[0];
-        toast.warning("Human Detected", {
+        toast.error("Human Detected", {
             description: `Camera ${latest.camera_id} - Confidence: ${(latest.confidence! * 100).toFixed(0)}%`,
         });
     }, [alerts]);
