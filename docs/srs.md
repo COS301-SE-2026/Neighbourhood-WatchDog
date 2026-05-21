@@ -641,6 +641,8 @@ The quality requirements are derived directly from the non-functional requiremen
  
 ### Architectural Patterns
  
+ ![Architectural Diagram](images/Architecture Diagram.drawio.svg)
+
 #### Microservices Architecture
  
 Neighbourhood WatchDog is structured as a set of independently deployable microservices, each responsible for a single bounded context. The six primary subsystems — Video Ingestion, AI Detection, Alert Management, User and Access Control, the Monitoring Dashboard, and Data Storage — are deployed as separate containerised services. This allows each subsystem to be scaled, updated, and maintained independently without affecting the others. For example, AI detection workers can be scaled horizontally during high-traffic periods without redeploying the dashboard or authentication services.
