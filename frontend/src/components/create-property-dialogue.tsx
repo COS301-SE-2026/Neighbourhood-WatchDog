@@ -74,7 +74,7 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
       await addProperty(validatedCreateProp.data)
       onPropertyAdded(validatedCreateProp.data)
       onOpenChange(false)
-      e.currentTarget.reset()
+      e.currentTarget?.reset()
 
     } catch (error) {
 

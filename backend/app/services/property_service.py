@@ -7,7 +7,7 @@ from app.models.property_user import PropertyUser
 from sqlalchemy.exc import IntegrityError
 from uuid import UUID
 
-async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims: dict, db: DbSession) -> tuple[Property, UUID]:
+async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims: dict, db: DbSession) -> Property:
     
     if not addr or addr == "":
         raise HTTPException(400, "No address or empty address field.")
@@ -47,4 +47,4 @@ async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims
         db.rollback()
         raise HTTPException(500, "Failed to add to property database")
 
-    return new_property, user.id
+    return new_property

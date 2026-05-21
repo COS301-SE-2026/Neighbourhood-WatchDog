@@ -76,28 +76,28 @@ class TestCreatePropertyReq:
 class TestPropertyRes:
     def test_valid_property_response(self):
         """Test creating a valid response model"""
-        user_id = uuid4()
+        property_id = uuid4()
         neighbourhood_id = uuid4()
         now = datetime.now()
 
         model = PropertyRes(
-            user_id=user_id,
+            property_id=property_id,
             neighbourhood_id=neighbourhood_id,
             address="123 Main Street",
             property_type=PropertyTypeEnum.PRIVATE,
             created_at=now
         )
-        assert model.user_id == user_id
+        assert model.property_id == property_id
         assert model.address == "123 Main Street"
         assert model.property_type == PropertyTypeEnum.PRIVATE
 
     def test_neighbourhood_id_optional(self):
         """Test that neighbourhood_id is optional"""
-        user_id = uuid4()
+        property_id = uuid4()
         now = datetime.now()
 
         model = PropertyRes(
-            user_id=user_id,
+            property_id=property_id,
             neighbourhood_id=None,
             address="123 Main Street",
             property_type=PropertyTypeEnum.PUBLIC,
@@ -109,7 +109,7 @@ class TestPropertyRes:
         """Test missing required fields"""
         with pytest.raises(ValidationError):
             PropertyRes(
-                user_id=uuid4(),
+                property_id=uuid4(),
                 neighbourhood_id=uuid4(),
                 address="123 Main Street"
                 # Missing property_type and created_at
@@ -119,7 +119,7 @@ class TestPropertyRes:
         """Test that empty address raises ValidationError"""
         with pytest.raises(ValidationError):
             PropertyRes(
-                user_id=uuid4(),
+                property_id=uuid4(),
                 neighbourhood_id=None,
                 address="",
                 property_type=PropertyTypeEnum.PRIVATE,
@@ -130,7 +130,7 @@ class TestPropertyRes:
         """Test that whitespace-only address is stripped and rejected"""
         with pytest.raises(ValidationError):
             PropertyRes(
-                user_id=uuid4(),
+                property_id=uuid4(),
                 neighbourhood_id=None,
                 address="   ",
                 property_type=PropertyTypeEnum.PUBLIC,
@@ -141,12 +141,12 @@ class TestPropertyRes:
 class TestCreatePropertyRes:
     def test_with_data(self):
         """Test response with data"""
-        user_id = uuid4()
+        property_id = uuid4()
         neighbourhood_id = uuid4()
         now = datetime.now()
 
         data = PropertyRes(
-            user_id=user_id,
+            property_id=property_id,
             neighbourhood_id=neighbourhood_id,
             address="123 Main Street",
             property_type=PropertyTypeEnum.PRIVATE,
