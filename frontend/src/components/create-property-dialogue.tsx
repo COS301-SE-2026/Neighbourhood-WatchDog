@@ -78,7 +78,7 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-sm [font-family:var(--font-jetbrains-mono)]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
             {loading && <Spinner className="mr-2 h-4 w-4 animate-spin" />}
