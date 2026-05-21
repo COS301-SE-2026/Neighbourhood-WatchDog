@@ -112,7 +112,16 @@ function EmptyState() {
       role="status"
       aria-live="polite"
     >
-      <p className="text-[15px] font-semibold text-white/60">No alerts</p>
+      {/*
+        On a light background, use --color-body (muted navy-grey) for de-emphasised text.
+        --color-mist would be near-invisible on white; --color-body gives enough contrast.
+      */}
+      <p
+        className="text-[15px] font-semibold"
+        style={{ color: "var(--color-body)" }}
+      >
+        No alerts
+      </p>
     </div>
   );
 }
@@ -152,7 +161,6 @@ export default function AlertsPage() {
     [alerts, selectedSeverities, selectedStatuses],
   );
 
-  // active = user has deviated from the default (new + acknowledged, all severities)
   const hasActiveFilters =
     selectedSeverities.size < ALL_SEVERITIES.length ||
     !selectedStatuses.has("NEW") ||
@@ -165,22 +173,26 @@ export default function AlertsPage() {
   ).length;
 
   return (
-    // TooltipProvider wraps the tree because AlertCard uses Radix tooltips internally
     <TooltipProvider>
       {/*
-        Using w-full + flex here so this page fills whatever space the parent layout
-        gives it (i.e. the content area to the right of the sidebar), rather than
-        trying to be min-h-screen and centering against the full viewport width.
+        Page surface: --color-fog (#F4F6FA) — the spec's light alternate surface.
+        This is the dominant (60%) background on light-mode pages.
+        font-sans resolves to var(--font-sans) via global.css @theme inline.
       */}
       <div
-        className="w-full flex flex-col items-center px-8 py-10 bg-[#1D2A5E] min-h-full"
-        style={{
-          fontFamily: "var(--font-sans, 'Inter', system-ui, sans-serif)",
-        }}
+        className="w-full flex flex-col items-center px-8 py-10 min-h-full font-sans"
+        style={{ backgroundColor: "var(--color-fog)" }}
       >
         <div className="w-full max-w-2xl">
           <header className="mb-6 text-center">
-            <h1 className="text-[32px] font-bold leading-10 text-white">
+            {/*
+              heading-1: 32px / Bold 700.
+              --color-navy on --color-fog: ≥ 8:1 contrast (same ratio as white-on-navy).
+            */}
+            <h1
+              className="text-[32px] font-bold leading-10"
+              style={{ color: "var(--color-navy)" }}
+            >
               Alerts
             </h1>
 
@@ -190,12 +202,34 @@ export default function AlertsPage() {
                 aria-live="polite"
               >
                 {newCount > 0 && (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold bg-[#3B5EDE]/20 border border-[#3B5EDE]/30 rounded-full px-3 py-1 text-[#5B8DEF]">
+                  /*
+                    "New" informational badge: --color-blue tint bg, --color-blue text.
+                    --color-blue on white-ish fog meets ≥ 4.5:1 for small text.
+                  */
+                  <span
+                    className="inline-flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1"
+                    style={{
+                      backgroundColor: "color-mix(in srgb, var(--color-blue) 12%, transparent)",
+                      border: "1px solid color-mix(in srgb, var(--color-blue) 25%, transparent)",
+                      color: "var(--color-blue)",
+                    }}
+                  >
                     {newCount} new
                   </span>
                 )}
                 {criticalCount > 0 && (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold bg-[#DC2626]/20 border border-[#DC2626]/30 rounded-full px-3 py-1 text-[#DC2626]">
+                  /*
+                    Critical badge: --color-threat tint bg, --color-threat text.
+                    Solid threat red on light bg comfortably exceeds 4.5:1.
+                  */
+                  <span
+                    className="inline-flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1"
+                    style={{
+                      backgroundColor: "color-mix(in srgb, var(--color-threat) 12%, transparent)",
+                      border: "1px solid color-mix(in srgb, var(--color-threat) 25%, transparent)",
+                      color: "var(--color-threat)",
+                    }}
+                  >
                     {criticalCount} critical
                   </span>
                 )}
@@ -204,48 +238,89 @@ export default function AlertsPage() {
           </header>
 
           {/*
-            rounded-2xl needs to be paired with overflow-hidden carefully — overflow-hidden
-            clips the corners but also clips box-shadows and focus rings on children.
-            Instead we let the card round its own corners and handle inner border-radius
-            on the toolbar/list sections manually.
+            Card: white surface (--color-white) so it lifts off the fog background.
+            Border: --color-mist (#D0D7E8) — the spec's border/divider token.
+            shadow-sm adds subtle lift per the elevation spec.
           */}
-          <Card className="bg-[#2C3E6B]/40 border-[#2C3E6B] rounded-2xl">
-            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#2C3E6B] rounded-t-2xl">
+          <Card
+            className="rounded-2xl"
+            style={{
+              backgroundColor: "var(--color-white)",
+              borderColor: "var(--color-mist)",
+              boxShadow: "var(--shadow-sm)",
+            }}
+          >
+            {/* Toolbar row */}
+            <div
+              className="flex items-center justify-between gap-3 px-5 py-4 rounded-t-2xl"
+              style={{ borderBottom: "1px solid var(--color-mist)" }}
+            >
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
                     size="sm"
-                    className={[
-                      "border-[#2C3E6B] bg-transparent text-[#D0D7E8] hover:bg-[#2C3E6B] hover:text-white transition-colors text-xs font-medium",
-                      hasActiveFilters
-                        ? "border-[#3B5EDE]/60 text-[#5B8DEF]"
-                        : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
+                    className="text-xs font-medium transition-colors"
+                    style={{
+                      /*
+                        Default: --color-mist border, --color-body text (readable on white).
+                        Active: --color-blue border + text to signal filter is on.
+                      */
+                      borderColor: hasActiveFilters
+                        ? "var(--color-blue)"
+                        : "var(--color-mist)",
+                      backgroundColor: "transparent",
+                      color: hasActiveFilters
+                        ? "var(--color-blue)"
+                        : "var(--color-body)",
+                    }}
                     aria-label="Open filter options"
                   >
                     <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
                     Filter
                     {hasActiveFilters && (
-                      <span className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#3B5EDE] text-[9px] font-bold text-white">
+                      /*
+                        Active-filter pip: --color-blue fill, white label.
+                        White on --color-blue ≥ 4.5:1 per spec contrast table.
+                      */
+                      <span
+                        className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"
+                        style={{
+                          backgroundColor: "var(--color-blue)",
+                          color: "var(--color-white)",
+                        }}
+                      >
                         !
                       </span>
                     )}
                   </Button>
                 </DropdownMenuTrigger>
+
+                {/*
+                  Dropdown: white bg, mist border, ink text.
+                  The dropdown sits above the light page so it stays white (not navy).
+                */}
                 <DropdownMenuContent
                   align="start"
-                  className="w-52 bg-[#1D2A5E] border-[#2C3E6B] text-white"
+                  className="w-52"
+                  style={{
+                    backgroundColor: "var(--color-white)",
+                    borderColor: "var(--color-mist)",
+                    color: "var(--color-ink)",
+                  }}
                 >
-                  <DropdownMenuLabel className="text-[#D0D7E8]/60 text-[10px] uppercase tracking-wider">
+                  {/* Section label: caption-weight, --color-body for subdued tone */}
+                  <DropdownMenuLabel
+                    className="text-[10px] uppercase tracking-wider"
+                    style={{ color: "var(--color-body)" }}
+                  >
                     Severity
                   </DropdownMenuLabel>
                   {ALL_SEVERITIES.map((sev) => (
                     <DropdownMenuCheckboxItem
                       key={sev}
-                      className="text-sm text-white focus:bg-[#2C3E6B] focus:text-white cursor-pointer"
+                      className="text-sm cursor-pointer"
+                      style={{ color: "var(--color-ink)" }}
                       checked={selectedSeverities.has(sev)}
                       onCheckedChange={(checked) => {
                         setSelectedSeverities((prev) => {
@@ -259,15 +334,21 @@ export default function AlertsPage() {
                     </DropdownMenuCheckboxItem>
                   ))}
 
-                  <DropdownMenuSeparator className="bg-[#2C3E6B]" />
+                  <DropdownMenuSeparator
+                    style={{ backgroundColor: "var(--color-mist)" }}
+                  />
 
-                  <DropdownMenuLabel className="text-[#D0D7E8]/60 text-[10px] uppercase tracking-wider">
+                  <DropdownMenuLabel
+                    className="text-[10px] uppercase tracking-wider"
+                    style={{ color: "var(--color-body)" }}
+                  >
                     Status
                   </DropdownMenuLabel>
                   {ALL_STATUSES.map((st) => (
                     <DropdownMenuCheckboxItem
                       key={st}
-                      className="text-sm text-white focus:bg-[#2C3E6B] focus:text-white cursor-pointer"
+                      className="text-sm cursor-pointer"
+                      style={{ color: "var(--color-ink)" }}
                       checked={selectedStatuses.has(st)}
                       onCheckedChange={(checked) => {
                         setSelectedStatuses((prev) => {
@@ -283,13 +364,23 @@ export default function AlertsPage() {
 
                   {hasActiveFilters && (
                     <>
-                      <DropdownMenuSeparator className="bg-[#2C3E6B]" />
+                      <DropdownMenuSeparator
+                        style={{ backgroundColor: "var(--color-mist)" }}
+                      />
+                      {/* Ghost: --color-blue text, no border — readable on white */}
                       <button
                         onClick={() => {
                           setSelectedSeverities(new Set(ALL_SEVERITIES));
                           setSelectedStatuses(new Set(["NEW", "ACKNOWLEDGED"]));
                         }}
-                        className="w-full text-left px-2 py-1.5 text-xs text-[#5B8DEF] hover:text-white transition-colors"
+                        className="w-full text-left px-2 py-1.5 text-xs transition-colors"
+                        style={{ color: "var(--color-blue)" }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.color = "var(--color-navy)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.color = "var(--color-blue)")
+                        }
                       >
                         Clear all filters
                       </button>
@@ -298,11 +389,16 @@ export default function AlertsPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/*
+                Ghost refresh button: --color-blue text on white card.
+                Hover darkens to --color-navy, staying within the brand palette.
+              */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleRefresh}
-                className="text-[#5B8DEF] hover:text-white hover:bg-[#2C3E6B] transition-colors text-xs"
+                className="text-xs transition-colors"
+                style={{ color: "var(--color-blue)" }}
                 aria-label="Refresh alerts"
               >
                 <RefreshCw key={refreshKey} className="h-3.5 w-3.5 mr-1.5" />
