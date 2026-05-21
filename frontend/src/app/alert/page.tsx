@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   AlertCard,
   type Alert,
@@ -23,6 +24,7 @@ import { SlidersHorizontal, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import {
   fetchAlerts,
   acknowledgeAlert,
+  fetchCurrentUser,
   normaliseAlert,
   getAuthToken,
   WS_BASE,
@@ -81,6 +83,31 @@ function ErrorState({
   );
 }
 
+function ActionErrorBanner({
+  message,
+  onDismiss,
+}: {
+  message: string;
+  onDismiss: () => void;
+}) {
+  return (
+    <div
+      role="alert"
+      className="mb-4 flex items-center gap-2 rounded-lg border border-[#DC2626]/30 bg-[#DC2626]/10 px-4 py-3 text-sm text-[#DC2626]"
+    >
+      <span className="flex-1">{message}</span>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Dismiss error"
+        className="ml-2 text-[#DC2626]/60 hover:text-[#DC2626] transition-colors"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
 type FetchState = {
   alerts: Alert[];
   loading: boolean;
@@ -121,14 +148,27 @@ function fetchReducer(state: FetchState, action: FetchAction): FetchState {
   }
 }
 interface Props {
-  neighbourhoodId: string;
+  neighbourhoodId?: string;
 }
 
-export default function AlertsPage({ neighbourhoodId }: Props) {
+export default function AlertsPage({
+  neighbourhoodId: initialNeighbourhoodId,
+}: Props) {
   const [{ alerts, loading, error }, dispatch] = useReducer(
     fetchReducer,
     initialFetchState,
   );
+  const searchParams = useSearchParams();
+  const queryNeighbourhoodId =
+    searchParams.get("neighbourhoodId") || searchParams.get("neighbourhood_id");
+  const [neighbourhoodId, setNeighbourhoodId] = useState<string | null>(
+    initialNeighbourhoodId ?? queryNeighbourhoodId ?? null,
+  );
+  const [identityLoading, setIdentityLoading] = useState(
+    !initialNeighbourhoodId && !queryNeighbourhoodId,
+  );
+  const [identityError, setIdentityError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
 
   const [fetchTick, setFetchTick] = useState(0);
@@ -156,6 +196,45 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
   }, []);
 
   useEffect(() => {
+    if (initialNeighbourhoodId || queryNeighbourhoodId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    fetchCurrentUser()
+      .then((user) => {
+        if (cancelled) return;
+
+        if (user.neighbourhood_id) {
+          setNeighbourhoodId(user.neighbourhood_id);
+          setIdentityError(null);
+        } else {
+          setNeighbourhoodId(null);
+          setIdentityError(
+            "No neighbourhood is associated with the current user yet.",
+          );
+        }
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setNeighbourhoodId(null);
+        setIdentityError(
+          err instanceof Error ? err.message : "Failed to load current user.",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setIdentityLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialNeighbourhoodId, queryNeighbourhoodId]);
+
+  useEffect(() => {
+    if (!neighbourhoodId) return;
+
     const controller = new AbortController();
 
     fetchAlerts(neighbourhoodId, controller.signal)
@@ -176,6 +255,8 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
   }, [neighbourhoodId, fetchTick]);
 
   useEffect(() => {
+    if (!neighbourhoodId) return;
+
     const token = getAuthToken();
     const url = `${WS_BASE}/alerts/${neighbourhoodId}/ws${token ? `?token=${token}` : ""}`;
     let unmounted = false;
@@ -244,8 +325,9 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
 
   async function handleAcknowledge(id: string) {
     const original = alerts.find((a) => a.id === id);
-    if (!original) return;
+    if (!original || original.status !== "NEW") return;
 
+    setActionError(null);
     dispatch({
       type: "UPDATE_ALERT",
       payload: { ...original, status: "ACKNOWLEDGED" },
@@ -256,6 +338,9 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
     } catch (err) {
       if (mountedRef.current) {
         dispatch({ type: "UPDATE_ALERT", payload: original });
+        setActionError(
+          err instanceof Error ? err.message : "Failed to acknowledge alert.",
+        );
       }
       console.error("Acknowledge failed:", err);
     }
@@ -284,14 +369,38 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
     (a) => getSeverity(a.detection_type) === "CRITICAL" && a.status === "NEW",
   ).length;
 
+  if (identityLoading) {
+    return (
+      <TooltipProvider>
+        <div className="w-full min-h-full flex items-center justify-center px-8 py-10 bg-[#1D2A5E] text-white/70">
+          <div className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4 animate-spin text-[#5B8DEF]" />
+            Resolving neighbourhood context...
+          </div>
+        </div>
+      </TooltipProvider>
+    );
+  }
+
+  if (!neighbourhoodId) {
+    return (
+      <TooltipProvider>
+        <div className="w-full min-h-full flex items-center justify-center px-8 py-10 bg-[#1D2A5E] text-center">
+          <Card className="max-w-md bg-[#2C3E6B]/40 border-[#2C3E6B] rounded-2xl p-6 text-white">
+            <p className="text-lg font-semibold">Alerts need a neighbourhood</p>
+            <p className="mt-2 text-sm text-white/60">
+              {identityError ||
+                "Open this page with a neighbourhood ID, or sign in to a user that already belongs to one."}
+            </p>
+          </Card>
+        </div>
+      </TooltipProvider>
+    );
+  }
+
   return (
     <TooltipProvider>
-      <div
-        className="w-full flex flex-col items-center px-8 py-10 bg-[#1D2A5E] min-h-full"
-        style={{
-          fontFamily: "var(--font-sans, 'Inter', system-ui, sans-serif)",
-        }}
-      >
+      <div className="w-full flex flex-col items-center px-8 py-10 bg-[#1D2A5E] min-h-full font-sans">
         <div className="w-full max-w-2xl">
           <header className="mb-6 text-center">
             <div className="flex items-center justify-center gap-2">
@@ -332,6 +441,13 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
               </div>
             )}
           </header>
+
+          {actionError && (
+            <ActionErrorBanner
+              message={actionError}
+              onDismiss={() => setActionError(null)}
+            />
+          )}
 
           <Card className="bg-[#2C3E6B]/40 border-[#2C3E6B] rounded-2xl">
             {/* Toolbar */}
@@ -375,7 +491,11 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
                       onCheckedChange={(checked) => {
                         setSelectedSeverities((prev) => {
                           const next = new Set(prev);
-                          checked ? next.add(sev) : next.delete(sev);
+                          if (checked) {
+                            next.add(sev);
+                          } else {
+                            next.delete(sev);
+                          }
                           return next;
                         });
                       }}
@@ -397,7 +517,11 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
                       onCheckedChange={(checked) => {
                         setSelectedStatuses((prev) => {
                           const next = new Set(prev);
-                          checked ? next.add(st) : next.delete(st);
+                          if (checked) {
+                            next.add(st);
+                          } else {
+                            next.delete(st);
+                          }
                           return next;
                         });
                       }}
