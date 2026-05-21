@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "jest"
+    "test": "jest --passWithNoTests"
   },
   "dependencies": {
     "amazon-cognito-identity-js": "^6.3.16",

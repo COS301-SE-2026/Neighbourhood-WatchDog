@@ -13,7 +13,6 @@ export function useCameras(initialCameras: Camera[] = []) {
     try {
       const newCamera = await apiAddCamera(data)
       setCameras(prev => [...prev, newCamera])
-      return newCamera
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to add camera'
       setError(message)

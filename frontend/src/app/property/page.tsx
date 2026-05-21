@@ -4,17 +4,16 @@ import { InfoCard } from "@/components/info-card";
 import { ListCard } from "@/components/list-card";
 import { AddCameraDialogBox } from "@/components/add-camera-dialogue";
 import { useCameras } from "@/hooks/use-camera";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { getPropertyDetails } from "@/lib/api/property";
 import { PropertyDetailedRes } from "@/lib/validators/property";
 import { CreateNeighbourhoodDialog } from "@/components/create-neighbourhood-dialog";
 import { NeighbourhoodRes } from "@/lib/validators/neighbourhood";
 
-
 const PROPERTY_ID = "30000000-0000-0000-0000-000000000001" // TODO: Get from URL params or props
 
-export default function PropertyPage(){
+function PropertyPageContent(){
   const searchParams = useSearchParams()
   const propertyId = searchParams.get("id") 
 
@@ -123,5 +122,13 @@ export default function PropertyPage(){
         
       />
     </>
+  )
+}
+
+export default function PropertyPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Loading...</div>}>
+      <PropertyPageContent />
+    </Suspense>
   )
 }
