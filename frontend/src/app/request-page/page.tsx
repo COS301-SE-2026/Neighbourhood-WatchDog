@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import {
   RequestCard,
   type JoinRequest,
@@ -8,7 +15,12 @@ import {
 } from "@/components/shared/RequestCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw, AlertCircle } from "lucide-react";
+import {
+  fetchJoinRequests,
+  resolveJoinRequest,
+  ApiError,
+} from "@/lib/api/neighbourhoodJoin";
 
 const ALL_STATUSES: JoinRequestStatus[] = ["PENDING", "APPROVED", "DENIED"];
 
@@ -36,47 +48,124 @@ function EmptyState({ filter }: { filter: FilterValue }) {
   );
 }
 
+function ErrorBanner({
+  message,
+  onDismiss,
+}: {
+  message: string;
+  onDismiss: () => void;
+}) {
+  return (
+    <div
+      role="alert"
+      className="flex items-center gap-2 rounded-lg border border-[#DC2626]/30 bg-[#DC2626]/10 px-4 py-3 text-sm text-[#DC2626] mb-4"
+    >
+      <AlertCircle className="h-4 w-4 shrink-0" />
+      <span className="flex-1">{message}</span>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Dismiss error"
+        className="ml-2 text-[#DC2626]/60 hover:text-[#DC2626] transition-colors"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
+type FetchState = {
+  requests: JoinRequest[];
+  loading: boolean;
+  error: string | null;
+};
+
+type FetchAction =
+  | { type: "FETCH_START" }
+  | { type: "FETCH_SUCCESS"; payload: JoinRequest[] }
+  | { type: "FETCH_ERROR"; payload: string }
+  | { type: "DISMISS_ERROR" }
+  | { type: "UPDATE_REQUEST"; payload: JoinRequest };
+
+const initialFetchState: FetchState = {
+  requests: [],
+  loading: true,
+  error: null,
+};
+
+function fetchReducer(state: FetchState, action: FetchAction): FetchState {
+  switch (action.type) {
+    case "FETCH_START":
+      return { ...state, loading: true, error: null };
+    case "FETCH_SUCCESS":
+      return { requests: action.payload, loading: false, error: null };
+    case "FETCH_ERROR":
+      return { ...state, loading: false, error: action.payload };
+    case "DISMISS_ERROR":
+      return { ...state, error: null };
+    case "UPDATE_REQUEST":
+      return {
+        ...state,
+        requests: state.requests.map((r) =>
+          r.id === action.payload.id ? { ...r, ...action.payload } : r,
+        ),
+      };
+  }
+}
+
 export default function JoinRequestsPage() {
-  const [requests, setRequests] = useState<JoinRequest[]>(MOCK_REQUESTS);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [{ requests, loading, error }, dispatch] = useReducer(
+    fetchReducer,
+    initialFetchState,
+  );
   const [activeFilter, setActiveFilter] = useState<FilterValue>("PENDING");
 
+  // Incrementing this triggers a re-fetch without needing a stable callback ref.
+  const [fetchTick, setFetchTick] = useState(0);
+
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    dispatch({ type: "FETCH_START" });
+
+    fetchJoinRequests(controller.signal)
+      .then((data) => {
+        if (!mountedRef.current) return;
+        dispatch({ type: "FETCH_SUCCESS", payload: data });
+      })
+      .catch((err: unknown) => {
+        if (!mountedRef.current) return;
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        const message =
+          err instanceof ApiError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : "Failed to load join requests.";
+        dispatch({ type: "FETCH_ERROR", payload: message });
+      });
+
+    return () => controller.abort();
+  }, [fetchTick]);
+
   const handleApprove = useCallback(async (id: string) => {
-    // Simulate network latency
-    await new Promise((res) => setTimeout(res, 900));
-    setRequests((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              status: "APPROVED" as JoinRequestStatus,
-              resolved_at: new Date().toISOString(),
-            }
-          : r,
-      ),
-    );
+    const updated = await resolveJoinRequest(id, "APPROVE");
+    dispatch({ type: "UPDATE_REQUEST", payload: updated });
   }, []);
 
   const handleDeny = useCallback(async (id: string) => {
-    await new Promise((res) => setTimeout(res, 900));
-    setRequests((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              status: "DENIED" as JoinRequestStatus,
-              resolved_at: new Date().toISOString(),
-            }
-          : r,
-      ),
-    );
+    const updated = await resolveJoinRequest(id, "DENY");
+    dispatch({ type: "UPDATE_REQUEST", payload: updated });
   }, []);
-
-  function handleRefresh() {
-    setRequests(MOCK_REQUESTS);
-    setRefreshKey((k) => k + 1);
-    setActiveFilter("PENDING");
-  }
 
   const filtered = useMemo(
     () =>
@@ -113,6 +202,13 @@ export default function JoinRequestsPage() {
           )}
         </header>
 
+        {error && (
+          <ErrorBanner
+            message={error}
+            onDismiss={() => dispatch({ type: "DISMISS_ERROR" })}
+          />
+        )}
+
         <Card className="bg-[#2C3E6B]/40 border-[#2C3E6B] rounded-2xl">
           {/* Toolbar */}
           <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#2C3E6B] rounded-t-2xl">
@@ -143,11 +239,16 @@ export default function JoinRequestsPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleRefresh}
+              onClick={() => setFetchTick((t) => t + 1)}
+              disabled={loading}
               className="text-[#5B8DEF] hover:text-white hover:bg-[#2C3E6B] transition-colors text-xs"
               aria-label="Refresh requests"
             >
-              <RefreshCw key={refreshKey} className="h-3.5 w-3.5 mr-1.5" />
+              {loading ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              )}
               Refresh
             </Button>
           </div>
@@ -158,7 +259,11 @@ export default function JoinRequestsPage() {
             aria-live="polite"
             className="p-4 rounded-b-2xl"
           >
-            {filtered.length === 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="h-6 w-6 animate-spin text-[#5B8DEF]" />
+              </div>
+            ) : filtered.length === 0 ? (
               <EmptyState filter={activeFilter} />
             ) : (
               <div className="space-y-2.5">
