@@ -85,7 +85,7 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
             created_at=new_camera.created_at
         )
 
-    except IntegrityError as ie:
+    except IntegrityError:
         db.rollback()
         raise HTTPException(500, "Could not register camera")
     except HTTPException as he:

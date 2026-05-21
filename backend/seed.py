@@ -121,11 +121,11 @@ def seed_database():
         #commit all changes
         db.commit()
         print("\nDatabase seeded successfully!")
-        print(f"\nTest Credentials:")
-        print(f"  Email: testuser@example.com")
-        print(f"  Cognito Sub: 00000000-0000-0000-0000-000000000001")
-        print(f"  Neighbourhood: Test Neighbourhood")
-        print(f"  Property Address: 123 Test Street")
+        print("\nTest Credentials:")
+        print("Email: testuser@example.com")
+        print("Cognito Sub: 00000000-0000-0000-0000-000000000001")
+        print("Neighbourhood: Test Neighbourhood")
+        print("Property Address: 123 Test Street")
 
     except Exception as e:
         db.rollback()

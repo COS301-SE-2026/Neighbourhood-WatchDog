@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Query, WebSocket
 
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
-from app.schemas.alert import AcknowledgeAlertRes, AlertRes, ListAlertsRes
+from app.schemas.alert import AcknowledgeAlertRes, ListAlertsRes
 from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
@@ -80,11 +80,11 @@ async def alert_websocket(
 ):
     _ = token  # TODO: verify real Cognito token when auth is live
 
-    claims = {
-        "sub": "mock-websocket-user",
-        "custom:role": "RESIDENT",
-        "custom:neighbourhood_id": str(neighbourhood_id),
-    }
+    # claims = {
+    #     "sub": "mock-websocket-user",
+    #     "custom:role": "RESIDENT",
+    #     "custom:neighbourhood_id": str(neighbourhood_id),
+    # }
 
     await websocket.accept()
     register_connection(str(neighbourhood_id), websocket)

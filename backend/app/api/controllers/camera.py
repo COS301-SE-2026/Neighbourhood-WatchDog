@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from app.schemas.camera import RegisterCameraReq, RegisterCameraRes
 from app.services.camera_service import register_camera_handler
 from app.auth.dependencies import get_current_user

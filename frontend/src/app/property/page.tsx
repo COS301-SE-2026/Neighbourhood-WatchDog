@@ -20,7 +20,7 @@ export default function PropertyPage(){
 
   const [neighbourhoodDialogOpen, setNeighbourhoodDialogOpen] = useState(false);
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false)
-  const { cameras, addCamera, deleteCamera } = useCameras([])
+  const { addCamera, deleteCamera } = useCameras([])
   const [propertyData, setPropertyData] = useState<PropertyDetailedRes | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -57,9 +57,9 @@ export default function PropertyPage(){
 
       <ListCard
         title="Property Members"
-          items={propertyData.users.map((u: any) => ({
+          items={propertyData.users.map((u: { id: string; email: string; first_name?: string | null; last_name?: string | null }) => ({
             id: u.id,
-            name: `${u.first_name} ${u.last_name}`,
+            name: `${u.first_name || ''} ${u.last_name || ''}`.trim(),
           }))}
         onAdd={() => console.log("Add member")}
         onDelete={(id) => console.log("Delete", id)}
@@ -105,7 +105,7 @@ export default function PropertyPage(){
       <ListCard
 
           title="Cameras"
-          items={propertyData.cameras.map((c: any) => ({
+          items={propertyData.cameras.map((c: { id: string; location: string }) => ({
             id: c.id,
             name: c.location,
           }))}

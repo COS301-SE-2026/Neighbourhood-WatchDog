@@ -37,6 +37,7 @@ services:
     build:
       context: ./backend
       target: development
+    platform: linux/amd64
     ports:
       - "8000:8000"
     environment:
@@ -77,6 +78,7 @@ services:
     build:
       context: ./ai
       target: development
+    platform: linux/amd64
     ports:
       - "8001:8001"
     environment:
