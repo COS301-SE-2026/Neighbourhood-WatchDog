@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from app.models.alert import Alert
 from app.models.detection_event import DetectionEvent
 from app.schemas.alert import AlertCreate
+from fastapi import HTTPException
 
 
 async def create_alert(db: Session, data: AlertCreate):
@@ -29,4 +30,4 @@ async def create_alert(db: Session, data: AlertCreate):
         return alert
     except Exception as e:
         db.rollback()
-        raise e
+        raise HTTPException(status_code=500, detail=f"Failed to create alert: {str(e)}")
