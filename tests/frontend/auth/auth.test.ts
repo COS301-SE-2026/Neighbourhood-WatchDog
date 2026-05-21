@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 
-import { setSession, getAccessToken, logout, login } from "../../../frontend/src/lib/auth/cognito";
+import { setSession, getAccessToken, logout, login, signUp } from "../../../frontend/src/lib/auth/cognito";
 jest.mock("amazon-cognito-identity-js");
 //TEST SET SESSION
 describe("setSession", () => {
@@ -47,4 +47,15 @@ test("login returns access and id tokens", async () => {
     accessToken: "mock-access-token",
     idToken: "mock-id-token",
   });
+});
+
+test("signup returns created user", async () => {
+  const result = await signUp(
+    "test@example.com",
+    "Password123!",
+    "Test User",
+    "123 Main Street"
+  );
+
+  expect(result).toBeDefined();
 });
