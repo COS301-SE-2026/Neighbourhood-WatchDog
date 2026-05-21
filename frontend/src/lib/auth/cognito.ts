@@ -12,3 +12,12 @@ const poolData = {
 };
 
 export const userPool = new CognitoUserPool(poolData);
+
+export const signUp = (email: string, password: string) => {
+  return new Promise((resolve, reject) => {
+    userPool.signUp(email, password, [], [], (err, result) => {
+      if (err) return reject(err);
+      resolve(result?.user);
+    });
+  });
+};
