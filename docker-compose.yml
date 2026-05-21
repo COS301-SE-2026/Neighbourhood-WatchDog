@@ -66,11 +66,25 @@ services:
       - "3000:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_AI_URL: http://localhost:8001
     volumes:
       - ./frontend:/app
       - /app/node_modules
     depends_on:
       - backend
+
+  ai:
+    build:
+      context: ./ai
+      target: development
+    ports:
+      - "8001:8001"
+    environment:
+      OPENCV_FFMPEG_CAPTURE_OPTIONS: "rtsp_transport;tcp"
+      BACKEND_URL: http://backend:8000
+    volumes:
+      - ./ai:/app
+    command: uvicorn app:app --host 0.0.0.0 --port 8001 --reload
 
 volumes:
   postgres_data:

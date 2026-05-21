@@ -11,8 +11,8 @@ interface CameraCardProps {
 }
 
 export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
-    const streamUrl = rtspUrl ? `http://localhost:8001/stream?url=${encodeURIComponent(rtspUrl)}` : null;
-    const streamHealthUrl = rtspUrl ? `http://localhost:8001/stream/health?url=${encodeURIComponent(rtspUrl)}` : null
+    const streamUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream?url=${encodeURIComponent(rtspUrl)}` : null;
+    const streamHealthUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream/health?url=${encodeURIComponent(rtspUrl)}` : null;
     const [streamHealth, setStreamHealth] = useState<{ url: string | null; available: boolean; error: boolean }>({
         url: null,
         available: false,
