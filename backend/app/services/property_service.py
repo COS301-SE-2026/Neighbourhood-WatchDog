@@ -4,9 +4,11 @@ from sqlalchemy import select
 from app.models.user import User
 from app.models.property import Property, PropertyTypeEnum
 from app.models.property_user import PropertyUser
+from app.models.camera import Camera
+from app.models.neighbourhood import Neighbourhood
 from sqlalchemy.exc import IntegrityError
-from uuid import UUID
 from typing import List
+from uuid import UUID
 
 async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims: dict, db: DbSession) -> Property:
     
@@ -75,3 +77,72 @@ async def get_user_properties_handler(claims: dict, db: DbSession) -> List[Prope
         raise
     except Exception as e:
         raise HTTPException(500, f"Failed to fetch properties: {str(e)}")
+    
+async def get_property_details_handler(property_id: UUID, db: DbSession):
+    """gets all the details for the property page"""
+
+    if not property_id:
+        raise HTTPException(400, "No property ID provided")
+
+    try:
+        #get property
+        stmt = select(Property).where(Property.id == property_id)
+        property = db.execute(stmt).scalar_one_or_none()
+
+        if not property:
+            raise HTTPException(404, "Property not found")
+        
+        stmt = select(PropertyUser).where(PropertyUser.property_id == property_id)
+        propuse = db.execute(stmt).scalars().all()
+
+        users = [
+            {
+                "id": pu.user.id,
+                "email": pu.user.email,
+                "first_name": pu.user.first_name,
+                "last_name": pu.user.last_name,
+            }
+            for pu in propuse
+        ]
+
+        # get neighbourhood if property is linked to one
+        neighbourhood = None
+        if property.neighbourhood_id:
+            stmt = select(Neighbourhood).where(Neighbourhood.id == property.neighbourhood_id)
+            neighbourhood_obj = db.execute(stmt).scalar_one_or_none()
+            if neighbourhood_obj:
+                neighbourhood = {
+                    "id": neighbourhood_obj.id,
+                    "name": neighbourhood_obj.name,
+                    "location": neighbourhood_obj.location,
+                    "join_code": neighbourhood_obj.join_code,
+                    "created_at": neighbourhood_obj.created_at,
+                }
+
+        # get cameras linked to this property
+        stmt = select(Camera).where(Camera.property_id == property_id)
+        cameras = db.execute(stmt).scalars().all()
+        camera_list = [
+            {
+                "id": cam.id,
+                "location": cam.location,
+                "visibility": cam.visibility.value,
+                "created_at": cam.created_at,
+            }
+            for cam in cameras
+        ]
+
+        return {
+            "property_id": property.id,
+            "address": property.address,
+            "property_type": property.property_type.value,
+            "created_at": property.created_at,
+            "users": users,
+            "neighbourhood": neighbourhood,
+            "cameras": camera_list,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Failed to fetch property details: {str(e)}")
