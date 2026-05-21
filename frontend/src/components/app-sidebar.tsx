@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   LayoutDashboard,
   User,
@@ -12,7 +12,8 @@ import {
   Bell,
   FileText,
   Settings,
-} from "lucide-react"
+  ClipboardClock,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -23,46 +24,46 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/tooltip";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Property = {
-  id: string
-  name: string
-  address: string
-}
+  id: string;
+  name: string;
+  address: string;
+};
 
 type NavChild = {
-  id: string
-  label: string
-  icon: React.ReactNode
-}
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+};
 
 type NavItem = {
-  id: string
-  label: string
-  icon: React.ReactNode
-  children?: NavChild[]
-}
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  children?: NavChild[];
+};
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
-const USERNAME = "John Doe"
+const USERNAME = "John Doe";
 
 const PROPERTIES: Property[] = [
-  { id: "p1", name: "Oakwood Estate",   address: "14 Oakwood Ave" },
-  { id: "p2", name: "Sunset Heights",  address: "7 Sunset Blvd"  },
+  { id: "p1", name: "Oakwood Estate", address: "14 Oakwood Ave" },
+  { id: "p2", name: "Sunset Heights", address: "7 Sunset Blvd" },
   { id: "p3", name: "Riverview Close", address: "3 Riverview Rd" },
-]
+];
 
 /**
  * NAV_ITEMS drives every navigation tile in the sidebar.
@@ -80,6 +81,11 @@ const NAV_ITEMS: NavItem[] = [
     })),
   },
   {
+    id: "requests",
+    label: "Requests",
+    icon: <ClipboardClock className="h-4 w-4 shrink-0" />,
+  },
+  {
     id: "alerts",
     label: "Alerts",
     icon: <Bell className="h-4 w-4 shrink-0" />,
@@ -94,7 +100,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "Settings",
     icon: <Settings className="h-4 w-4 shrink-0" />,
   },
-]
+];
 
 // ─── Logo ─────────────────────────────────────────────────────────────────────
 
@@ -116,11 +122,26 @@ function WatchdogLogo({ size = 28 }: { size?: number }) {
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
-      <ellipse cx="14" cy="13" rx="4.5" ry="3" fill="#5B8DEF" fillOpacity="0.3" stroke="#5B8DEF" strokeWidth="1.2" />
+      <ellipse
+        cx="14"
+        cy="13"
+        rx="4.5"
+        ry="3"
+        fill="#5B8DEF"
+        fillOpacity="0.3"
+        stroke="#5B8DEF"
+        strokeWidth="1.2"
+      />
       <circle cx="14" cy="13" r="1.6" fill="#5B8DEF" />
-      <path d="M10.5 18l2.5 2.5L18 15" stroke="#5B8DEF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M10.5 18l2.5 2.5L18 15"
+        stroke="#5B8DEF"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
-  )
+  );
 }
 
 // ─── Pin Button ───────────────────────────────────────────────────────────────
@@ -129,8 +150,8 @@ function PinToggle({
   pinned,
   onToggle,
 }: {
-  pinned: boolean
-  onToggle: () => void
+  pinned: boolean;
+  onToggle: () => void;
 }) {
   return (
     <Tooltip>
@@ -142,20 +163,22 @@ function PinToggle({
             "transition-colors duration-150",
             pinned
               ? "text-[#5B8DEF] hover:text-white hover:bg-white/10"
-              : "text-white/30 hover:text-white/70 hover:bg-white/10"
+              : "text-white/30 hover:text-white/70 hover:bg-white/10",
           )}
           aria-label={pinned ? "Unpin sidebar" : "Pin sidebar open"}
         >
-          {pinned
-            ? <Pin className="h-3.5 w-3.5" />
-            : <PinOff className="h-3.5 w-3.5" />}
+          {pinned ? (
+            <Pin className="h-3.5 w-3.5" />
+          ) : (
+            <PinOff className="h-3.5 w-3.5" />
+          )}
         </button>
       </TooltipTrigger>
       <TooltipContent side="right">
         {pinned ? "Unpin — hover to expand" : "Pin sidebar open"}
       </TooltipContent>
     </Tooltip>
-  )
+  );
 }
 
 // ─── NavTile ──────────────────────────────────────────────────────────────────
@@ -168,15 +191,15 @@ function NavTile({
   onChildSelect,
   isExpanded,
 }: {
-  item: NavItem
-  activeItem: string | null
-  activeChild: string | null
-  onSelect: (id: string) => void
-  onChildSelect: (id: string) => void
-  isExpanded: boolean
+  item: NavItem;
+  activeItem: string | null;
+  activeChild: string | null;
+  onSelect: (id: string) => void;
+  onChildSelect: (id: string) => void;
+  isExpanded: boolean;
 }) {
-  const isActive = activeItem === item.id
-  const isOpen   = isActive && !!item.children
+  const isActive = activeItem === item.id;
+  const isOpen = isActive && !!item.children;
 
   const button = (
     <button
@@ -187,10 +210,15 @@ function NavTile({
         isActive
           ? "bg-[#1D2A5E] text-white shadow-[inset_0_0_0_1px_rgba(91,141,239,0.35)]"
           : "text-white/70 hover:bg-white/8 hover:text-white",
-        !isExpanded && "justify-center px-2"
+        !isExpanded && "justify-center px-2",
       )}
     >
-      <span className={cn("shrink-0", isActive ? "text-[#5B8DEF]" : "text-white/60")}>
+      <span
+        className={cn(
+          "shrink-0",
+          isActive ? "text-[#5B8DEF]" : "text-white/60",
+        )}
+      >
         {item.icon}
       </span>
       {isExpanded && (
@@ -200,14 +228,14 @@ function NavTile({
             <ChevronDown
               className={cn(
                 "h-3.5 w-3.5 shrink-0 text-white/40 transition-transform duration-200",
-                isOpen && "rotate-180"
+                isOpen && "rotate-180",
               )}
             />
           )}
         </>
       )}
     </button>
-  )
+  );
 
   return (
     <SidebarMenuItem>
@@ -232,10 +260,17 @@ function NavTile({
                   "transition-colors duration-100",
                   activeChild === child.id
                     ? "bg-[#1D2A5E] text-white shadow-[inset_0_0_0_1px_rgba(91,141,239,0.25)]"
-                    : "text-white/55 hover:bg-white/8 hover:text-white/90"
+                    : "text-white/55 hover:bg-white/8 hover:text-white/90",
                 )}
               >
-                <span className={cn("shrink-0", activeChild === child.id ? "text-[#5B8DEF]" : "text-white/40")}>
+                <span
+                  className={cn(
+                    "shrink-0",
+                    activeChild === child.id
+                      ? "text-[#5B8DEF]"
+                      : "text-white/40",
+                  )}
+                >
                   {child.icon}
                 </span>
                 <span className="truncate">{child.label}</span>
@@ -248,52 +283,54 @@ function NavTile({
         </ul>
       )}
     </SidebarMenuItem>
-  )
+  );
 }
 
 // ─── AppSidebar ───────────────────────────────────────────────────────────────
 
 export function AppSidebar() {
-  const { state, setOpen } = useSidebar()
+  const { state, setOpen } = useSidebar();
 
   // pinned = sidebar is locked open; unpinned = hover-to-expand mode
-  const [pinned, setPinned] = React.useState(true)
+  const [pinned, setPinned] = React.useState(true);
 
-  const isExpanded = state === "expanded"
+  const isExpanded = state === "expanded";
 
   // When the user toggles the pin:
   // - Pinning: lock it open
   // - Unpinning: collapse it so hover mode takes over
   const handlePinToggle = () => {
     if (pinned) {
-      setPinned(false)
-      setOpen(false)   // collapse — hover will re-expand temporarily
+      setPinned(false);
+      setOpen(false); // collapse — hover will re-expand temporarily
     } else {
-      setPinned(true)
-      setOpen(true)    // lock open
+      setPinned(true);
+      setOpen(true); // lock open
     }
-  }
+  };
 
   const handleMouseEnter = () => {
-    if (!pinned) setOpen(true)
-  }
+    if (!pinned) setOpen(true);
+  };
 
   const handleMouseLeave = () => {
-    if (!pinned) setOpen(false)
-  }
+    if (!pinned) setOpen(false);
+  };
 
-  const [activeItem,  setActiveItem]  = React.useState<string | null>("dashboard")
-  const [activeChild, setActiveChild] = React.useState<string | null>(null)
+  const [activeItem, setActiveItem] = React.useState<string | null>(
+    "dashboard",
+  );
+  const [activeChild, setActiveChild] = React.useState<string | null>(null);
 
   const handleSelect = (id: string) => {
-    const item = NAV_ITEMS.find((n) => n.id === id)
+    const item = NAV_ITEMS.find((n) => n.id === id);
     if (!item?.children) {
-      setActiveItem(id)
-      setActiveChild(null)
-      return
+      setActiveItem(id);
+      setActiveChild(null);
+      return;
     }
-    setActiveItem((prev) => (prev === id ? null : id))
-  }
+    setActiveItem((prev) => (prev === id ? null : id));
+  };
 
   return (
     <Sidebar
@@ -305,7 +342,12 @@ export function AppSidebar() {
       <SidebarHeader className="px-3 py-3">
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className={cn("flex items-center gap-2.5", !isExpanded && "justify-center")}>
+            <div
+              className={cn(
+                "flex items-center gap-2.5",
+                !isExpanded && "justify-center",
+              )}
+            >
               {/* Logo mark — always visible */}
               <div className="shrink-0">
                 <WatchdogLogo size={28} />
@@ -370,7 +412,7 @@ export function AppSidebar() {
                   className={cn(
                     "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2",
                     "text-white/60 hover:text-white hover:bg-white/8 transition-colors duration-150",
-                    !isExpanded && "justify-center"
+                    !isExpanded && "justify-center",
                   )}
                 >
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#3B5EDE]/40 ring-1 ring-[#5B8DEF]/40">
@@ -391,5 +433,5 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }
