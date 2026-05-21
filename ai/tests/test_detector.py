@@ -11,7 +11,7 @@ from ai.pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
 model = YOLO('ai/pipeline/models/weights/yolov8n.pt')
 
 tracker = DeepSort(
-    max_age=220,           # keep lost tracks for 70 frames before deleting
+    max_age=2000,           # keep lost tracks for 70 frames before deleting
     n_init=2,             # require 2 consecutive detections to confirm a track
     max_iou_distance=0.7,
     embedder="mobilenet", # appearance model for re-identification
