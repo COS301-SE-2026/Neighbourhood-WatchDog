@@ -42,3 +42,37 @@ export async function submitJoinRequest(
   const body = await res.json();
   return body.data as JoinRequest;
 }
+
+export async function resolveJoinRequest(
+  requestId: string,
+  action: "APPROVE" | "DENY",
+): Promise<JoinRequest> {
+  const res = await fetch(
+    `${API_BASE}/neighbourhood/join-requests/${requestId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ action }),
+    },
+  );
+
+  if (!res.ok) throw await parseError(res);
+
+  const body = await res.json();
+  return body.data as JoinRequest;
+}
+
+export async function fetchJoinRequests(
+  signal?: AbortSignal,
+): Promise<JoinRequest[]> {
+  const res = await fetch(`${API_BASE}/neighbourhood/join-requests`, {
+    credentials: "include",
+    signal,
+  });
+
+  if (!res.ok) throw await parseError(res);
+
+  const body = await res.json();
+  return (body.data ?? body) as JoinRequest[];
+}
