@@ -9,19 +9,27 @@ from app.auth.cognito import verify_token
 # change these to test different baseline states without touching headers
 
 MOCK_SUB = "00000000-0000-0000-0000-000000000001"
-MOCK_EMAIL = "dev@local.test"
-MOCK_ROLE = "RESIDENT"
-MOCK_NEIGHBOURHOOD_ID: str | None = None  # None = user has no neighbourhood yet
+MOCK_EMAIL = "admin@northwood.com"
+MOCK_FIRST_NAME = "Sarah"
+MOCK_LAST_NAME = "Johnson"
+MOCK_ROLE = "NEIGHBOURHOOD_ADMIN"
+MOCK_NEIGHBOURHOOD_ID: str | None = "a1111111-1111-1111-1111-111111111111"
 
 # mock claims for now, real Cognito later
 async def get_current_user(
     x_mock_role: str | None = Header(default=None),
     x_mock_sub: str | None = Header(default=None),
     x_mock_neighbourhood_id: str | None = Header(default=None),
+    x_mock_email: str | None = Header(default=None),
+    x_mock_first_name: str | None = Header(default=None),
+    x_mock_last_name: str | None = Header(default=None),
 ) -> dict:
     role = x_mock_role or MOCK_ROLE
     sub = x_mock_sub or MOCK_SUB
     neighbourhood_id = x_mock_neighbourhood_id or MOCK_NEIGHBOURHOOD_ID
+    email = x_mock_email or MOCK_EMAIL
+    first_name = x_mock_first_name or MOCK_FIRST_NAME
+    last_name = x_mock_last_name or MOCK_LAST_NAME
  
     valid_roles = {
         "RESIDENT",
@@ -45,7 +53,9 @@ async def get_current_user(
  
     claims: dict = {
         "sub": sub,
-        "email": MOCK_EMAIL,
+        "email": email,
+        "given_name": first_name,
+        "family_name": last_name,
         "custom:role": role,
     }
 
