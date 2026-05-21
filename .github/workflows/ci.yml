@@ -45,21 +45,6 @@ jobs:
   tests:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: test_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -87,6 +72,9 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install
 
+      - name: Create test .env
+        run: echo "DATABASE_URL=sqlite:///test.db" > backend/.env
+
       - name: Run backend tests
         run: cd tests/backend && python -m pytest
 
@@ -106,7 +94,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20.9.0'
           
 
       - name: Install pnpm
