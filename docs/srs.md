@@ -429,27 +429,156 @@ It is no secret that the world we live in is an unsafe place. Neighbourhood Watc
 
 ![Use Cases P1 - UCD1](images/Use%20Cases%20P1%20-%20UCD1.png)
 
+R1: Video Ingestion
+UC1.1 - Register a Camera Stream (Abstract) 
+High-Level:
+TUCBW: A Neighbourhood Administrator / Resident can add a new camera to a property..
+TUCEW: The Administrator or Resident sees the camera stream registered and appearing on the dashboard with a live preview.
+UC1.2 - View Live Camera Feed (Abstract) 
+High-Level:
+TUCBW: A user selects a camera from the dashboard.
+TUCEW: The user sees a live stream preview of the selected camera feed in their browser.
+
 ![Use Cases P1 - UCD2](images/Use%20Cases%20P1%20-%20UCD2.png)
+
+R2: User and Access Control
+UC2.1 - Log In with Multi-Factor Authentication (Abstract)
+High-Level:
+TUCBW: A user enters their credentials on the login screen.
+TUCEW: The user has successfully completed MFA verification and sees the dashboard.
+UC2.2 - Set Camera Visibility (Abstract)
+High-Level:
+TUCBW: A Resident navigates to their camera settings and selects a visibility option for one of their cameras.
+TUCEW: The Resident sees the camera's visibility updated to public, restricted, or private.
+UC2.3 - View Permitted Camera Streams (Abstract)
+High-Level:
+TUCBW: A Security Officer / Neighbourhood Administrator opens the live streams view on the dashboard.
+TUCEW: The Security Officer / Neighbourhood Administrator sees all public and restricted camera streams they are permitted to view, with no access to private streams.
 
 ![Use Case P2 - UCD3](images/Use%20Case%20P2%20-%20UCD3.png)
 
+R3: Dashboard
+UC3.1 - Monitor Live Alert Feed (Abstract)
+High-Level:
+TUCBW: A User opens the dashboard.
+TUCEW: The Security Officer sees all incoming alerts updating in real time, each showing camera name, detection type, severity, confidence score, and timestamp.
+UC3.2 - Filter Incident History (Abstract)
+High-Level:
+TUCBW: A Security Officer navigates to the incident history view and applies filters.
+TUCEW: The Security Officer sees a filtered list of past alerts matching the selected camera, detection type, date range, or status.
+UC3.3 - Configure Alert Threshold (Abstract)
+High-Level:
+TUCBW: A Security Officer or Neighbourhood Administrator navigates to the configuration panel and adjusts the confidence threshold slider for a camera.
+TUCEW: The Security Officer or Neighbourhood Administrator sees a confirmation that the new threshold value has been saved and is now active.
+UC3.4 - Track an Individual Across Cameras (Abstract)
+High-Level:
+TUCBW: A Security Officer selects a detected individual from the alert feed to view their movement path. 
+TUCEW: The Security Officer sees the individual's tracking ID and full movement path summary across all cameras. 
+UC3.5 - Acknowledge an Alert (Abstract)
+High-Level:
+TUCBW: A Security Officer views an unacknowledged alert on the dashboard.
+TUCEW: The Security Officer sees the alert status updated to acknowledged on the dashboard.
+UC3.6 - Review Historical Alert Footage (Abstract)
+High-Level:
+TUCBW: A Security Officer / Resident selects a past alert from the incident history view.
+TUCEW: The Security Officer /Resident is able to view the footage clip associated with that alert event.
+UC3.7 - Receive Alert Notification (Abstract)
+High-Level:
+TUCBW: A Security Officer / Resident has registered for notifications and a high-severity alert is triggered. 
+TUCEW: The Security Officer / Resident has received a notification via WhatsApp or email containing the event details. 
+
 ![Use Case P2 - UCD4](images/Use%20Case%20P2%20-%20UCD4.png)
+
+R4: Analytics and Reporting
+UC4.1 - View Neighbourhood Risk Score (Abstract)
+High-Level:
+TUCBW: A user opens the analytics page.
+TUCEW: The user sees the current risk score for their neighbourhood, categorised as LOW, MEDIUM, or HIGH, calculated from historical incident data.
+UC4.2 - Analyse Incident Trends (Abstract)
+High-Level:
+TUCBW: A user applies date range and incident type filters in the trend analysis view.
+TUCEW: The user sees graphical representations of incident trends over the selected period, grouped by time, location, and type.
 
 ![Use Case P2 - UCD5](images/Use%20Case%20P2%20-%20UCD5.png)
 
+R5: User Registration
+UC5.1 - Register a New Account (Abstract)
+High-Level:
+TUCBW: A new user navigates to the registration page and submits their details.
+TUCEW: The user sees a confirmation that their account has been created and can now log in.
+UC5.2 - Register as Security Officer(Abstract)
+High-Level:
+TUCBW: The Security Officer once registered as a user can choose to join the waiting pool until they are assigned to a Neighbourhood.
+TUCEW: The Security Officer gets a confirmation stating that they have been added to the waiting pool.
+
 ![Use Case P3 - UCD6](images/Use%20Case%20P3%20-%20UCD6.png)
 
+R6: Property Management
+UC6.1 - Create a Property (Abstract)
+High-Level:
+TUCBW: A Resident creates a new property.
+TUCEW: The property is created and the Resident is presented with the option to add cameras to the property and to add the property to a neighbourhood.
+
+UC6.2 - Invite Resident to Property (Abstract)
+High-Level:
+TUCBW: A Property Administrator searches for a user and sends them an invitation to join the property.
+TUCEW: The Property Administrator sees a confirmation that the invitation has been sent and the recipient receives a notification inviting them to join the property.
+UC6.3 - Respond to Property Invitation
+High-Level:
+TUCBW: A Resident receives a notification that they have been invited to join a property and either accepts or rejects it.
+TUCEW: The Resident sees confirmation that they have accepted or declined the invitation.
+UC6.4 - Remove resident from property
+High-Level:
+TUCBW: A Property Administrator can remove a resident from a property.
+TUCEW: The Resident will be notified that they have been removed from a property and the property Administrator receives a notification that the resident has been removed. 
+
+
 ![Use Case P3 - UCD7](images/Use%20Case%20P3%20-%20UCD7.png)
+
+R7 Neighbourhood Management
+
+UC7.1 - Create a Neighbourhood (Abstract)
+High-Level:
+TUCBW: A Resident with a property creates a new neighbourhood.
+TUCEW: The user sees the newly created neighbourhood and receives a unique join code for distribution to residents.
+UC7.2 - Remove property from Neighbourhood (Abstract)
+High-Level
+TUCBW: A Neighbourhood Administrator can remove the property from the neighbourhood.
+TUCEW: The Neighbourhood Administrator views a confirmation dialogue to confirm that the property has been removed and the Residents of the property receive notification stating that their property has been removed from the neighbourhood.
+
+UC7.3 - Request to Add Property to Neighbourhood (Abstract)
+High-Level
+TUCBW: A Property Administrator requests to add a property to a neighbourhood using the neighbourhood’s join code.
+TUCEW: The Neighbourhood Administrator receives the request to add the property to the neighbourhood and can accept or reject it.
+UC7.4 - Request to Add Property to Neighbourhood Approved (Abstract)
+High-Level
+TUCBW: A Neighbourhood Administrator approves the request to add a property to the neighbourhood.
+TUCEW: The property is added and all its public and restricted cameras are visible to the other Users linked to that neighbourhood as well as the Security Officer.
+UC7.5 - Request to Add Property to Neighbourhood Rejected (Abstract)
+High-Level
+TUCBW: A Neighbourhood Administrator rejects the request to add a property to the neighbourhood.
+TUCEW: The Property Administrator is presented with a notification informing them that the request has been rejected and they are unable to submit another request for 24 hours.
+
+UC7.6 - Adding a Security Officer to a Neighbourhood (Abstract)
+High-Level:
+TUCBW: The Neighbourhood Administrator can select a Security Officer to invite to the neighbourhood from a list of existing officers.
+TUCEW: The Security Officer can accept or reject the invitation to join the neighbourhood.
+
 
 ---
 
 ## Domain Model
 
+![Architectural Diagram](images/NWD.drawio.svg)
+
 ## Architectural Requirements:
     
 ### Quality requirements
+
 ### Architectural Patterns
+
 ### Design Patterns
+
 ### Constraints
 
 ## Technology Requirements
