@@ -1,5 +1,5 @@
 import cv2
-import numpy as np
+import os
 from ai.pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
 
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"

@@ -1,8 +1,8 @@
 import os
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
-
 from ai.pipeline.ingestion.ffmpeg_handler import StreamCapture
 from ai.pipeline.processing.tracker import Detector
+
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 # from ai.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
 
 STREAM_URL = "rtsp://Intrepid:password1234@192.168.1.126:554/stream2"

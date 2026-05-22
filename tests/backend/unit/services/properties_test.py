@@ -24,14 +24,14 @@ class TestCreateProperty:
 
     @pytest.mark.asyncio
     async def test_happy_path(self): 
-        with patch('app.services.property_service.Property') as MockProperty, \
-            patch('app.services.property_service.PropertyUser') as MockPropertyUser:
+        with patch('app.services.property_service.Property') as MockProperty:
+            # patch('app.services.property_service.PropertyUser') as _MockPropertyUser:
             #create the vars and whatnot
             mock_prop = Mock()
             mock_prop.id = uuid4()
             MockProperty.return_value = mock_prop
 
-            property = await create_property_handler(
+            await create_property_handler(
                 "100 Test Street",
                 PropertyTypeEnum.PRIVATE,
                 self.claims,
@@ -45,7 +45,7 @@ class TestCreateProperty:
     @pytest.mark.asyncio
     async def test_empty_address(self):
         with patch('app.services.property_service.Property') as MockProperty, \
-            patch('app.services.property_service.PropertyUser') as MockPropertyUser:
+            patch('app.services.property_service.PropertyUser') as _MockPropertyUser:
 
             mock_prop = Mock()
             MockProperty.return_value = mock_prop
@@ -66,7 +66,7 @@ class TestCreateProperty:
     @pytest.mark.asyncio
     async def test_no_claims(self):
         with patch('app.services.property_service.Property') as MockProperty, \
-            patch('app.services.property_service.PropertyUser') as MockPropertyUser:
+            patch('app.services.property_service.PropertyUser') as _MockPropertyUser:
 
             mock_prop = Mock()
             MockProperty.return_value = mock_prop
@@ -87,7 +87,7 @@ class TestCreateProperty:
     @pytest.mark.asyncio
     async def test_no_claim(self):
         with patch('app.services.property_service.Property') as MockProperty, \
-            patch('app.services.property_service.PropertyUser') as MockPropertyUser:
+            patch('app.services.property_service.PropertyUser') as _MockPropertyUser:
 
             mock_prop = Mock()
             MockProperty.return_value = mock_prop

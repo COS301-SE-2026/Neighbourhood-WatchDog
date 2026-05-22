@@ -2,7 +2,6 @@ from enum import Enum
 from sqlalchemy import Column, String, DateTime, Enum as SQLEnum, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
 from app.core.database import Base
 from sqlalchemy.dialects.postgresql import UUID
 from uuid import uuid4

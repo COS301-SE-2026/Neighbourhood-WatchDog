@@ -1,5 +1,4 @@
 from jose import JWTError, jwt
-from jose.exceptions import JWTClaimsError
 from fastapi import HTTPException
 from app.core.config import config
 import httpx

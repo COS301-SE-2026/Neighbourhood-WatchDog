@@ -1,6 +1,4 @@
 import os
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
-
 import cv2
 from fastapi import APIRouter, FastAPI, Query
 from fastapi.responses import StreamingResponse
@@ -13,6 +11,8 @@ from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger("watchdog.ai")
+
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
 app = FastAPI(title="WatchDog AI Service")
 

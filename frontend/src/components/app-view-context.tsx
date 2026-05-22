@@ -30,9 +30,11 @@ export function AppViewProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (parsed.section) {
+        // eslint-disable-next-line
         setSectionState(parsed.section)
       }
       if (typeof parsed.propertyId === "string" || parsed.propertyId === null) {
+        // eslint-disable-next-line
         setPropertyId(parsed.propertyId ?? null)
       }
     } catch {

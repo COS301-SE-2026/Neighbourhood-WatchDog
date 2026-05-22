@@ -2,7 +2,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface FetchOptions {
 	method?: 'GET' | 'POST' | 'DELETE' | 'PUT'
-  body?: any
+  body?: unknown
 }
 
 export async function apiCall<T>(
@@ -29,7 +29,7 @@ export async function apiCall<T>(
 			const errorBody = await response.json()
 			console.error("API error response:", errorBody)
 			errorMsg = errorBody.detail || errorBody.message || errorMsg
-		} catch (e) {
+		} catch {
 			// Could not parse error response as JSON
 		}
 		throw new Error(errorMsg)

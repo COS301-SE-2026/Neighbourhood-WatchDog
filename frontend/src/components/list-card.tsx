@@ -1,17 +1,16 @@
 "use client"
 
-import { Card, CardHeader, CardTitle, CardAction, CardDescription } from "@/components/ui/card"
-import { Trash2, Plus } from "lucide-react"
+import { Card } from "@/components/ui/card"
+import { Trash2 } from "lucide-react"
 
 interface ListCardProps {
   title: string
   items: Array<{ id: string; name: string }>
   onAdd: () => void // TODO: Change this after demo 1
   onDelete: (id: string) => void
-  children?: (item: any) => React.ReactNode
 }
 
-export function ListCard({ title, items, onAdd, onDelete, children}: ListCardProps){
+export function ListCard({ title, items, onAdd, onDelete }: ListCardProps){
   return (
     <Card className="!bg-navy text-black rounded-lg p-5">
       <h2 className="text-xl font-bold">{title}</h2>
