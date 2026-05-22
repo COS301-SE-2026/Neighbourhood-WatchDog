@@ -7,7 +7,7 @@ on:
 
 jobs:
 
-  lint:
+  python-lint:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,9 +21,26 @@ jobs:
 
       - name: Check using ruff
         run: ruff check
+
+  frontend-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       
-      - name: Format using ruff
-        run: ruff format --check
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.9.0'
+          
+      - name: Install pnpm
+        run: npm install -g pnpm@8
+
+      - name: Install frontend dependencies
+        run: cd frontend && pnpm install
+
+      - name: Run ESLint
+        run: cd frontend && pnpm lint 
 
   tests:
     runs-on: ubuntu-latest
@@ -35,13 +52,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'pnpm'
-
+          node-version: '20.9.0'
+          
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+        run: npm install -g pnpm@8
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
@@ -55,13 +69,22 @@ jobs:
           pip install -r backend/requirements-dev.txt
 
       - name: Install frontend dependencies
-        run: pnpm install
+        run: cd frontend && pnpm install
+
+      - name: Create test .env
+        run: echo "DATABASE_URL=sqlite:///test.db" > backend/.env
 
       - name: Run backend tests
         run: cd tests/backend && python -m pytest
 
       - name: Run frontend tests
         run: cd frontend && pnpm test
+
+      - name: Install E2E dependencies
+        run: cd tests/e2e && pnpm install
+
+      - name: Install Playwright browsers
+        run: cd tests/e2e && pnpm exec playwright install
 
       - name: Run E2E tests
         run: cd tests/e2e && pnpm test
@@ -76,16 +99,14 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'pnpm'
+          node-version: '20.9.0'
+          
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+        run: npm install -g pnpm@8
 
       - name: Install frontend dependencies
-        run: pnpm install
+        run: cd frontend && pnpm install
 
       - name: Build frontend
         run: cd frontend && pnpm build

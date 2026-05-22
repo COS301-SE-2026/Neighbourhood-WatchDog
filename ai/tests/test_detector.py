@@ -1,12 +1,12 @@
 import os
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
-
 import cv2
 import httpx
 from datetime import datetime, timezone
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from ai.pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
+
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
 model = YOLO('ai/pipeline/models/weights/yolov8n.pt')
 

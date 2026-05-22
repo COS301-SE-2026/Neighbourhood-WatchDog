@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel
 from app.schemas.property import NonEmptyString
 from app.models.camera import CameraVisibilityEnum
 from uuid import UUID

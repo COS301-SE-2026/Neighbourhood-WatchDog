@@ -7,7 +7,6 @@ from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.core.database import DbSession
 from uuid import UUID
-import re
 
 async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims: dict) -> CameraRes:
     if not db:

@@ -4,23 +4,22 @@ import { InfoCard } from "@/components/info-card";
 import { ListCard } from "@/components/list-card";
 import { AddCameraDialogBox } from "@/components/add-camera-dialogue";
 import { useCameras } from "@/hooks/use-camera";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { getPropertyDetails } from "@/lib/api/property";
 import { PropertyDetailedRes } from "@/lib/validators/property";
 import { CreateNeighbourhoodDialog } from "@/components/create-neighbourhood-dialog";
 import { NeighbourhoodRes } from "@/lib/validators/neighbourhood";
 
-
 const PROPERTY_ID = "30000000-0000-0000-0000-000000000001" // TODO: Get from URL params or props
 
-export default function PropertyPage(){
+function PropertyPageContent(){
   const searchParams = useSearchParams()
   const propertyId = searchParams.get("id") 
 
   const [neighbourhoodDialogOpen, setNeighbourhoodDialogOpen] = useState(false);
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false)
-  const { cameras, addCamera, deleteCamera } = useCameras([])
+  const { addCamera, deleteCamera } = useCameras([])
   const [propertyData, setPropertyData] = useState<PropertyDetailedRes | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -57,9 +56,9 @@ export default function PropertyPage(){
 
       <ListCard
         title="Property Members"
-          items={propertyData.users.map((u: any) => ({
+          items={propertyData.users.map((u: { id: string; email: string; first_name?: string | null; last_name?: string | null }) => ({
             id: u.id,
-            name: `${u.first_name} ${u.last_name}`,
+            name: `${u.first_name || ''} ${u.last_name || ''}`.trim(),
           }))}
         onAdd={() => console.log("Add member")}
         onDelete={(id) => console.log("Delete", id)}
@@ -105,7 +104,7 @@ export default function PropertyPage(){
       <ListCard
 
           title="Cameras"
-          items={propertyData.cameras.map((c: any) => ({
+          items={propertyData.cameras.map((c: { id: string; location: string }) => ({
             id: c.id,
             name: c.location,
           }))}
@@ -123,5 +122,13 @@ export default function PropertyPage(){
         
       />
     </>
+  )
+}
+
+export default function PropertyPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Loading...</div>}>
+      <PropertyPageContent />
+    </Suspense>
   )
 }

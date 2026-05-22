@@ -44,11 +44,11 @@ class TestCreateUser:
 
     @pytest.mark.asyncio
     async def test_empty_email(self):
-        with patch('app.services.user_service') as MockUser:
+        with patch('app.services.user_service') as _MockUser:
 
             self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
             with pytest.raises(HTTPException) as exception:
-                user = await create_user(
+                _ = await create_user(
                     email = "",
                     first_name = "John",
                     last_name = "Doe",
@@ -64,11 +64,11 @@ class TestCreateUser:
 
     @pytest.mark.asyncio
     async def test_empty_first_namel(self):
-        with patch('app.services.user_service') as MockUser:
+        with patch('app.services.user_service') as _MockUser:
 
             self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
             with pytest.raises(HTTPException) as exception:
-                user = await create_user(
+                _ = await create_user(
                     email = "test@gmail.com",
                     first_name = "",
                     last_name = "Doe",
@@ -84,11 +84,11 @@ class TestCreateUser:
 
     @pytest.mark.asyncio
     async def test_empty_last_name(self):
-        with patch('app.services.user_service') as MockUser:
+        with patch('app.services.user_service') as _MockUser:
 
             self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
             with pytest.raises(HTTPException) as exception:
-                user = await create_user(
+                _ = await create_user(
                     email = "test@gmail.com",
                     first_name = "John",
                     last_name = "",
@@ -104,40 +104,37 @@ class TestCreateUser:
 
     @pytest.mark.asyncio
     async def test_empty_cognito_sub(self):
-        with patch('app.services.user_service') as MockUser:
 
-            self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
-            with pytest.raises(HTTPException) as exception:
-                user = await create_user(
-                    email = "test@gmail.com",
-                    first_name = "John",
-                    last_name = "Doe",
-                    cognito_sub = "",
-                    db = self.mock_db
-                )
+        self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
+        with pytest.raises(HTTPException) as exception:
+            await create_user(
+                email = "test@gmail.com",
+                first_name = "John",
+                last_name = "Doe",
+                cognito_sub = "",
+                db = self.mock_db
+            )
 
-            assert exception.value.status_code == 400
+        assert exception.value.status_code == 400
 
-            assert self.mock_db.add.call_count == 0
-            assert self.mock_db.refresh.call_count == 0
-            assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.add.call_count == 0
+        assert self.mock_db.refresh.call_count == 0
+        assert self.mock_db.commit.call_count == 0
 
     @pytest.mark.asyncio
-    async def test_empty_cognito_sub(self):
-        with patch('app.services.user_service') as MockUser:
+    async def test_no_db(self):
+        self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
+        with pytest.raises(HTTPException) as exception:
+            await create_user(
+                email = "test@gmail.com",
+                first_name = "John",
+                last_name = "Doe",
+                cognito_sub = "test-sub-123",
+                db = None
+            )
 
-            self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
-            with pytest.raises(HTTPException) as exception:
-                user = await create_user(
-                    email = "test@gmail.com",
-                    first_name = "John",
-                    last_name = "Doe",
-                    cognito_sub = "test-sub-123",
-                    db = None
-                )
+        assert exception.value.status_code == 500
 
-            assert exception.value.status_code == 500
-
-            assert self.mock_db.add.call_count == 0
-            assert self.mock_db.refresh.call_count == 0
-            assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.add.call_count == 0
+        assert self.mock_db.refresh.call_count == 0
+        assert self.mock_db.commit.call_count == 0

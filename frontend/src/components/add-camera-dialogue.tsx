@@ -14,14 +14,13 @@ import {
 import { Field, FieldGroup } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useCameras } from "@/hooks/use-camera"
-import { CameraInput, Camera, cameraInputSchema } from "@/lib/validators/camera"
+import { CameraInput, cameraInputSchema } from "@/lib/validators/camera"
 import { useState } from "react"
 
 interface DialogBoxProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onCameraAdded: (camera: any) => void
+  onCameraAdded: (camera: CameraInput) => Promise<void>
   propertyId: string
 }
 
@@ -54,8 +53,7 @@ export function AddCameraDialogBox({ open, onOpenChange, onCameraAdded, property
     }
 
     //if the code gets here it means that the validation has passed.
-    const data: CameraInput = result.data
-    try {  
+    try {
       setLoading(true)
       await onCameraAdded(result.data) 
       onOpenChange(false)  // Close dialog on success
