@@ -77,9 +77,9 @@ Existing CCTV cameras and alarm systems operate in isolation and respond only **
 ## System Architecture
 
 <!-- TODO: Export architecture diagram as PNG and place in assets/architecture.png -->
-<div align="center">
+<!-- <div align="center">
   <img src="docs/images/Architecture Diagram.drawio.svg" alt="System Architecture Diagram" width="50%"/>
-</div>
+</div> -->
 
 The platform consists of six primary subsystems:
 
