@@ -770,3 +770,8 @@ The system is developed by a team of five third-year Computer Science students. 
 ### Cloud
  
 **AWS:** Single cloud provider for all infrastructure to avoid cross-cloud egress costs. EC2, RDS, and S3 map directly to the project's infrastructure needs. Standard EC2 CPU instances (t3.medium) are sufficient for prototype scale and are covered under the AWS Free Tier and student credits, keeping compute costs within the R5,000 budget.
+
+## Mockups 
+![Mockup 1](images/Mockups%201.png)
+![Mockup 2](images/Mockups%202.png)
+![Mockup 3](images/Mockups%203.png)
