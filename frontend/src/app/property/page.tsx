@@ -19,7 +19,7 @@ function PropertyPageContent(){
 
   const [neighbourhoodDialogOpen, setNeighbourhoodDialogOpen] = useState(false);
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false)
-  const { addCamera, deleteCamera } = useCameras([])
+  const { addCamera, deleteCamera } = useCameras(propertyId || PROPERTY_ID)
   const [propertyData, setPropertyData] = useState<PropertyDetailedRes | null>(null);
   const [loading, setLoading] = useState(true);
 

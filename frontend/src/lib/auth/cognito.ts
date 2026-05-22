@@ -60,7 +60,7 @@ export const login = (email: string, password: string) => {
     Password: password,
   });
 
-  return new Promise((resolve, reject) => {
+  return new Promise<{ accessToken: string; idToken: string }>((resolve, reject) => {
     user.authenticateUser(authDetails, {
       onSuccess: (result) => {
         const accessToken = result.getAccessToken().getJwtToken();
@@ -77,7 +77,7 @@ export const login = (email: string, password: string) => {
   });
 };
 
-export const setSession = (tokens: any) => {
+export const setSession = (tokens: { accessToken: string; idToken: string }) => {
   localStorage.setItem("accessToken", tokens.accessToken);
   localStorage.setItem("idToken", tokens.idToken);
 };
