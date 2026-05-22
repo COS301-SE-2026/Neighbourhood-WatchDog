@@ -31,5 +31,5 @@ async def get_property_cameras(
     db: DbSession,
     claims: dict = Depends(get_current_user),
 ) -> CamerasRes:
-    require_role(["Resident"])
+    require_role(claims, ['Resident'])
     return await list_cameras_handler(property_id, db, claims)
