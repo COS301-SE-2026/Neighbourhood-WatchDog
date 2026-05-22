@@ -1,0 +1,27 @@
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+*.env
+
+# Keep example files
+!*.example
+
+# Node modules
+node_modules 
+
+# Python
+venv/
+backend/__pycache__/
+backend/*.py[cod]
+backend/*$py.class
+backend/.venv/
+ai/.venv/
+backend/env/
+backend/.pytest_cache/
+.python-version
+
+__pycache__/
+*.pyc
+.pytest_cache/

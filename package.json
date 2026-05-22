@@ -1,0 +1,22 @@
+{
+  "name": "neighbourhood-watchdog",
+  "version": "1.0.0",
+  "scripts": {
+    "setup": "pnpm setup:python && pnpm install && pnpm setup:backend",
+    "setup:dev": "pnpm setup:python && pnpm install && pnpm setup:backend:dev",
+    "setup:python": "python3.11 -m venv venv",
+    "setup:backend": "cd backend && . ../venv/bin/activate && pip install -r requirements.txt",
+    "setup:backend:dev": "cd backend && . ../venv/bin/activate && pip install -r requirements.txt -r requirements-dev.txt",
+    "setup:ai": "cd ai && . ../venv/bin/activate && pip install -r requirements.txt",
+    "test": "cd frontend && pnpm test && cd ../tests/backend && python -m pytest && cd ../../tests/e2e && pnpm test",
+    "test:backend": "cd tests/backend && python -m pytest",
+    "dev:backend": "cd backend && . .venv/bin/activate && uvicorn main:app --port 8000 --reload",
+    "dev:frontend": "cd frontend && pnpm dev",
+    "dev:ai": "cd ai && . .venv/bin/activate && python tests/test_detector.py"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.11"
+  }
+}

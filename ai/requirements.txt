@@ -1,0 +1,65 @@
+# ── AI / ML Pipeline ──────────────────────────────────────────────
+ultralytics==8.4.45
+ultralytics-thop==2.0.19
+torch==2.7.0
+torchvision==0.22.0
+opencv-python==4.13.0.92
+numpy==2.2.6
+scipy==1.15.3
+pillow==12.2.0
+matplotlib==3.10.9
+sympy==1.14.0
+mpmath==1.3.0
+networkx==3.4.2
+contourpy==1.3.2
+cycler==0.12.1
+fonttools==4.62.1
+kiwisolver==1.5.0
+pyparsing==3.3.2
+filelock==3.29.0
+fsspec==2026.4.0
+polars==1.40.1
+polars-runtime-32==1.40.1
+psutil==7.2.2
+
+# ── CUDA / GPU ────────────────────────────────────────────────────
+cuda-bindings==13.2.0
+cuda-pathfinder==1.5.4
+cuda-toolkit==13.0.2
+nvidia-cublas==13.1.0.3
+nvidia-cuda-cupti==13.0.85
+nvidia-cuda-nvrtc==13.0.88
+nvidia-cuda-runtime==13.0.96
+nvidia-cudnn-cu13==9.19.0.56
+nvidia-cufft==12.0.0.61
+nvidia-cufile==1.15.1.6
+nvidia-curand==10.4.0.35
+nvidia-cusolver==12.0.4.66
+nvidia-cusparse==12.6.3.3
+nvidia-cusparselt-cu13==0.8.0
+nvidia-nccl-cu13==2.28.9
+nvidia-nvjitlink==13.0.88
+nvidia-nvshmem-cu13==3.4.5
+nvidia-nvtx==13.0.85
+
+# ── Object Tracking ───────────────────────────────────────────────
+deep-sort-realtime==1.3.2
+
+# ── Task Queue & Messaging ────────────────────────────────────────
+celery==5.3.4
+kafka-python==2.0.2
+
+# ── AWS ───────────────────────────────────────────────────────────
+boto3==1.28.57
+
+# ── HTTP ──────────────────────────────────────────────────────────
+httpx==0.24.1
+
+# ── Config ────────────────────────────────────────────────────────
+python-dotenv==1.0.0
+
+geoalchemy2==0.15.2
+
+# Web Framework
+fastapi==0.136.1
+uvicorn==0.46.0

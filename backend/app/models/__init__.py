@@ -1,0 +1,12 @@
+from app.models.user import *  # noqa: F403
+from app.models.camera import *  # noqa: F403
+from app.models.alert import *  # noqa: F403
+from app.models.audit_log import *  # noqa: F403
+from app.models.detection_event import *  # noqa: F403
+from app.models.neighbourhood import *  # noqa: F403
+from app.models.neighbourhood_join_request import *  # noqa: F403
+from app.models.property import *  # noqa: F403
+from app.models.property_user import *  # noqa: F403
+from app.models.retention_policy import *  # noqa: F403
+from app.models.user_property import *  # noqa: F403
+from app.models.zone import *  # noqa: F403
