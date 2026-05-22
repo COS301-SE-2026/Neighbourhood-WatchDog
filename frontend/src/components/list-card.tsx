@@ -13,7 +13,7 @@ interface ListCardProps {
 
 export function ListCard({ title, items, onAdd, onDelete, children}: ListCardProps){
   return (
-    <Card className="!bg-navy text-black rounded-lg p-5 ${className}">
+    <Card className="!bg-navy text-black rounded-lg p-5">
       <h2 className="text-xl font-bold">{title}</h2>
 
       {/** creating the list of whatever it may be */}

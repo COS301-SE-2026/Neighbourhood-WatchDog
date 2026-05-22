@@ -1,5 +1,9 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { signUp } from "@/lib/auth/cognito";
 import { SignupCard } from "../../../components/auth-components/signup-card";
 
 export default function Page() {
@@ -28,6 +32,18 @@ export default function Page() {
   };
 
   return (
-    <SignupCard />
+    <SignupCard
+      name={name}
+      setName={setName}
+      email={email}
+      setEmail={setEmail}
+      password={password}
+      setPassword={setPassword}
+      confirmPassword={confirmPassword}
+      setConfirmPassword={setConfirmPassword}
+      address={address}
+      setAddress={setAddress}
+      onSubmit={handleSignUp}
+    />
   );
 }
