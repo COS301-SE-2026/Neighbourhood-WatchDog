@@ -1,11 +1,9 @@
 <div align="center">
 
-<!-- HERO BANNER -->
-<img src="assets/banner.png" alt="Neighbourhood WatchDog Banner" width="100%"/>
 
 <br/>
 
-<img src="assets/logo.png" alt="Neighbourhood WatchDog Logo" width="200"/>
+<img src="assets/logo.png" alt="Neighbourhood WatchDog Logo" width="20%"/>
 
 <br/>
 
@@ -15,17 +13,23 @@
 
 <br/>
 
-<img src="assets/team_intrepid_logo.png" alt="Team Intrepid" height="40" style="margin-right: 16px;"/>
+<img src="assets/team_intrepid_logo.png" alt="Team Intrepid" height="70" style="margin-right: 16px;"/>
 &nbsp;&nbsp;
-<img src="assets/epiuse_logo.png" alt="EPI-USE Africa" height="40" style="margin-right: 16px;"/>
+<img src="assets/epiuse_logo.png" alt="EPI-USE Africa" height="70" style="margin-right: 16px;"/>
 &nbsp;&nbsp;
-<img src="assets/up_logo.png" alt="University of Pretoria" height="40"/>
+<img src="assets/up_logo.png" alt="University of Pretoria" height="70"/>
 
 <br/><br/>
 
-<!-- BADGES -->
-[![CI Pipeline](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions/workflows/CI.yml/badge.svg)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions/workflows/CI.yml)
-[![CD Pipeline](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions/workflows/CD.yml/badge.svg)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions/workflows/CD.yml)
+<p align="center">
+  <a href="https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions/workflows/ci.yml">
+    <img src="https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions/workflows/ci.yml/badge.svg" alt="CI Pipeline"/>
+  </a>
+  <a href="https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions">
+    <img src="https://img.shields.io/badge/CD%20Pipeline-blue?logo=githubactions&logoColor=white" alt="CD Pipeline"/>
+  </a>
+</p>
+
 [![Commit Activity](https://img.shields.io/github/commit-activity/m/COS301-SE-2026/Neighbourhood-WatchDog/Dev)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/commits/Dev)
 [![Open Issues](https://img.shields.io/github/issues-raw/COS301-SE-2026/Neighbourhood-WatchDog?color=blue)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/issues)
 [![Closed Issues](https://img.shields.io/github/issues-closed-raw/COS301-SE-2026/Neighbourhood-WatchDog?color=blue)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/issues?q=is%3Aissue+is%3Aclosed)
@@ -74,7 +78,7 @@ Existing CCTV cameras and alarm systems operate in isolation and respond only **
 
 <!-- TODO: Export architecture diagram as PNG and place in assets/architecture.png -->
 <div align="center">
-  <img src="assets/architecture.png" alt="System Architecture Diagram" width="90%"/>
+  <img src="docs/images/Architecture Diagram.drawio.svg" alt="System Architecture Diagram" width="50%"/>
 </div>
 
 The platform consists of six primary subsystems:
@@ -211,11 +215,11 @@ Neighbourhood-WatchDog/
 
 | | Name | Student No. | Role | Skills | GitHub | LinkedIn |
 |---|---|---|---|---|---|---|
-| <img src="assets/team/jared.png" width="50" style="border-radius:50%"/> | **Jared Williams** | u24581039 | Team Lead & Full-Stack Developer | Python, FastAPI, React, Next.js, PostgreSQL, Docker | [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/) | [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/jared-williams-5286a6283/) |
-| <img src="assets/team/ange.png" width="50" style="border-radius:50%"/> | **Ange Yehouessi** | u24614484 | Backend Engineer | Python, FastAPI, Node.js, PostgreSQL, REST API | [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/) | [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/ange-yehouessi-624086376/) |
-| <img src="assets/team/joshua.png" width="50" style="border-radius:50%"/> | **Joshua Mahabeer** | u24597092 | AI/ML Engineer | Python, OpenCV, YOLOv8, React, Docker, C++ | [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/) | [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/joshua-mahabeer-286528269/) |
-| <img src="assets/team/obed.png" width="50" style="border-radius:50%"/> | **Obed Edom Mbaya** | u24595889 | AI/ML Engineer | Python, FastAPI, LangGraph, Next.js, PostgreSQL, Docker | [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/) | [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/obed-edom-mbaya-01197423b/) |
-| <img src="assets/team/zaman.png" width="50" style="border-radius:50%"/> | **Zaman Bassa** | u24744931 | DevOps & Integration Engineer | TypeScript, Python, Docker, PostgreSQL, GitHub Actions | [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/) | [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/zaman-bassa-033673360/) |
+**Jared Williams** | u24581039 | Team Lead & Full-Stack Developer | Python, FastAPI, React, Next.js, PostgreSQL, Docker | [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/) | [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/jared-williams-5286a6283/) |
+**Ange Yehouessi** | u24614484 | Backend Engineer | Python, FastAPI, Node.js, PostgreSQL, REST API | [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/) | [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/ange-yehouessi-624086376/) |
+**Joshua Mahabeer** | u24597092 | AI/ML Engineer | Python, OpenCV, YOLOv8, React, Docker, C++ | [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/) | [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/joshua-mahabeer-286528269/) |
+**Obed Edom Mbaya** | u24595889 | AI/ML Engineer | Python, FastAPI, LangGraph, Next.js, PostgreSQL, Docker | [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/) | [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/obed-edom-mbaya-01197423b/) |
+**Zaman Bassa** | u24744931 | DevOps & Integration Engineer | TypeScript, Python, Docker, PostgreSQL, GitHub Actions | [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/) | [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/zaman-bassa-033673360/) |
 
 <p align="right"><a href="#-table-of-contents">↑ Back to top</a></p>
 
