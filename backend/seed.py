@@ -63,7 +63,7 @@ def seed_database():
         #create test property
         test_property = Property(
             id=PROPERTY_ID,
-            neighbourhood_id=NEIGHBOURHOOD_ID,
+            neighbourhood_id=None,
             address="123 Test Street\nTest City\nGauteng\n1234",
             property_type=PropertyTypeEnum.PRIVATE
         )

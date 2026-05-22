@@ -3,7 +3,7 @@
 import DashboardPage from "@/app/dashboard/page"
 import AlertsPage from "@/app/alert/page"
 import JoinNeighbourhoodPage from "@/app/joinNeighbourhood/page"
-import PropertyPage from "@/app/property-page/page"
+import PropertyPage from "@/app/property/page"
 import { Card } from "@/components/ui/card"
 import { useAppView } from "@/components/app-view-context"
 
