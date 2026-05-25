@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   AlertCard,
   type Alert,
@@ -19,75 +20,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { SlidersHorizontal, RefreshCw } from "lucide-react";
-
-const now = new Date();
-const minsAgo = (m: number) =>
-  new Date(now.getTime() - m * 60_000).toISOString();
-
-const MOCK_ALERTS: Alert[] = [
-  {
-    id: "a1b2c3d4-0001-0001-0001-000000000001",
-    camera_id: "cam-f3a9b201-0001-0001-0001-000000000001",
-    detection_event_id: "evt-00000001-0001-0001-0001-000000000001",
-    status: "NEW",
-    created_at: minsAgo(2),
-    detection_type: "WEAPON_DETECTED",
-    confidence_score: 0.97,
-    thumbnail_url: null,
-  },
-  {
-    id: "a1b2c3d4-0002-0002-0002-000000000002",
-    camera_id: "cam-f3a9b201-0002-0002-0002-000000000002",
-    detection_event_id: "evt-00000002-0002-0002-0002-000000000002",
-    status: "NEW",
-    created_at: minsAgo(8),
-    detection_type: "LOITERING",
-    confidence_score: 0.84,
-    thumbnail_url: null,
-  },
-  {
-    id: "a1b2c3d4-0003-0003-0003-000000000003",
-    camera_id: "cam-f3a9b201-0003-0003-0003-000000000003",
-    detection_event_id: "evt-00000003-0003-0003-0003-000000000003",
-    status: "NEW",
-    created_at: minsAgo(15),
-    detection_type: "HUMAN_PRESENCE",
-    confidence_score: 0.76,
-    thumbnail_url: null,
-  },
-  {
-    id: "a1b2c3d4-0004-0004-0004-000000000004",
-    camera_id: "cam-f3a9b201-0004-0004-0004-000000000004",
-    detection_event_id: "evt-00000004-0004-0004-0004-000000000004",
-    status: "ACKNOWLEDGED",
-    created_at: minsAgo(34),
-    detection_type: "PERIMETER_SCAN",
-    confidence_score: 0.91,
-    thumbnail_url: null,
-  },
-  {
-    id: "a1b2c3d4-0005-0005-0005-000000000005",
-    camera_id: "cam-f3a9b201-0005-0005-0005-000000000005",
-    detection_event_id: "evt-00000005-0005-0005-0005-000000000005",
-    status: "ACKNOWLEDGED",
-    created_at: minsAgo(55),
-    detection_type: "FALL_DETECTED",
-    confidence_score: 0.88,
-    thumbnail_url: null,
-  },
-  {
-    id: "a1b2c3d4-0006-0006-0006-000000000006",
-    camera_id: "cam-f3a9b201-0006-0006-0006-000000000006",
-    detection_event_id: "evt-00000006-0006-0006-0006-000000000006",
-    status: "RESOLVED",
-    created_at: minsAgo(120),
-    resolved_at: minsAgo(90),
-    detection_type: "HUMAN_PRESENCE",
-    confidence_score: 0.62,
-    thumbnail_url: null,
-  },
-];
+import { SlidersHorizontal, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import {
+  fetchAlerts,
+  acknowledgeAlert,
+  fetchCurrentUser,
+  normaliseAlert,
+  getAuthToken,
+  WS_BASE,
+} from "@/lib/api/alert";
 
 const ALL_SEVERITIES: AlertSeverity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "RESOLVED"];
@@ -126,9 +67,121 @@ function EmptyState() {
   );
 }
 
-export default function AlertsPage() {
-  const [alerts, setAlerts] = useState<Alert[]>(MOCK_ALERTS);
-  const [refreshKey, setRefreshKey] = useState(0);
+function ErrorState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
+      <p className="text-[15px] font-semibold text-red-400">
+        Failed to load alerts
+      </p>
+      <p className="text-xs text-white/40 max-w-xs">{message}</p>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={onRetry}
+        className="border-[#2C3E6B] text-[#D0D7E8] hover:bg-[#2C3E6B] hover:text-white text-xs"
+      >
+        Try again
+      </Button>
+    </div>
+  );
+}
+
+function ActionErrorBanner({
+  message,
+  onDismiss,
+}: {
+  message: string;
+  onDismiss: () => void;
+}) {
+  return (
+    <div
+      role="alert"
+      className="mb-4 flex items-center gap-2 rounded-lg border border-[#DC2626]/30 bg-[#DC2626]/10 px-4 py-3 text-sm text-[#DC2626]"
+    >
+      <span className="flex-1">{message}</span>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Dismiss error"
+        className="ml-2 text-[#DC2626]/60 hover:text-[#DC2626] transition-colors"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
+type FetchState = {
+  alerts: Alert[];
+  loading: boolean;
+  error: string | null;
+};
+
+type FetchAction =
+  | { type: "FETCH_START" }
+  | { type: "FETCH_SUCCESS"; payload: Alert[] }
+  | { type: "FETCH_ERROR"; payload: string }
+  | { type: "UPDATE_ALERT"; payload: Alert }
+  | { type: "PREPEND_ALERT"; payload: Alert };
+
+const initialFetchState: FetchState = {
+  alerts: [],
+  loading: true,
+  error: null,
+};
+
+function fetchReducer(state: FetchState, action: FetchAction): FetchState {
+  switch (action.type) {
+    case "FETCH_START":
+      return { ...state, loading: true, error: null };
+    case "FETCH_SUCCESS":
+      return { alerts: action.payload, loading: false, error: null };
+    case "FETCH_ERROR":
+      return { ...state, loading: false, error: action.payload };
+    case "PREPEND_ALERT":
+      if (state.alerts.some((a) => a.id === action.payload.id)) return state;
+      return { ...state, alerts: [action.payload, ...state.alerts] };
+    case "UPDATE_ALERT":
+      return {
+        ...state,
+        alerts: state.alerts.map((a) =>
+          a.id === action.payload.id ? action.payload : a,
+        ),
+      };
+  }
+}
+interface Props {
+  neighbourhoodId?: string;
+}
+
+export default function AlertsPage({
+  neighbourhoodId: initialNeighbourhoodId,
+}: Props) {
+  const [{ alerts, loading, error }, dispatch] = useReducer(
+    fetchReducer,
+    initialFetchState,
+  );
+  const searchParams = useSearchParams();
+  const queryNeighbourhoodId =
+    searchParams.get("neighbourhoodId") || searchParams.get("neighbourhood_id");
+  const [neighbourhoodId, setNeighbourhoodId] = useState<string | null>(
+    initialNeighbourhoodId ?? queryNeighbourhoodId ?? null,
+  );
+  const [identityLoading, setIdentityLoading] = useState(
+    !initialNeighbourhoodId && !queryNeighbourhoodId,
+  );
+  const [identityError, setIdentityError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [wsConnected, setWsConnected] = useState(false);
+
+  const [fetchTick, setFetchTick] = useState(0);
+
   const [selectedSeverities, setSelectedSeverities] = useState<
     Set<AlertSeverity>
   >(new Set(ALL_SEVERITIES));
@@ -136,17 +189,170 @@ export default function AlertsPage() {
     new Set(["NEW", "ACKNOWLEDGED"]),
   );
 
-  const handleAcknowledge = useCallback(async (id: string) => {
-    setAlerts((prev) =>
-      prev.map((a) =>
-        a.id === id ? { ...a, status: "ACKNOWLEDGED" as AlertStatus } : a,
-      ),
-    );
+  function triggerRefresh() {
+    dispatch({ type: "FETCH_START" });
+    setFetchTick((t) => t + 1);
+  }
+
+  const wsRef = useRef<WebSocket | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
-  function handleRefresh() {
-    setAlerts(MOCK_ALERTS);
-    setRefreshKey((k) => k + 1);
+  useEffect(() => {
+    if (initialNeighbourhoodId || queryNeighbourhoodId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    fetchCurrentUser()
+      .then((user) => {
+        if (cancelled) return;
+
+        if (user.neighbourhood_id) {
+          setNeighbourhoodId(user.neighbourhood_id);
+          setIdentityError(null);
+        } else {
+          setNeighbourhoodId(null);
+          setIdentityError(
+            "No neighbourhood is associated with the current user yet.",
+          );
+        }
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setNeighbourhoodId(null);
+        setIdentityError(
+          err instanceof Error ? err.message : "Failed to load current user.",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setIdentityLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialNeighbourhoodId, queryNeighbourhoodId]);
+
+  useEffect(() => {
+    if (!neighbourhoodId) return;
+
+    const controller = new AbortController();
+
+    fetchAlerts(neighbourhoodId, controller.signal)
+      .then((data) => {
+        if (!mountedRef.current) return;
+        dispatch({ type: "FETCH_SUCCESS", payload: data });
+      })
+      .catch((err: unknown) => {
+        if (!mountedRef.current) return;
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        dispatch({
+          type: "FETCH_ERROR",
+          payload: err instanceof Error ? err.message : "Unknown error",
+        });
+      });
+
+    return () => controller.abort();
+  }, [neighbourhoodId, fetchTick]);
+
+  useEffect(() => {
+    if (!neighbourhoodId) return;
+
+    const token = getAuthToken();
+    const url = `${WS_BASE}/alerts/${neighbourhoodId}/ws${token ? `?token=${token}` : ""}`;
+    let unmounted = false;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function connect() {
+      if (unmounted) return;
+
+      const ws = new WebSocket(url);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        if (mountedRef.current) setWsConnected(true);
+      };
+
+      ws.onclose = () => {
+        if (mountedRef.current) setWsConnected(false);
+        if (!unmounted) {
+          reconnectTimer = setTimeout(connect, 3_000);
+        }
+      };
+
+      ws.onerror = () => ws.close();
+
+      ws.onmessage = (e) => {
+        if (!mountedRef.current) return;
+        try {
+          const msg = JSON.parse(e.data as string) as {
+            event: string;
+            payload?: Record<string, unknown>;
+          };
+
+          if (msg.event === "ping") return;
+
+          if (msg.event === "alert.new" && msg.payload) {
+            dispatch({
+              type: "PREPEND_ALERT",
+              payload: normaliseAlert(msg.payload),
+            });
+          }
+
+          if (msg.event === "alert.acknowledged" && msg.payload) {
+            dispatch({
+              type: "UPDATE_ALERT",
+              payload: normaliseAlert(msg.payload),
+            });
+          }
+        } catch {
+          // Ignore
+        }
+      };
+    }
+
+    connect();
+
+    return () => {
+      unmounted = true;
+      if (reconnectTimer !== null) clearTimeout(reconnectTimer);
+      const ws = wsRef.current;
+      if (ws) {
+        ws.onclose = null;
+        ws.close();
+      }
+    };
+  }, [neighbourhoodId]);
+
+  async function handleAcknowledge(id: string) {
+    const original = alerts.find((a) => a.id === id);
+    if (!original || original.status !== "NEW") return;
+
+    setActionError(null);
+    dispatch({
+      type: "UPDATE_ALERT",
+      payload: { ...original, status: "ACKNOWLEDGED" },
+    });
+
+    try {
+      await acknowledgeAlert(id);
+    } catch (err) {
+      if (mountedRef.current) {
+        dispatch({ type: "UPDATE_ALERT", payload: original });
+        setActionError(
+          err instanceof Error ? err.message : "Failed to acknowledge alert.",
+        );
+      }
+      console.error("Acknowledge failed:", err);
+    }
   }
 
   const filtered = useMemo(
@@ -172,29 +378,59 @@ export default function AlertsPage() {
     (a) => getSeverity(a.detection_type) === "CRITICAL" && a.status === "NEW",
   ).length;
 
+  if (identityLoading) {
+    return (
+      <TooltipProvider>
+        <div className="w-full min-h-full flex items-center justify-center px-8 py-10 bg-[#1D2A5E] text-white/70">
+          <div className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4 animate-spin text-[#5B8DEF]" />
+            Resolving neighbourhood context...
+          </div>
+        </div>
+      </TooltipProvider>
+    );
+  }
+
+  if (!neighbourhoodId) {
+    return (
+      <TooltipProvider>
+        <div className="w-full min-h-full flex items-center justify-center px-8 py-10 bg-[#1D2A5E] text-center">
+          <Card className="max-w-md bg-[#2C3E6B]/40 border-[#2C3E6B] rounded-2xl p-6 text-white">
+            <p className="text-lg font-semibold">Alerts need a neighbourhood</p>
+            <p className="mt-2 text-sm text-white/60">
+              {identityError ||
+                "Open this page with a neighbourhood ID, or sign in to a user that already belongs to one."}
+            </p>
+          </Card>
+        </div>
+      </TooltipProvider>
+    );
+  }
+
   return (
     <TooltipProvider>
-      {/*
-        Page surface: --color-fog (#F4F6FA) — the spec's light alternate surface.
-        This is the dominant (60%) background on light-mode pages.
-        font-sans resolves to var(--font-sans) via global.css @theme inline.
-      */}
-      <div
-        className="w-full flex flex-col items-center px-8 py-10 min-h-full font-sans"
-        style={{ backgroundColor: "var(--color-fog)" }}
-      >
+      <div className="w-full flex flex-col items-center px-8 py-10 bg-[#1D2A5E] min-h-full font-sans">
         <div className="w-full max-w-2xl">
           <header className="mb-6 text-center">
-            {/*
-              heading-1: 32px / Bold 700.
-              --color-navy on --color-fog: ≥ 8:1 contrast (same ratio as white-on-navy).
-            */}
-            <h1
-              className="text-[32px] font-bold leading-10"
-              style={{ color: "var(--color-navy)" }}
-            >
-              Alerts
-            </h1>
+            <div className="flex items-center justify-center gap-2">
+              <h1 className="text-[32px] font-bold leading-10 text-white">
+                Alerts
+              </h1>
+              <span
+                title={
+                  wsConnected
+                    ? "Live updates connected"
+                    : "Live updates disconnected"
+                }
+                aria-label={wsConnected ? "Live" : "Offline"}
+              >
+                {wsConnected ? (
+                  <Wifi className="h-4 w-4 text-[#16A34A] mt-1" />
+                ) : (
+                  <WifiOff className="h-4 w-4 text-white/30 mt-1" />
+                )}
+              </span>
+            </div>
 
             {(newCount > 0 || criticalCount > 0) && (
               <div
@@ -237,24 +473,16 @@ export default function AlertsPage() {
             )}
           </header>
 
-          {/*
-            Card: white surface (--color-white) so it lifts off the fog background.
-            Border: --color-mist (#D0D7E8) — the spec's border/divider token.
-            shadow-sm adds subtle lift per the elevation spec.
-          */}
-          <Card
-            className="rounded-2xl"
-            style={{
-              backgroundColor: "var(--color-white)",
-              borderColor: "var(--color-mist)",
-              boxShadow: "var(--shadow-sm)",
-            }}
-          >
-            {/* Toolbar row */}
-            <div
-              className="flex items-center justify-between gap-3 px-5 py-4 rounded-t-2xl"
-              style={{ borderBottom: "1px solid var(--color-mist)" }}
-            >
+          {actionError && (
+            <ActionErrorBanner
+              message={actionError}
+              onDismiss={() => setActionError(null)}
+            />
+          )}
+
+          <Card className="bg-[#2C3E6B]/40 border-[#2C3E6B] rounded-2xl">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#2C3E6B] rounded-t-2xl">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -325,7 +553,11 @@ export default function AlertsPage() {
                       onCheckedChange={(checked) => {
                         setSelectedSeverities((prev) => {
                           const next = new Set(prev);
-                          checked ? next.add(sev) : next.delete(sev);
+                          if (checked) {
+                            next.add(sev);
+                          } else {
+                            next.delete(sev);
+                          }
                           return next;
                         });
                       }}
@@ -353,7 +585,11 @@ export default function AlertsPage() {
                       onCheckedChange={(checked) => {
                         setSelectedStatuses((prev) => {
                           const next = new Set(prev);
-                          checked ? next.add(st) : next.delete(st);
+                          if (checked) {
+                            next.add(st);
+                          } else {
+                            next.delete(st);
+                          }
                           return next;
                         });
                       }}
@@ -396,22 +632,34 @@ export default function AlertsPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleRefresh}
-                className="text-xs transition-colors"
-                style={{ color: "var(--color-blue)" }}
+                onClick={triggerRefresh}
+                disabled={loading}
+                className="text-[#5B8DEF] hover:text-white hover:bg-[#2C3E6B] transition-colors text-xs"
                 aria-label="Refresh alerts"
               >
-                <RefreshCw key={refreshKey} className="h-3.5 w-3.5 mr-1.5" />
+                <RefreshCw
+                  className={`h-3.5 w-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`}
+                />
                 Refresh
               </Button>
             </div>
 
+            {/* Alert list */}
             <section
               aria-label="Alert list"
               aria-live="polite"
               className="p-4 rounded-b-2xl"
             >
-              {filtered.length === 0 ? (
+              {loading && alerts.length === 0 ? (
+                <div className="flex items-center justify-center py-20">
+                  <RefreshCw className="h-5 w-5 animate-spin text-[#5B8DEF]" />
+                </div>
+              ) : error ? (
+                <ErrorState
+                  message={error}
+                  onRetry={() => setFetchTick((t) => t + 1)}
+                />
+              ) : filtered.length === 0 ? (
                 <EmptyState />
               ) : (
                 <div className="space-y-3">

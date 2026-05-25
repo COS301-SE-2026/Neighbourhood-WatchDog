@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from uuid import UUID
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -27,9 +28,14 @@ async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -
         if not neighbourhood:
             raise HTTPException(404, "Invalid join code")
 
-        user = db.execute(
-            select(User).where(User.cognito_sub == claims.get("sub"))
-        ).scalar_one_or_none()
+        user_email = claims.get("email")
+        user_sub = claims.get("sub")
+
+        user = None
+        if user_email:
+            user = db.execute(select(User).where(User.email == user_email)).scalar_one_or_none()
+        if not user and user_sub:
+            user = db.execute(select(User).where(User.cognito_sub == user_sub)).scalar_one_or_none()
         if not user:
             raise HTTPException(401, "Not authenticated")
 
@@ -57,6 +63,34 @@ async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -
     except IntegrityError:
         db.rollback()
         raise HTTPException(500, "Failed to create join request")
+
+
+async def list_join_requests_handler(db: DbSession, claims: dict) -> list[JoinRequestRes]:
+    if not db:
+        raise HTTPException(500, "No database session")
+    if not claims:
+        raise HTTPException(401, "Not authenticated")
+
+    if claims.get("custom:role") != "NEIGHBOURHOOD_ADMIN":
+        raise HTTPException(403, "Insufficient permissions")
+
+    neighbourhood_id = claims.get("custom:neighbourhood_id")
+    if not neighbourhood_id:
+        raise HTTPException(403, "Neighbourhood context missing")
+
+    try:
+        neighbourhood_uuid = UUID(str(neighbourhood_id))
+        requests = db.execute(
+            select(NeighbourhoodJoinRequest)
+            .where(NeighbourhoodJoinRequest.neighbourhood_id == neighbourhood_uuid)
+            .order_by(NeighbourhoodJoinRequest.created_at.desc())
+        ).scalars().all()
+        return [JoinRequestRes.model_validate(request) for request in requests]
+    except HTTPException as he:
+        raise he
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(500, "Failed to list join requests")
 
 async def resolve_join_request_handler(request_id, action: str, db: DbSession, claims: dict) -> JoinRequestRes:
     if not request_id:
