@@ -7,12 +7,17 @@ import {
   CognitoUserAttribute,
 } from "amazon-cognito-identity-js";
 
-const poolData = {
-  UserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID!,
-  ClientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!,
-};
+let _userPool: CognitoUserPool | null = null;
 
-export const userPool = new CognitoUserPool(poolData);
+export const getUserPool = (): CognitoUserPool => {
+  if (!_userPool) {
+    _userPool = new CognitoUserPool({
+      UserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID!,
+      ClientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!,
+    });
+  }
+  return _userPool;
+};
 
 export const signUp = (
   email: string,
@@ -32,7 +37,7 @@ export const signUp = (
   ];
 
   return new Promise((resolve, reject) => {
-    userPool.signUp(
+    getUserPool().signUp(
       email,
       password,
       attributes,
@@ -52,7 +57,7 @@ export const signUp = (
 export const login = (email: string, password: string) => {
   const user = new CognitoUser({
     Username: email,
-    Pool: userPool,
+    Pool: getUserPool(),
   });
 
   const authDetails = new AuthenticationDetails({
@@ -60,7 +65,7 @@ export const login = (email: string, password: string) => {
     Password: password,
   });
 
-  return new Promise((resolve, reject) => {
+  return new Promise<{ accessToken: string; idToken: string }>((resolve, reject) => {
     user.authenticateUser(authDetails, {
       onSuccess: (result) => {
         const accessToken = result.getAccessToken().getJwtToken();
@@ -77,7 +82,7 @@ export const login = (email: string, password: string) => {
   });
 };
 
-export const setSession = (tokens: any) => {
+export const setSession = (tokens: { accessToken: string; idToken: string }) => {
   localStorage.setItem("accessToken", tokens.accessToken);
   localStorage.setItem("idToken", tokens.idToken);
 };

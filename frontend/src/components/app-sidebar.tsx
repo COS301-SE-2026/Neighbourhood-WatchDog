@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import * as React from "react"
+import Image from "next/image"
 import {
   LayoutDashboard,
   User,
@@ -109,17 +110,16 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-// ─── Logo ─────────────────────────────────────────────────────────────────────
-
+// Logo
 function WatchdogLogo({ size = 28 }: { size?: number }) {
   return (
-    <svg
+    <Image
+      src="/logo.png"
       width={size}
       height={size}
-      viewBox="0 0 28 28"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+      alt=""
       aria-hidden="true"
+      className="block object-contain"
     >
       <path
         d="M14 2L4 6v8c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V6L14 2z"
@@ -149,6 +149,8 @@ function WatchdogLogo({ size = 28 }: { size?: number }) {
       />
     </svg>
   );
+    </Image>
+  )
 }
 
 // Pin Button
