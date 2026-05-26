@@ -15,8 +15,7 @@ import {
   Settings,
   ClipboardClock,
   KeyRound,
-} from "lucide-react";
-  Plus,
+  Plus
 } from "lucide-react"
 
 import { CreatePropertyDialog } from "./create-property-dialogue"
@@ -62,54 +61,6 @@ type NavItem = {
 
 const USERNAME = "John Doe";
 
-const PROPERTIES: Property[] = [
-  { id: "p1", name: "Oakwood Estate", address: "14 Oakwood Ave" },
-  { id: "p2", name: "Sunset Heights", address: "7 Sunset Blvd" },
-  { id: "p3", name: "Riverview Close", address: "3 Riverview Rd" },
-];
-
-/**
- * NAV_ITEMS drives every navigation tile in the sidebar.
- * To add a new tile: push a new entry here — no JSX changes needed.
- */
-const NAV_ITEMS: NavItem[] = [
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    icon: <LayoutDashboard className="h-4 w-4 shrink-0" />,
-    children: PROPERTIES.map((p) => ({
-      id: p.id,
-      label: p.name,
-      icon: <Home className="h-3.5 w-3.5 shrink-0" />,
-    })),
-  },
-  {
-    id: "requests",
-    label: "Requests",
-    icon: <ClipboardClock className="h-4 w-4 shrink-0" />,
-  },
-  {
-    id: "alerts",
-    label: "Alerts",
-    icon: <Bell className="h-4 w-4 shrink-0" />,
-  },
-  {
-    id: "reports",
-    label: "Reports",
-    icon: <FileText className="h-4 w-4 shrink-0" />,
-  },
-  {
-    id: "joinNeighbourhood",
-    label: "Join Neighbourhood",
-    icon: <KeyRound className="h-4 w-4 shrink-0" />,
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    icon: <Settings className="h-4 w-4 shrink-0" />,
-  },
-];
-
 // Logo
 function WatchdogLogo({ size = 28 }: { size?: number }) {
   return (
@@ -120,8 +71,12 @@ function WatchdogLogo({ size = 28 }: { size?: number }) {
       alt=""
       aria-hidden="true"
       className="block object-contain"
-    >
-      <path
+    />
+     
+  )
+}
+
+/* <path
         d="M14 2L4 6v8c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V6L14 2z"
         fill="#3B5EDE"
         fillOpacity="0.25"
@@ -147,11 +102,7 @@ function WatchdogLogo({ size = 28 }: { size?: number }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
-  );
-    </Image>
-  )
-}
+    </Image> */
 
 // Pin Button
 
