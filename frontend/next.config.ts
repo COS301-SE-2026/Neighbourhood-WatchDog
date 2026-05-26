@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
       },
     ],
+  },
   turbopack: {
     root: __dirname,
   },
