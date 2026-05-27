@@ -66,6 +66,11 @@ Existing CCTV cameras and alarm systems operate in isolation and respond only **
 
 ## System Architecture
 
+<!-- TODO: Export architecture diagram as PNG and place in assets/architecture.png -->
+<!-- <div align="center">
+  <img src="docs/images/Architecture Diagram.drawio.svg" alt="System Architecture Diagram" width="50%"/>
+</div> -->
+
 The platform consists of six primary subsystems:
 
 ```mermaid
@@ -280,7 +285,13 @@ Neighbourhood-WatchDog/
 
 <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=500&size=14&pause=1000&color=90E0EF&center=true&vCenter=true&width=700&lines=Five+engineers+%C2%B7+One+mission+%C2%B7+Safer+communities" alt="Team tagline"/>
 
-<br/><br/>
+| | Name | Student No. | Role | Skills | GitHub | LinkedIn |
+|---|---|---|---|---|---|---|
+**Jared Williams** | u24581039 | Team Lead & Full-Stack Developer | Python, FastAPI, React, Next.js, PostgreSQL, Docker | [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/) | [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/jared-williams-5286a6283/) |
+**Ange Yehouessi** | u24614484 | Backend Engineer | Python, FastAPI, Node.js, PostgreSQL, REST API | [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/) | [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/ange-yehouessi-624086376/) |
+**Joshua Mahabeer** | u24597092 | AI/ML Engineer | Python, OpenCV, YOLOv8, React, Docker, C++ | [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/) | [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/joshua-mahabeer-286528269/) |
+**Obed Edom Mbaya** | u24595889 | AI/ML Engineer | Python, FastAPI, LangGraph, Next.js, PostgreSQL, Docker | [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/) | [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/obed-edom-mbaya-01197423b/) |
+**Zaman Bassa** | u24744931 | DevOps & Integration Engineer | TypeScript, Python, Docker, PostgreSQL, GitHub Actions | [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/) | [![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/zaman-bassa-033673360/) |
 
 <table width="100%">
   <tr>
@@ -495,4 +506,4 @@ Have questions, ideas, or want to get in touch?
 
 <sub><i>COS 301 Capstone Project 2026 · University of Pretoria · EPI-USE Africa · Team Intrepid</i></sub>
 
-</div>
+<p align="right"><a href="#-table-of-contents">↑ Back to top</a></p>
