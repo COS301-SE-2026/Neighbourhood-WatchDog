@@ -14,24 +14,14 @@ import {
   ChevronRight,
   ShieldCheck,
 } from "lucide-react";
+import { submitJoinRequest, ApiError } from "@/lib/api/neighbourhoodJoin";
+import type { JoinRequest } from "@/components/shared/RequestCard";
 
 type RequestState =
   | { kind: "idle" }
   | { kind: "loading" }
-  | { kind: "pending"; requestId: string }
+  | { kind: "pending"; request: JoinRequest }
   | { kind: "error"; message: string };
-
-async function submitJoinRequest(
-  joinCode: string,
-): Promise<{ requestId: string }> {
-  await new Promise((res) => setTimeout(res, 1200));
-
-  if (joinCode === "INVALID") {
-    throw new Error("Invalid join code. Check the code and try again.");
-  }
-
-  return { requestId: "req-" + crypto.randomUUID() };
-}
 
 function StatusRow({
   icon: Icon,
@@ -56,7 +46,7 @@ function StatusRow({
   );
 }
 
-function PendingState({ requestId }: { requestId: string }) {
+function PendingState({ request }: { request: JoinRequest }) {
   return (
     <div className="space-y-5 py-1" role="status" aria-live="polite">
       <div className="text-center space-y-2">
@@ -80,7 +70,7 @@ function PendingState({ requestId }: { requestId: string }) {
           Request ID
         </p>
         <p className="text-xs font-mono text-[#5B8DEF] break-all">
-          {requestId}
+          {request.id}
         </p>
       </div>
 
@@ -198,22 +188,20 @@ export default function JoinNeighbourhoodPage() {
   async function handleSubmit(code: string) {
     setState({ kind: "loading" });
     try {
-      const { requestId } = await submitJoinRequest(code);
-      setState({ kind: "pending", requestId });
+      const request = await submitJoinRequest(code);
+      setState({ kind: "pending", request });
     } catch (e) {
-      setState({
-        kind: "error",
-        message:
-          e instanceof Error ? e.message : "Could not send join request.",
-      });
+      const message =
+        e instanceof ApiError
+          ? e.message
+          : e instanceof Error
+            ? e.message
+            : "Could not send join request.";
+      setState({ kind: "error", message });
     }
   }
 
   return (
-    /*
-      Same fix as the alerts page — w-full fills the layout's content area so
-      centering works relative to the space beside the sidebar, not the full viewport.
-    */
     <div
       className="w-full min-h-full flex flex-col items-center justify-center px-8 py-12 bg-[#1D2A5E]"
       style={{ fontFamily: "var(--font-sans, 'Inter', system-ui, sans-serif)" }}
@@ -227,7 +215,7 @@ export default function JoinNeighbourhoodPage() {
 
         <Card className="bg-[#2C3E6B] border-[#2C3E6B] p-6 rounded-2xl shadow-lg">
           {state.kind === "pending" ? (
-            <PendingState requestId={state.requestId} />
+            <PendingState request={state.request} />
           ) : (
             <JoinForm
               onSubmit={handleSubmit}

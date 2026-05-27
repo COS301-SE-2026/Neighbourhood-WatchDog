@@ -8,10 +8,12 @@ from app.core.database import DbSession
 from app.schemas.neighbourhood_join import (
     JoinNeighbourhoodReq,
     JoinNeighbourhoodRes,
+    JoinRequestRes,
     ResolveJoinRequestReq,
     ResolveJoinRequestRes,
 )
 from app.services.neighbourhood_join_service import (
+    list_join_requests_handler,
     request_to_join_handler,
     resolve_join_request_handler,
 )
@@ -31,6 +33,18 @@ async def join_neighbourhood(
 ):
     result = await request_to_join_handler(body.join_code, db, claims)
     return JoinNeighbourhoodRes(status=201, message="Join request submitted", data=result)
+
+
+@router.get(
+    "/join-requests",
+    response_model=list[JoinRequestRes],
+    summary="List pending join requests for the admin's neighbourhood",
+)
+async def list_join_requests(
+    db: DbSession,
+    claims: dict = Depends(get_current_user),
+):
+    return await list_join_requests_handler(db, claims)
 
 @router.patch(
     "/join-requests/{request_id}",
