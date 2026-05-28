@@ -56,7 +56,7 @@ export default function Dashboard() {
                 <h1 className="text-2xl font-bold">Property Name</h1>
                 <Button
                     onClick={() => setShowCard(true)}
-                    className="bg-blue-500 hover:bg-blue-600 text-white rounded-full"
+                    className="bg-blue hover:bg-sky text-white rounded-full"
                 >
                     <Plus size={16} className="mr-1" />
                     Add Camera
