@@ -37,49 +37,46 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
 }
 
 :root {
-  /* Tailwind defaults */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: #1D2A5E;
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* shadcn mapped to WatchDog Design System */
+  --background: #FFFFFF;           /* White */
+  --foreground: #1A1A2E;           /* Ink */
+  --card: #FFFFFF;                 /* White */
+  --card-foreground: #1A1A2E;      /* Ink */
+  --popover: #FFFFFF;              /* White */
+  --popover-foreground: #1A1A2E;   /* Ink */
+  --primary: #3B5EDE;              /* Alert Blue - primary interactive */
+  --primary-foreground: #FFFFFF;   /* White on blue */
+  --secondary: #F4F6FA;            /* Fog */
+  --secondary-foreground: #2C3E6B; /* Steel */
+  --muted: #F4F6FA;                /* Fog */
+  --muted-foreground: #2E3A5C;     /* Body */
+  --accent: #F4F6FA;               /* Fog */
+  --accent-foreground: #1D2A5E;    /* Navy */
+  --destructive: #DC2626;          /* Threat Red */
+  --border: #D0D7E8;               /* Mist */
+  --input: #F4F6FA;                /* Fog - input backgrounds */
+  --ring: #3B5EDE;                 /* Alert Blue - focus rings */
+  --chart-1: #3B5EDE;              /* Alert Blue */
+  --chart-2: #5B8DEF;              /* Sky Blue */
+  --chart-3: #1D2A5E;              /* Navy */
+  --chart-4: #2C3E6B;              /* Steel */
+  --chart-5: #D0D7E8;              /* Mist */
+  --sidebar: #1D2A5E;              /* Navy */
+  --sidebar-foreground: #FFFFFF;   /* White on navy */
+  --sidebar-primary: #3B5EDE;      /* Alert Blue */
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #2C3E6B;       /* Steel - hover on navy */
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #2C3E6B;       /* Steel */
+  --sidebar-ring: #3B5EDE;         /* Alert Blue */
 
   /* WatchDog Design System Tokens */
   /* Colour - Brand */
@@ -102,8 +99,18 @@
   --color-info: #0284C7;
 
   /* Typography */
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', Consolas, monospace;
+  --text-display: 3rem/3.5rem var(--font-sans);
+  --text-h1: 2rem/2.5rem var(--font-sans);
+  --text-h2: 1.5rem/2rem var(--font-sans);
+  --text-h3: 1.25rem/1.75rem var(--font-sans);
+  --text-body-lg: 1.125rem/1.75rem var(--font-sans);
+  --text-body: 1rem/1.5rem var(--font-sans);
+  --text-sm: 0.875rem/1.25rem var(--font-sans);
+  --text-label: 0.875rem/1.25rem var(--font-sans);
+  --text-caption: 0.75rem/1rem var(--font-sans);
+  --text-code: 0.875rem/1.25rem var(--font-mono);
 
   /* Spacing */
   --space-1: 4px;
@@ -124,9 +131,11 @@
   --radius-full: 9999px;
 
   /* Motion */
+  --motion-instant: 0ms;
   --motion-fast: 100ms ease-out;
   --motion-normal: 200ms ease-in-out;
   --motion-slow: 350ms ease-in-out;
+  --motion-alert-pulse: 1200ms ease-in-out infinite;
 
   /* Shadows */
   --shadow-sm: 0 1px 3px rgba(29, 42, 94, 0.08);
@@ -134,71 +143,71 @@
   --shadow-lg: 0 8px 24px rgba(29, 42, 94, 0.16);
   --shadow-alert: 0 0 0 3px rgba(220, 38, 38, 0.30);
 
-    --toast-bg: #ffffff;
-    --toast-text: #0f172a;
-    --toast-border: #e2e8f0;
+  --toast-bg: #FFFFFF;           /* White */
+  --toast-text: #1A1A2E;         /* Ink */
+  --toast-border: #D0D7E8;       /* Mist */
 
-    --toast-success: #065f46; /* dark green */
-    --toast-success-text: #ecfdf5;
+  --toast-success: #16A34A;      /* Safe Green */
+  --toast-success-text: #FFFFFF;
 
-    --toast-warning: #d6b780; /* amber */
-    --toast-warning-text: #111827;
+  --toast-warning: #D97706;      /* Caution Amber */
+  --toast-warning-text: #FFFFFF;
 
-    --toast-error: #b91c1c;   /* red */
-    --toast-error-text: #fef2f2;
+  --toast-error: #DC2626;        /* Threat Red */
+  --toast-error-text: #FFFFFF;
 
-    --toast-info: #0ea5e9;    /* sky */
-    --toast-info-text: #f0f9ff;
+  --toast-info: #0284C7;         /* Info Blue */
+  --toast-info-text: #FFFFFF;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: #1D2A5E;
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #1A1A2E;                   /* Ink */
+  --foreground: #F4F6FA;                   /* Fog */
+  --card: #2C3E6B;                         /* Steel */
+  --card-foreground: #F4F6FA;              /* Fog */
+  --popover: #2C3E6B;                      /* Steel */
+  --popover-foreground: #F4F6FA;           /* Fog */
+  --primary: #5B8DEF;                      /* Sky Blue (lighter for dark bg) */
+  --primary-foreground: #FFFFFF;
+  --secondary: #1D2A5E;                    /* Navy */
+  --secondary-foreground: #F4F6FA;         /* Fog */
+  --muted: #1D2A5E;                        /* Navy */
+  --muted-foreground: #D0D7E8;             /* Mist */
+  --accent: #1D2A5E;                       /* Navy */
+  --accent-foreground: #F4F6FA;            /* Fog */
+  --destructive: #DC2626;                  /* Threat Red */
+  --border: rgba(208, 215, 232, 0.15);     /* Mist at 15% */
+  --input: rgba(208, 215, 232, 0.15);      /* Mist at 15% */
+  --ring: #5B8DEF;                         /* Sky Blue */
+  --chart-1: #5B8DEF;                      /* Sky Blue */
+  --chart-2: #3B5EDE;                      /* Alert Blue */
+  --chart-3: #D0D7E8;                      /* Mist */
+  --chart-4: #F4F6FA;                      /* Fog */
+  --chart-5: #2C3E6B;                      /* Steel */
+  --sidebar: #1A1A2E;                      /* Ink */
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #5B8DEF;              /* Sky Blue */
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #2C3E6B;              /* Steel */
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: rgba(208, 215, 232, 0.15);
+  --sidebar-ring: #5B8DEF;
 
-  --toast-bg: #0b0f14;
-  --toast-text: #f8fafc;
-  --toast-border: #1f2937;
+  --toast-bg: #1A1A2E;            /* Ink */
+  --toast-text: #F4F6FA;          /* Fog */
+  --toast-border: #2C3E6B;        /* Steel */
 
-  --toast-success: #10b981;
-  --toast-success-text: #052e1b;
+  --toast-success: #16A34A;       /* Safe Green */
+  --toast-success-text: #FFFFFF;
 
-  --toast-warning: #fbbf24;
-  --toast-warning-text: #0b0f14;
+  --toast-warning: #D97706;       /* Caution Amber */
+  --toast-warning-text: #FFFFFF;
 
-  --toast-error: #f87171;
-  --toast-error-text: #0b0f14;
+  --toast-error: #DC2626;         /* Threat Red */
+  --toast-error-text: #FFFFFF;
 
-  --toast-info: #38bdf8;
-  --toast-info-text: #0b0f14;
+  --toast-info: #5B8DEF;          /* Sky Blue (lighter for dark bg) */
+  --toast-info-text: #FFFFFF;
 }
 
 @layer base {
@@ -206,7 +215,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground font-mono;
+    @apply bg-background text-foreground font-sans;
   }
   html {
     @apply font-sans;
