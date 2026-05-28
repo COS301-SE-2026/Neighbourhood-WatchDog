@@ -42,6 +42,18 @@
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-full: 9999px;
+  --color-navy: #1D2A5E;
+  --color-blue: #3B5EDE;
+  --color-sky: #5B8DEF;
+  --color-steel: #2C3E6B;
+  --color-fog: #F4F6FA;
+  --color-mist: #D0D7E8;
+  --color-ink: #1A1A2E;
+  --color-body: #2E3A5C;
+  --color-threat: #DC2626;
+  --color-caution: #D97706;
+  --color-safe: #16A34A;
+  --color-info: #0284C7;
 }
 
 :root {
