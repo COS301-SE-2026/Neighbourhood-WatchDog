@@ -19,22 +19,22 @@ type ForgotPasswordCardProps = {
 export function ForgotPasswordCard({ className }: ForgotPasswordCardProps) {
   return (
     <Card className={cn(
-      "w-full max-w-md sm:max-w-xl rounded-3xl border border-[rgba(29,42,94,0.12)] bg-white/95 shadow-[0_20px_60px_rgba(29,42,94,0.14)] backdrop-blur",
+      "w-full max-w-md sm:max-w-xl rounded-xl border border-navy/12 bg-white/95 shadow-lg backdrop-blur",
       className
     )}>
       <CardHeader>
-        <CardTitle className="text-3xl sm:text-4xl font-semibold tracking-tight text-[color:var(--color-navy)]">
+        <CardTitle className="text-[2rem] sm:text-[2rem] font-semibold tracking-tight text-navy">
           Forgot your password?
         </CardTitle>
 
-        <CardDescription className="text-base text-[color:var(--color-body)]">
+        <CardDescription className="text-base text-body">
           Enter your email below and we will send a message to reset your password
         </CardDescription>
 
         <CardAction>
           <Button
             variant="link"
-            className="text-[color:var(--color-sky)] hover:text-[color:var(--color-blue)]"
+            className="text-sky hover:text-blue"
           >
             Login
           </Button>
@@ -45,7 +45,7 @@ export function ForgotPasswordCard({ className }: ForgotPasswordCardProps) {
         <form>
           <div className="flex flex-col gap-6">
             <div className="grid gap-2">
-              <Label htmlFor="email" className="font-medium text-[color:var(--color-body)]">
+              <Label htmlFor="email" className="font-medium text-body">
                 Email
               </Label>
               <Input
@@ -62,7 +62,7 @@ export function ForgotPasswordCard({ className }: ForgotPasswordCardProps) {
       <CardFooter className="flex-col gap-2">
         <Button
           type="submit"
-          className="w-full bg-[color:var(--color-navy)] text-white hover:bg-[color:var(--color-steel)]"
+          className="w-full bg-navy text-white hover:bg-steel"
         >
           Send reset link
         </Button>
