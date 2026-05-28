@@ -40,7 +40,7 @@ function EmptyState({ filter }: { filter: FilterValue }) {
       role="status"
       aria-live="polite"
     >
-      <p className="text-[15px] font-semibold text-white/50">
+      <p className="text-base font-semibold text-mist/50">
         No {filter === "ALL" ? "" : STATUS_LABELS[filter].toLowerCase()}{" "}
         requests
       </p>
@@ -58,7 +58,7 @@ function ErrorBanner({
   return (
     <div
       role="alert"
-      className="flex items-center gap-2 rounded-lg border border-[#DC2626]/30 bg-[#DC2626]/10 px-4 py-3 text-sm text-[#DC2626] mb-4"
+      className="flex items-center gap-2 rounded-lg border border-threat/30 bg-threat/10 px-4 py-3 text-sm text-threat mb-4"
     >
       <AlertCircle className="h-4 w-4 shrink-0" />
       <span className="flex-1">{message}</span>
@@ -66,7 +66,7 @@ function ErrorBanner({
         type="button"
         onClick={onDismiss}
         aria-label="Dismiss error"
-        className="ml-2 text-[#DC2626]/60 hover:text-[#DC2626] transition-colors"
+        className="ml-2 text-threat/60 hover:text-threat transition-colors"
       >
         ✕
       </button>
@@ -211,10 +211,10 @@ export default function JoinRequestsPage() {
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
 
   return (
-    <div className="w-full flex flex-col items-center px-8 py-10 bg-[#1D2A5E] min-h-full font-sans">
+    <div className="w-full flex flex-col items-center px-8 py-10 bg-navy min-h-full font-sans">
       <div className="w-full max-w-2xl">
         <header className="mb-6 text-center">
-          <h1 className="text-[32px] font-bold leading-10 text-white">
+          <h1 className="text-[2rem] font-bold leading-10 text-white">
             Join Requests
           </h1>
 
@@ -223,7 +223,7 @@ export default function JoinRequestsPage() {
               className="flex gap-2 mt-3 flex-wrap justify-center"
               aria-live="polite"
             >
-              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-[#3B5EDE]/20 border border-[#3B5EDE]/30 rounded-full px-3 py-1 text-[#5B8DEF]">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-blue/20 border border-blue/30 rounded-full px-3 py-1 text-sky">
                 {pendingCount} pending
               </span>
             </div>
@@ -244,11 +244,11 @@ export default function JoinRequestsPage() {
           />
         )}
 
-        <Card className="bg-[#2C3E6B]/40 border-[#2C3E6B] rounded-2xl">
+        <Card className="bg-steel/40 border-steel rounded-xl">
           {/* Toolbar */}
-          <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#2C3E6B] rounded-t-2xl">
+          <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-steel rounded-t-xl">
             {/* Filter tabs */}
-            <div className="flex items-center bg-[#1D2A5E]/70 border border-[#2C3E6B] rounded-lg overflow-hidden">
+            <div className="flex items-center bg-navy/70 border border-steel rounded-lg overflow-hidden">
               {(
                 ["PENDING", ...ALL_STATUSES.slice(1), "ALL"] as FilterValue[]
               ).map((f, i, arr) => (
@@ -257,11 +257,11 @@ export default function JoinRequestsPage() {
                   type="button"
                   onClick={() => setActiveFilter(f)}
                   className={[
-                    "text-[11px] font-medium px-3 py-1.5 transition-colors duration-100",
-                    i < arr.length - 1 ? "border-r border-[#2C3E6B]" : "",
+                    "text-xs font-medium px-3 py-1.5 transition-colors duration-100",
+                    i < arr.length - 1 ? "border-r border-steel" : "",
                     activeFilter === f
-                      ? "bg-[#3B5EDE]/25 text-[#5B8DEF]"
-                      : "text-[#D0D7E8] hover:bg-[#2C3E6B] hover:text-white",
+                      ? "bg-blue/25 text-sky"
+                      : "text-mist hover:bg-steel hover:text-white",
                   ]
                     .filter(Boolean)
                     .join(" ")}
@@ -276,7 +276,7 @@ export default function JoinRequestsPage() {
               size="sm"
               onClick={() => setFetchTick((t) => t + 1)}
               disabled={loading}
-              className="text-[#5B8DEF] hover:text-white hover:bg-[#2C3E6B] transition-colors text-xs"
+              className="text-sky hover:text-white hover:bg-steel transition-colors text-xs"
               aria-label="Refresh requests"
             >
               {loading ? (
@@ -292,11 +292,11 @@ export default function JoinRequestsPage() {
           <section
             aria-label="Join request list"
             aria-live="polite"
-            className="p-4 rounded-b-2xl"
+            className="p-4 rounded-b-xl"
           >
             {loading ? (
               <div className="flex items-center justify-center py-16">
-                <Loader2 className="h-6 w-6 animate-spin text-[#5B8DEF]" />
+                <Loader2 className="h-6 w-6 animate-spin text-sky" />
               </div>
             ) : filtered.length === 0 ? (
               <EmptyState filter={activeFilter} />
