@@ -10,7 +10,7 @@ import { useAppView } from "@/components/app-view-context"
 function Placeholder({ title, description }: { title: string; description: string }) {
   return (
     <div className="watchdog-page-shell watchdog-page-shell--center">
-      <Card className="w-full max-w-2xl p-8 rounded-2xl watchdog-surface-strong text-white">
+      <Card className="w-full max-w-2xl p-8 rounded-xl watchdog-surface-strong text-white">
         <h1 className="watchdog-heading text-white">{title}</h1>
         <p className="mt-3 watchdog-text-subtle">{description}</p>
       </Card>

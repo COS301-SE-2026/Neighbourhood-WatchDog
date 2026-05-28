@@ -122,7 +122,7 @@ function PinToggle({
             "flex items-center justify-center rounded-md p-1.5",
             "transition-colors duration-150",
             pinned
-              ? "text-[#5B8DEF] hover:text-white hover:bg-white/10"
+              ? "text-sky hover:text-white hover:bg-white/10"
               : "text-white/30 hover:text-white/70 hover:bg-white/10",
           )}
           aria-label={pinned ? "Unpin sidebar" : "Pin sidebar open"}
@@ -171,7 +171,7 @@ function NavTile({
         "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium",
         "transition-all duration-150",
         isActive
-          ? "bg-[#1D2A5E] text-white shadow-[inset_0_0_0_1px_rgba(91,141,239,0.35)]"
+          ? "bg-navy text-white ring-inset ring-1 ring-sky/35"
           : "text-white/70 hover:bg-white/8 hover:text-white",
         !isExpanded && "justify-center px-2",
       )}
@@ -179,7 +179,7 @@ function NavTile({
       <span
         className={cn(
           "shrink-0",
-          isActive ? "text-[#5B8DEF]" : "text-white/60",
+          isActive ? "text-sky" : "text-white/60",
         )}
       >
         {item.icon}
@@ -222,7 +222,7 @@ function NavTile({
                   "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-xs font-medium",
                   "transition-colors duration-100",
                   activeChild === child.id
-                    ? "bg-[#1D2A5E] text-white shadow-[inset_0_0_0_1px_rgba(91,141,239,0.25)]"
+                    ? "bg-navy text-white ring-inset ring-1 ring-sky/25"
                     : "text-white/55 hover:bg-white/8 hover:text-white/90",
                 )}
               >
@@ -230,7 +230,7 @@ function NavTile({
                   className={cn(
                     "shrink-0",
                     activeChild === child.id
-                      ? "text-[#5B8DEF]"
+                      ? "text-sky"
                       : "text-white/40",
                   )}
                 >
@@ -238,7 +238,7 @@ function NavTile({
                 </span>
                 <span className="truncate">{child.label}</span>
                 {activeChild === child.id && (
-                  <ChevronRight className="ml-auto h-3 w-3 text-[#5B8DEF]" />
+                  <ChevronRight className="ml-auto h-3 w-3 text-sky" />
                 )}
               </button>
             </li>
@@ -370,7 +370,7 @@ export function AppSidebar() {
                     <p className="text-sm font-extrabold text-white leading-tight tracking-tight truncate">
                       Neighbourhood
                     </p>
-                    <p className="text-xs font-semibold text-[#5B8DEF] leading-tight tracking-widest uppercase truncate">
+                    <p className="text-xs font-semibold text-sky leading-tight tracking-widest uppercase truncate">
                       WatchDog
                     </p>
                   </div>
@@ -431,8 +431,8 @@ export function AppSidebar() {
                     !isExpanded && "justify-center",
                   )}
                 >
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#3B5EDE]/40 ring-1 ring-[#5B8DEF]/40">
-                    <User className="h-3.5 w-3.5 text-[#5B8DEF]" />
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue/40 ring-1 ring-sky/40">
+                    <User className="h-3.5 w-3.5 text-sky" />
                   </span>
                   {isExpanded && (
                     <span className="truncate text-sm font-medium text-white/80">
