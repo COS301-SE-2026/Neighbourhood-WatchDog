@@ -6,7 +6,7 @@ export default function SignUpLayout({ children }: { children: ReactNode }) {
       className="min-h-screen flex items-center justify-center px-4"
       style={{
         background:
-          "radial-gradient(circle at top, rgba(91, 141, 239, 0.16), transparent 32%), linear-gradient(180deg, var(--color-fog) 0%, #ffffff 100%)",
+          "radial-gradient(circle at top, color-mix(in srgb, var(--color-sky) 16%, transparent), transparent 32%), linear-gradient(180deg, var(--color-fog) 0%, var(--color-white) 100%)",
       }}
     >
       {children}
