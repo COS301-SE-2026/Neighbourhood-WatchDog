@@ -112,8 +112,8 @@ def confirm_sign_up(email, code):
             "response": response,
         }
     except ClientError as e:
-        return {
+        raise Exception ({#TODO: Change to HTTPException
             "success": False,
             "error": e.response["Error"]["Code"],
             "message": e.response["Error"]["Message"]
-        }
+        })
