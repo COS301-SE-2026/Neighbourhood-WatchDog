@@ -5,6 +5,8 @@ import httpx
 import os
 import boto3
 from functools import lru_cache
+from botocore.exceptions import ClientError
+from fastapi import HTTPException
 
 @lru_cache(maxsize=1)
 def get_jwks():
@@ -66,11 +68,13 @@ def sign_up(email: str, password : str, name : str, address: str):
             "user_confirmed": response["UserConfirmed"],
         }
     except ClientError as e:
-        raise Exception({ #TODO: Change to HTTPException
-            "success": False,
-            "error": e.response["Error"]["Code"],
-            "message": e.response["Error"]["Message"]
-        })
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": e.response["Error"]["Code"],
+                "message": e.response["Error"]["Message"]
+            }
+        )
 
 def login(email, password):
     try:
@@ -93,11 +97,13 @@ def login(email, password):
             "token_type": auth_result["TokenType"],
         }
     except ClientError as e:
-        raise Exception({ #TODO: Change to HTTPException
-            "success": False,
-            "error": e.response["Error"]["Code"],
-            "message": e.response["Error"]["Message"]
-        })
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": e.response["Error"]["Code"],
+                "message": e.response["Error"]["Message"]
+            }
+        )
 
 def confirm_sign_up(email, code):
     try:
@@ -112,8 +118,10 @@ def confirm_sign_up(email, code):
             "response": response,
         }
     except ClientError as e:
-        raise Exception ({#TODO: Change to HTTPException
-            "success": False,
-            "error": e.response["Error"]["Code"],
-            "message": e.response["Error"]["Message"]
-        })
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": e.response["Error"]["Code"],
+                "message": e.response["Error"]["Message"]
+            }
+        )
