@@ -68,7 +68,7 @@ export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
                         onError={() => setStreamImage({ url: streamUrl, loaded: false, error: true })}
                     /> */}
 
-                    <CameraFeed streamPath="tapo-camera" host="localhost" />
+                    <CameraFeed streamUrl={streamUrl} />
 
 
                     {!(streamHealth.url === streamUrl && streamHealth.available && !streamHealth.error) && (

@@ -19,7 +19,8 @@ interface Camera {
 
 const initialCameras: Camera[] = [
     { id: "1", name: "Camera 1 - Backyard" },
-    { id: "2", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://Intrepid:password1234@172.20.10.2:554/stream2" },
+  //{ id: "2", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://Intrepid:password1234@172.20.10.2:554/stream2" },
+    { id: "2", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://localhost:8554/tapo-camera" },
     { id: "3", name: "Camera 5 - Living Room" },
     { id: "4", name: "Camera 3 - Bedroom 2" },
     { id: "5", name: "Camera 4 - Kitchen" },
