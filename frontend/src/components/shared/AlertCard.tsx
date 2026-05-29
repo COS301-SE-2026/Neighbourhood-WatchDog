@@ -66,22 +66,22 @@ const SEVERITY_CONFIG: Record<
   { bg: string; label: string; icon: ReactNode }
 > = {
   CRITICAL: {
-    bg: "bg-[#DC2626] text-white",
+    bg: "bg-threat text-white",
     label: "Critical",
     icon: <ShieldAlert className="h-3 w-3" />,
   },
   HIGH: {
-    bg: "bg-[#D97706] text-white",
+    bg: "bg-caution text-white",
     label: "High",
     icon: <AlertTriangle className="h-3 w-3" />,
   },
   MEDIUM: {
-    bg: "bg-[#0284C7] text-white",
+    bg: "bg-info text-white",
     label: "Medium",
     icon: <Info className="h-3 w-3" />,
   },
   LOW: {
-    bg: "bg-[#16A34A] text-white",
+    bg: "bg-safe text-white",
     label: "Low",
     icon: <CheckCircle2 className="h-3 w-3" />,
   },
@@ -92,20 +92,20 @@ const STATUS_CONFIG: Record<
   { bg: string; textColor: string; label: string; icon: ReactNode }
 > = {
   NEW: {
-    bg: "bg-[#3B5EDE]/20 border border-[#3B5EDE]/40",
-    textColor: "text-[#5B8DEF]",
+    bg: "bg-blue/20 border border-blue/40",
+    textColor: "text-sky",
     label: "New",
     icon: <Activity className="h-3 w-3" />,
   },
   ACKNOWLEDGED: {
-    bg: "bg-[#D0D7E8]/20 border border-[#D0D7E8]/40",
-    textColor: "text-[#D0D7E8]",
+    bg: "bg-mist/20 border border-mist/40",
+    textColor: "text-mist",
     label: "Acknowledged",
     icon: <CheckCheck className="h-3 w-3" />,
   },
   RESOLVED: {
-    bg: "bg-[#16A34A]/20 border border-[#16A34A]/40",
-    textColor: "text-[#16A34A]",
+    bg: "bg-safe/20 border border-safe/40",
+    textColor: "text-safe",
     label: "Resolved",
     icon: <CheckCircle2 className="h-3 w-3" />,
   },
@@ -115,7 +115,7 @@ export function SeverityBadge({ severity }: { severity: AlertSeverity }) {
   const config = SEVERITY_CONFIG[severity];
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${config.bg}`}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${config.bg}`}
       aria-label={`Severity: ${config.label}`}
     >
       {config.icon}
@@ -128,7 +128,7 @@ export function StatusBadge({ status }: { status: AlertStatus }) {
   const config = STATUS_CONFIG[status];
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${config.bg} ${config.textColor}`}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${config.bg} ${config.textColor}`}
       aria-label={`Status: ${config.label}`}
     >
       {config.icon}
@@ -192,7 +192,7 @@ function AlertDetailSheet({
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
         side="right"
-        className="w-full max-w-md border-l border-[#2C3E6B] bg-[#1D2A5E] text-white"
+        className="w-full max-w-md border-l border-steel bg-navy text-white"
         style={{ boxShadow: "var(--shadow-lg)" }}
       >
         <SheetHeader className="mb-6">
@@ -200,17 +200,17 @@ function AlertDetailSheet({
             <SeverityBadge severity={severity} />
             <StatusBadge status={alert.status} />
           </div>
-          <SheetTitle className="text-white text-[20px] font-semibold leading-7">
+          <SheetTitle className="text-white text-xl font-semibold leading-7">
             {detectionLabel(alert.detection_type)}
           </SheetTitle>
-          <SheetDescription className="text-[#D0D7E8] text-sm">
+          <SheetDescription className="text-mist text-sm">
             Full alert details
           </SheetDescription>
         </SheetHeader>
 
         <div className="space-y-4">
           {alert.thumbnail_url ? (
-            <div className="relative rounded-lg overflow-hidden border border-[#2C3E6B]">
+            <div className="relative rounded-lg overflow-hidden border border-steel">
               <Image
                 src={alert.thumbnail_url}
                 alt="Detection thumbnail"
@@ -221,13 +221,13 @@ function AlertDetailSheet({
               />
             </div>
           ) : (
-            <div className="rounded-lg border border-[#2C3E6B] bg-[#2C3E6B]/40 h-40 flex items-center justify-center gap-2">
-              <Camera className="h-8 w-8 text-[#5B8DEF] opacity-50" />
-              <span className="text-sm text-[#D0D7E8]/60">No thumbnail</span>
+            <div className="rounded-lg border border-steel bg-steel/40 h-40 flex items-center justify-center gap-2">
+              <Camera className="h-8 w-8 text-sky opacity-50" />
+              <span className="text-sm text-mist/60">No thumbnail</span>
             </div>
           )}
 
-          <Separator className="bg-[#2C3E6B]" />
+          <Separator className="bg-steel" />
 
           <div className="space-y-3">
             <MetaRow label="Alert ID" value={alert.id} mono />
@@ -261,11 +261,11 @@ function AlertDetailSheet({
             )}
           </div>
 
-          <Separator className="bg-[#2C3E6B]" />
+          <Separator className="bg-steel" />
 
           {isNew && (
             <Button
-              className="w-full bg-[#3B5EDE] hover:bg-[#5B8DEF] text-white font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#3B5EDE] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1D2A5E]"
+              className="w-full bg-blue hover:bg-sky text-white font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:ring-offset-navy"
               onClick={() => onAcknowledge(alert.id)}
               disabled={acknowledging}
               aria-label="Acknowledge this alert"
@@ -300,7 +300,7 @@ function MetaRow({
 }) {
   return (
     <div className="flex justify-between gap-4">
-      <span className="text-xs font-medium text-[#D0D7E8]/70 shrink-0">
+      <span className="text-xs font-medium text-mist/70 shrink-0">
         {label}
       </span>
       <span
@@ -340,12 +340,12 @@ export function AlertCard({ alert, onAcknowledge }: AlertCardProps) {
       <Card
         className={[
           "relative flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-xl border transition-all duration-200",
-          "bg-[#2C3E6B] border-[#2C3E6B]",
+          "bg-steel border-steel",
           isNew
-            ? "hover:border-[#3B5EDE]/60 hover:shadow-md"
+            ? "hover:border-blue/60 hover:shadow-md"
             : "opacity-80 hover:opacity-100",
           isCritical && isNew
-            ? "border-[#DC2626]/40 shadow-[0_0_0_1px_rgba(220,38,38,0.20)]"
+            ? "border-threat/40 shadow-alert"
             : "",
         ]
           .filter(Boolean)
@@ -359,20 +359,20 @@ export function AlertCard({ alert, onAcknowledge }: AlertCardProps) {
             <SeverityBadge severity={severity} />
             <StatusBadge status={alert.status} />
           </div>
-          <p className="text-[15px] font-semibold text-white leading-snug truncate">
+          <p className="text-base font-semibold text-white leading-snug truncate">
             {detectionLabel(alert.detection_type)}
           </p>
           <div className="flex flex-wrap items-center gap-3 mt-1">
-            <span className="flex items-center gap-1 text-[11px] text-[#D0D7E8]/70 font-mono">
+            <span className="flex items-center gap-1 text-xs text-mist/70 font-mono">
               <Camera className="h-3 w-3" />
               {alert.camera_id.slice(0, 8)}…
             </span>
             {alert.confidence_score != null && (
-              <span className="text-[11px] text-[#D0D7E8]/70 font-mono">
+              <span className="text-xs text-mist/70 font-mono">
                 {(alert.confidence_score * 100).toFixed(0)}% confidence
               </span>
             )}
-            <span className="flex items-center gap-1 text-[11px] text-[#D0D7E8]/60 font-mono">
+            <span className="flex items-center gap-1 text-xs text-mist/60 font-mono">
               <Clock className="h-3 w-3" />
               {timeAgo(alert.created_at)}
             </span>
@@ -386,7 +386,7 @@ export function AlertCard({ alert, onAcknowledge }: AlertCardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-[#5B8DEF] hover:text-white hover:bg-[#3B5EDE]/20 text-xs font-medium transition-colors duration-100"
+                className="text-sky hover:text-white hover:bg-blue/20 text-xs font-medium transition-colors duration-100"
                 onClick={() => setDetailOpen(true)}
                 aria-label="View alert details"
               >
@@ -402,7 +402,7 @@ export function AlertCard({ alert, onAcknowledge }: AlertCardProps) {
               <TooltipTrigger asChild>
                 <Button
                   size="sm"
-                  className="bg-[#3B5EDE] hover:bg-[#5B8DEF] text-white text-xs font-semibold transition-colors duration-100 focus-visible:ring-2 focus-visible:ring-[#3B5EDE] focus-visible:ring-offset-2 focus-visible:ring-offset-[#2C3E6B]"
+                  className="bg-blue hover:bg-sky text-white text-xs font-semibold transition-colors duration-100 focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:ring-offset-steel"
                   onClick={() => handleAcknowledge(alert.id)}
                   disabled={acknowledging}
                   aria-label="Acknowledge alert"

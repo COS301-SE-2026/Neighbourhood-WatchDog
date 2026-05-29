@@ -44,17 +44,17 @@ const STATUS_CONFIG: Record<
   { badge: string; label: string; icon: ReactNode }
 > = {
   PENDING: {
-    badge: "bg-[#3B5EDE]/20 border border-[#3B5EDE]/40 text-[#5B8DEF]",
+    badge: "bg-blue/20 border border-blue/40 text-sky",
     label: "Pending",
     icon: <Clock className="h-2.5 w-2.5" />,
   },
   APPROVED: {
-    badge: "bg-[#16A34A]/15 border border-[#16A34A]/30 text-[#16A34A]",
+    badge: "bg-safe/15 border border-safe/30 text-safe",
     label: "Approved",
     icon: <CheckCheck className="h-2.5 w-2.5" />,
   },
   DENIED: {
-    badge: "bg-[#DC2626]/12 border border-[#DC2626]/25 text-[#DC2626]",
+    badge: "bg-threat/12 border border-threat/25 text-threat",
     label: "Denied",
     icon: <XCircle className="h-2.5 w-2.5" />,
   },
@@ -65,19 +65,19 @@ const AVATAR_CONFIG: Record<
   { bg: string; border: string; text: string }
 > = {
   PENDING: {
-    bg: "bg-[#3B5EDE]/20",
-    border: "border-[#3B5EDE]/30",
-    text: "text-[#5B8DEF]",
+    bg: "bg-blue/20",
+    border: "border-blue/30",
+    text: "text-sky",
   },
   APPROVED: {
-    bg: "bg-[#16A34A]/15",
-    border: "border-[#16A34A]/25",
-    text: "text-[#16A34A]",
+    bg: "bg-safe/15",
+    border: "border-safe/25",
+    text: "text-safe",
   },
   DENIED: {
-    bg: "bg-[#DC2626]/12",
-    border: "border-[#DC2626]/20",
-    text: "text-[#DC2626]",
+    bg: "bg-threat/12",
+    border: "border-threat/20",
+    text: "text-threat",
   },
 };
 
@@ -119,8 +119,8 @@ export function RequestCard({ request, onApprove, onDeny }: RequestCardProps) {
     <Card
       className={[
         "flex flex-col items-center gap-3 px-4 py-4 rounded-xl border transition-all duration-150",
-        "bg-[#2C3E6B] border-[#2C3E6B]",
-        isPending ? "hover:border-[#3B5EDE]/50" : "opacity-70 hover:opacity-90",
+        "bg-steel border-steel",
+        isPending ? "hover:border-blue/50" : "opacity-70 hover:opacity-90",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -131,7 +131,7 @@ export function RequestCard({ request, onApprove, onDeny }: RequestCardProps) {
       <div
         className={[
           "h-10 w-10 rounded-full border flex items-center justify-center shrink-0",
-          "text-[13px] font-semibold tracking-wide",
+          "text-sm font-semibold tracking-wide",
           avatarCfg.bg,
           avatarCfg.border,
           avatarCfg.text,
@@ -147,15 +147,15 @@ export function RequestCard({ request, onApprove, onDeny }: RequestCardProps) {
 
       {/* Info */}
       <div className="flex-1 min-w-0 text-center">
-        <p className="text-[14px] font-semibold text-white truncate leading-snug">
+        <p className="text-sm font-semibold text-white truncate leading-snug">
           {request.user_name}
         </p>
         <div className="flex flex-wrap items-center gap-3 mt-0.5">
-          <span className="flex items-center gap-1 text-[11px] text-[#D0D7E8]/60 font-mono">
+          <span className="flex items-center gap-1 text-xs text-mist/60 font-mono">
             <Clock className="h-2.5 w-2.5" />
             {timeAgo(request.created_at)}
           </span>
-          <span className="text-[11px] text-[#D0D7E8]/40 font-mono truncate hidden sm:inline">
+          <span className="text-xs text-mist/40 font-mono truncate hidden sm:inline">
             {request.id}
           </span>
         </div>
@@ -163,7 +163,7 @@ export function RequestCard({ request, onApprove, onDeny }: RequestCardProps) {
 
       {/* Status badge */}
       <span
-        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest shrink-0 ${statusCfg.badge}`}
+        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-widest shrink-0 ${statusCfg.badge}`}
         aria-label={`Status: ${statusCfg.label}`}
       >
         {statusCfg.icon}
@@ -178,7 +178,7 @@ export function RequestCard({ request, onApprove, onDeny }: RequestCardProps) {
             disabled={isLoading}
             onClick={handleApprove}
             aria-label="Approve join request"
-            className="bg-[#16A34A]/15 hover:bg-[#16A34A]/30 text-[#16A34A] border border-[#16A34A]/30 text-[11px] font-semibold transition-colors duration-100 h-7 px-3"
+            className="bg-safe/15 hover:bg-safe/30 text-safe border border-safe/30 text-xs font-semibold transition-colors duration-100 h-7 px-3"
           >
             {approvingId ? (
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -195,7 +195,7 @@ export function RequestCard({ request, onApprove, onDeny }: RequestCardProps) {
             disabled={isLoading}
             onClick={handleDeny}
             aria-label="Deny join request"
-            className="bg-[#DC2626]/10 hover:bg-[#DC2626]/20 text-[#DC2626] border border-[#DC2626]/25 text-[11px] font-semibold transition-colors duration-100 h-7 px-3"
+            className="bg-threat/10 hover:bg-threat/20 text-threat border border-threat/25 text-xs font-semibold transition-colors duration-100 h-7 px-3"
           >
             {denyingId ? (
               <Loader2 className="h-3 w-3 animate-spin" />

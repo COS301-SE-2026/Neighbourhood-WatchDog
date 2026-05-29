@@ -58,7 +58,7 @@ function EmptyState() {
         --color-mist would be near-invisible on white; --color-body gives enough contrast.
       */}
       <p
-        className="text-[15px] font-semibold"
+        className="text-base font-semibold"
         style={{ color: "var(--color-body)" }}
       >
         No alerts
@@ -76,15 +76,15 @@ function ErrorState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
-      <p className="text-[15px] font-semibold text-red-400">
+      <p className="text-base font-semibold text-threat">
         Failed to load alerts
       </p>
-      <p className="text-xs text-white/40 max-w-xs">{message}</p>
+      <p className="text-xs text-mist max-w-xs">{message}</p>
       <Button
         size="sm"
         variant="outline"
         onClick={onRetry}
-        className="border-[#2C3E6B] text-[#D0D7E8] hover:bg-[#2C3E6B] hover:text-white text-xs"
+        className="border-steel text-mist hover:bg-steel hover:text-white text-xs"
       >
         Try again
       </Button>
@@ -102,14 +102,14 @@ function ActionErrorBanner({
   return (
     <div
       role="alert"
-      className="mb-4 flex items-center gap-2 rounded-lg border border-[#DC2626]/30 bg-[#DC2626]/10 px-4 py-3 text-sm text-[#DC2626]"
+      className="mb-4 flex items-center gap-2 rounded-lg border border-threat/30 bg-threat/10 px-4 py-3 text-sm text-threat"
     >
       <span className="flex-1">{message}</span>
       <button
         type="button"
         onClick={onDismiss}
         aria-label="Dismiss error"
-        className="ml-2 text-[#DC2626]/60 hover:text-[#DC2626] transition-colors"
+        className="ml-2 text-threat/60 hover:text-threat transition-colors"
       >
         ✕
       </button>
@@ -381,9 +381,9 @@ export default function AlertsPage({
   if (identityLoading) {
     return (
       <TooltipProvider>
-        <div className="w-full min-h-full flex items-center justify-center px-8 py-10 bg-[#1D2A5E] text-white/70">
+        <div className="w-full min-h-full flex items-center justify-center px-8 py-10 bg-navy text-mist">
           <div className="flex items-center gap-2">
-            <RefreshCw className="h-4 w-4 animate-spin text-[#5B8DEF]" />
+            <RefreshCw className="h-4 w-4 animate-spin text-sky" />
             Resolving neighbourhood context...
           </div>
         </div>
@@ -394,10 +394,10 @@ export default function AlertsPage({
   if (!neighbourhoodId) {
     return (
       <TooltipProvider>
-        <div className="w-full min-h-full flex items-center justify-center px-8 py-10 bg-[#1D2A5E] text-center">
-          <Card className="max-w-md bg-[#2C3E6B]/40 border-[#2C3E6B] rounded-2xl p-6 text-white">
+        <div className="w-full min-h-full flex items-center justify-center px-8 py-10 bg-navy text-center">
+          <Card className="max-w-md bg-steel/40 border-steel rounded-xl p-6 text-white">
             <p className="text-lg font-semibold">Alerts need a neighbourhood</p>
-            <p className="mt-2 text-sm text-white/60">
+            <p className="mt-2 text-sm text-mist">
               {identityError ||
                 "Open this page with a neighbourhood ID, or sign in to a user that already belongs to one."}
             </p>
@@ -409,11 +409,11 @@ export default function AlertsPage({
 
   return (
     <TooltipProvider>
-      <div className="w-full flex flex-col items-center px-8 py-10 bg-[#1D2A5E] min-h-full font-sans">
+      <div className="w-full flex flex-col items-center px-8 py-10 bg-navy min-h-full font-sans">
         <div className="w-full max-w-2xl">
           <header className="mb-6 text-center">
             <div className="flex items-center justify-center gap-2">
-              <h1 className="text-[32px] font-bold leading-10 text-white">
+              <h1 className="text-[2rem] font-bold leading-[2.5rem] text-white">
                 Alerts
               </h1>
               <span
@@ -425,9 +425,9 @@ export default function AlertsPage({
                 aria-label={wsConnected ? "Live" : "Offline"}
               >
                 {wsConnected ? (
-                  <Wifi className="h-4 w-4 text-[#16A34A] mt-1" />
+                  <Wifi className="h-4 w-4 text-safe mt-1" />
                 ) : (
-                  <WifiOff className="h-4 w-4 text-white/30 mt-1" />
+                  <WifiOff className="h-4 w-4 text-mist/50 mt-1" />
                 )}
               </span>
             </div>
@@ -480,9 +480,9 @@ export default function AlertsPage({
             />
           )}
 
-          <Card className="bg-[#2C3E6B]/40 border-[#2C3E6B] rounded-2xl">
+          <Card className="bg-steel/40 border-steel rounded-xl">
             {/* Toolbar */}
-            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#2C3E6B] rounded-t-2xl">
+            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-steel rounded-t-xl">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -512,7 +512,7 @@ export default function AlertsPage({
                         White on --color-blue ≥ 4.5:1 per spec contrast table.
                       */
                       <span
-                        className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"
+                        className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full text-xs font-bold"
                         style={{
                           backgroundColor: "var(--color-blue)",
                           color: "var(--color-white)",
@@ -539,7 +539,7 @@ export default function AlertsPage({
                 >
                   {/* Section label: caption-weight, --color-body for subdued tone */}
                   <DropdownMenuLabel
-                    className="text-[10px] uppercase tracking-wider"
+                    className="text-xs uppercase tracking-wider"
                     style={{ color: "var(--color-body)" }}
                   >
                     Severity
@@ -571,7 +571,7 @@ export default function AlertsPage({
                   />
 
                   <DropdownMenuLabel
-                    className="text-[10px] uppercase tracking-wider"
+                    className="text-xs uppercase tracking-wider"
                     style={{ color: "var(--color-body)" }}
                   >
                     Status
@@ -634,7 +634,7 @@ export default function AlertsPage({
                 size="sm"
                 onClick={triggerRefresh}
                 disabled={loading}
-                className="text-[#5B8DEF] hover:text-white hover:bg-[#2C3E6B] transition-colors text-xs"
+                className="text-sky hover:text-white hover:bg-steel transition-colors text-xs"
                 aria-label="Refresh alerts"
               >
                 <RefreshCw
@@ -648,11 +648,11 @@ export default function AlertsPage({
             <section
               aria-label="Alert list"
               aria-live="polite"
-              className="p-4 rounded-b-2xl"
+              className="p-4 rounded-b-xl"
             >
               {loading && alerts.length === 0 ? (
                 <div className="flex items-center justify-center py-20">
-                  <RefreshCw className="h-5 w-5 animate-spin text-[#5B8DEF]" />
+                  <RefreshCw className="h-5 w-5 animate-spin text-sky" />
                 </div>
               ) : error ? (
                 <ErrorState
