@@ -16,8 +16,17 @@ def register_user(payload):
         "confirmed": result["user_confirmed"]
     }
 
-def authenticate_user(email,password):
-    return login(email,password)
+def authenticate_user(payload):
+    result = login(
+        email = payload.email,
+        password = payload.password
+    )
+
+    return {
+        "access_token": result["access_token"],
+        "id_token": result["id_token"],
+        "expires_in": result["expires_in"]
+    }
 
 def confirm_user(email,code):
     return confirm_sign_up(email,code)
