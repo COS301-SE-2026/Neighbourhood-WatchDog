@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import CameraFeed from "./CameraFeed"
 
 interface CameraCardProps {
     name: string;
@@ -49,10 +50,7 @@ export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
         Boolean(streamUrl) &&
         streamHealth.url === streamUrl &&
         streamHealth.available &&
-        !streamHealth.error &&
-        streamImage.url === streamUrl &&
-        streamImage.loaded &&
-        !streamImage.error
+        !streamHealth.error;
 
     const effectiveStatus = streamOnline ? "online" : "offline"
 
@@ -61,17 +59,21 @@ export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
             {streamUrl ? (
                 <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    {/* <img
                         key={streamUrl}
                         src={streamUrl}
                         alt={`Live feed: ${name}`}
                         className={streamImage.error ? "hidden" : "w-full h-full object-cover rounded-md"}
                         onLoad={() => setStreamImage({ url: streamUrl, loaded: true, error: false })}
                         onError={() => setStreamImage({ url: streamUrl, loaded: false, error: true })}
-                    />
-                    {!(streamHealth.url === streamUrl && streamHealth.available && !streamHealth.error && streamImage.url === streamUrl && streamImage.loaded && !streamImage.error) && (
+                    /> */}
+
+                    <CameraFeed streamPath="tapo-camera" host="localhost" />
+
+
+                    {!(streamHealth.url === streamUrl && streamHealth.available && !streamHealth.error) && (
                         <span className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
-                            {streamHealth.error || streamImage.error ? "Stream unavailable" : "Connecting..."}
+                            {streamHealth.error ? "Stream unavailable" : "Connecting..."}
                         </span>
                     )}
                 </>
