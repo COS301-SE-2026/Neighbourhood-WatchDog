@@ -28,5 +28,13 @@ def authenticate_user(payload):
         "expires_in": result["expires_in"]
     }
 
-def confirm_user(email,code):
-    return confirm_sign_up(email,code)
+def confirm_user(payload):
+    result = confirm_sign_up(
+        email = payload.email,
+        code = payload.code
+    )
+
+    return {
+        "confirmed": True,
+        "result": result
+    }
