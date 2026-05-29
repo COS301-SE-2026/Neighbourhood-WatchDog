@@ -33,3 +33,8 @@ def signup(payload: SignUpRequest):
 @router.post("/login")
 def login(payload: LoginRequest):
     return authenticate_user(payload)
+
+@router.post("/confirm")
+def confirm(payload: ConfirmSignUpRequest):
+    return confirm_user(payload)
+
