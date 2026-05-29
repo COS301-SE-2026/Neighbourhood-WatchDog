@@ -48,50 +48,72 @@ client = boto3.client("cognito-idp", region_name=COGNITO_REGION)
 #temporarilyy functions to test other things.
 #Should ONLY talk to Cognito
 def sign_up(email: str, password : str, name : str, address: str):
-    response = client.sign_up(
-        ClientId = CLIENT_ID,
-        Username = email,
-        Password = password,
-        UserAttributes=[
-            {"Name": "email", "Value": email},
-            {"Name": "name", "Value": name},
-            {"Name": "address", "Value": address},
-        ],
-    )
+    try:
+        response = client.sign_up(
+            ClientId = CLIENT_ID,
+            Username = email,
+            Password = password,
+            UserAttributes=[
+                {"Name": "email", "Value": email},
+                {"Name": "name", "Value": name},
+                {"Name": "address", "Value": address},
+            ],
+        )
 
-    return { # TODO: Send this response to the database to add the user
-        "user_sub": response["UserSub"],
-        "user_confirmed": response["UserConfirmed"],
-    }
+        return { # TODO: Send this response to the database to add the user
+            "success": True,
+            "user_sub": response["UserSub"],
+            "user_confirmed": response["UserConfirmed"],
+        }
+    except ClientError as e:
+        raise Exception({ #TODO: Change to HTTPException
+            "success": False,
+            "error": e.response["Error"]["Code"],
+            "message": e.response["Error"]["Message"]
+        })
 
 def login(email, password):
-    response = client.initiate_auth(
-        ClientId = CLIENT_ID,
-        AuthFlow = "USER_PASSWORD_AUTH",
-        AuthParameters = {
-            "USERNAME": email,
-            "PASSWORD": password,
-        },
-    )
+    try:
+        response = client.initiate_auth(
+            ClientId = CLIENT_ID,
+            AuthFlow = "USER_PASSWORD_AUTH",
+            AuthParameters = {
+                "USERNAME": email,
+                "PASSWORD": password,
+            },
+        )
 
-    auth_result = response["AuthenticationResult"]
+        auth_result = response["AuthenticationResult"]
 
-    return {
-        "access_token": auth_result["AccessToken"],
-        "id_token": auth_result["IdToken"],
-        "refresh_token": auth_result.get("RefreshToken"),
-        "expires_in": auth_result["ExpiresIn"],
-        "token_type": auth_result["TokenType"],
-    }
+        return {
+            "access_token": auth_result["AccessToken"],
+            "id_token": auth_result["IdToken"],
+            "refresh_token": auth_result.get("RefreshToken"),
+            "expires_in": auth_result["ExpiresIn"],
+            "token_type": auth_result["TokenType"],
+        }
+    except ClientError as e:
+        raise Exception({ #TODO: Change to HTTPException
+            "success": False,
+            "error": e.response["Error"]["Code"],
+            "message": e.response["Error"]["Message"]
+        })
 
 def confirm_sign_up(email, code):
-    response = client.confirm_sign_up(
-        ClientId = CLIENT_ID,
-        Username = email,
-        ConfirmationCode = code,
-    )
+    try:
+        response = client.confirm_sign_up(
+            ClientId = CLIENT_ID,
+            Username = email,
+            ConfirmationCode = code,
+        )
 
-    return{
-        "message": "user confirmed",
-        "response": response,
-    }
+        return{
+            "message": "user confirmed",
+            "response": response,
+        }
+    except ClientError as e:
+        return {
+            "success": False,
+            "error": e.response["Error"]["Code"],
+            "message": e.response["Error"]["Message"]
+        }
