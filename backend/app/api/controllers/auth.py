@@ -29,3 +29,7 @@ def auth_ping():
 @router.post("/signup")
 def signup(payload: SignUpRequest):
     return register_user(payload)
+
+@router.post("/login")
+def login(payload: LoginRequest):
+    return authenticate_user(payload)
