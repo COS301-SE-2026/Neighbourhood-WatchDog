@@ -2,6 +2,8 @@ from jose import JWTError, jwt
 from fastapi import HTTPException
 from app.core.config import config
 import httpx
+import os
+import boto3
 from functools import lru_cache
 
 @lru_cache(maxsize=1)
@@ -37,12 +39,59 @@ def verify_token(token: str) -> dict:
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
     
+COGNITO_REGION = os.getenv("COGNITO_REGION")
+USER_POOL_ID = os.getenv("COGNITO_USER_POOL_ID")
+CLIENT_ID = os.getenv("COGNITO_CLIENT_ID")
+
+client = boto3.client("cognito-idp", region_name=COGNITO_REGION)
+
 #temporarilyy functions to test other things.
-def sign_up(email, password, name, address):
-    pass
+#Should ONLY talk to Cognito
+def sign_up(email: str, password : str, name : str, address: str):
+    response = client.sign_up(
+        ClientId = CLIENT_ID,
+        Username = email,
+        Password = password,
+        UserAttributes=[
+            {"Name": "email", "Value": email},
+            {"Name": "name", "Value": name},
+            {"Name": "address", "Value": address},
+        ],
+    )
+
+    return { # TODO: Send this response to the database to add the user
+        "user_sub": response["UserSub"],
+        "user_confirmed": response["UserConfirmed"],
+    }
 
 def login(email, password):
-    pass
+    response = client.initiate_auth(
+        ClientId = CLIENT_ID,
+        AuthFlow = "USER_PASSWORD_AUTH",
+        AuthParameters = {
+            "USERNAME": email,
+            "PASSWORD": password,
+        },
+    )
+
+    auth_result = response["AuthenticationResult"]
+
+    return {
+        "access_token": auth_result["AccessToken"],
+        "id_token": auth_result["IdToken"],
+        "refresh_token": auth_result.get("RefreshToken"),
+        "expires_in": auth_result["ExpiresIn"],
+        "token_type": auth_result["TokenType"],
+    }
 
 def confirm_sign_up(email, code):
-    pass
+    response = client.confirm_sign_up(
+        ClientId = CLIENT_ID,
+        Username = email,
+        ConfirmationCode = code,
+    )
+
+    return{
+        "message": "user confirmed",
+        "response": response,
+    }

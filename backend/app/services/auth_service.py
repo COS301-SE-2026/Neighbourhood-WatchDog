@@ -1,5 +1,5 @@
 from app.auth.cognito import sign_up, login, confirm_sign_up
-
+#Business Logic
 def register_user(email,password,name,address):
     return sign_up(email,password,name,address)
 
