@@ -36,3 +36,13 @@ def verify_token(token: str) -> dict:
 
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
+    
+#temporarilyy functions to test other things.
+def sign_up(email, password, name, address):
+    pass
+
+def login(email, password):
+    pass
+
+def confirm_sign_up(email, code):
+    pass

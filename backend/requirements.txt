@@ -45,7 +45,7 @@ jmespath==1.1.0
 # Video Processing
 ffmpeg-python==0.2.0
 future==1.0.0
-opencv-python-headless==4.13.0.92
+opencv-python-headless
 
 # WebSocket
 websockets==16.0

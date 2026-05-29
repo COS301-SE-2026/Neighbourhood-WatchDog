@@ -1,27 +1,15 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
+from app.services.auth_service import (register_user,authenticate_user,confirm_user)
 from app.auth.dependencies import get_current_user
-from app.core.database import DbSession
-from app.services.user_service import create_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+# Need to define the route here and then delegate the work to other layers
 
-@router.get("/me")
-async def get_current_user_info(
-    current_user: dict = Depends(get_current_user),
-    db: DbSession = None
-):
-    """Get current user info and create in database if needed"""
-    user = await create_user(
-        email=current_user.get("email"),
-        first_name=current_user.get("given_name", ""),
-        last_name=current_user.get("family_name", ""),
-        cognito_sub=current_user.get("sub"),
-        db=db
-    )
-    return user
-
-@router.post("/logout")
-async def logout(current_user: dict = Depends(get_current_user)):
-    """Logout endpoint"""
-    return {"message": "Logged out"}
+#Health check, see if this route is all good
+@router.get("/ping")
+def auth_ping():
+    return{
+        "status":"ok",
+        "message":"auth router is ALIVE"
+    }
 
