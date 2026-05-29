@@ -15,7 +15,7 @@ const PROPERTY_ID = "30000000-0000-0000-0000-000000000001" // TODO: Get from URL
 
 function PropertyPageContent(){
   const searchParams = useSearchParams()
-  const propertyId = searchParams.get("id") 
+  const propertyId = searchParams.get("id") || PROPERTY_ID
 
   const [neighbourhoodDialogOpen, setNeighbourhoodDialogOpen] = useState(false);
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false)
@@ -24,8 +24,12 @@ function PropertyPageContent(){
   const [loading, setLoading] = useState(true);
 
   useEffect(() =>{
-    if (!propertyId) return;
+    if (!propertyId && !PROPERTY_ID){
+      console.log("AINT NO PROPEWR")
+      return;
+    } 
 
+    console.log("THIS IS SUPPOSED TO PRINT")
     const fetchProperty = async () => {
       try {
 
