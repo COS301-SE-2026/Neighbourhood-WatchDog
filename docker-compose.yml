@@ -18,20 +18,20 @@ services:
       retries: 5
       start_period: 30s
 
-  redis: 
-    image: redis:7-alpine
-    container_name: redis_cache
-    restart: always
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 1m30s
-      timeout: 30s
-      retries: 5
-      start_period: 30s
+  # redis: 
+  #   image: redis:7-alpine
+  #   container_name: redis_cache
+  #   restart: always
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 1m30s
+  #     timeout: 30s
+  #     retries: 5
+  #     start_period: 30s
 
   backend:
     build:
@@ -44,7 +44,7 @@ services:
       APP_ENV: development
       DEBUG: "true"
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      REDIS_URL: redis://redis:6379/0
+      # REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
       AWS_REGION: ${AWS_REGION}
       COGNITO_REGION: ${COGNITO_REGION}
@@ -74,21 +74,21 @@ services:
     depends_on:
       - backend
 
-  ai:
-    build:
-      context: ./ai
-      target: development
-    platform: linux/amd64
-    ports:
-      - "8001:8001"
-    environment:
-      OPENCV_FFMPEG_CAPTURE_OPTIONS: "rtsp_transport;tcp"
-      BACKEND_URL: http://backend:8000
-    volumes:
-      - ./ai:/app
-    command: uvicorn app:app --host 0.0.0.0 --port 8001 --reload
+  # ai:
+  #   build:
+  #     context: ./ai
+  #     target: development
+  #   platform: linux/amd64
+  #   ports:
+  #     - "8001:8001"
+  #   environment:
+  #     OPENCV_FFMPEG_CAPTURE_OPTIONS: "rtsp_transport;tcp"
+  #     BACKEND_URL: http://backend:8000
+  #   volumes:
+  #     - ./ai:/app
+  #   command: uvicorn app:app --host 0.0.0.0 --port 8001 --reload
 
 volumes:
   postgres_data:
-  redis_data:
+  # redis_data:
   frontend_node_modules:
