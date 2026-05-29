@@ -1,3 +1,6 @@
+rtpAddress: :8002
+rtcpAddress: :8003
+
 rtspAddress: :8554
 webrtcAddress: :8889
 api: yes
