@@ -2,6 +2,19 @@ from fastapi import APIRouter, Depends, Response
 from app.services.auth_service import (register_user,authenticate_user,confirm_user)
 from app.auth.dependencies import get_current_user
 
+from fastapi import APIRouter
+from app.schemas.auth import (
+    SignUpRequest,
+    LoginRequest,
+    ConfirmSignUpRequest
+)
+
+from app.services.auth_service import (
+    register_user,
+    authenticate_user,
+    confirm_user
+)
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 # Need to define the route here and then delegate the work to other layers
 
@@ -13,3 +26,6 @@ def auth_ping():
         "message":"auth router is ALIVE"
     }
 
+@router.post("/signup")
+def signup(payload: SignUpRequest):
+    return register_user(payload)
