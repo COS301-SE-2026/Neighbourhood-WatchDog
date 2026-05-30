@@ -17,7 +17,10 @@ from app.core.database import engine, Base
 import app.models
 
 configure_logging()
-Base.metadata.create_all(bind=engine)
+import os
+
+if os.getenv("SKIP_DB_INIT", "false").lower() != "true":
+    Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=config.app_name,
