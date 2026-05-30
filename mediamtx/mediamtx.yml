@@ -15,9 +15,5 @@ paths:
 webrtcAdditionalHosts:
   - localhost
 
-# this will allow CORS from netx.js
-webrtcICEHostNAT1ToIPs: []
-
-cors: 
-  allowedOrigins:
-    - "http://localhost:3000"
+# this will allow CORS from next.js
+webrtcAllowOrigin: "http://localhost:3000"
