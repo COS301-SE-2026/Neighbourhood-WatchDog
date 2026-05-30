@@ -28,13 +28,13 @@ async def async_client():
     # AsyncClient supports creating with `app=` in newer httpx versions.
     # If that fails, fall back to creating an ASGITransport instance.
     try:
-        async with AsyncClient(app=main_module.app, base_url="http://testserver") as ac:
+        async with AsyncClient(app=main_module.app, base_url="https://testserver") as ac:
             yield ac
     except TypeError:
         if ASGITransport is None:
             raise
         transport = ASGITransport(app=main_module.app)
-        async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
+        async with AsyncClient(transport=transport, base_url="https://testserver") as ac:
             yield ac
 
 
