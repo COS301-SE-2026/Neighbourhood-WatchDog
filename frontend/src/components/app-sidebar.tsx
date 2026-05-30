@@ -76,34 +76,6 @@ function WatchdogLogo({ size = 28 }: { size?: number }) {
   )
 }
 
-/* <path
-        d="M14 2L4 6v8c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V6L14 2z"
-        fill="#3B5EDE"
-        fillOpacity="0.25"
-        stroke="#5B8DEF"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      <ellipse
-        cx="14"
-        cy="13"
-        rx="4.5"
-        ry="3"
-        fill="#5B8DEF"
-        fillOpacity="0.3"
-        stroke="#5B8DEF"
-        strokeWidth="1.2"
-      />
-      <circle cx="14" cy="13" r="1.6" fill="#5B8DEF" />
-      <path
-        d="M10.5 18l2.5 2.5L18 15"
-        stroke="#5B8DEF"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Image> */
-
 // Pin Button
 
 function PinToggle({

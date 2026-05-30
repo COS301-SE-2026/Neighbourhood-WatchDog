@@ -25,11 +25,9 @@ function PropertyPageContent(){
 
   useEffect(() =>{
     if (!propertyId && !PROPERTY_ID){
-      console.log("AINT NO PROPEWR")
       return;
     } 
 
-    console.log("THIS IS SUPPOSED TO PRINT")
     const fetchProperty = async () => {
       try {
 
