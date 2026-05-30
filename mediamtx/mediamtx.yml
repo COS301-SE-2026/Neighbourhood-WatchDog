@@ -10,3 +10,14 @@ paths:
   tapo-camera:
     source: rtsp://Intrepid:password1234@192.168.3.65:554/stream2
     sourceProtocol: tcp
+
+
+webrtcAdditionalHosts:
+  - localhost
+
+# this will allow CORS from netx.js
+webrtcICEHostNAT1ToIPs: []
+
+cors: 
+  allowedOrigins:
+    - "http://localhost:3000"
