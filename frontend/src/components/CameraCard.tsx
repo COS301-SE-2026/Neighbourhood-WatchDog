@@ -10,6 +10,13 @@ interface CameraCardProps {
     rtspUrl?: string;
 }
 
+
+function getStreamPath(rtspUrl: string): string {
+
+    return rtspUrl.split("/").pop() || rtspUrl;
+
+}
+
 export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
     const streamUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream?url=${encodeURIComponent(rtspUrl)}` : null;
     const streamHealthUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream/health?url=${encodeURIComponent(rtspUrl)}` : null;
@@ -68,7 +75,10 @@ export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
                         onError={() => setStreamImage({ url: streamUrl, loaded: false, error: true })}
                     /> */}
 
-                    <CameraFeed streamUrl={streamUrl} />
+                    <CameraFeed streamPath={getStreamPath(rtspUrl ?? "")}
+                                host="localhost"
+                                port={8889}
+                    />
 
 
                     {!(streamHealth.url === streamUrl && streamHealth.available && !streamHealth.error) && (
