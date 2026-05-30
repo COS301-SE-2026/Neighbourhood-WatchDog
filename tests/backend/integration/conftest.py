@@ -2,8 +2,10 @@ import os
 
 os.environ["SKIP_DB_INIT"] = "false"
 
+TEST_BEARER = "Bearer test"
+
 postgres_user = os.getenv("POSTGRES_USER", "postgres")
-postgres_password = os.getenv("POSTGRES_PASSWORD", "postgres")
+postgres_password = os.getenv("POSTGRES_PASSWORD")
 postgres_db = os.getenv("POSTGRES_DB", "watchdog")
 os.environ["DATABASE_URL"] = (
     f"postgresql://{postgres_user}:{postgres_password}@localhost:5432/{postgres_db}"
@@ -41,7 +43,7 @@ async def async_client():
 @pytest.fixture
 def auth_headers():
     return {
-        "Authorization": "Bearer test",
+        "Authorization": TEST_BEARER,
         "X-Mock-Role": "RESIDENT",
         "X-Mock-Sub": "00000000-0000-0000-0000-000000000001",
     }
@@ -50,7 +52,7 @@ def auth_headers():
 @pytest.fixture
 def admin_headers():
     return {
-        "Authorization": "Bearer test",
+        "Authorization": TEST_BEARER,
         "X-Mock-Role": "NEIGHBOURHOOD_ADMIN",
         "X-Mock-Sub": "11111111-1111-1111-1111-111111111111",
     }
@@ -60,5 +62,5 @@ def admin_headers():
 def internal_headers():
     return {
         "X-Internal-Token": "dev-token",
-        "Authorization": "Bearer test",
+        "Authorization": TEST_BEARER,
     }

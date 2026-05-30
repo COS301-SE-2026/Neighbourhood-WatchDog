@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 
+ALERT_TIMESTAMP = "2023-01-01T00:00:00Z"
+
 @pytest.mark.asyncio
 async def test_create_alert(async_client, auth_headers):
     alert_res = {
@@ -8,7 +10,7 @@ async def test_create_alert(async_client, auth_headers):
         "camera_id": "22222222-2222-2222-2222-222222222222",
         "detection_event_id": "88888888-8888-8888-8888-888888888888",
         "status": "OPEN",
-        "created_at": "2023-01-01T00:00:00Z",
+        "created_at": ALERT_TIMESTAMP,
     }
 
     with patch(
@@ -19,7 +21,7 @@ async def test_create_alert(async_client, auth_headers):
             "camera_id": "22222222-2222-2222-2222-222222222222",
             "detection_type": "HUMAN_PRESENCE",
             "confidence": 0.9,
-            "timestamp": "2023-01-01T00:00:00Z",
+            "timestamp": ALERT_TIMESTAMP,
         }
         r = await async_client.post("/alerts/", json=payload, headers=auth_headers)
         assert r.status_code == 200
@@ -44,7 +46,7 @@ async def test_list_and_acknowledge(async_client, auth_headers):
         "status": "OPEN",
         "resolved_by": None,
         "resolved_at": None,
-        "created_at": "2023-01-01T00:00:00Z",
+        "created_at": ALERT_TIMESTAMP,
         "detection_type": "HUMAN_PRESENCE",
         "confidence_score": 0.9,
         "thumbnail_url": None,
