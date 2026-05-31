@@ -23,7 +23,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         frontend_origin = _normalize_origin(config.frontend_url)
 
-        if not request.url.path in public_routes:
+        if request.url.path not in public_routes:
             if not request.headers.get("Authorization"):
                 response = JSONResponse({"detail": "No Authorization header"}, status_code=401)
                 self._add_cors_headers(response)

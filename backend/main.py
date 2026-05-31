@@ -14,10 +14,10 @@ from app.api.controllers.stream import router as stream_router
 from slowapi.middleware import SlowAPIMiddleware
 from app.auth.rate_limiter import limiter
 from app.core.database import engine, Base
+import os
 import app.models
 
 configure_logging()
-import os
 
 if os.getenv("SKIP_DB_INIT", "false").lower() != "true":
     Base.metadata.create_all(bind=engine)
