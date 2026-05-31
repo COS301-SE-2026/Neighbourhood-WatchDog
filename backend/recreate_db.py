@@ -2,6 +2,7 @@
 """Recreate database schema from models"""
 
 from app.core.database import engine, Base
+import app.models #noqa: F401
 
 def recreate_database():
     """Drop all tables and recreate from models"""

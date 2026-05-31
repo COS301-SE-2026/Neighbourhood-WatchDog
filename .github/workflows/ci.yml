@@ -45,10 +45,28 @@ jobs:
   tests:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgis/postgis:15-3.4-alpine
+        env: 
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: watchdog
+        ports:
+          - "5432:5432" 
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Verify Postgres Connection
+        env:
+          PGPASSWORD: test_password
+        run: |
+          sudo apt-get -yqq update
+          sudo apt-get -yqq install postgresql-client
+          psql -h localhost -U postgres -d watchdog -c "SELECT 1;" # FIXED: Corrected user and database name
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -71,10 +89,9 @@ jobs:
       - name: Install frontend dependencies
         run: cd frontend && pnpm install
 
-      - name: Create test .env
-        run: echo "DATABASE_URL=sqlite:///test.db" > backend/.env
-
       - name: Run backend tests
+        env:
+          DATABASE_URL: postgresql://postgres:test_password@localhost:5432/watchdog 
         run: cd tests/backend && python -m pytest
 
       - name: Run frontend tests
@@ -100,7 +117,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20.9.0'
-          
 
       - name: Install pnpm
         run: npm install -g pnpm@8

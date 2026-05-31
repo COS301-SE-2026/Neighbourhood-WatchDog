@@ -10,16 +10,14 @@ from app.api.controllers.property import router as property_router
 from app.api.controllers.neighbourhood import router as neighbourhood_router
 from app.api.controllers.camera import router as camera_router
 from app.api.controllers.users import router as users_router
-# from app.api.controllers.alerts import router as alerts_router
-from app.api.controllers.alert import router as alert_router
 from app.api.controllers.stream import router as stream_router
 from slowapi.middleware import SlowAPIMiddleware
 from app.auth.rate_limiter import limiter
 from app.core.database import engine, Base
+import os
 import app.models
 
 configure_logging()
-import os
 
 if os.getenv("SKIP_DB_INIT", "false").lower() != "true":
     Base.metadata.create_all(bind=engine)

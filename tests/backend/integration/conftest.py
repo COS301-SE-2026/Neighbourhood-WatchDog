@@ -1,4 +1,7 @@
 import os
+import main as main_module
+import pytest
+from httpx import AsyncClient
 
 os.environ["SKIP_DB_INIT"] = "false"
 
@@ -7,12 +10,13 @@ TEST_BEARER = "Bearer test"
 postgres_user = os.getenv("POSTGRES_USER", "postgres")
 postgres_password = os.getenv("POSTGRES_PASSWORD")
 postgres_db = os.getenv("POSTGRES_DB", "watchdog")
-os.environ["DATABASE_URL"] = (
-    f"postgresql://{postgres_user}:{postgres_password}@localhost:5432/{postgres_db}"
-)
+# os.environ["DATABASE_URL"] = (
+#     f"postgresql://{postgres_user}:{postgres_password}@localhost:5432/{postgres_db}"
+# )
 
-import pytest
-from httpx import AsyncClient
+if not os.getenv("DATABASE_URL"):
+    os.environ["DATABASE_URL"] = f"postgresql://{postgres_user}:{postgres_password}@localhost:5432/{postgres_db}"
+
 try:
     # ASGITransport may be in different places depending on httpx version
     from httpx import ASGITransport 
@@ -21,8 +25,6 @@ except Exception:
         from httpx._transports.asgi import ASGITransport  
     except Exception:
         ASGITransport = None 
-import main as main_module
-
 
 @pytest.fixture
 async def async_client():
