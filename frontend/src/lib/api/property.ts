@@ -5,6 +5,8 @@ import { apiCall } from './client'
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export async function addProperty(data: CreatePropertyReq): Promise<PropertyRes> {
+  console.log(data)
+  
   const result = await apiCall<CreatePropertyRes>('/properties/create-property', {
     method: 'POST',
     body: data,

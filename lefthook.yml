@@ -1,0 +1,17 @@
+pre-commit:
+  parallel: true
+  commands:
+    frontend-lint:
+      root: frontend/
+      glob: "*.{js,jsx,ts,tsx}"
+      stage_fixed: true
+      run: pnpm eslint --fix {staged_files}
+    frontend-build:
+      root: frontend/
+      glob: "*.{js,jsx,ts,tsx}"
+      stage_fixed: true
+      run: pnpm run build
+    backend-ruff:
+      glob: "*.py"
+      run: ruff check --fix {staged_files}
+      stage_fixed: true

@@ -5,18 +5,7 @@ import os
 
 # Import all models so Alembic can detect them
 from app.core.database import Base
-from app.models.user import User  # noqa: F401
-from app.models.neighbourhood import Neighbourhood  # noqa: F401
-from app.models.property import Property  # noqa: F401
-from app.models.camera import Camera  # noqa: F401
-from app.models.detection_event import DetectionEvent  # noqa: F401
-from app.models.alert import Alert  # noqa: F401
-from app.models.zone import GeospatialZone  # noqa: F401
-from app.models.retention_policy import RetentionPolicy  # noqa: F401
-from app.models.neighbourhood_join_request import NeighbourhoodJoinRequest  # noqa: F401
-from app.models.audit_log import AuditLog  # noqa: F401
-from app.models.user_property import UserProperty  # noqa: F401
-from app.models.property_user import PropertyUser  # noqa: F401
+import app.models #noqa: F401
 
 config = context.config
 

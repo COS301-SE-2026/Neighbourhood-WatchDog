@@ -14,10 +14,13 @@ from app.api.controllers.stream import router as stream_router
 from slowapi.middleware import SlowAPIMiddleware
 from app.auth.rate_limiter import limiter
 from app.core.database import engine, Base
-import app.models  # noqa: F401
+from app import models  # noqa: F401  (imported for side effects: model registration)
+import os
 
 configure_logging()
-Base.metadata.create_all(bind=engine)
+
+if os.getenv("SKIP_DB_INIT", "false").lower() != "true":
+    Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=config.app_name,
