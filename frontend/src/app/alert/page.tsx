@@ -171,17 +171,13 @@ export default function AlertsPage({
     initialFetchState,
   );
 
-  // Read search params on the client without syncing them into state.
-  const searchParams = useSearchParams();
-  const queryNeighbourhoodId =
-    searchParams.get("neighbourhoodId") ||
-    searchParams.get("neighbourhood_id");
+  const [queryNeighbourhoodId, setQueryNeighbourhoodId] = useState<string | null>(null);
   const [neighbourhoodId, setNeighbourhoodId] = useState<string | null>(
-    initialNeighbourhoodId ?? queryNeighbourhoodId ?? null,
+    initialNeighbourhoodId ?? null,
   );
   
   const [identityLoading, setIdentityLoading] = useState(
-    !initialNeighbourhoodId && !queryNeighbourhoodId,
+    !initialNeighbourhoodId,
   );
   const [identityError, setIdentityError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -210,6 +206,20 @@ export default function AlertsPage({
       mountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    const searchParams = useSearchParams();
+    const qId = searchParams.get("neighbourhoodId") || searchParams.get("neighbourhood_id");
+    
+    if (qId) {
+      setQueryNeighbourhoodId(qId);
+      if (!initialNeighbourhoodId) {
+        setNeighbourhoodId(qId);
+      }
+    }
+    
+    setIdentityLoading(!initialNeighbourhoodId && !qId);
+  }, [initialNeighbourhoodId]);
 
   useEffect(() => {
     if (initialNeighbourhoodId || queryNeighbourhoodId) {
