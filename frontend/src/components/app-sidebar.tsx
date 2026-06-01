@@ -13,13 +13,10 @@ import {
   Bell,
   FileText,
   Settings,
-  ClipboardClock,
-  KeyRound,
   Plus
 } from "lucide-react"
 
 import { CreatePropertyDialog } from "./create-property-dialogue"
-import { useEffect } from "react"
 
 import {
   Sidebar,

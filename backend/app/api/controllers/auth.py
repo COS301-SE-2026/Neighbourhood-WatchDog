@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
 from app.services.user_service import create_user
@@ -11,11 +11,17 @@ async def get_current_user_info(
     db: DbSession = None
 ):
     """Get current user info and create in database if needed"""
+    email = current_user.get("email")
+    cognito_sub = current_user.get("sub")
+
+    if not email or not cognito_sub:
+        raise HTTPException(status_code=401, detail="Invalid token claims")
+
     user = await create_user(
-        email=current_user.get("email"),
+        email=email,
         first_name=current_user.get("given_name", ""),
         last_name=current_user.get("family_name", ""),
-        cognito_sub=current_user.get("sub"),
+        cognito_sub=cognito_sub,
         db=db
     )
     return user
