@@ -40,8 +40,6 @@ app.include_router(property_router)
 app.include_router(neighbourhood_router)
 app.include_router(camera_router)
 app.include_router(users_router)
-# app.include_router(alerts_router)
-app.include_router(alert_router)
 app.include_router(stream_router)
 
 @app.get("/health")

@@ -19,7 +19,8 @@ interface Camera {
 
 const initialCameras: Camera[] = [
     { id: "1", name: "Camera 1 - Backyard" },
-    { id: "2", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://Intrepid:password1234@172.20.10.2:554/stream2" },
+  //{ id: "2", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://Intrepid:password1234@172.20.10.2:554/stream2" },
+    { id: "2", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://localhost:8554/tapo-camera" },
     { id: "3", name: "Camera 5 - Living Room" },
     { id: "4", name: "Camera 3 - Bedroom 2" },
     { id: "5", name: "Camera 4 - Kitchen" },
@@ -54,13 +55,17 @@ export default function Dashboard() {
         <div className="w-full p-6">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold">Property Name</h1>
-                <Button
-                    onClick={() => setShowCard(true)}
-                    className="bg-blue hover:bg-sky text-white rounded-full"
-                >
-                    <Plus size={16} className="mr-1" />
-                    Add Camera
-                </Button>
+                <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-sm">{connected ? 'Connected' : 'Disconnected'}</span>
+                    <Button
+                        onClick={() => setShowCard(true)}
+                        className="bg-blue hover:bg-sky text-white rounded-full"
+                    >
+                        <Plus size={16} className="mr-1" />
+                        Add Camera
+                    </Button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
