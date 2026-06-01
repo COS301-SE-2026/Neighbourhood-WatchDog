@@ -1,5 +1,4 @@
 import pytest
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 @pytest.mark.asyncio

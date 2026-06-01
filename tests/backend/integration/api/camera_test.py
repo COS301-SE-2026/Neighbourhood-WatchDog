@@ -1,5 +1,4 @@
 import pytest
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 RSTP_URL = "rtsp://example.com/stream"
