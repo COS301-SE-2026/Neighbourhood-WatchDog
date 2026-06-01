@@ -40,15 +40,48 @@ jobs:
         run: cd frontend && pnpm install
 
       - name: Run ESLint
-        run: cd frontend && pnpm lint 
+        run: cd frontend && pnpm lint  
 
   tests:
     runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: postgresql://postgres:test_password@localhost:5432/watchdog
+      REDIS_URL: ${{ secrets.REDIS_URL }}
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      COGNITO_REGION: ${{ secrets.COGNITO_REGION }}
+      COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
+      COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
+      FRONTEND_URL: https://testserver
+
+    services:
+      postgres:
+        image: postgis/postgis:15-3.4-alpine
+        env: 
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: watchdog
+        ports:
+          - "5432:5432" 
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Verify Postgres Connection
+        env:
+          PGPASSWORD: test_password
+        run: |
+          sudo apt-get -yqq update
+          sudo apt-get -yqq install postgresql-client
+          psql -h localhost -U postgres -d watchdog -c "SELECT 1;" 
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -71,8 +104,11 @@ jobs:
       - name: Install frontend dependencies
         run: cd frontend && pnpm install
 
-      - name: Create test .env
-        run: echo "DATABASE_URL=sqlite:///test.db" > backend/.env
+      - name: Run database migrations
+        run: cd backend && alembic upgrade head
+
+      - name: Seed test data
+        run: cd backend && python seed.py
 
       - name: Run backend tests
         run: cd tests/backend && python -m pytest
@@ -100,7 +136,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20.9.0'
-          
 
       - name: Install pnpm
         run: npm install -g pnpm@8
@@ -127,7 +162,7 @@ jobs:
         run: pip install mypy
 
       - name: Type check backend
-        run: cd backend && mypy . --ignore-missing-imports || true
+        run: cd backend && mypy . --ignore-missing-imports
 
   security:
     runs-on: ubuntu-latest
@@ -148,4 +183,4 @@ jobs:
         run: bandit -r backend/ -ll
 
       - name: Check pip dependencies
-        run: pip-audit --ignore-vulns CVE-2024-1234 || true
+        run: pip-audit
