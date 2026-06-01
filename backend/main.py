@@ -14,7 +14,7 @@ from app.api.controllers.stream import router as stream_router
 from slowapi.middleware import SlowAPIMiddleware
 from app.auth.rate_limiter import limiter
 from app.core.database import engine, Base
-import app.models
+import app.models  # noqa: F401
 
 configure_logging()
 Base.metadata.create_all(bind=engine)

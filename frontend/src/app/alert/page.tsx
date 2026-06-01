@@ -171,13 +171,16 @@ export default function AlertsPage({
     initialFetchState,
   );
 
-  const [queryNeighbourhoodId, setQueryNeighbourhoodId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const queryNeighbourhoodId =
+    searchParams.get("neighbourhoodId") || searchParams.get("neighbourhood_id");
+  
   const [neighbourhoodId, setNeighbourhoodId] = useState<string | null>(
-    initialNeighbourhoodId ?? null,
+    initialNeighbourhoodId ?? queryNeighbourhoodId ?? null,
   );
   
   const [identityLoading, setIdentityLoading] = useState(
-    !initialNeighbourhoodId,
+    !initialNeighbourhoodId && !queryNeighbourhoodId,
   );
   const [identityError, setIdentityError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -206,20 +209,6 @@ export default function AlertsPage({
       mountedRef.current = false;
     };
   }, []);
-
-  useEffect(() => {
-    const searchParams = useSearchParams();
-    const qId = searchParams.get("neighbourhoodId") || searchParams.get("neighbourhood_id");
-    
-    if (qId) {
-      setQueryNeighbourhoodId(qId);
-      if (!initialNeighbourhoodId) {
-        setNeighbourhoodId(qId);
-      }
-    }
-    
-    setIdentityLoading(!initialNeighbourhoodId && !qId);
-  }, [initialNeighbourhoodId]);
 
   useEffect(() => {
     if (initialNeighbourhoodId || queryNeighbourhoodId) {
