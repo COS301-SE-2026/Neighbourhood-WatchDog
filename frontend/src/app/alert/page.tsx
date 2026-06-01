@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -29,9 +31,6 @@ import {
   getAuthToken,
   WS_BASE,
 } from "@/lib/api/alert";
-
-
-export const dynamic = 'force-dynamic';
 
 const ALL_SEVERITIES: AlertSeverity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "RESOLVED"];
