@@ -30,6 +30,9 @@ import {
   WS_BASE,
 } from "@/lib/api/alert";
 
+
+export const dynamic = 'force-dynamic';
+
 const ALL_SEVERITIES: AlertSeverity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "RESOLVED"];
 
