@@ -170,12 +170,16 @@ export default function AlertsPage({
     fetchReducer,
     initialFetchState,
   );
+
+  // Read search params on the client without syncing them into state.
   const searchParams = useSearchParams();
   const queryNeighbourhoodId =
-    searchParams.get("neighbourhoodId") || searchParams.get("neighbourhood_id");
+    searchParams.get("neighbourhoodId") ||
+    searchParams.get("neighbourhood_id");
   const [neighbourhoodId, setNeighbourhoodId] = useState<string | null>(
     initialNeighbourhoodId ?? queryNeighbourhoodId ?? null,
   );
+  
   const [identityLoading, setIdentityLoading] = useState(
     !initialNeighbourhoodId && !queryNeighbourhoodId,
   );
