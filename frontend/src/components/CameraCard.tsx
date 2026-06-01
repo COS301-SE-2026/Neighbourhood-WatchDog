@@ -25,11 +25,11 @@ export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
         available: false,
         error: false,
     })
-    const [streamImage, setStreamImage] = useState<{ url: string | null; loaded: boolean; error: boolean }>({
-        url: null,
-        loaded: false,
-        error: false,
-    })
+    // const [streamImage, setStreamImage] = useState<{ url: string | null; loaded: boolean; error: boolean }>({
+    //     url: null,
+    //     loaded: false,
+    //     error: false,
+    // })
 
     useEffect(() => {
         if (!streamHealthUrl) return
