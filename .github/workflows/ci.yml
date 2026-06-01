@@ -53,7 +53,7 @@ jobs:
       COGNITO_REGION: ${{ secrets.COGNITO_REGION }}
       COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
       COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
-      FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+      FRONTEND_URL: https://testserver
 
     services:
       postgres:
