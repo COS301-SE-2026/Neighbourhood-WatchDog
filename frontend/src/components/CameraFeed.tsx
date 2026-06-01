@@ -4,9 +4,9 @@ import { useEffect, useRef } from "react";
 
 interface CameraFeedProps {
 
-    streamPath: string // "tapo-camera"
-    host?: string // "localhost"
-    port?: number // 8889
+    readonly streamPath: string // "tapo-camera"
+    readonly host?: string // "localhost"
+    readonly port?: number // 8889
 
 }
 
