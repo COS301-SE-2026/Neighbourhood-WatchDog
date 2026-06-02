@@ -22,12 +22,12 @@ tracker = DeepSort(
 # url = "rtsp://Intrepid:password1234@192.168.1.126:554/stream1"
 
 # url with stream 2, to lower resolution stream
-url = "rtsp://Intrepid:password1234@10.76.19.58:554/stream2"
+MEDIAMTX_RTSP_URL = "rtsp://localhost:8554/tapo-camera"
 
 BACKEND_URL = "http://localhost:8000/api/alerts"
 CAMERA_ID = "" #we need to add a camera uuid here
 
-cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
+cap = cv2.VideoCapture(MEDIAMTX_RTSP_URL, cv2.CAP_FFMPEG)
 
 if not cap.isOpened():
     print("Failed to open stream")
