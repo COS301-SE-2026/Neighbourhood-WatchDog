@@ -101,9 +101,21 @@ while True:
             except Exception as e:
                 print(f"Failed to send alert: {e}")
 
-    annotated = annotate_frame(frame, tracks_for_thumbnail)
-    _ = encode_frame_as_jpeg(annotated)
-    cv2.imshow("Annotated", annotated)
+    # annotated = annotate_frame(frame, tracks_for_thumbnail)
+    # _ = encode_frame_as_jpeg(annotated)
+    # cv2.imshow("Annotated", annotated)
+
+    try:
+        httpx.post(
+            f"http://localhost:8000/api/stream/cameras/{CAMERA_ID}/annotations",
+            json={
+                "tracks": tracks_for_thumbnail,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
+        )
+        timeout=1.0,
+    except Exception as e:
+        print(f"Failed to send annotation: {e}")
 
     # 'q' to quit
     if cv2.waitKey(1) & 0xFF == ord('q'):
