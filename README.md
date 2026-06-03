@@ -26,6 +26,7 @@
 [![Open Issues](https://img.shields.io/github/issues-raw/COS301-SE-2026/Neighbourhood-WatchDog?style=for-the-badge&logo=github&logoColor=white&label=Issues&labelColor=0D1B2A&color=0096C7)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/issues)
 [![Closed Issues](https://img.shields.io/github/issues-closed-raw/COS301-SE-2026/Neighbourhood-WatchDog?style=for-the-badge&logo=github&logoColor=white&label=Closed&labelColor=0D1B2A&color=023E8A)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/issues?q=is%3Aissue+is%3Aclosed)
 [![Status](https://img.shields.io/maintenance/maintained/2026?style=for-the-badge&label=Status&labelColor=0D1B2A&color=00B4D8)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog)
+[![codecov](https://codecov.io/github/COS301-SE-2026/Neighbourhood-WatchDog/graph/badge.svg?token=28L6HTN8XV)](https://codecov.io/github/COS301-SE-2026/Neighbourhood-WatchDog)
 
 </div>
 
