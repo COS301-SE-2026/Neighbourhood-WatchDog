@@ -129,7 +129,7 @@ jobs:
         run: cd tests/e2e && pnpm test
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@f30e4959ba63075080d4f7f90cacc18d9f3fafd7
         with:
           files: coverage/lcov.info,coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
