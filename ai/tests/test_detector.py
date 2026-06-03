@@ -25,7 +25,7 @@ tracker = DeepSort(
 MEDIAMTX_RTSP_URL = "rtsp://localhost:8554/tapo-camera"
 
 BACKEND_URL = "http://localhost:8000/api/alerts"
-CAMERA_ID = "" #we need to add a camera uuid here
+CAMERA_ID = "2"
 
 cap = cv2.VideoCapture(MEDIAMTX_RTSP_URL, cv2.CAP_FFMPEG)
 
@@ -112,8 +112,9 @@ while True:
                 "tracks": tracks_for_thumbnail,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             },
+            timeout=1.0,
         )
-        timeout=1.0,
+
     except Exception as e:
         print(f"Failed to send annotation: {e}")
 

@@ -4,8 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import CameraFeed from "./CameraFeed"
+import { string } from "zod"
 
 interface CameraCardProps {
+
+    id: string;
     name: string;
     rtspUrl?: string;
 }
@@ -17,7 +20,7 @@ function getStreamPath(rtspUrl: string): string {
 
 }
 
-export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
+export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
     const streamUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream?url=${encodeURIComponent(rtspUrl)}` : null;
     const streamHealthUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream/health?url=${encodeURIComponent(rtspUrl)}` : null;
     const [streamHealth, setStreamHealth] = useState<{ url: string | null; available: boolean; error: boolean }>({
@@ -72,6 +75,7 @@ export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
                     /> */}
 
                     <CameraFeed streamPath={getStreamPath(rtspUrl ?? "")}
+                                cameraId={id}
                                 host="localhost"
                                 port={8889}
                     />
