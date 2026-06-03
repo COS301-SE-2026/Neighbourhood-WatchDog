@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import * as React from "react"
 import Image from "next/image"
@@ -13,11 +13,10 @@ import {
   Bell,
   FileText,
   Settings,
-  Plus,
+  Plus
 } from "lucide-react"
 
 import { CreatePropertyDialog } from "./create-property-dialogue"
-import { useEffect } from "react"
 
 import {
   Sidebar,
@@ -28,13 +27,13 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/tooltip";
 
 import { cn } from "@/lib/utils"
 import { useProperties, type Property } from "@/hooks/use-properties"
@@ -43,21 +42,21 @@ import { useAppView } from "@/components/app-view-context"
 // Types
 
 type NavChild = {
-  id: string
-  label: string
-  icon: React.ReactNode
-}
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+};
 
 type NavItem = {
-  id: string
-  label: string
-  icon: React.ReactNode
-  children?: NavChild[]
-}
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  children?: NavChild[];
+};
 
 //data
 
-const USERNAME = "John Doe"
+const USERNAME = "John Doe";
 
 // Logo
 function WatchdogLogo({ size = 28 }: { size?: number }) {
@@ -69,8 +68,8 @@ function WatchdogLogo({ size = 28 }: { size?: number }) {
       alt=""
       aria-hidden="true"
       className="block object-contain"
-    >
-    </Image>
+    />
+     
   )
 }
 
@@ -80,8 +79,8 @@ function PinToggle({
   pinned,
   onToggle,
 }: {
-  pinned: boolean
-  onToggle: () => void
+  pinned: boolean;
+  onToggle: () => void;
 }) {
   return (
     <Tooltip>
@@ -92,21 +91,23 @@ function PinToggle({
             "flex items-center justify-center rounded-md p-1.5",
             "transition-colors duration-150",
             pinned
-              ? "text-[#5B8DEF] hover:text-white hover:bg-white/10"
-              : "text-white/30 hover:text-white/70 hover:bg-white/10"
+              ? "text-sky hover:text-white hover:bg-white/10"
+              : "text-white/30 hover:text-white/70 hover:bg-white/10",
           )}
           aria-label={pinned ? "Unpin sidebar" : "Pin sidebar open"}
         >
-          {pinned
-            ? <Pin className="h-3.5 w-3.5" />
-            : <PinOff className="h-3.5 w-3.5" />}
+          {pinned ? (
+            <Pin className="h-3.5 w-3.5" />
+          ) : (
+            <PinOff className="h-3.5 w-3.5" />
+          )}
         </button>
       </TooltipTrigger>
       <TooltipContent side="right">
         {pinned ? "Unpin: hover to expand" : "Pin sidebar open"}
       </TooltipContent>
     </Tooltip>
-  )
+  );
 }
 
 // NavTile
@@ -139,12 +140,17 @@ function NavTile({
         "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium",
         "transition-all duration-150",
         isActive
-          ? "bg-[#1D2A5E] text-white shadow-[inset_0_0_0_1px_rgba(91,141,239,0.35)]"
+          ? "bg-navy text-white ring-inset ring-1 ring-sky/35"
           : "text-white/70 hover:bg-white/8 hover:text-white",
-        !isExpanded && "justify-center px-2"
+        !isExpanded && "justify-center px-2",
       )}
     >
-      <span className={cn("shrink-0", isActive ? "text-[#5B8DEF]" : "text-white/60")}>
+      <span
+        className={cn(
+          "shrink-0",
+          isActive ? "text-sky" : "text-white/60",
+        )}
+      >
         {item.icon}
       </span>
       {isExpanded && (
@@ -154,14 +160,14 @@ function NavTile({
             <ChevronDown
               className={cn(
                 "h-3.5 w-3.5 shrink-0 text-white/40 transition-transform duration-200",
-                isOpen && "rotate-180"
+                isOpen && "rotate-180",
               )}
             />
           )}
         </>
       )}
     </button>
-  )
+  );
 
   return (
     <SidebarMenuItem>
@@ -185,16 +191,23 @@ function NavTile({
                   "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-xs font-medium",
                   "transition-colors duration-100",
                   activeChild === child.id
-                    ? "bg-navy text-white shadow-[inset_0_0_0_1px_rgba(91,141,239,0.25)]"
-                    : "text-white/55 hover:bg-white/8 hover:text-white/90"
+                    ? "bg-navy text-white ring-inset ring-1 ring-sky/25"
+                    : "text-white/55 hover:bg-white/8 hover:text-white/90",
                 )}
               >
-                <span className={cn("shrink-0", activeChild === child.id ? "text-[#5B8DEF]" : "text-white/40")}>
+                <span
+                  className={cn(
+                    "shrink-0",
+                    activeChild === child.id
+                      ? "text-sky"
+                      : "text-white/40",
+                  )}
+                >
                   {child.icon}
                 </span>
                 <span className="truncate">{child.label}</span>
                 {activeChild === child.id && (
-                  <ChevronRight className="ml-auto h-3 w-3 text-[#5B8DEF]" />
+                  <ChevronRight className="ml-auto h-3 w-3 text-sky" />
                 )}
               </button>
             </li>
@@ -220,7 +233,7 @@ function NavTile({
         </ul>
       )}
     </SidebarMenuItem>
-  )
+  );
 }
 
 // AppSidebar
@@ -234,7 +247,7 @@ export function AppSidebar() {
   const [pinned, setPinned] = React.useState(true)
   const [dialogOpen, setDialogOpen] = React.useState(false)
 
-  const isExpanded = state === "expanded"
+  const isExpanded = state === "expanded";
 
   const NAV_ITEMS: NavItem[] = [
     {
@@ -274,21 +287,21 @@ export function AppSidebar() {
   // - Unpinning: collapse it so hover mode takes over
   const handlePinToggle = () => {
     if (pinned) {
-      setPinned(false)
-      setOpen(false)   // collapse — hover will re-expand temporarily
+      setPinned(false);
+      setOpen(false); // collapse — hover will re-expand temporarily
     } else {
-      setPinned(true)
-      setOpen(true)    // lock open
+      setPinned(true);
+      setOpen(true); // lock open
     }
-  }
+  };
 
   const handleMouseEnter = () => {
-    if (!pinned) setOpen(true)
-  }
+    if (!pinned) setOpen(true);
+  };
 
   const handleMouseLeave = () => {
-    if (!pinned) setOpen(false)
-  }
+    if (!pinned) setOpen(false);
+  };
 
   const handleSelect = (id: string) => {
     setSection(id as typeof section)
@@ -308,7 +321,12 @@ export function AppSidebar() {
       <SidebarHeader className="px-3 py-3">
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className={cn("flex items-center gap-2.5", !isExpanded && "justify-center")}>
+            <div
+              className={cn(
+                "flex items-center gap-2.5",
+                !isExpanded && "justify-center",
+              )}
+            >
               {/* Logo mark — always visible */}
               <div className="shrink-0">
                 <WatchdogLogo size={28} />
@@ -321,7 +339,7 @@ export function AppSidebar() {
                     <p className="text-sm font-extrabold text-white leading-tight tracking-tight truncate">
                       Neighbourhood
                     </p>
-                    <p className="text-xs font-semibold text-[#5B8DEF] leading-tight tracking-widest uppercase truncate">
+                    <p className="text-xs font-semibold text-sky leading-tight tracking-widest uppercase truncate">
                       WatchDog
                     </p>
                   </div>
@@ -379,11 +397,11 @@ export function AppSidebar() {
                   className={cn(
                     "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2",
                     "text-white/60 hover:text-white hover:bg-white/8 transition-colors duration-150",
-                    !isExpanded && "justify-center"
+                    !isExpanded && "justify-center",
                   )}
                 >
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#3B5EDE]/40 ring-1 ring-[#5B8DEF]/40">
-                    <User className="h-3.5 w-3.5 text-[#5B8DEF]" />
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue/40 ring-1 ring-sky/40">
+                    <User className="h-3.5 w-3.5 text-sky" />
                   </span>
                   {isExpanded && (
                     <span className="truncate text-sm font-medium text-white/80">
@@ -400,5 +418,5 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

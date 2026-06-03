@@ -1,4 +1,3 @@
-from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
@@ -15,7 +14,7 @@ router = APIRouter(prefix="/camera", tags=["cameras"])
 async def register_camera(req: RegisterCameraReq, db: DbSession, claims: dict = Depends(get_current_user)):
     """Creates a new camera and links it to the property of the user."""
     
-    require_role(claims, ['Resident'])
+    require_role(claims = claims, allowed_roles= ['RESIDENT'])
     new_camera = await register_camera_handler(req, db, claims)
 
     return RegisterCameraRes(
@@ -27,9 +26,9 @@ async def register_camera(req: RegisterCameraReq, db: DbSession, claims: dict = 
 
 @router.get("/property/{property_id}")
 async def get_property_cameras(
-    property_id: UUID,
+    property_id: str,
     db: DbSession,
     claims: dict = Depends(get_current_user),
 ) -> CamerasRes:
-    require_role(["Resident"])
+    require_role(claims, ["RESIDENT"])
     return await list_cameras_handler(property_id, db, claims)

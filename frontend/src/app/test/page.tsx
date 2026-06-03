@@ -21,8 +21,8 @@ export default function Test() {
       <h1 className="text-2xl font-bold mb-4">Create Neighbourhood Dialog Test</h1>
       <Button onClick={() => setOpen(true)}>Open Create Neighbourhood Dialog</Button>
       {error && (
-        <div className="mt-4 p-4 border border-red-300 bg-red-50 rounded-lg">
-          <p className="text-red-700">{error}</p>
+        <div className="mt-4 p-4 border border-threat/30 bg-threat/10 rounded-lg">
+          <p className="text-threat">{error}</p>
         </div>
       )}
       <CreateNeighbourhoodDialog
@@ -32,7 +32,7 @@ export default function Test() {
       />
 
       {createdNeighbourhood && (
-        <div className="mt-8 p-4 border border-green-300 bg-green-50 rounded-lg">
+        <div className="mt-8 p-4 border border-safe/30 bg-safe/10 rounded-lg">
           <h2 className="text-lg font-bold mb-4">Created Neighbourhood</h2>
           <pre className="bg-white p-4 rounded border overflow-auto text-sm">
             {JSON.stringify(createdNeighbourhood, null, 2)}

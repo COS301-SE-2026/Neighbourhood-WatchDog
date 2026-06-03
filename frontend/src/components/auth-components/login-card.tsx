@@ -35,16 +35,16 @@ export function LoginCard({
   return (
     <Card
       className={cn(
-        "w-full max-w-md sm:max-w-xl rounded-3xl border border-[rgba(29,42,94,0.12)] bg-white/95 shadow-[0_20px_60px_rgba(29,42,94,0.14)] backdrop-blur",
+        "w-full max-w-md sm:max-w-xl rounded-xl border border-navy/12 bg-white/95 shadow-lg backdrop-blur",
         className
       )}
     >
       <CardHeader>
-        <CardTitle className="text-3xl sm:text-4xl font-semibold tracking-tight text-[color:var(--color-navy)]">
+        <CardTitle className="text-[2rem] sm:text-[2rem] font-semibold tracking-tight text-navy">
           Login to your account
         </CardTitle>
 
-        <CardDescription className="text-base text-[color:var(--color-body)]">
+        <CardDescription className="text-base text-body">
           Enter your email below to login to your account
         </CardDescription>
 
@@ -88,7 +88,7 @@ export function LoginCard({
         <Button
           type="button"
           onClick={onSubmit}
-          className="w-full bg-[color:var(--color-navy)] text-white hover:bg-[color:var(--color-steel)]"
+          className="w-full bg-navy text-white hover:bg-steel"
         >
           Login
         </Button>

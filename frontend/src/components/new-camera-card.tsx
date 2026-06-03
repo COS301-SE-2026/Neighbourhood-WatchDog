@@ -32,11 +32,11 @@ export function NewCameraCard({ onClose, onAcknowledge }: NewCameraCardProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-md bg-white rounded-2xl shadow-xl">
+      <Card className="w-full max-w-md bg-white rounded-xl shadow-xl">
         <CardHeader className="relative flex items-center justify-center pb-2">
           <button
             onClick={onClose}
-            className="absolute left-4 top-4 text-gray-500 hover:text-gray-800 transition-colors"
+            className="absolute left-4 top-4 text-body hover:text-ink transition-colors"
           >
             <X size={20} />
           </button>
@@ -56,10 +56,10 @@ export function NewCameraCard({ onClose, onAcknowledge }: NewCameraCardProps) {
               value={cameraLocation}
               onChange={(e) => setCameraLocation(e.target.value)}
               onBlur={() => setTouched((t) => ({ ...t, cameraLocation: true }))}
-              className={`bg-gray-50 border-gray-200 ${errors.cameraLocation ? "border-red-500 focus-visible:ring-red-400" : ""}`}
+              className={`bg-mist/10 border-mist/40 ${errors.cameraLocation ? "border-threat focus-visible:ring-threat" : ""}`}
             />
             {errors.cameraLocation && (
-              <p className="text-xs text-red-500">Camera location is required.</p>
+              <p className="text-xs text-threat">Camera location is required.</p>
             )}
           </div>
 
@@ -73,17 +73,17 @@ export function NewCameraCard({ onClose, onAcknowledge }: NewCameraCardProps) {
               value={rtspUrl}
               onChange={(e) => setRtspUrl(e.target.value)}
               onBlur={() => setTouched((t) => ({ ...t, rtspUrl: true }))}
-              className={`bg-gray-50 border-gray-200 ${errors.rtspUrl ? "border-red-500 focus-visible:ring-red-400" : ""}`}
+              className={`bg-mist/10 border-mist/40 ${errors.rtspUrl ? "border-threat focus-visible:ring-threat" : ""}`}
             />
             {errors.rtspUrl && (
-              <p className="text-xs text-red-500">RTSP URL is required.</p>
+              <p className="text-xs text-threat">RTSP URL is required.</p>
             )}
           </div>
 
           <Button
             onClick={handleSubmit}
             disabled={!isValid}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-full font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-blue hover:bg-sky text-white rounded-full font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Acknowledge
           </Button>

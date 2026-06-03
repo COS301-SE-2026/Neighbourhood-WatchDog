@@ -15,7 +15,7 @@ const PROPERTY_ID = "30000000-0000-0000-0000-000000000001" // TODO: Get from URL
 
 function PropertyPageContent(){
   const searchParams = useSearchParams()
-  const propertyId = searchParams.get("id") 
+  const propertyId = searchParams.get("id") || PROPERTY_ID
 
   const [neighbourhoodDialogOpen, setNeighbourhoodDialogOpen] = useState(false);
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false)
@@ -24,7 +24,9 @@ function PropertyPageContent(){
   const [loading, setLoading] = useState(true);
 
   useEffect(() =>{
-    if (!propertyId) return;
+    if (!propertyId && !PROPERTY_ID){
+      return;
+    } 
 
     const fetchProperty = async () => {
       try {
@@ -73,10 +75,10 @@ function PropertyPageContent(){
         )}
         {!propertyData.neighbourhood && (
           <>
-            <p className="text-sm text-gray-500 mb-4">No neighbourhood assigned</p>
+            <p className="text-sm text-body mb-4">No neighbourhood assigned</p>
             <button
               onClick={() => setNeighbourhoodDialogOpen(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="px-4 py-2 bg-blue text-white rounded hover:bg-sky"
             >
               Create Neighbourhood
             </button>

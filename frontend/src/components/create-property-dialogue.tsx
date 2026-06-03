@@ -104,7 +104,7 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm [font-family:var(--font-jetbrains-mono)]">
+      <DialogContent className="sm:max-w-sm font-mono">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
             {loading && <Spinner className="mr-2 h-4 w-4 animate-spin" />}
@@ -116,14 +116,14 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           {errors.submit && (
-            <p className="text-sm text-red-500 mb-4">{errors.submit}</p>
+            <p className="text-sm text-threat mb-4">{errors.submit}</p>
           )}
           <FieldGroup>
             <Field>
               <Label htmlFor="add-line-1">Address Line 1 (Street address)</Label>
               <Input id="add-line-1" name="address-line-1" defaultValue="" />
               {errors["address-line-1"] && (
-                <p className="text-sm text-red-500 text-xs mt-0.5">{errors["address-line-1"]}</p>
+                <p className="text-sm text-threat text-xs mt-0.5">{errors["address-line-1"]}</p>
               )}
             </Field>
 
@@ -131,7 +131,7 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
               <Label htmlFor="add-line-2">Address Line 2 (Apartment, suite, unit, building etc.)</Label>
               <Input id="add-line-2" name="address-line-2" defaultValue="" />
               {errors["address-line-2"] && (
-                <p className="text-sm text-red-500 text-xs mt-0.5">{errors["address-line-2"]}</p>
+                <p className="text-sm text-threat text-xs mt-0.5">{errors["address-line-2"]}</p>
               )}
             </Field>
 
@@ -139,7 +139,7 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
               <Label htmlFor="city-1">City</Label>
               <Input id="city-1" name="city" defaultValue="" />
               {errors["city"] && (
-                <p className="text-sm text-red-500 text-xs mt-0.5">{errors["city"]}</p>
+                <p className="text-sm text-threat text-xs mt-0.5">{errors["city"]}</p>
               )}
             </Field>
 
@@ -163,7 +163,7 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
                 <option value="Western Cape">Western Cape</option>
               </select>
               {errors["province"] && (
-                <p className="text-sm text-red-500 text-xs mt-0.5">{errors["province"]}</p>
+                <p className="text-sm text-threat text-xs mt-0.5">{errors["province"]}</p>
               )}
             </Field>
 
@@ -171,7 +171,7 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
               <Label htmlFor="postal-code-1">Postal Code</Label>
               <Input id="postal-code-1" name="postal-code" defaultValue="" />
               {errors["postal-code"] && (
-                <p className="text-sm text-red-500 text-xs mt-0.5">{errors["postal-code"]}</p>
+                <p className="text-sm text-threat text-xs mt-0.5">{errors["postal-code"]}</p>
               )}
             </Field>
             

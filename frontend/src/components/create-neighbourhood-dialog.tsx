@@ -74,7 +74,7 @@ export function CreateNeighbourhoodDialog(
   // TODO: refactor this dialogue to use the same component as the createpropertyone and just to pass in the fields that the user must enter
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm [font-family:var(--font-jetbrains-mono)]">
+      <DialogContent className="sm:max-w-sm font-mono">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
             {loading && <Spinner className="mr-2 h-4 w-4 animate-spin" />}
@@ -86,14 +86,14 @@ export function CreateNeighbourhoodDialog(
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           {errors.submit && (
-            <p className="text-sm text-red-500 mb-4">{errors.submit}</p>
+            <p className="text-sm text-threat mb-4">{errors.submit}</p>
           )}
           <FieldGroup>
             <Field>
               <Label htmlFor="name-1">Neighbourhood Name</Label>
               <Input id="name-1" name="name" defaultValue="" placeholder="e.g., Westwood Heights" />
               {errors["name"] && (
-                <p className="text-sm text-red-500 text-xs mt-0.5">{errors["name"]}</p>
+                <p className="text-sm text-threat text-xs mt-0.5">{errors["name"]}</p>
               )}
             </Field>
 
@@ -101,7 +101,7 @@ export function CreateNeighbourhoodDialog(
               <Label htmlFor="location-1">Location</Label>
               <Input id="location-1" name="location" defaultValue="" placeholder="e.g., Johannesburg, Gauteng" />
               {errors["location"] && (
-                <p className="text-sm text-red-500 text-xs mt-0.5">{errors["location"]}</p>
+                <p className="text-sm text-threat text-xs mt-0.5">{errors["location"]}</p>
               )}
             </Field>
           </FieldGroup>

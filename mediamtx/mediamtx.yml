@@ -1,0 +1,19 @@
+rtpAddress: :8002
+rtcpAddress: :8003
+
+rtspAddress: :8554
+webrtcAddress: :8889
+api: yes
+apiAddress: :9997
+
+paths:
+  tapo-camera:
+    source: rtsp://Intrepid:password1234@192.168.3.65:554/stream2
+    sourceProtocol: tcp
+
+
+webrtcAdditionalHosts:
+  - localhost
+
+# this will allow CORS from next.js
+webrtcAllowOrigin: "http://localhost:3000"
