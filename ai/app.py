@@ -1,5 +1,6 @@
 import os
 import cv2
+import threading
 from fastapi import APIRouter, FastAPI, Query
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,6 +31,18 @@ BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 CAMERA_ID = "40000000-0000-0000-0000-000000000001"
 NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001"
+
+def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp: str) -> None:
+    """Fire-and-forget: POST track data to backend so it can broadcast via WebSocket."""
+    try:
+        httpx.post(
+            f"{backend_url}/api/stream/cameras/{camera_id}/annotations",
+            json={"tracks": tracks, "timestamp": timestamp},
+            timeout=0.5,
+        )
+    except Exception:
+        pass  # never block the frame loop
+
 
 def annotated_mjpeg(rtsp_url: str):
     tracker = DeepSort(
@@ -94,6 +107,12 @@ def annotated_mjpeg(rtsp_url: str):
                         logger.info(f"Alert sent for Track ID: {track_id}")
                     except Exception as e:
                         logger.error(f"Failed to send alert for Track ID {track_id}: {e}")
+
+            threading.Thread(
+                target=_push_annotations,
+                args=(BACKEND_URL, CAMERA_ID, tracks_for_thumbnail, datetime.now(timezone.utc).isoformat()),
+                daemon=True,
+            ).start()
 
             annotated = annotate_frame(frame, tracks_for_thumbnail)
             jpeg_bytes = encode_frame_as_jpeg(annotated)

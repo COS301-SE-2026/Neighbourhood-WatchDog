@@ -1,3 +1,14 @@
+#pkg_resources compatibility shim
+import sys, types, importlib, os
+
+if "pkg_resources" not in sys.modules:
+    _mock = types.ModuleType("pkg_resources")
+    def _resource_filename(package, path):
+        mod = importlib.import_module(package)
+        return os.path.join(os.path.dirname(mod.__file__), path)
+    _mock.resource_filename = _resource_filename
+    sys.modules["pkg_resources"] = _mock
+
 import os
 import cv2
 import httpx

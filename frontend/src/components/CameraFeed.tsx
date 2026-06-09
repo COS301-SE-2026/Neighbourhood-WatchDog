@@ -94,23 +94,30 @@ export default function AnnotatedCameraFeed({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (annotations?.tracks) {
+    if (annotations?.tracks && annotations.tracks.length > 0) {
       annotations.tracks.forEach((track) => {
         const [left, top, right, bottom] = track.bbox;
+        const w = right - left;
+        const h = bottom - top;
 
-        // draw bounding box
+        // bounding box
         ctx.strokeStyle = "#00ff00";
         ctx.lineWidth = 2;
-        ctx.strokeRect(left, top, right - left, bottom - top);
+        ctx.strokeRect(left, top, w, h);
 
-        // draw track ID and confidence
-        const label = `ID: ${track.track_id} | ${(track.confidence * 100).toFixed(0)}%`;
+        // label background
+        const label = `ID ${track.track_id}  ${(track.confidence * 100).toFixed(0)}%`;
+        ctx.font = "bold 14px Arial";
+        const textW = ctx.measureText(label).width;
+        const labelY = top > 24 ? top - 6 : bottom + 18;
+        ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+        ctx.fillRect(left, labelY - 14, textW + 8, 18);
+
+        // label text
         ctx.fillStyle = "#00ff00";
-        ctx.font = "14px Arial";
-        ctx.fillText(label, left, top - 5);
+        ctx.fillText(label, left + 4, labelY);
       });
     }
   }, [annotations, videoWidth, videoHeight]);
@@ -121,11 +128,18 @@ export default function AnnotatedCameraFeed({
         ref={videoRef}
         autoPlay
         playsInline
-        className="w-full h-full object-cover"
+        muted
+        className="w-full h-full object-contain"
       />
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
+        style={{ objectFit: "contain" }}
+      />
+      {/* Annotation connection status dot */}
+      <div
+        className={`absolute top-2 right-2 w-2 h-2 rounded-full ${connected ? "bg-green-400" : "bg-red-500"}`}
+        title={connected ? "Annotations live" : "Annotations disconnected"}
       />
     </div>
   );

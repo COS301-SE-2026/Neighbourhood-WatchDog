@@ -1,9 +1,9 @@
-# Add to stream.py
-
 import asyncio
 import json
-from fastapi import WebSocket, Query
+from fastapi import APIRouter, WebSocket
 from typing import Optional
+
+router = APIRouter(prefix="/api/stream", tags=["stream"])
 
 # Camera annotation connections: {camera_id: set[WebSocket]}
 _annotation_connections: dict[str, set[WebSocket]] = {}
