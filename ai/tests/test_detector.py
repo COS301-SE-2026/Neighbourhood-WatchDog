@@ -39,6 +39,7 @@ BACKEND_URL = "http://localhost:8000/api/alerts"
 CAMERA_ID = "2"
 
 cap = cv2.VideoCapture(MEDIAMTX_RTSP_URL, cv2.CAP_FFMPEG)
+cap.set(cv2.CAP_PROP_BUFFERSIZE, 1) # minimize the buffer
 
 if not cap.isOpened():
     print("Failed to open stream")
@@ -52,15 +53,29 @@ alerted_ids = set()
 frame_count = 0
 
 while True:
-    ret, frame = cap.read()
+    #commenting these line out, and replacing them with the following because we want to retrieve the latest frame, and skip the stale buffered ones
 
+    # ret, frame = cap.read()
+
+    # if not ret:
+    #     print("Failed to grab frame")
+    #     break
+
+    # frame_count += 1
+    # if frame_count % 2 != 0:
+    #     continue
+
+
+    #drain the buffer and always use the latest frames
+    cap.grab() # to discard the buffered frames
+    cap.grab()
+    cap.grab()
+
+    ret, frame = cap.retrieve()
     if not ret:
         print("Failed to grab frame")
         break
 
-    frame_count += 1
-    if frame_count % 2 != 0:
-        continue
 
     # YOLO detection only (no built-in tracker)
     results = model.predict(
@@ -68,7 +83,7 @@ while True:
         verbose=False,
         conf=0.6,
         iou=0.3,
-        imgsz=640,
+        imgsz=320,
     )
 
     # collect person detections for DeepSORT
