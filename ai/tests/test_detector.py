@@ -117,7 +117,7 @@ while True:
     # cv2.imshow("Annotated", annotated)
 
     try:
-        httpx.post(
+        resp = httpx.post(
             f"http://localhost:8000/api/stream/cameras/{CAMERA_ID}/annotations",
             json={
                 "tracks": tracks_for_thumbnail,
@@ -125,7 +125,7 @@ while True:
             },
             timeout=1.0,
         )
-
+        print(f"Annotation POST: {resp.status_code}")
     except Exception as e:
         print(f"Failed to send annotation: {e}")
 

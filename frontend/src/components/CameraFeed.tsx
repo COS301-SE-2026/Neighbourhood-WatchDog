@@ -1,30 +1,23 @@
 "use client"
 import { useEffect, useRef, useState } from "react";
-import { useCameraAnnotations, type AnnotationData } from "@/hooks/use-camera-annotations";
+import { useCameraAnnotations } from "@/hooks/use-camera-annotations";
 
 interface AnnotatedCameraFeedProps {
-
   readonly streamPath: string;
   readonly cameraId: string;
   readonly host?: string;
   readonly port?: number;
-
 }
 
 export default function AnnotatedCameraFeed({
-
   streamPath,
   cameraId,
   host = "localhost",
   port = 8889,
-
-
 }: AnnotatedCameraFeedProps) {
-
-
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { annotations } = useCameraAnnotations(cameraId);
+  const { annotations, connected } = useCameraAnnotations(cameraId);
   const [videoWidth, setVideoWidth] = useState(0);
   const [videoHeight, setVideoHeight] = useState(0);
 
@@ -40,39 +33,37 @@ export default function AnnotatedCameraFeed({
 
       pc.ontrack = (event) => {
         if (videoRef.current) {
-
-          videoRef.current.srcObject = event.streams[0];
-
-          // video dimensions
+          // Set handler BEFORE srcObject loadedmetadata fires immediately after srcObject is set
           videoRef.current.onloadedmetadata = () => {
-
             setVideoWidth(videoRef.current!.videoWidth);
             setVideoHeight(videoRef.current!.videoHeight);
           };
+          videoRef.current.srcObject = event.streams[0];
 
-
+          // Fallback: if metadata already loaded
+          if (videoRef.current.videoWidth > 0) {
+            setVideoWidth(videoRef.current.videoWidth);
+            setVideoHeight(videoRef.current.videoHeight);
+          }
         }
       };
 
       pc.addTransceiver("video", { direction: "recvonly" });
       pc.addTransceiver("audio", { direction: "recvonly" });
 
-
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
       const response = await fetch(whepUrl, {
-
         method: "POST",
         headers: { "Content-Type": "application/sdp" },
         body: pc.localDescription!.sdp,
-
       });
 
       const answerSdp = await response.text();
-      await pc.setRemoteDescription(new RTCSessionDescription({ type: "answer", sdp: answerSdp }));
-
-
+      await pc.setRemoteDescription(
+        new RTCSessionDescription({ type: "answer", sdp: answerSdp })
+      );
     }
 
     connect().catch(console.error);
@@ -80,11 +71,13 @@ export default function AnnotatedCameraFeed({
     return () => {
       if (pc) pc.close();
     };
-
   }, [streamPath, host, port]);
 
-  // draw annotations on canvas overlay
+  // Draw annotations on canvas overlay
   useEffect(() => {
+
+    console.log("Canvas:", { videoWidth, videoHeight, tracks: annotations?.tracks?.length ?? 0 });
+
     if (!canvasRef.current || !videoWidth || !videoHeight) return;
 
     const canvas = canvasRef.current;
@@ -102,20 +95,18 @@ export default function AnnotatedCameraFeed({
         const w = right - left;
         const h = bottom - top;
 
-        // bounding box
+        // Bounding box
         ctx.strokeStyle = "#00ff00";
         ctx.lineWidth = 2;
         ctx.strokeRect(left, top, w, h);
 
-        // label background
+        // Label background + text
         const label = `ID ${track.track_id}  ${(track.confidence * 100).toFixed(0)}%`;
         ctx.font = "bold 14px Arial";
         const textW = ctx.measureText(label).width;
         const labelY = top > 24 ? top - 6 : bottom + 18;
         ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
         ctx.fillRect(left, labelY - 14, textW + 8, 18);
-
-        // label text
         ctx.fillStyle = "#00ff00";
         ctx.fillText(label, left + 4, labelY);
       });
@@ -136,9 +127,11 @@ export default function AnnotatedCameraFeed({
         className="absolute inset-0 w-full h-full"
         style={{ objectFit: "contain" }}
       />
-      {/* Annotation connection status dot */}
+      {/* Annotation WebSocket status dot — green = live, red = disconnected */}
       <div
-        className={`absolute top-2 right-2 w-2 h-2 rounded-full ${connected ? "bg-green-400" : "bg-red-500"}`}
+        className={`absolute top-2 right-2 w-2 h-2 rounded-full ${
+          connected ? "bg-green-400" : "bg-red-500"
+        }`}
         title={connected ? "Annotations live" : "Annotations disconnected"}
       />
     </div>

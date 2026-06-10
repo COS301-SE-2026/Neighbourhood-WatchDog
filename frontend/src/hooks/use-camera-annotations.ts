@@ -38,6 +38,7 @@ export function useCameraAnnotations(cameraId: string) {
 
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
+            console.log("WS received:", data.event, "tracks:", data.tracks?.length ?? 0);
             if (data.event === "ping") return;
             setAnnotations(data);
         };
