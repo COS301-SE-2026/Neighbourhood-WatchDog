@@ -1,7 +1,6 @@
 import asyncio
 import json
 from fastapi import APIRouter, WebSocket
-from typing import Optional
 
 router = APIRouter(prefix="/api/stream", tags=["stream"])
 
@@ -23,14 +22,14 @@ async def broadcast_annotation(camera_id: str, annotation_data: dict) -> None:
     """Broadcast annotation data (bounding boxes, confidence, etc) to all connected clients"""
     connections = _get_camera_bucket(camera_id)
     dead: set[WebSocket] = set()
-    
+
     payload = json.dumps(annotation_data)
     for ws in connections:
         try:
             await ws.send_text(payload)
         except Exception:
             dead.add(ws)
-    
+
     for ws in dead:
         connections.discard(ws)
 
@@ -49,7 +48,7 @@ async def camera_annotation_websocket(camera_id: str, websocket: WebSocket):
     """WebSocket endpoint for receiving annotation updates for a specific camera"""
     await websocket.accept()
     register_camera_connection(camera_id, websocket)
-    
+
     try:
         while True:
             try:

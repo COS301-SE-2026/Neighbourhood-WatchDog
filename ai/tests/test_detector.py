@@ -1,5 +1,8 @@
 # pkg_resources compatibility shim
-import sys, types, importlib, os
+import importlib
+import os
+import sys
+import types
 
 if "pkg_resources" not in sys.modules:
     _mock = types.ModuleType("pkg_resources")
@@ -16,7 +19,6 @@ import httpx
 from datetime import datetime, timezone
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
-from ai.pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
 
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
@@ -28,7 +30,7 @@ CONF_THRESHOLD    = 0.4   # lower for more sensitive detection
 IOU_THRESHOLD     = 0.3
 INFER_SIZE        = 320   # 320 = fast, 640 = accurate
 
-# the loaded pre-trained model
+# loaded pre-trained model
 model = YOLO("ai/pipeline/models/weights/yolov8n.pt")
 
 tracker = DeepSort(
@@ -40,8 +42,8 @@ tracker = DeepSort(
 )
 
 # latest-frame reader thread
-# runs continuously and always keeps the MOST RECENT frame in memory.
-# The processing loop reads from here such that it's always current, never buffered.
+# this runs continuously and always keeps the MOST RECENT frame in memory.
+# the processing loop reads from here such that it's always current, never buffered.
 
 class LatestFrameCapture:
     def __init__(self, url: str):
@@ -86,7 +88,7 @@ class LatestFrameCapture:
         self._running = False
 
 
-# non-blocking annotation POST 
+# non-blocking annotation POST
 def _post_annotations(tracks: list, timestamp: str):
     try:
         resp = httpx.post(
@@ -120,7 +122,7 @@ def main():
             time.sleep(0.01)
             continue
 
-        # YOLO detection 
+        # YOLO detection
         results = model.predict(
             frame,
             verbose=False,
