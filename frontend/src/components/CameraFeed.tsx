@@ -34,20 +34,21 @@ export default function AnnotatedCameraFeed({
     const whepUrl = `http://${host}:${port}/${streamPath}/whep`;
     let pc: RTCPeerConnection;
 
+    // Extracted outside connect() to reduce nesting depth
+    function handleTrack(event: RTCTrackEvent) {
+      const video = videoRef.current;
+      if (!video) return;
+      video.onloadedmetadata = () => applyVideoDimensions(video);
+      video.srcObject = event.streams[0];
+      applyVideoDimensions(video);
+    }
+
     async function connect() {
       pc = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       });
 
-      pc.ontrack = (event) => {
-        const video = videoRef.current;
-        if (!video) return;
-        // Set handler BEFORE srcObject to avoid missing the event
-        video.onloadedmetadata = () => applyVideoDimensions(video);
-        video.srcObject = event.streams[0];
-        // Fallback: metadata may already be available for fast/cached streams
-        applyVideoDimensions(video);
-      };
+      pc.ontrack = handleTrack;   // ← just a reference, no inline nesting
 
       pc.addTransceiver("video", { direction: "recvonly" });
       pc.addTransceiver("audio", { direction: "recvonly" });
