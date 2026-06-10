@@ -21,31 +21,32 @@ export default function AnnotatedCameraFeed({
   const [videoWidth, setVideoWidth] = useState(0);
   const [videoHeight, setVideoHeight] = useState(0);
 
+  // Extracted: set video dimensions from a loaded video element
+  function applyVideoDimensions(video: HTMLVideoElement) {
+    if (video.videoWidth > 0) {
+      setVideoWidth(video.videoWidth);
+      setVideoHeight(video.videoHeight);
+    }
+  }
+
   // WebRTC connection setup
   useEffect(() => {
     const whepUrl = `http://${host}:${port}/${streamPath}/whep`;
-
     let pc: RTCPeerConnection;
+
     async function connect() {
       pc = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       });
 
       pc.ontrack = (event) => {
-        if (videoRef.current) {
-          // Set handler BEFORE srcObject loadedmetadata fires immediately after srcObject is set
-          videoRef.current.onloadedmetadata = () => {
-            setVideoWidth(videoRef.current!.videoWidth);
-            setVideoHeight(videoRef.current!.videoHeight);
-          };
-          videoRef.current.srcObject = event.streams[0];
-
-          // Fallback: if metadata already loaded
-          if (videoRef.current.videoWidth > 0) {
-            setVideoWidth(videoRef.current.videoWidth);
-            setVideoHeight(videoRef.current.videoHeight);
-          }
-        }
+        const video = videoRef.current;
+        if (!video) return;
+        // Set handler BEFORE srcObject to avoid missing the event
+        video.onloadedmetadata = () => applyVideoDimensions(video);
+        video.srcObject = event.streams[0];
+        // Fallback: metadata may already be available for fast/cached streams
+        applyVideoDimensions(video);
       };
 
       pc.addTransceiver("video", { direction: "recvonly" });
@@ -67,17 +68,11 @@ export default function AnnotatedCameraFeed({
     }
 
     connect().catch(console.error);
-
-    return () => {
-      if (pc) pc.close();
-    };
+    return () => { if (pc) pc.close(); };
   }, [streamPath, host, port]);
 
   // Draw annotations on canvas overlay
   useEffect(() => {
-
-    console.log("Canvas:", { videoWidth, videoHeight, tracks: annotations?.tracks?.length ?? 0 });
-
     if (!canvasRef.current || !videoWidth || !videoHeight) return;
 
     const canvas = canvasRef.current;
@@ -89,27 +84,25 @@ export default function AnnotatedCameraFeed({
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (annotations?.tracks && annotations.tracks.length > 0) {
-      annotations.tracks.forEach((track) => {
-        const [left, top, right, bottom] = track.bbox;
-        const w = right - left;
-        const h = bottom - top;
+    if (!annotations?.tracks || annotations.tracks.length === 0) return;
 
-        // Bounding box
-        ctx.strokeStyle = "#00ff00";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(left, top, w, h);
+    for (const track of annotations.tracks) {
+      const [left, top, right, bottom] = track.bbox;
+      const w = right - left;
+      const h = bottom - top;
 
-        // Label background + text
-        const label = `ID ${track.track_id}  ${(track.confidence * 100).toFixed(0)}%`;
-        ctx.font = "bold 14px Arial";
-        const textW = ctx.measureText(label).width;
-        const labelY = top > 24 ? top - 6 : bottom + 18;
-        ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
-        ctx.fillRect(left, labelY - 14, textW + 8, 18);
-        ctx.fillStyle = "#00ff00";
-        ctx.fillText(label, left + 4, labelY);
-      });
+      ctx.strokeStyle = "#00ff00";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(left, top, w, h);
+
+      const label = `ID ${track.track_id}  ${(track.confidence * 100).toFixed(0)}%`;
+      ctx.font = "bold 14px Arial";
+      const textW = ctx.measureText(label).width;
+      const labelY = top > 24 ? top - 6 : bottom + 18;
+      ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+      ctx.fillRect(left, labelY - 14, textW + 8, 18);
+      ctx.fillStyle = "#00ff00";
+      ctx.fillText(label, left + 4, labelY);
     }
   }, [annotations, videoWidth, videoHeight]);
 
@@ -127,7 +120,7 @@ export default function AnnotatedCameraFeed({
         className="absolute inset-0 w-full h-full"
         style={{ objectFit: "contain" }}
       />
-      {/* Annotation WebSocket status dot — green = live, red = disconnected */}
+      {/* Annotation WebSocket status dot */}
       <div
         className={`absolute top-2 right-2 w-2 h-2 rounded-full ${
           connected ? "bg-green-400" : "bg-red-500"

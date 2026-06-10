@@ -35,13 +35,59 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
         pass
 
 
+def _extract_detections(results) -> list:
+    """Convert YOLO results to DeepSort detection format."""
+    detections = []
+    for box in results[0].boxes:
+        x1, y1, x2, y2 = box.xyxy[0].tolist()
+        conf = float(box.conf[0])
+        detections.append(([x1, y1, x2 - x1, y2 - y1], conf, "person"))
+    return detections
+
+
+def _build_track_payload(track) -> dict:
+    """Convert a confirmed DeepSort track to the annotation payload format."""
+    left, top, right, bottom = track.to_ltrb()
+    return {
+        "track_id": track.track_id,
+        "confidence": float(track.det_conf) if track.det_conf is not None else 0.0,
+        "bbox": [left, top, right, bottom],
+    }
+
+
+def _send_new_person_alert(track_id: int, conf: float) -> None:
+    """Send a one-time human-presence alert to the backend."""
+    try:
+        httpx.post(
+            f"{BACKEND_URL}/alerts/dev/broadcast",
+            json={
+                "camera_id": CAMERA_ID,
+                "neighbourhood_id": NEIGHBOURHOOD_ID,
+                "detection_type": "HUMAN_PRESENCE",
+                "confidence": conf,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "thumbnail_url": None,
+            },
+            timeout=1.0,
+        )
+    except Exception:
+        logger.exception("Alert POST failed for Track ID %s", track_id)
+
+
+def _open_stream(rtsp_url: str):
+    """Open an RTSP stream, returning None if unavailable."""
+    cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
+    if not cap.isOpened():
+        cap = None
+    return cap
+
+
 def _detection_loop(rtsp_url: str) -> None:
     """
     Background thread: continuously read RTSP, run YOLO+DeepSort, push annotations.
-    This is the main loop — the frontend uses WebRTC from mediamtx for display,
-    and this loop feeds bounding boxes to the backend WebSocket broadcaster.
+    The frontend uses WebRTC from mediamtx for display; this loop supplies bounding boxes.
     """
-    logger.info(f"Detection loop starting for {rtsp_url}")
+    logger.info("Detection loop starting for %s", rtsp_url)
 
     tracker = DeepSort(
         max_age=70,
@@ -53,19 +99,12 @@ def _detection_loop(rtsp_url: str) -> None:
 
     cap = None
     frame_count = 0
-    alerted_ids = set()
+    alerted_ids: set = set()
 
     while True:
-        # (Re)connect to the RTSP stream
-        if cap is None or not cap.isOpened():
-            logger.info("Connecting to RTSP stream…")
-            cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
-            if not cap.isOpened():
-                logger.warning("Could not open stream — retrying in 5s")
-                time.sleep(5)
-                cap = None
-                continue
-            logger.info("RTSP stream connected")
+        cap = _reconnect_if_needed(cap, rtsp_url)
+        if cap is None:
+            continue
 
         ret, frame = cap.read()
         if not ret:
@@ -76,52 +115,45 @@ def _detection_loop(rtsp_url: str) -> None:
             continue
 
         frame_count += 1
-        if frame_count % 2 != 0:   # process every other frame
+        if frame_count % 2 != 0:
             continue
 
         results = model.predict(frame, imgsz=640, conf=0.6, iou=0.3, classes=[0], verbose=False)
-
-        detections = []
-        for box in results[0].boxes:
-            x1, y1, x2, y2 = box.xyxy[0].tolist()
-            conf = float(box.conf[0])
-            detections.append(([x1, y1, x2 - x1, y2 - y1], conf, "person"))
-
+        detections = _extract_detections(results)
         tracks = tracker.update_tracks(detections, frame=frame)
 
-        tracks_payload = []
-        for track in tracks:
-            if not track.is_confirmed():
-                continue
-            track_id = track.track_id
-            left, top, right, bottom = track.to_ltrb()
-            tracks_payload.append({
-                "track_id": track_id,
-                "confidence": float(track.det_conf) if track.det_conf is not None else 0.0,
-                "bbox": [left, top, right, bottom],
-            })
+        tracks_payload = _collect_tracks(tracks, alerted_ids)
+        _push_annotations(BACKEND_URL, CAMERA_ID, tracks_payload, datetime.now(timezone.utc).isoformat())
 
-            # Fire alert for new unique person
-            if track_id not in alerted_ids and track.det_conf is not None:
-                alerted_ids.add(track_id)
-                logger.info(f"New person — Track ID: {track_id}, conf: {track.det_conf:.2f}")
-                try:
-                    httpx.post(f"{BACKEND_URL}/alerts/dev/broadcast", json={
-                        "camera_id": CAMERA_ID,
-                        "neighbourhood_id": NEIGHBOURHOOD_ID,
-                        "detection_type": "HUMAN_PRESENCE",
-                        "confidence": float(track.det_conf),
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "thumbnail_url": None,
-                    }, timeout=1.0)
-                except Exception as e:
-                    logger.error(f"Alert POST failed: {e}")
 
-        # Push annotation data to backend → WebSocket → frontend canvas
-        _push_annotations(
-            BACKEND_URL, CAMERA_ID, tracks_payload,
-            datetime.now(timezone.utc).isoformat()
-        )
+def _reconnect_if_needed(cap, rtsp_url: str):
+    """Return an open capture, reconnecting if necessary."""
+    if cap is not None and cap.isOpened():
+        return cap
+    logger.info("Connecting to RTSP stream…")
+    new_cap = _open_stream(rtsp_url)
+    if new_cap is None:
+        logger.warning("Could not open stream — retrying in 5s")
+        time.sleep(5)
+        return None
+    logger.info("RTSP stream connected")
+    return new_cap
+
+
+def _collect_tracks(tracks, alerted_ids: set) -> list:
+    """Build the annotation payload from confirmed tracks, firing alerts for new persons."""
+    payload = []
+    for track in tracks:
+        if not track.is_confirmed():
+            continue
+        track_id = track.track_id
+        payload.append(_build_track_payload(track))
+
+        if track_id not in alerted_ids and track.det_conf is not None:
+            alerted_ids.add(track_id)
+            logger.info("New person — Track ID: %s, conf: %.2f", track_id, track.det_conf)
+            _send_new_person_alert(track_id, float(track.det_conf))
+    return payload
 
 
 @asynccontextmanager
@@ -131,7 +163,6 @@ async def lifespan(app_: FastAPI):
     t.start()
     logger.info("Detection background thread started")
     yield
-    # daemon=True means it dies with the process — no explicit cleanup needed
 
 
 app = FastAPI(title="WatchDog AI Service", lifespan=lifespan)
@@ -161,15 +192,10 @@ def annotated_mjpeg(rtsp_url: str):
             if frame_count % 2 != 0:
                 continue
             results = model.predict(frame, imgsz=640, conf=0.6, iou=0.3, classes=[0], verbose=False)
-            tracks_for_thumbnail = []
-            for box in results[0].boxes:
-                x1, y1, x2, y2 = box.xyxy[0].tolist()
-                conf = float(box.conf[0])
-                tracks_for_thumbnail.append({
-                    "track_id": 0,
-                    "confidence": conf,
-                    "bbox": [x1, y1, x2, y2],
-                })
+            tracks_for_thumbnail = [
+                {"track_id": 0, "confidence": float(box.conf[0]), "bbox": box.xyxy[0].tolist()}
+                for box in results[0].boxes
+            ]
             annotated = annotate_frame(frame, tracks_for_thumbnail)
             jpeg_bytes = encode_frame_as_jpeg(annotated)
             yield (
