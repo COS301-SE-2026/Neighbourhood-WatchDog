@@ -72,6 +72,7 @@ export default function Dashboard() {
                 {cameras.map((camera) => (
                     <CameraCard
                         key={camera.id}
+                        id={camera.id}
                         name={camera.name}
                         rtspUrl={camera.rtspUrl}
                     />

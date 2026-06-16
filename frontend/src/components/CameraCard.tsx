@@ -6,18 +6,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import CameraFeed from "./CameraFeed"
 
 interface CameraCardProps {
-    name: string;
-    rtspUrl?: string;
+    readonly id: string;
+    readonly name: string;
+    readonly rtspUrl?: string;
 }
-
 
 function getStreamPath(rtspUrl: string): string {
-
     return rtspUrl.split("/").pop() || rtspUrl;
-
 }
 
-export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
+export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
     const streamUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream?url=${encodeURIComponent(rtspUrl)}` : null;
     const streamHealthUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream/health?url=${encodeURIComponent(rtspUrl)}` : null;
     const [streamHealth, setStreamHealth] = useState<{ url: string | null; available: boolean; error: boolean }>({
@@ -25,7 +23,6 @@ export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
         available: false,
         error: false,
     })
-
 
     useEffect(() => {
         if (!streamHealthUrl) return
@@ -61,22 +58,12 @@ export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
         <div className="aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative">
             {streamUrl ? (
                 <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {/* <img
-                        key={streamUrl}
-                        src={streamUrl}
-                        alt={`Live feed: ${name}`}
-                        className={streamImage.error ? "hidden" : "w-full h-full object-cover rounded-md"}
-                        onLoad={() => setStreamImage({ url: streamUrl, loaded: true, error: false })}
-                        onError={() => setStreamImage({ url: streamUrl, loaded: false, error: true })}
-                    /> */}
-
-                    <CameraFeed streamPath={getStreamPath(rtspUrl ?? "")}
-                                host="localhost"
-                                port={8889}
+                    <CameraFeed
+                        streamPath={getStreamPath(rtspUrl ?? "")}
+                        cameraId={id}
+                        host="localhost"
+                        port={8889}
                     />
-
-
                     {!(streamHealth.url === streamUrl && streamHealth.available && !streamHealth.error) && (
                         <span className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
                             {streamHealth.error ? "Stream unavailable" : "Connecting..."}

@@ -1,46 +1,61 @@
-import os
-import cv2
-from fastapi import APIRouter
-from fastapi.responses import StreamingResponse
+import asyncio
+import json
+from fastapi import APIRouter, WebSocket
 
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
+router = APIRouter(prefix="/api/stream", tags=["stream"])
 
-router = APIRouter(prefix="/stream", tags=["stream"])
+# Camera annotation connections: {camera_id: set[WebSocket]}
+_annotation_connections: dict[str, set[WebSocket]] = {}
 
-def mjpeg_generator(rtsp_url: str):
-    
-    cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
-    if not cap.isOpened():
-        return
-    
+def _get_camera_bucket(camera_id: str) -> set[WebSocket]:
+    if camera_id not in _annotation_connections:
+        _annotation_connections[camera_id] = set()
+    return _annotation_connections[camera_id]
+
+def register_camera_connection(camera_id: str, websocket: WebSocket) -> None:
+    _get_camera_bucket(camera_id).add(websocket)
+
+def remove_camera_connection(camera_id: str, websocket: WebSocket) -> None:
+    _get_camera_bucket(camera_id).discard(websocket)
+
+async def broadcast_annotation(camera_id: str, annotation_data: dict) -> None:
+    """Broadcast annotation data (bounding boxes, confidence, etc) to all connected clients"""
+    connections = _get_camera_bucket(camera_id)
+    dead: set[WebSocket] = set()
+
+    payload = json.dumps(annotation_data)
+    for ws in connections:
+        try:
+            await ws.send_text(payload)
+        except Exception:
+            dead.add(ws)
+
+    for ws in dead:
+        connections.discard(ws)
+
+@router.post("/cameras/{camera_id}/annotations")
+async def receive_annotation(camera_id: str, data: dict):
+    """Receive annotation data from detector and broadcast to connected clients"""
+    await broadcast_annotation(camera_id, {
+        "camera_id": camera_id,
+        "event": "annotation",
+        **data  # Contains: tracks (list of {track_id, confidence, bbox}), timestamp
+    })
+    return {"status": "broadcasted"}
+
+@router.websocket("/cameras/{camera_id}/annotations/ws")
+async def camera_annotation_websocket(camera_id: str, websocket: WebSocket):
+    """WebSocket endpoint for receiving annotation updates for a specific camera"""
+    await websocket.accept()
+    register_camera_connection(camera_id, websocket)
+
     try:
         while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            _, buffer = cv2.imencode(".jpg", frame)
-            yield(
-                b"--frame\r\n"
-                b"Content-Type: image/jpeg\r\n\r\n" + buffer.tobytes() + b"\r\n"
-            )
+            try:
+                await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+            except asyncio.TimeoutError:
+                await websocket.send_text(json.dumps({"event": "ping"}))
+    except Exception:
+        pass
     finally:
-        cap.release()
-
-@router.get("/")
-def stream(url: str):
-    return StreamingResponse(
-        mjpeg_generator(url),
-        media_type="multipart/x-mixed-replace; boundary=frame"
-    )
-
-
-@router.get("/health")
-def stream_health(url: str):
-    cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
-    try:
-        is_available = cap.isOpened()
-        if is_available:
-            is_available = cap.grab()
-        return {"available": bool(is_available)}
-    finally:
-        cap.release()
+        remove_camera_connection(camera_id, websocket)

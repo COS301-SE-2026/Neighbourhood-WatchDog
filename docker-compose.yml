@@ -88,6 +88,18 @@ services:
   #     - ./ai:/app
   #   command: uvicorn app:app --host 0.0.0.0 --port 8001 --reload
 
+  mediamtx:
+    build:
+      context: ./mediamtx
+    platform: linux/amd64
+    ports:
+      - "8554:8554"    # RTSP
+      - "8889:8889"    # WebRTC
+      - "9997:9997"    # API
+    volumes:
+      - ./mediamtx/mediamtx.yml:/mediamtx/mediamtx.yml
+    restart: always
+
 volumes:
   postgres_data:
   # redis_data:

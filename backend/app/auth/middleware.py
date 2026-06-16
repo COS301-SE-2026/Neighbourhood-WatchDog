@@ -11,8 +11,13 @@ def _normalize_origin(value: str | None) -> str | None:
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        #Checking the origin
-        public_routes = ["/health", "/docs", "/openapi.json", "/stream", "/alerts"]
+        # BaseHTTPMiddleware cannot handle WebSocket upgrades — pass them straight through.
+        # Without this, the middleware kills the WS handshake and clients get code 1006.
+        if request.headers.get("upgrade", "").lower() == "websocket":
+            return await call_next(request)
+
+        PUBLIC_EXACT = {"/health", "/docs", "/openapi.json", "/redoc"}
+        PUBLIC_PREFIXES = ["/stream", "/alerts", "/api/stream"]
 
         # Allow preflight requests without auth
         # TODO: remove this later
@@ -23,7 +28,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         frontend_origin = _normalize_origin(config.frontend_url)
 
-        if request.url.path not in public_routes:
+        is_public = (
+            request.url.path in PUBLIC_EXACT or
+            any(request.url.path.startswith(p) for p in PUBLIC_PREFIXES)
+        )
+
+        if not is_public:
             if not request.headers.get("Authorization"):
                 response = JSONResponse({"detail": "No Authorization header"}, status_code=401)
                 self._add_cors_headers(response)
@@ -43,4 +53,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
         response.headers["Access-Control-Allow-Origin"] = _normalize_origin(config.frontend_url) or config.frontend_url
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        response.headers["Access-Control-Allow-Headers"] = (
+            "Content-Type, Authorization, "
+            "X-Mock-Role, X-Mock-Sub, X-Mock-Neighbourhood-Id, "
+            "X-Mock-Email, X-Mock-First-Name, X-Mock-Last-Name"
+        )
