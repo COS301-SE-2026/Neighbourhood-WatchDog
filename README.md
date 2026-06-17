@@ -25,12 +25,8 @@
 [![Quality Gate](https://img.shields.io/sonar/quality_gate/COS301-SE-2026_Neighbourhood-WatchDog?server=https%3A%2F%2Fsonarcloud.io&style=for-the-badge&logo=sonarcloud&logoColor=white&label=Quality+Gate&labelColor=0D1B2A&color=00B4D8)](https://sonarcloud.io/summary/new_code?id=COS301-SE-2026_Neighbourhood-WatchDog)
 [![Coverage](https://img.shields.io/codecov/c/github/COS301-SE-2026/Neighbourhood-WatchDog?style=for-the-badge&logo=codecov&logoColor=white&label=Coverage&labelColor=0D1B2A&color=00B4D8&token=28L6HTN8XV)](https://codecov.io/github/COS301-SE-2026/Neighbourhood-WatchDog)
 [![Commit Activity](https://img.shields.io/github/commit-activity/m/COS301-SE-2026/Neighbourhood-WatchDog/dev?style=for-the-badge&logo=git&logoColor=white&label=Commits&labelColor=0D1B2A&color=00B4D8)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/commits/dev)
-[![Last Commit](https://img.shields.io/github/last-commit/COS301-SE-2026/Neighbourhood-WatchDog/dev?style=for-the-badge&logo=git&logoColor=white&label=Last+Commit&labelColor=0D1B2A&color=00B4D8)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/commits/dev)
 [![Open Issues](https://img.shields.io/github/issues-raw/COS301-SE-2026/Neighbourhood-WatchDog?style=for-the-badge&logo=github&logoColor=white&label=Issues&labelColor=0D1B2A&color=0096C7)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/issues)
 [![Closed Issues](https://img.shields.io/github/issues-closed-raw/COS301-SE-2026/Neighbourhood-WatchDog?style=for-the-badge&logo=github&logoColor=white&label=Closed&labelColor=0D1B2A&color=023E8A)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/issues?q=is%3Aissue+is%3Aclosed)
-[![Stars](https://img.shields.io/github/stars/COS301-SE-2026/Neighbourhood-WatchDog?style=for-the-badge&logo=github&logoColor=white&label=Stars&labelColor=0D1B2A&color=00B4D8)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/stargazers)
-[![Forks](https://img.shields.io/github/forks/COS301-SE-2026/Neighbourhood-WatchDog?style=for-the-badge&logo=github&logoColor=white&label=Forks&labelColor=0D1B2A&color=00B4D8)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/network/members)
-[![License](https://img.shields.io/github/license/COS301-SE-2026/Neighbourhood-WatchDog?style=for-the-badge&logo=opensourceinitiative&logoColor=white&label=License&labelColor=0D1B2A&color=00B4D8)](LICENSE)
 [![Status](https://img.shields.io/maintenance/maintained/2026?style=for-the-badge&label=Status&labelColor=0D1B2A&color=00B4D8)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog)
 
 </div>
