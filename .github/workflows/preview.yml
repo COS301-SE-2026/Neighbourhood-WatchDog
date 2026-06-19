@@ -1,4 +1,4 @@
-name: Production Deployment
+name: Preview Deployment
 
 env: 
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -9,13 +9,16 @@ on:
     branches-ignore: [ "main" ]
 
 jobs:
-  Deploy-Production:
+  Deploy-Preview:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install Vercel client 
+        run: pnpm install --global vercel
+
+      - name: Pull Vercel Environment Information
         run:  vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build
