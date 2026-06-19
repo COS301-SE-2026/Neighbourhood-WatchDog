@@ -38,3 +38,6 @@ def login(payload: LoginRequest):
 def confirm(payload: ConfirmSignUpRequest):
     return confirm_user(payload)
 
+@router.post("/resend-code")
+def resend_code(payload: ResendCodeRequest):
+    return resend_confirmation_code(payload)

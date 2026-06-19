@@ -13,3 +13,6 @@ class LoginRequest(BaseModel):
 class ConfirmSignUpRequest(BaseModel):
     email: EmailStr
     code: str
+
+class ResendCodeRequest(BaseModel):
+    email: EmailStr

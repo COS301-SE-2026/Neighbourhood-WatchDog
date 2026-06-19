@@ -66,7 +66,7 @@ export default function SignupPage() {
       
       // Redirect to confirmation afterr delay
       setTimeout(() => {
-        router.push("/confirm");
+        router.push("/auth/confirm");
       }, 2000);
       
     } catch (err) {

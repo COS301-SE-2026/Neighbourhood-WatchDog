@@ -103,7 +103,19 @@ export const confirmSignUp = async (
   }
 };
 
-// ✅ Store tokens (same as before)
+export const resendConfirmationCode = async (email: string): Promise<void> => {
+  try {
+    await apiClient('/auth/resend-code', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  } catch (error) {
+    console.error('Resend code error:', error);
+    throw error;
+  }
+};
+
+// Store tokens 
 export const setSession = (tokens: { 
   accessToken: string; 
   idToken: string;
@@ -113,7 +125,7 @@ export const setSession = (tokens: {
   localStorage.setItem('idToken', tokens.idToken);
 };
 
-// ✅ Get token (same as before)
+// Get token
 export const getAccessToken = (): string | null => {
   if (typeof window === 'undefined') return null;
   

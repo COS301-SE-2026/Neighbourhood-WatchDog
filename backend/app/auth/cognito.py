@@ -125,3 +125,23 @@ def confirm_sign_up(email, code):
                 "message": e.response["Error"]["Message"]
             }
         )
+    
+def resend_code(email: str):
+    try:
+        response = client.resend_confirmation_code(
+            ClientId=CLIENT_ID,
+            Username=email,
+        )
+        
+        return {
+            "message": "New confirmation code sent successfully",
+            "response": response
+        }
+    except ClientError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": e.response["Error"]["Code"],
+                "message": e.response["Error"]["Message"]
+            }
+        )

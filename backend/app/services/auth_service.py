@@ -38,3 +38,9 @@ def confirm_user(payload):
         "confirmed": True,
         "result": result
     }
+
+def resend_confirmation_code(payload):
+    result = resend_code_service(payload.email)
+    return {
+        "message": "New confirmation code sent successfully"
+    }
