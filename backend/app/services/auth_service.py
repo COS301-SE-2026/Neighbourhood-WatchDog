@@ -1,4 +1,4 @@
-from app.auth.cognito import sign_up, login, confirm_sign_up
+from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code
 
 
 #Business Logic between our API and AWS
@@ -40,7 +40,7 @@ def confirm_user(payload):
     }
 
 def resend_confirmation_code(payload):
-    result = resend_code_service(payload.email)
+    result = resend_code(payload.email) #if result is returned then the message was sent succesfully, HTTPException would disrupt execution if throwin (failed to send)
     return {
         "message": "New confirmation code sent successfully"
     }

@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, Response
-from app.services.auth_service import (register_user,authenticate_user,confirm_user)
+from app.services.auth_service import (register_user,authenticate_user,confirm_user, resend_confirmation_code)
 from app.auth.dependencies import get_current_user
 
 from fastapi import APIRouter
 from app.schemas.auth import ( #Check payloads from schemas
     SignUpRequest,
     LoginRequest,
-    ConfirmSignUpRequest
+    ConfirmSignUpRequest,
+    ResendCodeRequest
 )
 
 from app.services.auth_service import ( #use services

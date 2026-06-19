@@ -1,4 +1,3 @@
-// components/auth-components/confirm-card.tsx
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
