@@ -15,6 +15,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Install Vercel client 
         run: npm install --global vercel
 
@@ -25,5 +30,5 @@ jobs:
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
        
       - name: Deploy 
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
       
