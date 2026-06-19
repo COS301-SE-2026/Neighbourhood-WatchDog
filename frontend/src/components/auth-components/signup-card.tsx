@@ -1,3 +1,5 @@
+import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 type SignupCardProps = {
   className?: string;
@@ -31,6 +34,9 @@ type SignupCardProps = {
   setConfirmPassword: (v: string) => void;
 
   onSubmit: () => void;
+  onKeyDown?: (e: React.KeyboardEvent) => void;//Enter key logic
+  isLoading?: boolean;
+  error?: string | null;
 };
 
 export function SignupCard({
@@ -46,102 +52,181 @@ export function SignupCard({
   confirmPassword,
   setConfirmPassword,
   onSubmit,
+  onKeyDown,
+  isLoading = false,
+  error = null,
 }: SignupCardProps) {
+  // Password visibility toggle
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   return (
     <Card
       className={cn(
-        "w-full max-w-md sm:max-w-xl rounded-xl border border-navy/12 bg-white/95 shadow-lg backdrop-blur",
+        "w-full max-w-lg sm:max-w-2xl p-2 sm:p-4 rounded-2xl border border-navy/12 bg-white/95 shadow-xl backdrop-blur",
         className
       )}
     >
-      <CardHeader>
-        <CardTitle className="text-[2rem] sm:text-[2rem] font-semibold tracking-tight text-navy">
-          Create your account
+      <CardHeader className="space-y-3">
+        <CardTitle className="text-[2rem] sm:text-[2.5rem] font-bold tracking-tight text-navy">
+          Create Account
         </CardTitle>
 
         <CardDescription className="text-base text-body">
-          Enter your details below to sign up
+          Enter your details below to get started
         </CardDescription>
 
         <CardAction>
-          <Button variant="link">Login</Button>
+          <Link href="/auth/login" passHref>
+            <Button variant="link" className="text-sm font-medium">
+              Already have an account? Login
+            </Button>
+          </Link>
         </CardAction>
       </CardHeader>
 
-      <CardContent>
-        <div className="flex flex-col gap-6">
+      <CardContent className="space-y-6">
+        {/* Error display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
 
+        <div className="flex flex-col gap-6">
           {/* NAME */}
           <div className="grid gap-2">
-            <Label htmlFor="name">Full Name</Label>
+            <Label htmlFor="name" className="text-sm font-medium">
+              Full Name
+            </Label>
             <Input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="John Doe"
+              onKeyDown={onKeyDown}
+              placeholder="Name Surname"
+              disabled={isLoading}
+              className="h-11 text-base"
               required
             />
           </div>
 
           {/* ADDRESS */}
           <div className="grid gap-2">
-            <Label htmlFor="address">Address</Label>
+            <Label htmlFor="address" className="text-sm font-medium">
+              Address
+            </Label>
             <Input
               id="address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Pretoria, South Africa"
+              onKeyDown={onKeyDown}
+              placeholder=" 44 Home Street, Pretoria"
+              disabled={isLoading}
+              className="h-11 text-base"
               required
             />
           </div>
 
           {/* EMAIL */}
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-sm font-medium">
+              Email Address
+            </Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="m@example.com"
+              onKeyDown={onKeyDown}
+              placeholder="email@example.com"
+              disabled={isLoading}
+              className="h-11 text-base"
               required
             />
           </div>
 
-          {/* PASSWORD */}
+          {/* PASSWORD with visibility toggle */}
           <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <Label htmlFor="password" className="text-sm font-medium">
+              Password
+            </Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={onKeyDown}
+                disabled={isLoading}
+                className="h-11 text-base pr-10"
+                required
+                minLength={8}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                disabled={isLoading}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-gray-500">Must have: 8+ characters | Special Character | Number</p>
           </div>
 
-          {/* CONFIRM PASSWORD */}
+          {/* CONFIRM PASSWORD with visibility toggle */}
           <div className="grid gap-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
+            <Label htmlFor="confirmPassword" className="text-sm font-medium">
+              Confirm Password
+            </Label>
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                onKeyDown={onKeyDown}
+                disabled={isLoading}
+                className="h-11 text-base pr-10"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                disabled={isLoading}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           </div>
-
         </div>
       </CardContent>
 
-      <CardFooter className="flex-col gap-2">
+      <CardFooter className="flex-col gap-3 pt-2">
         <Button
           type="button"
           onClick={onSubmit}
-          className="w-full bg-navy text-white hover:bg-steel"
+          disabled={isLoading}
+          className="w-full h-11 text-base font-medium bg-navy text-white hover:bg-steel transition-colors"
         >
-          Sign Up
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating account...
+            </>
+          ) : (
+            "Create Account"
+          )}
         </Button>
       </CardFooter>
     </Card>
