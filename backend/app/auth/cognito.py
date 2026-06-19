@@ -32,7 +32,7 @@ def verify_token(token: str) -> dict:
                 break
 
         if not rsa_key:
-            raise HTTPException(status=401, detail="Invalid token")
+            raise HTTPException(status_code=401, detail="Invalid token")
 
         payload = jwt.decode(token, rsa_key, algorithms=["RS256"], audience=config.cognito_client_id)
 

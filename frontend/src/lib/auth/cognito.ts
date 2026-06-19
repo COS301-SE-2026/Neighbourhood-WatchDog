@@ -1,101 +1,145 @@
-"use client";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-import {
-  CognitoUserPool,
-  CognitoUser,
-  AuthenticationDetails,
-  CognitoUserAttribute,
-} from "amazon-cognito-identity-js";
+// Types for API responses
+interface SignUpResponse {
+  user_sub: string;
+  confirmed: boolean;
+}
 
-let _userPool: CognitoUserPool | null = null;
+interface LoginResponse {
+  access_token: string;
+  id_token: string;
+  expires_in: number;
+}
 
-export const getUserPool = (): CognitoUserPool => {
-  if (!_userPool) {
-    _userPool = new CognitoUserPool({
-      UserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID!,
-      ClientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!,
-    });
+interface ConfirmResponse {
+  confirmed: boolean;
+  result: any;
+}
+
+// API Client with error handling
+const apiClient = async <T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> => {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    // Handle error backend
+    const errorMessage = data.detail?.message || data.detail || 'Something went wrong';
+    throw new Error(errorMessage);
   }
-  return _userPool;
-};
 
-export const signUp = (
+  return data as T;
+};
+//Signup call to backend
+export const signUp = async (
   email: string,
   password: string,
   name: string,
   address: string
-) => {
-  const attributes = [
-    new CognitoUserAttribute({
-      Name: "name",
-      Value: name,
-    }),
-    new CognitoUserAttribute({
-      Name: "address",
-      Value: address,
-    }),
-  ];
-
-  return new Promise((resolve, reject) => {
-    getUserPool().signUp(
-      email,
-      password,
-      attributes,
-      [],
-      (err, result) => {
-        if (err) {
-          console.error(err);
-          return reject(err);
-        }
-
-        resolve(result?.user);
-      }
-    );
-  });
-};
-
-export const login = (email: string, password: string) => {
-  const user = new CognitoUser({
-    Username: email,
-    Pool: getUserPool(),
-  });
-
-  const authDetails = new AuthenticationDetails({
-    Username: email,
-    Password: password,
-  });
-
-  return new Promise<{ accessToken: string; idToken: string }>((resolve, reject) => {
-    user.authenticateUser(authDetails, {
-      onSuccess: (result) => {
-        const accessToken = result.getAccessToken().getJwtToken();
-        const idToken = result.getIdToken().getJwtToken();
-
-        resolve({ accessToken, idToken });
-      },
-
-      onFailure: (err) => {
-        console.error(err);
-        reject(err);
-      },
+): Promise<{ userSub: string; confirmed: boolean }> => {//expects to return these back
+  try {
+    const response = await apiClient<SignUpResponse>('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, name, address }),//create JSON for API Post
     });
-  });
+
+    return {//Handle API response
+      userSub: response.user_sub,
+      confirmed: response.confirmed,
+    };
+  } catch (error) {
+    console.error('Signup error:', error);
+    throw error;
+  }
 };
 
-export const setSession = (tokens: { accessToken: string; idToken: string }) => {
-  localStorage.setItem("accessToken", tokens.accessToken);
-  localStorage.setItem("idToken", tokens.idToken);
+// Login function call to backend 
+export const login = async (
+  email: string,
+  password: string
+): Promise<{ accessToken: string; idToken: string; expiresIn: number }> => {//expects to return these
+  try {
+    const response = await apiClient<LoginResponse>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),//Create JSON
+    });
+
+    return {
+      accessToken: response.access_token,
+      idToken: response.id_token,
+      expiresIn: response.expires_in,
+    };
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
+  }
 };
 
-export const getAccessToken = () => {
-  return localStorage.getItem("accessToken");
+// Confirm Signup function to backend 
+export const confirmSignUp = async (
+  email: string,
+  code: string
+): Promise<boolean> => {
+  try {
+    const response = await apiClient<ConfirmResponse>('/auth/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    });
+
+    return response.confirmed;
+  } catch (error) {
+    console.error('Confirmation error:', error);
+    throw error;
+  }
 };
 
-export const isAuthenticated = () => {
-  if (typeof window === "undefined") return false;
-  return !!localStorage.getItem("accessToken");
+// ✅ Store tokens (same as before)
+export const setSession = (tokens: { 
+  accessToken: string; 
+  idToken: string;
+  expiresIn?: number;
+}) => {
+  localStorage.setItem('accessToken', tokens.accessToken);
+  localStorage.setItem('idToken', tokens.idToken);
 };
 
-export const logout = () => {
-  localStorage.clear();
+// ✅ Get token (same as before)
+export const getAccessToken = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  
+  // Chekc if token is expired, if it is, logout user
+  const expiry = localStorage.getItem('tokenExpiry');
+  if (expiry && Date.now() > parseInt(expiry)) {
+    // Token expired
+    logout();
+    return null;
+  }
+  
+  return localStorage.getItem('accessToken');
+};
+
+//Checks if they are logged in 
+export const isAuthenticated = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  
+  const token = getAccessToken();
+  return !!token;
+};
+
+// Logout
+//Do not need to call backend... we are not handling sessions
+export const logout = (): void => {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('idToken');
+  localStorage.removeItem('tokenExpiry');
 };

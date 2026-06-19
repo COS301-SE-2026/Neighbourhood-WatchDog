@@ -3,13 +3,13 @@ from app.services.auth_service import (register_user,authenticate_user,confirm_u
 from app.auth.dependencies import get_current_user
 
 from fastapi import APIRouter
-from app.schemas.auth import (
+from app.schemas.auth import ( #Check payloads from schemas
     SignUpRequest,
     LoginRequest,
     ConfirmSignUpRequest
 )
 
-from app.services.auth_service import (
+from app.services.auth_service import ( #use services
     register_user,
     authenticate_user,
     confirm_user
