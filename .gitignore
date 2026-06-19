@@ -25,3 +25,4 @@ backend/.pytest_cache/
 __pycache__/
 *.pyc
 .pytest_cache/
+.vercel
