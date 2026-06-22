@@ -16,3 +16,14 @@ echo \
     $(. etc/os-release && echo "$VERSION_CODENAME") stable" | \
     sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
+#Install Docker Engineer and Compose plugin
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+#adding ubuntu user to docker group
+sudo usermod -aG docker ubuntu
+
+#make app directry 
+mkdir -p /home/ubuntu/app
+
+echo "Bootstrap done. Log out and in again "
