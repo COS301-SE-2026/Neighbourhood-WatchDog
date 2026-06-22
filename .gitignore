@@ -5,6 +5,10 @@
 .env.staging
 *.env
 
+#keys and pem
+*.key
+*.pem
+
 # Keep example files
 !*.example
 
