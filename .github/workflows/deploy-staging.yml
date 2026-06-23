@@ -27,13 +27,13 @@ jobs:
           EOF
       
       - name: Copy files to EC2
-        uses: appleboy/scp-actions@v0.1.7
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: ".!frontend"
-          target: "home/ubuntu/app"
+          source: ".,!frontend"
+          target: "/home/ubuntu/app"
 
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.0.3
