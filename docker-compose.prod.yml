@@ -1,22 +1,4 @@
 services:
-  postgres:
-    image: postgis/postgis:15-3.4-alpine
-    restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    ports: 
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 1m30s
-      timeout: 30s
-      retries: 5
-      start_period: 30s
-
   # redis: 
   #   image: redis:7-alpine
   #   container_name: redis_cache
@@ -35,11 +17,11 @@ services:
   backend:
     build:
       context: ./backend
-      target: development
+      target: production
     ports:
       - "8000:8000"
     environment:
-      APP_ENV: development
+      APP_ENV: production
       DEBUG: "false"
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       # REDIS_URL: redis://redis:6379/0
@@ -49,28 +31,14 @@ services:
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
       COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
       FRONTEND_URL: ${FRONTEND_URL}
-    volumes:
-      - ./backend:/app
+    restart: always
+    # volumes:
+    #   - ./backend:/app
     depends_on:
       postgres:
         condition: service_healthy
       # redis:
       #   condition: service_healthy
-
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     target: development
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     NEXT_PUBLIC_API_URL: http://localhost:8000
-  #     NEXT_PUBLIC_AI_URL: http://localhost:8001
-  #   volumes:
-  #     - ./frontend:/app
-  #     - /app/node_modules
-  #   depends_on:
-  #     - backend
 
   # ai:
   #   build:
@@ -99,6 +67,4 @@ services:
     restart: always
 
 volumes:
-  postgres_data:
   # redis_data:
-  frontend_node_modules:

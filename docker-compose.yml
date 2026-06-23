@@ -103,4 +103,4 @@ services:
 volumes:
   postgres_data:
   # redis_data:
-  frontend_node_modules:
+  # frontend_node_modules:
