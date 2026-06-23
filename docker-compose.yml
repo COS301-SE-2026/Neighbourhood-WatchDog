@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgis/postgis:15-3.4-alpine
-    platform: linux/amd64
+    # platform: linux/amd64
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -37,7 +37,7 @@ services:
     build:
       context: ./backend
       target: development
-    platform: linux/amd64
+    # platform: linux/amd64
     ports:
       - "8000:8000"
     environment:
@@ -59,20 +59,20 @@ services:
       # redis:
       #   condition: service_healthy
 
-  frontend:
-    build:
-      context: ./frontend
-      target: development
-    ports:
-      - "3000:3000"
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
-      NEXT_PUBLIC_AI_URL: http://localhost:8001
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    depends_on:
-      - backend
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     target: development
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     NEXT_PUBLIC_API_URL: http://localhost:8000
+  #     NEXT_PUBLIC_AI_URL: http://localhost:8001
+  #   volumes:
+  #     - ./frontend:/app
+  #     - /app/node_modules
+  #   depends_on:
+  #     - backend
 
   # ai:
   #   build:

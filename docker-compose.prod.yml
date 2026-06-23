@@ -40,7 +40,7 @@ services:
       - "8000:8000"
     environment:
       APP_ENV: development
-      DEBUG: "true"
+      DEBUG: "false"
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       # REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
@@ -57,20 +57,20 @@ services:
       # redis:
       #   condition: service_healthy
 
-  frontend:
-    build:
-      context: ./frontend
-      target: development
-    ports:
-      - "3000:3000"
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
-      NEXT_PUBLIC_AI_URL: http://localhost:8001
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    depends_on:
-      - backend
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     target: development
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     NEXT_PUBLIC_API_URL: http://localhost:8000
+  #     NEXT_PUBLIC_AI_URL: http://localhost:8001
+  #   volumes:
+  #     - ./frontend:/app
+  #     - /app/node_modules
+  #   depends_on:
+  #     - backend
 
   # ai:
   #   build:
