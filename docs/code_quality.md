@@ -304,7 +304,7 @@ backend/tests/
 cd backend && pytest
 ```
 
-**Minimum coverage target:** 70% line coverage on `backend/app/`.
+**Minimum coverage target:** 80% line coverage on `backend/app/`.
 
 ### 6.2 End-to-End - Playwright
 
@@ -457,12 +457,12 @@ As of June 2026, the following standards are actively enforced:
 | Pytest backend tests | Active | Runs against live PostgreSQL in CI |
 | `readonly` props on all components | Enforced | SonarCloud + manual review |
 | Conventional commit messages | Manual | Not yet enforced by commitlint |
-| 70% test coverage threshold | Target | Not yet enforced as a hard gate |
+| 80% test coverage threshold | Target | Not yet enforced as a hard gate |
 | `boto3` present in `ai/requirements.txt` | Confirmed | `boto3==1.28.57` |
 
 ### Recommended Future Improvements
 
 1. **Add `commitlint` to CI** - enforce Conventional Commits format automatically
-2. **Add coverage threshold** - fail CI if line coverage drops below 70%
+2. **Add coverage threshold** - fail CI if line coverage drops below 80%
 3. **Add `dependabot`** - automated dependency update PRs for security patches
 4. **Add pre-commit hooks** - run Ruff and ESLint locally before a commit reaches CI
