@@ -11,6 +11,10 @@ def _normalize_origin(value: str | None) -> str | None:
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        if request.url.path.startswith("/auth"): #If prefix is "/auth" we do not need authorization header
+            response = await call_next(request)
+            self._add_cors_headers(response)
+            return response
         #Checking the origin
         public_routes = ["/health", "/docs", "/openapi.json", "/stream", "/alerts"]
 

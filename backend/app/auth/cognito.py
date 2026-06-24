@@ -41,11 +41,11 @@ def verify_token(token: str) -> dict:
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
     
-COGNITO_REGION = os.getenv("COGNITO_REGION")
-USER_POOL_ID = os.getenv("COGNITO_USER_POOL_ID")
-CLIENT_ID = os.getenv("COGNITO_CLIENT_ID")
+COGNITO_REGION = config.cognito_region
+USER_POOL_ID = config.cognito_user_pool_id
+CLIENT_ID = config.cognito_client_id
 
-client = boto3.client("cognito-idp", region_name=COGNITO_REGION)
+client = boto3.client("cognito-idp", region_name=config.cognito_region)
 
 #temporarilyy functions to test other things.
 #Should ONLY talk to Cognito
