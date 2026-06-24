@@ -36,7 +36,7 @@ jobs:
           target: "/home/ubuntu/app"
 
       - name: Deploy on EC2
-        uses: appleboy/ssh-action@v0ff4204d59e8e51228ff73bce53f80d53301dee2 #1.0.3
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 #1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
