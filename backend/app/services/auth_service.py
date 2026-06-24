@@ -5,42 +5,56 @@ from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code
 #take clean input and calls cognito then reshape results into app format
 #Frontend must never rely on AWS naming convention
 def register_user(payload):
-    result = sign_up(
-        email = payload.email,
-        password = payload.password,
-        name = payload.name,
-        address = payload.address
+    response = sign_up(
+        email=payload["email"],
+        password=payload["password"],
+        name=payload["name"],
+        address=payload["address"]
     )
+
     return {
-        "user_sub": result["user_sub"],
-        "confirmed": result["user_confirmed"]
+        "success": True,
+        "data": {
+            "user_sub": response["UserSub"],
+            "user_confirmed": response["UserConfirmed"]
+        }
     }
 
 def authenticate_user(payload):
-    result = login(
-        email = payload.email,
-        password = payload.password
+    response = login(
+        email=payload["email"],
+        password=payload["password"]
     )
 
     return {
-        "access_token": result["access_token"],
-        "id_token": result["id_token"],
-        "expires_in": result["expires_in"]
+        "success": True,
+        "data": {
+            "access_token": response["AuthenticationResult"]["AccessToken"],
+            "id_token": response["AuthenticationResult"]["IdToken"],
+            "refresh_token": response["AuthenticationResult"]["RefreshToken"],
+            "token_type": response["AuthenticationResult"]["TokenType"]
+        }
     }
 
 def confirm_user(payload):
-    result = confirm_sign_up(
-        email = payload.email,
-        code = payload.code
+    response = confirm_sign_up(
+        email=payload["email"],
+        code=payload["code"]
     )
 
     return {
-        "confirmed": True,
-        "result": result
+        "success": True,
+        "data": {
+            "status": response["status"]
+        }
     }
 
 def resend_confirmation_code(payload):
-    result = resend_code(payload.email) #if result is returned then the message was sent succesfully, HTTPException would disrupt execution if throwin (failed to send)
+    response = resend_code(payload["email"])
+
     return {
-        "message": "New confirmation code sent successfully"
+        "success": True,
+        "data": {
+            "message": response.get("message", "sent")
+        }
     }

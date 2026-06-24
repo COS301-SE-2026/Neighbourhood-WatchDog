@@ -1,11 +1,13 @@
+import sys
+from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from app.schemas.auth import ( #Import the auth schemas
+from backend.app.schemas.auth import ( #
     SignUpRequest,
     LoginRequest,
     ConfirmSignUpRequest,
-    ResendCodeRequest
+    ResendCodeRequest,
 )
 #Singup
 def test_signup_valid(): # Valid signup 
