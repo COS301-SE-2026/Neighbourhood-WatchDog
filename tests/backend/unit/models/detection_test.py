@@ -130,3 +130,76 @@ class TestDetectionIngestReq:
 
         with pytest.raises(ValidationError):
             DetectionIngestReq(**data)
+
+class TestDetectionEventRes:
+    def test_valid_unprocessed_event(self):
+        """Happy path: processed=False, no thumbnail"""
+        data = _make_event_res(processed=False)
+        res = DetectionEventRes(**data)
+
+        assert res.id == data["id"]
+        assert res.camera_id == data["camera_id"]
+        assert res.detection_type == "HUMAN_PRESENCE"
+        assert res.confidence_score == 0.75
+        assert res.processed is False
+        assert res.thumbnail_url is None
+
+    def test_valid_processed_event(self):
+        """processed=True should be accepted"""
+        res = DetectionEventRes(**_make_event_res(processed=True))
+        assert res.processed is True
+
+    def test_with_thumbnail_url(self):
+        """thumbnail_url is optional and accepts a string"""
+        res = DetectionEventRes(**_make_event_res(thumbnail_url="https://cdn.example.com/thumb.jpg"))
+        assert res.thumbnail_url == "https://cdn.example.com/thumb.jpg"
+
+    def test_missing_id_raises_validation_error(self):
+        data = _make_event_res()
+        del data["id"]
+
+        with pytest.raises(ValidationError):
+            DetectionEventRes(**data)
+
+    def test_missing_camera_id_raises_validation_error(self):
+        data = _make_event_res()
+        del data["camera_id"]
+
+        with pytest.raises(ValidationError):
+            DetectionEventRes(**data)
+
+    def test_missing_frame_timestamp_raises_validation_error(self):
+        data = _make_event_res()
+        del data["frame_timestamp"]
+
+        with pytest.raises(ValidationError):
+            DetectionEventRes(**data)
+
+    def test_missing_detection_type_raises_validation_error(self):
+        data = _make_event_res()
+        del data["detection_type"]
+
+        with pytest.raises(ValidationError):
+            DetectionEventRes(**data)
+
+    def test_missing_confidence_score_raises_validation_error(self):
+        data = _make_event_res()
+        del data["confidence_score"]
+
+        with pytest.raises(ValidationError):
+            DetectionEventRes(**data)
+
+    def test_missing_processed_raises_validation_error(self):
+        data = _make_event_res()
+        del data["processed"]
+
+        with pytest.raises(ValidationError):
+            DetectionEventRes(**data)
+
+    def test_invalid_uuid_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            DetectionEventRes(**_make_event_res(id="not-a-uuid"))
+
+    def test_from_attributes_config_present(self):
+        """model_config should allow construction from ORM objects"""
+        assert DetectionEventRes.model_config.get("from_attributes") is True
