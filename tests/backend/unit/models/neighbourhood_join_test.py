@@ -50,3 +50,76 @@ class TestJoinNeighbourhoodReq:
         """join_code is required"""
         with pytest.raises(ValidationError):
             JoinNeighbourhoodReq()
+
+class TestJoinRequestRes:
+    def test_valid_pending_request(self):
+        """Happy path: all required fields, status PENDING"""
+        data = _make_join_request_res()
+        res = JoinRequestRes(**data)
+
+        assert res.id == data["id"]
+        assert res.neighbourhood_id == data["neighbourhood_id"]
+        assert res.user_id == data["user_id"]
+        assert res.status == "PENDING"
+        assert res.created_at == data["created_at"]
+
+    def test_approved_status_accepted(self):
+        """Status can be APPROVED"""
+        res = JoinRequestRes(**_make_join_request_res(status="APPROVED"))
+        assert res.status == "APPROVED"
+
+    def test_denied_status_accepted(self):
+        """Status can be DENIED"""
+        res = JoinRequestRes(**_make_join_request_res(status="DENIED"))
+        assert res.status == "DENIED"
+
+    def test_missing_id_raises_validation_error(self):
+        data = _make_join_request_res()
+        del data["id"]
+
+        with pytest.raises(ValidationError):
+            JoinRequestRes(**data)
+
+    def test_missing_neighbourhood_id_raises_validation_error(self):
+        data = _make_join_request_res()
+        del data["neighbourhood_id"]
+
+        with pytest.raises(ValidationError):
+            JoinRequestRes(**data)
+
+    def test_missing_user_id_raises_validation_error(self):
+        data = _make_join_request_res()
+        del data["user_id"]
+
+        with pytest.raises(ValidationError):
+            JoinRequestRes(**data)
+
+    def test_missing_status_raises_validation_error(self):
+        data = _make_join_request_res()
+        del data["status"]
+
+        with pytest.raises(ValidationError):
+            JoinRequestRes(**data)
+
+    def test_missing_created_at_raises_validation_error(self):
+        data = _make_join_request_res()
+        del data["created_at"]
+
+        with pytest.raises(ValidationError):
+            JoinRequestRes(**data)
+
+    def test_invalid_uuid_for_id_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            JoinRequestRes(**_make_join_request_res(id="not-a-uuid"))
+
+    def test_invalid_uuid_for_neighbourhood_id_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            JoinRequestRes(**_make_join_request_res(neighbourhood_id="bad"))
+
+    def test_invalid_uuid_for_user_id_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            JoinRequestRes(**_make_join_request_res(user_id="bad"))
+
+    def test_from_attributes_config_present(self):
+        """model_config should allow construction from ORM objects"""
+        assert JoinRequestRes.model_config.get("from_attributes") is True
