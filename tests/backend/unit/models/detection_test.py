@@ -203,3 +203,66 @@ class TestDetectionEventRes:
     def test_from_attributes_config_present(self):
         """model_config should allow construction from ORM objects"""
         assert DetectionEventRes.model_config.get("from_attributes") is True
+
+class TestDetectionIngestRes:
+    def _make_event_res_obj(self) -> DetectionEventRes:
+        return DetectionEventRes(**_make_event_res(processed=True))
+
+    def test_valid_response_with_alert(self):
+        """Happy path: alert was created"""
+        alert_id = uuid4()
+        event = self._make_event_res_obj()
+        res = DetectionIngestRes(
+            status=200,
+            message="Detection processed",
+            data=event,
+            alert_created=True,
+            alert_id=alert_id,
+        )
+
+        assert res.status == 200
+        assert res.alert_created is True
+        assert res.alert_id == alert_id
+        assert res.data.processed is True
+
+    def test_valid_response_without_alert(self):
+        """Detections below threshold produce no alert"""
+        event = self._make_event_res_obj()
+        res = DetectionIngestRes(
+            status=200,
+            data=event,
+            alert_created=False,
+            alert_id=None,
+        )
+
+        assert res.alert_created is False
+        assert res.alert_id is None
+
+    def test_optional_fields_default_to_none(self):
+        """message and data are optional, alert_id is optional"""
+        res = DetectionIngestRes(status=200, alert_created=False)
+
+        assert res.message is None
+        assert res.data is None
+        assert res.alert_id is None
+
+    def test_missing_status_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            DetectionIngestRes(alert_created=False)
+
+    def test_missing_alert_created_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            DetectionIngestRes(status=200)
+
+    def test_invalid_alert_id_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            DetectionIngestRes(status=200, alert_created=True, alert_id="not-a-uuid")
+
+    def test_invalid_nested_data_raises_validation_error(self):
+        """Malformed data object must be rejected"""
+        with pytest.raises(ValidationError):
+            DetectionIngestRes(
+                status=200,
+                alert_created=False,
+                data={"processed": True},
+            )
