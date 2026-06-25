@@ -29,7 +29,7 @@ jobs:
           COGNITO_REGION: ${{ secrets.COGNITO_REGION }}
         run: |
           cat > .env << EOF
-          POSTGRES_USER=${ POSTGRES_USER }
+          POSTGRES_USER=${POSTGRES_USER}
           POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
           POSTGRES_DB=${POSTGRES_DB}
           SECRET_KEY=${SECRET_KEY}
