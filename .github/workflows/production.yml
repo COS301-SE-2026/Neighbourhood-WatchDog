@@ -3,6 +3,7 @@ name: Production Deployment
 env: 
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
 on:
   push:
@@ -24,11 +25,11 @@ jobs:
         run: npm install --global vercel
 
       - name: Pull Vercel Environment Information
-        run:  vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        run:  vercel pull --yes --environment=production --token=${VERCEL_TOKEN}
 
       - name: Build
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel build --prod --token=${VERCEL_TOKEN}
       
       - name: Deploy 
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prebuilt --prod --token=${VERCEL_TOKEN}
       
