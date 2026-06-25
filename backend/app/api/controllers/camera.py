@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, status
 
 from app.schemas.camera import RegisterCameraReq, RegisterCameraRes, CamerasRes, DeregisterCameraReq, DeregisterCameraRes
-from app.services.camera_service import register_camera_handler, list_cameras_handler
+from app.services.camera_service import register_camera_handler, list_cameras_handler, deregister_camera_handler
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
 from app.auth.rbac import require_role
@@ -28,10 +28,9 @@ async def deregister_camera(req: DeregisterCameraReq, db: DbSession, claims: dic
     """Permanently remove a camera from a users property and the system."""
     require_role(claims = claims, allowed_roles= ['RESIDENT'])
 
-    await register_camera_handler(req, db, claims)
+    await deregister_camera_handler(req, db, claims)
 
     return DeregisterCameraRes(
-        status=201,
         message="Camera Created Successfully",
         data=[],
     )
