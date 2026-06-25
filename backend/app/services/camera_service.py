@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from app.schemas.camera import RegisterCameraReq, CameraRes, CamerasRes
 from app.models.camera import Camera
 from app.models.property import Property
@@ -47,6 +47,29 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
     except HTTPException as he:
         db.rollback()
         raise he
+
+async def deregister_camera_handler(camera_id: UUID, db: DbSession, claims: dict):
+    if not db:
+        raise HTTPException(status_code=500, detail="No database session")
+    if not claims:
+        raise HTTPException(status_code=500, detail="Not authenticated")
+    
+    try:
+        stmt = select(Camera).where(Camera.id == camera_id)
+        camera_obj = db.execute(stmt).scalar_one_or_none()
+
+        if not camera_obj:
+            raise HTTPException(status_code=404, detail="Camera not found")
+        
+        db.execute(delete(Camera).where(Camera.id == camera_id))
+        db.commit()
+        
+    except HTTPException as he:
+        db.rollback()
+        raise he
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error")
 
 async def list_cameras_handler(property_id: str, db: DbSession, claims: dict) -> CamerasRes:
     if not db:
