@@ -170,3 +170,40 @@ class TestAcknowledgeAlertRes:
         """Passing a plain dict with missing required fields as data must raise error"""
         with pytest.raises(ValidationError):
             AcknowledgeAlertRes(status=200, data={"status": "OPEN"})
+
+class TestListAlertsRes:
+    def _make_alert(self, status: str = "OPEN") -> AlertRes:
+        return AlertRes(**_make_alert_res(status=status))
+
+    def test_valid_response_with_multiple_alerts(self):
+        """Happy path: list of AlertRes objects"""
+        alerts = [self._make_alert("OPEN"), self._make_alert("ACKNOWLEDGED")]
+        res = ListAlertsRes(status=200, message="OK", data=alerts)
+
+        assert res.status == 200
+        assert len(res.data) == 2
+        assert res.data[0].status == "OPEN"
+        assert res.data[1].status == "ACKNOWLEDGED"
+
+    def test_empty_list_is_valid(self):
+        """An empty list is a legitimate response (there are no active alerts)"""
+        res = ListAlertsRes(status=200, data=[])
+
+        assert res.data == []
+
+    def test_data_none_by_default(self):
+        """message and data are optional"""
+        res = ListAlertsRes(status=200)
+
+        assert res.message is None
+        assert res.data is None
+
+    def test_missing_status_raises_validation_error(self):
+        """status is required"""
+        with pytest.raises(ValidationError):
+            ListAlertsRes(data=[])
+
+    def test_invalid_item_in_list_raises_validation_error(self):
+        """Each item in data must be a valid AlertRes"""
+        with pytest.raises(ValidationError):
+            ListAlertsRes(status=200, data=["not-an-alert-res"])
