@@ -5,18 +5,18 @@ from datetime import datetime, timezone
 from app.schemas.alert import AlertRes, AcknowledgeAlertRes, ListAlertsRes
 
 def _make_alert_res(**overrides):
-    base = dict(
-        id=uuid4(),
-        camera_id=uuid4(),
-        detection_event_id=uuid4(),
-        status="OPEN",
-        resolved_by=None,
-        resolved_at=None,
-        created_at=datetime.now(timezone.utc),
-        detection_type="HUMAN_PRESENCE",
-        confidence_score=0.85,
-        thumbnail_url=None,
-    )
+    base = {
+        "id": uuid4(),
+        "camera_id": uuid4(),
+        "detection_event_id": uuid4(),
+        "status": "OPEN",
+        "resolved_by": None,
+        "resolved_at": None,
+        "created_at": datetime.now(timezone.utc),
+        "detection_type": "HUMAN_PRESENCE",
+        "confidence_score": 0.85,
+        "thumbnail_url": None,
+    }
     base.update(overrides)
     return base
 
@@ -33,7 +33,7 @@ class TestAlertRes:
         assert alert.resolved_by is None
         assert alert.resolved_at is None
         assert alert.detection_type == "HUMAN_PRESENCE"
-        assert alert.confidence_score == 0.85
+        assert alert.confidence_score == pytest.approx(0.85)
         assert alert.thumbnail_url is None
 
     def test_acknowledged_alert_with_resolved_by(self):

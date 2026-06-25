@@ -11,13 +11,13 @@ from app.schemas.neighbourhood_join import (
 )
 
 def _make_join_request_res(**overrides):
-    base = dict(
-        id=uuid4(),
-        neighbourhood_id=uuid4(),
-        user_id=uuid4(),
-        status="PENDING",
-        created_at=datetime.now(timezone.utc),
-    )
+    base = {
+        "id": uuid4(),
+        "neighbourhood_id": uuid4(),
+        "user_id": uuid4(),
+        "status": "PENDING",
+        "created_at": datetime.now(timezone.utc),
+    }
     base.update(overrides)
     return base
 class TestJoinNeighbourhoodReq:

@@ -13,28 +13,28 @@ VALID_DETECTION_TYPES = [
 ]
 
 def _make_ingest_req(**overrides):
-    base = dict(
-        camera_id=uuid4(),
-        frame_timestamp=datetime.now(timezone.utc),
-        detection_type="HUMAN_PRESENCE",
-        confidence_score=0.75,
-        thumbnail_url=None,
-        zone_id=None,
-    )
+    base = {
+        "camera_id": uuid4(),
+        "frame_timestamp": datetime.now(timezone.utc),
+        "detection_type": "HUMAN_PRESENCE",
+        "confidence_score": 0.75,
+        "thumbnail_url": None,
+        "zone_id": None,
+    }
     base.update(overrides)
     return base
 
 
 def _make_event_res(**overrides):
-    base = dict(
-        id=uuid4(),
-        camera_id=uuid4(),
-        frame_timestamp=datetime.now(timezone.utc),
-        detection_type="HUMAN_PRESENCE",
-        confidence_score=0.75,
-        thumbnail_url=None,
-        processed=False,
-    )
+    base = {
+        "id": uuid4(),
+        "camera_id": uuid4(),
+        "frame_timestamp": datetime.now(timezone.utc),
+        "detection_type": "HUMAN_PRESENCE",
+        "confidence_score": 0.75,
+        "thumbnail_url": None,
+        "processed": False,
+    }
     base.update(overrides)
     return base
 
@@ -46,7 +46,7 @@ class TestDetectionIngestReq:
 
         assert req.camera_id == data["camera_id"]
         assert req.detection_type == "HUMAN_PRESENCE"
-        assert req.confidence_score == 0.75
+        assert req.confidence_score == pytest.approx(0.75)
         assert req.thumbnail_url is None
         assert req.zone_id is None
 
@@ -69,12 +69,12 @@ class TestDetectionIngestReq:
     def test_confidence_score_boundary_zero(self):
         """0.0 is a valid lower boundary"""
         req = DetectionIngestReq(**_make_ingest_req(confidence_score=0.0))
-        assert req.confidence_score == 0.0
+        assert req.confidence_score == pytest.approx(0.0)
 
     def test_confidence_score_boundary_one(self):
         """1.0 is a valid upper boundary"""
         req = DetectionIngestReq(**_make_ingest_req(confidence_score=1.0))
-        assert req.confidence_score == 1.0
+        assert req.confidence_score == pytest.approx(1.0)
 
     def test_confidence_score_above_range_raises_validation_error(self):
         """Scores above 1.0 must be rejected"""
@@ -140,7 +140,7 @@ class TestDetectionEventRes:
         assert res.id == data["id"]
         assert res.camera_id == data["camera_id"]
         assert res.detection_type == "HUMAN_PRESENCE"
-        assert res.confidence_score == 0.75
+        assert res.confidence_score == pytest.approx(0.75)
         assert res.processed is False
         assert res.thumbnail_url is None
 
