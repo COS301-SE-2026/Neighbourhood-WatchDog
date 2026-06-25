@@ -123,3 +123,45 @@ class TestJoinRequestRes:
     def test_from_attributes_config_present(self):
         """model_config should allow construction from ORM objects"""
         assert JoinRequestRes.model_config.get("from_attributes") is True
+
+class TestJoinNeighbourhoodRes:
+    def _make_nested_res(self) -> JoinRequestRes:
+        return JoinRequestRes(**_make_join_request_res())
+
+    def test_valid_response_with_data(self):
+        """Happy path: all fields present"""
+        nested = self._make_nested_res()
+        res = JoinNeighbourhoodRes(
+            status=201,
+            message="Join request submitted",
+            data=nested,
+        )
+
+        assert res.status == 201
+        assert res.message == "Join request submitted"
+        assert res.data is not None
+        assert res.data.status == "PENDING"
+
+    def test_only_status_required(self):
+        """message and data are optional"""
+        res = JoinNeighbourhoodRes(status=201)
+
+        assert res.status == 201
+        assert res.message is None
+        assert res.data is None
+
+    def test_error_response_without_data(self):
+        """Error responses carry status and message only"""
+        res = JoinNeighbourhoodRes(status=409, message="Already have a pending request")
+
+        assert res.status == 409
+        assert res.data is None
+
+    def test_missing_status_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            JoinNeighbourhoodRes(message="oops")
+
+    def test_invalid_nested_data_raises_validation_error(self):
+        """Malformed data dict must be rejected"""
+        with pytest.raises(ValidationError):
+            JoinNeighbourhoodRes(status=201, data={"status": "PENDING"})
