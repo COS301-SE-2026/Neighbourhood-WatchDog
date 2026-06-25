@@ -3,7 +3,7 @@
 ## Neighbourhood WatchDog
 
 **Version:** 1.0  
-**Last Updated:** 23 June 2026
+**Last Updated:** 25 June 2026
 
 ---
 
@@ -383,7 +383,6 @@ Example: `stream_test.py` skips the stream health test because OpenCV video capt
 1. **Stream testing** - The stream health endpoint is skipped in CI because OpenCV does not work well in containers. We need to find a way to test this, possibly with a mock video source.
 2. **Frontend coverage** - We only have three frontend unit test files. As we add more pages, we should add more tests.
 3. **E2E coverage** - We only test three flows. More critical paths (like camera registration or property creation) should get E2E tests too.
-4. **Schema consistency** - Some schema tests import from `backend.app.schemas` while others import from `app.schemas`. We should standardise the import paths.
 
 ---
 
