@@ -1,7 +1,7 @@
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 
-from app.schemas.camera import RegisterCameraReq, RegisterCameraRes, CamerasRes
+from app.schemas.camera import RegisterCameraReq, RegisterCameraRes, CamerasRes, DeregisterCameraReq, DeregisterCameraRes
 from app.services.camera_service import register_camera_handler, list_cameras_handler
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
@@ -23,6 +23,18 @@ async def register_camera(req: RegisterCameraReq, db: DbSession, claims: dict = 
         data=new_camera,
     )
 
+@router.delete("deregister-camera", status_code=status.HTTP_204_NO_CONTENT)
+async def deregister_camera(req: DeregisterCameraReq, db: DbSession, claims: dict = Depends(get_current_user)):
+    """Permanently remove a camera from a users property and the system."""
+    require_role(claims = claims, allowed_roles= ['RESIDENT'])
+
+    await register_camera_handler(req, db, claims)
+
+    return DeregisterCameraRes(
+        status=201,
+        message="Camera Created Successfully",
+        data=[],
+    )
 
 @router.get("/property/{property_id}")
 async def get_property_cameras(
