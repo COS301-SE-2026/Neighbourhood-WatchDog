@@ -211,3 +211,52 @@ class TestResolveJoinRequestReq:
         """action is required"""
         with pytest.raises(ValidationError):
             ResolveJoinRequestReq()
+
+class TestResolveJoinRequestRes:
+    def _make_nested_res(self, status: str = "APPROVED") -> JoinRequestRes:
+        return JoinRequestRes(**_make_join_request_res(status=status))
+
+    def test_valid_approved_response(self):
+        """Happy path: request was approved"""
+        nested = self._make_nested_res("APPROVED")
+        res = ResolveJoinRequestRes(
+            status=200,
+            message="Request approved",
+            data=nested,
+        )
+
+        assert res.status == 200
+        assert res.data.status == "APPROVED"
+
+    def test_valid_denied_response(self):
+        """Happy path: request was denied"""
+        nested = self._make_nested_res("DENIED")
+        res = ResolveJoinRequestRes(
+            status=200,
+            message="Request denied",
+            data=nested,
+        )
+
+        assert res.data.status == "DENIED"
+
+    def test_only_status_required(self):
+        """message and data are optional"""
+        res = ResolveJoinRequestRes(status=200)
+
+        assert res.message is None
+        assert res.data is None
+
+    def test_error_response_without_data(self):
+        """e.g. 404 when the request was not found"""
+        res = ResolveJoinRequestRes(status=404, message="Request not found")
+
+        assert res.status == 404
+        assert res.data is None
+
+    def test_missing_status_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            ResolveJoinRequestRes(message="oops")
+
+    def test_invalid_nested_data_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            ResolveJoinRequestRes(status=200, data={"status": "APPROVED"})
