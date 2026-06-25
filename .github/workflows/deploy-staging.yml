@@ -16,6 +16,12 @@ jobs:
         run: |
           cat > .env << EOF
           DATABASE_URL=${{ secrets.DATABASE_URL }}
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
+          FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
           AWS_REGION=${{ secrets.AWS_REGION }}
           AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
