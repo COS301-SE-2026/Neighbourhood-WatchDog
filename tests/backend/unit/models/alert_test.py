@@ -126,3 +126,47 @@ class TestAlertRes:
     def test_from_attributes_config_present(self):
         """model_config should allow construction from ORM objects"""
         assert AlertRes.model_config.get("from_attributes") is True
+
+class TestAcknowledgeAlertRes:
+    def _make_nested_alert(self):
+        return AlertRes(**_make_alert_res(status="ACKNOWLEDGED"))
+
+    def test_valid_response_with_data(self):
+        """Happy path: status, message, and nested AlertRes all present"""
+        alert = self._make_nested_alert()
+        res = AcknowledgeAlertRes(
+            status=200,
+            message="Alert acknowledged",
+            data=alert,
+        )
+
+        assert res.status == 200
+        assert res.message == "Alert acknowledged"
+        assert res.data is not None
+        assert res.data.status == "ACKNOWLEDGED"
+
+    def test_only_status_required(self):
+        """message and data are optional and default to None"""
+        res = AcknowledgeAlertRes(status=200)
+
+        assert res.status == 200
+        assert res.message is None
+        assert res.data is None
+
+    def test_error_response_without_data(self):
+        """4xx/5xx responses carry no data"""
+        res = AcknowledgeAlertRes(status=404, message="Alert not found")
+
+        assert res.status == 404
+        assert res.message == "Alert not found"
+        assert res.data is None
+
+    def test_missing_status_raises_validation_error(self):
+        """status is required"""
+        with pytest.raises(ValidationError):
+            AcknowledgeAlertRes(message="oops")
+
+    def test_invalid_nested_data_raises_validation_error(self):
+        """Passing a plain dict with missing required fields as data must raise error"""
+        with pytest.raises(ValidationError):
+            AcknowledgeAlertRes(status=200, data={"status": "OPEN"})
