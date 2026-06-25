@@ -165,3 +165,49 @@ class TestJoinNeighbourhoodRes:
         """Malformed data dict must be rejected"""
         with pytest.raises(ValidationError):
             JoinNeighbourhoodRes(status=201, data={"status": "PENDING"})
+
+class TestResolveJoinRequestReq:
+    def test_valid_approve_action(self):
+        """APPROVE is a valid action"""
+        req = ResolveJoinRequestReq(action="APPROVE")
+        assert req.action == "APPROVE"
+
+    def test_valid_deny_action(self):
+        """DENY is a valid action"""
+        req = ResolveJoinRequestReq(action="DENY")
+        assert req.action == "DENY"
+
+    def test_lowercase_approve_is_normalised(self):
+        """Validator should uppercase the action so that lowercase input should pass"""
+        req = ResolveJoinRequestReq(action="approve")
+        assert req.action == "APPROVE"
+
+    def test_lowercase_deny_is_normalised(self):
+        """Lowercase deny should also be normalised"""
+        req = ResolveJoinRequestReq(action="deny")
+        assert req.action == "DENY"
+
+    def test_mixed_case_is_normalised(self):
+        """Mixed-case input should be uppercased and accepted"""
+        req = ResolveJoinRequestReq(action="Approve")
+        assert req.action == "APPROVE"
+
+    def test_invalid_action_raises_validation_error(self):
+        """Unknown action strings must be rejected"""
+        with pytest.raises(ValidationError):
+            ResolveJoinRequestReq(action="IGNORE")
+
+    def test_empty_action_raises_validation_error(self):
+        """Empty string is not a valid action"""
+        with pytest.raises(ValidationError):
+            ResolveJoinRequestReq(action="")
+
+    def test_none_action_raises_validation_error(self):
+        """None is not a valid action"""
+        with pytest.raises(ValidationError):
+            ResolveJoinRequestReq(action=None)
+
+    def test_missing_action_raises_validation_error(self):
+        """action is required"""
+        with pytest.raises(ValidationError):
+            ResolveJoinRequestReq()
