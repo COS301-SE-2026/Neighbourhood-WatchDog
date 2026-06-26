@@ -160,7 +160,7 @@ export function ConfirmCard({
         {/* Resend code */}
         <div className="flex flex-col items-center gap-1 w-full">
           <p className="text-sm text-gray-500">
-            Didn't receive the code?
+              Didn&apos;t receive the code?
           </p>
           <Button
             type="button"

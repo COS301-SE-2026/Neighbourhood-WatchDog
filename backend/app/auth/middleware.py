@@ -4,24 +4,15 @@ from starlette.responses import JSONResponse
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        if request.url.path.startswith("/auth"): #If prefix is "/auth" we do not need authorization header
-            return await call_next(request)
+
         # BaseHTTPMiddleware cannot handle WebSocket upgrades — pass them straight through.
         # Without this, the middleware kills the WS handshake and clients get code 1006.
         if request.headers.get("upgrade", "").lower() == "websocket":
             return await call_next(request)
 
         PUBLIC_EXACT = {"/health", "/docs", "/openapi.json", "/redoc"}
-        PUBLIC_PREFIXES = ["/stream", "/alerts", "/api/stream"]
+        PUBLIC_PREFIXES = ["/stream", "/alerts", "/api/stream", "/auth"]
 
-        # Allow preflight requests without auth
-        # TODO: remove this later
-        if request.method == "OPTIONS":
-            response = Response()
-            self._add_cors_headers(response)
-            return response
-
-        public_routes = ["/health", "/docs", "/openapi.json", "/stream", "/alerts"]
 
         is_public = (
             request.url.path in PUBLIC_EXACT or

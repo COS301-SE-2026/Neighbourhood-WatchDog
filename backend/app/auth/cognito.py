@@ -2,11 +2,9 @@ from jose import JWTError, jwt
 from fastapi import HTTPException
 from app.core.config import config
 import httpx
-import os
 import boto3
 from functools import lru_cache
 from botocore.exceptions import ClientError
-from fastapi import HTTPException
 
 @lru_cache(maxsize=1)
 def get_jwks():

@@ -19,7 +19,6 @@ interface LoginResponse {
 
 interface ConfirmResponse {
   confirmed: boolean;
-  result: any;
 }
 
 // API Client with error handling

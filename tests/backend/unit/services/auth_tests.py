@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
 import backend.app.services.auth_service as auth_service
-from backend.app.services.auth_service import authenticate_user, register_user, confirm_user, resend_confirmation_code
 
 
 

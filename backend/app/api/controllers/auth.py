@@ -1,4 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+from app.auth.dependencies import get_current_user
+from app.core.database import DbSession
+from app.services.user_service import create_user
+
 from app.schemas.auth import ( #Check payloads from schemas
     SignUpRequest,
     LoginRequest,
