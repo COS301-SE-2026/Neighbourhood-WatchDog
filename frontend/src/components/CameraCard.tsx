@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import CameraFeed from "./CameraFeed"
+import CameraDropdown from "./camera-dropdown"
 
 interface CameraCardProps {
     readonly id: string;
@@ -82,9 +83,12 @@ export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
                 <Card className="cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
                     <CardHeader className="flex flex-row items-center justify-between p-4">
                         <CardTitle className="text-sm font-medium">{name}</CardTitle>
-                        <Badge variant={effectiveStatus === "online" ? "success" : "destructive"}>
-                            {effectiveStatus}
-                        </Badge>
+                        <div className="flex flex-row items-center">
+                            <Badge variant={effectiveStatus === "online" ? "success" : "destructive"}>
+                                {effectiveStatus}
+                            </Badge>
+                            <CameraDropdown/>
+                        </div>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
                         {feedContent}
