@@ -1,11 +1,7 @@
-/// <reference types="jest" />
-
+const {setSession, getAccessToken, logout, login, signUp,} = require("../../../frontend/src/lib/auth/cognito");
 
 jest.mock("amazon-cognito-identity-js", () => require("../../../frontend/__mocks__/amazon-cognito-identity-js.js"));
-const { setSession, getAccessToken, logout, login, signUp } = require("../../../frontend/src/lib/auth/cognito");
 
-
-//TEST SET SESSION
 describe("setSession", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -22,14 +18,11 @@ describe("setSession", () => {
   });
 });
 
-//TEST GET ACCESS TOKEN
 test("returns stored access token", () => {
   localStorage.setItem("accessToken", "abc123");
-
   expect(getAccessToken()).toBe("abc123");
 });
 
-//TEST LOGOUT
 test("clears localStorage", () => {
   localStorage.setItem("accessToken", "abc");
   localStorage.setItem("idToken", "xyz");
@@ -40,24 +33,45 @@ test("clears localStorage", () => {
   expect(localStorage.getItem("idToken")).toBeNull();
 });
 
-// test("login returns access and id tokens", async () => {
-//   const result = await login(
-//     "test@example.com",
-//     "Password123!"
-//   );
+test("login returns access and id tokens", async () => {
+  (fetch as jest.Mock).mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      data: {
+        access_token: "mock-access-token",
+        id_token: "mock-id-token",
+        expires_in: 3600,
+      },
+    }),
+  });
 
-//   expect(result).toEqual({
-//     accessToken: "mock-access-token",
-//     idToken: "mock-id-token",
-//   });
-// });
+  const result = await login("test@example.com", "Password123!");
 
-// test("signup returns created user", async () => {
-//   const result = await signUp(
-//     "test@example.com",
-//     "Password123!",
-//     "Test User",
-//     "123 Main Street"
-//   );
-//   expect(result).toHaveProperty('username', 'test@example.com');
-// });
+  expect(result).toEqual({
+    accessToken: "mock-access-token",
+    idToken: "mock-id-token",
+    expiresIn: 3600,
+  });
+});
+
+test("signup returns created user", async () => {
+  (fetch as jest.Mock).mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      user_sub: "user-123",
+      confirmed: false,
+    }),
+  });
+
+  const result = await signUp(
+    "test@example.com",
+    "Password123!",
+    "Test User",
+    "123 Main Street"
+  );
+
+  expect(result).toEqual({
+    userSub: "user-123",
+    confirmed: false,
+  });
+});
