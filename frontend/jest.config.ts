@@ -22,6 +22,10 @@ const config: Config = {
 
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
 
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
+
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       tsconfig: {
