@@ -59,7 +59,7 @@ def _build_track_payload(track) -> dict:
     }
 
 
-def _send_new_person_alert(track_id: int, conf: float) -> None:
+def _send_new_person_alert(track_id: int, conf: float, detection_type: str = "UNKNOWN") -> None:
     """Send a one-time human-presence alert to the backend."""
     try:
         httpx.post(
@@ -67,7 +67,7 @@ def _send_new_person_alert(track_id: int, conf: float) -> None:
             json={
                 "camera_id": CAMERA_ID,
                 "neighbourhood_id": NEIGHBOURHOOD_ID,
-                "detection_type": "HUMAN_PRESENCE",
+                "detection_type": detection_type.upper(), #GUN, KNIFE, GRENADE
                 "confidence": conf,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "thumbnail_url": None,
@@ -151,12 +151,18 @@ def _collect_tracks(tracks, alerted_ids: set) -> list:
         if not track.is_confirmed():
             continue
         track_id = track.track_id
-        payload.append(_build_track_payload(track))
+
+        track_data = _build_track_payload(track)
+
+        payload.append(track_data)
 
         if track_id not in alerted_ids and track.det_conf is not None:
             alerted_ids.add(track_id)
-            logger.info("New person — Track ID: %s, conf: %.2f", track_id, track.det_conf)
-            _send_new_person_alert(track_id, float(track.det_conf))
+
+            detection_type = track.get_det_class() or "UNKNOWN"
+
+            logger.info("New detection — Track ID: %s, conf: %.2f", detection_type, track_id, track.det_conf)
+            _send_new_person_alert(track_id, float(track.det_conf), detection_type)
     return payload
 
 
