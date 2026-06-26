@@ -63,7 +63,7 @@ def test_confirm_user_success(mock_cognito):
     })
 
     assert result["success"] is True
-    assert result["data"]["status"] == "CONFIRMED"
+    assert result["data"]["confirmed"] is True
 
 #RESEND
 def test_resend_code_success(mock_cognito):

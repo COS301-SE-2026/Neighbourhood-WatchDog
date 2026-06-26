@@ -59,7 +59,7 @@ def confirm_user(payload):
     return {
         "success": True,
         "data": {
-            "status": response["status"]
+            "confirmed": True
         }
     }
 
