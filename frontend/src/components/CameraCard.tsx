@@ -3,23 +3,24 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import CameraFeed from "./CameraFeed"
 
 interface CameraCardProps {
-    name: string;
-    rtspUrl?: string;
+    readonly id: string;
+    readonly name: string;
+    readonly rtspUrl?: string;
 }
 
-export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
+function getStreamPath(rtspUrl: string): string {
+    return rtspUrl.split("/").pop() || rtspUrl;
+}
+
+export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
     const streamUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream?url=${encodeURIComponent(rtspUrl)}` : null;
     const streamHealthUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream/health?url=${encodeURIComponent(rtspUrl)}` : null;
     const [streamHealth, setStreamHealth] = useState<{ url: string | null; available: boolean; error: boolean }>({
         url: null,
         available: false,
-        error: false,
-    })
-    const [streamImage, setStreamImage] = useState<{ url: string | null; loaded: boolean; error: boolean }>({
-        url: null,
-        loaded: false,
         error: false,
     })
 
@@ -49,10 +50,7 @@ export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
         Boolean(streamUrl) &&
         streamHealth.url === streamUrl &&
         streamHealth.available &&
-        !streamHealth.error &&
-        streamImage.url === streamUrl &&
-        streamImage.loaded &&
-        !streamImage.error
+        !streamHealth.error;
 
     const effectiveStatus = streamOnline ? "online" : "offline"
 
@@ -60,18 +58,15 @@ export default function CameraCard({ name, rtspUrl }: CameraCardProps) {
         <div className="aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative">
             {streamUrl ? (
                 <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                        key={streamUrl}
-                        src={streamUrl}
-                        alt={`Live feed: ${name}`}
-                        className={streamImage.error ? "hidden" : "w-full h-full object-cover rounded-md"}
-                        onLoad={() => setStreamImage({ url: streamUrl, loaded: true, error: false })}
-                        onError={() => setStreamImage({ url: streamUrl, loaded: false, error: true })}
+                    <CameraFeed
+                        streamPath={getStreamPath(rtspUrl ?? "")}
+                        cameraId={id}
+                        host="localhost"
+                        port={8889}
                     />
-                    {!(streamHealth.url === streamUrl && streamHealth.available && !streamHealth.error && streamImage.url === streamUrl && streamImage.loaded && !streamImage.error) && (
+                    {!(streamHealth.url === streamUrl && streamHealth.available && !streamHealth.error) && (
                         <span className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
-                            {streamHealth.error || streamImage.error ? "Stream unavailable" : "Connecting..."}
+                            {streamHealth.error ? "Stream unavailable" : "Connecting..."}
                         </span>
                     )}
                 </>

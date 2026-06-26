@@ -41,6 +41,31 @@ def login(payload: LoginRequest):
 @router.post("/confirm")
 def confirm(payload: ConfirmSignUpRequest):
     return confirm_user(_payload_to_dict(payload))
+@router.get("/me")
+async def get_current_user_info(
+    current_user: dict = Depends(get_current_user),
+    db: DbSession = None
+):
+    """Get current user info and create in database if needed"""
+    email = current_user.get("email")
+    cognito_sub = current_user.get("sub")
+
+    if not email or not cognito_sub:
+        raise HTTPException(status_code=401, detail="Invalid token claims")
+
+    user = await create_user(
+        email=email,
+        first_name=current_user.get("given_name", ""),
+        last_name=current_user.get("family_name", ""),
+        cognito_sub=cognito_sub,
+        db=db
+    )
+    return user
+
+@router.post("/logout")
+async def logout(current_user: dict = Depends(get_current_user)):
+    """Logout endpoint"""
+    return {"message": "Logged out"}
 
 @router.post("/resend-code")
 def resend_code(payload: ResendCodeRequest):
