@@ -51,7 +51,7 @@ def authenticate_user(payload):
     }
 
 def confirm_user(payload):
-    response = confirm_sign_up(
+    confirm_sign_up(
         email=payload["email"],
         code=payload["code"]
     )

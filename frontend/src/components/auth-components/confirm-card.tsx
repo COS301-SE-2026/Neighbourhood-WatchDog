@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
-type ConfirmCardProps = {
+type ConfirmCardProps = Readonly<{
   className?: string;
 
   email: string;
@@ -31,7 +31,7 @@ type ConfirmCardProps = {
   error?: string | null;
   success?: boolean;
   resendSuccess?: boolean;  // Success state for resend
-};
+}>;
 
 export function ConfirmCard({
   className,

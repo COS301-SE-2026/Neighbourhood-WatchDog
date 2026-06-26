@@ -15,7 +15,6 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -27,7 +26,6 @@ export default function SignupPage() {
   const handleSignUp = async () => {
     // Reset states
     setError(null);
-    setSuccess(false);
 
     // Validation
     if (!name.trim() || !address.trim() || !email.trim() || !password.trim()) {
@@ -56,9 +54,7 @@ export default function SignupPage() {
 
     try {
       await signUp(email, password, name, address);
-      
-      // success state
-      setSuccess(true);
+  
       
       //clear data
       setPassword("");

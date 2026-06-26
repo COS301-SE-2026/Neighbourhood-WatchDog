@@ -142,11 +142,11 @@ export const setSession = (tokens: {
 
 // Get token
 export const getAccessToken = (): string | null => {
-  if (typeof window === 'undefined') return null;
+  if (typeof globalThis.window === 'undefined') return null;
   
   // Chekc if token is expired, if it is, logout user
   const expiry = localStorage.getItem('tokenExpiry');
-  if (expiry && Date.now() > parseInt(expiry)) {
+  if (expiry && Date.now() > Number.parseInt(expiry)) {
     // Token expired
     logout();
     return null;
@@ -157,7 +157,7 @@ export const getAccessToken = (): string | null => {
 
 //Checks if they are logged in 
 export const isAuthenticated = (): boolean => {
-  if (typeof window === 'undefined') return false;
+  if (typeof globalThis.window === 'undefined') return false;
   
   const token = getAccessToken();
   return !!token;
