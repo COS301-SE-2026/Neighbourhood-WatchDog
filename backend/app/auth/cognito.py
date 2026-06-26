@@ -43,12 +43,17 @@ COGNITO_REGION = config.cognito_region
 USER_POOL_ID = config.cognito_user_pool_id
 CLIENT_ID = config.cognito_client_id
 
-client = boto3.client("cognito-idp", region_name=config.cognito_region)
+def get_cognito_client():
+    return boto3.client(
+        "cognito-idp",
+        region_name=config.cognito_region
+    )
 
 #temporarilyy functions to test other things.
 #Should ONLY talk to Cognito
 def sign_up(email: str, password : str, name : str, address: str):
     try:
+        client = get_cognito_client()
         response = client.sign_up(
             ClientId = CLIENT_ID,
             Username = email,
@@ -76,6 +81,7 @@ def sign_up(email: str, password : str, name : str, address: str):
 
 def login(email, password):
     try:
+        client = get_cognito_client()
         response = client.initiate_auth(
             ClientId = CLIENT_ID,
             AuthFlow = "USER_PASSWORD_AUTH",
@@ -105,6 +111,7 @@ def login(email, password):
 
 def confirm_sign_up(email, code):
     try:
+        client = get_cognito_client()
         response = client.confirm_sign_up(
             ClientId = CLIENT_ID,
             Username = email,
@@ -126,6 +133,7 @@ def confirm_sign_up(email, code):
     
 def resend_code(email: str):
     try:
+        client = get_cognito_client()
         response = client.resend_confirmation_code(
             ClientId=CLIENT_ID,
             Username=email,

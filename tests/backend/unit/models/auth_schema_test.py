@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from backend.app.schemas.auth import ( #
+from app.schemas.auth import ( #
     SignUpRequest,
     LoginRequest,
     ConfirmSignUpRequest,
