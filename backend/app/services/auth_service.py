@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code
 
 
@@ -26,13 +27,23 @@ def authenticate_user(payload):
         password=payload["password"]
     )
 
+    if not response.get("access_token") or not response.get("id_token"):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "AuthenticationFailed",
+                "message": response,
+            },
+        )
+
     return {
         "success": True,
         "data": {
-            "access_token": response["AuthenticationResult"]["AccessToken"],
-            "id_token": response["AuthenticationResult"]["IdToken"],
-            "refresh_token": response["AuthenticationResult"]["RefreshToken"],
-            "token_type": response["AuthenticationResult"]["TokenType"]
+            "access_token": response["access_token"],
+            "id_token": response["id_token"],
+            "refresh_token": response.get("refresh_token"),
+            "token_type": response.get("token_type"),
+            "expires_in": response.get("expires_in"),
         }
     }
 

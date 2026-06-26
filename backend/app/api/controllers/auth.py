@@ -1,7 +1,3 @@
-from fastapi import APIRouter, Depends, Response
-from app.services.auth_service import (register_user,authenticate_user,confirm_user, resend_confirmation_code)
-from app.auth.dependencies import get_current_user
-
 from fastapi import APIRouter
 from app.schemas.auth import ( #Check payloads from schemas
     SignUpRequest,
@@ -13,8 +9,15 @@ from app.schemas.auth import ( #Check payloads from schemas
 from app.services.auth_service import ( #use services
     register_user,
     authenticate_user,
-    confirm_user
+    confirm_user,
+    resend_confirmation_code,
 )
+
+
+def _payload_to_dict(payload):
+    if hasattr(payload, "model_dump"):
+        return payload.model_dump()
+    return payload.dict()
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 # Need to define the route here and then delegate the work to other layers
@@ -29,16 +32,16 @@ def auth_ping():
 
 @router.post("/signup")
 def signup(payload: SignUpRequest):
-    return register_user(payload)
+    return register_user(_payload_to_dict(payload))
 
 @router.post("/login")
 def login(payload: LoginRequest):
-    return authenticate_user(payload)
+    return authenticate_user(_payload_to_dict(payload))
 
 @router.post("/confirm")
 def confirm(payload: ConfirmSignUpRequest):
-    return confirm_user(payload)
+    return confirm_user(_payload_to_dict(payload))
 
 @router.post("/resend-code")
 def resend_code(payload: ResendCodeRequest):
-    return resend_confirmation_code(payload)
+    return resend_confirmation_code(_payload_to_dict(payload))

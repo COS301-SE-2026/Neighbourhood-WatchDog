@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { getApiBaseUrl } from '@/lib/api/auth';
 
 // Types for API responses
 interface SignUpResponse {
@@ -7,9 +7,14 @@ interface SignUpResponse {
 }
 
 interface LoginResponse {
-  access_token: string;
-  id_token: string;
-  expires_in: number;
+  success: boolean;
+  data: {
+    access_token: string;
+    id_token: string;
+    refresh_token?: string | null;
+    token_type?: string | null;
+    expires_in?: number;
+  };
 }
 
 interface ConfirmResponse {
@@ -22,7 +27,7 @@ const apiClient = async <T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> => {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -74,10 +79,12 @@ export const login = async (
       body: JSON.stringify({ email, password }),//Create JSON
     });
 
+    const tokens = response.data;
+
     return {
-      accessToken: response.access_token,
-      idToken: response.id_token,
-      expiresIn: response.expires_in,
+      accessToken: tokens.access_token,
+      idToken: tokens.id_token,
+      expiresIn: tokens.expires_in ?? 0,
     };
   } catch (error) {
     console.error('Login error:', error);
@@ -121,8 +128,16 @@ export const setSession = (tokens: {
   idToken: string;
   expiresIn?: number;
 }) => {
+  if (!tokens.accessToken || !tokens.idToken) {
+    throw new Error('Cannot store empty auth tokens');
+  }
+
   localStorage.setItem('accessToken', tokens.accessToken);
   localStorage.setItem('idToken', tokens.idToken);
+
+  if (typeof tokens.expiresIn === 'number') {
+    localStorage.setItem('tokenExpiry', String(Date.now() + tokens.expiresIn * 1000));
+  }
 };
 
 // Get token

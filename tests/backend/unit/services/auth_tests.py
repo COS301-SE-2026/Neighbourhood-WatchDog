@@ -14,13 +14,11 @@ def mock_cognito(monkeypatch):
     }))
 
     monkeypatch.setattr(auth_service, "login", MagicMock(return_value={
-        "AuthenticationResult": {
-            "AccessToken": "token",
-            "IdToken": "id",
-            "RefreshToken": "refresh",
-            "ExpiresIn": 3600,
-            "TokenType": "Bearer"
-        }
+        "access_token": "token",
+        "id_token": "id",
+        "refresh_token": "refresh",
+        "expires_in": 3600,
+        "token_type": "Bearer"
     }))
 
     monkeypatch.setattr(auth_service, "confirm_sign_up", MagicMock(return_value={
@@ -55,6 +53,7 @@ def test_login_success(mock_cognito):
 
     assert result["success"] is True
     assert result["data"]["access_token"] == "token"
+    assert result["data"]["expires_in"] == 3600
 
 #CONFIRM
 def test_confirm_user_success(mock_cognito):
