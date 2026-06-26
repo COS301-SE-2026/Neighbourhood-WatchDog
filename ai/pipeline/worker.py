@@ -6,7 +6,7 @@ os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 # from ai.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
 
 STREAM_URL = "rtsp://Intrepid:password1234@192.168.1.126:554/stream2"
-WEIGHTS = "ai/pipeline/models/weights/yolov8n.pt"
+WEIGHTS = "ai/pipeline/models/weights/best.pt"
 
 def run():
     stream = StreamCapture(STREAM_URL)

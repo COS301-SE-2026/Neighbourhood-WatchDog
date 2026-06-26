@@ -16,7 +16,7 @@ import logging
 logger = logging.getLogger("watchdog.ai")
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
-model = YOLO("pipeline/models/weights/yolov8n.pt")
+model = YOLO("pipeline/models/weights/best.pt")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 CAMERA_ID = "2"
 NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001"
