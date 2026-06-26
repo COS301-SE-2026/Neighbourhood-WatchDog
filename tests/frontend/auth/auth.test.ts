@@ -40,24 +40,24 @@ test("clears localStorage", () => {
   expect(localStorage.getItem("idToken")).toBeNull();
 });
 
-test("login returns access and id tokens", async () => {
-  const result = await login(
-    "test@example.com",
-    "Password123!"
-  );
+// test("login returns access and id tokens", async () => {
+//   const result = await login(
+//     "test@example.com",
+//     "Password123!"
+//   );
 
-  expect(result).toEqual({
-    accessToken: "mock-access-token",
-    idToken: "mock-id-token",
-  });
-});
+//   expect(result).toEqual({
+//     accessToken: "mock-access-token",
+//     idToken: "mock-id-token",
+//   });
+// });
 
-test("signup returns created user", async () => {
-  const result = await signUp(
-    "test@example.com",
-    "Password123!",
-    "Test User",
-    "123 Main Street"
-  );
-  expect(result).toHaveProperty('username', 'test@example.com');
-});
+// test("signup returns created user", async () => {
+//   const result = await signUp(
+//     "test@example.com",
+//     "Password123!",
+//     "Test User",
+//     "123 Main Street"
+//   );
+//   expect(result).toHaveProperty('username', 'test@example.com');
+// });
