@@ -16,7 +16,9 @@ import logging
 logger = logging.getLogger("watchdog.ai")
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
-model = YOLO("pipeline/models/weights/best.pt")
+threat_model = YOLO("pipeline/models/weights/best.pt")
+person_model = YOLO("pipeline/models/weights/yolov8n.pt")
+
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 CAMERA_ID = "2"
 NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001"
@@ -38,14 +40,42 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
 def _extract_detections(results) -> list:
     """Convert YOLO results to DeepSort detection format."""
     detections = []
-    for box in results[0].boxes:
+
+    #threat detection
+    threat_results = threat_model.predict(
+        frame,
+        imgsz=640,
+        conf=0.6,
+        iou=0.3,
+        verbose=False
+    )
+
+    for box in threat_results[0].boxes:
         x1, y1, x2, y2 = box.xyxy[0].tolist()
         conf = float(box.conf[0])
 
-        cls_id = int(box.cls[0])
-        label = model.names[cls_id] # represents gun, knife, grenade
+        label = threat_model.names[int(box.cls[0])] # represents gun, knife, grenade
 
         detections.append(([x1, y1, x2 - x1, y2 - y1], conf, label))
+
+
+
+    #person detection
+    person_results = person_model.predict(
+        frame,
+        imgsz=640,
+        conf=0.6,
+        iou=0.3,
+        classes=[0],
+        verbose=False
+        )
+    
+    for box in person_results[0].boxes:
+        x1, y1, x2, y2 = box.xyxy[0].tolist()
+        conf = float(box.conf[0])
+        detections.append(([x1, y1, x2 - x1, y2 - y1], conf, "person"))
+        
+    
     return detections
 
 
