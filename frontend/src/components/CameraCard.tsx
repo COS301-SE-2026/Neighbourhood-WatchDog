@@ -87,7 +87,10 @@ export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
                             <Badge variant={effectiveStatus === "online" ? "success" : "destructive"}>
                                 {effectiveStatus}
                             </Badge>
-                            <CameraDropdown/>
+                            <CameraDropdown
+                                camera_id={id}
+                                camera_name={name}
+                            />
                         </div>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
