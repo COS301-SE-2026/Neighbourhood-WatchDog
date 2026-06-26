@@ -9,62 +9,69 @@ from backend.app.schemas.auth import ( #
     ConfirmSignUpRequest,
     ResendCodeRequest,
 )
+
+TEST_EMAIL = "test@example.com"
+TEST_PASSWORD = "Password123!"
+TEST_NAME = "Zaman"
+TEST_ADDRESS = "JHB"
+TEST_CODE = "123456"
+
 #Singup
 def test_signup_valid(): # Valid signup 
     obj = SignUpRequest(
-        email="test@example.com",
-        password="Password123!",
-        name="Zaman",
-        address="JHB"
+        email=TEST_EMAIL,
+        password=TEST_PASSWORD,
+        name=TEST_NAME,
+        address=TEST_ADDRESS
     )
 
-    assert obj.email == "test@example.com"
+    assert obj.email == TEST_EMAIL
 
 
 def test_signup_missing(): # missing name and address
     with pytest.raises(ValidationError):
         SignUpRequest(
-            email="test@example.com",
-            password="Password123!"
+            email=TEST_EMAIL,
+            password=TEST_PASSWORD
         )
 
 #Login
 def test_login_valid(): #valid longin
     obj = LoginRequest(
-        email="test@example.com",
-        password="Password123!"
+        email=TEST_EMAIL,
+        password=TEST_PASSWORD
     )
 
-    assert obj.email == "test@example.com"
+    assert obj.email == TEST_EMAIL
 
 
 def test_login_missing_password(): #missing
     with pytest.raises(ValidationError):
         LoginRequest(
-            email="test@example.com"
+            email=TEST_EMAIL
         )
 
 #confirm signup
 def test_confirm_valid():
     obj = ConfirmSignUpRequest(
-        email="test@example.com",
-        code="123456"
+        email=TEST_EMAIL,
+        code=TEST_CODE
     )
 
-    assert obj.code == "123456"
+    assert obj.code == TEST_CODE
 
 
 def test_confirm_missing_code(): #invalid
     with pytest.raises(ValidationError):
         ConfirmSignUpRequest(
-            email="test@example.com"
+            email=TEST_EMAIL
         )
 
 
 #resend
 def test_resend_valid():
-    obj = ResendCodeRequest(email="test@example.com")
-    assert obj.email == "test@example.com"
+    obj = ResendCodeRequest(email=TEST_EMAIL)
+    assert obj.email == TEST_EMAIL
 
 
 def test_resend_missing_email():

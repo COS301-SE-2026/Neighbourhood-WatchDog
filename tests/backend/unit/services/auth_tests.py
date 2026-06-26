@@ -4,6 +4,7 @@ import backend.app.services.auth_service as auth_service
 from backend.app.services.auth_service import authenticate_user, register_user, confirm_user, resend_confirmation_code
 
 
+
 #THIS IS THE MOCK AWS COGNITO # we do not want to make calls to AWS... we know they work :)
 @pytest.fixture(autouse=True)
 def mock_cognito(monkeypatch):
@@ -29,12 +30,15 @@ def mock_cognito(monkeypatch):
         "message": "sent"
     }))
 
+TEST_EMAIL = "test@example.com"
+TEST_PASSWORD = "Password123!"
+
 #START TESTS
 #SIGNUP
 def test_register_user_success(mock_cognito):
     payload = {
-        "email": "test@example.com",
-        "password": "Password123!",
+        "email": TEST_EMAIL,
+        "password": TEST_PASSWORD,
         "name": "Zaman",
         "address": "JHB"
     }
@@ -47,8 +51,8 @@ def test_register_user_success(mock_cognito):
 #LOGIN
 def test_login_success(mock_cognito):
     result = auth_service.authenticate_user({
-        "email": "email@example.com",
-        "password": "Password123!"
+        "email": TEST_EMAIL,
+        "password": TEST_PASSWORD
     })
 
     assert result["success"] is True
@@ -58,7 +62,7 @@ def test_login_success(mock_cognito):
 #CONFIRM
 def test_confirm_user_success(mock_cognito):
     result = auth_service.confirm_user({
-        "email": "test@example.com",
+        "email": TEST_EMAIL,
         "code": "123456"
     })
 
@@ -68,7 +72,7 @@ def test_confirm_user_success(mock_cognito):
 #RESEND
 def test_resend_code_success(mock_cognito):
     result = auth_service.resend_confirmation_code({
-        "email": "test@example.com"
+        "email": TEST_EMAIL
     })
 
     assert result["success"] is True
