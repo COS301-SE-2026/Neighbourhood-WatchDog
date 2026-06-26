@@ -13,11 +13,14 @@ def register_user(payload):
         address=payload["address"]
     )
 
+    user_sub = response.get("UserSub", response.get("user_sub"))
+    user_confirmed = response.get("UserConfirmed", response.get("user_confirmed"))
+
     return {
         "success": True,
         "data": {
-            "user_sub": response["UserSub"],
-            "user_confirmed": response["UserConfirmed"]
+            "user_sub": user_sub,
+            "user_confirmed": user_confirmed
         }
     }
 
