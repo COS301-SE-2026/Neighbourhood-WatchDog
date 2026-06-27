@@ -2,9 +2,9 @@ import os
 os.environ["MKL_THREADING_LAYER"] = "GNU"
 
 
-import cv2
+import cv2 # noqa: E402
 
-from ultralytics import YOLO
+from ultralytics import YOLO # noqa: E402
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 AI_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../../"))
