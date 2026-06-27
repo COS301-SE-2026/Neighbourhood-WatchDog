@@ -4,7 +4,7 @@ export function getAuthToken(): string {
   if (typeof window === "undefined") return FALLBACK_AUTH_TOKEN;
 
   return (
-    localStorage.getItem("access_token") ||
+    localStorage.getItem("accessToken") ||
     localStorage.getItem("authToken") ||
     FALLBACK_AUTH_TOKEN
   );
