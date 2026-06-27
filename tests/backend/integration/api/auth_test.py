@@ -18,7 +18,7 @@ async def test_logout(async_client, auth_headers):
     assert r.status_code == 200
     assert r.json() == {"message": "Logged out"}
 
-# MOCK AWS BOTO3 LAYER
+# MOCK AWS LAYER (boto3)
 @pytest.fixture(autouse=True)
 def mock_cognito_client(monkeypatch):
 
@@ -51,8 +51,7 @@ def mock_cognito_client(monkeypatch):
         "CodeDeliveryDetails": {"Destination": "email"}
     }
 
-    
-    monkeypatch.setattr(# mock AWS boundary
+    monkeypatch.setattr(
         cognito,
         "get_cognito_client",
         lambda: mock_client
@@ -63,11 +62,12 @@ def mock_cognito_client(monkeypatch):
 TEST_EMAIL = "test@example.com"
 TEST_PASSWORD = "Password123!"
 
-#INTEGRATION TEST
+
 #SIGNUP
 @pytest.mark.asyncio
 async def test_register_user_integration(async_client):
-    response = await async_client.post("/auth/register", json={
+
+    response = await async_client.post("/auth/signup", json={
         "email": TEST_EMAIL,
         "password": TEST_PASSWORD,
         "name": "Zaman",
@@ -75,10 +75,11 @@ async def test_register_user_integration(async_client):
     })
 
     assert response.status_code == 200
-    data = response.json()
 
-    assert data["success"] is True
+    data = response.json()["data"]
+
     assert data["user_sub"] == "abc-123"
+    assert data["user_confirmed"] is False
 
 
 #LOGIN
@@ -90,11 +91,12 @@ async def test_login_integration(async_client):
     })
 
     assert response.status_code == 200
-    data = response.json()
+    data = response.json()["data"]
 
     assert data["access_token"] == "token-123"
     assert data["id_token"] == "id-123"
     assert data["expires_in"] == 3600
+    assert data["token_type"] == "Bearer"
 
 #CONFIRM
 @pytest.mark.asyncio
@@ -105,9 +107,10 @@ async def test_confirm_sign_up_integration(async_client):
     })
 
     assert response.status_code == 200
-    data = response.json()
 
-    assert "message" in data
+    data = response.json()["data"]
+
+    assert data["confirmed"] is True
 
 
 #RESEND
@@ -118,6 +121,8 @@ async def test_resend_code_integration(async_client):
     })
 
     assert response.status_code == 200
-    data = response.json()
+
+    data = response.json()["data"]
 
     assert "message" in data
+    assert data["message"] == "New confirmation code sent successfully"
