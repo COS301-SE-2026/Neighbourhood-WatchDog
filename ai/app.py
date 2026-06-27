@@ -37,7 +37,7 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
         pass
 
 
-def _extract_detections(results) -> list:
+def _extract_detections(frame) -> list:
     """Convert YOLO results to DeepSort detection format."""
     detections = []
 
@@ -152,8 +152,7 @@ def _detection_loop(rtsp_url: str) -> None:
         if frame_count % 2 != 0:
             continue
 
-        results = model.predict(frame, imgsz=640, conf=0.6, iou=0.3, verbose=False)
-        detections = _extract_detections(results)
+        detections = _extract_detections(frame)
         tracks = tracker.update_tracks(detections, frame=frame)
 
         tracks_payload = _collect_tracks(tracks, alerted_ids)
@@ -231,7 +230,7 @@ def annotated_mjpeg(rtsp_url: str):
             frame_count += 1
             if frame_count % 2 != 0:
                 continue
-            results = model.predict(frame, imgsz=640, conf=0.6, iou=0.3, verbose=False)
+            results = threat_model.predict(frame, imgsz=640, conf=0.6, iou=0.3, verbose=False)
             tracks_for_thumbnail = [
                 {"track_id": 0, "confidence": float(box.conf[0]), "bbox": box.xyxy[0].tolist()}
                 for box in results[0].boxes

@@ -1,7 +1,8 @@
 import os
-import cv2
-
 os.environ["MKL_THREADING_LAYER"] = "GNU"
+
+
+import cv2
 
 from ultralytics import YOLO
 
