@@ -35,7 +35,7 @@ export function LoginCard({
   return (
     <Card
       className={cn(
-        "w-full max-w-md sm:max-w-xl rounded-xl border border-navy/12 bg-white/95 shadow-lg backdrop-blur",
+        "w-full max-w-md sm:max-w-xl rounded-xl shadow-lg backdrop-blur",
         className
       )}
     >
