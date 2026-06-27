@@ -32,7 +32,7 @@ test("clears localStorage", () => {
   expect(localStorage.getItem("accessToken")).toBeNull();
   expect(localStorage.getItem("idToken")).toBeNull();
 });
-
+//LOGIN//////////////////////////////////////////////////////
 test("login returns access and id tokens", async () => {
   (fetch as jest.Mock).mockResolvedValue({
     ok: true,
@@ -54,6 +54,25 @@ test("login returns access and id tokens", async () => {
   });
 });
 
+test("login throws backend error message", async () => {
+  (fetch as jest.Mock).mockResolvedValue({
+    ok: false,
+    json: async () => ({
+      detail: "Invalid credentials",
+    }),
+  });
+
+  await expect(
+    login("test@example.com", "wrongpassword")
+  ).rejects.toThrow("Invalid credentials");
+});
+//END LOGIN//////////////////////////////////////////////////////
+
+
+
+
+
+//SIGNUP/////////////////////////////////////////////////////////
 test("signup returns created user", async () => {
   (fetch as jest.Mock).mockResolvedValue({
     ok: true,
@@ -75,3 +94,78 @@ test("signup returns created user", async () => {
     confirmed: false,
   });
 });
+
+test("signup throws nested backend error message", async () => {
+  (fetch as jest.Mock).mockResolvedValue({
+    ok: false,
+    json: async () => ({
+      detail: {
+        message: "User already exists",
+      },
+    }),
+  });
+
+  await expect(
+    signUp(
+      "test@example.com",
+      "Password123!",
+      "Test User",
+      "123 Main Street"
+    )
+  ).rejects.toThrow("User already exists");
+});
+//END SIGNUP///////////////////////////////////////////////////////
+
+//CONFRIM SIGNUP////////////////////////////////////////////////
+test("confirm signup returns confirmed status", async () => {
+  (fetch as jest.Mock).mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      confirmed: true,
+    }),
+  });
+
+  const result = await confirmSignUp(
+    "test@example.com",
+    "123456"
+  );
+
+  expect(result).toBe(true);
+});
+
+test("confirm signup handles errors", async () => {
+  (fetch as jest.Mock).mockRejectedValue(
+    new Error("Confirmation failed")
+  );
+
+  await expect(
+    confirmSignUp(
+      "test@example.com",
+      "123456"
+    )
+  ).rejects.toThrow("Confirmation failed");
+});
+//END CONFIRM SIGNUP///////////////////////////////////////////////
+
+//RESEND CODE///////////////////////////////////////////////
+test("resend confirmation code succeeds", async () => {
+  (fetch as jest.Mock).mockResolvedValue({
+    ok: true,
+    json: async () => ({}),
+  });
+
+  await expect(
+    resendConfirmationCode("test@example.com")
+  ).resolves.toBeUndefined();
+});
+
+test("resend confirmation code handles errors", async () => {
+  (fetch as jest.Mock).mockRejectedValue(
+    new Error("Resend failed")
+  );
+
+  await expect(
+    resendConfirmationCode("test@example.com")
+  ).rejects.toThrow("Resend failed");
+});
+//END RESEND CODE///////////////////////////////////////////////
