@@ -65,8 +65,9 @@ TEST_PASSWORD = "Password123!"
 
 #INTEGRATION TEST
 #SIGNUP
-def test_register_user_integration(async_client):
-    response = async_client.post("/auth/register", json={
+@pytest.mark.asyncio
+async def test_register_user_integration(async_client):
+    response = await async_client.post("/auth/register", json={
         "email": TEST_EMAIL,
         "password": TEST_PASSWORD,
         "name": "Zaman",
@@ -81,8 +82,9 @@ def test_register_user_integration(async_client):
 
 
 #LOGIN
-def test_login_integration(async_client):
-    response = async_client.post("/auth/login", json={
+@pytest.mark.asyncio
+async def test_login_integration(async_client):
+    response = await async_client.post("/auth/login", json={
         "email": TEST_EMAIL,
         "password": TEST_PASSWORD
     })
@@ -95,8 +97,9 @@ def test_login_integration(async_client):
     assert data["expires_in"] == 3600
 
 #CONFIRM
-def test_confirm_sign_up_integration(async_client):
-    response = async_client.post("/auth/confirm", json={
+@pytest.mark.asyncio
+async def test_confirm_sign_up_integration(async_client):
+    response = await async_client.post("/auth/confirm", json={
         "email": TEST_EMAIL,
         "code": "123456"
     })
@@ -108,8 +111,9 @@ def test_confirm_sign_up_integration(async_client):
 
 
 #RESEND
-def test_resend_code_integration(async_client):
-    response = async_client.post("/auth/resend-code", json={
+@pytest.mark.asyncio
+async def test_resend_code_integration(async_client):
+    response = await async_client.post("/auth/resend-code", json={
         "email": TEST_EMAIL
     })
 
