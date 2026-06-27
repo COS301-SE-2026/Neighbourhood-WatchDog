@@ -1,4 +1,5 @@
-const {setSession, getAccessToken, logout, login, signUp,} = require("../../../frontend/src/lib/auth/cognito");
+import {setSession, getAccessToken, logout, login, signUp, confirmSignUp, resendConfirmationCode} from "../../../frontend/src/lib/auth/cognito";
+import {getAuthHeaders, getAuthToken,} from "../../../frontend/src/lib/api/auth";
 
 jest.mock("amazon-cognito-identity-js", () => require("../../../frontend/__mocks__/amazon-cognito-identity-js.js"));
 
@@ -54,7 +55,7 @@ test("login returns access and id tokens", async () => {
   });
 });
 
-test("login throws backend error message", async () => {
+test("login throws backend error message", async () => { // remove if you want less errors
   (fetch as jest.Mock).mockResolvedValue({
     ok: false,
     json: async () => ({
@@ -95,7 +96,7 @@ test("signup returns created user", async () => {
   });
 });
 
-test("signup throws nested backend error message", async () => {
+test("signup throws nested backend error message", async () => {// remove if you want less errors
   (fetch as jest.Mock).mockResolvedValue({
     ok: false,
     json: async () => ({
@@ -133,7 +134,7 @@ test("confirm signup returns confirmed status", async () => {
   expect(result).toBe(true);
 });
 
-test("confirm signup handles errors", async () => {
+test("confirm signup handles errors", async () => {// remove if you want less errors
   (fetch as jest.Mock).mockRejectedValue(
     new Error("Confirmation failed")
   );
@@ -159,7 +160,7 @@ test("resend confirmation code succeeds", async () => {
   ).resolves.toBeUndefined();
 });
 
-test("resend confirmation code handles errors", async () => {
+test("resend confirmation code handles errors", async () => { // remove if you want less errors
   (fetch as jest.Mock).mockRejectedValue(
     new Error("Resend failed")
   );
@@ -169,3 +170,30 @@ test("resend confirmation code handles errors", async () => {
   ).rejects.toThrow("Resend failed");
 });
 //END RESEND CODE///////////////////////////////////////////////
+
+//getAuthToken////////////////////
+test("getAuthToken returns accessToken from localStorage", () => {
+  localStorage.setItem("accessToken", "access-123");
+
+  expect(getAuthToken()).toBe("access-123");
+});
+
+test("getAuthToken falls back to authToken", () => {
+  localStorage.removeItem("accessToken");
+  localStorage.setItem("authToken", "auth-123");
+
+  expect(getAuthToken()).toBe("auth-123");
+});
+
+//getAuthToken end////////////////////////////
+
+// GET AUTH HEADERS///////////////////
+test("getAuthHeaders returns authorization and content type", () => {
+  localStorage.setItem("accessToken", "token123");
+
+  expect(getAuthHeaders()).toEqual({
+    "Content-Type": "application/json",
+    Authorization: "Bearer token123",
+  });
+});
+// GET AUTH HEADERS/////////////////
