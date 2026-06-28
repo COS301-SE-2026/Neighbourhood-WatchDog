@@ -45,7 +45,7 @@ def _extract_detections(frame) -> list:
     threat_results = threat_model.predict(
         frame,
         imgsz=640,
-        conf=0.6,
+        conf=0.35,
         iou=0.3,
         verbose=False
     )
@@ -64,7 +64,7 @@ def _extract_detections(frame) -> list:
     person_results = person_model.predict(
         frame,
         imgsz=640,
-        conf=0.6,
+        conf=0.4,
         iou=0.3,
         classes=[0],
         verbose=False
@@ -74,6 +74,9 @@ def _extract_detections(frame) -> list:
         x1, y1, x2, y2 = box.xyxy[0].tolist()
         conf = float(box.conf[0])
         detections.append(([x1, y1, x2 - x1, y2 - y1], conf, "person"))
+
+
+    print(f"Threat boxes: {len(threat_results[0].boxes)}, Person boxes: {len(person_results[0].boxes)}")
         
     
     return detections
@@ -129,8 +132,8 @@ def _detection_loop(rtsp_url: str) -> None:
     logger.info("Detection loop starting for %s", rtsp_url)
 
     tracker = DeepSort(
-        max_age=70,
-        n_init=2,
+        max_age=30,
+        n_init=1,
         max_iou_distance=0.7,
         embedder="mobilenet",
         embedder_gpu=False,
@@ -154,13 +157,30 @@ def _detection_loop(rtsp_url: str) -> None:
             continue
 
         frame_count += 1
-        if frame_count % 2 != 0:
+        if frame_count % 4 != 0:
             continue
 
         detections = _extract_detections(frame)
         tracks = tracker.update_tracks(detections, frame=frame)
 
         tracks_payload = _collect_tracks(tracks, alerted_ids)
+
+
+        #adding raw weapon detections
+        for i, det in enumerate(detections):
+            bbox_xywh, conf, label = det
+            if label.lower() != "person":
+                x, y, w, h = bbox_xywh
+
+                tracks_payload.append({
+                    "tracks_id": f"threat_{i}",
+                    "confidence": conf,
+                    "bbox": [x, y, x + w, y + h],
+                    "detection_type": label
+
+                })
+            
+
         _push_annotations(BACKEND_URL, CAMERA_ID, tracks_payload, datetime.now(timezone.utc).isoformat())
 
 
@@ -238,7 +258,7 @@ def annotated_mjpeg(rtsp_url: str):
 
 
             #weapon detection
-            threat_results = threat_model.predict(frame, imgsz=640, conf=0.6, iou=0.3, verbose=False)
+            threat_results = threat_model.predict(frame, imgsz=640, conf=0.35, verbose=False)
             tracks_for_thumbnail = [
                 {
                     "track_id": i, 

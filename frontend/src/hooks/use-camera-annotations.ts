@@ -3,9 +3,10 @@
 import { useEffect, useState, useRef } from "react";
 
 export interface Track {
-    track_id: number;
+    track_id: number | string;
     confidence: number;
     bbox: [number, number, number, number]; // (l, t, r, b)
+    detection_type?: string;
 }
 
 export interface AnnotationData {
