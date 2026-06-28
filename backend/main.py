@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.core.logging import configure_logging
 from app.core.config import config
 from app.auth.middleware import AuthMiddleware
@@ -28,8 +29,18 @@ app = FastAPI(
     docs_url="/docs" if config.debug else None,
     redoc_url="/redoc" if config.debug else None,
 )
-app.add_middleware(AuthMiddleware)
-app.add_middleware(SlowAPIMiddleware)
+
+app.add_middleware(AuthMiddleware) #Which routes are public and private
+app.add_middleware(SlowAPIMiddleware) #Rate limiting 
+
+app.add_middleware( #CORS (allow requests from frontend)
+    CORSMiddleware,
+    allow_origins=[config.frontend_url.rstrip("/")],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.state.limiter = limiter
 
 app.include_router(auth_router)
