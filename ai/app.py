@@ -222,7 +222,7 @@ app.add_middleware(
 
 
 def annotated_mjpeg(rtsp_url: str):
-    """MJPEG endpoint — useful for direct debugging/testing."""
+    """MJPEG endpoint - useful for direct debugging/testing."""
     cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
     if not cap.isOpened():
         return
@@ -235,11 +235,38 @@ def annotated_mjpeg(rtsp_url: str):
             frame_count += 1
             if frame_count % 2 != 0:
                 continue
-            results = threat_model.predict(frame, imgsz=640, conf=0.6, iou=0.3, verbose=False)
+
+
+            #weapon detection
+            threat_results = threat_model.predict(frame, imgsz=640, conf=0.6, iou=0.3, verbose=False)
             tracks_for_thumbnail = [
-                {"track_id": 0, "confidence": float(box.conf[0]), "bbox": box.xyxy[0].tolist()}
-                for box in results[0].boxes
+                {
+                    "track_id": i, 
+                    "confidence": float(box.conf[0]), 
+                    "bbox": box.xyxy[0].tolist(),
+                    "detection_type": threat_model.names[int(box.cls[0])],
+
+                }
+                for i, box in enumerate(threat_results[0].boxes)
             ]
+
+
+            #human detection
+            person_results = person_model.predict(frame, imgsz=640, conf=0.5, classes=[0], verbose=False)
+            tracks_for_thumbnail += [
+                {
+                    "track_id": 100 + i,
+                    "confidence": float(box.conf[0]),
+                    "bbox": box.xyxy[0].tolist(),
+                    "detection_type": "person",
+
+                }
+
+                for i, box in enumerate(person_results[0].boxes)
+            ]
+
+
+
             annotated = annotate_frame(frame, tracks_for_thumbnail)
             jpeg_bytes = encode_frame_as_jpeg(annotated)
             yield (
