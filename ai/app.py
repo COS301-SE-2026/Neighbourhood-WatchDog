@@ -48,10 +48,15 @@ def _extract_detections(results) -> list:
 def _build_track_payload(track) -> dict:
     """Convert a confirmed DeepSort track to the annotation payload format."""
     left, top, right, bottom = track.to_ltrb()
+
+    detection_type = track.get_det_class() or "person"
+
+
     return {
         "track_id": track.track_id,
         "confidence": float(track.det_conf) if track.det_conf is not None else 0.0,
         "bbox": [left, top, right, bottom],
+        "detection_type": detection_type,
     }
 
 
