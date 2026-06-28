@@ -59,8 +59,6 @@ async def get_current_user_info(
 
     user = await create_user(
         email=email,
-        first_name=current_user.get("given_name", ""),
-        last_name=current_user.get("family_name", ""),
         cognito_sub=cognito_sub,
         db=db
     )

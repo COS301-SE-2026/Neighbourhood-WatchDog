@@ -9,7 +9,7 @@ MOCK_SUB = "00000000-0000-0000-0000-000000000001"
 MOCK_EMAIL = "admin@northwood.com"
 MOCK_FIRST_NAME = "Sarah"
 MOCK_LAST_NAME = "Johnson"
-MOCK_ROLE = "NEIGHBOURHOOD_ADMIN"
+MOCK_ROLE = "RESIDENT"
 MOCK_NEIGHBOURHOOD_ID: str | None = "a1111111-1111-1111-1111-111111111111"
 
 # mock claims for now, real Cognito later
@@ -30,8 +30,8 @@ async def get_current_user(
  
     valid_roles = {
         "RESIDENT",
-        "NEIGHBOURHOOD_ADMIN",
-        "SECURITY_OFFICER",
+        "NEIGH_ADMIN",
+        "PROP_ADMIN",
         "SYSTEM_ADMIN",
     }
     if role not in valid_roles:
