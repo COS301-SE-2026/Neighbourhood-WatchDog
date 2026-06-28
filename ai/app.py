@@ -16,11 +16,13 @@ import logging
 logger = logging.getLogger("watchdog.ai")
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
-model = YOLO("pipeline/models/weights/yolov8n.pt")
+threat_model = YOLO("pipeline/models/weights/best.pt")
+person_model = YOLO("pipeline/models/weights/yolov8n.pt")
+
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 CAMERA_ID = "2"
 NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001"
-RTSP_URL = os.getenv("RTSP_URL", "rtsp://Intrepid:password1234@192.168.1.126:554/stream2")
+RTSP_URL = os.getenv("RTSP_URL", "rtsp://Intrepid:password1234@192.168.3.65:554/stream2")
 
 
 def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp: str) -> None:
@@ -35,13 +37,45 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
         pass
 
 
-def _extract_detections(results) -> list:
+def _extract_detections(frame) -> list:
     """Convert YOLO results to DeepSort detection format."""
     detections = []
-    for box in results[0].boxes:
+
+    #threat detection
+    threat_results = threat_model.predict(
+        frame,
+        imgsz=640,
+        conf=0.6,
+        iou=0.3,
+        verbose=False
+    )
+
+    for box in threat_results[0].boxes:
+        x1, y1, x2, y2 = box.xyxy[0].tolist()
+        conf = float(box.conf[0])
+
+        label = threat_model.names[int(box.cls[0])] # represents gun, knife, grenade
+
+        detections.append(([x1, y1, x2 - x1, y2 - y1], conf, label))
+
+
+
+    #person detection
+    person_results = person_model.predict(
+        frame,
+        imgsz=640,
+        conf=0.6,
+        iou=0.3,
+        classes=[0],
+        verbose=False
+        )
+    
+    for box in person_results[0].boxes:
         x1, y1, x2, y2 = box.xyxy[0].tolist()
         conf = float(box.conf[0])
         detections.append(([x1, y1, x2 - x1, y2 - y1], conf, "person"))
+        
+    
     return detections
 
 
@@ -55,7 +89,7 @@ def _build_track_payload(track) -> dict:
     }
 
 
-def _send_new_person_alert(track_id: int, conf: float) -> None:
+def _send_new_person_alert(track_id: int, conf: float, detection_type: str = "UNKNOWN") -> None:
     """Send a one-time human-presence alert to the backend."""
     try:
         httpx.post(
@@ -63,7 +97,7 @@ def _send_new_person_alert(track_id: int, conf: float) -> None:
             json={
                 "camera_id": CAMERA_ID,
                 "neighbourhood_id": NEIGHBOURHOOD_ID,
-                "detection_type": "HUMAN_PRESENCE",
+                "detection_type": detection_type.upper(), #GUN, KNIFE, GRENADE
                 "confidence": conf,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "thumbnail_url": None,
@@ -118,8 +152,7 @@ def _detection_loop(rtsp_url: str) -> None:
         if frame_count % 2 != 0:
             continue
 
-        results = model.predict(frame, imgsz=640, conf=0.6, iou=0.3, classes=[0], verbose=False)
-        detections = _extract_detections(results)
+        detections = _extract_detections(frame)
         tracks = tracker.update_tracks(detections, frame=frame)
 
         tracks_payload = _collect_tracks(tracks, alerted_ids)
@@ -147,12 +180,18 @@ def _collect_tracks(tracks, alerted_ids: set) -> list:
         if not track.is_confirmed():
             continue
         track_id = track.track_id
-        payload.append(_build_track_payload(track))
+
+        track_data = _build_track_payload(track)
+
+        payload.append(track_data)
 
         if track_id not in alerted_ids and track.det_conf is not None:
             alerted_ids.add(track_id)
-            logger.info("New person — Track ID: %s, conf: %.2f", track_id, track.det_conf)
-            _send_new_person_alert(track_id, float(track.det_conf))
+
+            detection_type = track.get_det_class() or "UNKNOWN"
+
+            logger.info("New detection — Track ID: %s, conf: %.2f", detection_type, track_id, track.det_conf)
+            _send_new_person_alert(track_id, float(track.det_conf), detection_type)
     return payload
 
 
@@ -191,7 +230,7 @@ def annotated_mjpeg(rtsp_url: str):
             frame_count += 1
             if frame_count % 2 != 0:
                 continue
-            results = model.predict(frame, imgsz=640, conf=0.6, iou=0.3, classes=[0], verbose=False)
+            results = threat_model.predict(frame, imgsz=640, conf=0.6, iou=0.3, verbose=False)
             tracks_for_thumbnail = [
                 {"track_id": 0, "confidence": float(box.conf[0]), "bbox": box.xyxy[0].tolist()}
                 for box in results[0].boxes
