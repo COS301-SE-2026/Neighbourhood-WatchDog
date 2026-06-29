@@ -175,7 +175,7 @@ def _detection_loop(rtsp_url: str) -> None:
             x, y, w, h = bbox
  
             tracks_payload.append({
-                "tracks_id": f"threat_{i}",
+                "track_id": f"threat_{i}",
                 "confidence": conf,
                 "bbox": [x, y, x + w, y + h],
                 "detection_type": label
@@ -185,7 +185,8 @@ def _detection_loop(rtsp_url: str) -> None:
 
 
         #filtering out zero confidence (0%) ghost tracks
-        tracks_payload = [t for t in tracks_payload if t["confidence"] > 0.1 or t["track_id"] == f"threat_{i}"]
+        tracks_payload = [t for t in tracks_payload 
+                          if t.get("confidence", 0) > 0.1 or str(t.get("track_id", "")).startswith("threat_")]
             
 
         _push_annotations(BACKEND_URL, CAMERA_ID, tracks_payload, datetime.now(timezone.utc).isoformat())
