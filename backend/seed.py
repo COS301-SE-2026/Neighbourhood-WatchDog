@@ -48,6 +48,7 @@ def seed_database():
 
         #make test user
         test_user = User(
+            id=USER_ID,
             email="testuser@example.com",
             cognito_sub="00000000-0000-0000-0000-000000000001",
             role=UserRole.RESIDENT,
@@ -69,7 +70,7 @@ def seed_database():
 
         #link the  user to the prop
         property_user = PropertyUser(
-            user_id=USER_ID,
+            user_id=test_user.id,
             property_id=PROPERTY_ID,
             is_admin=True
         )
