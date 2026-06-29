@@ -48,13 +48,9 @@ def seed_database():
 
         #make test user
         test_user = User(
-            id=USER_ID,
             email="testuser@example.com",
-            first_name="Test",
-            last_name="User",
             cognito_sub="00000000-0000-0000-0000-000000000001",
             role=UserRole.RESIDENT,
-            neighbourhood_id=NEIGHBOURHOOD_ID
         )
         db.add(test_user)
         db.flush()
