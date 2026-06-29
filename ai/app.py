@@ -39,14 +39,16 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
 
 def _extract_detections(frame) -> list:
     """Convert YOLO results to DeepSort detection format."""
-    detections = []
+
+    #only passing human objects to deepsort
+    person_detections = []
+    weapon_detections = []
 
     #threat detection
     threat_results = threat_model.predict(
         frame,
         imgsz=640,
         conf=0.35,
-        iou=0.3,
         verbose=False
     )
 
@@ -56,7 +58,7 @@ def _extract_detections(frame) -> list:
 
         label = threat_model.names[int(box.cls[0])] # represents gun, knife, grenade
 
-        detections.append(([x1, y1, x2 - x1, y2 - y1], conf, label))
+        weapon_detections.append(([x1, y1, x2 - x1, y2 - y1], conf, label))
 
 
 
@@ -65,7 +67,6 @@ def _extract_detections(frame) -> list:
         frame,
         imgsz=640,
         conf=0.4,
-        iou=0.3,
         classes=[0],
         verbose=False
         )
@@ -73,13 +74,13 @@ def _extract_detections(frame) -> list:
     for box in person_results[0].boxes:
         x1, y1, x2, y2 = box.xyxy[0].tolist()
         conf = float(box.conf[0])
-        detections.append(([x1, y1, x2 - x1, y2 - y1], conf, "person"))
+        person_detections.append(([x1, y1, x2 - x1, y2 - y1], conf, "person"))
 
 
-    print(f"Threat boxes: {len(threat_results[0].boxes)}, Person boxes: {len(person_results[0].boxes)}")
+    print(f"Threat boxes: {len(weapon_detections)}, Person boxes: {len(person_detections)}")
         
     
-    return detections
+    return person_detections, weapon_detections
 
 
 def _build_track_payload(track) -> dict:
@@ -161,28 +162,30 @@ def _detection_loop(rtsp_url: str) -> None:
         if frame_count % 4 != 0:
             continue
 
-        detections = _extract_detections(frame)
-        tracks = tracker.update_tracks(detections, frame=frame)
+        person_detections, weapon_detections = _extract_detections(frame)
+
+        #only tracking humans through deepsort
+        tracks = tracker.update_tracks(person_detections, frame=frame)
 
         tracks_payload = _collect_tracks(tracks, alerted_ids)
 
 
-        #adding raw weapon detections
-        for i, det in enumerate(detections):
-            bbox_xywh, conf, label = det
-            if label.lower() != "person":
-                x, y, w, h = bbox_xywh
+        #adding raw weapon detections (no deepsort, no duplication)
+        for i, (bbox, conf, label) in enumerate(weapon_detections):
+            x, y, w, h = bbox
+ 
+            tracks_payload.append({
+                "tracks_id": f"threat_{i}",
+                "confidence": conf,
+                "bbox": [x, y, x + w, y + h],
+                "detection_type": label
 
-                tracks_payload.append({
-                    "tracks_id": f"threat_{i}",
-                    "confidence": conf,
-                    "bbox": [x, y, x + w, y + h],
-                    "detection_type": label
+            })
 
-                })
 
-        
-        tracks_payload = [t for t in tracks_payload if t["confidence"] > 0.1]
+
+        #filtering out zero confidence (0%) ghost tracks
+        tracks_payload = [t for t in tracks_payload if t["confidence"] > 0.1 or t["track_id"] == f"threat_{i}"]
             
 
         _push_annotations(BACKEND_URL, CAMERA_ID, tracks_payload, datetime.now(timezone.utc).isoformat())
