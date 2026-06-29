@@ -132,11 +132,12 @@ def _detection_loop(rtsp_url: str) -> None:
     logger.info("Detection loop starting for %s", rtsp_url)
 
     tracker = DeepSort(
-        max_age=30,
-        n_init=1,
-        max_iou_distance=0.7,
+        max_age=150,
+        n_init=3,
+        max_iou_distance=0.5,  #for stricter matching and less duplicate boxes
         embedder="mobilenet",
         embedder_gpu=False,
+        nms_max_overlap=0.5 #to suppress overlapping boxes
     )
 
     cap = None
@@ -179,6 +180,9 @@ def _detection_loop(rtsp_url: str) -> None:
                     "detection_type": label
 
                 })
+
+        
+        tracks_payload = [t for t in tracks_payload if t["confidence"] > 0.1]
             
 
         _push_annotations(BACKEND_URL, CAMERA_ID, tracks_payload, datetime.now(timezone.utc).isoformat())
