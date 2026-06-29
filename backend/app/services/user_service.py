@@ -7,6 +7,8 @@ from sqlalchemy.exc import IntegrityError
 
 async def create_user(
     email: str,
+    first_name: str,
+    last_name: str,
     cognito_sub: str,
     db: DbSession
 ) -> User:
@@ -20,6 +22,12 @@ async def create_user(
 
     if email is None or email == "":
         raise HTTPException(400, "Email missing. Create user unsuccessful")
+
+    if first_name is None or first_name == "":
+        raise HTTPException(400, "First name missing. Create user unsuccessful")
+
+    if last_name is None or last_name == "":
+        raise HTTPException(400, "Last name missing. Create user unsuccessful")
 
     if cognito_sub is None or cognito_sub == "":
         raise HTTPException(400, "Cognito sub missing. Create user unsuccessful")
@@ -39,6 +47,8 @@ async def create_user(
         #TODO add a proper way to deal with log in as other roles
         new_user = User(
             email=email,
+            first_name=first_name,
+            last_name=last_name,
             cognito_sub=cognito_sub,
             role=UserRole.RESIDENT
         )
