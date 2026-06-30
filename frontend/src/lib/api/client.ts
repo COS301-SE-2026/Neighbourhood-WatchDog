@@ -11,11 +11,13 @@ export async function apiCall<T>(
 ): Promise<T> {
 	const { method = 'GET', body } = options //  defaul method set to get
 
+	const accessToken = localStorage.getItem("accessToken");
+
 	const headers: Record<string, string> = {
 		'Content-Type': 'application/json',
-		'Authorization': 'Bearer mocktoke',
+		'Authorization': 'Bearer ' + accessToken,
 		'X-Mock-Role': 'RESIDENT',                                    
-		'X-Mock-Sub': '20000000-0000-0000-0000-000000000001',         
+		'X-Mock-Sub': '00000000-0000-0000-0000-000000000001',         
 		'X-Mock-Neighbourhood-Id': '10000000-0000-0000-0000-000000000001' 
 		// TODO: Remeber to come back and extract the actual auth token when zaman has set up the stuff
 	}
