@@ -3,39 +3,38 @@
  * https://jestjs.io/docs/configuration
  */
 
-import type { Config } from "jest";
+import type {Config} from 'jest';
 
 const config: Config = {
-  testEnvironment: "jsdom",
+  testEnvironment: 'jsdom',
+
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
 
   clearMocks: true,
   collectCoverage: true,
-  coverageDirectory: "../tests/frontend/coverage",
-  coverageProvider: "v8",
+  coverageDirectory: '../tests/frontend/coverage',
+  coverageProvider: 'v8',
 
   // Include repo-level tests directory so Jest discovers tests placed outside
   // the frontend package (e.g., /tests/frontend/...)
   roots: ["<rootDir>/../tests/frontend", "<rootDir>/src"],
 
   // Ensure modules can be resolved from the frontend package and the repository root
-  moduleDirectories: [
-    "node_modules",
-    "<rootDir>/node_modules",
-    "<rootDir>/../node_modules",
-  ],
+  moduleDirectories: ["node_modules", "<rootDir>/node_modules", "<rootDir>/../node_modules"],
 
-  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
 
   transform: {
-    "^.+\\.tsx?$": [
-      "ts-jest",
-      {
-        tsconfig: {
-          jsx: "react-jsx",
-          esModuleInterop: true,
-        },
+    '^.+\\.tsx?$': ['ts-jest', {
+      tsconfig: {
+        jsx: 'react-jsx',
+        esModuleInterop: true,
       },
-    ],
+    }],
   },
 
   testMatch: [
@@ -44,10 +43,6 @@ const config: Config = {
     "<rootDir>/../tests/frontend/**/*.test.ts",
     "<rootDir>/../tests/frontend/**/*.test.tsx",
   ],
-
-  moduleNameMapper: {
-    "^@/(.*)$": "<rootDir>/src/$1",
-  },
 };
 
 export default config;
