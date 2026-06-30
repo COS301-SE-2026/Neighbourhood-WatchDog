@@ -21,6 +21,7 @@ import { useState, useEffect } from "react"
 import {MoreVertical, Edit, Trash} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import RemoveCamera from "./remove-camera-card"
+import { deleteCamera as apiDeleteCamera } from "@/lib/api/camera"
 import { id } from "zod/locales"
 interface CameraDropdownProp {
     camera_id: string
@@ -61,10 +62,19 @@ export function CameraDropdown({camera_id, camera_name}: CameraDropdownProp) {
                     open={isDelete}
                     name={camera_name}
                     onOpenChange={setDelete}
-                    onConfirm={() => {
+                    onConfirm={async () => {
                         // will add the logic here
                         console.log("camera with id ", camera_id, " to be deleted")
                         setDelete(false)
+                        try {
+                            await apiDeleteCamera(camera_id)
+                            setDelete(false)
+                            //going to add a toast notification
+                        } catch(error) {
+                            console.error("Failed to delete camera:", error)
+                            //going add a toast notification here too
+                        }
+
                     }}
                 />
             )}
