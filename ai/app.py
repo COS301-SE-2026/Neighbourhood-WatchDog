@@ -80,7 +80,7 @@ def _extract_detections(frame) -> list:
     print(f"Threat boxes: {len(weapon_detections)}, Person boxes: {len(person_detections)}")
         
     
-    return person_detections, weapon_detections
+    return [person_detections, weapon_detections]
 
 
 def _build_track_payload(track) -> dict:
