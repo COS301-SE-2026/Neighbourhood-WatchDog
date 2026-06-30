@@ -85,6 +85,28 @@ class TestCreateProperty:
             assert self.mock_db.commit.call_count == 0
 
     @pytest.mark.asyncio
+    async def test_no_claims(self):
+        with patch('app.services.property_service.Property') as MockProperty, \
+            patch('app.services.property_service.PropertyUser') as _MockPropertyUser:
+
+            mock_prop = Mock()
+            MockProperty.return_value = mock_prop
+            self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
+
+            # expecting an exception bad req
+            with pytest.raises(HTTPException) as exc_info:
+                await create_property_handler(
+                    "test 123",
+                    None,
+                    self.claims,
+                    self.mock_db
+                )
+            assert exc_info.value.status_code == 400
+            assert self.mock_db.add.call_count == 0
+            assert self.mock_db.flush.call_count == 0
+            assert self.mock_db.commit.call_count == 0
+
+    @pytest.mark.asyncio
     async def test_no_claim(self):
         with patch('app.services.property_service.Property') as MockProperty, \
             patch('app.services.property_service.PropertyUser') as _MockPropertyUser:
