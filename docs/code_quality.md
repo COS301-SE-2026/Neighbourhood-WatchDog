@@ -434,7 +434,7 @@ All camera footage and live-stream access is subject to role-based access contro
 | Role | Live streams | Footage clips |
 |:---|:---|:---|
 | `SYSTEM_ADMIN` | All cameras | All cameras |
-| `NEIGH_ADMIN` | All cameras in neighbourhood | All cameras in neighbourhood |
+| `NEIGHBOURHOOD_ADMIN` | All cameras in neighbourhood | All cameras in neighbourhood |
 | `PROP_ADMIN` (Security) | All cameras in neighbourhood | All cameras in neighbourhood |
 | `RESIDENT` | Public cameras in their neighbourhood | Public cameras in their neighbourhood |
 
