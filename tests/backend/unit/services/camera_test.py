@@ -6,6 +6,8 @@ from app.services.camera_service import RegisterCameraReq
 from app.models.camera import CameraVisibilityEnum
 from fastapi import HTTPException
 from datetime import datetime
+from typing import cast
+from app.core.database import DbSession
 
 class TestRegisterCamera:
     def setup_method(self):
@@ -92,7 +94,7 @@ class TestRegisterCamera:
             with pytest.raises(HTTPException) as exception:
                 await register_camera_handler(
                     req = self.mock_req,
-                    db = None,
+                    db=cast(DbSession, None),
                     claims = self.claims
                 )
 
@@ -182,7 +184,7 @@ class TestDeregisterCamera:
         with pytest.raises(HTTPException) as exc:
             await deregister_camera_handler(
                 camera_id=self.camera_id,
-                db=None,
+                db=cast(DbSession, None),
                 claims=self.claims
             )
         assert exc.value.status_code == 500

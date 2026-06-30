@@ -8,11 +8,14 @@ from app.models.property_user import PropertyUser
 from app.core.database import DbSession
 from uuid import UUID
 
+NO_DB_SESSION = "No database session"
+NOT_AUTHENTICATED = "Not authenticated"
+
 async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims: dict) -> CameraRes:
     if not db:
-        raise HTTPException(500, "No database session")
+        raise HTTPException(500, NO_DB_SESSION)
     if not claims:
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED)
 
     try:
         stmt = select(Property).where(Property.id == req.property_id)
@@ -50,9 +53,9 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
 
 async def deregister_camera_handler(camera_id: UUID, db: DbSession, claims: dict):
     if not db:
-        raise HTTPException(status_code=500, detail="No database session")
+        raise HTTPException(status_code=500, detail=NO_DB_SESSION)
     if not claims:
-        raise HTTPException(status_code=500, detail="Not authenticated")
+        raise HTTPException(status_code=500, detail=NOT_AUTHENTICATED)
     
     try:
         stmt = select(Camera).where(Camera.id == camera_id)
@@ -78,10 +81,10 @@ async def deregister_camera_handler(camera_id: UUID, db: DbSession, claims: dict
 
 async def list_cameras_handler(property_id: str, db: DbSession, claims: dict) -> CamerasRes:
     if not db:
-        raise HTTPException(500, "No database session")
+        raise HTTPException(500, NO_DB_SESSION)
 
     if not claims:
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED)
 
     try:
         prop_uuid = UUID(property_id)
