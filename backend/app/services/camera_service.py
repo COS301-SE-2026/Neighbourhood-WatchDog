@@ -75,9 +75,6 @@ async def deregister_camera_handler(camera_id: UUID, db: DbSession, claims: dict
     except HTTPException as he:
         db.rollback()
         raise he
-    except Exception:
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Database error")
 
 async def list_cameras_handler(property_id: str, db: DbSession, claims: dict) -> CamerasRes:
     if not db:
