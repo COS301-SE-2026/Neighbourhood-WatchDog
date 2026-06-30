@@ -1,7 +1,7 @@
 import pytest
 from uuid import uuid4
 from unittest.mock import Mock, patch
-from app.services.camera_service import register_camera_handler
+from app.services.camera_service import register_camera_handler, deregister_camera_handler
 from app.services.camera_service import RegisterCameraReq
 from app.models.camera import CameraVisibilityEnum
 from fastapi import HTTPException
@@ -131,3 +131,27 @@ class TestRegisterCamera:
             assert self.mock_db.refresh.call_count == 0
             assert self.mock_db.commit.call_count == 0
             assert self.mock_db.rollback.call_count == 0
+
+
+class TestDeregisterCamera:
+    def setup_method(self):
+        """Arrange"""
+        self.mock_db = Mock()
+        self.camera_id = uuid4()
+
+        self.mock_camera = Mock()
+        self.mock_camera.id = self.camera_id
+        self.mock_camera.property_id = uuid4()
+
+        self.mock_prop_user = Mock()
+        self.mock_prop_user.user.cognito_sub = "user-sub-123"
+
+        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+            self.mock_camera,
+            self.mock_prop_user
+        ]
+
+        self.mock_db.commit = Mock()
+        self.mock_db.rollback = Mock()
+
+        self.claims = {"sub": "user-sub-123"}
