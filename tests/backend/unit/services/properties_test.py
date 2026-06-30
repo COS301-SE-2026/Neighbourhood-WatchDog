@@ -85,7 +85,7 @@ class TestCreateProperty:
             assert self.mock_db.commit.call_count == 0
 
     @pytest.mark.asyncio
-    async def test_no_claims(self):
+    async def test_no_user(self):
         with patch('app.services.property_service.Property') as MockProperty, \
             patch('app.services.property_service.PropertyUser') as _MockPropertyUser:
 
