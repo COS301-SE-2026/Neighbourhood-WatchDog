@@ -216,3 +216,20 @@ class TestDeregisterCamera:
         assert self.mock_db.execute.call_count == 1
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.rollback.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_wrong_owner(self):
+        """Camera belongs to a different user"""
+        self.mock_prop_user.user.cognito_sub = "different-user-sub"
+        self.reset_side_effects(camera=self.mock_camera, prop_user=self.mock_prop_user)
+
+        with pytest.raises(HTTPException) as exc:
+            await deregister_camera_handler(
+                camera_id=self.camera_id,
+                db=self.mock_db,
+                claims=self.claims
+            )
+        assert exc.value.status_code == 403
+        assert self.mock_db.execute.call_count == 2
+        assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.rollback.call_count == 1
