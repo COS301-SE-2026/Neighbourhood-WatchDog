@@ -162,3 +162,16 @@ class TestDeregisterCamera:
         self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
             camera, prop_user
         ]
+
+    @pytest.mark.asyncio
+    async def test_happy_path(self):
+        """Camera exists, user owns it. Deletes successfully"""
+        await deregister_camera_handler(
+            camera_id=self.camera_id,
+            db=self.mock_db,
+            claims=self.claims
+        )
+
+        assert self.mock_db.execute.call_count == 3  
+        assert self.mock_db.commit.call_count == 1
+        assert self.mock_db.rollback.call_count == 0
