@@ -155,3 +155,10 @@ class TestDeregisterCamera:
         self.mock_db.rollback = Mock()
 
         self.claims = {"sub": "user-sub-123"}
+
+
+    def reset_side_effects(self, camera=None, prop_user=None):
+        """Helper to reset side_effect between tests"""
+        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+            camera, prop_user
+        ]
