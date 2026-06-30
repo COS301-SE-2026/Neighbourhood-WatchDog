@@ -15,7 +15,7 @@ echo "============================================"
 #  Step 1: Create symlink (avoids spaces-in-path PyTorch crash)
 echo ""
 echo "[1/5] Creating symlink ~/watchdog -> $REPO_DIR"
-if [ -L "$SYMLINK" ]; then
+if [[ -L "$SYMLINK" ]]; then
     echo "      Symlink already exists — skipping"
 else
     ln -s "$REPO_DIR" "$SYMLINK"
@@ -27,7 +27,7 @@ echo ""
 echo "[2/5] Setting up Python virtual environment"
 cd ~/watchdog/ai
 
-if [ -d ".venv" ]; then
+if [[ -d ".venv" ]]; then
     echo "      .venv already exists — skipping creation"
 else
     python3 -m venv .venv
@@ -46,7 +46,7 @@ echo "[3/5] Downloading model weights"
 WEIGHTS_DIR=~/watchdog/ai/pipeline/models/weights
 mkdir -p "$WEIGHTS_DIR"
 
-if [ -f "$WEIGHTS_DIR/best.pt" ]; then
+if [[ -f "$WEIGHTS_DIR/best.pt" ]]; then
     echo "      best.pt already exists — skipping"
 else
     echo "      Downloading threat detection model from HuggingFace..."
@@ -62,13 +62,13 @@ print(f"      Downloaded to: {path}")
 PYEOF
 fi
 
-if [ -f "$WEIGHTS_DIR/yolov8n.pt" ]; then
+if [[ -f "$WEIGHTS_DIR/yolov8n.pt" ]]; then
     echo "      yolov8n.pt already exists — skipping"
 else
     echo "      Downloading YOLOv8n (person detection) from Ultralytics..."
     python3 -c "from ultralytics import YOLO; YOLO('yolov8n.pt')" 2>/dev/null
     # Move to weights dir if downloaded to current dir
-    [ -f "yolov8n.pt" ] && mv yolov8n.pt "$WEIGHTS_DIR/"
+    [[ -f "yolov8n.pt" ]] && mv yolov8n.pt "$WEIGHTS_DIR/"
     echo "      Done"
 fi
 
@@ -113,7 +113,7 @@ echo ""
 echo "[5/5] Installing frontend dependencies"
 cd ~/watchdog/frontend
 
-if [ -d "node_modules" ]; then
+if [[ -d "node_modules" ]]; then
     echo "      node_modules already exists — skipping"
 else
     npm install --silent
@@ -122,7 +122,6 @@ fi
 
 #  Done 
 echo ""
-echo "============================================"
 echo "  Setup complete!"
 echo ""
 echo "  To start the project, run these in"
@@ -144,4 +143,3 @@ echo "    cd ~/watchdog/frontend"
 echo "    npm run dev"
 echo ""
 echo "  Then open: http://localhost:3000"
-echo "============================================"
