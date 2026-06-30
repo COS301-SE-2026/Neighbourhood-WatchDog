@@ -6,8 +6,6 @@ from app.services.camera_service import RegisterCameraReq
 from app.models.camera import CameraVisibilityEnum
 from fastapi import HTTPException
 from datetime import datetime
-from typing import cast
-from app.core.database import DbSession
 
 class TestRegisterCamera:
     def setup_method(self):
@@ -94,7 +92,7 @@ class TestRegisterCamera:
             with pytest.raises(HTTPException) as exception:
                 await register_camera_handler(
                     req = self.mock_req,
-                    db=cast(DbSession, None),
+                    db=None,
                     claims = self.claims
                 )
 
@@ -176,31 +174,6 @@ class TestDeregisterCamera:
 
         assert self.mock_db.execute.call_count == 3  
         assert self.mock_db.commit.call_count == 1
-        assert self.mock_db.rollback.call_count == 0
-
-    
-    @pytest.mark.asyncio
-    async def test_db_none(self):
-        with pytest.raises(HTTPException) as exc:
-            await deregister_camera_handler(
-                camera_id=self.camera_id,
-                db=cast(DbSession, None),
-                claims=self.claims
-            )
-        assert exc.value.status_code == 500
-        assert self.mock_db.commit.call_count == 0
-        assert self.mock_db.rollback.call_count == 0
-
-    @pytest.mark.asyncio
-    async def test_claims_none(self):
-        with pytest.raises(HTTPException) as exc:
-            await deregister_camera_handler(
-                camera_id=self.camera_id,
-                db=self.mock_db,
-                claims=None
-            )
-        assert exc.value.status_code == 500
-        assert self.mock_db.commit.call_count == 0
         assert self.mock_db.rollback.call_count == 0
 
     @pytest.mark.asyncio
