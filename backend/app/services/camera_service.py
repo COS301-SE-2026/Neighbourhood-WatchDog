@@ -61,6 +61,14 @@ async def deregister_camera_handler(camera_id: UUID, db: DbSession, claims: dict
         if not camera_obj:
             raise HTTPException(status_code=404, detail="Camera not found")
         
+        prop_user = db.execute(
+            select(PropertyUser).where(PropertyUser.property_id == camera_obj.property_id)
+            ).scalar_one_or_none()
+        
+        if not prop_user or prop_user.user.cognito_sub != claims.get("sub"):
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+        
         db.execute(delete(Camera).where(Camera.id == camera_id))
         db.commit()
         
