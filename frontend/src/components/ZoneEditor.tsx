@@ -13,7 +13,7 @@ interface Point {
 
 interface ZoneEditorProps {
 
-    readonly videoRef: React.RefObject<HTMLVideoElement>;
+    readonly videoRef: React.RefObject<HTMLVideoElement | null>;
     readonly onSave: (polygon: number[][], name: string) => Promise<void>;
     readonly onCancel: () => void;
 

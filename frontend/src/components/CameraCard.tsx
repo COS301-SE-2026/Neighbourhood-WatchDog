@@ -1,21 +1,24 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import CameraFeed from "./CameraFeed"
+import { CameraSettingsPanel } from "./CameraSettingsPanel"
 
 interface CameraCardProps {
     readonly id: string;
     readonly name: string;
     readonly rtspUrl?: string;
+    readonly userRole?: string;
 }
 
 function getStreamPath(rtspUrl: string): string {
     return rtspUrl.split("/").pop() || rtspUrl;
 }
 
-export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
+export default function CameraCard({ id, name, rtspUrl, userRole = "RESIDENT" }: CameraCardProps) {
+    const videoRef = useRef<HTMLVideoElement>(null);
     const streamUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream?url=${encodeURIComponent(rtspUrl)}` : null;
     const streamHealthUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream/health?url=${encodeURIComponent(rtspUrl)}` : null;
     const [streamHealth, setStreamHealth] = useState<{ url: string | null; available: boolean; error: boolean }>({
@@ -91,6 +94,7 @@ export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
                     </CardContent>
                 </Card>
             </DialogTrigger>
+
             <DialogContent className="max-w-4xl w-full">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
@@ -101,6 +105,11 @@ export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
                     </DialogTitle>
                 </DialogHeader>
                 {feedContent}
+                <CameraSettingsPanel
+                    cameraId={id}
+                    userRole={userRole}
+                    videoRef={videoRef}
+                />
             </DialogContent>
         </Dialog>
     )
