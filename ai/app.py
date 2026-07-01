@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
+from pipeline.utils.zone_config import filter_detections_by_zones
 import httpx
 from datetime import datetime, timezone
 import logging
@@ -98,8 +99,17 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
         pass
 
 
-def _extract_detections(frame) -> list:
+def _extract_detections(frame) -> tuple:
     """Convert YOLO results to DeepSort detection format."""
+
+
+    #running yolo on frame, applying the confidendce threshold and zone filters
+    with _settings_lock:
+        threshold = _camera_settings["confidence_threshold"]
+        zones = list(_camera_settings["zones"])
+
+
+    frame_h, frame_w = frame.shape[:2]
 
     #only passing human objects to deepsort
     person_detections = []
@@ -109,7 +119,7 @@ def _extract_detections(frame) -> list:
     threat_results = threat_model.predict(
         frame,
         imgsz=640,
-        conf=0.35,
+        conf=threshold,
         verbose=False
     )
 
@@ -127,7 +137,7 @@ def _extract_detections(frame) -> list:
     person_results = person_model.predict(
         frame,
         imgsz=640,
-        conf=0.4,
+        conf=threshold,
         classes=[0],
         verbose=False
         )
@@ -138,10 +148,18 @@ def _extract_detections(frame) -> list:
         person_detections.append(([x1, y1, x2 - x1, y2 - y1], conf, "person"))
 
 
+
+    #applying the zones filter (current plan: pass all it no zones are configured)
+    person_detections = filter_detections_by_zones(person_detections, zones, frame_w, frame_h)
+    weapon_detections = filter_detections_by_zones(weapon_detections, zones, frame_w, frame_h)
+
+
+
+
     print(f"Threat boxes: {len(weapon_detections)}, Person boxes: {len(person_detections)}")
         
     
-    return [person_detections, weapon_detections]
+    return person_detections, weapon_detections
 
 
 def _build_track_payload(track) -> dict:
@@ -292,8 +310,22 @@ def _collect_tracks(tracks, alerted_ids: set) -> list:
 @asynccontextmanager
 async def lifespan(app_: FastAPI):
     """Start the detection background thread when the AI service starts."""
+
+    #starting the detection loop
     t = threading.Thread(target=_detection_loop, args=(RTSP_URL,), daemon=True)
     t.start()
+
+
+    #starting tne settings refresh loop
+    s = threading.Thread(
+        target=_settings_refresh_loop,
+        args=(BACKEND_URL, CAMERA_ID),
+        daemon=True
+    )
+
+    s.start()
+
+
     logger.info("Detection background thread started")
     yield
 
