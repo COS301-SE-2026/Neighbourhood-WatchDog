@@ -1,6 +1,6 @@
-"use client"
-import { useState, useEffect, useCallback } from "react"
-import { apiCall } from "@/lib/api/client"
+"use client";
+import { useState, useEffect, useCallback } from "react";
+import { apiCall } from "@/lib/api/client";
 
 
 export interface Zone {
@@ -24,9 +24,9 @@ export interface CameraSettings {
 
 export function useCameraSettings(cameraId: string) {
 
-    const [settings, setSettings] = useState<CameraSettings | null>(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    const [settings, setSettings] = useState<CameraSettings | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
 
     //downloading the latest setting from the backend
@@ -34,29 +34,29 @@ export function useCameraSettings(cameraId: string) {
 
         try {
             
-            const data = await apiCall<CameraSettings>(`/cameras/${cameraId}/settings`)
-            setSettings(data)
+            const data = await apiCall<CameraSettings>(`/cameras/${cameraId}/settings`);
+            setSettings(data);
 
         }
         catch (e) {
 
-            setError("Failed to load camera settings")
+            setError(`Failed to load camera settings: \n${e}`);
 
         }
         finally {
 
-            setLoading(false)
+            setLoading(false);
 
         }
 
     }, [cameraId])
 
     useEffect(() => { const load = async () => {
-                        await fetchSettings() 
+                        await fetchSettings() ;
                     };
 
                     void load();
-                }, [fetchSettings])
+                }, [fetchSettings]);
 
 
     const updateThreshold = useCallback(async (threshold: number) => {
@@ -66,11 +66,11 @@ export function useCameraSettings(cameraId: string) {
             body: JSON.stringify({
                 confidence_threshold: threshold
             })
-        })
+        });
 
-        setSettings(prev => prev ? {...prev, confidence_threshold: threshold} : prev)
+        setSettings(prev => prev ? {...prev, confidence_threshold: threshold} : prev);
     
-    }, [cameraId])
+    }, [cameraId]);
 
 
 
@@ -82,11 +82,11 @@ export function useCameraSettings(cameraId: string) {
                 name,
                 polygon
             })
-        })
+        });
 
-        setSettings(prev => prev ? {...prev, zones: [...prev.zones, zone]} : prev)
+        setSettings(prev => prev ? {...prev, zones: [...prev.zones, zone]} : prev);
 
-    }, [cameraId])
+    }, [cameraId]);
 
 
 
@@ -94,11 +94,11 @@ export function useCameraSettings(cameraId: string) {
 
         await apiCall(`/cameras/${cameraId}/zones/${zoneId}`, {
             method: "DELETE"
-        })
+        });
 
-        setSettings(prev => prev ? {...prev, zones: prev.zones.filter(z => z.id !== zoneId)} : prev)
+        setSettings(prev => prev ? {...prev, zones: prev.zones.filter(z => z.id !== zoneId)} : prev);
 
-    }, [cameraId])
+    }, [cameraId]);
 
 
 
