@@ -63,3 +63,12 @@ def internal_headers():
         "X-Internal-Token": "dev-token",
         "Authorization": TEST_BEARER,
     }
+
+@pytest.fixture
+def pending_user_headers():
+    return{
+        "Authorization": TEST_BEARER,
+        "X-Mock-Role": "NEIGHBOURHOOD_ADMIN",
+        "X-Mock-Sub": "22222222-2222-2222-2222-222222222222",
+        "X-Mock-Neighbourhood-Id": "",
+    }
