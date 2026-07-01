@@ -7,8 +7,8 @@ from datetime import datetime
 class AuditScheme(BaseModel):
     user_id: UUID
     action: AuditAction
-    target_entity_type: NonEmptyString
-    target_entity_id: UUID
+    target_entity_type: NonEmptyString | None = None
+    target_entity_id: UUID | None = None
     ip_address: IPvAnyAddress
     timestamp: datetime
-    extra_metadata: Json
+    extra_metadata: Json | None = None
