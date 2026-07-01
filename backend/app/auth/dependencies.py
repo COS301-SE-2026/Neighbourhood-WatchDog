@@ -31,7 +31,7 @@ async def get_current_user(
     valid_roles = {
         "RESIDENT",
         "NEIGHBOURHOOD_ADMIN",
-        "SECURITY_OFFICER",
+        "PROP_ADMIN",
         "SYSTEM_ADMIN",
     }
     if role not in valid_roles:
