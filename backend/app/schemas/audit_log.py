@@ -4,7 +4,7 @@ from uuid import UUID
 from audit_log import AuditAction
 from datetime import datetime
 
-class AuditScheme(BaseModel):
+class AuditLogScheme(BaseModel):
     user_id: UUID
     action: AuditAction
     target_entity_type: NonEmptyString | None = None
