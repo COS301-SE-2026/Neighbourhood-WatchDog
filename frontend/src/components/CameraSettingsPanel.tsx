@@ -63,7 +63,7 @@ export function CameraSettingsPanel({
                     Confidence threshold: {Math.round(currentThreshold * 100)}%
                 </label>
 
-                <Slider.Root
+                <Slider
                     className="mt-2"
                     min={0}
                     max={1}
