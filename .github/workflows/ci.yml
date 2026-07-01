@@ -126,7 +126,7 @@ jobs:
       - name: Start backend
         run: |
           cd backend
-          nohup uvicorn main:app --host 0.0.0.0 --port 8000 & 
+          nohup uvicorn main:app --host 0.0.0.0 --port 8000 &
           npx wait-on tcp:8000 -t 60000
 
       - name: Build frontend
@@ -142,7 +142,7 @@ jobs:
         run: cd tests/e2e && pnpm install
 
       - name: Install Playwright browsers
-        run: cd tests/e2e && pnpm exec playwright install
+        run: cd tests/e2e && pnpm exec playwright install --with-deps
 
       - name: Run E2E tests
         run: cd tests/e2e && pnpm test
