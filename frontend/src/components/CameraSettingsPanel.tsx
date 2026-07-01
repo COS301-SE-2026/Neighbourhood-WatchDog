@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useCameraSettings } from "@/hooks/use-camera-settings";
 import { ZoneEditor } from "./ZoneEditor";
 import { Button } from "./ui/button";
-import * as Slider from "@radix-ui/react-slider";
+import { Slider } from "@/components/ui/slider";
 import { Trash2, PlusCircle } from "lucide-react";
 
 
