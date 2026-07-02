@@ -8,19 +8,17 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { useState, useEffect } from "react"
+import { useState} from "react"
 import {MoreVertical, Edit, Trash} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import RemoveCamera from "./remove-camera-card"
 import { deleteCamera as apiDeleteCamera } from "@/lib/api/camera"
-import { id } from "zod/locales"
 interface CameraDropdownProp {
     camera_id: string
     camera_name: string
 }
-export function CameraDropdown({camera_id, camera_name}: CameraDropdownProp) {
+export function CameraDropdown({camera_id, camera_name}: Readonly<CameraDropdownProp>) {
 
-    const [isEdit, setEdit] = useState(false);
     const [isDelete, setDelete] = useState(false);
 
     

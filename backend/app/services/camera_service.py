@@ -53,7 +53,7 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
         db.rollback()
         raise he
 
-async def deregister_camera_handler(camera_id: UUID, db: Optional[DbSession], claims: Optional[dict]):
+def deregister_camera_handler(camera_id: UUID, db: Optional[DbSession], claims: Optional[dict]):
     if not db:
         raise HTTPException(status_code=500, detail=NO_DB_SESSION)
     if not claims:

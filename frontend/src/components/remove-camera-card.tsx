@@ -19,7 +19,7 @@ interface RemoveCameraProps {
 }
 
 
-export function RemoveCamera({ open, name, onOpenChange, onConfirm }: RemoveCameraProps) {
+export function RemoveCamera({ open, name, onOpenChange, onConfirm }: Readonly<RemoveCameraProps>) {
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>

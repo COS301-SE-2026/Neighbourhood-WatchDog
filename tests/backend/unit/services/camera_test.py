@@ -166,7 +166,7 @@ class TestDeregisterCamera:
     @pytest.mark.asyncio
     async def test_happy_path(self):
         """Camera exists, user owns it. Deletes successfully"""
-        await deregister_camera_handler(
+        deregister_camera_handler(
             camera_id=self.camera_id,
             db=self.mock_db,
             claims=self.claims
@@ -179,7 +179,7 @@ class TestDeregisterCamera:
     @pytest.mark.asyncio
     async def test_db_none(self):
         with pytest.raises(HTTPException) as exc:
-            await deregister_camera_handler(
+            deregister_camera_handler(
                 camera_id=self.camera_id,
                 db=None,
                 claims=self.claims
@@ -191,7 +191,7 @@ class TestDeregisterCamera:
     @pytest.mark.asyncio
     async def test_claims_none(self):
         with pytest.raises(HTTPException) as exc:
-            await deregister_camera_handler(
+            deregister_camera_handler(
                 camera_id=self.camera_id,
                 db=self.mock_db,
                 claims=None
@@ -206,7 +206,7 @@ class TestDeregisterCamera:
         self.reset_side_effects(camera=None, prop_user=None)
 
         with pytest.raises(HTTPException) as exc:
-            await deregister_camera_handler(
+            deregister_camera_handler(
                 camera_id=self.camera_id,
                 db=self.mock_db,
                 claims=self.claims
@@ -223,7 +223,7 @@ class TestDeregisterCamera:
         self.reset_side_effects(camera=self.mock_camera, prop_user=self.mock_prop_user)
 
         with pytest.raises(HTTPException) as exc:
-            await deregister_camera_handler(
+            deregister_camera_handler(
                 camera_id=self.camera_id,
                 db=self.mock_db,
                 claims=self.claims
