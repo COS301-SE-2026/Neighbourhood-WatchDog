@@ -343,3 +343,58 @@ class TestCreateNeighbourhood:
         
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.rollback.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_two_neighbourhoods_have_distinct_join_codes(self):
+        mock_db_2 = Mock()
+ 
+        mock_property_2 = Mock()
+        mock_property_2.id = uuid4()
+        mock_property_2.neighbourhood_id = None
+ 
+        mock_property_user_2 = Mock()
+        mock_property_user_2.property_id = uuid4()
+        mock_property_user_2.user = Mock()
+        mock_property_user_2.user.cognito_sub = "cognito-sub-123"
+ 
+        mock_creator_2 = Mock()
+        mock_creator_2.cognito_sub = "cognito-sub-123"
+        mock_creator_2.role = UserRole.RESIDENT
+        mock_creator_2.neighbourhood_id = None
+ 
+        mock_db_2.execute.return_value.scalar_one_or_none.side_effect = [
+            None,               # join_code uniqueness check
+            mock_property_2,
+            mock_property_user_2,
+            mock_creator_2,
+        ]
+        mock_db_2.add = Mock()
+        mock_db_2.commit = Mock()
+        mock_db_2.flush = Mock()
+        mock_db_2.rollback = Mock()
+ 
+        def mock_refresh_2(obj):
+            if hasattr(obj, 'id') and obj.id is None:
+                obj.id = uuid4()
+            if hasattr(obj, 'created_at') and obj.created_at is None:
+                obj.created_at = datetime.now()
+ 
+        mock_db_2.refresh = Mock(side_effect=mock_refresh_2)
+ 
+        nb1 = await create_neighbourhood_handler(
+            name="Neighbourhood One",
+            location="Location One",
+            property_id=uuid4(),
+            db=self.mock_db,
+            claims=self.claims,
+        )
+ 
+        nb2 = await create_neighbourhood_handler(
+            name="Neighbourhood Two",
+            location="Location Two",
+            property_id=uuid4(),
+            db=mock_db_2,
+            claims=self.claims,
+        )
+ 
+        assert nb1.join_code != nb2.join_code
