@@ -177,6 +177,30 @@ class TestDeregisterCamera:
         assert self.mock_db.rollback.call_count == 0
 
     @pytest.mark.asyncio
+    async def test_db_none(self):
+        with pytest.raises(HTTPException) as exc:
+            await deregister_camera_handler(
+                camera_id=self.camera_id,
+                db=None,
+                claims=self.claims
+            )
+        assert exc.value.status_code == 500
+        assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.rollback.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_claims_none(self):
+        with pytest.raises(HTTPException) as exc:
+            await deregister_camera_handler(
+                camera_id=self.camera_id,
+                db=self.mock_db,
+                claims=None
+            )
+        assert exc.value.status_code == 500
+        assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.rollback.call_count == 0
+
+    @pytest.mark.asyncio
     async def test_camera_not_found(self):
         """Camera ID doesn't exist"""
         self.reset_side_effects(camera=None, prop_user=None)
