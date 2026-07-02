@@ -76,15 +76,23 @@ export function useCameraSettings(cameraId: string) {
 
     const createZone = useCallback(async (polygon: number[][], name = "Zone") => {
 
-        const zone = await apiCall<Zone>(`/cameras/${cameraId}/zones`, {
-            method: "POST",
-            body: JSON.stringify({
-                name,
-                polygon
-            })
-        });
+        try{
 
-        setSettings(prev => prev ? {...prev, zones: [...prev.zones, zone]} : prev);
+            const zone = await apiCall<Zone>(`/cameras/${cameraId}/zones`, {
+                method: "POST",
+                body: JSON.stringify({
+                    name,
+                    polygon
+                })
+            });
+
+            setSettings(prev => prev ? {...prev, zones: [...prev.zones, zone]} : prev);
+        }
+        catch (e: unknown) {
+            const message = e instanceof Error ? e.message : JSON.stringify(e);
+            console.error("Zone save failed: ", message);
+            alert("Zone save error: " + message);
+        }
 
     }, [cameraId]);
 

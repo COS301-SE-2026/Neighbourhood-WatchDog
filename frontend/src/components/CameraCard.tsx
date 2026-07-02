@@ -96,7 +96,7 @@ export default function CameraCard({ id, name, rtspUrl, userRole = "RESIDENT" }:
                 </Card>
             </DialogTrigger>
 
-            <DialogContent className="max-w-4xl w-full">
+            <DialogContent className="max-w-4xl w-full overflow-y-auto max-h-[90vh]">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         {name}
