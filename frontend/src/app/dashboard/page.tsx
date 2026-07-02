@@ -75,6 +75,7 @@ export default function Dashboard() {
                         id={camera.id}
                         name={camera.name}
                         rtspUrl={camera.rtspUrl}
+                        userRole="NEIGHBOURHOOD_ADMIN"
                     />
                 ))}
             </div>
