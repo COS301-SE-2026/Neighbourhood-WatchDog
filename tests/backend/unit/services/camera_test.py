@@ -1,7 +1,7 @@
 import pytest
 from uuid import uuid4
 from unittest.mock import Mock, patch
-from app.services.camera_service import register_camera_handler
+from app.services.camera_service import register_camera_handler, deregister_camera_handler
 from app.services.camera_service import RegisterCameraReq
 from app.models.camera import CameraVisibilityEnum
 from fastapi import HTTPException
@@ -92,7 +92,7 @@ class TestRegisterCamera:
             with pytest.raises(HTTPException) as exception:
                 await register_camera_handler(
                     req = self.mock_req,
-                    db = None,
+                    db=None,
                     claims = self.claims
                 )
 
@@ -131,3 +131,104 @@ class TestRegisterCamera:
             assert self.mock_db.refresh.call_count == 0
             assert self.mock_db.commit.call_count == 0
             assert self.mock_db.rollback.call_count == 0
+
+
+class TestDeregisterCamera:
+    def setup_method(self):
+        """Arrange"""
+        self.mock_db = Mock()
+        self.camera_id = uuid4()
+
+        self.mock_camera = Mock()
+        self.mock_camera.id = self.camera_id
+        self.mock_camera.property_id = uuid4()
+
+        self.mock_prop_user = Mock()
+        self.mock_prop_user.user.cognito_sub = "user-sub-123"
+
+        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+            self.mock_camera,
+            self.mock_prop_user
+        ]
+
+        self.mock_db.commit = Mock()
+        self.mock_db.rollback = Mock()
+
+        self.claims = {"sub": "user-sub-123"}
+
+
+    def reset_side_effects(self, camera=None, prop_user=None):
+        """Helper to reset side_effect between tests"""
+        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+            camera, prop_user
+        ]
+
+    @pytest.mark.asyncio
+    async def test_happy_path(self):
+        """Camera exists, user owns it. Deletes successfully"""
+        deregister_camera_handler(
+            camera_id=self.camera_id,
+            db=self.mock_db,
+            claims=self.claims
+        )
+
+        assert self.mock_db.execute.call_count == 3  
+        assert self.mock_db.commit.call_count == 1
+        assert self.mock_db.rollback.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_db_none(self):
+        with pytest.raises(HTTPException) as exc:
+            deregister_camera_handler(
+                camera_id=self.camera_id,
+                db=None,
+                claims=self.claims
+            )
+        assert exc.value.status_code == 500
+        assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.rollback.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_claims_none(self):
+        with pytest.raises(HTTPException) as exc:
+            deregister_camera_handler(
+                camera_id=self.camera_id,
+                db=self.mock_db,
+                claims=None
+            )
+        assert exc.value.status_code == 500
+        assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.rollback.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_camera_not_found(self):
+        """Camera ID doesn't exist"""
+        self.reset_side_effects(camera=None, prop_user=None)
+
+        with pytest.raises(HTTPException) as exc:
+            deregister_camera_handler(
+                camera_id=self.camera_id,
+                db=self.mock_db,
+                claims=self.claims
+            )
+        assert exc.value.status_code == 404
+        assert self.mock_db.execute.call_count == 1
+        assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.rollback.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_wrong_owner(self):
+        """Camera belongs to a different user"""
+        self.mock_prop_user.user.cognito_sub = "different-user-sub"
+        self.reset_side_effects(camera=self.mock_camera, prop_user=self.mock_prop_user)
+
+        with pytest.raises(HTTPException) as exc:
+            deregister_camera_handler(
+                camera_id=self.camera_id,
+                db=self.mock_db,
+                claims=self.claims
+            )
+        assert exc.value.status_code == 403
+        assert self.mock_db.execute.call_count == 2
+        assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.rollback.call_count == 1
