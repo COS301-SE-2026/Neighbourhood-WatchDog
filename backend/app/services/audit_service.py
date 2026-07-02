@@ -9,7 +9,7 @@ from uuid import uuid4
 
 MOCK_IP_ADDRESS = "196.168.10.1"
 
-async def create_audit_log_item(audit_log_details: AuditLogScheme, db: DbSession) -> None:
+async def create_audit_log_item(audit_log_details: AuditLogScheme, db: DbSession) -> AuditLog:
     if not db:
         raise HTTPException(500, "No database session. Could not create audit log item.")
     if not audit_log_details:
@@ -29,6 +29,8 @@ async def create_audit_log_item(audit_log_details: AuditLogScheme, db: DbSession
 
         db.add(new_audit_log_item)
         db.commit
+
+        return new_audit_log_item
         
     except IntegrityError:
         db.rollback()
