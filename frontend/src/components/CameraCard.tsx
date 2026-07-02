@@ -62,6 +62,7 @@ export default function CameraCard({ id, name, rtspUrl, userRole = "RESIDENT" }:
             {streamUrl ? (
                 <>
                     <CameraFeed
+                        ref={videoRef}
                         streamPath={getStreamPath(rtspUrl ?? "")}
                         cameraId={id}
                         host="localhost"
