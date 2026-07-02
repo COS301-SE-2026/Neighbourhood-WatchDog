@@ -79,7 +79,6 @@ export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
 
     return (
         <Dialog>
-            <DialogTrigger asChild>
                 <Card className="cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
                     <CardHeader className="flex flex-row items-center justify-between p-4">
                         <CardTitle className="text-sm font-medium">{name}</CardTitle>
@@ -93,11 +92,12 @@ export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
                             />
                         </div>
                     </CardHeader>
+                    <DialogTrigger asChild>
                     <CardContent className="p-4 pt-0">
                         {feedContent}
                     </CardContent>
+                    </DialogTrigger>
                 </Card>
-            </DialogTrigger>
             <DialogContent className="max-w-4xl w-full">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">

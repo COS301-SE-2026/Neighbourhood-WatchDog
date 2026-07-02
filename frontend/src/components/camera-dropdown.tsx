@@ -23,7 +23,7 @@ export function CameraDropdown({camera_id, camera_name}: Readonly<CameraDropdown
 
     
     return (
-        <div onClick={(e) => e.stopPropagation()}>
+        <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
@@ -37,9 +37,8 @@ export function CameraDropdown({camera_id, camera_name}: Readonly<CameraDropdown
                     <DropdownMenuItem className="cursor-pointer" onClick={() => {console.log("Camera with id", camera_id)}}>
                         <Edit className="mr-2 h-4 w-4" /> Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive cursor-pointer" onClick={(e) => {
-                        e.stopPropagation()
-                        setDelete(true)
+                    <DropdownMenuItem className="text-destructive cursor-pointer" onSelect={(e) => {
+                            setDelete(true)
                         }}>
                         <Trash className="mr-2 h-4 w-4" /> Delete
                     </DropdownMenuItem>
@@ -52,9 +51,7 @@ export function CameraDropdown({camera_id, camera_name}: Readonly<CameraDropdown
                     name={camera_name}
                     onOpenChange={setDelete}
                     onConfirm={async () => {
-                        // will add the logic here
                         console.log("camera with id ", camera_id, " to be deleted")
-                        setDelete(false)
                         try {
                             await apiDeleteCamera(camera_id)
                             setDelete(false)
@@ -67,7 +64,7 @@ export function CameraDropdown({camera_id, camera_name}: Readonly<CameraDropdown
                     }}
                 />
             )}
-        </div>
+        </>
     )
 }
 
