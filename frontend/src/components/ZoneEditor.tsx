@@ -1,205 +1,187 @@
-"use client"
-import React, { useRef, useState, useEffect, useCallback } from "react";
+"use client";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 
 
-interface Point {
 
-    x: number;
-    y: number
-
-}
+interface Point { x: number; y: number }
 
 
 interface ZoneEditorProps {
 
-    readonly videoRef: React.RefObject<HTMLVideoElement | null>;
-    readonly onSave: (polygon: number[][], name: string) => Promise<void>;
-    readonly onCancel: () => void;
+  readonly videoRef: React.RefObject<HTMLVideoElement | null>;
+  readonly onSave: (polygon: number[][], name: string) => Promise<void>;
+  readonly onCancel: () => void;
 
 }
 
 
 export function ZoneEditor({ videoRef, onSave, onCancel }: ZoneEditorProps) {
 
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [points, setPoints] = useState<Point[]>([]);
-    const [saving, setSaving] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [points, setPoints] = useState<Point[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [hasFrame, setHasFrame] = useState(false);
 
+  //capture a still frame from the live video as canvas background
+  const captureFrame = useCallback(() => {
 
-    //to draw the polygon, the current one on the canvas
-    const draw = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
 
-        const canvas = canvasRef.current;
-        const video = videoRef.current;
+    if (!video || !canvas) return;
 
-        if (!canvas || ! video) return;
+    const w = video.videoWidth || video.clientWidth || 640;
+    const h = video.videoHeight || video.clientHeight || 360;
 
-        canvas.width = video.videoWidth || video.clientWidth;
-        canvas.height = video.height || video.clientHeight;
+    canvas.width = w;
+    canvas.height = h;
 
+    const ctx = canvas.getContext("2d");
 
-        const canvasContext = canvas.getContext("2d");
-        if (!canvasContext) return;
+    if (!ctx) return;
 
+    if (video.videoWidth > 0) {
 
-        canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-        if (points.length === 0) return;
+      ctx.drawImage(video, 0, 0, w, h);
+      setHasFrame(true);
 
+    } else {
 
-        const w = canvas.width;
-        const h = canvas.height;
-
-
-
-        //drawing the polygon lines.
-        canvasContext.beginPath();
-        canvasContext.strokeStyle = "#facc15";
-        canvasContext.lineWidth = 2;
-        canvasContext.setLineDash([6, 3]);
-        canvasContext.moveTo(points[0].x*w, points[0].y*h);
-
-        for (let i = 1; i < points.length; i++) {
-            canvasContext.lineTo(points[i].x*w, points[i].y*h)
-
-        }
-
-        if (points.length > 2) {
-            canvasContext.lineTo(points[0].x*w, points[0].y*h) ///this will close the preview
-
-
-        }
-        canvasContext.stroke();
-
-
-
-        //drawing the vertex dots
-        for (const p of points) {
-            canvasContext.beginPath();
-            canvasContext.fillStyle = "#facc15";
-            canvasContext.arc(p.x*w, p.y*h, 5, 0, Math.PI*2); //this needs some checking
-            canvasContext.fill();
-
-
-        }
-
-        //highlight the first point, so that the user knows to end the polygon by coming to this point
-        canvasContext.beginPath();
-        canvasContext.strokeStyle = "#fff";
-        canvasContext.lineWidth = 1;
-        canvasContext.arc(points[0].x*w, points[0].y*h, 8, 0, Math.PI*2);
-        canvasContext.stroke();
-
-    }, [points, videoRef]);
-
-
-    useEffect(() => { draw() }, [draw]);
-
-    
-    const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-
-        const rect = canvas.getBoundingClientRect(); //so we can get the canvas position on the page
-        const normalizedX = (e.clientX - rect.left) / rect.width;
-        const normalizedY = (e.clientY - rect.top) / rect.height;
-
-
-        ///closing polygon if we click nearthe first point
-        if (points.length >= 3) {
-
-            const distanceX = normalizedX - points[0].x;
-            const distanceY = normalizedY - points[0].y;
-
-            //314's euclidean distance :(
-            if (Math.sqrt(distanceX * distanceX  +  distanceY * distanceY) < 0.03) {
-                handleSave();
-                return;
-            }
-
-        }
-
-
-        setPoints(prev => [...prev, {
-            x: normalizedX,
-            y: normalizedY
-        }]);
+      ctx.fillStyle = "#1a1a2e";
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "#888";
+      ctx.font = "14px Arial";
+      ctx.fillText("No video signal - drawing on blank frame", 20, h / 2);
+      setHasFrame(true);
 
     }
+    setPoints([]);
+  }, [videoRef]);
 
 
-    const handleSave = async() => {
 
-        if (points.length < 3) return;
-        setSaving(true);
+  //auto capture on mount
+  useEffect(() => { captureFrame() }, [captureFrame]);
 
-        try {
-            
-            const polygon = points.map(p => [p.x, p.y]);
-            await onSave(polygon, `Zone ${Date.now()}`);
-            setPoints([]);
+  const redraw = useCallback(() => {
 
-        }
-        finally {
+    const canvas = canvasRef.current;
+    if (!canvas || !hasFrame) return;
 
-            setSaving(false);
-        }
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
+
+    //restoring the captured frame  - redrawing from live video
+    const video = videoRef.current;
+    if (video && video.videoWidth > 0) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
     }
 
+    if (points.length === 0) return;
+
+    const w = canvas.width;
+    const h = canvas.height;
+
+    //semi-transparent overlay outside polygon
+    ctx.beginPath();
+    ctx.strokeStyle = "#facc15";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 3]);
+    ctx.moveTo(points[0].x * w, points[0].y * h);
+
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x * w, points[i].y * h);
+    }
+
+    if (points.length > 2) ctx.lineTo(points[0].x * w, points[0].y * h);
+
+    ctx.stroke();
+
+
+    for (const p of points) {
+
+      ctx.beginPath();
+      ctx.fillStyle = "#facc15";
+      ctx.arc(p.x * w, p.y * h, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    //first point =  close target
+    ctx.beginPath();
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([]);
+    ctx.arc(points[0].x * w, points[0].y * h, 10, 0, Math.PI * 2);
+    ctx.stroke();
+  }, [points, hasFrame, videoRef]);
 
 
 
-    //rendering
-    return (
+  useEffect(() => { redraw() }, [redraw]);
 
-        <div className="relative">
-            <p className="text-xs text-muted-foreground mb-2">
-                Click on the camera view to add zone vertices. Click near the first point to close and save.
+  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
 
-            </p>
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-            <div className="relative">
-                <video
-                    ref={videoRef}
-                    autoPlay playsInline muted
-                    className="w-full rounded-md"
-                />
-
-                <canvas
-                    ref={canvasRef}
-                    className="absolute inset-0 w-full h-full cursor-crosshair"
-                    onClick={handleClick}
-                />
+    const rect = canvas.getBoundingClientRect();
+    const nx = (e.clientX - rect.left) / rect.width;
+    const ny = (e.clientY - rect.top) / rect.height;
 
 
-            </div>
-            <div className="flex gap-2 mt-3">
-                <Button
-                    size="sm"
-                    onClick={handleSave}
-                    disabled={points.length < 3 || saving}
-                >
-                    {saving ? "Saving...": `Save zone (${points.length} pts)`}
+    if (points.length >= 3) {
 
-                </Button>
+      const dx = nx - points[0].x;
+      const dy = ny - points[0].y;
 
-                <Button size="sm"
-                        variant="outline"
-                        onClick={() => setPoints([])}>
-                            Clear
-                </Button>
+      if (Math.sqrt(dx * dx + dy * dy) < 0.03) {
+        handleSave();
+        return;
 
-                <Button size="sm"
-                        variant="ghost"
-                        onClick={onCancel}>
-                            Cancel
-                </Button>
-            </div>
-        </div>
+      }
+    }
 
-    )
+    setPoints(prev => [...prev, { x: nx, y: ny }]);
+  }
 
+  const handleSave = async () => {
+
+    if (points.length < 3) return;
+    setSaving(true);
+    try {
+
+      await onSave(points.map(p => [p.x, p.y]), `Zone ${Date.now()}`);
+      setPoints([]);
+    } finally {
+
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span>Click to add vertices. Click near the first circle to close and save the zone.</span>
+        <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={captureFrame}>
+          Refresh frame
+        </Button>
+      </div>
+      <div className="relative rounded-md overflow-hidden">
+        <canvas
+          ref={canvasRef}
+          className="w-full cursor-crosshair"
+          onClick={handleClick}
+        />
+      </div>
+      <div className="flex gap-2">
+        <Button size="sm" onClick={handleSave} disabled={points.length < 3 || saving}>
+          {saving ? "Saving…" : `Save zone (${points.length} pts)`}
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => setPoints([])}>Clear</Button>
+        <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
+      </div>
+    </div>
+  )
 }
