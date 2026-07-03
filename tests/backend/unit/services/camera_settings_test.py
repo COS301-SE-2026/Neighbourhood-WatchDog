@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from uuid import UUID
 from fastapi import HTTPException
 
@@ -30,7 +30,7 @@ def _mock_zone():
     return z
 
 
-def _make_db(camera=None, zones=None, zone=None):
+def _make_db(camera=None, zones=None):
     db = MagicMock()
     exec_mock = MagicMock()
     db.execute.return_value = exec_mock
@@ -55,7 +55,7 @@ async def test_get_settings_returns_threshold_and_zones():
     ]
 
     result = get_camera_settings_handler(CAMERA_ID, db)
-    assert result["confidence_threshold"] == 0.6
+    assert result["confidence_threshold"] == pytest.approx(0.6)
     assert len(result["zones"]) == 1
     assert result["zones"][0]["name"] == "Test Zone"
 
@@ -76,9 +76,9 @@ async def test_update_threshold_ok():
     db = _make_db(camera=cam)
 
     result = update_camera_settings_handler(CAMERA_ID, 0.8, db)
-    assert cam.confidence_threshold == 0.8
+    assert cam.confidence_threshold == pytest.approx(0.8)
     db.commit.assert_called_once()
-    assert result["confidence_threshold"] == 0.8
+    assert result["confidence_threshold"] == pytest.approx(0.8)
 
 
 @pytest.mark.asyncio
@@ -97,7 +97,6 @@ async def test_create_zone_ok():
     db = _make_db(camera=cam)
 
     polygon = [[0.1, 0.1], [0.5, 0.1], [0.5, 0.5], [0.1, 0.5]]
-    result = create_zone_handler(CAMERA_ID, "Gate", polygon, db)
     db.add.assert_called_once()
     db.commit.assert_called_once()
 
