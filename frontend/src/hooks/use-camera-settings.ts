@@ -2,126 +2,96 @@
 import { useState, useEffect, useCallback } from "react";
 import { apiCall } from "@/lib/api/client";
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface Zone {
-
     id: string
     camera_id: string
     name: string
     polygon: number[][]
-
 }
 
-
 export interface CameraSettings {
-
     camera_id: string
     confidence_threshold: number
     zones: Zone[]
-
 }
 
-
 export function useCameraSettings(cameraId: string) {
+    const isValidUUID = UUID_REGEX.test(cameraId);
 
     const [settings, setSettings] = useState<CameraSettings | null>(null);
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [refetchToken, setRefetchToken] = useState(0);
+
+    const [loadedFor, setLoadedFor] = useState<string | null>(null);
 
 
-    //downloading the latest setting from the backend
-    const fetchSettings = useCallback(async () => {
-
-        try {
-            
-            const data = await apiCall<CameraSettings>(`/cameras/${cameraId}/settings`);
-            setSettings(data);
-
-        }
-        catch (e) {
-
-            setError(`Failed to load camera settings: \n${e}`);
-
-        }
-        finally {
-
-            setLoading(false);
-
-        }
-
-    }, [cameraId])
-
-    useEffect(() => { const load = async () => {
-                        await fetchSettings() ;
-                    };
-
-                    void load();
-                }, [fetchSettings]);
+    if (cameraId !== loadedFor && settings !== null) {
+        setSettings(null);
+    }
+    if (cameraId !== loadedFor && error !== null) {
+        setError(null);
+    }
 
 
-    const updateThreshold = useCallback(async (threshold: number) => {
+    const loading = isValidUUID && loadedFor !== cameraId;
 
-        await apiCall(`/cameras/${cameraId}/settings`, {
-            method: "PATCH",
-            body: JSON.stringify({
-                confidence_threshold: threshold
+    useEffect(() => {
+        if (!isValidUUID) return;
+
+        let ignore = false;
+
+        apiCall<CameraSettings>(`/cameras/${cameraId}/settings`)
+            .then(data => {
+                if (ignore) return;
+                setSettings(data);
+                setLoadedFor(cameraId);
             })
-        });
-
-        setSettings(prev => prev ? {...prev, confidence_threshold: threshold} : prev);
-    
-    }, [cameraId]);
-
-
-
-    const createZone = useCallback(async (polygon: number[][], name = "Zone") => {
-
-        try{
-
-            const zone = await apiCall<Zone>(`/cameras/${cameraId}/zones`, {
-                method: "POST",
-                body: JSON.stringify({
-                    name,
-                    polygon
-                })
+            .catch(e => {
+                if (ignore) return;
+                setError(`Failed to load camera settings: \n${e}`);
+                setLoadedFor(cameraId);
             });
 
-            setSettings(prev => prev ? {...prev, zones: [...prev.zones, zone]} : prev);
-        }
-        catch (e: unknown) {
+        return () => {
+            ignore = true;
+        };
+    }, [cameraId, isValidUUID, refetchToken]);
+
+    const refetch = useCallback(() => {
+        setRefetchToken(t => t + 1);
+    }, []);
+
+    const updateThreshold = useCallback(async (threshold: number) => {
+        if (!isValidUUID) return;
+        await apiCall(`/cameras/${cameraId}/settings`, {
+            method: "PATCH",
+            body: { confidence_threshold: threshold }
+        });
+        setSettings(prev => prev ? { ...prev, confidence_threshold: threshold } : prev);
+    }, [cameraId, isValidUUID]);
+
+    const createZone = useCallback(async (polygon: number[][], name = "Zone") => {
+        if (!isValidUUID) return;
+        try {
+            const zone = await apiCall<Zone>(`/cameras/${cameraId}/zones`, {
+                method: "POST",
+                body: { name, polygon }
+            });
+            setSettings(prev => prev ? { ...prev, zones: [...prev.zones, zone] } : prev);
+        } catch (e: unknown) {
             const message = e instanceof Error ? e.message : JSON.stringify(e);
             console.error("Zone save failed: ", message);
             alert("Zone save error: " + message);
         }
-
-    }, [cameraId]);
-
-
+    }, [cameraId, isValidUUID]);
 
     const deleteZone = useCallback(async (zoneId: string) => {
+        if (!isValidUUID) return;
+        await apiCall(`/cameras/${cameraId}/zones/${zoneId}`, { method: "DELETE" });
+        setSettings(prev => prev ? { ...prev, zones: prev.zones.filter(z => z.id !== zoneId) } : prev);
+    }, [cameraId, isValidUUID]);
 
-        await apiCall(`/cameras/${cameraId}/zones/${zoneId}`, {
-            method: "DELETE"
-        });
-
-        setSettings(prev => prev ? {...prev, zones: prev.zones.filter(z => z.id !== zoneId)} : prev);
-
-    }, [cameraId]);
-
-
-
-
-    return {
-        settings, 
-        loading, 
-        error, 
-        updateThreshold, 
-        createZone, 
-        deleteZone, 
-        refetch: fetchSettings
-        
-    }
-
-
-
+    return { settings, loading, error, updateThreshold, createZone, deleteZone, refetch };
 }

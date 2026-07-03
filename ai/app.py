@@ -40,7 +40,7 @@ _settings_lock = threading.Lock()
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 CAMERA_ID = "2"
 NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001"
-RTSP_URL = os.getenv("RTSP_URL", "rtsp://Intrepid:password1234@192.168.3.65:554/stream2")
+RTSP_URL = os.getenv("RTSP_URL", "rtsp://Intrepid:password1234@192.168.3.68:554/stream2")
 
 
 

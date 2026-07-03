@@ -14,7 +14,7 @@ export async function apiCall<T>(
 	const headers: Record<string, string> = {
 		'Content-Type': 'application/json',
 		'Authorization': 'Bearer mocktoke',
-		'X-Mock-Role': 'RESIDENT',                                    
+		'X-Mock-Role': 'NEIGHBOURHOOD_ADMIN',                                    
 		'X-Mock-Sub': '20000000-0000-0000-0000-000000000001',         
 		'X-Mock-Neighbourhood-Id': '10000000-0000-0000-0000-000000000001' 
 		// TODO: Remeber to come back and extract the actual auth token when zaman has set up the stuff

@@ -12,7 +12,7 @@ AI_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../../"))
 threat_model = YOLO(os.path.join(AI_DIR, "pipeline/models/weights/best.pt"))
 person_model = YOLO(os.path.join(AI_DIR, "pipeline/models/weights/yolov8n.pt"))
 
-RTSP_URL = "rtsp://Intrepid:password1234@192.168.3.65:554/stream2"
+RTSP_URL = "rtsp://Intrepid:password1234@192.168.3.68:554/stream2"
 
 print("Models loaded: ", threat_model.names, person_model.names.get(0))
 print("Connecting to camera ... (Ctrl+C to stop)")

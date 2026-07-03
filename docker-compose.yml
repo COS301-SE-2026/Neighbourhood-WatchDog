@@ -7,16 +7,16 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    ports: 
-      - "5432:5432"
+    # ports: 
+    #   - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 1m30s
-      timeout: 30s
-      retries: 5
-      start_period: 30s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   # redis: 
   #   image: redis:7-alpine
@@ -51,6 +51,7 @@ services:
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
       COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
       FRONTEND_URL: ${FRONTEND_URL}
+      SKIP_DB_INIT: "true"
     volumes:
       - ./backend:/app
     depends_on:
@@ -96,7 +97,7 @@ services:
     ports:
       - "8554:8554"    # RTSP
       - "8889:8889"    # WebRTC
-      - "8189:8189/udp"
+      # - "8189:8189/udp"
       - "9997:9997"    # API
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx/mediamtx.yml

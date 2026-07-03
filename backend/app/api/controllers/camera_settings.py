@@ -30,8 +30,9 @@ ZONE_EDITOR_ROLES = ["NEIGHBOURHOOD_ADMIN", "PROP_ADMIN", "SYSTEM_ADMIN"]
 async def get_settings(
 
     camera_id: UUID,
+    db: DbSession,
     claims: dict = Depends(get_current_user),
-    db: DbSession = None
+    
 
 ):
     
@@ -47,8 +48,9 @@ async def update_settings(
 
     camera_id: UUID,
     payload: UpdateCameraSettingsRequest,
+    db: DbSession,
     claims: dict = Depends(get_current_user),
-    db: DbSession = None
+    
 
 ):
     
@@ -68,8 +70,8 @@ async def create_zone(
 
     camera_id: UUID,
     payload: CreateZoneRequest,
+    db: DbSession,
     claims: dict = Depends(get_current_user),
-    db: DbSession = None
 
 ):
     
@@ -87,8 +89,8 @@ async def delete_zone(
 
     camera_id: UUID,
     zone_id: UUID,
+    db: DbSession,
     claims: dict = Depends(get_current_user),
-    db: DbSession = None
 
     
 ):
