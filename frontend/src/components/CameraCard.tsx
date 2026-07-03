@@ -83,26 +83,25 @@ export default function CameraCard({ id, name, rtspUrl, userRole = "RESIDENT" }:
 
     return (
         <Dialog>
-                <Card className="cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
-                    <CardHeader className="flex flex-row items-center justify-between p-4">
-                        <CardTitle className="text-sm font-medium">{name}</CardTitle>
-                        <div className="flex flex-row items-center">
-                            <Badge variant={effectiveStatus === "online" ? "success" : "destructive"}>
-                                {effectiveStatus}
-                            </Badge>
-                            <CameraDropdown
-                                camera_id={id}
-                                camera_name={name}
-                            />
-                        </div>
-                    </CardHeader>
-                    <DialogTrigger asChild>
+            <Card className="cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
+                <CardHeader className="flex flex-row items-center justify-between p-4">
+                    <CardTitle className="text-sm font-medium">{name}</CardTitle>
+                    <div className="flex flex-row items-center">
+                        <Badge variant={effectiveStatus === "online" ? "success" : "destructive"}>
+                            {effectiveStatus}
+                        </Badge>
+                        <CameraDropdown
+                            camera_id={id}
+                            camera_name={name}
+                        />
+                    </div>
+                </CardHeader>
+                <DialogTrigger asChild>
                     <CardContent className="p-4 pt-0">
                         {feedContent}
                     </CardContent>
-                    </DialogTrigger>
-                </Card>
-            </DialogTrigger>
+                </DialogTrigger>
+            </Card>
 
             <DialogContent className="max-w-4xl w-full overflow-y-auto max-h-[90vh]">
                 <DialogHeader>
