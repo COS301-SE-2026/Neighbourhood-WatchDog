@@ -13,7 +13,6 @@ from pipeline.utils.zone_config import filter_detections_by_zones
 import httpx
 from datetime import datetime, timezone
 import logging
-import threading
 
 
 logger = logging.getLogger("watchdog.ai")
