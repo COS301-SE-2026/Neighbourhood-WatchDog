@@ -54,7 +54,7 @@ async def test_get_settings_returns_threshold_and_zones():
         MagicMock(**{"scalars.return_value.all.return_value": [zone]}),
     ]
 
-    result = await get_camera_settings_handler(CAMERA_ID, db)
+    result = get_camera_settings_handler(CAMERA_ID, db)
     assert result["confidence_threshold"] == 0.6
     assert len(result["zones"]) == 1
     assert result["zones"][0]["name"] == "Test Zone"
@@ -64,7 +64,7 @@ async def test_get_settings_returns_threshold_and_zones():
 async def test_get_settings_camera_not_found():
     db = _make_db(camera=None)
     with pytest.raises(HTTPException) as exc:
-        await get_camera_settings_handler(CAMERA_ID, db)
+        get_camera_settings_handler(CAMERA_ID, db)
     assert exc.value.status_code == 404
 
 
@@ -75,7 +75,7 @@ async def test_update_threshold_ok():
     cam = _mock_camera(0.5)
     db = _make_db(camera=cam)
 
-    result = await update_camera_settings_handler(CAMERA_ID, 0.8, db)
+    result = update_camera_settings_handler(CAMERA_ID, 0.8, db)
     assert cam.confidence_threshold == 0.8
     db.commit.assert_called_once()
     assert result["confidence_threshold"] == 0.8
@@ -85,7 +85,7 @@ async def test_update_threshold_ok():
 async def test_update_threshold_camera_not_found():
     db = _make_db(camera=None)
     with pytest.raises(HTTPException) as exc:
-        await update_camera_settings_handler(CAMERA_ID, 0.8, db)
+        update_camera_settings_handler(CAMERA_ID, 0.8, db)
     assert exc.value.status_code == 404
 
 
@@ -97,7 +97,7 @@ async def test_create_zone_ok():
     db = _make_db(camera=cam)
 
     polygon = [[0.1, 0.1], [0.5, 0.1], [0.5, 0.5], [0.1, 0.5]]
-    result = await create_zone_handler(CAMERA_ID, "Gate", polygon, db)
+    result = create_zone_handler(CAMERA_ID, "Gate", polygon, db)
     db.add.assert_called_once()
     db.commit.assert_called_once()
 
@@ -107,7 +107,7 @@ async def test_create_zone_too_few_points():
     cam = _mock_camera()
     db = _make_db(camera=cam)
     with pytest.raises(HTTPException) as exc:
-        await create_zone_handler(CAMERA_ID, "Bad Zone", [[0.1, 0.1], [0.5, 0.5]], db)
+        create_zone_handler(CAMERA_ID, "Bad Zone", [[0.1, 0.1], [0.5, 0.5]], db)
     assert exc.value.status_code == 400
 
 
@@ -115,7 +115,7 @@ async def test_create_zone_too_few_points():
 async def test_create_zone_camera_not_found():
     db = _make_db(camera=None)
     with pytest.raises(HTTPException) as exc:
-        await create_zone_handler(CAMERA_ID, "Zone", [[0.1, 0.1], [0.5, 0.1], [0.5, 0.5]], db)
+        create_zone_handler(CAMERA_ID, "Zone", [[0.1, 0.1], [0.5, 0.1], [0.5, 0.5]], db)
     assert exc.value.status_code == 404
 
 
@@ -125,7 +125,7 @@ async def test_create_zone_camera_not_found():
 async def test_delete_zone_ok():
     zone = _mock_zone()
     db = _make_db(camera=zone)  # scalar_one_or_none returns the zone
-    await delete_zone_handler(CAMERA_ID, ZONE_ID, db)
+    delete_zone_handler(CAMERA_ID, ZONE_ID, db)
     db.delete.assert_called_once_with(zone)
     db.commit.assert_called_once()
 
@@ -134,5 +134,5 @@ async def test_delete_zone_ok():
 async def test_delete_zone_not_found():
     db = _make_db(camera=None)
     with pytest.raises(HTTPException) as exc:
-        await delete_zone_handler(CAMERA_ID, ZONE_ID, db)
+        delete_zone_handler(CAMERA_ID, ZONE_ID, db)
     assert exc.value.status_code == 404

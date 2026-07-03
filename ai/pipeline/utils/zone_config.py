@@ -33,7 +33,7 @@ def _point_in_polygon(px: float, py: float, polygon: List[List[float]]) -> bool:
 
 
 
-def bbox_in_zone(bbox_xyxy: List[float], polygon: List[List[float]], frame_width: int, frame_height: int, threshold: float = 0.5) -> bool:
+def bbox_in_zone(bbox_xyxy: List[float], polygon: List[List[float]], frame_width: int, frame_height: int) -> bool:
 
     #return true if the centre of the boundary box falls inside the zone polygon
 
@@ -63,7 +63,7 @@ def filter_detections_by_zones(detections: List, zones: List[List[float]], frame
     filtered = []
 
     for det in detections:
-        bbox_xywh, conf, label = det
+        bbox_xywh = det
 
         x, y, w, h = bbox_xywh
         bbox_xyxy = [x, y, x + w, y + h]
