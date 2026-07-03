@@ -96,7 +96,7 @@ async def test_create_zone_ok():
     cam = _mock_camera()
     db = _make_db(camera=cam)
 
-    polygon = [[0.1, 0.1], [0.5, 0.1], [0.5, 0.5], [0.1, 0.5]]
+    create_zone_handler(CAMERA_ID, "Gate", [[0.1, 0.1], [0.5, 0.1], [0.5, 0.5], [0.1, 0.5]], db)
     db.add.assert_called_once()
     db.commit.assert_called_once()
 
