@@ -1,8 +1,9 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 CAMERA_ID = "40000000-0000-0000-0000-000000000001"
 ZONE_ID   = "f68ad3aa-6946-4019-9817-e35d27e15950"
+TEST_ZONE_NAME = "Test Zone"
 
 MOCK_SETTINGS = {
     "camera_id": CAMERA_ID,
@@ -13,7 +14,7 @@ MOCK_SETTINGS = {
 MOCK_ZONE = {
     "id": ZONE_ID,
     "camera_id": CAMERA_ID,
-    "name": "Test Zone",
+    "name": TEST_ZONE_NAME,
     "polygon": [[0.1, 0.1], [0.5, 0.1], [0.5, 0.5], [0.1, 0.5]],
 }
 
@@ -29,7 +30,7 @@ async def test_get_camera_settings_ok(async_client, admin_headers):
     assert r.status_code == 200
     body = r.json()
     assert body["camera_id"] == CAMERA_ID
-    assert body["confidence_threshold"] == 0.5
+    assert body["confidence_threshold"] == pytest.approx(0.5)
 
 
 @pytest.mark.asyncio
@@ -63,7 +64,7 @@ async def test_update_camera_threshold_ok(async_client, admin_headers):
             headers=admin_headers,
         )
     assert r.status_code == 200
-    assert r.json()["confidence_threshold"] == 0.7
+    assert r.json()["confidence_threshold"] == pytest.approx(0.7)
 
 
 @pytest.mark.asyncio
@@ -105,7 +106,7 @@ async def test_create_zone_ok(async_client, admin_headers):
         )
     assert r.status_code == 201
     body = r.json()
-    assert body["name"] == "Test Zone"
+    assert body["name"] == TEST_ZONE_NAME
     assert body["camera_id"] == CAMERA_ID
 
 
