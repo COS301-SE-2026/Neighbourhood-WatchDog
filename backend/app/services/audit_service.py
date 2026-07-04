@@ -1,11 +1,26 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends, Query
+from app.auth.rbac import require_role
+from app.auth.dependencies import get_current_user
 from app.models.audit_log import AuditAction
 from app.models.audit_log import AuditLog
 from app.core.database import DbSession
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select, func
+from app.schemas.audit_log import GetAuditLogsRes, PaginatedResponse
 from uuid import uuid4, UUID
 
-async def create_audit_log_item(user_id: UUID, action: AuditAction, target_entity_type: str, target_entity_id: UUID, old_values: dict, new_values: dict, db: DbSession) -> AuditLog:
+PAGE = 1
+SIZE = 30
+
+async def create_audit_log_item(
+    user_id: UUID, 
+    action: AuditAction, 
+    target_entity_type: str,
+    target_entity_id: UUID,
+    old_values: dict,
+    new_values: dict,
+    db: DbSession
+) -> AuditLog:
     """Receives an AuditLogScheme object and adds the audit log to the database."""
     if not db:
         raise HTTPException(500, "Could not create audit log item. No database session.")
@@ -65,7 +80,25 @@ async def create_audit_log_item(user_id: UUID, action: AuditAction, target_entit
     except IntegrityError:
         db.rollback()
         raise HTTPException(500, "Could not create audit log item. Failed to add audit log item.")
+
+async def get_audit_logs_handler(
+    db: DbSession,
+    claims: dict = Depends(get_current_user),
+    page: int = Query(PAGE, ge=1, description="Page number"),
+    size: int = Query(SIZE, ge=1, le=100, description="Items per page")
+) -> PaginatedResponse[GetAuditLogsRes]:
     
-async def get_audits_handler():
-    # include pagination here
-    pass
+    require_role(claims, ['SYSTEM_ADMIN'])
+    offset = (page - 1) * size
+
+    total_count = db.scalar(select(func.count()).select_from(AuditLog))
+    stmt = select(AuditLog).offset(offset).limit(size).order_by(AuditLog.id)
+    audit_logs = db.scalars(stmt).all()
+    
+    return PaginatedResponse(
+        total=total_count,
+        page=page,
+        size=size,
+        results=audit_logs
+    )
+    
