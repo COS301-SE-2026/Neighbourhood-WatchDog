@@ -3,10 +3,12 @@ from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, delete
+from sqlalchemy.orm import Session
 from app.schemas.camera import RegisterCameraReq, CameraRes, CamerasRes, CameraEdit
 from app.models.camera import Camera
 from app.models.property import Property
 from app.models.property_user import PropertyUser
+from app.models.user import User
 from app.core.database import DbSession
 from uuid import UUID
 
@@ -84,7 +86,7 @@ def deregister_camera_handler(camera_id: UUID, db: Optional[DbSession], claims: 
 def edit_camera_handler(
     camera_id: UUID, 
     req: CameraEdit,
-    db: DbSession, 
+    db: Session, 
     claims: dict
     ):
 
@@ -98,6 +100,10 @@ def edit_camera_handler(
         raise HTTPException(status_code=400, detail="Payload is empty")
     
     try:
+
+        update_data = req.model_dump(exclude_unset=True)
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No fields provided to update")
     
         stmt = select(Camera).where(Camera.id == camera_id)
         camera_obj = db.execute(stmt).scalar_one_or_none()
@@ -105,15 +111,17 @@ def edit_camera_handler(
         if not camera_obj:
             raise HTTPException(status_code=404, detail="Camera not found")
         
-        update_data = req.model_dump(exclude_unset=True)
-        if not update_data:
-            raise HTTPException(status_code=400, detail="No fields provided to update")
-        
         prop_user = db.execute(
-            select(PropertyUser).where(PropertyUser.property_id == camera_obj.property_id)
+            select(PropertyUser)
+            .join(PropertyUser.user)
+            .where(
+                PropertyUser.property_id == camera_obj.property_id,
+                User.cognito_sub == claims.get("sub")
+                
+                )
             ).scalar_one_or_none()
         
-        if not prop_user or prop_user.user.cognito_sub != claims.get("sub"):
+        if not prop_user:
             raise HTTPException(status_code=403, detail="Forbidden")
         
         for field, value in update_data.items():
@@ -127,6 +135,9 @@ def edit_camera_handler(
     except HTTPException as he:
         db.rollback()
         raise he
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update camera")
 
 
 
