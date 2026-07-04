@@ -89,15 +89,6 @@ def edit_camera_handler(
     db: Session, 
     claims: dict
     ):
-
-    if not db:
-        raise HTTPException(status_code=500, detail=NO_DB_SESSION)
-    
-    if not claims:
-        raise HTTPException(status_code=500, detail=NOT_AUTHENTICATED)
-    
-    if not type(req).model_fields:
-        raise HTTPException(status_code=400, detail="Payload is empty")
     
     try:
 
