@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Json, IPvAnyAddress, IPvAnyInterface
 from app.schemas.property import NonEmptyString
 from uuid import UUID
-from audit_log import AuditAction
+from app.models.audit_log import AuditAction
 from datetime import datetime
 
 class AuditLogScheme(BaseModel):

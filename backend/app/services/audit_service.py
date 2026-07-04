@@ -11,7 +11,7 @@ from datetime import datetime
 
 MOCK_IP_ADDRESS = "196.168.10.1"
 
-async def create_audit_log_item(user_id: UUID, action: AuditAction, target_entity_type: str, target_entity_id: UUID, ip_address: IPvAnyAddress, timestamp: datetime, extra_metadata, db: DbSession) -> AuditLog:
+async def create_audit_log_item(user_id: UUID, action: AuditAction, target_entity_type: str, target_entity_id: UUID, ip_address: IPvAnyAddress, extra_metadata, db: DbSession) -> AuditLog:
     """Receives an AuditLogScheme object and adds the audit log to the database."""
     if not db:
         raise HTTPException(500, "No database session. Could not create audit log item.")
@@ -42,11 +42,11 @@ async def create_audit_log_item(user_id: UUID, action: AuditAction, target_entit
             target_entity_type = target_entity_type,
             target_entity_id = target_entity_id,
             ip_address = ip_address | MOCK_IP_ADDRESS,
-            timestamp = timestamp,
             extra_metadata = extra_metadata
         )
 
         db.add(new_audit_log_item)
+        db.refresh(new_audit_log_item)
         db.commit
 
         return new_audit_log_item
@@ -54,3 +54,5 @@ async def create_audit_log_item(user_id: UUID, action: AuditAction, target_entit
     except IntegrityError:
         db.rollback()
         raise HTTPException(500, "Failed to add audit log item.")
+    
+# async def get_audits_handler():
