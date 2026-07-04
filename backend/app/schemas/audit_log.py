@@ -5,15 +5,6 @@ from uuid import UUID
 from app.models.audit_log import AuditAction
 from datetime import datetime
 
-
-class GetAuditLogsReq(BaseModel):
-    id: UUID | None = None
-    user_id: UUID | None = None
-    target_entity_type: NonEmptyString | None = None
-    target_entity_id: UUID | None = None
-    start_date: datetime | None = None
-    end_date: datetime | None = None
-
 class AuditLogScheme(BaseModel):
     id: UUID
     user_id: UUID
@@ -29,3 +20,10 @@ class GetAuditLogsRes(BaseModel):
     message: str | None = None
     data: list[AuditLogScheme] = None
 
+T = TypeVar('T')
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    total: int
+    page: int
+    size: int
+    results: List[T]
