@@ -72,6 +72,7 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      - /app/.next
     depends_on:
       - backend
 
@@ -83,6 +84,7 @@ services:
     ports:
       - "8001:8001"
     environment:
+      RTSP_URL: ${RTSP_URL}
       OPENCV_FFMPEG_CAPTURE_OPTIONS: "rtsp_transport;tcp"
       BACKEND_URL: http://backend:8000
       MKL_THREADING_LAYER: GNU
