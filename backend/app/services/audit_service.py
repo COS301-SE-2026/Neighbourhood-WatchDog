@@ -29,14 +29,14 @@ async def create_audit_log_item(user_id: UUID, action: AuditAction, target_entit
     if not new_values:
         raise HTTPException(500, "Could not create audit log item. No new value provided.")
 
-    if not old_values and old_values == new_values:
+    if old_values == new_values:
         raise HTTPException(500, "Could not create audit log item. Old values and new values are the same.")
 
     try:
         #TODO: check that id in table actually exists
 
         new_audit_log_item = AuditLog(
-            id = uuid4,
+            id = uuid4(),
             user_id = user_id,
             action = action,
             target_entity_type = target_entity_type,
@@ -46,8 +46,8 @@ async def create_audit_log_item(user_id: UUID, action: AuditAction, target_entit
         )
 
         db.add(new_audit_log_item)
-        db.refresh(new_audit_log_item)
         db.commit()
+        db.refresh(new_audit_log_item)
 
         return new_audit_log_item
         
