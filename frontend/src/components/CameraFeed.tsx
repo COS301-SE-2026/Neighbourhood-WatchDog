@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useRef, useState } from "react";
+import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { useCameraAnnotations } from "@/hooks/use-camera-annotations";
 
 interface AnnotatedCameraFeedProps {
@@ -9,25 +9,37 @@ interface AnnotatedCameraFeedProps {
   readonly port?: number;
 }
 
-export default function AnnotatedCameraFeed({
-  streamPath,
-  cameraId,
-  host = "localhost",
-  port = 8889,
-}: AnnotatedCameraFeedProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { annotations, connected } = useCameraAnnotations(cameraId);
-  const [videoWidth, setVideoWidth] = useState(0);
-  const [videoHeight, setVideoHeight] = useState(0);
 
-  // Extracted: set video dimensions from a loaded video element
-  function applyVideoDimensions(video: HTMLVideoElement) {
-    if (video.videoWidth > 0) {
-      setVideoWidth(video.videoWidth);
-      setVideoHeight(video.videoHeight);
+const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProps> (
+
+  function AnnotatedCameraFeed (
+    { streamPath, cameraId, host="localhost", port=8889 },
+    ref
+  ){
+
+    const internalVideoRef = useRef<HTMLVideoElement>(null);
+    const videoRef = (ref as React.RefObject<HTMLVideoElement>) ?? internalVideoRef;
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const { annotations, connected } = useCameraAnnotations(cameraId);
+    const [videoWidth, setVideoWidth] = useState(0);
+    const [videoHeight, setVideoHeight] = useState(0);
+
+
+
+    // Extracted: set video dimensions from a loaded video element
+    function applyVideoDimensions(video: HTMLVideoElement) {
+      if (video.videoWidth > 0) {
+        setVideoWidth(video.videoWidth);
+        setVideoHeight(video.videoHeight);
+      }
     }
-  }
+  
+
+  
+
+
+
+
 
   // WebRTC connection setup
   useEffect(() => {
@@ -70,7 +82,7 @@ export default function AnnotatedCameraFeed({
 
     connect().catch(console.error);
     return () => { if (pc) pc.close(); };
-  }, [streamPath, host, port]);
+  }, [streamPath, host, port, videoRef]);
 
   // Draw annotations on canvas overlay
   useEffect(() => {
@@ -136,4 +148,8 @@ export default function AnnotatedCameraFeed({
       />
     </div>
   );
-}
+})
+
+
+AnnotatedCameraFeed.displayName = "AnnotatedCameraFeed";
+export default AnnotatedCameraFeed;
