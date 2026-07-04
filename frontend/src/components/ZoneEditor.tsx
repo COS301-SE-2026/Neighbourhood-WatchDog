@@ -136,7 +136,7 @@ export function ZoneEditor({ videoRef, onSave, onCancel }: ZoneEditorProps) {
       const dx = nx - points[0].x;
       const dy = ny - points[0].y;
 
-      if (Math.sqrt(dx * dx + dy * dy) < 0.03) {
+      if (Math.hypot(dx * dx + dy * dy) < 0.03) {
         handleSave();
         return;
 

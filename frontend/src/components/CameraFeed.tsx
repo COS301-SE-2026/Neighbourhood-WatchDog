@@ -82,7 +82,7 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
 
     connect().catch(console.error);
     return () => { if (pc) pc.close(); };
-  }, [streamPath, host, port]);
+  }, [streamPath, host, port, videoRef]);
 
   // Draw annotations on canvas overlay
   useEffect(() => {

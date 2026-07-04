@@ -17,7 +17,7 @@ interface CameraSettingsPanelProps {
 
 
 //the roles that can access the zone settigns
-const ADMIN_ROLES = ["NEIGHBOURHOOD_ADMIN", "PROP_ADMIN", "SYSTEM_ADMIN"]
+const ADMIN_ROLES = new Set(["NEIGHBOURHOOD_ADMIN", "PROP_ADMIN", "SYSTEM_ADMIN"])
 
 
 export function CameraSettingsPanel({
@@ -31,7 +31,7 @@ export function CameraSettingsPanel({
     const [threshold, setThreshold] = useState<number | null>(null);
 
     // resident role cannot see the panel
-    if (!ADMIN_ROLES.includes(userRole)) return null;
+    if (!ADMIN_ROLES.has(userRole)) return null;
 
     if (loading) {
 
