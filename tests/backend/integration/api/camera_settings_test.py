@@ -19,7 +19,7 @@ MOCK_ZONE = {
 }
 
 
-# ── GET /cameras/{id}/settings ────────────────────────────────────────────────
+# GET /cameras/{id}/settings 
 
 @pytest.mark.asyncio
 async def test_get_camera_settings_ok(async_client, admin_headers):
@@ -50,7 +50,7 @@ async def test_get_camera_settings_not_found(async_client, admin_headers):
     assert r.status_code == 404
 
 
-# ── PATCH /cameras/{id}/settings ─────────────────────────────────────────────
+# PATCH /cameras/{id}/settings 
 
 @pytest.mark.asyncio
 async def test_update_camera_threshold_ok(async_client, admin_headers):
@@ -92,7 +92,7 @@ async def test_update_camera_threshold_missing_field(async_client, admin_headers
     assert r.status_code == 400
 
 
-# ── POST /cameras/{id}/zones ──────────────────────────────────────────────────
+# POST /cameras/{id}/zones
 
 @pytest.mark.asyncio
 async def test_create_zone_ok(async_client, admin_headers):
@@ -135,7 +135,7 @@ async def test_create_zone_camera_not_found(async_client, admin_headers):
     assert r.status_code == 404
 
 
-# ── DELETE /cameras/{id}/zones/{zone_id} ─────────────────────────────────────
+# DELETE /cameras/{id}/zones/{zone_id}
 
 @pytest.mark.asyncio
 async def test_delete_zone_ok(async_client, admin_headers):
