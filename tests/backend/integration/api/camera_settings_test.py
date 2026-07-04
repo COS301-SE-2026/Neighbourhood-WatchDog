@@ -4,6 +4,7 @@ from fastapi import HTTPException
 
 CAMERA_ID = "40000000-0000-0000-0000-000000000001"
 ZONE_ID   = "f68ad3aa-6946-4019-9817-e35d27e15950"
+TEST_ZONE_NAME = "Test Zone"
 
 MOCK_SETTINGS = {
     "camera_id": CAMERA_ID,
@@ -14,7 +15,7 @@ MOCK_SETTINGS = {
 MOCK_ZONE = {
     "id": ZONE_ID,
     "camera_id": CAMERA_ID,
-    "name": "Test Zone",
+    "name": TEST_ZONE_NAME,
     "polygon": [[0.1, 0.1], [0.5, 0.1], [0.5, 0.5], [0.1, 0.5]],
 }
 
@@ -102,12 +103,12 @@ async def test_create_zone_ok(async_client, admin_headers):
     ):
         r = await async_client.post(
             f"/cameras/{CAMERA_ID}/zones",
-            json={"name": "Test Zone", "polygon": [[0.1, 0.1], [0.5, 0.1], [0.5, 0.5], [0.1, 0.5]]},
+            json={"name": TEST_ZONE_NAME, "polygon": [[0.1, 0.1], [0.5, 0.1], [0.5, 0.5], [0.1, 0.5]]},
             headers=admin_headers,
         )
     assert r.status_code == 201
     body = r.json()
-    assert body["name"] == "Test Zone"
+    assert body["name"] == TEST_ZONE_NAME
     assert body["camera_id"] == CAMERA_ID
 
 
