@@ -34,3 +34,9 @@ class CameraEdit(BaseModel):
     location: NonEmptyString | None = None
     visibility: CameraVisibilityEnum | None = None
     enabled: bool | None = None
+
+
+class EditCameraRes(BaseModel):
+    status: int
+    message: NonEmptyString | None = None
+    data: CameraRes | None = None
