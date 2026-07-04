@@ -84,7 +84,7 @@ export function CameraSettingsPanel({
             <div>
                 <div className="flex items-center justify-between mb-2">
 
-                <label className="text-xs font-medium">Detection zones</label>
+                <span className="text-xs font-medium">Detection zones</span>
 
                 {!drawingZone && (
                     <Button size="sm" variant="outline" onClick={() => setDrawingZone(true)}>
