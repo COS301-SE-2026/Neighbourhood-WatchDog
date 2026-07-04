@@ -32,7 +32,7 @@ class CamerasRes(BaseModel):
     data: list[CameraRes] = []
 
 
-class CameraEdit(BaseModel):
+class CameraEditReq(BaseModel):
     name: NonEmptyString | None = None
     location: NonEmptyString | None = None
     visibility: CameraVisibilityEnum | None = None

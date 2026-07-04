@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
-from app.schemas.camera import RegisterCameraReq, CameraRes, CamerasRes, CameraEdit
+from app.schemas.camera import RegisterCameraReq, CameraRes, CamerasRes, CameraEditReq
 from app.models.camera import Camera
 from app.models.property import Property
 from app.models.property_user import PropertyUser
@@ -85,7 +85,7 @@ def deregister_camera_handler(camera_id: UUID, db: Optional[DbSession], claims: 
     
 def edit_camera_handler(
     camera_id: UUID, 
-    req: CameraEdit,
+    req: CameraEditReq,
     db: Session, 
     claims: dict
     ):

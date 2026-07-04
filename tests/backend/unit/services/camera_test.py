@@ -1,8 +1,8 @@
 import pytest
 from uuid import uuid4
 from unittest.mock import Mock, patch
-from app.services.camera_service import register_camera_handler, deregister_camera_handler
-from app.services.camera_service import RegisterCameraReq
+from app.services.camera_service import register_camera_handler, deregister_camera_handler, edit_camera_handler
+from app.services.camera_service import RegisterCameraReq, CameraEditReq
 from app.models.camera import CameraVisibilityEnum
 from fastapi import HTTPException
 from datetime import datetime
@@ -232,3 +232,6 @@ class TestDeregisterCamera:
         assert self.mock_db.execute.call_count == 2
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.rollback.call_count == 1
+
+
+    
