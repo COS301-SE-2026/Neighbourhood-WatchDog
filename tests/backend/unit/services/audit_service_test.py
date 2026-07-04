@@ -30,8 +30,6 @@ class TestCreateAuditLogItem:
             action=AuditAction.CREATE,
             target_entity_type="USER",
             target_entity_id=uuid4(),
-            ip_address="196.168.21.2",
-            timestamp=datetime.now(),
             old_values={
                 "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
                 "email": "john@example.com",
@@ -42,7 +40,7 @@ class TestCreateAuditLogItem:
                 "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
                 "created_at": datetime.now()
             },
-            new_value={
+            new_values={
                 "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
                 "email": "john@example.co.za", #changed the email address
                 "first_name": "John",
@@ -51,12 +49,13 @@ class TestCreateAuditLogItem:
                 "role": UserRole.RESIDENT,
                 "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
                 "created_at": datetime.now()
-            }
+            },
+            db=self.mock_db
         )
 
-        assert self.mock_mb.add.call_count == 1
-        assert self.mock_mb.refresh.call_count == 1
-        assert self.mock_mb.commit.call_count == 1
+        assert self.mock_db.add.call_count == 1
+        assert self.mock_db.refresh.call_count == 1
+        assert self.mock_db.commit.call_count == 1
         assert self.mock_db.rollback.call_count == 0
 
 

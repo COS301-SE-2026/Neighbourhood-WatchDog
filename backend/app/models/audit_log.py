@@ -20,7 +20,6 @@ class AuditLog(Base):
     action = Column(Enum(AuditAction), nullable=False)
     target_entity_type = Column(Text, nullable=True)
     target_entity_id = Column(UUID(as_uuid=True), nullable=True)
-    ip_address = Column(INET, nullable=False)
     timestamp = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
     old_values = Column(JSONB, nullable=True)
     new_values = Column(JSONB, nullable=False)
