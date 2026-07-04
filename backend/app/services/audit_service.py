@@ -1,13 +1,9 @@
 from fastapi import HTTPException
-from pydantic import Json
-from sqlalchemy import select
 from app.models.audit_log import AuditAction
-from app.models.user import User
 from app.models.audit_log import AuditLog
 from app.core.database import DbSession
 from sqlalchemy.exc import IntegrityError
 from uuid import uuid4, UUID
-from datetime import datetime
 
 async def create_audit_log_item(user_id: UUID, action: AuditAction, target_entity_type: str, target_entity_id: UUID, old_values: dict, new_values: dict, db: DbSession) -> AuditLog:
     """Receives an AuditLogScheme object and adds the audit log to the database."""
