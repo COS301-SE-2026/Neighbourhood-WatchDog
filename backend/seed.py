@@ -12,6 +12,7 @@ from app.models.property_user import PropertyUser
 from app.models.camera import Camera, CameraVisibilityEnum
 from app.models.zone import GeospatialZone, SensitivityLevel
 from app.models.retention_policy import RetentionPolicy
+from app.models.audit_log import AuditLog, AuditAction
 
 # Fixed UUIDs for testing
 NEIGHBOURHOOD_ID = UUID("10000000-0000-0000-0000-000000000001")
@@ -19,6 +20,7 @@ USER_ID = UUID("20000000-0000-0000-0000-000000000001")
 PROPERTY_ID = UUID("30000000-0000-0000-0000-000000000001")
 CAMERA_ID = UUID("40000000-0000-0000-0000-000000000001")
 ZONE_ID = UUID("50000000-0000-0000-0000-000000000001")
+AUDIT_LOG_ID = UUID("60000000-0000-0000-0000-000000000001")
 
 def seed_database():
     """Seed the database with test data"""
@@ -117,6 +119,36 @@ def seed_database():
         db.add(test_zone)
         db.flush()
         print("Created test zone")
+
+        audit_create = AuditLog(
+            id=AUDIT_LOG_ID,
+            user_id=USER_ID,
+            action=AuditAction.CREATE,
+            target_entity_type="CAMERA",
+            target_entity_id=CAMERA_ID,
+            old_values=None,
+            new_values={
+                "location": "Front Entrance",
+                "visibility": "PRIVATE",
+                "rtsp_url": "rtsp://camera.local:554/stream",
+            },
+        )
+        db.add(audit_create)
+
+        audit_update = AuditLog(
+            id=uuid4(),
+            user_id=USER_ID,
+            action=AuditAction.UPDATE,
+            target_entity_type="CAMERA",
+            target_entity_id=CAMERA_ID,
+            old_values={"visibility": "PRIVATE"},
+            new_values={"visibility": "PUBLIC"}
+        )
+        db.add(audit_update)
+
+        db.flush()
+
+        print("Created test audit logs")
 
         #commit all changes
         db.commit()
