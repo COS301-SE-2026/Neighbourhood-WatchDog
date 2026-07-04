@@ -27,7 +27,7 @@ class TestCreateAuditLogItem:
     async def test_happy_path(self):
         audit_log_item = await create_audit_log_item(
             user_id=uuid4(),
-            action=AuditAction.CREATE,
+            action=AuditAction.UPDATE,
             target_entity_type="USER",
             target_entity_id=uuid4(),
             old_values={
@@ -63,32 +63,32 @@ class TestCreateAuditLogItem:
         with pytest.raises(HTTPException) as exception:
             now = datetime.now()
             _ = await create_audit_log_item(
-            user_id=uuid4(),
-            action=AuditAction.CREATE,
-            target_entity_type="USER",
-            target_entity_id=uuid4(),
-            old_values={
-                "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                "email": "john@example.com",
-                "first_name": "John",
-                "last_name": "Doe",
-                "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-                "role": UserRole.RESIDENT,
-                "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                "created_at": now
-            },
-            new_values={
-                "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                "email": "john@example.com",
-                "first_name": "John",
-                "last_name": "Doe",
-                "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-                "role": UserRole.RESIDENT,
-                "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                "created_at": now
-            },
-            db=self.mock_db
-        )
+                user_id=uuid4(),
+                action=AuditAction.UPDATE,
+                target_entity_type="USER",
+                target_entity_id=uuid4(),
+                old_values={
+                    "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "email": "john@example.com",
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+                    "role": UserRole.RESIDENT,
+                    "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "created_at": now
+                },
+                new_values={
+                    "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "email": "john@example.com",
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+                    "role": UserRole.RESIDENT,
+                    "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "created_at": now
+                },
+                db=self.mock_db
+            )
 
         assert exception.value.status_code == 500
         assert self.mock_db.add.call_count == 0
@@ -99,37 +99,70 @@ class TestCreateAuditLogItem:
     async def test_empty_user_id(self):
         with pytest.raises(HTTPException) as exception:
             _ = await create_audit_log_item(
-            user_id=None,
-            action=AuditAction.CREATE,
-            target_entity_type="USER",
-            target_entity_id=uuid4(),
-            old_values={
-                "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                "email": "john@example.com",
-                "first_name": "John",
-                "last_name": "Doe",
-                "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-                "role": UserRole.RESIDENT,
-                "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                "created_at": datetime.now()
-            },
-            new_values={
-                "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                "email": "john@example.co.za", #changed the email address
-                "first_name": "John",
-                "last_name": "Doe",
-                "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-                "role": UserRole.RESIDENT,
-                "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                "created_at": datetime.now()
-            },
-            db=self.mock_db
-        )
+                user_id=None,
+                action=AuditAction.UPDATE,
+                target_entity_type="USER",
+                target_entity_id=uuid4(),
+                old_values={
+                    "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "email": "john@example.com",
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+                    "role": UserRole.RESIDENT,
+                    "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "created_at": datetime.now()
+                },
+                new_values={
+                    "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "email": "john@example.co.za", #changed the email address
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+                    "role": UserRole.RESIDENT,
+                    "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "created_at": datetime.now()
+                },
+                db=self.mock_db
+            )
 
         assert exception.value.status_code == 500
         assert self.mock_db.add.call_count == 0
         assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
 
+    @pytest.mark.asyncio
+    async def test_empty_action(self):
+        with pytest.raises(HTTPException) as exception:
+            _ = await create_audit_log_item(
+                user_id=uuid4(),
+                action=None,
+                target_entity_type="USER",
+                target_entity_id=uuid4(),
+                old_values={
+                    "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "email": "john@example.com",
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+                    "role": UserRole.RESIDENT,
+                    "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "created_at": datetime.now()
+                },
+                new_values={
+                    "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "email": "john@example.co.za", #changed the email address
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+                    "role": UserRole.RESIDENT,
+                    "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "created_at": datetime.now()
+                },
+                db=self.mock_db
+            )
 
-        #TODO: include a case where the same new and old values are passed
+        assert exception.value.status_code == 500
+        assert self.mock_db.add.call_count == 0
+        assert self.mock_db.refresh.call_count == 0
+        assert self.mock_db.commit.call_count == 0

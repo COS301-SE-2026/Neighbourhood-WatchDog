@@ -26,7 +26,7 @@ async def create_audit_log_item(user_id: UUID, action: AuditAction, target_entit
     if not target_entity_id:
         raise HTTPException(500, "Could not create audit log item. No target entity id provided.")
     
-    if not new_values:
+    if action == AuditAction.DELETE and not new_values:
         raise HTTPException(500, "Could not create audit log item. No new value provided.")
 
     if old_values == new_values:
@@ -34,6 +34,9 @@ async def create_audit_log_item(user_id: UUID, action: AuditAction, target_entit
 
     try:
         #TODO: check that id in table actually exists
+
+        #TODO: check the cases around the action and what is being done
+        #
 
         new_audit_log_item = AuditLog(
             id = uuid4(),
