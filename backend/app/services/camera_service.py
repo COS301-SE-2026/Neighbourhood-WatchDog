@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, delete
-from app.schemas.camera import RegisterCameraReq, CameraRes, CamerasRes
+from app.schemas.camera import RegisterCameraReq, CameraRes, CamerasRes, CameraEdit
 from app.models.camera import Camera
 from app.models.property import Property
 from app.models.property_user import PropertyUser
@@ -80,6 +80,55 @@ def deregister_camera_handler(camera_id: UUID, db: Optional[DbSession], claims: 
     except HTTPException as he:
         db.rollback()
         raise he
+    
+def edit_camera_handler(
+    camera_id: UUID, 
+    req: CameraEdit,
+    db: DbSession, 
+    claims: dict
+    ):
+
+    if not db:
+        raise HTTPException(status_code=500, detail=NO_DB_SESSION)
+    
+    if not claims:
+        raise HTTPException(status_code=500, detail=NOT_AUTHENTICATED)
+    
+    if not type(req).model_fields:
+        raise HTTPException(status_code=400, detail="Payload is empty")
+    
+    try:
+    
+        stmt = select(Camera).where(Camera.id == camera_id)
+        camera_obj = db.execute(stmt).scalar_one_or_none()
+
+        if not camera_obj:
+            raise HTTPException(status_code=404, detail="Camera not found")
+        
+        update_data = req.model_dump(exclude_unset=True)
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No fields provided to update")
+        
+        prop_user = db.execute(
+            select(PropertyUser).where(PropertyUser.property_id == camera_obj.property_id)
+            ).scalar_one_or_none()
+        
+        if not prop_user or prop_user.user.cognito_sub != claims.get("sub"):
+            raise HTTPException(status_code=403, detail="Forbidden")
+        
+        for field, value in update_data.items():
+            setattr(camera_obj, field, value)
+
+        db.commit()
+        db.refresh(camera_obj)
+
+        return camera_obj
+    
+    except HTTPException as he:
+        db.rollback()
+        raise he
+
+
 
 async def list_cameras_handler(property_id: str, db: DbSession, claims: dict) -> CamerasRes:
     if not db:
