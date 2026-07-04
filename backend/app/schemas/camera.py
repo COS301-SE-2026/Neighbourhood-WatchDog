@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.schemas.property import NonEmptyString
 from app.models.camera import CameraVisibilityEnum
 from uuid import UUID
@@ -27,3 +27,10 @@ class RegisterCameraRes(BaseModel):
 class CamerasRes(BaseModel):
     status: int
     data: list[CameraRes] = []
+
+
+class CameraEdit(BaseModel):
+    camera_name: NonEmptyString | None = None
+    location: NonEmptyString | None = None
+    visibility: CameraVisibilityEnum | None = None
+    enabled: bool | None = None
