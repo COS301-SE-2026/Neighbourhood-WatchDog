@@ -23,38 +23,38 @@ async def create_audit_log_item(
 ) -> AuditLog:
     """Receives an AuditLogScheme object and adds the audit log to the database."""
     if not db:
-        raise HTTPException(500, "Could not create audit log item. No database session.")
+        raise HTTPException(400, "Could not create audit log item. No database session.")
     
     if not user_id:
-        raise HTTPException(500, "Could not create audit log item. No user id provided.")
+        raise HTTPException(400, "Could not create audit log item. No user id provided.")
 
     if not target_entity_type:
-        raise HTTPException(500, "Could not create audit log item. No target entity type provided.")
+        raise HTTPException(400, "Could not create audit log item. No target entity type provided.")
     
     if not target_entity_id:
-        raise HTTPException(500, "Could not create audit log item. No target entity id provided.")
+        raise HTTPException(400, "Could not create audit log item. No target entity id provided.")
     
     if not action:
-        raise HTTPException(500, "Could not create audit log item. No action provided.")
+        raise HTTPException(400, "Could not create audit log item. No action provided.")
 
     if action == AuditAction.DELETE:
         new_values = None
 
         if not old_values: # old must exist
-            raise HTTPException(500, "Could not create audit log item. No old value provided.")
+            raise HTTPException(400, "Could not create audit log item. No old value provided.")
    
     elif action == AuditAction.UPDATE:
         if not old_values or not new_values:
-            raise HTTPException(500, "Could not create audit log item. Either old or new values were not provided.")
+            raise HTTPException(400, "Could not create audit log item. Either old or new values were not provided.")
    
     elif action == AuditAction.CREATE:
         old_values = None
 
         if not new_values:
-            raise HTTPException(500, "Could not create audit log item. New values were not provided.")
+            raise HTTPException(400, "Could not create audit log item. New values were not provided.")
 
     if old_values == new_values:
-        raise HTTPException(500, "Could not create audit log item. Old values and new values are the same.")
+        raise HTTPException(400, "Could not create audit log item. Old values and new values are the same.")
 
     try:
         #TODO: check that id in table actually exists
@@ -79,21 +79,22 @@ async def create_audit_log_item(
         
     except IntegrityError:
         db.rollback()
-        raise HTTPException(500, "Could not create audit log item. Failed to add audit log item.")
+        raise HTTPException(400, "Could not create audit log item. Failed to add audit log item.")
 
 async def get_audit_logs_handler(
+    page: int,
+    size: int,
     db: DbSession,
-    claims: dict = Depends(get_current_user),
-    page: int = Query(PAGE, ge=1, description="Page number"),
-    size: int = Query(SIZE, ge=1, le=100, description="Items per page")
+    claims: dict
 ) -> PaginatedResponse[GetAuditLogsRes]:
     
     require_role(claims, ['SYSTEM_ADMIN'])
+
     offset = (page - 1) * size
 
-    total_count = db.scalar(select(func.count()).select_from(AuditLog))
+    total_count = await db.scalar(select(func.count()).select_from(AuditLog))
     stmt = select(AuditLog).offset(offset).limit(size).order_by(AuditLog.id)
-    audit_logs = db.scalars(stmt).all()
+    audit_logs = await db.scalars(stmt).all()
     
     return PaginatedResponse(
         total=total_count,

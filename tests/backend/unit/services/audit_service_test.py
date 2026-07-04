@@ -90,7 +90,7 @@ class TestCreateAuditLogItem:
                 db=self.mock_db
             )
 
-        assert exception.value.status_code == 500
+        assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
         assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
@@ -126,7 +126,7 @@ class TestCreateAuditLogItem:
                 db=self.mock_db
             )
 
-        assert exception.value.status_code == 500
+        assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
         assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
@@ -162,7 +162,7 @@ class TestCreateAuditLogItem:
                 db=self.mock_db
             )
 
-        assert exception.value.status_code == 500
+        assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
         assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
@@ -198,7 +198,7 @@ class TestCreateAuditLogItem:
                 db=self.mock_db
             )
 
-        assert exception.value.status_code == 500
+        assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
         assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
@@ -234,7 +234,7 @@ class TestCreateAuditLogItem:
                 db=self.mock_db
             )
 
-        assert exception.value.status_code == 500
+        assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
         assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
@@ -261,7 +261,7 @@ class TestCreateAuditLogItem:
                 db=self.mock_db
             )
 
-        assert exception.value.status_code == 500
+        assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
         assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
@@ -288,7 +288,7 @@ class TestCreateAuditLogItem:
                 db=self.mock_db
             )
 
-        assert exception.value.status_code == 500
+        assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
         assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
@@ -315,7 +315,7 @@ class TestCreateAuditLogItem:
                 db=self.mock_db
             )
 
-        assert exception.value.status_code == 500
+        assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
         assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
@@ -342,7 +342,7 @@ class TestCreateAuditLogItem:
                 db=self.mock_db
             )
 
-        assert exception.value.status_code == 500
+        assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
         assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0

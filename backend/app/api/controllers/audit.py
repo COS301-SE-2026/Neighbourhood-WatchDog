@@ -9,12 +9,12 @@ SIZE = 30
 
 router = APIRouter(prefix="/audit", tags=["properties"])
 
-@router.post("get-audit-logs" ,response_model=PaginatedResponse[GetAuditLogsRes])
+@router.get("/get-audit-logs", response_model=PaginatedResponse[GetAuditLogsRes])
 async def get_audit_logs(
     db: DbSession,
     claims: dict = Depends(get_current_user),
     page: int = Query(PAGE, ge=1, description="Page number"),
-    size: int = Query(30, ge=1, le=100, description="Items per page"),
+    size: int = Query(SIZE, ge=1, le=100, description="Items per page"),
 ):
     """Retrieves the all audit logs and returns them in a list."""
     
