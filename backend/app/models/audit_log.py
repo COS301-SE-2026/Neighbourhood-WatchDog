@@ -22,7 +22,7 @@ class AuditLog(Base):
     target_entity_id = Column(UUID(as_uuid=True), nullable=True)
     timestamp = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
     old_values = Column(JSONB, nullable=True)
-    new_values = Column(JSONB, nullable=False)
+    new_values = Column(JSONB, nullable=True)
 
     user = relationship("User", back_populates="audit_logs")
 
