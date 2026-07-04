@@ -32,7 +32,7 @@ async def test_get_camera_settings_ok(async_client, admin_headers):
     assert r.status_code == 200
     body = r.json()
     assert body["camera_id"] == CAMERA_ID
-    assert body["confidence_threshold"] == 0.5
+    assert body["confidence_threshold"] == pytest.approx(0.5)
 
 
 @pytest.mark.asyncio
@@ -66,7 +66,7 @@ async def test_update_camera_threshold_ok(async_client, admin_headers):
             headers=admin_headers,
         )
     assert r.status_code == 200
-    assert r.json()["confidence_threshold"] == 0.7
+    assert r.json()["confidence_threshold"] == pytest.approx(0.7)
 
 
 @pytest.mark.asyncio
