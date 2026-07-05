@@ -19,8 +19,8 @@ async def get_audit_logs(
     """Retrieves the all audit logs and returns them in a list."""
     
     return await get_audit_logs_handler(
-        db,
-        claims,
-        page,
-        size
+        db=db,
+        claims=claims,
+        page=page,
+        size=size
     )

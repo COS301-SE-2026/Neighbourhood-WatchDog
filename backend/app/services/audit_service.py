@@ -92,9 +92,9 @@ async def get_audit_logs_handler(
 
     offset = (page - 1) * size
 
-    total_count = await db.scalar(select(func.count()).select_from(AuditLog))
+    total_count = db.scalar(select(func.count()).select_from(AuditLog))
     stmt = select(AuditLog).offset(offset).limit(size).order_by(AuditLog.id)
-    audit_logs = await db.scalars(stmt).all()
+    audit_logs = db.scalars(stmt).all()
     
     return PaginatedResponse(
         total=total_count,
