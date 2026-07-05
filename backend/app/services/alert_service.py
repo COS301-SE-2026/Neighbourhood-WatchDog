@@ -101,12 +101,15 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
 
         alert_res = _build_alert_res(alert)
 
-        from app.api.controllers.alert import broadcast
+        try:
+            from app.api.controllers.alert import broadcast
 
-        await broadcast(
-            neighbourhood_id=str(claims.get("custom:neighbourhood_id")),
-            message={"event": "alert.acknowledged", "payload": alert_res.model_dump()},
-        )
+            await broadcast(
+                neighbourhood_id=str(claims.get("custom:neighbourhood_id")),
+                message={"event": "alert.acknowledged", "payload": alert_res.model_dump(mode="json")},
+            )
+        except Exception:
+            pass
 
         return alert_res
     except HTTPException as he:
@@ -199,7 +202,7 @@ def get_response_metrics_handler(
         items.append(AlertMetricItem(
             alert_id=alert.id,
             camera_id=alert.camera_id,
-            status=alert.status,
+            status=display_status,
             response_seconds=response_seconds,
             acknowledged_by=alert.resolved_by,
             created_at=alert.created_at

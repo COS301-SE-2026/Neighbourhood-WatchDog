@@ -414,7 +414,7 @@ export default function AlertsPage({
     <div className="max-w-4xl mx-auto mb-6">
         <details className="group">
             <summary className="cursor-pointer text-sm font-semibold text-sky list-none flex items-center gap-2 mb-3">
-                <span className="group-open:rotate-90 transition-transform inline-block">Show</span>
+                <span className="group-open:rotate-90 transition-transform inline-block">&#x25B6;</span>
                 Response Time Metrics
             </summary>
             <AlertMetrics
