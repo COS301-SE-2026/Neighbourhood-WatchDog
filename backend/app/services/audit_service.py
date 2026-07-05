@@ -6,8 +6,9 @@ from app.models.audit_log import AuditLog
 from app.core.database import DbSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, func
-from app.schemas.audit_log import GetAuditLogsRes, PaginatedResponse
+from app.schemas.audit_log import GetAuditLogsRes, PaginatedResponse, AuditLogScheme
 from uuid import uuid4, UUID
+from fastapi.exceptions import ResponseValidationError
 
 PAGE = 1
 SIZE = 30
@@ -86,20 +87,35 @@ async def get_audit_logs_handler(
     size: int,
     db: DbSession,
     claims: dict
-) -> PaginatedResponse[GetAuditLogsRes]:
+) -> GetAuditLogsRes:
     
     require_role(claims, ['SYSTEM_ADMIN'])
 
     offset = (page - 1) * size
 
     total_count = db.scalar(select(func.count()).select_from(AuditLog))
+
+    if offset > total_count:
+        raise HTTPException(422, "Request is beyond the total number of audit logs.")
+
     stmt = select(AuditLog).offset(offset).limit(size).order_by(AuditLog.id)
     audit_logs = db.scalars(stmt).all()
+
+    results = [AuditLogScheme.model_validate(a) for a in audit_logs]
     
-    return PaginatedResponse(
-        total=total_count,
-        page=page,
-        size=size,
-        results=audit_logs
+    for al in audit_logs:
+        print(al.id)
+
+    paginated = PaginatedResponse[AuditLogScheme](
+        total = total_count,
+        page = page,
+        size = size,
+        results = results
     )
-    
+    output = GetAuditLogsRes(
+        status=200,
+        message="OK",
+        data=paginated
+    )
+
+    return output

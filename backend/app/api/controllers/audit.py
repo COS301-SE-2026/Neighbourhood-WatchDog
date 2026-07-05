@@ -9,7 +9,7 @@ SIZE = 30
 
 router = APIRouter(prefix="/audit", tags=["properties"])
 
-@router.get("/get-audit-logs", response_model=PaginatedResponse[GetAuditLogsRes])
+@router.get("/get-audit-logs")
 async def get_audit_logs(
     db: DbSession,
     claims: dict = Depends(get_current_user),
