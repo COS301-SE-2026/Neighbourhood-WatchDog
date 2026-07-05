@@ -46,3 +46,22 @@ class ListAlertsRes(BaseModel):
 	status: int
 	message: str | None = None
 	data: list[AlertRes] | None = None
+
+class AlertMetricItem(BaseModel):
+	alert_id: UUID
+	camera_id: UUID
+	status: str
+	response_seconds: float | None = None
+	acknowledged_by: UUID | None = None
+	created_at: datetime
+
+	model_config = {"from_attributes": True}
+      
+class AlertMetricsRes(BaseModel):
+	total_alerts: int
+	acknowledged_count: int
+	pending_count: int
+	average_response_seconds: float | None = None
+	items: list[AlertMetricItem]
+      
+
