@@ -76,6 +76,22 @@ async def list_alerts(
     results = await list_alerts_handler(str(neighbourhood_id), db, claims, status_filter)
     return ListAlertsRes(status=200, data=results)
 
+Claims = Annotated[dict, Depends(get_current_user)]
+
+@router.get("/metrics", response_model=AlertMetricsRes)
+async def get_alert_metrics(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: Claims,
+    camera_id: UUID | None = None,
+    officer_id: UUID | None = None
+
+):
+    """This will rep the time metrics for the alerts in the neighbourhood; can be filtered by camera and officer"""
+
+    return get_response_metrics_handler(neighbourhood_id, db, claims, camera_id, officer_id)
+
+
 
 @router.patch(
     "/{alert_id}/acknowledge",
@@ -118,18 +134,3 @@ async def alert_websocket(
         pass
     finally:
         remove_connection(str(neighbourhood_id), websocket)
-
-Claims = Annotated[dict, Depends(get_current_user)]
-
-@router.get("/metrics", response_model=AlertMetricsRes)
-async def get_alert_metrics(
-    neighbourhood_id: UUID,
-    db: DbSession,
-    claims: Claims,
-    camera_id: UUID | None = None,
-    officer_id: UUID | None = None
-
-):
-    """This will reps the time metrics for the alerts in the neighbourhood; can be filtered by camera and officer"""
-
-    return get_response_metrics_handler(neighbourhood_id, db, claims, camera_id, officer_id)
