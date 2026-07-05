@@ -1,7 +1,8 @@
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.alert import Alert
 from app.models.detection_event import DetectionEvent
-from app.schemas.alert import AlertCreate
+from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes
 from fastapi import HTTPException
 from uuid import UUID
 
@@ -86,7 +87,15 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
         if alert.status != "OPEN":
             raise HTTPException(409, "Alert is already acknowledged or resolved")
 
+        user_id_str = claims.get("sub") or claims.get("custom:sub")
         alert.status = "ACKNOWLEDGED"
+        alert.resolved_at = datetime.now(timezone.utc)
+        if user_id_str:
+            try:
+                alert.resolved_by = UUID(user_id_str)
+            except ValueError:
+                pass
+
         db.commit()
         db.refresh(alert)
 
@@ -141,3 +150,74 @@ async def list_alerts_handler(
     except IntegrityError:
         db.rollback()
         raise HTTPException(500, "Failed to list alerts")
+    
+
+def get_response_metrics_handler(
+        neighbourhood_id: UUID,
+        db: DbSession,
+        claims: dict,
+        camera_id: UUID | None = None,
+        officer_id: UUID | None = None
+) -> AlertMetricsRes:
+    caller_neighbourhood = claims.get("custom:neighbourhood_id")
+    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
+        raise HTTPException(403, "Not authorised for this neighbourhood")
+    
+
+    stmt = (
+        select(Alert).join(
+            Camera, 
+            Alert.camera_id == Camera.id
+        ).where(
+            Camera.neighbourhood_id == neighbourhood_id
+        )
+    )
+
+    if camera_id:
+        stmt = stmt.where(Alert.camera_id == camera_id)
+
+    if officer_id:
+        stmt = stmt.where(Alert.resolved_by == officer_id)
+
+    alerts = db.execute(stmt).scalars().all()
+
+
+    items: list[AlertMetricItem] = []
+    response_times: list[float] = []
+
+    for alert in alerts:
+        response_seconds = None
+        if alert.resolved_at and alert.created_at:
+            delta = alert.resolved_at - alert.created_at
+
+            response_seconds = max(delta.total_seconds(), 0.0)
+            response_times.append(response_seconds)
+
+        display_status = "PENDING" if alert.status == "OPEN" else alert.status
+
+
+        items.append(AlertMetricItem(
+            alert_id=alert.id,
+            camera_id=alert.camera_id,
+            status=alert.status,
+            response_seconds=response_seconds,
+            acknowledged_by=alert.resolved_by,
+            created_at=alert.created_at
+
+        ))
+    
+    avg = sum(response_times) / len(response_times) if response_times else None
+    
+    pending_count = sum(1 for a in alerts if a.status == "OPEN")
+
+    acknowledged_count = sum(1 for a in alerts if a.status in ("ACKNOWLEDGED", "RESOLVED"))
+
+
+    return AlertMetricsRes (
+        total_alerts=len(alerts),
+        acknowledged_count=acknowledged_count,
+        pending_count=pending_count,
+        average_response_seconds=avg,
+        items=items
+        
+    )
