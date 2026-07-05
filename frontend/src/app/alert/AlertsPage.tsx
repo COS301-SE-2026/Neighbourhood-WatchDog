@@ -11,6 +11,7 @@ import {
 } from "@/components/shared/AlertCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { AlertMetrics } from "@/components/shared/AlertMetrics";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -408,6 +409,20 @@ export default function AlertsPage({
   }
 
   return (
+    <>
+    {/*response time metrics - visible to admins */}
+    <div className="max-w-4xl mx-auto mb-6">
+        <details className="group">
+            <summary className="cursor-pointer text-sm font-semibold text-sky list-none flex items-center gap-2 mb-3">
+                <span className="group-open:rotate-90 transition-transform inline-block">Show</span>
+                Response Time Metrics
+            </summary>
+            <AlertMetrics
+                neighbourhoodId={neighbourhoodId}
+            />
+        </details>
+    </div>
+
     <TooltipProvider>
       <div className="w-full flex flex-col items-center px-8 py-10 bg-navy min-h-full font-sans">
         <div className="w-full max-w-2xl">
@@ -677,5 +692,6 @@ export default function AlertsPage({
         </div>
       </div>
     </TooltipProvider>
+    </>
   );
 }
