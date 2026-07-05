@@ -1,15 +1,16 @@
 import asyncio
 import json
 from uuid import UUID
-
+from typing import Annotated
 from fastapi import APIRouter, Depends, Query, WebSocket
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession, get_db
 from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, ListAlertsRes
-from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler
+from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler, get_response_metrics_handler
 from app.services import alert_service
+from app.schemas.alert import AlertMetricsRes
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -117,3 +118,18 @@ async def alert_websocket(
         pass
     finally:
         remove_connection(str(neighbourhood_id), websocket)
+
+Claims = Annotated[dict, Depends(get_current_user)]
+
+@router.get("/metrics", response_model=AlertMetricsRes)
+async def get_alert_metrics(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: Claims,
+    camera_id: UUID | None = None,
+    officer_id: UUID | None = None
+
+):
+    """This will reps the time metrics for the alerts in the neighbourhood; can be filtered by camera and officer"""
+
+    return get_response_metrics_handler(neighbourhood_id, db, claims, camera_id, officer_id)
