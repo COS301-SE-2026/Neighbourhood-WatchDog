@@ -1,5 +1,4 @@
 from fastapi import HTTPException, Depends, Query
-from app.auth.rbac import require_role
 from app.auth.dependencies import get_current_user
 from app.models.audit_log import AuditAction
 from app.models.audit_log import AuditLog
@@ -86,10 +85,8 @@ async def get_audit_logs_handler(
     page: int,
     size: int,
     db: DbSession,
-    claims: dict
 ) -> GetAuditLogsRes:
     
-    require_role(claims, ['SYSTEM_ADMIN'])
 
     offset = (page - 1) * size
 
