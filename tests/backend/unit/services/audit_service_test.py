@@ -2,7 +2,8 @@ import pytest
 from fastapi import HTTPException
 from unittest.mock import Mock
 from app.services.audit_service import create_audit_log_item, get_audit_logs_handler
-from app.models.audit_log import AuditAction
+from app.models.audit_log import AuditAction, AuditLog
+from app.schemas.audit_log import GetAuditLogsRes
 from app.models.user import UserRole
 from uuid import uuid4
 from datetime import datetime
@@ -250,7 +251,7 @@ class TestCreateAuditLogItem:
                 old_values=None,
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.co.za", #changed the email address
+                    "email": "john@example.co.za",
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -331,7 +332,7 @@ class TestCreateAuditLogItem:
                 old_values=None,
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.co.za", #changed the email address
+                    "email": "john@example.co.za", 
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -348,22 +349,84 @@ class TestCreateAuditLogItem:
         assert self.mock_db.commit.call_count == 0
 
 class TestGetAuditLogsHandler:
-    #TODO: Setup
-    #TODO: Happy case
-    #TODO: offset > total count case
     def setup_method(self):
         """Runs before the test method"""
 
         self.mock_db = Mock()
-        self.mock_db.add = Mock()
-        self.mock_db.commit = Mock()
-        self.mock_db.refresh = Mock()
-        self.mock_db.rollback = Mock()
 
         self.mock_log_item = Mock()
         self.mock_log_item.user_id = uuid4()
         self.mock_log_item.user_id = uuid4()
 
         self.mock_db.scalar.return_value = 5
+        self.mock_db.scalars.return_value.all.return_value = {
+            AuditLog(
+                id=uuid4(),
+                user_id=uuid4(),
+                action=AuditAction.DELETE,
+                target_entity_type="USER",
+                target_entity_id=uuid4(),
+                timestamp=datetime.now(),
+                old_values=None,
+                new_values={
+                    "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "email": "john@example.co.za", 
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+                    "role": UserRole.RESIDENT,
+                    "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "created_at": datetime.now()
+                },
+            ),
+            AuditLog(
+                id=uuid4(),
+                user_id=uuid4(),
+                action=AuditAction.DELETE,
+                target_entity_type="USER",
+                target_entity_id=uuid4(),
+                timestamp=datetime.now(),
+                old_values={
+                    "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "email": "john@example.com",
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+                    "role": UserRole.RESIDENT,
+                    "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "created_at": datetime.now()
+                },
+                new_values={
+                    "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "email": "john@example.co.za", #changed the email address
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+                    "role": UserRole.RESIDENT,
+                    "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "created_at": datetime.now()
+                },
+            ),
+        }
+        
         self.total = 10
         self.page = 1
+        self.size = 20
+
+    #TODO: Happy case
+    @pytest.mark.asyncio
+    async def test_happy_case(self):
+        
+        get_audit_log_res = await get_audit_logs_handler(
+            page=self.page,
+            size=self.size,
+            db=self.mock_db
+        )
+
+        assert self.mock_db.scalars.return_value.all.call_count == 1
+        assert self.mock_db.scalar.call_count == 1
+        assert get_audit_log_res.status == 200
+
+    
+
+    #TODO: offset > total count case
