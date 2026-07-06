@@ -444,5 +444,19 @@ class TestGetAuditLogsHandler:
         assert self.mock_db.scalars.return_value.all.call_count == 0
         assert self.mock_db.scalar.call_count == 1
 
+    @pytest.mark.asyncio
+    async def test_no_db(self):
+        #this line will make the total return 1
+        self.mock_db.scalar.return_value = 1
+        self.page = 21
 
-    #TODO: offset > total count case
+        with pytest.raises(HTTPException) as exception:
+            get_audit_log_res = await get_audit_logs_handler(
+                page=self.page,
+                size=self.size,
+                db=None
+            )
+
+        assert exception.value.status_code == 500
+        assert self.mock_db.scalars.return_value.all.call_count == 0
+        assert self.mock_db.scalar.call_count == 0

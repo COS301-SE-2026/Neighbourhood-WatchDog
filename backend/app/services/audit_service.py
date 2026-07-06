@@ -87,6 +87,8 @@ async def get_audit_logs_handler(
     db: DbSession,
 ) -> GetAuditLogsRes:
     
+    if not db:
+        raise HTTPException(500, "No database.")
 
     offset = (page - 1) * size
 
