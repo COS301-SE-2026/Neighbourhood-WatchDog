@@ -94,7 +94,6 @@ async def get_audit_logs_handler(
 
     if offset > total_count:
         raise HTTPException(422, "Request is beyond the total number of audit logs.")
-    #TODO: write a terst that tests this case
 
     stmt = select(AuditLog).offset(offset).limit(size).order_by(AuditLog.id)
     audit_logs = db.scalars(stmt).all()

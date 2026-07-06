@@ -26,7 +26,7 @@ class TestCreateAuditLogItem:
 
     @pytest.mark.asyncio
     async def test_happy_path(self):
-        audit_log_item = await create_audit_log_item(
+        _ = await create_audit_log_item(
             user_id=uuid4(),
             action=AuditAction.UPDATE,
             target_entity_type="USER",
@@ -427,6 +427,22 @@ class TestGetAuditLogsHandler:
         assert self.mock_db.scalar.call_count == 1
         assert get_audit_log_res.status == 200
 
-    
+    @pytest.mark.asyncio
+    async def test_offset_greater_than_total(self):
+        #this line will make the total return 1
+        self.mock_db.scalar.return_value = 1
+        self.page = 21
+
+        with pytest.raises(HTTPException) as exception:
+            get_audit_log_res = await get_audit_logs_handler(
+                page=self.page,
+                size=self.size,
+                db=self.mock_db
+            )
+
+        assert exception.value.status_code == 422
+        assert self.mock_db.scalars.return_value.all.call_count == 0
+        assert self.mock_db.scalar.call_count == 1
+
 
     #TODO: offset > total count case
