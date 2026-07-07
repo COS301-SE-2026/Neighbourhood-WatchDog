@@ -34,5 +34,6 @@ export const getAuditLogResSchema = z.object({
 })
 
 export type GetAuditLogRes = z.infer<typeof getAuditLogResSchema>
+export type PaginatedResponse<T> = z.infer<ReturnType<typeof paginatedResponseSchema<z.ZodType<T>>>>
 export type AuditAction = z.infer<typeof AuditActionEnum>
 export type AuditLog = z.infer<typeof auditLogSchema>

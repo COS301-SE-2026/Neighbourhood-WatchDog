@@ -86,7 +86,7 @@ async def get_audit_logs_handler(
     size: int,
     db: DbSession,
 ) -> GetAuditLogsRes:
-    
+    #TODO: Maybe return the username as well
     if not db:
         raise HTTPException(500, "No database.")
 
