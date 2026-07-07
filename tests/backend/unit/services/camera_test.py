@@ -1,6 +1,5 @@
 import pytest
 from uuid import uuid4
-import unittest
 from unittest.mock import Mock, patch
 from app.services.camera_service import register_camera_handler, deregister_camera_handler, edit_camera_handler
 from app.services.camera_service import RegisterCameraReq, CameraEditReq
