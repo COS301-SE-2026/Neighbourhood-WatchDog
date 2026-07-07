@@ -1,8 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { apiCall } from "@/lib/api/client";
-import { string } from "zod";
-import { tr } from "zod/locales";
 
 
 export interface TrendBucket {

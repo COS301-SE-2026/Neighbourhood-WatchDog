@@ -75,7 +75,7 @@ export function IncidentTrends({ neighbourhoodId }: IncidentTrendProps) {
                         className="bg-[#1D2A5E] border border-[#2D3A6E] text-white text-xs rounded px-2 py-1">
 
                     <option value="">All types</option>
-                    {DETECTION_TYPES.map(t => <option key={t}>{t.replace("_", " ")}</option>)}
+                    {DETECTION_TYPES.map(t => <option key={t}>{t.replaceAll("_", " ")}</option>)}
                 </select>
 
                 <button onClick={() => void refetch()} disabled={loading}
