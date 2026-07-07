@@ -268,6 +268,7 @@ class TestEditCamera:
         ]
 
         self.mock_db.add = Mock()
+        self.mock_db.execute = Mock()
         self.mock_db.flush = Mock()
         self.mock_db.refresh = Mock()
         self.mock_db.commit = Mock()
@@ -306,12 +307,24 @@ class TestEditCamera:
 
         self.mock_db.commit.assert_called_once()
         self.mock_db.refresh.assert_called_once()
+        self.mock_db.execute.call_count == 2
         self.mock_db.flush.assert_not_called()
         self.mock_db.rollback.assert_not_called()
         self.mock_db.add.assert_not_called()
 
     def test_empty_payload_400(self):
         """Empty payload on camera"""
-        pass
+        
+        empty_req = CameraEditReq()
+        with pytest.raises(HTTPException) as exe:
+            camera = edit_camera_handler(
+                camera_id=self.mock_camera.id,
+                req=empty_req,
+                db=self.mock_db,
+                claims=self.claims
+            )
+
+        assert exe.value.status_code == 400
+        self.mock_db.rollback.assert_called_once()
 
         
