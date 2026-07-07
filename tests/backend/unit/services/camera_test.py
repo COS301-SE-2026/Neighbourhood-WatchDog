@@ -400,4 +400,29 @@ class TestEditCamera:
         assert exception.value.status_code == 500
         self.mock_db.rollback.assert_called_once()
 
+    def test_re_enable_camera(self):
+        """re enabling a camera that has been disabled"""
+
+        self.mock_camera.enabled = False
+        enable_req = CameraEditReq(
+            enabled=True
+        )
+
+        camera = edit_camera_handler(
+            camera_id=self.mock_camera.id,
+            req=enable_req,
+            db=self.mock_db,
+            claims=self.claims
+        )
+
+        assert camera.enabled == True
+        
+        self.mock_db.commit.assert_called_once()
+        self.mock_db.refresh.assert_called_once()
+        self.mock_db.execute.call_count == 2
+        self.mock_db.flush.assert_not_called()
+        self.mock_db.rollback.assert_not_called()
+        self.mock_db.add.assert_not_called()
+
+
 
