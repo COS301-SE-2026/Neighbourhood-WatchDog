@@ -77,6 +77,8 @@ export function useAlertTrends (
             void fetchTrends();
 
         }, 0);
+
+        return () => clearTimeout(id);
     }, [fetchTrends]);
 
     return { 
