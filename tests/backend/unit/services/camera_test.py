@@ -267,10 +267,38 @@ class TestEditCamera:
         self.mock_db.rollback = Mock()
 
         self.mock_req = CameraEditReq(
-            name="Primary Camera",
-            location="Front Door",
-            visibility=CameraVisibilityEnum.PRIVATE,
-            enabled=True
+            name="Secondary Camera",
+            location="Back Door",
+            visibility=CameraVisibilityEnum.PUBLIC,
+            enabled=False
         )
 
         self.claims = {"sub" : "user-sub-123"}
+
+    def reset_side_effects(self, camera=None, prop_user=None):
+        """Helper to reset side_effect between tests"""
+        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+            camera, prop_user
+        ]
+
+    def test_happy_path(self):
+        """"Edit camera """
+        camera = edit_camera_handler(
+            camera_id=self.mock_camera.id,
+            req=self.mock_req,
+            db=self.mock_db,
+            claims=self.claims
+        )
+
+
+        assert camera is not None
+        assert camera.name == "Secondary Camera"
+        assert camera.location == "Back Door"
+        assert camera.enabled == False
+        assert camera.visibility == CameraVisibilityEnum.PUBLIC
+
+        self.mock_db.commit.assert_called_once()
+        self.mock_db.refresh.assert_called_once()
+        self.mock_db.flush.assert_not_called()
+        self.mock_db.rollback.assert_not_called()
+        self.mock_db.add.assert_not_called()
