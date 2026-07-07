@@ -384,4 +384,20 @@ class TestEditCamera:
         self.mock_db.commit.assert_not_called()
         self.mock_db.rollback.assert_called_once()
 
+    def test_unexpected_error_raises_500(self):
+        """unexpected error, could be db"""
+
+        self.mock_db.commit.side_effect = Exception("DB connection lost")
+
+        with pytest.raises(HTTPException) as exception:
+            camera = edit_camera_handler(
+                camera_id=self.mock_camera.id,
+                req=self.mock_req,
+                db=self.mock_db,
+                claims=self.claims
+            )
+
+        assert exception.value.status_code == 500
+        self.mock_db.rollback.assert_called_once()
+
 
