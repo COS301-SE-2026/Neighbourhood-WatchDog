@@ -416,13 +416,23 @@ class TestEditCamera:
         )
 
         assert camera.enabled == True
-        
+
         self.mock_db.commit.assert_called_once()
         self.mock_db.refresh.assert_called_once()
         self.mock_db.execute.call_count == 2
         self.mock_db.flush.assert_not_called()
         self.mock_db.rollback.assert_not_called()
         self.mock_db.add.assert_not_called()
+
+    def test_refresh_called_after_update(self):
+        edit_camera_handler(
+            camera_id=self.mock_camera.id,
+            req=self.mock_req,
+            db=self.mock_db,
+            claims=self.claims
+        )
+
+        self.mock_db.refresh.assert_called_once_with(self.mock_camera)
 
 
 
