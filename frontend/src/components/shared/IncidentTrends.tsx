@@ -1,10 +1,8 @@
 "use client";
-import React, { useState } from "react";
-import { Card } from "../ui/card";
+import { useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { useAlertTrends } from "@/hooks/use-alert-trends";
 import { IncidentTrendChart } from "./IncidentTrendChart"; //needs to be completed by OEM
-import { setgroups } from "process";
 
 
 const DETECTION_TYPES = [

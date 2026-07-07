@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AlertMetrics } from "@/components/shared/AlertMetrics";
+import { IncidentTrends } from "@/components/shared/IncidentTrends";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -421,6 +422,17 @@ export default function AlertsPage({
                 neighbourhoodId={neighbourhoodId}
             />
         </details>
+    </div>
+
+    {/*incident trend analysis*/}
+    <div className="max-w-4x1 mx-auto mb-6">
+      <details className="group">
+        <summary className="cursor-pointer text-sm font-semibold text-sky list-none flex items-center gap-2 mb-3">
+          <span className="group-open:rotate-90 transition-transform inline-block">&#x25B6;</span>
+          Incident Trends
+        </summary>
+        <IncidentTrends neighbourhoodId={neighbourhoodId} />
+      </details>
     </div>
 
     <TooltipProvider>
