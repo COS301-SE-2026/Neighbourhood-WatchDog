@@ -268,7 +268,6 @@ class TestEditCamera:
         ]
 
         self.mock_db.add = Mock()
-        self.mock_db.execute = Mock()
         self.mock_db.flush = Mock()
         self.mock_db.refresh = Mock()
         self.mock_db.commit = Mock()
@@ -327,4 +326,29 @@ class TestEditCamera:
         assert exe.value.status_code == 400
         self.mock_db.rollback.assert_called_once()
 
+    def test_partial_edit(self):
+        """Partial edit for a camera"""
+        partial_req = CameraEditReq(
+            enabled=False
+        )
         
+        
+        camera = edit_camera_handler(
+            camera_id=self.mock_camera.id,
+            req=partial_req,
+            db=self.mock_db,
+            claims=self.claims
+        )
+
+        assert camera.name == "Camera 1000"
+        assert camera.location == "Front Door"
+        assert camera.visibility == CameraVisibilityEnum.PRIVATE
+        assert camera.enabled == False
+
+        self.mock_db.commit.assert_called_once()
+        self.mock_db.refresh.assert_called_once()
+        self.mock_db.execute.call_count == 2
+        self.mock_db.flush.assert_not_called()
+        self.mock_db.rollback.assert_not_called()
+        self.mock_db.add.assert_not_called()
+
