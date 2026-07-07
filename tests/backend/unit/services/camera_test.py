@@ -33,14 +33,17 @@ class TestRegisterCamera:
 
         self.mock_camera = Mock()
         self.mock_camera.id = uuid4()
+        self.mock_camera.name = "Camera 1"
         self.mock_camera.rtsp_url="rtsp://example.com/stream"
         self.mock_camera.location="Front Door"
         self.mock_camera.visibility=CameraVisibilityEnum.PRIVATE
         self.mock_camera.property_id=uuid4()
+        self.mock_camera.enabled = True
         self.mock_camera.neighbourhood_id = uuid4()
         self.mock_camera.created_at = datetime.now()
         
         self.mock_req = RegisterCameraReq(
+            name="Camera 1",
             rtsp_url="rtsp://admin:securepassword123@192.168.1.100:554/Streaming/channels/101",
             location="Front Door",
             visibility=CameraVisibilityEnum.PRIVATE,
@@ -64,10 +67,12 @@ class TestRegisterCamera:
 
             assert camera is not None
             assert camera.id == self.mock_camera.id
+            assert camera.name == "Camera 1"
             assert camera.rtsp_url == "rtsp://example.com/stream"
             assert camera.location == "Front Door"
             assert camera.visibility == CameraVisibilityEnum.PRIVATE
             assert camera.property_id == self.mock_camera.property_id
+            assert camera.enabled == True
             assert camera.created_at == self.mock_camera.created_at
             assert camera.neighbourhood_id == self.mock_camera.neighbourhood_id
 
@@ -84,6 +89,7 @@ class TestRegisterCamera:
             MockCamera.return_value = self.mock_camera
 
             self.mock_req = RegisterCameraReq(
+                name="Camera 1",
                 rtsp_url="rtsp://admin:securepassword123@192.168.1.100:554/Streaming/channels/101",
                 location="Front Door",
                 visibility=CameraVisibilityEnum.PRIVATE,
@@ -112,6 +118,7 @@ class TestRegisterCamera:
             MockCamera.return_value = self.mock_camera
 
             self.mock_req = RegisterCameraReq(
+                name="Camera 1",
                 rtsp_url="rtsp://admin:securepassword123@192.168.1.100:554/Streaming/channels/101",
                 location="Front Door",
                 visibility=CameraVisibilityEnum.PRIVATE,
@@ -302,3 +309,9 @@ class TestEditCamera:
         self.mock_db.flush.assert_not_called()
         self.mock_db.rollback.assert_not_called()
         self.mock_db.add.assert_not_called()
+
+    def test_empty_payload_400(self):
+        """Empty payload on camera"""
+        pass
+
+        

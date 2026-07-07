@@ -30,6 +30,7 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
 
         new_camera = Camera(
             property_id=req.property_id,
+            name=req.name,
             neighbourhood_id=property_obj.neighbourhood_id,
             rtsp_url=req.rtsp_url,
             visibility=req.visibility,
@@ -40,11 +41,13 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
 
         return CameraRes(
             id=new_camera.id,
+            name=new_camera.name,
             property_id=new_camera.property_id,
             neighbourhood_id=new_camera.neighbourhood_id,
             rtsp_url=new_camera.rtsp_url,
             visibility=new_camera.visibility,
             location=new_camera.location,
+            enabled=new_camera.enabled,
             created_at=new_camera.created_at,
         )
 
