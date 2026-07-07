@@ -311,7 +311,7 @@ class TestEditCamera:
         self.mock_db.rollback.assert_not_called()
         self.mock_db.add.assert_not_called()
 
-    def test_empty_payload_400(self):
+    def test_empty_payload_raises_400(self):
         """Empty payload on camera"""
         
         empty_req = CameraEditReq()
@@ -351,4 +351,22 @@ class TestEditCamera:
         self.mock_db.flush.assert_not_called()
         self.mock_db.rollback.assert_not_called()
         self.mock_db.add.assert_not_called()
+
+    def test_camera_not_found_raises_404(self):
+        """Camera non existent for edit camera"""
+        self.reset_side_effects(camera=None, prop_user=self.mock_property_user)
+
+        with pytest.raises(HTTPException) as exception:
+            camera = edit_camera_handler(
+                camera_id="fake_camera_id",
+                req=self.mock_req,
+                db=self.mock_db,
+                claims=self.claims
+            )
+
+        assert exception.value.status_code == 404
+        self.mock_db.commit.assert_not_called()
+        self.mock_db.rollback.assert_called_once()
+
+
 
