@@ -30,6 +30,8 @@ import {
   Loader2,
 } from "lucide-react";
 
+import { AlertFootagePlayer } from "@/components/shared/AlertFootagePlayer";
+
 export type AlertSeverity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 export type AlertStatus = "NEW" | "ACKNOWLEDGED" | "RESOLVED";
 
@@ -227,6 +229,11 @@ function AlertDetailSheet({
             </div>
           )}
 
+          <AlertFootagePlayer
+            detectionEventId={alert.detection_event_id}
+            timestamp={alert.created_at}
+          />
+
           <Separator className="bg-steel" />
 
           <div className="space-y-3">
@@ -313,8 +320,8 @@ function MetaRow({
 }
 
 export interface AlertCardProps {
-  alert: Alert;
-  onAcknowledge: (id: string) => Promise<void>;
+  readonly alert: Alert;
+  readonly onAcknowledge: (id: string) => Promise<void>;
 }
 
 export function AlertCard({ alert, onAcknowledge }: AlertCardProps) {
