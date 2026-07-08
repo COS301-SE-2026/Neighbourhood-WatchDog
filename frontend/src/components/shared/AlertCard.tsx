@@ -229,10 +229,13 @@ function AlertDetailSheet({
             </div>
           )}
 
-          <AlertFootagePlayer
-            detectionEventId={alert.detection_event_id}
-            timestamp={alert.created_at}
-          />
+          {alert.detection_type === "WEAPON_DETECTED" && (
+            <AlertFootagePlayer
+              detectionEventId={alert.detection_event_id}
+              timestamp={alert.created_at}
+            />
+            
+          )}
 
           <Separator className="bg-steel" />
 
