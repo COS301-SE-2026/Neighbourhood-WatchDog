@@ -84,9 +84,11 @@ def seed_database():
         #create test camera
         test_camera = Camera(
             id=CAMERA_ID,
+            name="Camera x",
             property_id=PROPERTY_ID,
             neighbourhood_id=NEIGHBOURHOOD_ID,
             visibility=CameraVisibilityEnum.PRIVATE,
+            enabled=True,
             location="Front Entrance",
             rtsp_url="rtsp://camera.local:554/stream"
         )

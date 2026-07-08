@@ -5,18 +5,22 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import CameraFeed from "./CameraFeed"
 import CameraDropdown from "./camera-dropdown"
+import { vi } from "zod/locales"
 
 interface CameraCardProps {
     readonly id: string;
     readonly name: string;
     readonly rtspUrl?: string;
+    readonly location: string;
+    readonly visibility: "PUBLIC" | "PRIVATE" | "NEIGHBOURHOOD";
+    readonly enabled: boolean;
 }
 
 function getStreamPath(rtspUrl: string): string {
     return rtspUrl.split("/").pop() || rtspUrl;
 }
 
-export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
+export default function CameraCard({ id, name, rtspUrl, location, visibility, enabled }: CameraCardProps) {
     const streamUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream?url=${encodeURIComponent(rtspUrl)}` : null;
     const streamHealthUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream/health?url=${encodeURIComponent(rtspUrl)}` : null;
     const [streamHealth, setStreamHealth] = useState<{ url: string | null; available: boolean; error: boolean }>({
@@ -89,6 +93,9 @@ export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
                             <CameraDropdown
                                 camera_id={id}
                                 camera_name={name}
+                                camera_location={location}
+                                camera_visibility={visibility}
+                                camera_enabled={enabled}
                             />
                         </div>
                     </CardHeader>

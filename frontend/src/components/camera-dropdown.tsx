@@ -17,8 +17,11 @@ import { deleteCamera as apiDeleteCamera, editCamera as apiEditCamera } from "@/
 interface CameraDropdownProp {
     camera_id: string
     camera_name: string
+    camera_location: string
+    camera_visibility: "PUBLIC" | "PRIVATE" | "NEIGHBOURHOOD"
+    camera_enabled: boolean
 }
-export function CameraDropdown({camera_id, camera_name}: Readonly<CameraDropdownProp>) {
+export function CameraDropdown({camera_id, camera_name, camera_location, camera_visibility, camera_enabled}: Readonly<CameraDropdownProp>) {
 
     const [isDelete, setDelete] = useState(false);
     const [isEdit, setEdit] = useState(false);
@@ -72,6 +75,9 @@ export function CameraDropdown({camera_id, camera_name}: Readonly<CameraDropdown
                 <EditCamera 
                     open={isEdit}
                     name={camera_name}
+                    location={camera_location}
+                    visibility={camera_visibility}
+                    enabled={camera_enabled}
                     onOpenChange={setEdit}
                     onConfirm={async (data) => {
                         console.log("camera with id ", camera_id, " to be edited")

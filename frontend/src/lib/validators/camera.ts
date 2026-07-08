@@ -12,9 +12,11 @@ export const cameraSchema = z.object({
   id: z.uuid(),
   property_id: z.uuid(),
   neighbourhood_id: z.uuid(),
-  visibility: z.enum(['public', 'private', 'neighbourhood']),
+  name: z.string(),
+  visibility: z.enum(['PUBLIC', 'PRIVATE', 'NEIGHBOURHOOD']),
   location: z.string(),
   rtsp_url: z.string(),
+  enabled: z.boolean(),
   created_at: z.iso.datetime(),
 })
 

@@ -1,6 +1,6 @@
 "use client"
 import CameraCard from "@/components/CameraCard"
-
+import type { Camera } from "@/lib/validators/camera"
 import { useAlerts } from "@/hooks/use-alerts"
 import { toast } from "sonner"
 import { useEffect, useState } from "react"
@@ -10,19 +10,22 @@ import { NewCameraCard } from "@/components/new-camera-card"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-interface Camera {
+interface CameraProp {
     id: string;
     name: string;
+    visibility: Camera["visibility"],
+    enabled: boolean
+    location: string
     rtspUrl?: string;
 }
 
-const initialCameras: Camera[] = [
-    { id: "1", name: "Camera 1 - Backyard" },
+const initialCameras: CameraProp[] = [
+    { id: "1", name: "Camera 1 - Backyard" , visibility: "PRIVATE", enabled: true, location: "Backyard"},
   //{ id: "2", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://Intrepid:password1234@172.20.10.2:554/stream2" },
-    { id: "2", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://localhost:8554/tapo-camera" },
-    { id: "3", name: "Camera 5 - Living Room" },
-    { id: "4", name: "Camera 3 - Bedroom 2" },
-    { id: "5", name: "Camera 4 - Kitchen" },
+    { id: "2", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://localhost:8554/tapo-camera", visibility: "PRIVATE", enabled: true, location: "Office Room" },
+    { id: "3", name: "Camera 5 - Living Room", visibility: "PRIVATE", enabled: true, location: "Living Room" },
+    { id: "4", name: "Camera 3 - Bedroom 2", visibility: "PRIVATE", enabled: true, location: "Bedroom" },
+    { id: "5", name: "Camera 4 - Kitchen", visibility: "PRIVATE",enabled: true, location: "Kitchen" },
 ]
 
 export default function Dashboard() {
@@ -38,12 +41,15 @@ export default function Dashboard() {
     }, [alerts]);
 
     const [showCard, setShowCard] = useState(false);
-    const [cameras, setCameras] = useState<Camera[]>(initialCameras);
+    const [cameras, setCameras] = useState<CameraProp[]>(initialCameras);
 
-    const handleAcknowledge = (data: { cameraLocation: string; rtspUrl: string }) => {
-        const newCamera: Camera = {
+    const handleAcknowledge = (data: { name: string, location: string; rtspUrl: string }) => {
+        const newCamera: CameraProp = {
             id: crypto.randomUUID(),
-            name: data.cameraLocation,
+            name: data.name,
+            location: data.location,
+            visibility: "PRIVATE",
+            enabled: true,
             rtspUrl: data.rtspUrl || undefined,
         };
         setCameras((prev) => [...prev, newCamera]);
@@ -73,6 +79,9 @@ export default function Dashboard() {
                         key={camera.id}
                         id={camera.id}
                         name={camera.name}
+                        location={camera.location}
+                        visibility={camera.visibility}
+                        enabled={camera.enabled}
                         rtspUrl={camera.rtspUrl}
                     />
                 ))}
