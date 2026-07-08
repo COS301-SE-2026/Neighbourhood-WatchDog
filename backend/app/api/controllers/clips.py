@@ -44,6 +44,8 @@ S3_BUCKET = os.getenv("S3_CLIPS_BUCKET", "")
 # Return URL
 
 
+ADMIN_ROLES = {"SYSTEM_ADMIN", "NEIGHBOURHOOD_ADMIN", "PROP_ADMIN"}
+
 #create an aws s3 client for the applications aws region
 def _s3_client():
     return boto3.client("s3", region_name=config.aws_region)
@@ -55,10 +57,10 @@ def _check_rbac(claims: dict, camera: Camera, db: Session) -> None:
 
     #this assumes that the claim came from a jwt token - need to consolidate this
     role = claims.get("role", claims.get("custom:role", ""))
-    user_neighbourhood = claims.get("custom:neighbourhood_id")
+    user_neighbourhood = claims.get("custom:neighbourhood_id", claims.get("custom:neighbourhood_id"))
 
     #admins see everything
-    if role in ("SYSTEM_ADMIN", "NEIGHBOURHOOD_ADMIN"):
+    if role in ADMIN_ROLES:
         return
     
     #security officers only see what is available in their neighbourhood
