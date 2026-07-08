@@ -33,7 +33,7 @@ export function EditCamera({ open, name, onOpenChange, onConfirm }: Readonly<Edi
 
 
     const [visibility, setVisibility] = useState<"PRIVATE" | "PUBLIC" | "NEIGHBOURHOOD">("PUBLIC");
-
+    const [enabled, setEnabled] = useState(true)
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault()
 
@@ -43,7 +43,7 @@ export function EditCamera({ open, name, onOpenChange, onConfirm }: Readonly<Edi
         name: String(formData.get("name") || ""),
         location: String(formData.get("location") || ""),
         visibility,
-        enabled: formData.get("enabled") === "on",
+        enabled,
         })
     }
 
@@ -90,8 +90,8 @@ export function EditCamera({ open, name, onOpenChange, onConfirm }: Readonly<Edi
                     </Field>
 
                     <Field>
-                    <Label htmlFor="enabled">Enabled</Label>
-                    <Switch name="enabled" />
+                        <Label htmlFor="enabled">Enabled</Label>
+                        <Switch id="enabled" checked={enabled} onCheckedChange={setEnabled} />
                     </Field>
                 </FieldGroup>
 
