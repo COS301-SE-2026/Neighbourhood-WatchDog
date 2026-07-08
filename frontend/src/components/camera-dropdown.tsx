@@ -12,7 +12,8 @@ import { useState} from "react"
 import {MoreVertical, Edit, Trash} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import RemoveCamera from "./remove-camera-card"
-import { deleteCamera as apiDeleteCamera } from "@/lib/api/camera"
+import { EditCamera } from "./edit-camera-card"
+import { deleteCamera as apiDeleteCamera, editCamera as apiEditCamera } from "@/lib/api/camera"
 interface CameraDropdownProp {
     camera_id: string
     camera_name: string
@@ -20,7 +21,7 @@ interface CameraDropdownProp {
 export function CameraDropdown({camera_id, camera_name}: Readonly<CameraDropdownProp>) {
 
     const [isDelete, setDelete] = useState(false);
-
+    const [isEdit, setEdit] = useState(false);
     
     return (
         <>
@@ -34,7 +35,9 @@ export function CameraDropdown({camera_id, camera_name}: Readonly<CameraDropdown
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="cursor-pointer" onClick={() => {console.log("Camera with id", camera_id)}}>
+                    <DropdownMenuItem className="cursor-pointer" onSelect={() => {
+                            setEdit(true)
+                        }}>
                         <Edit className="mr-2 h-4 w-4" /> Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive cursor-pointer" onSelect={(e) => {
@@ -58,6 +61,26 @@ export function CameraDropdown({camera_id, camera_name}: Readonly<CameraDropdown
                             //going to add a toast notification
                         } catch(error) {
                             console.error("Failed to delete camera:", error)
+                            //going add a toast notification here too
+                        }
+
+                    }}
+                />
+            )}
+
+            {isEdit && (
+                <EditCamera 
+                    open={isEdit}
+                    name={camera_name}
+                    onOpenChange={setEdit}
+                    onConfirm={async (data) => {
+                        console.log("camera with id ", camera_id, " to be edited")
+                        try {
+                            await apiEditCamera(camera_id, data)
+                            setEdit(false)
+                            //going to add a toast notification
+                        } catch(error) {
+                            console.error("Failed to edit camera:", error)
                             //going add a toast notification here too
                         }
 
