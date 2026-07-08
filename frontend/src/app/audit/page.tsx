@@ -14,27 +14,6 @@ import { ColumnDef } from "@tanstack/react-table"
 
 const SIZE = 30
 
-const columns: ColumnDef<AuditLog>[] = [
-    {
-        accessorKey: "id",
-        header: "Record ID",
-    },
-    {
-        accessorKey: "action",
-        header: "Action",
-    },
-    {
-        accessorKey: "target_entity_type",
-        header: "Target Entity Type",
-    },
-    {
-        accessorKey: "timestamp",
-        header: "Timestamp",
-        cell: ({ row }) => {
-            return row.original.timestamp.toLocaleString()
-        }
-    },
-]
 
 interface PaginationControlsProps{
     nextDisabled: boolean,
@@ -92,6 +71,28 @@ export function AuditLogTable() {
     }, [page])
     
     const data = auditLog?.results ?? []
+
+    const columns: ColumnDef<AuditLog>[] = [
+        {
+            accessorKey: "id",
+            header: "Record ID",
+        },
+        {
+            accessorKey: "action",
+            header: "Action",
+        },
+        {
+            accessorKey: "target_entity_type",
+            header: "Target Entity Type",
+        },
+        {
+            accessorKey: "timestamp",
+            header: "Timestamp",
+            cell: ({ row }) => {
+                return row.original.timestamp.toLocaleString()
+            }
+        },
+    ]
 
     return (
         <div>
