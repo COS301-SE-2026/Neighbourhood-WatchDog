@@ -54,7 +54,7 @@ def _check_rbac(claims: dict, camera: Camera, db: Session) -> None:
     """Raise 403 if the caller lacks permission to view this camera's footage."""
 
     #this assumes that the claim came from a jwt token - need to consolidate this
-    role = claims.get("custom:role", "")
+    role = claims.get("role", claims.get("custom:role", ""))
     user_neighbourhood = claims.get("custom:neighbourhood_id")
 
     #admins see everything
@@ -136,7 +136,7 @@ async def get_clip_url(
 
     )
 
-    if not event.clips_s3_key:
+    if not event.clip_s3_key:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No clip is available for this event"
@@ -171,8 +171,8 @@ async def get_clip_url(
     try:
         s3 = _s3_client()
         url = s3.generate_presigned_url(
-            "get_objects",
-            Params={"Bucket": S3_BUCKET, "Key": event.clips_s3_key},
+            "get_object",
+            Params={"Bucket": S3_BUCKET, "Key": event.clip_s3_key},
             ExpiresIn=PRESIGN_TTL,
 
         )

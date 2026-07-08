@@ -4,8 +4,6 @@ import { useRef } from "react";
 import { Film, Loader2, Ban, Lock, VideoOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useClip  } from "@/hooks/use-clip";
-import { timeStamp } from "console";
-import { stat } from "fs";
 
 
 interface AlertFootagePlayerProps {
