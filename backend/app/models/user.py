@@ -20,6 +20,7 @@ class User(Base):
     email = Column(String, unique=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
     cognito_sub = Column(String, unique=True)
     role = Column(SQLEnum(UserRole), nullable=False, default=UserRole.RESIDENT)
     neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id"), nullable=True)
