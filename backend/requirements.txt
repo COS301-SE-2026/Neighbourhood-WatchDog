@@ -92,3 +92,6 @@ psutil==7.2.2
 
 # GeoAlchemy2
 geoalchemy2==0.18.0
+
+#Twilio
+twilio==9.3.6
