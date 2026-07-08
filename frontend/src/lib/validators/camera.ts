@@ -18,5 +18,13 @@ export const cameraSchema = z.object({
   created_at: z.iso.datetime(),
 })
 
+export const cameraEditSchema = z.object({
+  name: z.string().min(1, 'Camera is required').optional(),
+  location: z.string().min(1, 'Location is required').optional(),
+  visibility: z.enum(['PUBLIC', 'PRIVATE', 'NEIGHBOURHOOD']).optional(),
+  enabled: z.boolean().optional()
+})
+
 export type Camera = z.infer<typeof cameraSchema>
 export type CameraInput = z.infer<typeof cameraInputSchema>
+export type CameraEditInput = z.infer<typeof cameraEditSchema>
