@@ -6,7 +6,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 export async function getAuditLogs(page: number, size: number): Promise<PaginatedResponse<AuditLog>> {
     console.log() //TODO: remove this
 
-    const result = await apiCall<GetAuditLogRes>(`/audit/get-audit-logs?page={page}&size={size}`, {
+    const result = await apiCall<GetAuditLogRes>(`/audit/get-audit-logs?page=${page}&size=${size}`, {
         method: 'GET',
     })
     if (!result.data) 
