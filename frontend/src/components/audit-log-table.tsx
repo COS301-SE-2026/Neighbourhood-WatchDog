@@ -71,6 +71,9 @@ export function AuditLogTable() {
         {
             accessorKey: "id",
             header: "Record ID",
+            cell: ({row}) => {
+                {return row.original.id.slice(0, 8) + "..."}
+            }
         },
         {
             accessorKey: "action",
@@ -84,14 +87,19 @@ export function AuditLogTable() {
             accessorKey: "timestamp",
             header: "Timestamp",
             cell: ({ row }) => {
-                return row.original.timestamp.toLocaleString()
+                const day = row.original.timestamp.getDate()
+                const month = row.original.timestamp.getMonth() + 1
+                const year = row.original.timestamp.getFullYear()
+                const hours = row.original.timestamp.getHours()
+                const minutes = row.original.timestamp.getMinutes()
+                return `${day}/${month}/${year} ${hours}:${minutes}`
             }
         },
         {
             id: "actions", // this is for the btn
             cell: ({ row }) => {
-                return (<button 
-                    onClick={() => setSelectedRow(row.original)}>
+                return (
+                <button onClick={() => setSelectedRow(row.original)}>
                     View More
                 </button>
                 )
@@ -101,7 +109,7 @@ export function AuditLogTable() {
     ]
 
     return (
-        <div>
+        <div className="bg-background rounded-radius-sm p-20 w-full max-w-full overflow-x-auto">
             { loading && <p>Loading...</p>}
             <Dialog open={!!selectedRow} onOpenChange={(open) => setSelectedRow(null)}>
                 <DialogContent>

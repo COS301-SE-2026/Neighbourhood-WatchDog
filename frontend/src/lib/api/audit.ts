@@ -1,4 +1,4 @@
-import { GetAuditLogRes, PaginatedResponse, AuditLog } from '../validators/audit'
+import { GetAuditLogRes, getAuditLogsResSchema, PaginatedResponse, AuditLog } from '../validators/audit'
 import { apiCall } from './client'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -12,5 +12,6 @@ export async function getAuditLogs(page: number, size: number): Promise<Paginate
     if (!result.data) 
         throw new Error(result.message || 'No data returned')
     
-    return result.data
+    const parsedObject = getAuditLogsResSchema.parse(result)
+    return parsedObject.data
 }
