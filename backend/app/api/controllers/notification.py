@@ -22,7 +22,7 @@ async def list_notifications_for_alert(
     claims: dict = Depends(get_current_user),
 ):
     role = claims.get("custom:role")
-    if role not in ("NEIGHBOURHOOD_ADMIN", "SYSTEM_ADMIN"):
+    if role not in ("NEIGHBOURHOOD_ADMIN", "SYSTEM_ADMIN", "SECURITY_OFFICER"):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     alert = db.execute(select(Alert).where(Alert.id == alert_id)).scalar_one_or_none()

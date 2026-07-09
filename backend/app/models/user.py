@@ -13,6 +13,7 @@ class UserRole(str, Enum):
     NEIGHBOURHOOD_ADMIN = "NEIGHBOURHOOD_ADMIN"
     PROPERTY_ADMIN = "PROPERTY_ADMIN"
     USER = "USER"
+    SECURITY_OFFICER = "SECURITY_OFFICER"
 
 class User(Base):
     __tablename__ = "users"
