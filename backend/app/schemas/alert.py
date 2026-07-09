@@ -71,4 +71,5 @@ class TimeIntervalEnum(str, Enum):
 	YEARLY = "YEARLY"
 
 class AlertFrequencyMetricsRes(BaseModel):
+	time_interval: TimeIntervalEnum
 	
