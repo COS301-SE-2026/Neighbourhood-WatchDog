@@ -16,7 +16,7 @@ import {Switch} from "@/components/ui/switch"
 import {Button} from "@/components/ui/button"
 import {Label} from "@/components/ui/label"
 import { CameraEditInput } from "@/lib/validators/camera"
-import { useEffect, useState } from "react"
+import {useState } from "react"
 
 interface EditCameraProps {
     open: boolean
@@ -56,12 +56,6 @@ export function EditCamera({
         enabled,
         })
     }
-
-    useEffect(() => {
-        setNameValue(name)
-    setVisibility(initialVisibility)
-    setEnabled(initialEnabled)
-    }, [name, initialVisibility, initialEnabled, open])
 
 
     return (

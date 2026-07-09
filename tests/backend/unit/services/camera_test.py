@@ -71,7 +71,7 @@ class TestRegisterCamera:
             assert camera.location == "Front Door"
             assert camera.visibility == CameraVisibilityEnum.PRIVATE
             assert camera.property_id == self.mock_camera.property_id
-            assert camera.enabled == True
+            assert camera.enabled
             assert camera.created_at == self.mock_camera.created_at
             assert camera.neighbourhood_id == self.mock_camera.neighbourhood_id
 
@@ -300,7 +300,7 @@ class TestEditCamera:
         assert camera is not None
         assert camera.name == "Secondary Camera"
         assert camera.location == "Back Door"
-        assert camera.enabled == False
+        assert not camera.enabled
         assert camera.visibility == CameraVisibilityEnum.PUBLIC
 
         self.mock_db.commit.assert_called_once()
@@ -315,7 +315,7 @@ class TestEditCamera:
         
         empty_req = CameraEditReq()
         with pytest.raises(HTTPException) as exe:
-            camera = edit_camera_handler(
+            edit_camera_handler(
                 camera_id=self.mock_camera.id,
                 req=empty_req,
                 db=self.mock_db,
@@ -342,7 +342,7 @@ class TestEditCamera:
         assert camera.name == "Camera 1000"
         assert camera.location == "Front Door"
         assert camera.visibility == CameraVisibilityEnum.PRIVATE
-        assert camera.enabled == False
+        assert not camera.enabled
 
         self.mock_db.commit.assert_called_once()
         self.mock_db.refresh.assert_called_once()
@@ -356,7 +356,7 @@ class TestEditCamera:
         self.reset_side_effects(camera=None, prop_user=self.mock_property_user)
 
         with pytest.raises(HTTPException) as exception:
-            camera = edit_camera_handler(
+            edit_camera_handler(
                 camera_id="fake_camera_id",
                 req=self.mock_req,
                 db=self.mock_db,
@@ -372,7 +372,7 @@ class TestEditCamera:
         """Unauthorised user makes request to edit camera"""
         self.reset_side_effects(camera=self.mock_camera, prop_user=None)
         with pytest.raises(HTTPException) as exception:
-            camera = edit_camera_handler(
+            edit_camera_handler(
                 camera_id=self.mock_camera.id,
                 req=self.mock_req,
                 db=self.mock_db,
@@ -389,7 +389,7 @@ class TestEditCamera:
         self.mock_db.commit.side_effect = Exception("DB connection lost")
 
         with pytest.raises(HTTPException) as exception:
-            camera = edit_camera_handler(
+            edit_camera_handler(
                 camera_id=self.mock_camera.id,
                 req=self.mock_req,
                 db=self.mock_db,
@@ -414,7 +414,7 @@ class TestEditCamera:
             claims=self.claims
         )
 
-        assert camera.enabled == True
+        assert camera.enabled
 
         self.mock_db.commit.assert_called_once()
         self.mock_db.refresh.assert_called_once()
