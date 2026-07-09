@@ -455,7 +455,7 @@ def _collect_tracks(tracks, alerted_ids: set) -> list:
 
             detection_type = track.get_det_class() or "UNKNOWN"
 
-            logger.info("New detection — Track ID: %s, conf: %.2f", detection_type, track_id, track.det_conf)
+            logger.info("New detection - type: %s, track_id: %s, conf: %.2f", detection_type, track_id, track.det_conf)
             _send_new_person_alert(track_id, float(track.det_conf), detection_type)
     return payload
 
