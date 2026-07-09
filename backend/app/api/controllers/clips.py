@@ -57,7 +57,7 @@ def _check_rbac(claims: dict, camera: Camera, db: Session) -> None:
 
     #this assumes that the claim came from a jwt token - need to consolidate this
     role = claims.get("role", claims.get("custom:role", ""))
-    user_neighbourhood = claims.get("custom:neighbourhood_id", claims.get("custom:neighbourhood_id"))
+    user_neighbourhood = claims.get("neighbourhood_id", claims.get("custom:neighbourhood_id"))
 
     #admins see everything
     if role in ADMIN_ROLES:
