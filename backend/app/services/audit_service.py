@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Depends, Query
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import String, Text, select, func, or_
+from sqlalchemy import String, Text, select, func, or_, Enum
 from uuid import uuid4, UUID
 from fastapi.exceptions import ResponseValidationError
 from datetime import datetime
@@ -110,7 +110,7 @@ async def get_audit_logs_handler(
         conditions = [
             col.contains(search_term)
             for col in AuditLog.__table__.columns
-            if isinstance(col.type, (String, Text))
+            if isinstance(col.type, (String, Text)) and not isinstance(col.type, Enum)
         ]
         if conditions:
             stmt = stmt.where(or_(*conditions))
@@ -128,7 +128,7 @@ async def get_audit_logs_handler(
         stmt = stmt.where(AuditLog.target_entity_type == target_entity_type)
     
     count_stmt = select(func.count()).select_from(stmt.subquery())
-    total_count = await db.scalar(count_stmt)
+    total_count = db.scalar(count_stmt)
 
     offset = (page - 1) * size
     if total_count and offset >= total_count:
