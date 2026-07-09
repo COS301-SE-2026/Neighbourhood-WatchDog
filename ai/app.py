@@ -331,7 +331,7 @@ def _save_weapon_clip(weapon_label: str, conf: float) -> None:
 
         logger.info("Clip uploaded: s3://%s/%s", S3_CLIPS_BUCKET, s3_key)
 
-        
+
     except Exception as e:
         logger.error("Clip upload or encoding failed: %s", e)
         return
@@ -368,11 +368,16 @@ def _detection_loop(rtsp_url: str) -> None:
 
         ret, frame = cap.read()
         if not ret:
-            logger.warning("Empty frame — reconnecting in 2s")
+            logger.warning("Empty frame - reconnecting in 2s")
             cap.release()
             cap = None
             time.sleep(2)
             continue
+
+
+        #buffer every frame for pre capture
+        with _frame_buffer_lock:
+            _frame_buffer.append(frame.copy())
 
         frame_count += 1
         if frame_count % 4 != 0:
@@ -398,6 +403,17 @@ def _detection_loop(rtsp_url: str) -> None:
 
             })
 
+
+            #trigger clip saves for weapon detection
+            if label.lower() in WEAPON_CLASSES:
+                threading.Thread(
+                    target=_save_weapon_clip,
+                    args=(label, conf), 
+                    daemon=True
+                    
+                ).start()
+
+                
 
 
         #filtering out zero confidence (0%) ghost tracks
