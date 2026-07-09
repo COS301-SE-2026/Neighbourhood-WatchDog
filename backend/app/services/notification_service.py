@@ -92,3 +92,45 @@ def _log_notification(
     except Exception as e:
         logger.error(f"Failed to log notification record: {e}")
         db.rollback()
+
+async def dispatch_notifications(
+        db: Session,
+        alert_id: UUID,
+        camera_id: UUID,
+        neighbourhood_id: UUID,
+        detection_type: str,
+        confidence_score: float,
+        frame_timestamp,
+) -> None:
+    if not should_notify(confidence_score):
+        logger.info(f"Alert {alert_id}: confidence {confidence_score:.2f} below notification threshold, skipping")
+        return
+    
+    if os.get.env("NOTIFICATION_ENABLED", "false").lower() != "true":
+        logger.info(f"Alert {alert_id}: NOTIFICATION_ENABLED is not 'true', skipping")
+        return
+    
+    severity = _classify_severity(confidence_score)
+    timestamp_str = frame_timestamp.strftime("%d %b %Y, %H:%M:%S") if frame_timestamp else "Unknown"
+    whatsapp_message = _format_whatsapp_message(severity, detection_type, camera_id, timestamp_str)
+
+    try:
+        residents = db.execute(select(User).where(User.neighbourhood_id == neighbourhood_id, User.role == UserRole.RESIDENT,)).scalars().all()
+    except Exception as e:
+        logger.error(f"Failed to fetch residents for neighbourhood {neighbourhood_id}: {e}")
+        return
+    
+    if not residents:
+        logger.info(f"Alert {alert_id}: no residents found in neighbourhood {neighbourhood_id}.")
+
+    logger.info(f"Alert {alert_id} [{severity}]: notifying {len(residents)} resident(s) via WhatsApp")
+
+    for user in residents:
+        if user.phone_number:
+            success, error = _send_whatsapp(user.phone_number, whatsapp_message)
+            _log_notification(db, alert_id, user.id, NotificationChannel.WHATSAPP, success, error)
+
+            if not success:
+                logger.warning(f"WhatsApp failed for user {user.id}: {error}")
+            else:
+                logger.info(f"User {user.id} has no phone_number, skipping")
