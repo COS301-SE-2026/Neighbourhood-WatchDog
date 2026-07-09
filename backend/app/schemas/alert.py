@@ -1,3 +1,4 @@
+from enum import Enum
 from datetime import datetime
 from uuid import UUID
 from typing import Optional
@@ -64,4 +65,10 @@ class AlertMetricsRes(BaseModel):
 	average_response_seconds: float | None = None
 	items: list[AlertMetricItem]
       
+class TimeIntervalEnum(str, Enum):
+	DAILY = "DAILY"
+	MONTHLY = "MONTHLY"
+	YEARLY = "YEARLY"
 
+class AlertFrequencyMetricsRes(BaseModel):
+	

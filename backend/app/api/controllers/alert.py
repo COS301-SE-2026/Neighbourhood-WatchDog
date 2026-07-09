@@ -10,7 +10,7 @@ from app.core.database import DbSession, get_db
 from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, ListAlertsRes
 from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler, get_response_metrics_handler
 from app.services import alert_service
-from app.schemas.alert import AlertMetricsRes
+from app.schemas.alert import AlertMetricsRes, AlertFrequencyMetricsRes, TimeIntervalEnum
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -61,7 +61,19 @@ async def get_alert_metrics(
 
     return get_response_metrics_handler(neighbourhood_id, db, claims, camera_id, officer_id)
 
-
+@router.get("/alert-frequency-metrics", response_model=AlertFrequencyMetricsRes)
+async def get_alert_frequency_metrics(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: Claims,
+    time_interval: TimeIntervalEnum = TimeIntervalEnum.DAILY,
+):
+    """Responds with number of alerts received with the neighbourhood"""
+    return await get_alert_frequency_metrics_handler(
+        neighbourhood_id=neighbourhood_id,
+        db=db,
+        time_interval=time_interval
+    )
 
 @router.post("/", response_model=AlertResponse)
 async def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
