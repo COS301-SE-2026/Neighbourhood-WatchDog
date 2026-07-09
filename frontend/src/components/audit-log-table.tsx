@@ -5,7 +5,7 @@ import { DataTable } from "@/components/data-table"
 import { AuditLog, PaginatedResponse } from "@/lib/validators/audit"
 import { getAuditLogs } from "@/lib/api/audit"
 import { ColumnDef } from "@tanstack/react-table"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 
 const SIZE = 30
@@ -99,7 +99,7 @@ export function AuditLogTable() {
             id: "actions", // this is for the btn
             cell: ({ row }) => {
                 return (
-                <button onClick={() => setSelectedRow(row.original)}>
+                <button className="rounded-lg bg-navy text-white p-2" onClick={() => setSelectedRow(row.original)}>
                     View More
                 </button>
                 )
@@ -114,20 +114,23 @@ export function AuditLogTable() {
             <Dialog open={!!selectedRow} onOpenChange={(open) => setSelectedRow(null)}>
                 <DialogContent>
                     {selectedRow && (
-                        <ul>
-                            <li>User ID: {selectedRow.user_id}</li>
-                            <li>Target Entity ID: {selectedRow.target_entity_id}</li>
-                            <li>Old values: 
-                                <pre>
-                                    {selectedRow.old_values ? JSON.stringify(selectedRow.old_values, null, 4) : "No old values"}
-                                </pre>
-                            </li>
-                            <li>New values: 
-                                <pre>
-                                    {selectedRow.new_values ? JSON.stringify(selectedRow.new_values, null, 4) : "No new values"}
-                                </pre>
-                            </li>
-                        </ul>
+                        <div>
+                            <DialogTitle className="font-bold">Record Details</DialogTitle>
+                            <ul>
+                                <li>User ID: {selectedRow.user_id}</li>
+                                <li>Target Entity ID: {selectedRow.target_entity_id}</li>
+                                <li>Old values: 
+                                    <pre>
+                                        {selectedRow.old_values ? JSON.stringify(selectedRow.old_values, null, 4) : "No old values"}
+                                    </pre>
+                                </li>
+                                <li>New values: 
+                                    <pre>
+                                        {selectedRow.new_values ? JSON.stringify(selectedRow.new_values, null, 4) : "No new values"}
+                                    </pre>
+                                </li>
+                            </ul>
+                        </div>
                     )}
                 </DialogContent>
             </Dialog>
