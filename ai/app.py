@@ -223,6 +223,124 @@ def _open_stream(rtsp_url: str):
     return cap
 
 
+def _save_weapon_clip(weapon_label: str, conf: float) -> None:
+    """
+    Records a pre and post detection clip. Uploads it to S3, and links it to a DetectionEvent
+    This does run in a daemon thread, so it should not interefere with the detection loop
+    """
+
+    now = datetime.now()
+
+
+    #cooldown check. without this two detections arrivving simultaneously could both upload clips
+    with _cooldown_lock:
+        if now - _clips_cooldowns.get(weapon_label < 0) < CLIP_COOLDOWN_SECS:
+            logger.info("Clip cooldown active for '%s', skipping", weapon_label)
+            return
+        
+        _clips_cooldowns[weapon_label] = now
+
+
+    if not S3_CLIPS_BUCKET:
+        logger.warning("S3_CLIPS_BUCKET has not been configured. Skipping clip save")
+        
+        return
+    
+
+    #creating a detection event and alert in the backend
+    try:
+        resp = httpx.post(
+            f"{BACKEND_URL}/internal/detection-events",
+            json={
+                "camera_id": CAMERA_ID,
+                "detection_type": "WEAPON_DETECTED",
+                "confidence_score": conf,
+                "frame_timestamp": datetime.now(timezone.utc).isoformat()
+
+            }, 
+            timeout=3.0,
+
+        )
+
+        resp.raise_for_status()
+        detection_event_id = resp.json()["detection_event_id"]
+        
+        logger.info("DetectionEvent created: %s", detection_event_id)
+
+
+    except Exception as e:
+        logger.error("Failed to create DetectionEvent: %e", e)
+        return
+
+
+    
+    #snapshot pre detection frames
+    #from the buffer
+    with _frame_buffer_lock:
+        pre_frames = list(_frame_buffer)
+
+    
+    #capturing 3 seconds of post-detection frames
+    cap_post = cv2.VideoCapture(RTSP_URL, cv2.CAP_FFMPEG)
+    post_frames = []
+    deadline = time.time() + 3.0
+
+    while time.time() < deadline:
+        if cap_post.isOpened():
+            ret, f = cap_post.read()
+            if ret:
+                post_frames.append(f)
+
+        else:
+            break
+    cap_post.release()
+
+    all_frames = pre_frames + post_frames
+    if not all_frames:
+        logger.warning("No frames have been captured for the clip, aborting")
+
+        return
+    
+
+
+    #encoding to mp4
+    #uploading to s3
+    h, w = all_frames[0].shape[:2]
+    s3_key = (
+        f"clips/{datetime.now(timezone.utc).strftime('%Y/%m/%d')}"
+        f"/{weapon_label}_{int(now)}.mp4"
+
+    )
+
+
+    tmp_fd, tmp_path = tempfile.mkstemp(suffix=".mp4")
+    os.close(tmp_fd)
+
+
+
+    try:
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        writer = cv2.VideoWriter(tmp_path, fourcc, 25, (w, h))
+
+        for f in all_frames:
+            writer.write(f)
+        writer.release()
+
+        s3 = boto3.client("s3", region_name=AWS_REGION)
+        s3.upload_file(tmp_path, S3_CLIPS_BUCKET, s3_key)
+
+        logger.info("Clip uploaded: s3://%s/%s", S3_CLIPS_BUCKET, s3_key)
+
+        
+    except Exception as e:
+        logger.error("Clip upload or encoding failed: %s", e)
+        return
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+
 def _detection_loop(rtsp_url: str) -> None:
     """
     Background thread: continuously read RTSP, run YOLO+DeepSort, push annotations.
