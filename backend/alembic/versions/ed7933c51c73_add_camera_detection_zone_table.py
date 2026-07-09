@@ -1,0 +1,25 @@
+"""add camera_detection_zone table
+
+Revision ID: ed7933c51c73
+Revises: 8b7703bb085b
+Create Date: 2026-07-02 08:37:04.300265
+
+"""
+from typing import Sequence, Union
+
+
+# revision identifiers, used by Alembic.
+revision: str = 'ed7933c51c73'
+down_revision: Union[str, Sequence[str], None] = '8b7703bb085b'
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    """Upgrade schema."""
+    pass
+
+
+def downgrade() -> None:
+    """Downgrade schema."""
+    pass

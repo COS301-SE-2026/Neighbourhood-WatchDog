@@ -1,9 +1,10 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import CameraFeed from "./CameraFeed"
+import { CameraSettingsPanel } from "./CameraSettingsPanel"
 import CameraDropdown from "./camera-dropdown"
 import { vi } from "zod/locales"
 
@@ -14,13 +15,15 @@ interface CameraCardProps {
     readonly location: string;
     readonly visibility: "PUBLIC" | "PRIVATE" | "NEIGHBOURHOOD";
     readonly enabled: boolean;
+    readonly userRole?: string;
 }
 
 function getStreamPath(rtspUrl: string): string {
     return rtspUrl.split("/").pop() || rtspUrl;
 }
 
-export default function CameraCard({ id, name, rtspUrl, location, visibility, enabled }: CameraCardProps) {
+export default function CameraCard({ id, name, rtspUrl, location, visibility, enabled, userRole = "RESIDENT" }: CameraCardProps) {
+    const videoRef = useRef<HTMLVideoElement>(null);
     const streamUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream?url=${encodeURIComponent(rtspUrl)}` : null;
     const streamHealthUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream/health?url=${encodeURIComponent(rtspUrl)}` : null;
     const [streamHealth, setStreamHealth] = useState<{ url: string | null; available: boolean; error: boolean }>({
@@ -64,6 +67,7 @@ export default function CameraCard({ id, name, rtspUrl, location, visibility, en
             {streamUrl ? (
                 <>
                     <CameraFeed
+                        ref={videoRef}
                         streamPath={getStreamPath(rtspUrl ?? "")}
                         cameraId={id}
                         host="localhost"
@@ -103,9 +107,10 @@ export default function CameraCard({ id, name, rtspUrl, location, visibility, en
                     <CardContent className="p-4 pt-0">
                         {feedContent}
                     </CardContent>
-                    </DialogTrigger>
-                </Card>
-            <DialogContent className="max-w-4xl w-full">
+                </DialogTrigger>
+            </Card>
+
+            <DialogContent className="max-w-4xl w-full overflow-y-auto max-h-[90vh]">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         {name}
@@ -115,6 +120,11 @@ export default function CameraCard({ id, name, rtspUrl, location, visibility, en
                     </DialogTitle>
                 </DialogHeader>
                 {feedContent}
+                <CameraSettingsPanel
+                    cameraId={id}
+                    userRole={userRole}
+                    videoRef={videoRef}
+                />
             </DialogContent>
         </Dialog>
     )
