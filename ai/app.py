@@ -2,6 +2,11 @@ import os
 import cv2
 import time
 import threading
+import tempfile
+from collections import deque
+from datetime import timedelta
+
+import boto3
 from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI, Query
 from fastapi.responses import StreamingResponse
@@ -37,11 +42,26 @@ _settings_lock = threading.Lock()
 
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
-CAMERA_ID = "2"
+CAMERA_ID = os.getenv("CAMERA_ID", "40000000-0000-0000-0000-000000000001")
 NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001"
 RTSP_URL = os.getenv("RTSP_URL", "rtsp://Intrepid:password1234@192.168.3.68:554/stream2")
 
 
+#clip recording settings
+WEAPON_CLASSES = {"gun", "knife", "grenade", "explosion"}
+CLIP_COOLDOWN_SECS = 30
+CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
+S3_CLIPS_BUCKET = os.getenv("S3_CLIPS_BUCKET", "")
+AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")
+
+
+#pre capture
+_frame_buffer: deque = deque(maxlen=100)
+_frame_buffer_lock = threading.Lock()
+
+#cooldown tracker per weapon class
+_clips_cooldowns: dict = {}
+_cooldown_lock = threading.Lock()
 
 def _fetch_camera_settings(backend_url: str, camera_id: str) -> None:
 
