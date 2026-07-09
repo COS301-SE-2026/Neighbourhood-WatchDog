@@ -17,7 +17,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         PUBLIC_EXACT = {"/health", "/docs", "/openapi.json", "/redoc"}
-        PUBLIC_PREFIXES = ["/stream", "/alerts", "/api/stream"]
+        PUBLIC_PREFIXES = ["/stream", "/alerts", "/api/stream", "/designs"]
 
         # Allow preflight requests without auth
         # TODO: remove this later
