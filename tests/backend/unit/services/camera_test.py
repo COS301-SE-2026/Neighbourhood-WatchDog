@@ -7,6 +7,9 @@ from app.models.camera import CameraVisibilityEnum
 from fastapi import HTTPException
 from datetime import datetime
 
+MOCK_RTSP_URL = "rtsp://example.com/stream"
+MOCK_CAMERA_NAME = "Camera 1"
+
 class TestRegisterCamera:
     def setup_method(self):
         """Arrange"""
@@ -32,8 +35,8 @@ class TestRegisterCamera:
 
         self.mock_camera = Mock()
         self.mock_camera.id = uuid4()
-        self.mock_camera.name = "Camera 1"
-        self.mock_camera.rtsp_url="rtsp://example.com/stream"
+        self.mock_camera.name = MOCK_CAMERA_NAME
+        self.mock_camera.rtsp_url=MOCK_RTSP_URL
         self.mock_camera.location="Front Door"
         self.mock_camera.visibility=CameraVisibilityEnum.PRIVATE
         self.mock_camera.property_id=uuid4()
@@ -42,7 +45,7 @@ class TestRegisterCamera:
         self.mock_camera.created_at = datetime.now()
         
         self.mock_req = RegisterCameraReq(
-            name="Camera 1",
+            name=MOCK_CAMERA_NAME,
             rtsp_url="rtsp://admin:securepassword123@192.168.1.100:554/Streaming/channels/101",
             location="Front Door",
             visibility=CameraVisibilityEnum.PRIVATE,
@@ -66,8 +69,8 @@ class TestRegisterCamera:
 
             assert camera is not None
             assert camera.id == self.mock_camera.id
-            assert camera.name == "Camera 1"
-            assert camera.rtsp_url == "rtsp://example.com/stream"
+            assert camera.name == MOCK_CAMERA_NAME
+            assert camera.rtsp_url == MOCK_RTSP_URL
             assert camera.location == "Front Door"
             assert camera.visibility == CameraVisibilityEnum.PRIVATE
             assert camera.property_id == self.mock_camera.property_id
@@ -88,7 +91,7 @@ class TestRegisterCamera:
             MockCamera.return_value = self.mock_camera
 
             self.mock_req = RegisterCameraReq(
-                name="Camera 1",
+                name=MOCK_CAMERA_NAME,
                 rtsp_url="rtsp://admin:securepassword123@192.168.1.100:554/Streaming/channels/101",
                 location="Front Door",
                 visibility=CameraVisibilityEnum.PRIVATE,
@@ -117,7 +120,7 @@ class TestRegisterCamera:
             MockCamera.return_value = self.mock_camera
 
             self.mock_req = RegisterCameraReq(
-                name="Camera 1",
+                name=MOCK_CAMERA_NAME,
                 rtsp_url="rtsp://admin:securepassword123@192.168.1.100:554/Streaming/channels/101",
                 location="Front Door",
                 visibility=CameraVisibilityEnum.PRIVATE,
@@ -247,7 +250,7 @@ class TestEditCamera:
 
         self.mock_camera = Mock()
         self.mock_camera.id = uuid4()
-        self.mock_camera.rtsp_url="rtsp://example.com/stream"
+        self.mock_camera.rtsp_url=MOCK_RTSP_URL
         self.mock_camera.name = "Camera 1000"
         self.mock_camera.location="Front Door"
         self.mock_camera.visibility=CameraVisibilityEnum.PRIVATE
@@ -305,7 +308,7 @@ class TestEditCamera:
 
         self.mock_db.commit.assert_called_once()
         self.mock_db.refresh.assert_called_once()
-        self.mock_db.execute.call_count == 2
+        assert self.mock_db.execute.call_count == 2
         self.mock_db.flush.assert_not_called()
         self.mock_db.rollback.assert_not_called()
         self.mock_db.add.assert_not_called()
@@ -346,7 +349,7 @@ class TestEditCamera:
 
         self.mock_db.commit.assert_called_once()
         self.mock_db.refresh.assert_called_once()
-        self.mock_db.execute.call_count == 2
+        assert self.mock_db.execute.call_count == 2
         self.mock_db.flush.assert_not_called()
         self.mock_db.rollback.assert_not_called()
         self.mock_db.add.assert_not_called()
@@ -418,7 +421,7 @@ class TestEditCamera:
 
         self.mock_db.commit.assert_called_once()
         self.mock_db.refresh.assert_called_once()
-        self.mock_db.execute.call_count == 2
+        assert self.mock_db.execute.call_count == 2
         self.mock_db.flush.assert_not_called()
         self.mock_db.rollback.assert_not_called()
         self.mock_db.add.assert_not_called()

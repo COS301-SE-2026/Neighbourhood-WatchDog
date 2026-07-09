@@ -6,7 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import CameraFeed from "./CameraFeed"
 import { CameraSettingsPanel } from "./CameraSettingsPanel"
 import CameraDropdown from "./camera-dropdown"
-import { vi } from "zod/locales"
 
 interface CameraCardProps {
     readonly id: string;

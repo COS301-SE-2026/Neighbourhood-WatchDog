@@ -51,7 +51,7 @@ export function EditCamera({
 
         onConfirm?.({
         name: nameValue,
-        location: String(formData.get("location") || ""),
+        location: typeof formData.get("location") === "string" ? (formData.get("location") as string) : "",
         visibility,
         enabled,
         })

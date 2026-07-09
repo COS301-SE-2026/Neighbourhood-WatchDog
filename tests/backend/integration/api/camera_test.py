@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, patch
 
 RSTP_URL = "rtsp://example.com/stream"
 LOCATION = "Front Door"
+CAMERA_NAME = "Camera 1"
 
 @pytest.mark.asyncio
 async def test_register_camera(async_client, auth_headers):
@@ -10,7 +11,7 @@ async def test_register_camera(async_client, auth_headers):
         "id": "22222222-2222-2222-2222-222222222222",
         "property_id": "33333333-3333-3333-3333-333333333333",
         "neighbourhood_id": "44444444-4444-4444-4444-444444444444",
-        "name": "Camera 1",
+        "name": CAMERA_NAME,
         "visibility": "PRIVATE",
         "location": LOCATION,
         "rtsp_url": RSTP_URL,
@@ -25,7 +26,7 @@ async def test_register_camera(async_client, auth_headers):
         payload = {
             "rtsp_url": RSTP_URL,
             "location": LOCATION,
-            "name": "Camera 1",
+            "name": CAMERA_NAME,
             "visibility": "PRIVATE",
             "property_id": "33333333-3333-3333-3333-333333333333",
         }
@@ -42,7 +43,7 @@ async def test_get_property_cameras(async_client, auth_headers):
         "id": "22222222-2222-2222-2222-222222222222",
         "property_id": "33333333-3333-3333-3333-333333333333",
         "neighbourhood_id": "44444444-4444-4444-4444-444444444444",
-        "name": "Camera 1",
+        "name": CAMERA_NAME,
         "visibility": "PRIVATE",
         "location": LOCATION,
         "rtsp_url": RSTP_URL,
