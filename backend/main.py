@@ -14,6 +14,7 @@ from app.api.controllers.users import router as users_router
 from app.api.controllers.stream import router as stream_router
 from app.api.controllers.camera_settings import router as camera_settings_router
 from app.api.controllers.clips import router as clips_router
+from app.api.controllers.internal import router as internal_router
 from slowapi.middleware import SlowAPIMiddleware
 from app.auth.rate_limiter import limiter
 from app.core.database import engine, Base
@@ -56,6 +57,7 @@ app.include_router(users_router)
 app.include_router(stream_router)
 app.include_router(camera_settings_router)
 app.include_router(clips_router)
+app.include_router(internal_router)
 
 @app.get("/health")
 def health_check():
