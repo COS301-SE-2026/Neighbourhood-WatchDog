@@ -1,13 +1,15 @@
 from fastapi import HTTPException, Depends, Query
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import String, Text, select, func, or_
+from uuid import uuid4, UUID
+from fastapi.exceptions import ResponseValidationError
+from datetime import datetime
+
 from app.auth.dependencies import get_current_user
 from app.models.audit_log import AuditAction
 from app.models.audit_log import AuditLog
 from app.core.database import DbSession
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select, func
 from app.schemas.audit_log import GetAuditLogsRes, PaginatedResponse, AuditLogScheme
-from uuid import uuid4, UUID
-from fastapi.exceptions import ResponseValidationError
 
 PAGE = 1
 SIZE = 30
@@ -82,22 +84,65 @@ async def create_audit_log_item(
         raise HTTPException(400, "Could not create audit log item. Failed to add audit log item.")
 
 async def get_audit_logs_handler(
+    search_term: str,
+    action: AuditAction,
+    start_date: datetime,
+    end_date: datetime,
+    target_entity_type: str,
+    sort_order: str,
     page: int,
     size: int,
     db: DbSession,
 ) -> GetAuditLogsRes:
-    #TODO: Maybe return the username as well
+    #TODO: consider returning the username as well
     if not db:
         raise HTTPException(500, "No database.")
 
+    if page < 1:
+        raise HTTPException(422, "page must be >= 1.")
+    if size < 1:
+        raise HTTPException(422, "size must be >= 1.")
+
+    stmt = select(AuditLog)
+
+    # Filters
+    if search_term:
+        conditions = [
+            col.contains(search_term)
+            for col in AuditLog.__table__.columns
+            if isinstance(col.type, (String, Text))
+        ]
+        if conditions:
+            stmt = stmt.where(or_(*conditions))
+
+    if action:
+        stmt = stmt.where(AuditLog.action == action)
+
+    if start_date:
+        stmt = stmt.where(AuditLog.timestamp >= start_date)
+
+    if end_date:
+        stmt = stmt.where(AuditLog.timestamp <= end_date)
+
+    if target_entity_type:
+        stmt = stmt.where(AuditLog.target_entity_type == target_entity_type)
+    
+    count_stmt = select(func.count()).select_from(stmt.subquery())
+    total_count = await db.scalar(count_stmt)
+
     offset = (page - 1) * size
-
-    total_count = db.scalar(select(func.count()).select_from(AuditLog))
-
-    if offset > total_count:
+    if total_count and offset >= total_count:
         raise HTTPException(422, "Request is beyond the total number of audit logs.")
 
-    stmt = select(AuditLog).offset(offset).limit(size).order_by(AuditLog.id)
+    if sort_order and sort_order == "ASC":
+        stmt = stmt.order_by(AuditLog.timestamp.asc())
+    elif sort_order and sort_order == "DESC":
+        stmt = stmt.order_by(AuditLog.timestamp.asc())
+    else: 
+        stmt = stmt.order_by(AuditLog.id.desc())
+
+    stmt = stmt.offset(offset).limit(size)
+    
     audit_logs = db.scalars(stmt).all()
 
     results = [AuditLogScheme.model_validate(a) for a in audit_logs]
