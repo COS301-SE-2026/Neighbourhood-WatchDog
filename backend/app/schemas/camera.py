@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from app.schemas.property import NonEmptyString
 from app.models.camera import CameraVisibilityEnum
 from uuid import UUID
@@ -12,6 +12,7 @@ class RegisterCameraReq(BaseModel):
     property_id: UUID
 
 class CameraRes(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: UUID
     property_id: UUID
     neighbourhood_id: UUID
