@@ -21,3 +21,19 @@ def _classify_severity(confidence_score: float) -> str:
 def should_notify(confidence_score: float) -> bool:
     severity = _classify_severity(confidence_score)
     return severity in ("HIGH", "CRITICAL")
+
+def _format_whatsapp_message(
+        severity: str,
+        detection_type: str,
+        camera_id: str,
+        timestamp: str,
+) -> str:
+    severity_emoji = "🔴" if severity == "CRITICAL" else "🟡"
+    formatted_type = detection_type.replaced("_", " ").title()
+    return(
+        f"{severity_emoji} *{severity} ALERT - Neighbourhood Watchdog*\n\n"
+        f"Camera: {camera_id}\n"
+        f"Detection: {formatted_type}\n"
+        f"Time: {timestamp}\n\n"
+        f"Open the dashboard to review this alert."
+    )
