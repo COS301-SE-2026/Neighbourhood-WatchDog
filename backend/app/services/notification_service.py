@@ -70,3 +70,25 @@ def _send_whatsapp(to_phone: str, message: str) -> tuple[bool, str | None]:
     except Exception as e:
         logger.error(f"WhatsApp send failed to {to_phone}: {e}")
         return False, str(e)
+    
+def _log_notification(
+        db: Session,
+        alert_id: UUID,
+        user_id: UUID,
+        channel: NotificationChannel,
+        success: bool,
+        error_message: str | None,
+) -> None:
+    try:
+        record = Notification(
+            alert_id=alert_id,
+            user_id=user_id,
+            channel=channel.value,
+            status=NotificationStatus.SENT.value if success else NotificationStatus.FAILED.value,
+            error_message=error_message,
+        )
+        db.add(record)
+        db.commit()
+    except Exception as e:
+        logger.error(f"Failed to log notification record: {e}")
+        db.rollback()
