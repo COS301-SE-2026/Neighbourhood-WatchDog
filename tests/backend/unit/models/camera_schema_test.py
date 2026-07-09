@@ -11,11 +11,13 @@ class TestRegisterCameraReq:
         """Happy path"""
         property_id = uuid4()
         req = RegisterCameraReq(
+            name="Camera 1",
             rtsp_url="rtsp://admin:password@192.168.1.100:554/Streaming/channels/101",
             location="Front Door",
             visibility=CameraVisibilityEnum.PRIVATE,
             property_id=property_id
         )
+        assert req.name == "Camera 1"
         assert req.rtsp_url == "rtsp://admin:password@192.168.1.100:554/Streaming/channels/101"
         assert req.location == "Front Door"
         assert req.visibility == CameraVisibilityEnum.PRIVATE
@@ -74,14 +76,18 @@ class TestCameraRes:
             id=camera_id,
             property_id=property_id,
             neighbourhood_id=neighbourhood_id,
+            name="Camera 1",
             visibility=CameraVisibilityEnum.PRIVATE,
             location="Front Door",
             rtsp_url="rtsp://192.168.1.100:554/stream",
+            enabled=True,
             created_at=now
         )
         assert model.id == camera_id
+        assert model.name == "Camera 1"
         assert model.location == "Front Door"
         assert model.visibility == CameraVisibilityEnum.PRIVATE
+        assert model.enabled
 
     def test_missing_location(self):
         """Test missing location raises ValidationError"""
@@ -117,6 +123,8 @@ class TestRegisterCameraRes:
             id=uuid4(),
             property_id=uuid4(),
             neighbourhood_id=uuid4(),
+            name="Camera 1",
+            enabled=True,
             visibility=CameraVisibilityEnum.PRIVATE,
             location="Front Door",
             rtsp_url="rtsp://192.168.1.100:554/stream",

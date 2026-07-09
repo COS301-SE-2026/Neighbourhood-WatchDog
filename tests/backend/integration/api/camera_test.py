@@ -10,9 +10,11 @@ async def test_register_camera(async_client, auth_headers):
         "id": "22222222-2222-2222-2222-222222222222",
         "property_id": "33333333-3333-3333-3333-333333333333",
         "neighbourhood_id": "44444444-4444-4444-4444-444444444444",
+        "name": "Camera 1",
         "visibility": "PRIVATE",
         "location": LOCATION,
         "rtsp_url": RSTP_URL,
+        "enabled": True,
         "created_at": "2021-01-01T00:00:00",
     }
 
@@ -23,6 +25,7 @@ async def test_register_camera(async_client, auth_headers):
         payload = {
             "rtsp_url": RSTP_URL,
             "location": LOCATION,
+            "name": "Camera 1",
             "visibility": "PRIVATE",
             "property_id": "33333333-3333-3333-3333-333333333333",
         }
@@ -39,9 +42,11 @@ async def test_get_property_cameras(async_client, auth_headers):
         "id": "22222222-2222-2222-2222-222222222222",
         "property_id": "33333333-3333-3333-3333-333333333333",
         "neighbourhood_id": "44444444-4444-4444-4444-444444444444",
+        "name": "Camera 1",
         "visibility": "PRIVATE",
         "location": LOCATION,
         "rtsp_url": RSTP_URL,
+        "enabled": True,
         "created_at": "2021-01-01T00:00:00",
     }
 
