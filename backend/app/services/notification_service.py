@@ -29,7 +29,7 @@ def _format_whatsapp_message(
         timestamp: str,
 ) -> str:
     severity_emoji = "🔴" if severity == "CRITICAL" else "🟡"
-    formatted_type = detection_type.replaced("_", " ").title()
+    formatted_type = detection_type.replace("_", " ").title()
     return(
         f"{severity_emoji} *{severity} ALERT - Neighbourhood Watchdog*\n\n"
         f"Camera: {camera_id}\n"
@@ -106,7 +106,7 @@ async def dispatch_notifications(
         logger.info(f"Alert {alert_id}: confidence {confidence_score:.2f} below notification threshold, skipping")
         return
     
-    if os.get.env("NOTIFICATION_ENABLED", "false").lower() != "true":
+    if os.getenv("NOTIFICATION_ENABLED", "false").lower() != "true":
         logger.info(f"Alert {alert_id}: NOTIFICATION_ENABLED is not 'true', skipping")
         return
     
@@ -133,4 +133,6 @@ async def dispatch_notifications(
             if not success:
                 logger.warning(f"WhatsApp failed for user {user.id}: {error}")
             else:
-                logger.info(f"User {user.id} has no phone_number, skipping")
+                logger.info(f"Whatsapp sent successfully to user {user.id}")
+        else:
+            logger.info(f"User {user.id} has no phone_number, skipping")
