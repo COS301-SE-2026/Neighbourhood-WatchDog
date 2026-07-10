@@ -8,7 +8,8 @@ import { SignupCard } from "../../../components/auth-components/signup-card";
 export default function SignupPage() {
   const router = useRouter();
 
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [address, setAddress] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,7 +29,7 @@ export default function SignupPage() {
     setError(null);
 
     // Validation
-    if (!name.trim() || !address.trim() || !email.trim() || !password.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !address.trim() || !email.trim() || !password.trim()) {
       setError("Please fill in all fields");
       return;
     }
@@ -53,7 +54,7 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      await signUp(email, password, name, address);
+      await signUp(email, password, firstName, lastName, address);
   
       
       //clear data
@@ -98,8 +99,10 @@ export default function SignupPage() {
 
   return (
     <SignupCard
-      name={name}
-      setName={setName}
+      firstName={firstName}
+      setFirstName={setFirstName}
+      lastName={lastName}
+      setLastName={setLastName}
       email={email}
       setEmail={setEmail}
       password={password}

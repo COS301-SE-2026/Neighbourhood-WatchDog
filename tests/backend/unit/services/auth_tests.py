@@ -38,7 +38,8 @@ def test_register_user_success(mock_cognito):
     payload = {
         "email": TEST_EMAIL,
         "password": TEST_PASSWORD,
-        "name": "Zaman",
+        "firstName": "Zaman",
+        "lastName": "Bassa",
         "address": "JHB"
     }
 

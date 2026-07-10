@@ -65,7 +65,7 @@ def sign_up(email: str, password : str, name : str, address: str):
             ],
         )
 
-        return { # TODO: Send this response to the database to add the user
+        return {
             "success": True,
             "user_sub": response["UserSub"],
             "user_confirmed": response["UserConfirmed"],
