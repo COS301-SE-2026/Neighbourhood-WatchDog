@@ -84,15 +84,15 @@ async def create_audit_log_item(
         raise HTTPException(400, "Could not create audit log item. Failed to add audit log item.")
 
 async def get_audit_logs_handler(
-    search_term: str,
-    action: AuditAction,
-    start_date: datetime,
-    end_date: datetime,
-    target_entity_type: str,
-    sort_order: str,
     page: int,
     size: int,
     db: DbSession,
+    search_term: str = None,
+    action: AuditAction = None,
+    start_date: datetime = None,
+    end_date: datetime = None,
+    target_entity_type: str = None,
+    sort_order: str = None,
 ) -> GetAuditLogsRes:
     #TODO: consider returning the username as well
     if not db:
