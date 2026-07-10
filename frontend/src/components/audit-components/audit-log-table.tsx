@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react"
 import { DataTable } from "@/components/data-table"
 import { AuditLog, PaginatedResponse } from "@/lib/validators/audit"
-import { getAuditLogs } from "@/lib/api/audit"
+import { AuditLogsFilters, getAuditLogs } from "@/lib/api/audit"
 import { ColumnDef } from "@tanstack/react-table"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-
+import { AuditFilters } from "./audit-filters"
 
 const SIZE = 30
 
@@ -48,20 +48,21 @@ export function AuditLogTable() {
     const [loading, setLoading] = useState<boolean>(true)
     const [selectedRow, setSelectedRow] = useState<AuditLog | null>(null)
 
-    useEffect(() => {
-        
-        async function fetchData(){
-            setLoading(true)
-            try{
-                const logs = await getAuditLogs(page, SIZE)
-                setAuditLog(logs)
-            } catch(e) {
-                console.error(e)
-            } finally {
-                setLoading(false)
-            }
 
+    async function fetchData(filters?: AuditLogsFilters){
+        setLoading(true)
+        try{
+            const logs = await getAuditLogs(page, SIZE, filters)
+            setAuditLog(logs)
+        } catch(e) {
+            console.error(e)
+        } finally {
+            setLoading(false)
         }
+
+    }
+
+    useEffect(() => {
         fetchData()
     }, [page])
     
@@ -134,6 +135,7 @@ export function AuditLogTable() {
                     )}
                 </DialogContent>
             </Dialog>
+            <AuditFilters onChange={fetchData}/>
             <DataTable columns={columns} data={data} />
             <PaginationControls 
                 previousDisabled={page==1}
