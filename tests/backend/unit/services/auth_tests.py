@@ -43,7 +43,9 @@ def test_register_user_success(mock_cognito):
         "address": "JHB"
     }
 
-    result = auth_service.register_user(payload)
+    mock_db = MagicMock()
+
+    result = auth_service.register_user(payload, mock_db)
 
     assert result["success"] is True # DID IT SUCCESFULLY EXECUTE
     assert result["data"]["user_sub"] == "abc-123"
