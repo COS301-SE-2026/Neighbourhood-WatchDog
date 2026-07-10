@@ -1,5 +1,5 @@
 services:
-  # redis: 
+  # redis:
   #   image: redis:7-alpine
   #   container_name: redis_cache
   #   restart: always
@@ -31,6 +31,10 @@ services:
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
       COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
       FRONTEND_URL: ${FRONTEND_URL}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM}
+      NOTIFICATION_ENABLED: ${NOTIFICATION_ENABLED}
     restart: always
     # volumes:
     #   - ./backend:/app
@@ -59,9 +63,9 @@ services:
       context: ./mediamtx
     platform: linux/amd64
     ports:
-      - "8554:8554"    # RTSP
-      - "8889:8889"    # WebRTC
-      - "9997:9997"    # API
+      - "8554:8554" # RTSP
+      - "8889:8889" # WebRTC
+      - "9997:9997" # API
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx/mediamtx.yml
     restart: always
