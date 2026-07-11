@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { AuditLogsFilters } from "@/lib/api/audit"
+import { useDebounce } from "@/hooks/use-debounce"
 
 // user should be able to filter by:
 //  search
@@ -18,15 +19,17 @@ export function AuditFilters({
     onChange
 }: AuditFiltersProps){
     const [searchTerm, setSearchTerm] = useState<AuditLogsFilters['searchTerm']>()
+    const debouncedSearch = useDebounce(searchTerm)
     const [action, setAction] = useState<AuditLogsFilters['action']>()
     const [startDate, setStartDate] = useState<AuditLogsFilters['startDate']>()
     const [endDate, setEndDate] = useState<AuditLogsFilters['endDate']>()
     const [targetEntityType, setTargetEntityType] = useState<AuditLogsFilters['targetEntityType']>("")
     const [sortOrder, setSortOrder] = useState<AuditLogsFilters['sortOrder']>()
 
+
     useEffect(() => {
-        onChange({searchTerm, action, startDate, endDate, targetEntityType, sortOrder})
-    }, [searchTerm, action, startDate, endDate, targetEntityType, sortOrder])
+        onChange({searchTerm: debouncedSearch, action, startDate, endDate, targetEntityType, sortOrder})
+    }, [debouncedSearch, action, startDate, endDate, targetEntityType, sortOrder])
 
     return (
         <div>
@@ -45,7 +48,7 @@ export function AuditFilters({
                 <option value="DELETE">DELETE</option>
             </select>
             <label>Choose a start date:</label>
-            <input
+            <input  
                 type="datetime-local"
                 onChange={(e) => setStartDate(e.target.value)}
             ></input>

@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Depends, Query
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import String, Text, select, func, or_, Enum
+from sqlalchemy import String, Text, select, func, or_, Enum, cast
 from uuid import uuid4, UUID
 from fastapi.exceptions import ResponseValidationError
 from datetime import datetime
@@ -107,10 +107,10 @@ async def get_audit_logs_handler(
 
     # Filters
     if search_term:
+        search_cols = [AuditLog.id, AuditLog.action, AuditLog.target_entity_type, AuditLog.target_entity_id]
         conditions = [
-            col.contains(search_term)
-            for col in AuditLog.__table__.columns
-            if isinstance(col.type, (String, Text)) and not isinstance(col.type, Enum)
+            cast(col, String).ilike(f"%{search_term}%") #non case sensitive search on any str field
+            for col in search_cols
         ]
         if conditions:
             stmt = stmt.where(or_(*conditions))
