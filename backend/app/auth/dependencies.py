@@ -1,6 +1,6 @@
-import uuid
-from fastapi import Header, HTTPException, status, Request, Depends
+from fastapi import HTTPException, Request, Depends
 from sqlalchemy.orm import Session
+from app.auth.jwt import get_authenticated_claims
 
 from app.core.database import get_db
 from app.models.user import User
@@ -11,12 +11,9 @@ from app.models.user import User
 
 async def get_current_user(request: Request, db: Session = Depends(get_db)):
     claims = getattr(request.state, "claims", None)
-    #If an endpoint is public then the claims will not be calculated, so be aware of that.
+
     if claims is None:
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required"
-        )
+        claims = get_authenticated_claims(request)
     
     sub = claims["sub"]
     email = claims["email"]

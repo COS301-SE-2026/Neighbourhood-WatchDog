@@ -1,9 +1,10 @@
-from jose import JWTError
+from http.client import HTTPException
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from app.auth.jwt import verify_jwt
+from app.auth.jwt import get_authenticated_claims
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -25,22 +26,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if is_public:
             return await call_next(request)
 
-        auth_header = request.headers.get("Authorization")
-
-        if not is_public:
-            if not auth_header:#does it have JWT
-                return JSONResponse({"detail": "No Authorization header"}, status_code=401)
-
-        if not auth_header.startswith("Bearer "):#extract JWT
-            return JSONResponse({"detail": "Invalid Authorization header"}, status_code=401)
-
-        token = auth_header.split(" ", 1)[1] #get jwt
-
         try:
-            claims = verify_jwt(token)
-        except JWTError:
-            return JSONResponse({"detail": "Invalid or expired token"}, status_code=401)
-
-        request.state.claims = claims
+            get_authenticated_claims(request) #verify JWT and set claims(data from JWT)
+        except HTTPException as e:
+            return JSONResponse(
+                {"detail": e.detail},
+                status_code=e.status_code,
+            )
 
         return await call_next(request)
