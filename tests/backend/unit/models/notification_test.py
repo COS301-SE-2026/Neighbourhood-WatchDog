@@ -103,3 +103,34 @@ class TestNotificationRes:
         obj = FakeOrmNotification(**_make_notification_res())
         res = NotificationRes.model_validate(obj)
         assert res.channel == "WHATSAPP"
+
+class TestListNotificationRes:
+    def test_valid_with_data(self):
+        n1 = NotificationRes(**_make_notification_res())
+        n2 = NotificationRes(**_make_notification_res(channel="EMAIL"))
+        res = ListNotificationRes(status=200, data=[n1, n2])
+ 
+        assert res.status == 200
+        assert res.message is None
+        assert len(res.data) == 2
+ 
+    def test_data_defaults_to_empty_list(self):
+        res = ListNotificationRes(status=200)
+        assert res.data == []
+ 
+    def test_message_optional(self):
+        res = ListNotificationRes(status=200, message="No notifications found")
+        assert res.message == "No notifications found"
+ 
+    def test_missing_status_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            ListNotificationRes(data=[])
+ 
+    def test_invalid_nested_data_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            ListNotificationRes(status=200, data=[{"channel": "WHATSAPP"}])
+ 
+    def test_data_from_dicts_is_coerced(self):
+        """Pydantic should coerce dicts into NotificationRes"""
+        res = ListNotificationRes(status=200, data=[_make_notification_res()])
+        assert isinstance(res.data[0], NotificationRes)
