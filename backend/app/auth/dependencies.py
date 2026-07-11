@@ -1,4 +1,4 @@
-from fastapi import HTTPException, Request, Depends
+from fastapi import HTTPException, Request, Depends, status
 from sqlalchemy.orm import Session
 from app.auth.jwt import get_authenticated_claims
 
@@ -43,6 +43,21 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
         ),
     }
 
+def require_role(*allowed_roles: str):#input any number of roles that are allowed and it will check for you
+    """Dependency function to check if the current user has one of the allowed roles. If allowed, then will return current user"""
+    async def role_checker(current_user: dict = Depends(get_current_user)):
+
+        user_role = current_user["custom:role"]
+
+        if user_role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions",
+            )
+
+        return current_user
+
+    return role_checker
 
 
 
