@@ -47,9 +47,9 @@ export function AuditLogTable() {
     const [auditLog, setAuditLog] = useState<PaginatedResponse<AuditLog>|null>(null)
     const [loading, setLoading] = useState<boolean>(true)
     const [selectedRow, setSelectedRow] = useState<AuditLog | null>(null)
+    const [filters, setFilters] = useState<AuditLogsFilters>({})
 
-
-    async function fetchData(filters?: AuditLogsFilters){
+    async function fetchData(){
         setLoading(true)
         try{
             const logs = await getAuditLogs(page, SIZE, filters)
@@ -59,12 +59,11 @@ export function AuditLogTable() {
         } finally {
             setLoading(false)
         }
-
     }
 
     useEffect(() => {
         fetchData()
-    }, [page])
+    }, [page, filters])
     
     const data = auditLog?.results ?? []
 
@@ -135,7 +134,7 @@ export function AuditLogTable() {
                     )}
                 </DialogContent>
             </Dialog>
-            <AuditFilters onChange={fetchData}/>
+            <AuditFilters filters={filters} onChange={(filters: AuditLogsFilters) => {setFilters(filters)}}/>
             <DataTable columns={columns} data={data} />
             <PaginationControls 
                 previousDisabled={page==1}

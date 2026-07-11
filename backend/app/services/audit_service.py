@@ -133,7 +133,7 @@ async def get_audit_logs_handler(
     if sort_order and sort_order == "ASC":
         stmt = stmt.order_by(AuditLog.timestamp.asc())
     elif sort_order and sort_order == "DESC":
-        stmt = stmt.order_by(AuditLog.timestamp.asc())
+        stmt = stmt.order_by(AuditLog.timestamp.desc())
     else: 
         stmt = stmt.order_by(AuditLog.id.desc())
 

@@ -4,63 +4,62 @@ import { useEffect, useState } from "react"
 import { AuditLogsFilters } from "@/lib/api/audit"
 import { useDebounce } from "@/hooks/use-debounce"
 
-// user should be able to filter by:
-//  search
-//  start date 
-//  end date
-//  action
-//  target entity type
-
 interface AuditFiltersProps{
+    filters: AuditLogsFilters
     onChange: (filters: AuditLogsFilters) => void
 }
 
 export function AuditFilters({
+    filters, 
     onChange
 }: AuditFiltersProps){
-    const [searchTerm, setSearchTerm] = useState<AuditLogsFilters['searchTerm']>()
-    const debouncedSearch = useDebounce(searchTerm)
-    const [action, setAction] = useState<AuditLogsFilters['action']>()
-    const [startDate, setStartDate] = useState<AuditLogsFilters['startDate']>()
-    const [endDate, setEndDate] = useState<AuditLogsFilters['endDate']>()
-    const [sortOrder, setSortOrder] = useState<AuditLogsFilters['sortOrder']>()
 
+    const [rawSearch, setRawSearch] = useState<string>(filters?.searchTerm ?? "")
+    const debouncedSearch = useDebounce(rawSearch)
 
     useEffect(() => {
-        onChange({searchTerm: debouncedSearch, action, startDate, endDate, sortOrder})
-    }, [debouncedSearch, action, startDate, endDate, sortOrder])
+        onChange({...filters, searchTerm: debouncedSearch})
+    }, [debouncedSearch])
 
     return (
         <div className="flex flex-col gap-2">
             <input
+                className="border-1 rounded-radius-lg"
                 type="text"
-                onChange={(e) => setSearchTerm(e.target.value)} 
-                placeholder="Search by any field..."
+                onChange={(e) => setRawSearch(e.target.value)} 
+                placeholder="Search by ID, Action, Target Entity Type or Target Entity ID field..."
             />
-            <select
-                name="actions"
-                // value={action}
-                onChange={(e) => setAction(e.target.value as AuditLogsFilters['action'])
-                }>
-                <option value="UPDATE">UPDATE</option>
-                <option value="CREATE">CREATE</option>
-                <option value="DELETE">DELETE</option>
-            </select>
-            <label>Choose a start date:</label>
-            <input  
-                type="datetime-local"
-                onChange={(e) => setStartDate(e.target.value)}
-            ></input>
-            <label>Choose an end date:</label>
-            <input
-                type="datetime-local"
-                onChange={(e) => setEndDate(e.target.value)}
-            ></input>
-            <select
-                name="sortOrder"
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value as AuditLogsFilters['sortOrder'])}>    
-            </select>
+            <div className="flex flex-row justify-between">
+                <select
+                    name="actions"
+                    // value={action}
+                    onChange={(e) => onChange({...filters, action: e.target.value as AuditLogsFilters['action']})}>
+                    <option value="UPDATE">UPDATE</option>
+                    <option value="CREATE">CREATE</option>
+                    <option value="DELETE">DELETE</option>
+                </select>
+                <div>
+                    <label>From:</label>
+                    <input  
+                        type="datetime-local"
+                        onChange={(e) => onChange({...filters, startDate: e.target.value})}
+                    ></input>
+                </div>
+                <div>
+                    <label>Up To:</label>
+                    <input
+                        type="datetime-local"
+                        onChange={(e) => onChange({...filters, endDate: e.target.value})}
+                    ></input>
+                </div>
+                <select
+                    name="sortOrder"
+                    // value={sortOrder}
+                    onChange={(e) => onChange({...filters, sortOrder: e.target.value as AuditLogsFilters['sortOrder']})}>  
+                    <option value="ASC">Oldest to newest</option>
+                    <option value="DESC">Newest to oldest</option>  
+                </select>
+            </div>
         </div>
     )
 }

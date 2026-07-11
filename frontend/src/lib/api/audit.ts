@@ -30,10 +30,10 @@ export async function getAuditLogs(page: number, size: number, filters?: AuditLo
         url += `&start_date=${filters.startDate}`
 
     if (filters?.endDate)
-        url += `&end_date${filters.endDate}`
+        url += `&end_date=${filters.endDate}`
 
     if (filters?.sortOrder)
-        url += `&sort_order${filters.sortOrder}`
+        url += `&sort_order=${filters.sortOrder}`
 
     const result = await apiCall<GetAuditLogRes>(url, {
         method: 'GET',
