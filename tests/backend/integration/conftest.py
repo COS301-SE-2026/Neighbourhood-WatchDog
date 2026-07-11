@@ -1,9 +1,10 @@
 import os
+os.environ["TESTING"] = "true"
+os.environ["SKIP_DB_INIT"] = "false"
+
 import main as main_module
 import pytest
 from httpx import AsyncClient
-
-os.environ["SKIP_DB_INIT"] = "false"
 
 TEST_BEARER = "Bearer test"
 
