@@ -91,7 +91,6 @@ async def get_audit_logs_handler(
     action: AuditAction = None,
     start_date: datetime = None,
     end_date: datetime = None,
-    target_entity_type: str = None,
     sort_order: str = None,
 ) -> GetAuditLogsRes:
     #TODO: consider returning the username as well
@@ -123,9 +122,6 @@ async def get_audit_logs_handler(
 
     if end_date:
         stmt = stmt.where(AuditLog.timestamp <= end_date)
-
-    if target_entity_type:
-        stmt = stmt.where(AuditLog.target_entity_type == target_entity_type)
     
     count_stmt = select(func.count()).select_from(stmt.subquery())
     total_count = db.scalar(count_stmt)

@@ -12,7 +12,6 @@ export type AuditLogsFilters = {
     // as dates on the frontend
     startDate?: string 
     endDate?: string 
-    targetEntityType?: string
     sortOrder?: 'ASC' | 'DESC'
 }
 
@@ -32,9 +31,6 @@ export async function getAuditLogs(page: number, size: number, filters?: AuditLo
 
     if (filters?.endDate)
         url += `&end_date${filters.endDate}`
-
-    if (filters?.targetEntityType)
-        url += `&target_entity_type${filters.targetEntityType}`
 
     if (filters?.sortOrder)
         url += `&sort_order${filters.sortOrder}`

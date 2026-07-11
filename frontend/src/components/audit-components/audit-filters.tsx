@@ -23,16 +23,15 @@ export function AuditFilters({
     const [action, setAction] = useState<AuditLogsFilters['action']>()
     const [startDate, setStartDate] = useState<AuditLogsFilters['startDate']>()
     const [endDate, setEndDate] = useState<AuditLogsFilters['endDate']>()
-    const [targetEntityType, setTargetEntityType] = useState<AuditLogsFilters['targetEntityType']>("")
     const [sortOrder, setSortOrder] = useState<AuditLogsFilters['sortOrder']>()
 
 
     useEffect(() => {
-        onChange({searchTerm: debouncedSearch, action, startDate, endDate, targetEntityType, sortOrder})
-    }, [debouncedSearch, action, startDate, endDate, targetEntityType, sortOrder])
+        onChange({searchTerm: debouncedSearch, action, startDate, endDate, sortOrder})
+    }, [debouncedSearch, action, startDate, endDate, sortOrder])
 
     return (
-        <div>
+        <div className="flex flex-col gap-2">
             <input
                 type="text"
                 onChange={(e) => setSearchTerm(e.target.value)} 

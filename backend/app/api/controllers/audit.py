@@ -34,7 +34,6 @@ async def get_audit_logs(
         action=action,
         start_date=start_date,
         end_date=end_date,
-        target_entity_type=target_entity_type,
         sort_order=sort_order,
         db=db,
         page=page,
