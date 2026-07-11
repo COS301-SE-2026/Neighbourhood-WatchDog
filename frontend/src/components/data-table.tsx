@@ -40,9 +40,9 @@ export function DataTable<TData, TValue>({
   const cardsView = (
     <div className="flex flex-col gap-3">
       {data.map((rowData, index) => (
-        <Card key={index}>
+        <div key={index}>
           {renderMobileCard && renderMobileCard(rowData)}
-        </Card>
+        </div>
       ))}
     </div>
   )
