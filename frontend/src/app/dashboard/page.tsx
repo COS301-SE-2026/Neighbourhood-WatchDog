@@ -5,7 +5,7 @@ import { useAlerts } from "@/hooks/use-alerts"
 import { toast } from "sonner"
 import { useEffect, useState } from "react"
 
-
+import { addCamera as apiAddCamera, fetchCameras as apiFetchCameras } from "@/lib/api/camera"
 import { NewCameraCard } from "@/components/new-camera-card"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -28,6 +28,8 @@ const initialCameras: CameraProp[] = [
     { id: "5", name: "Camera 4 - Kitchen", visibility: "PRIVATE",enabled: true, location: "Kitchen" },
 ]
 
+const PROPERTY_ID = "a79d1505-5000-438e-9813-ba0f5aecb5e2"; // TODO: replace once /properties/my-properties works
+
 export default function Dashboard() {
 
     const { alerts, connected } = useAlerts("10000000-0000-0000-0000-000000000001");
@@ -41,18 +43,47 @@ export default function Dashboard() {
     }, [alerts]);
 
     const [showCard, setShowCard] = useState(false);
-    const [cameras, setCameras] = useState<CameraProp[]>(initialCameras);
+    const [cameras, setCameras] = useState<CameraProp[]>([]);
 
-    const handleAcknowledge = (data: { name: string, location: string; rtspUrl: string }) => {
-        const newCamera: CameraProp = {
-            id: crypto.randomUUID(),
+    useEffect(() => {
+        apiFetchCameras(PROPERTY_ID)
+            .then((data) => {
+                setCameras(
+                    data.map((c) => ({
+                        id: c.id,
+                        name: c.name,
+                        location: c.location,
+                        visibility: c.visibility,
+                        enabled: c.enabled,
+                        rtspUrl: c.rtsp_url,
+                    }))
+                );
+            })
+            .catch((err) => {
+                console.error("Failed to fetch cameras", err);
+                toast.error("Failed to load cameras");
+            });
+    }, []);
+
+    const handleAcknowledge = async (data: { name: string, location: string; rtspUrl: string }) => {
+        const newCamera = await apiAddCamera({
             name: data.name,
             location: data.location,
             visibility: "PRIVATE",
             enabled: true,
-            rtspUrl: data.rtspUrl || undefined,
-        };
-        setCameras((prev) => [...prev, newCamera]);
+            rtsp_url: data.rtspUrl,
+            property_id: PROPERTY_ID
+        });
+        setCameras((prev) => [...prev, 
+            {
+        id: newCamera.id,
+        name: newCamera.name,
+        location: newCamera.location,
+        visibility: newCamera.visibility,
+        enabled: newCamera.enabled,
+        rtspUrl: newCamera.rtsp_url,
+            }
+        ]);
         setShowCard(false);
     };
 

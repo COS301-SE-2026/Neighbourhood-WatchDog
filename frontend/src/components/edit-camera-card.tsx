@@ -73,7 +73,7 @@ export function EditCamera({
                         <FieldGroup>
                             <Field>
                             <Label htmlFor="name">Name</Label>
-                            <Input id="name" name="name" defaultValue={name} />
+                            <Input id="name" name="name" defaultValue={name} onChange={(e) => setNameValue(e.target.value)}/>
                             </Field>
 
                             <Field>

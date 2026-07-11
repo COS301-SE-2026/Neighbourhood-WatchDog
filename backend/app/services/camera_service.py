@@ -91,7 +91,7 @@ def edit_camera_handler(
     req: CameraEditReq,
     db: Session, 
     claims: dict
-    ):
+    ) -> CameraRes:
     
     try:
 
@@ -124,7 +124,17 @@ def edit_camera_handler(
         db.commit()
         db.refresh(camera_obj)
 
-        return camera_obj
+        return CameraRes(
+            id=camera_obj.id,
+            name=camera_obj.name,
+            property_id=camera_obj.property_id,
+            neighbourhood_id=camera_obj.neighbourhood_id,
+            rtsp_url=camera_obj.rtsp_url,
+            visibility=camera_obj.visibility,
+            location=camera_obj.location,
+            enabled=camera_obj.enabled,
+            created_at=camera_obj.created_at,
+        )
     
     except HTTPException as he:
         db.rollback()
@@ -171,11 +181,13 @@ async def list_cameras_handler(property_id: str, db: DbSession, claims: dict) ->
         data=[
             CameraRes(
                 id=c.id,
+                name=c.name,
                 property_id=c.property_id,
                 neighbourhood_id=c.neighbourhood_id,
                 rtsp_url=c.rtsp_url,
                 visibility=c.visibility,
                 location=c.location,
+                enabled=c.enabled,
                 created_at=c.created_at,
             )
             for c in cameras
