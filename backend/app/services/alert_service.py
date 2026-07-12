@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, date, timedelta
+from datetime import datetime, timezone, timedelta, date as date_cls
 from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm import Session
 from app.models.alert import Alert
@@ -7,7 +7,7 @@ from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, Tim
 from fastapi import HTTPException
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 
 from app.core.database import DbSession
@@ -226,6 +226,12 @@ def get_response_metrics_handler(
         
     )
 
+INTERVAL_TO_TRUNC = {
+    TimeIntervalsEnum.DAILY: "day",
+    TimeIntervalsEnum.MONTHLY: "month",
+    TimeIntervalsEnum.YEARLY: "year",
+}
+
 async def get_alert_frequency_metrics_handler(
     neighbourhood_id: UUID,
     db: DbSession,
@@ -244,23 +250,43 @@ async def get_alert_frequency_metrics_handler(
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
         raise HTTPException(403, "Not authorised for this neighbourhood")
     
-    date = None
-    today = date.today()
+    start_date = None
+    today = date_cls.today()
 
     if time_period == TimePeriod.WEEK:
-        date = today - timedelta(days=7)
+        start_date = today - timedelta(days=7)
     elif time_period == TimePeriod.MONTH:
-        date = today - relativedelta(months=1)
+        start_date = today - relativedelta(months=1)
     elif time_period == TimePeriod.THREE_MONTH:
-        date = today - relativedelta(months=3)
+        start_date = today - relativedelta(months=3)
     elif time_period == TimePeriod.SIX_MONTHS:
-        date = today - relativedelta(months=6)
+        start_date = today - relativedelta(months=6)
     elif time_period == TimePeriod.YEAR:
-        date = today - relativedelta(year=1)
+        start_date = today - relativedelta(year=1)
 
-    stmt = select(Alert)
+    trunc_unit = INTERVAL_TO_TRUNC[time_interval]
+    bucket = func.date_trunc(trunc_unit, Alert.created_at).label("bucket")
 
-    if date:
-        stmt.where(Alert.created_at > date)
+    stmt = (
+        select(bucket, func.count(Alert.id).label("count"))
+        .join(Camera, Alert.camera_id == Camera.id)
+        .where(Camera.neighbourhood_id == UUID(str(neighbourhood_id)))
+    )
 
-    #TODO: group by week/month and count
+    if start_date:
+        stmt.where(Alert.created_at > start_date)
+
+    stmt = stmt.group_by(bucket).order_by(bucket)
+
+    rows = db.execute(stmt).all()
+
+    data=[
+        {"period": row.bucket, "count": row.count}
+        for row in rows
+    ]
+
+    return AlertFrequencyMetricsRes(
+        status=200,
+        data=data
+    )
+    

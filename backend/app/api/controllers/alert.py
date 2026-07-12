@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession, get_db
 from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, ListAlertsRes, TimePeriod
-from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler, get_response_metrics_handler
+from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler, get_response_metrics_handler, get_alert_frequency_metrics_handler
 from app.services import alert_service
 from app.schemas.alert import AlertMetricsRes, AlertFrequencyMetricsRes, TimeIntervalsEnum
 
@@ -75,6 +75,7 @@ async def get_alert_frequency_metrics(
         db=db,
         time_interval=time_interval,
         time_period=time_period,
+        claims=claims,
     )
 
 @router.post("/", response_model=AlertResponse)

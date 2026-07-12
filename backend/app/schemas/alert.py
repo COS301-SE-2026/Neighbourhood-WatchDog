@@ -1,7 +1,7 @@
 from enum import Enum
 from datetime import datetime
 from uuid import UUID
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 
 
@@ -78,6 +78,11 @@ class TimePeriod(str, Enum):
 	YEAR = "YEAR"
 	TOTAL = "TOTAL"
 
+class NumberInPeriod(BaseModel):
+	period: datetime
+	count: int
+
 class AlertFrequencyMetricsRes(BaseModel):
-	time_interval: TimeIntervalsEnum # this is how the graph will be broken down by
-	time_period: TimePeriod # this is how far back the metrics should go
+	status: int
+	message: str | None = None
+	data: List[NumberInPeriod] | None = None
