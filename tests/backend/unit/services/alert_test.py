@@ -332,7 +332,7 @@ class TestFrequencyMetrics:
         assert self.mock_db.join.call_count == 0
     
     @pytest.mark.asyncio
-    async def test_no_database(self):
+    async def test_no_time_interval(self):
         with pytest.raises(HTTPException) as exception:
             _ = await get_alert_frequency_metrics_handler(
                 neighbourhood_id=UUID("10000000-0000-0000-0000-000000000001"),
@@ -343,5 +343,20 @@ class TestFrequencyMetrics:
             )
         
         assert exception.value.status_code == 400
+        assert self.mock_db.select.call_count == 0
+        assert self.mock_db.join.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_no_claims(self):
+        with pytest.raises(HTTPException) as exception:
+            _ = await get_alert_frequency_metrics_handler(
+                neighbourhood_id=UUID("10000000-0000-0000-0000-000000000001"),
+                db=self.mock_db,
+                time_interval=TimeIntervalsEnum.DAILY,
+                time_period=TimePeriod.MONTH,
+                claims=None
+            )
+        
+        assert exception.value.status_code == 401
         assert self.mock_db.select.call_count == 0
         assert self.mock_db.join.call_count == 0
