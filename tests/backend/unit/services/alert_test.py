@@ -8,8 +8,8 @@ from fastapi import HTTPException
 
 from app.models.alert import Alert
 from app.models.camera import Camera
-from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler, get_response_metrics_handler
-
+from app.schemas.alert import TimeIntervalsEnum, TimePeriod
+from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler, get_response_metrics_handler, get_alert_frequency_metrics_handler
 
 class TestAcknowledgeAlert:
     def setup_method(self):
@@ -273,3 +273,26 @@ class TestResponseMetrics:
         assert result.average_response_seconds is None
         assert result.items[0].status == "PENDING"
         assert result.items[0].response_seconds is None
+
+class TestFrequencyMetrics:
+    def setup_method(self):
+        self.mock_db = Mock()
+        self.mock_db.execute = Mock()
+        self.claims = {
+            "custom:neighbourhood_id": "10000000-0000-0000-0000-000000000001",
+        }
+
+        self.mock_db.execute.return_value.all.return_value = []
+
+    @pytest.mark.asyncio
+    async def test_happy_case(self):
+        result = await get_alert_frequency_metrics_handler(
+            neighbourhood_id=UUID("10000000-0000-0000-0000-000000000001"),
+            db=self.mock_db,
+            time_interval=TimeIntervalsEnum.DAILY,
+            time_period=TimePeriod.MONTH,
+            claims=self.claims
+        )
+
+        assert result.status == 200
+        assert len(result.data) == 0
