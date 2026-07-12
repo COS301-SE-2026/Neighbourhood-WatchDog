@@ -99,7 +99,7 @@ services:
     ports:
       - "8554:8554"    # RTSP
       - "8889:8889"    # WebRTC
-      # - "8189:8189/udp"
+      - "8189:8189/udp"
       - "9997:9997"    # API
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx/mediamtx.yml

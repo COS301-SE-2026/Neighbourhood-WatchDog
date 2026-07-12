@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { useAlertTrends } from "@/hooks/use-alert-trends";
-import { IncidentTrendChart } from "./IncidentTrendChart"; //needs to be completed by OEM
+// import { IncidentTrendChart } from "./IncidentTrendChart"; //needs to be completed by OEM
 
 
 const DETECTION_TYPES = [
@@ -107,13 +107,13 @@ export function IncidentTrends({ neighbourhoodId }: IncidentTrendProps) {
             ): data?.buckets.length === 0 ? (
                 <p className="text-xs text-slate-500 text-center py-8">No incidents in this date range</p>
 
-            ): data ? (
-                <IncidentTrendChart
-                    buckets={data.buckets}
-                    trendDirection={data.trend_direction}
-                    trendPercentage={data.trend_percentage}
+            // ): data ? (
+            //     <IncidentTrendChart
+            //         buckets={data.buckets}
+            //         trendDirection={data.trend_direction}
+            //         trendPercentage={data.trend_percentage}
                 
-                />
+            //     />
 
             ): null}
         </div>

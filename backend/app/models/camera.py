@@ -1,7 +1,7 @@
 from enum import Enum
 
 from app.core.database import Base
-from sqlalchemy import Column, ForeignKey, String, text, Enum as SAEnum, TIMESTAMP, Float
+from sqlalchemy import Boolean, Column, ForeignKey, String, text, Enum as SAEnum, TIMESTAMP, Float
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -23,6 +23,9 @@ class Camera(Base):
     confidence_threshold = Column(Float, nullable=False, default=0.5, server_default="0.5")
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
+    name = Column(String, nullable=False, server_default="Camera")
+    enabled = Column(Boolean, nullable=False, server_default="true")
+    
     alerts = relationship("Alert", back_populates="camera")
     detection_events = relationship("DetectionEvent", back_populates="camera")
     neighbourhood = relationship("Neighbourhood", back_populates="cameras")

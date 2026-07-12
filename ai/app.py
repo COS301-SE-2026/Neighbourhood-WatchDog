@@ -44,7 +44,7 @@ _settings_lock = threading.Lock()
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 CAMERA_ID = os.getenv("CAMERA_ID", "40000000-0000-0000-0000-000000000001")
 NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001"
-RTSP_URL = os.getenv("RTSP_URL", "rtsp://Intrepid:password1234@192.168.3.68:554/stream2")
+RTSP_URL = os.getenv("RTSP_URL", "rtsp://Intrepid:password1234@192.168.50.143:554/stream2")
 
 
 #clip recording settings
@@ -229,15 +229,14 @@ def _save_weapon_clip(weapon_label: str, conf: float) -> None:
     This does run in a daemon thread, so it should not interefere with the detection loop
     """
 
-    now = datetime.now()
+    now = time.time()
 
-
-    #cooldown check. without this two detections arrivving simultaneously could both upload clips
+    #cooldown check. without this two detections arriving simultaneously could both upload clips
     with _cooldown_lock:
-        if now - _clips_cooldowns.get(weapon_label < 0) < CLIP_COOLDOWN_SECS:
+        if now - _clips_cooldowns.get(weapon_label, 0.0) < CLIP_COOLDOWN_SECS:
             logger.info("Clip cooldown active for '%s', skipping", weapon_label)
             return
-        
+
         _clips_cooldowns[weapon_label] = now
 
 

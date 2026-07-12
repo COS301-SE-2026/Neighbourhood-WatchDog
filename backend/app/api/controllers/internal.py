@@ -20,7 +20,7 @@ class CreateDetectionEventRequest(BaseModel):
     detection_type: str
     confidence_score: float
     thumbnail_url: str | None = None
-    frame_timestamp = str | None = None
+    frame_timestamp: str | None = None
 
 
 class UpdateClipRequest(BaseModel):
@@ -46,7 +46,7 @@ def create_detection_event(body: CreateDetectionEventRequest, db: DbSession):
     try:
         det_type = DetectionType(body.detection_type.upper())
     except ValueError:
-        det_type = label_map(body.detection_type.lower(), DetectionType.WEAPON_DETECTED)
+        det_type = label_map.get(body.detection_type.lower(), DetectionType.WEAPON_DETECTED)
 
 
     camera: Camera | None = db.query(Camera).filter_by(
