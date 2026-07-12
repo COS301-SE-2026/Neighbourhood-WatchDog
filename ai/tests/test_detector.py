@@ -25,7 +25,7 @@ os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 # config
 MEDIAMTX_RTSP_URL = "rtsp://localhost:8554/tapo-camera"
 BACKEND_URL       = "http://localhost:8000"
-CAMERA_ID         = "2"
+CAMERA_ID         = "40000000-0000-0000-0000-000000000001"
 CONF_THRESHOLD    = 0.4
 IOU_THRESHOLD     = 0.3
 INFER_SIZE        = 320
