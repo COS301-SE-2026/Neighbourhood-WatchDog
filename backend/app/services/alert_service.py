@@ -246,6 +246,9 @@ async def get_alert_frequency_metrics_handler(
     if not claims:
         raise HTTPException(401, "Not authenticated")
     
+    if not time_interval:
+        raise HTTPException(400, "No time interval provided")
+    
     caller_neighbourhood = claims.get("custom:neighbourhood_id")
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
         raise HTTPException(403, "Not authorised for this neighbourhood")
@@ -253,16 +256,17 @@ async def get_alert_frequency_metrics_handler(
     start_date = None
     today = date_cls.today()
 
-    if time_period == TimePeriod.WEEK:
-        start_date = today - timedelta(days=7)
-    elif time_period == TimePeriod.MONTH:
-        start_date = today - relativedelta(months=1)
-    elif time_period == TimePeriod.THREE_MONTH:
-        start_date = today - relativedelta(months=3)
-    elif time_period == TimePeriod.SIX_MONTHS:
-        start_date = today - relativedelta(months=6)
-    elif time_period == TimePeriod.YEAR:
-        start_date = today - relativedelta(year=1)
+    if time_period:
+        if time_period == TimePeriod.WEEK:
+            start_date = today - timedelta(days=7)
+        elif time_period == TimePeriod.MONTH:
+            start_date = today - relativedelta(months=1)
+        elif time_period == TimePeriod.THREE_MONTH:
+            start_date = today - relativedelta(months=3)
+        elif time_period == TimePeriod.SIX_MONTHS:
+            start_date = today - relativedelta(months=6)
+        elif time_period == TimePeriod.YEAR:
+            start_date = today - relativedelta(year=1)
 
     trunc_unit = INTERVAL_TO_TRUNC[time_interval]
     bucket = func.date_trunc(trunc_unit, Alert.created_at).label("bucket")
