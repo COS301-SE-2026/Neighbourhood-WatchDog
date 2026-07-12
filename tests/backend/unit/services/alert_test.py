@@ -282,7 +282,11 @@ class TestFrequencyMetrics:
             "custom:neighbourhood_id": "10000000-0000-0000-0000-000000000001",
         }
 
-        self.mock_db.execute.return_value.all.return_value = []
+        self.mock_data = Mock()
+        self.mock_data.bucket = "2025-07-13T00:00:00Z"
+        self.mock_data.count = 200
+
+        self.mock_db.execute.return_value.all.return_value = [self.mock_data]
 
     @pytest.mark.asyncio
     async def test_happy_case(self):
@@ -295,7 +299,7 @@ class TestFrequencyMetrics:
         )
 
         assert result.status == 200
-        assert len(result.data) == 0
+        assert len(result.data) == 1
 
     @pytest.mark.asyncio
     async def test_incorrect_claims(self):
