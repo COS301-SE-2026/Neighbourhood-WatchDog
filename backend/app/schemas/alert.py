@@ -65,11 +65,19 @@ class AlertMetricsRes(BaseModel):
 	average_response_seconds: float | None = None
 	items: list[AlertMetricItem]
       
-class TimeIntervalEnum(str, Enum):
+class TimeIntervalsEnum(str, Enum):
 	DAILY = "DAILY"
 	MONTHLY = "MONTHLY"
 	YEARLY = "YEARLY"
 
+class TimePeriod(str, Enum):
+	WEEK = "WEEK"
+	MONTH = "MONTH"
+	THREE_MONTHS = "THREE_MONTHS"
+	SIX_MONTHS = "SIX_MONTHS"
+	YEAR = "YEAR"
+	TOTAL = "TOTAL"
+
 class AlertFrequencyMetricsRes(BaseModel):
-	time_interval: TimeIntervalEnum
-	
+	time_interval: TimeIntervalsEnum # this is how the graph will be broken down by
+	time_period: TimePeriod # this is how far back the metrics should go

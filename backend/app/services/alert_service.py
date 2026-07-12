@@ -1,8 +1,9 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date, timedelta
+from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm import Session
 from app.models.alert import Alert
 from app.models.detection_event import DetectionEvent
-from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes
+from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes
 from fastapi import HTTPException
 from uuid import UUID
 
@@ -224,3 +225,42 @@ def get_response_metrics_handler(
         items=items
         
     )
+
+async def get_alert_frequency_metrics_handler(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    time_interval: TimeIntervalsEnum,
+    time_period: TimePeriod,
+    claims: dict
+) -> AlertFrequencyMetricsRes:
+    
+    if not db:
+        raise HTTPException(500, "No db")
+
+    if not claims:
+        raise HTTPException(401, "Not authenticated")
+    
+    caller_neighbourhood = claims.get("custom:neighbourhood_id")
+    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
+        raise HTTPException(403, "Not authorised for this neighbourhood")
+    
+    date = None
+    today = date.today()
+
+    if time_period == TimePeriod.WEEK:
+        date = today - timedelta(days=7)
+    elif time_period == TimePeriod.MONTH:
+        date = today - relativedelta(months=1)
+    elif time_period == TimePeriod.THREE_MONTH:
+        date = today - relativedelta(months=3)
+    elif time_period == TimePeriod.SIX_MONTHS:
+        date = today - relativedelta(months=6)
+    elif time_period == TimePeriod.YEAR:
+        date = today - relativedelta(year=1)
+
+    stmt = select(Alert)
+
+    if date:
+        stmt.where(Alert.created_at > date)
+
+    #TODO: group by week/month and count

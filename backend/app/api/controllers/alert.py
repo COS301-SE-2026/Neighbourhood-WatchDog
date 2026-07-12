@@ -7,10 +7,10 @@ from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession, get_db
-from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, ListAlertsRes
+from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, ListAlertsRes, TimePeriod
 from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler, get_response_metrics_handler
 from app.services import alert_service
-from app.schemas.alert import AlertMetricsRes, AlertFrequencyMetricsRes, TimeIntervalEnum
+from app.schemas.alert import AlertMetricsRes, AlertFrequencyMetricsRes, TimeIntervalsEnum
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -66,13 +66,15 @@ async def get_alert_frequency_metrics(
     neighbourhood_id: UUID,
     db: DbSession,
     claims: Claims,
-    time_interval: TimeIntervalEnum = TimeIntervalEnum.DAILY,
+    time_interval: TimeIntervalsEnum = TimeIntervalsEnum.DAILY,
+    time_period: TimePeriod = TimePeriod.WEEK
 ):
     """Responds with number of alerts received with the neighbourhood"""
     return await get_alert_frequency_metrics_handler(
         neighbourhood_id=neighbourhood_id,
         db=db,
-        time_interval=time_interval
+        time_interval=time_interval,
+        time_period=time_period,
     )
 
 @router.post("/", response_model=AlertResponse)
