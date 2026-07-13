@@ -14,4 +14,5 @@ class RiskScoreRes(BaseModel):
 
 class NeighbourhoodRiskScoreRes(BaseModel):
     status: int
+    message: str
     data: RiskScoreRes | None = None

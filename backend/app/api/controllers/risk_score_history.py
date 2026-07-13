@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession, get_db
 from app.auth.rbac import require_role
+from app.schemas.risk_score_history import NeighbourhoodRiskScoreRes
 from app.services.risk_score_history_service import get_neighbourhood_score_handler
 
 
@@ -22,5 +23,9 @@ def get_neighbourhood_score(neighbourhood_id: UUID, db: DbSession, claims: Annot
 
     neighbourhood_risk = get_neighbourhood_score_handler(neighbourhood_id, db, claims)
 
-
+    return NeighbourhoodRiskScoreRes(
+        status=200,
+        message="Risk Score retrieved successfully",
+        data=neighbourhood_risk
+    )
 
