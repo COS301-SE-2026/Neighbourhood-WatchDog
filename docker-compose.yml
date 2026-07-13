@@ -88,6 +88,12 @@ services:
       OPENCV_FFMPEG_CAPTURE_OPTIONS: "rtsp_transport;tcp"
       BACKEND_URL: http://backend:8000
       MKL_THREADING_LAYER: GNU
+      S3_CLIPS_BUCKET: ${S3_CLIPS_BUCKET}
+      AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      CLIP_RETENTION_DAYS: 7
+      CAMERA_ID: "40000000-0000-0000-0000-000000000001"
     volumes:
       - ./ai:/app
     command: uvicorn app:app --host 0.0.0.0 --port 8001 --reload
