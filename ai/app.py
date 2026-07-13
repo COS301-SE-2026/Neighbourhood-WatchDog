@@ -119,6 +119,11 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
 
 
 def _extract_detections(frame) -> tuple:
+
+    print(f"FRAME: shape={frame.shape}, mean={frame.mean():.1f}")
+
+
+    
     """Convert YOLO results to DeepSort detection format."""
 
 
@@ -138,7 +143,7 @@ def _extract_detections(frame) -> tuple:
     threat_results = threat_model.predict(
         frame,
         imgsz=640,
-        conf=threshold,
+        conf=0.35,
         verbose=False
     )
 
@@ -156,7 +161,7 @@ def _extract_detections(frame) -> tuple:
     person_results = person_model.predict(
         frame,
         imgsz=640,
-        conf=threshold,
+        conf=0.25,
         classes=[0],
         verbose=False
         )
@@ -349,7 +354,7 @@ def _detection_loop(rtsp_url: str) -> None:
 
     tracker = DeepSort(
         max_age=150,
-        n_init=3,
+        n_init=1,
         max_iou_distance=0.5,  #for stricter matching and less duplicate boxes
         embedder="mobilenet",
         embedder_gpu=False,
@@ -365,12 +370,22 @@ def _detection_loop(rtsp_url: str) -> None:
         if cap is None:
             continue
 
-        ret, frame = cap.read()
-        if not ret:
-            logger.warning("Empty frame - reconnecting in 2s")
+        
+        grabbed = cap.grab() # consumes frame from buffer without decoding
+        if not grabbed:
+            logger.warning("Empty frame, reconnecting...")
             cap.release()
             cap = None
             time.sleep(2)
+            continue
+        
+        frame_count += 1
+        if frame_count % 4 != 0:
+            continue
+
+        
+        ret, frame = cap.retrieve()
+        if not ret or frame is None:
             continue
 
 
@@ -378,9 +393,7 @@ def _detection_loop(rtsp_url: str) -> None:
         with _frame_buffer_lock:
             _frame_buffer.append(frame.copy())
 
-        frame_count += 1
-        if frame_count % 4 != 0:
-            continue
+        
 
         person_detections, weapon_detections = _extract_detections(frame)
 
@@ -388,6 +401,9 @@ def _detection_loop(rtsp_url: str) -> None:
         tracks = tracker.update_tracks(person_detections, frame=frame)
 
         tracks_payload = _collect_tracks(tracks, alerted_ids)
+
+        print(f"DEBUG: raw_tracks={len(tracks)}, confirmed={sum(1 for t in tracks if t.is_confirmed())}, payload={len(tracks_payload)}, person_dets={len(person_detections)}")
+
 
 
         #adding raw weapon detections (no deepsort, no duplication)
@@ -417,7 +433,7 @@ def _detection_loop(rtsp_url: str) -> None:
 
         #filtering out zero confidence (0%) ghost tracks
         tracks_payload = [t for t in tracks_payload 
-                          if t.get("confidence", 0) > 0.1 or str(t.get("track_id", "")).startswith("threat_")]
+                          if t.get("confidence", 0) >= 0.0 or str(t.get("track_id", "")).startswith("threat_")]
             
 
         _push_annotations(BACKEND_URL, CAMERA_ID, tracks_payload, datetime.now(timezone.utc).isoformat())
