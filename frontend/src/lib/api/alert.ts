@@ -1,5 +1,7 @@
 import type { Alert, AlertStatus } from "@/components/shared/AlertCard";
 import { getApiBaseUrl, getAuthHeaders } from "@/lib/api/auth";
+import { AlertFrequencyMetricsRes, TimeIntervalsEnum, TimePeriod } from "../validators/alerts";
+import { apiCall } from "./client";
 
 export { getAuthToken } from "@/lib/api/auth";
 
@@ -84,4 +86,20 @@ export async function fetchAlerts(
 
 export async function acknowledgeAlert(alertId: string): Promise<void> {
   await apiFetch(`/alerts/${alertId}/acknowledge`, { method: "PATCH" });
+}
+
+export async function getAlertFrequencyData(
+  neighbourhoodId: string,
+  timeInterval?: TimeIntervalsEnum,
+  timePeriod?: TimePeriod,
+): Promise<AlertFrequencyMetricsRes> {
+  let url = `/alerts/frequency-metrics/neighbourhood_id=${neighbourhoodId}`
+
+  url += timeInterval? `time_interval=${timeInterval}` : ''
+  url += TimePeriod? `time_period=${timePeriod}` : ''
+
+  return await apiCall<AlertFrequencyMetricsRes>(
+    url,
+    {method: 'GET'},
+  )
 }

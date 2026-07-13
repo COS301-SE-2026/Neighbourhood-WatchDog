@@ -16,7 +16,8 @@ export async function addProperty(data: CreatePropertyReq): Promise<PropertyRes>
 }
 
 export async function getPropertyDetails(propertyId: string): Promise<PropertyDetailedRes> {
-  return apiCall<PropertyDetailedRes>(`/properties/${propertyId}`, {
-    method: 'GET',
-  })
+  return apiCall<PropertyDetailedRes>(
+    `/properties/${propertyId}`, 
+    {method: 'GET'},
+  )
 }
