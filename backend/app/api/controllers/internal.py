@@ -1,6 +1,8 @@
 #internal endpoints for ai service communication
 #no auth, just protected by network boundary
 
+import traceback
+
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 from fastapi import APIRouter, HTTPException
@@ -35,73 +37,77 @@ class UpdateClipRequest(BaseModel):
 #returns a new detection event id and alert id
 def create_detection_event(body: CreateDetectionEventRequest, db: DbSession):
 
-    label_map = {
+    try:
+        label_map = {
         "gun": DetectionType.WEAPON_DETECTED,
         "knife": DetectionType.WEAPON_DETECTED,
         "grenade": DetectionType.WEAPON_DETECTED,
         "explosion": DetectionType.WEAPON_DETECTED
 
-    }
+        }
 
-    try:
-        det_type = DetectionType(body.detection_type.upper())
-    except ValueError:
-        det_type = label_map.get(body.detection_type.lower(), DetectionType.WEAPON_DETECTED)
-
-
-    camera: Camera | None = db.query(Camera).filter_by(
-        id=body.camera_id
-    ).first()
+        try:
+            det_type = DetectionType(body.detection_type.upper())
+        except ValueError:
+            det_type = label_map.get(body.detection_type.lower(), DetectionType.WEAPON_DETECTED)
 
 
+        camera: Camera | None = db.query(Camera).filter_by(
+            id=body.camera_id
+        ).first()
 
-    if not camera:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Camera {body.camera_id} not found"
+
+
+        if not camera:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Camera {body.camera_id} not found"
+            )
+        
+        ts = (
+            datetime.fromisoformat(body.frame_timestamp)
+
+            if body.frame_timestamp
+            else datetime.now(timezone.utc)
         )
-    
-    ts = (
-        datetime.fromisoformat(body.frame_timestamp)
-
-        if body.frame_timestamp
-        else datetime.now(timezone.utc)
-    )
-        
+            
 
 
-    event = DetectionEvent(
-        
-        camera_id=UUID(body.camera_id),
-        frame_timestamp=ts,
-        detection_type=det_type,
-        confidence_score=body.confidence_score,
-        thumbnail_url=body.thumbnail_url
+        event = DetectionEvent(
+            
+            camera_id=UUID(body.camera_id),
+            frame_timestamp=ts,
+            detection_type=det_type,
+            confidence_score=body.confidence_score,
+            thumbnail_url=body.thumbnail_url
 
-    )
+        )
 
-    db.add(event)
-    db.flush() #populating event id before creating the alert
-
-
-    alert = Alert(
-        camera_id=UUID(body.camera_id),
-        detection_event_id=event.id,
-        status="OPEN"
-
-    )
-    db.add(alert)
-    db.commit()
-    db.refresh(event)
-    db.refresh(alert)
+        db.add(event)
+        db.flush() #populating event id before creating the alert
 
 
-    return {
-        "detection_event_id": str(event.id),
-        "alert_id": str(alert.id)
-                        
-    }
+        alert = Alert(
+            camera_id=UUID(body.camera_id),
+            detection_event_id=event.id,
+            status="OPEN"
 
+        )
+        db.add(alert)
+        db.commit()
+        db.refresh(event)
+        db.refresh(alert)
+
+
+        return {
+            "detection_event_id": str(event.id),
+            "alert_id": str(alert.id)
+                            
+        }
+
+    except Exception as e:
+        print(f"INTERNAL EDNPOINT ERROR: {traceback.format_exc()}", flush=True)
+        raise
 
 
 
