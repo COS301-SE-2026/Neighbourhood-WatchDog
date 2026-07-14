@@ -14,8 +14,8 @@ export function getAuthHeaders(extraHeaders: HeadersInit = {}): HeadersInit {
   return {
     "Content-Type": "application/json",
     Authorization: `Bearer ${getAuthToken()}`,
-    "X-Mock-Role:": "NEIGHBOURHOOD_ADMIN",
-    "X-Mock-Sub": "20000000-0000-0000-0000-000000000001",
+    "X-Mock-Role": "NEIGHBOURHOOD_ADMIN",
+    "X-Mock-Sub": "00000000-0000-0000-0000-000000000001",
     "X-Mock-Neighbourhood-Id": "10000000-0000-0000-0000-000000000001",
     ...extraHeaders,
   };
