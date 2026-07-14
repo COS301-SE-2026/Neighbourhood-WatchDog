@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from app.core.database import DbSession
 from app.models.risk_threshold_config import RiskThresholdConfig
-from app.schemas.risk_threshold_config import RiskThresholdConfigRes
+from app.schemas.risk_threshold_config import RiskThresholdConfigRes, UpdateRiskThresholdConfigReq
 
 
 def get_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, db: DbSession, claims: dict) -> RiskThresholdConfigRes:
@@ -18,7 +18,7 @@ def get_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, db: DbSessi
 
     if not neighbourhood_risk_config:
         stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id.is_(None))
-        neighbourhood_risk_config = db.execute(stmt).scalar_one()
+        neighbourhood_risk_config = db.execute(stmt).scalar_one() #need to put a default in seed script
 
     return RiskThresholdConfigRes(
         id=neighbourhood_risk_config.id,
@@ -29,5 +29,40 @@ def get_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, db: DbSessi
     )
 
 
-def update_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, db: DbSession, claims: dict) -> RiskThresholdConfigRes:
-    pass
+def update_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, req: UpdateRiskThresholdConfigReq,db: DbSession, claims: dict) -> RiskThresholdConfigRes:
+    caller_neighbourhood = claims.get("custom:neighbourhood_id")
+    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
+        raise HTTPException(403, "Not authorised for this neighbourhood")
+    
+
+    update_data = req.model_dump(exclude_unset=True)
+    
+    stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id == neighbourhood_id)
+    neighbourhood_risk_config = db.execute(stmt).scalar_one_or_none()
+
+    if not neighbourhood_risk_config:
+
+        stmt_default = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id.is_(None))
+        default_neighbourhood_risk_config = db.execute(stmt_default).scalar_one()
+
+        new_neighbourhood_risk_config = RiskThresholdConfig(
+            neighbourhood_id=neighbourhood_id,
+            low_max=default_neighbourhood_risk_config.low_max,
+            medium_max=default_neighbourhood_risk_config.medium_max
+        )
+
+        db.add(new_neighbourhood_risk_config)
+
+        neighbourhood_risk_config = new_neighbourhood_risk_config
+
+
+    for field, value in update_data.items():
+        setattr(neighbourhood_risk_config, field, value)
+
+
+    db.commit()
+    db.refresh(neighbourhood_risk_config)
+
+    return RiskThresholdConfigRes.model_validate(neighbourhood_risk_config)
+    
+

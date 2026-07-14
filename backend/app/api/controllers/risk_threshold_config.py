@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, status
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
 from app.auth.rbac import require_role
-from app.schemas.risk_threshold_config import NeighbourhoodRiskThresholdConfigRes
+from app.schemas.risk_threshold_config import NeighbourhoodRiskThresholdConfigRes, UpdateRiskThresholdConfigReq
 from app.services.risk_threshold_config import get_neighbourhood_risk_threshold_handler, update_neighbourhood_risk_threshold_handler
 
 
@@ -25,11 +25,11 @@ def get_neighbourhood_risk_threshold(neighbourhood_id: UUID, db: DbSession, clai
     )
 
 @router.patch("/neighbourhood/{neighbourhood_id}", status_code=status.HTTP_200_OK)
-def update_neighbourhood_risk_threshold(neighbourhood_id: UUID, db: DbSession, claims: Annotated[dict ,Depends(get_current_user)]):
+def update_neighbourhood_risk_threshold(neighbourhood_id: UUID, req: UpdateRiskThresholdConfigReq,db: DbSession, claims: Annotated[dict ,Depends(get_current_user)]):
     """Update Risk Threshold for a neighbourhood"""
     require_role(claims=claims, allowed_roles=['NEIGHBOURHOOD_ADMIN'])
 
-    neighbourhood_threshold = update_neighbourhood_risk_threshold_handler(neighbourhood_id, db, claims)
+    neighbourhood_threshold = update_neighbourhood_risk_threshold_handler(neighbourhood_id, req, db, claims)
 
     return NeighbourhoodRiskThresholdConfigRes(
         status=200,
