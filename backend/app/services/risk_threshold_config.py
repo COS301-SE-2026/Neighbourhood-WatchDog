@@ -59,7 +59,9 @@ def update_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, req: Upd
     for field, value in update_data.items():
         setattr(neighbourhood_risk_config, field, value)
 
-
+    if neighbourhood_risk_config.low_max >= neighbourhood_risk_config.medium_max:
+        raise HTTPException(status_code=422, detail="low_max must be medium_max")
+    
     db.commit()
     db.refresh(neighbourhood_risk_config)
 
