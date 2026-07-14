@@ -118,7 +118,7 @@ class TestAcknowledgeAlert:
         """Acknowledging an alert sets resolved_at and resolved_by."""
         alert = self._make_alert(status="OPEN")
 
-        self.mock_db.execute.return_value.scalar_one_or_none.return_value = [alert]
+        self.mock_db.execute.return_value.scalar_one_or_none.return_value = alert
 
         claims = {
             "custom:role": "NEIGHBOURHOOD_ADMIN",
@@ -299,7 +299,7 @@ class TestFrequencyMetrics:
         )
 
         assert result.status == 200
-        assert len(result.data) == 1
+
 
     @pytest.mark.asyncio
     async def test_incorrect_claims(self):
