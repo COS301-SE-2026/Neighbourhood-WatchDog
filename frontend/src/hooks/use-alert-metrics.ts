@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { apiCall } from "@/lib/api/client";
+import { NumberInPeriod, TimeIntervalsEnum, TimePeriod } from "@/lib/validators/alert";
+import { fetchAlertFrequencyData } from "@/lib/api/alert";
 
 
 export interface AlertMetricItem {
@@ -75,5 +77,46 @@ export function useAlertMetrics(
         error, 
         refetch: fetchMetrics
     };
+
+}
+
+export function useAlertFrequencyMetrics(
+    neighbourhoodId: string,
+    timeInt?: TimeIntervalsEnum,
+    timePer?: TimePeriod
+) {
+
+    const [metrics, setMetrics] = useState<NumberInPeriod | null>()
+    const [loading, setLoading] = useState<boolean>(true)
+    const [error, setError] = useState<string | null>(null)
+
+    const fetchFreqMetrics = useCallback(async () => {
+        setLoading(true)
+
+        setError(null)
+
+        try {
+            const result = await fetchAlertFrequencyData(neighbourhoodId, timeInt, timePer)
+            const data = result.data
+            setMetrics(data)
+        } catch(e) {
+            setError(`Failed to load metrics: ${e}`)
+        } finally {
+            setLoading(false)
+        }
+    }, [neighbourhoodId, timeInt, timePer])
+    
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            void fetchFreqMetrics()
+        }, 0)
+    }, [fetchFreqMetrics])
+
+    return {
+        metrics,
+        loading,
+        error,
+        refetch: fetchFreqMetrics
+    }
 
 }

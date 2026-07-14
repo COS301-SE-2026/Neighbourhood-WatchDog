@@ -79,10 +79,10 @@ class TimePeriod(str, Enum):
 	TOTAL = "TOTAL"
 
 class NumberInPeriod(BaseModel):
-	period: datetime
-	count: int
+	period: List[datetime]
+	count: List[datetime]
 
 class AlertFrequencyMetricsRes(BaseModel):
 	status: int
 	message: str | None = None
-	data: List[NumberInPeriod] | None = None
+	data: NumberInPeriod | None = None

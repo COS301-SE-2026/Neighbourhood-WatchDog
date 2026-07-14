@@ -12,14 +12,14 @@ export const TimePeriod = z.enum([
 ])
 
 export const NumberInPeriod = z.object({
-    period: z.coerce.date(),
-    count: z.number().int(),
+    period: z.coerce.date().array(),
+    count: z.number().int().array(),
 })
 
 export const AlertFrequencyMetricsRes = z.object({
     status: z.number().int(),
     message: z.string().nullable().optional(),
-    data: z.array(NumberInPeriod).nullable().optional(),
+    data: NumberInPeriod.nullable().optional(),
 })
 
 export type TimePeriod = z.infer<typeof TimePeriod>

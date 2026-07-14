@@ -61,7 +61,7 @@ async def get_alert_metrics(
 
     return get_response_metrics_handler(neighbourhood_id, db, claims, camera_id, officer_id)
 
-@router.get("/alert-frequency-metrics", response_model=AlertFrequencyMetricsRes)
+@router.get("/frequency-metrics", response_model=AlertFrequencyMetricsRes)
 async def get_alert_frequency_metrics(
     neighbourhood_id: UUID,
     db: DbSession,
@@ -69,7 +69,7 @@ async def get_alert_frequency_metrics(
     time_interval: TimeIntervalsEnum = TimeIntervalsEnum.DAILY,
     time_period: TimePeriod = TimePeriod.WEEK
 ):
-    """Responds with number of alerts received with the neighbourhood"""
+    """Responds with number of alerts received with the neighbourhood. time_interval refers to the grouping of the numbers while time period refers to how far back the data should go."""
     return await get_alert_frequency_metrics_handler(
         neighbourhood_id=neighbourhood_id,
         db=db,

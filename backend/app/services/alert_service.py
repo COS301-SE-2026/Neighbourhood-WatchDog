@@ -3,7 +3,7 @@ from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm import Session
 from app.models.alert import Alert
 from app.models.detection_event import DetectionEvent
-from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes
+from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes, NumberInPeriod
 from fastapi import HTTPException
 from uuid import UUID
 
@@ -284,10 +284,17 @@ async def get_alert_frequency_metrics_handler(
 
     rows = db.execute(stmt).all()
 
-    data=[
-        {"period": row.bucket, "count": row.count}
-        for row in rows
-    ]
+    period_arr = []
+    count_arr = []
+
+    for row in rows:
+        period_arr.append(row.bucket)
+        count_arr.append(row.count)
+
+    data = NumberInPeriod(
+        period=period_arr,
+        count=count_arr
+    )
 
     return AlertFrequencyMetricsRes(
         status=200,
