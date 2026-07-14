@@ -30,3 +30,8 @@ def get_neighbourhood_score_handler(neighbourhood_id: UUID, db: DbSession, claim
         alert_count=latest_score.alert_count,
         calculated_at=latest_score.calculated_at
     )
+
+
+
+def get_neighbourhood_score_history_handler(neighbourhood_id: UUID, db: DbSession, claims: dict) -> list[RiskScoreRes]:
+    pass

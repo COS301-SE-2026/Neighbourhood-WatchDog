@@ -16,3 +16,8 @@ class NeighbourhoodRiskScoreRes(BaseModel):
     status: int
     message: str
     data: RiskScoreRes | None = None
+
+class NeighbourhoodRiskScoreHistoryRes(BaseModel):
+    status: int
+    message: str
+    data: list[RiskScoreRes] = []
