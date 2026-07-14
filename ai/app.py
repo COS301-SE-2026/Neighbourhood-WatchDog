@@ -335,7 +335,25 @@ def _save_weapon_clip(weapon_label: str, conf: float) -> None:
         s3 = boto3.client("s3", region_name=AWS_REGION)
         s3.upload_file(tmp_path, S3_CLIPS_BUCKET, s3_key)
 
-        logger.info("Clip uploaded: s3://%s/%s", S3_CLIPS_BUCKET, s3_key)
+        clip_expires_at = datetime.now(timezone.utc) + timedelta(days=CLIP_RETENTION_DAYS)
+
+        patch_resp = httpx.patch(
+            f"{BACKEND_URL}/internal/detection-events/{detection_event_id}/clip",
+            json={
+                "clip_s3_key": s3_key, 
+                "clip_expires_at": clip_expires_at.isoformat()
+
+            },
+            timeout=3.0, 
+        )
+
+        patch_resp.raise_for_status()
+
+        logger.info("Clip uploaded: s3://%s/%s -> event %s",
+                    S3_CLIPS_BUCKET,
+                    s3_key, 
+                    detection_event_id
+                    )
 
 
     except Exception as e:
