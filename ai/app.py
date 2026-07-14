@@ -234,12 +234,14 @@ def _save_weapon_clip(weapon_label: str, conf: float) -> None:
     This does run in a daemon thread, so it should not interefere with the detection loop
     """
 
+
+    print(f"CLIP: triggered for '{weapon_label}' conf={conf:.2f}", flush=True)
     now = time.time()
 
     #cooldown check. without this two detections arriving simultaneously could both upload clips
     with _cooldown_lock:
         if now - _clips_cooldowns.get(weapon_label, 0.0) < CLIP_COOLDOWN_SECS:
-            logger.info("Clip cooldown active for '%s', skipping", weapon_label)
+            print(f"CLIP: cooldown active for '{weapon_label}', skipping", flush=True)
             return
 
         _clips_cooldowns[weapon_label] = now
@@ -269,7 +271,7 @@ def _save_weapon_clip(weapon_label: str, conf: float) -> None:
         resp.raise_for_status()
         detection_event_id = resp.json()["detection_event_id"]
         
-        logger.info("DetectionEvent created: %s", detection_event_id)
+        print(f"CLIP: DetectionEvent created: {detection_event_id}", flush=True)
 
 
     except Exception as e:
