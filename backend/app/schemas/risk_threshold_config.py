@@ -15,3 +15,8 @@ class RiskThresholdConfigRes(BaseModel):
     low_max : float
     medium_max : float
     updated_at : datetime
+
+class NeighbourhoodRiskThresholdConfigRes(BaseModel):
+    status: int
+    message: str
+    data: RiskThresholdConfigRes
