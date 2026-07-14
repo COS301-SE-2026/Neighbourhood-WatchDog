@@ -16,7 +16,8 @@ def get_neighbourhood_score_handler(neighbourhood_id: UUID, db: DbSession, claim
         select(RiskScoreHistory)
         .where(RiskScoreHistory.neighbourhood_id == neighbourhood_id)
         .order_by(RiskScoreHistory.calculated_at.desc())
-        .limit(1))
+        .limit(1)
+        )
     
     latest_score = db.execute(stmt).scalar_one_or_none()
 
@@ -34,4 +35,32 @@ def get_neighbourhood_score_handler(neighbourhood_id: UUID, db: DbSession, claim
 
 
 def get_neighbourhood_score_history_handler(neighbourhood_id: UUID, db: DbSession, claims: dict) -> list[RiskScoreRes]:
-    pass
+
+    caller_neighbourhood = claims.get("custom:neighbourhood_id")
+    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
+        raise HTTPException(403, "Not authorised for this neighbourhood")
+    
+    stmt = (
+        select(RiskScoreHistory)
+        .where(RiskScoreHistory.neighbourhood_id == neighbourhood_id)
+        .order_by(RiskScoreHistory.calculated_at.asc())
+        )
+    
+    neighbourhood_history = db.execute(stmt).scalars().all()
+
+    if not neighbourhood_history:
+        raise HTTPException(status_code=404, detail="Neighbourhood does not have history")
+    
+    neighbourhood_history_scores = []
+    for curr_neighbourhood_risk in neighbourhood_history:
+        curr_risk = RiskScoreRes(
+            neighbourhood_id=curr_neighbourhood_risk.neighbourhood_id,
+            score=curr_neighbourhood_risk.score,
+            classification=curr_neighbourhood_risk.classification,
+            alert_count=curr_neighbourhood_risk.alert_count,
+            calculated_at=curr_neighbourhood_risk.calculated_at
+        )
+
+        neighbourhood_history_scores.append(curr_risk)
+
+    return neighbourhood_history_scores
