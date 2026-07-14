@@ -99,7 +99,7 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
                 alert_res = _build_alert_res(alert)
                 await broadcast(
                     neighbourhood_id=str(camera.neighbourhood_id),
-                    message={"event": "alert.new", "payload": alert_res.model_dump()},
+                    message={"event": "alert.new", "payload": alert_res.model_dump(mode="json")},
                 )
 
                 await dispatch_notifications(
