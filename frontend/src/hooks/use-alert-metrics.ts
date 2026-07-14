@@ -86,7 +86,7 @@ export function useAlertFrequencyMetrics(
     timePer?: TimePeriod
 ) {
 
-    const [metrics, setMetrics] = useState<NumberInPeriod[] | null>()
+    const [metrics, setMetrics] = useState<NumberInPeriod | null>()
     const [loading, setLoading] = useState<boolean>(true)
     const [error, setError] = useState<string | null>(null)
 

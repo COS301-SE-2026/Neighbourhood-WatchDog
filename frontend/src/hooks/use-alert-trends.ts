@@ -38,7 +38,7 @@ function toTimePeriod(startDate: string, endDate: string): "WEEK" | "MONTH" | "T
 }
 
 function mapFrequencyResponse(
-    buckets: NumberInPeriod[],
+    buckets: NumberInPeriod,
     startDate: string,
     endDate: string,
 ): TrendData {
