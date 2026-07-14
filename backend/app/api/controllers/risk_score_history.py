@@ -1,12 +1,9 @@
-import asyncio
-import json
 from uuid import UUID
 from typing import Annotated
-from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, status
 
 from app.auth.dependencies import get_current_user
-from app.core.database import DbSession, get_db
+from app.core.database import DbSession
 from app.auth.rbac import require_role
 from app.schemas.risk_score_history import NeighbourhoodRiskScoreRes
 from app.services.risk_score_history_service import get_neighbourhood_score_handler
@@ -17,9 +14,9 @@ router = APIRouter(prefix="/risk-score", tags=["risk-score"])
 
 @router.get("/neighbourhood/{neighbourhood_id}", status_code=status.HTTP_200_OK)
 def get_neighbourhood_score(neighbourhood_id: UUID, db: DbSession, claims: Annotated[dict, Depends(get_current_user)]):
-    """Get Risk Score for a Neighboyrhood"""
+    """Get Risk Score for a Neighbourhood"""
 
-    require_role(claims = claims, allowed_roles= ['NEIGHBOURHOOD_ADMIN'])
+    require_role(claims = claims, allowed_roles=['NEIGHBOURHOOD_ADMIN'])
 
     neighbourhood_risk = get_neighbourhood_score_handler(neighbourhood_id, db, claims)
 
