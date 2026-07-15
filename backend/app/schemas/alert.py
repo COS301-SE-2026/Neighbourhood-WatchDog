@@ -80,7 +80,7 @@ class TimePeriod(str, Enum):
 
 class NumberInPeriod(BaseModel):
 	period: List[datetime]
-	count: List[datetime]
+	count: List[int]
 
 class AlertFrequencyMetricsRes(BaseModel):
 	status: int

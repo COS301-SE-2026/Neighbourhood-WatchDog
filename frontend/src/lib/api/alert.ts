@@ -95,8 +95,8 @@ export async function fetchAlertFrequencyData(
 ): Promise<AlertFrequencyMetricsRes> {
   let url = `/alerts/frequency-metrics?neighbourhood_id=${neighbourhoodId}`
 
-  url += timeInterval? `time_interval=${timeInterval}` : ''
-  url += timePeriod? `time_period=${timePeriod}` : ''
+  url += timeInterval? `&time_interval=${timeInterval}` : ''
+  url += timePeriod? `&time_period=${timePeriod}` : ''
 
   return await apiCall<AlertFrequencyMetricsRes>(
     url,
