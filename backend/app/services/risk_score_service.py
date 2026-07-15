@@ -7,6 +7,8 @@ from sqlalchemy import select, func
 from app.models.alert import Alert
 from app.models.camera import Camera
 from app.models.detection_event import DetectionEvent, DetectionType
+from app.models.risk_score_history import RiskLevel, RiskScoreHistory
+from app.models.risk_threshold_config import RiskThresholdConfig
 
 SEVERITY_WEIGHTS = {
     DetectionType.WEAPON_DETECTED: 10,
@@ -31,3 +33,37 @@ def calculate_risk_score_handler(neighbourhood_id: UUID, db: DbSession):
 
     rows = db.execute(stmt).all()
 
+    score = 0.0
+    alert_count = 0
+
+    for detection_type, count in rows:
+        weight = SEVERITY_WEIGHTS.get(detection_type, 0)
+        score += weight * count
+        alert_count += count
+
+    threshold_stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id == neighbourhood_id)
+    threshold = db.execute(threshold_stmt).scalar_one_or_none()
+
+    if not threshold:
+        default_stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id.is_(None))
+        threshold = db.execute(default_stmt).scalar_one()
+
+    if score <= threshold.low_max:
+        classification = RiskLevel.LOW
+    elif score <= threshold.medium_max:
+        classification = RiskLevel.MEDIUM
+    else:
+        classification = RiskLevel.HIGH
+
+    new_score = RiskScoreHistory(
+        neighbourhood_id=neighbourhood_id,
+        score=score,
+        classification=classification,
+        alert_count=alert_count
+    )
+
+    db.add(new_score)
+    db.commit()
+    db.refresh(new_score)
+
+    return new_score
