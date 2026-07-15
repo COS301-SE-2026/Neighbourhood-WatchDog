@@ -1,22 +1,25 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import CameraFeed from "./CameraFeed"
+import { CameraSettingsPanel } from "./CameraSettingsPanel"
 import CameraDropdown from "./camera-dropdown"
 
 interface CameraCardProps {
     readonly id: string;
     readonly name: string;
     readonly rtspUrl?: string;
+    readonly userRole?: string;
 }
 
 function getStreamPath(rtspUrl: string): string {
     return rtspUrl.split("/").pop() || rtspUrl;
 }
 
-export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
+export default function CameraCard({ id, name, rtspUrl, userRole = "RESIDENT" }: CameraCardProps) {
+    const videoRef = useRef<HTMLVideoElement>(null);
     const streamUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream?url=${encodeURIComponent(rtspUrl)}` : null;
     const streamHealthUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream/health?url=${encodeURIComponent(rtspUrl)}` : null;
     const [streamHealth, setStreamHealth] = useState<{ url: string | null; available: boolean; error: boolean }>({
@@ -60,6 +63,7 @@ export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
             {streamUrl ? (
                 <>
                     <CameraFeed
+                        ref={videoRef}
                         streamPath={getStreamPath(rtspUrl ?? "")}
                         cameraId={id}
                         host="localhost"
@@ -79,26 +83,27 @@ export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
 
     return (
         <Dialog>
-                <Card className="cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
-                    <CardHeader className="flex flex-row items-center justify-between p-4">
-                        <CardTitle className="text-sm font-medium">{name}</CardTitle>
-                        <div className="flex flex-row items-center">
-                            <Badge variant={effectiveStatus === "online" ? "success" : "destructive"}>
-                                {effectiveStatus}
-                            </Badge>
-                            <CameraDropdown
-                                camera_id={id}
-                                camera_name={name}
-                            />
-                        </div>
-                    </CardHeader>
-                    <DialogTrigger asChild>
+            <Card className="cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
+                <CardHeader className="flex flex-row items-center justify-between p-4">
+                    <CardTitle className="text-sm font-medium">{name}</CardTitle>
+                    <div className="flex flex-row items-center">
+                        <Badge variant={effectiveStatus === "online" ? "success" : "destructive"}>
+                            {effectiveStatus}
+                        </Badge>
+                        <CameraDropdown
+                            camera_id={id}
+                            camera_name={name}
+                        />
+                    </div>
+                </CardHeader>
+                <DialogTrigger asChild>
                     <CardContent className="p-4 pt-0">
                         {feedContent}
                     </CardContent>
-                    </DialogTrigger>
-                </Card>
-            <DialogContent className="max-w-4xl w-full">
+                </DialogTrigger>
+            </Card>
+
+            <DialogContent className="max-w-4xl w-full overflow-y-auto max-h-[90vh]">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         {name}
@@ -108,6 +113,11 @@ export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
                     </DialogTitle>
                 </DialogHeader>
                 {feedContent}
+                <CameraSettingsPanel
+                    cameraId={id}
+                    userRole={userRole}
+                    videoRef={videoRef}
+                />
             </DialogContent>
         </Dialog>
     )
