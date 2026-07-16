@@ -144,4 +144,25 @@ class TestUpdateRiskThresholdConfig:
         
     @pytest.mark.asyncio
     async def test_happy_path_update(self):
-        pass
+        
+        req = UpdateRiskThresholdConfigReq(
+            low_max=45.2,
+            medium_max=90.1
+        )
+
+        updated_risk_threshold_config = update_neighbourhood_risk_threshold_handler(
+            self.neighbourhood_id,
+            req,
+            self.mock_db,
+            self.mock_claims
+        )
+
+        assert self.mock_db.execute.call_count == 1
+        assert self.mock_db.rollback.call_count == 0
+        assert self.mock_db.add.call_count == 0
+        assert self.mock_db.commit.call_count == 1
+        assert self.mock_db.refresh.call_count == 1
+
+        assert updated_risk_threshold_config.low_max == 45.2
+        assert updated_risk_threshold_config.medium_max == 90.1
+        assert updated_risk_threshold_config.neighbourhood_id == self.neighbourhood_id
