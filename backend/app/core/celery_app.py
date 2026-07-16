@@ -1,3 +1,4 @@
+from datetime import timedelta
 import os
 
 from celery import Celery
@@ -14,6 +15,6 @@ celery.conf.result_backend = os.environ.get("REDIS_URL")
 celery.conf.beat_schedule = {
     "recalculate-risk-scores-every-5-minutes": {
         "tasks": "app.tasks.risk_score_tasks.recalculate_all_risk_scores",
-        "schedule": 300.0,
+        "schedule": timedelta(minutes=5),
     }
 }
