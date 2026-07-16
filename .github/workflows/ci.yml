@@ -106,10 +106,10 @@ jobs:
       - name: Run database migrations
         run: cd backend && alembic upgrade head
 
-      - name: Seed test data (seed.sql)
-        env:
-          PGPASSWORD: test_password
-        run: psql -h localhost -U postgres -d watchdog -f seed.sql
+      # - name: Seed test data (seed.sql)
+      #   env:
+      #     PGPASSWORD: test_password
+      #   run: psql -h localhost -U postgres -d watchdog -f seed.sql
 
       - name: Seed test data
         run: cd backend && python seed.py
