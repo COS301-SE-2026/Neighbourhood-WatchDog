@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-export const TimeIntervalsEnum = z.enum(["DAILY", "MONTHLY", "YEARLY"])
+export const TimeIntervalsEnum = z.enum([
+    "DAILY",
+    "MONTHLY",
+    "YEARLY"
+])
 
 export const TimePeriod = z.enum([
     "WEEK",

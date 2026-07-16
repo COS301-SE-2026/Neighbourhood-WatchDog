@@ -261,12 +261,12 @@ async def get_alert_frequency_metrics_handler(
             start_date = today - timedelta(days=7)
         elif time_period == TimePeriod.MONTH:
             start_date = today - relativedelta(months=1)
-        elif time_period == TimePeriod.THREE_MONTH:
+        elif time_period == TimePeriod.THREE_MONTHS:
             start_date = today - relativedelta(months=3)
         elif time_period == TimePeriod.SIX_MONTHS:
             start_date = today - relativedelta(months=6)
         elif time_period == TimePeriod.YEAR:
-            start_date = today - relativedelta(year=1)
+            start_date = today - relativedelta(years=1)
 
     trunc_unit = INTERVAL_TO_TRUNC[time_interval]
     bucket = func.date_trunc(trunc_unit, Alert.created_at).label("bucket")
@@ -277,8 +277,10 @@ async def get_alert_frequency_metrics_handler(
         .where(Camera.neighbourhood_id == UUID(str(neighbourhood_id)))
     )
 
+    print(start_date)
+
     if start_date:
-        stmt.where(Alert.created_at > start_date)
+        stmt = stmt.where(Alert.created_at > start_date)
 
     stmt = stmt.group_by(bucket).order_by(bucket)
 

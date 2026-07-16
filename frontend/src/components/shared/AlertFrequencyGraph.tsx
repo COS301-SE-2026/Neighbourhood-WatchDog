@@ -69,13 +69,13 @@ export function AlertFrequencyGraph({
 	timePer
 }: AlertFrequencyMetricsProps){
 
-	const [timeInterval, setTimeInterval] = useState<TimeIntervalsEnum>("DAILY")
-	const [timePeriod, setTimePeriod] = useState<TimePeriod>("MONTH")
+	const [timeInterval, setTimeInterval] = useState<TimeIntervalsEnum>(timeInt? timeInt : "DAILY")
+	const [timePeriod, setTimePeriod] = useState<TimePeriod>(timePer? timePer : "MONTH")
 
 	const {metrics, loading, error, refetch} = useAlertFrequencyMetrics(
 		neighbourhoodId,
-		timeInt,
-		timePer
+		timeInterval,
+		timePeriod
 	)
 
 	const theme = useChartTheme();
@@ -104,7 +104,7 @@ export function AlertFrequencyGraph({
 						gradient.addColorStop(1, `${theme.blue}00`) 
 						return gradient
 					},
-					fill: true,
+					// fill: true,
 					tension: 0.35,
 					borderWidth: 2,
 					pointRadius: 3,
@@ -185,6 +185,32 @@ export function AlertFrequencyGraph({
           </div>
         )}
       </div>
+			<div className="flex justify-around p-4"> {/** Filter buttons */}
+				<select 
+					name="selectInterval"
+					value={timeInterval}
+					onChange={ (e) => {
+						setTimeInterval(e.target.value as TimeIntervalsEnum)
+					}}>
+					<option value="DAILY">Daily</option>
+					<option value="MONTHLY">Monthly</option>
+					<option value="YEARLY">Yearly</option>
+				</select>
+
+				<select 
+					name="selectPeriod"
+					value={timePeriod}
+					onChange={ (e) => {
+						setTimePeriod(e.target.value as TimePeriod)
+					}}>
+					<option value="WEEK">Week</option>
+					<option value="MONTH">Month</option>
+					<option value="THREE_MONTHS">3 Months</option>
+					<option value="SIX_MONTHS">6 Months</option>
+					<option value="YEAR">Year</option>
+					<option value="TOTAL">All</option>
+				</select>
+			</div>
     </div>
 	)
 }
