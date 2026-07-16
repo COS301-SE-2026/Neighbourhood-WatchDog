@@ -9,6 +9,7 @@ TRUNCATE TABLE audit_log CASCADE;
 TRUNCATE TABLE users CASCADE;
 TRUNCATE TABLE property CASCADE;
 TRUNCATE TABLE neighbourhood CASCADE;
+TRUNCATE TABLE risk_threshold_config CASCADE;
 
 -- Neighbourhoods
 INSERT INTO neighbourhood (id, name, location, join_code, created_at) VALUES
@@ -70,3 +71,7 @@ INSERT INTO neighbourhood_join_request (id, neighbourhood_id, user_id, status, c
 ('b0333333-3333-3333-3333-333333333333', 'a1111111-1111-1111-1111-111111111111', 'b8888888-8888-8888-8888-888888888888', 'PENDING',  now() - interval '30 minutes', NULL),
 ('b0444444-4444-4444-4444-444444444444', 'a1111111-1111-1111-1111-111111111111', 'b4444444-4444-4444-4444-444444444444', 'APPROVED', now() - interval '30 days',  now() - interval '29 days'),
 ('b0555555-5555-5555-5555-555555555555', 'a1111111-1111-1111-1111-111111111111', 'b7777777-7777-7777-7777-777777777777', 'DENIED',   now() - interval '5 days',   now() - interval '4 days');
+
+-- Risk Threshold Config (global default fallback, neighbourhood_id = NULL)
+INSERT INTO risk_threshold_config (id, neighbourhood_id, low_max, medium_max, updated_at) VALUES
+('c0111111-1111-1111-1111-111111111111', NULL, 30.0, 70.0, now());
