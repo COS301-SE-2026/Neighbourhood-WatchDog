@@ -1,4 +1,5 @@
-from jose import JWTError, jwt
+import jwt
+from jwt import PyJWKClient, algorithms
 from fastapi import HTTPException
 from app.core.config import config
 import httpx
@@ -26,7 +27,7 @@ def verify_token(token: str) -> dict:
         rsa_key = None
         for key in jwks["keys"]:
             if key["kid"] == unverified_header["kid"]:
-                rsa_key = key
+                rsa_key = algorithms.RSAAlgorithm.from_jwk(key)
                 break
 
         if not rsa_key:
@@ -36,7 +37,7 @@ def verify_token(token: str) -> dict:
 
         return payload
 
-    except JWTError:
+    except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
     
 COGNITO_REGION = config.cognito_region

@@ -1,5 +1,4 @@
-from jose import jwt
-from jose.exceptions import JWTError
+import jwt
 
 import requests
 from fastapi import HTTPException, Request
@@ -20,7 +19,7 @@ def verify_jwt(token: str) -> dict:
     key = next((k for k in JWKS if k["kid"] == kid), None) #find which primary key was used
 
     if key is None:
-        raise JWTError("Unable to find matching public key.")
+        raise jwt.PyJWTError("Unable to find matching public key.")
 
     claims = jwt.decode(
         token,
