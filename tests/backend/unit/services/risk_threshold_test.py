@@ -1,5 +1,55 @@
+from datetime import datetime
+from uuid import uuid4
+
 import pytest
 from unittest.mock import Mock, patch
 from fastapi import HTTPException
 from app.services.risk_threshold_config_service import get_neighbourhood_risk_threshold_handler, update_neighbourhood_risk_threshold_handler
 from app.schemas.risk_threshold_config import RiskThresholdConfigRes, UpdateRiskThresholdConfigReq, NeighbourhoodRiskThresholdConfigRes
+
+class TestRiskThresholdConfig:
+    def setup_method(self):
+        self.mock_db = Mock()
+        self.neighbourhood_id = uuid4()
+        self.mock_claims = {"custom:neighbourhood_id" : str(self.neighbourhood_id)}
+
+        self.mock_risk_threshold_config = Mock()
+        self.mock_risk_threshold_config.id = uuid4()
+        self.mock_risk_threshold_config.neighbourhood_id = self.neighbourhood_id
+        self.mock_risk_threshold_config.low_max = 20
+        self.mock_risk_threshold_config.medium_max = 50
+        self.mock_risk_threshold_config.updated_at = datetime.now()
+
+
+        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+            self.mock_risk_threshold_config,
+        ]
+
+        self.mock_db.add = Mock()
+        self.mock_db.flush = Mock()
+        self.mock_db.refresh = Mock()
+        self.mock_db.commit = Mock()
+        self.mock_db.rollback = Mock()
+
+    @pytest.mark.asyncio
+    async def test_happy_path(self):
+        """
+            Neighbourhood admin successfuly gets theshold config
+        """
+
+        neighbourhood_risk_config = get_neighbourhood_risk_threshold_handler(
+            self.neighbourhood_id, 
+            self.mock_db, 
+            self.mock_claims
+        )
+
+        assert self.mock_db.execute.call_count == 1
+        assert self.mock_db.rollback.call_count == 0
+        assert self.mock_db.add.call_count == 0
+        assert self.mock_db.commit.call_count == 0
+
+        assert neighbourhood_risk_config is not None
+        assert neighbourhood_risk_config.neighbourhood_id == self.neighbourhood_id
+        assert neighbourhood_risk_config.low_max == 20
+        assert neighbourhood_risk_config.medium_max == 50
+        assert neighbourhood_risk_config.updated_at == self.mock_risk_threshold_config.updated_at
