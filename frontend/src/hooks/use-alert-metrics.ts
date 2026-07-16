@@ -110,6 +110,7 @@ export function useAlertFrequencyMetrics(
         const timeoutId = setTimeout(() => {
             void fetchFreqMetrics()
         }, 0)
+        return () => clearTimeout(timeoutId);
     }, [fetchFreqMetrics])
 
     return {
