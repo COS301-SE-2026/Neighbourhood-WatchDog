@@ -18,6 +18,11 @@ SEVERITY_WEIGHTS = {
     DetectionType.HUMAN_PRESENCE: 2
 }
 
+CRITICAL_DETECTION_TYPES = {
+    DetectionType.WEAPON_DETECTED,
+    DetectionType.FALL_DETECTED
+}
+
 def calculate_risk_score_handler(neighbourhood_id: UUID, db: DbSession):
     window_start = datetime.now(timezone.utc) - timedelta(hours=24)
 
@@ -35,11 +40,14 @@ def calculate_risk_score_handler(neighbourhood_id: UUID, db: DbSession):
 
     score = 0.0
     alert_count = 0
+    critical_event_detected = False
 
     for detection_type, count in rows:
         weight = SEVERITY_WEIGHTS.get(detection_type, 0)
         score += weight * count
         alert_count += count
+        if detection_type in CRITICAL_DETECTION_TYPES and count > 0:
+            critical_event_detected = True
 
     threshold_stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id == neighbourhood_id)
     threshold = db.execute(threshold_stmt).scalar_one_or_none()
@@ -53,6 +61,10 @@ def calculate_risk_score_handler(neighbourhood_id: UUID, db: DbSession):
     elif score <= threshold.medium_max:
         classification = RiskLevel.MEDIUM
     else:
+        classification = RiskLevel.HIGH
+
+    #override
+    if critical_event_detected:
         classification = RiskLevel.HIGH
 
     new_score = RiskScoreHistory(

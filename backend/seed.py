@@ -5,6 +5,7 @@ import sys
 from uuid import uuid4, UUID
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal, engine, Base
+from app.models.risk_threshold_config import RiskThresholdConfig
 from app.models.user import User, UserRole
 from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property, PropertyTypeEnum
@@ -117,6 +118,24 @@ def seed_database():
         db.add(test_zone)
         db.flush()
         print("Created test zone")
+
+        #global default risk threshold config
+        existing_default_threshold = db.query(RiskThresholdConfig).filter(
+            RiskThresholdConfig.neighbourhood_id.is_(None)
+        ).first()
+
+        if not existing_default_threshold:
+            default_threshold = RiskThresholdConfig(
+                id=uuid4(),
+                neighbourhood_id=None,
+                low_max=30.0,
+                medium_max=70.0 
+            )
+            db.add(default_threshold)
+            db.flush()
+            print("Created global risk threshold config")
+        else:
+            print("Global default risk threshold config already exists")
 
         #commit all changes
         db.commit()
