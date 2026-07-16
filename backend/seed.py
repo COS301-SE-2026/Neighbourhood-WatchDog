@@ -2,7 +2,9 @@
 """Database seeder script for development"""
 
 import sys
+import random
 from uuid import uuid4, UUID
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal, engine, Base
 from app.models.risk_threshold_config import RiskThresholdConfig
@@ -13,6 +15,8 @@ from app.models.property_user import PropertyUser
 from app.models.camera import Camera, CameraVisibilityEnum
 from app.models.zone import GeospatialZone, SensitivityLevel
 from app.models.retention_policy import RetentionPolicy
+from app.models.detection_event import DetectionEvent, DetectionType
+from app.models.alert import Alert, AlertStatus
 
 # Fixed UUIDs for testing
 NEIGHBOURHOOD_ID = UUID("10000000-0000-0000-0000-000000000001")
@@ -137,6 +141,71 @@ def seed_database():
         else:
             print("Global default risk threshold config already exists")
 
+        alerts_created = 0
+        detection_events_created = 0
+
+        today = datetime.now()
+        one_year_ago = today - timedelta(days=365)
+        num_days = (today - one_year_ago).days
+
+        detection_types = list(DetectionType)
+        alert_statuses = [AlertStatus.OPEN, AlertStatus.ACKNOWLEDGED, AlertStatus.RESOLVED]
+        status_weights = [0.3, 0.2, 0.5]
+
+        for day_offset in range(num_days):
+            day = one_year_ago + timedelta(days=day_offset)
+
+            recency_weight = day_offset / num_days
+            daily_count = random.randint(0, int(2 + recency_weight * 8))
+
+            for _ in range(daily_count):
+                event_time = day + timedelta(
+                    hours=random.randint(0, 23),
+                    minutes=random.randint(0, 59),
+                    seconds=random.randint(0, 59),
+                )
+
+                detection_event = DetectionEvent(
+                    id=uuid4(),
+                    camera_id=CAMERA_ID,
+                    frame_timestamp=event_time,
+                    detection_type=random.choice(detection_types),
+                    confidence_score=round(random.uniform(0.55, 0.99), 2),
+                    thumbnail_url=None,
+                    processed=True,
+                )
+
+                db.add(detection_event)
+                db.flush()  # need detection_event.id for the FK below
+                detection_events_created += 1
+ 
+                status = random.choices(alert_statuses, weights=status_weights)[0]
+ 
+                resolved_by = None
+                resolved_at = None
+                if status == AlertStatus.RESOLVED:
+                    resolved_by = USER_ID
+                    resolved_at = event_time + timedelta(minutes=random.randint(5, 300))
+
+                alert = Alert(
+                    id=uuid4(),
+                    camera_id=CAMERA_ID,
+                    detection_event_id=detection_event.id,
+                    status=status.value,
+                    resolved_by=resolved_by,
+                    resolved_at=resolved_at,
+                    created_at=event_time,
+                )
+                db.add(alert)
+                alerts_created += 1
+
+            if day_offset % 30 == 0:
+                db.flush()
+
+        db.flush()
+        print(f"Created {detection_events_created} test detection events")
+        print(f"Created {alerts_created} test alerts spread across the last year")
+
         #commit all changes
         db.commit()
         print("\nDatabase seeded successfully!")
@@ -145,6 +214,7 @@ def seed_database():
         print("Cognito Sub: 00000000-0000-0000-0000-000000000001")
         print("Neighbourhood: Test Neighbourhood")
         print("Property Address: 123 Test Street")
+        print(f"Alerts seeded: {alerts_created}")
 
     except Exception as e:
         db.rollback()
