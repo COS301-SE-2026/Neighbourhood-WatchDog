@@ -1,5 +1,5 @@
 import jwt
-from jwt import PyJWKClient, algorithms
+from jwt import algorithms
 from fastapi import HTTPException
 from app.core.config import config
 import httpx

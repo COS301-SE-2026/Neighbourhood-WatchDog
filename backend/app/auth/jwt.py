@@ -60,7 +60,7 @@ def get_authenticated_claims(request: Request) -> dict:
 
     try:
         claims = verify_jwt(token)
-    except JWTError:
+    except jwt.PyJWTError:
         raise HTTPException(
             status_code=401,
             detail="Invalid or expired token",
