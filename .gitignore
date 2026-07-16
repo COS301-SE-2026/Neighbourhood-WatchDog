@@ -32,3 +32,6 @@ __pycache__/
 .vercel
 ai/.venv/
 .venv/
+
+celerybeat-schedule
+celerybeat-schedule.*
