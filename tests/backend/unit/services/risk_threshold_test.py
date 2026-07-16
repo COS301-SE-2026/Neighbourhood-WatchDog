@@ -180,3 +180,25 @@ class TestUpdateRiskThresholdConfig:
         assert self.mock_db.add.call_count == 0
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.refresh.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_incorrect_threshold(self):
+        """Testing with low threshold higher than medium"""
+        req = UpdateRiskThresholdConfigReq(
+            low_max=100.2,
+            medium_max=70.1
+        )
+
+        with pytest.raises(HTTPException) as exception:
+            update_neighbourhood_risk_threshold_handler(
+                self.neighbourhood_id,
+                req,
+                self.mock_db,
+                self.mock_claims
+            )
+
+        assert self.mock_db.execute.call_count == 1
+        assert self.mock_db.rollback.call_count == 0
+        assert self.mock_db.add.call_count == 0
+        assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.refresh.call_count == 0
