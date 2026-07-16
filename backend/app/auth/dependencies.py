@@ -9,7 +9,7 @@ from app.models.user import User
 # TODO: remove mock when Cognito is live
 # change these to test different baseline states without touching headers
 
-async def get_current_user(request: Request, db: Session = Depends(get_db)):
+def get_current_user(request: Request, db: Session = Depends(get_db)):
     claims = getattr(request.state, "claims", None)
 
     if claims is None:
@@ -45,7 +45,7 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
 
 def require_role(*allowed_roles: str):#input any number of roles that are allowed and it will check for you
     """Dependency function to check if the current user has one of the allowed roles. If allowed, then will return current user"""
-    async def role_checker(current_user: dict = Depends(get_current_user)):
+    def role_checker(current_user: dict = Depends(get_current_user)):
 
         user_role = current_user["custom:role"]
 
