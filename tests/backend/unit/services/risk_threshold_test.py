@@ -166,3 +166,17 @@ class TestUpdateRiskThresholdConfig:
         assert updated_risk_threshold_config.low_max == 45.2
         assert updated_risk_threshold_config.medium_max == 90.1
         assert updated_risk_threshold_config.neighbourhood_id == self.neighbourhood_id
+
+    @pytest.mark.asyncio
+    async def test_empty_req(self):
+        with pytest.raises(ValueError) as ve:
+            UpdateRiskThresholdConfigReq(
+                low_max=None,
+                medium_max=None
+            )
+
+        assert self.mock_db.execute.call_count == 0
+        assert self.mock_db.rollback.call_count == 0
+        assert self.mock_db.add.call_count == 0
+        assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.refresh.call_count == 0
