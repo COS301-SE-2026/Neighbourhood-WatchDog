@@ -183,6 +183,32 @@ class TestUpdateRiskThresholdConfig:
         assert updated_risk_threshold_config.neighbourhood_id == self.neighbourhood_id
 
     @pytest.mark.asyncio
+    async def test_not_authorised(self):
+        """Not authorised for this neighbourhood"""
+
+        wrong_neighbourhood_id = UUID("717159e3-2ea3-4163-9773-e908fec43be6")
+
+        req = UpdateRiskThresholdConfigReq(
+            low_max=45.2,
+            medium_max=90.1
+        )
+
+        with pytest.raises(HTTPException) as exception:
+            update_neighbourhood_risk_threshold_handler(
+                wrong_neighbourhood_id,
+                req,
+                self.mock_db,
+                self.mock_claims
+            )
+
+        assert exception.value.status_code == 403
+
+        assert self.mock_db.execute.call_count == 0
+        assert self.mock_db.rollback.call_count == 0
+        assert self.mock_db.add.call_count == 0
+        assert self.mock_db.commit.call_count == 0
+
+    @pytest.mark.asyncio
     async def test_empty_req(self):
         with pytest.raises(ValueError) as ve:
             UpdateRiskThresholdConfigReq(
