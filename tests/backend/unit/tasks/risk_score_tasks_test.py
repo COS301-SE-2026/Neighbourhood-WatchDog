@@ -31,3 +31,20 @@ class TestRecalculateAllRiskScores:
 
             assert mock_task.delay.call_count == 0
             assert self.mock_db.close.call_count == 1
+
+class TestCalculateRiskScoreTask:
+    def setup_method(self):
+        self.mock_db = Mock()
+        self.neighbourhood_id = uuid4()
+
+    def test_calculate_risk_score(self):
+        with patch('app.tasks.risk_score_tasks.SessionLocal', return_value = self.mock_db), \
+            patch('app.tasks.risk_score_tasks.calculate_risk_score_handler') as mock_handler:
+
+            calculate_risk_score_task(str(self.neighbourhood_id))
+
+            assert mock_handler.call_count == 1
+
+            mock_handler.assert_called_once_with(self.neighbourhood_id, self.mock_db)
+            assert self.mock_db.rollback.call_count == 0
+            assert self.mock_db.close.call_count == 1
