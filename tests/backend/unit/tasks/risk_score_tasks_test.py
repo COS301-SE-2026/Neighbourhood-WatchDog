@@ -48,3 +48,12 @@ class TestCalculateRiskScoreTask:
             mock_handler.assert_called_once_with(self.neighbourhood_id, self.mock_db)
             assert self.mock_db.rollback.call_count == 0
             assert self.mock_db.close.call_count == 1
+
+    def test_exception_roll_back(self):
+        with patch('app.tasks.risk_score_tasks.SessionLocal', return_value=self.mock_db), \
+             patch('app.tasks.risk_score_tasks.calculate_risk_score_handler', side_effect=Exception("fail")):
+
+            calculate_risk_score_task(str(self.neighbourhood_id))
+
+            assert self.mock_db.rollback.call_count == 1
+            assert self.mock_db.close.call_count == 1
