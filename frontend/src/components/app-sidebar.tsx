@@ -13,7 +13,8 @@ import {
   Bell,
   FileText,
   Settings,
-  Plus
+  Plus,
+  LogOut
 } from "lucide-react"
 
 import { CreatePropertyDialog } from "./create-property-dialogue"
@@ -38,6 +39,8 @@ import {
 import { cn } from "@/lib/utils"
 import { useProperties, type Property } from "@/hooks/use-properties"
 import { useAppView } from "@/components/app-view-context"
+import { useRouter } from "next/navigation";
+import { logout } from "@/lib/auth/cognito";
 
 // Types
 
@@ -242,6 +245,7 @@ export function AppSidebar() {
   const { state, setOpen } = useSidebar()
   const { properties, addProperty } = useProperties()
   const { section, propertyId, setSection, setPropertyView } = useAppView()
+  const router = useRouter();
 
   // pinned = sidebar is locked open; unpinned = hover-to-expand mode
   const [pinned, setPinned] = React.useState(true)
@@ -310,6 +314,11 @@ export function AppSidebar() {
   const handleChildSelect = (id: string) => {
     setPropertyView(id)
   }
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/auth/login");
+  };
 
   return (
     <Sidebar
