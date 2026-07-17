@@ -44,7 +44,7 @@ S3_BUCKET = os.getenv("S3_CLIPS_BUCKET", "")
 # Return URL
 
 
-ADMIN_ROLES = {"SYSTEM_ADMIN", "NEIGHBOURHOOD_ADMIN", "PROP_ADMIN"}
+ADMIN_ROLES = {"SYSTEM_ADMIN", "NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN"}
 
 #create an aws s3 client for the applications aws region
 def _s3_client():
