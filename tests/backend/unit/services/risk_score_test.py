@@ -79,3 +79,32 @@ class TestRiskScore:
 
         assert new_score.score == 10.0            
         assert new_score.classification == RiskLevel.HIGH
+
+    @pytest.mark.asyncio
+    async def test_no_detections(self):
+        self.reset_side_effects(rows=[], threshold=self.mock_threshold)
+
+        new_score = calculate_risk_score_handler(self.neighbourhood_id, self.mock_db)
+
+        assert new_score.score == 0
+        assert new_score.alert_count == 0
+        assert new_score.classification == RiskLevel.LOW
+
+    @pytest.mark.asyncio
+    async def test_threshold_fallback_to_default(self):
+        mock_default_threshold = Mock()
+        mock_default_threshold.low_max = 25.0
+        mock_default_threshold.medium_max = 60.0
+
+        self.reset_side_effects(
+            rows=[(DetectionType.PERIMETER_SCAN, 10)],  # score = 10*4 = 40
+            threshold=None,                              # neighbourhood-specific lookup misses
+            default_threshold=mock_default_threshold,
+        )
+
+        new_score = calculate_risk_score_handler(self.neighbourhood_id, self.mock_db)
+
+        assert new_score.score == 40.0
+        assert new_score.classification == RiskLevel.MEDIUM  # 25 < 40 <= 60, using the DEFAULT thresholds
+
+        assert self.mock_db.execute.call_count == 3
