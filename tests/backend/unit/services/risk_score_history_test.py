@@ -7,7 +7,7 @@ from uuid import uuid4
 from sqlalchemy import UUID
 
 from app.models.risk_score_history import RiskLevel
-from app.services.risk_score_history_service import get_neighbourhood_score_handler
+from app.services.risk_score_history_service import get_neighbourhood_score_handler, get_neighbourhood_score_history_handler
 
 class TestGetNeighbourhoodScore:
     def setup_method(self):
@@ -85,6 +85,68 @@ class TestGetNeighbourhoodScore:
             )
 
         assert exception.value.status_code == 404
+
+        assert self.mock_db.execute.call_count == 1
+        assert self.mock_db.rollback.call_count == 0
+        assert self.mock_db.add.call_count == 0
+        assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.refresh.call_count == 0
+
+
+class TestGetNeighbourhoodScoreHistory:
+    def setup_method(self):
+        self.mock_db = Mock()
+        self.neighbourhood_id = uuid4()
+        self.mock_claims = {"custom:neighbourhood_id" : str(self.neighbourhood_id)}
+
+        self.mock_risk_score1 = Mock()
+        self.mock_risk_score1.id = uuid4()
+        self.mock_risk_score1.neighbourhood_id = self.neighbourhood_id
+        self.mock_risk_score1.score = 214
+        self.mock_risk_score1.classification = RiskLevel.HIGH
+        self.mock_risk_score1.alert_count = 19
+        self.mock_risk_score1.calculated_at = datetime.now()
+
+        self.mock_risk_score2 = Mock()
+        self.mock_risk_score2.id = uuid4()
+        self.mock_risk_score2.neighbourhood_id = self.neighbourhood_id
+        self.mock_risk_score2.score = 12
+        self.mock_risk_score2.classification = RiskLevel.LOW
+        self.mock_risk_score2.alert_count = 5
+        self.mock_risk_score2.calculated_at = datetime.now()
+
+        self.mock_risk_score3 = Mock()
+        self.mock_risk_score3.id = uuid4()
+        self.mock_risk_score3.neighbourhood_id = self.neighbourhood_id
+        self.mock_risk_score3.score = 98
+        self.mock_risk_score3.classification = RiskLevel.MEDIUM
+        self.mock_risk_score3.alert_count = 12
+        self.mock_risk_score3.calculated_at = datetime.now()
+
+        self.mock_list = [self.mock_risk_score1, self.mock_risk_score2, self.mock_risk_score3]
+
+        self.mock_db.execute.return_value.scalars.return_value.all.side_effect = [self.mock_list]
+
+
+        self.mock_db.add = Mock()
+        self.mock_db.flush = Mock()
+        self.mock_db.refresh = Mock()
+        self.mock_db.commit = Mock()
+        self.mock_db.rollback = Mock()
+
+    def reset_side_effects(self, history_list=None):
+        self.mock_db.execute.return_value.scalars.return_value.all.side_effect = [history_list]
+
+    @pytest.mark.asyncio
+    async def test_happy_path(self):
+        history = get_neighbourhood_score_history_handler(
+            self.neighbourhood_id,
+            self.mock_db,
+            self.mock_claims
+        )
+
+        assert len(history) == 3
+
 
         assert self.mock_db.execute.call_count == 1
         assert self.mock_db.rollback.call_count == 0
