@@ -153,3 +153,39 @@ class TestGetNeighbourhoodScoreHistory:
         assert self.mock_db.add.call_count == 0
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.refresh.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_not_authorised(self):
+        wrong_neighbourhood_id = UUID("717159e3-2ea3-4163-9773-e908fec43be6")
+
+        with pytest.raises(HTTPException) as exception:
+            get_neighbourhood_score_history_handler(
+                wrong_neighbourhood_id,
+                self.mock_db,
+                self.mock_claims
+            )
+
+        assert exception.value.status_code == 403
+        assert self.mock_db.execute.call_count == 0
+        assert self.mock_db.rollback.call_count == 0
+        assert self.mock_db.add.call_count == 0
+        assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.refresh.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_history_not_found(self):
+        self.reset_side_effects(history_list=[])
+        with pytest.raises(HTTPException) as exception:
+            get_neighbourhood_score_history_handler(
+                self.neighbourhood_id,
+                self.mock_db,
+                self.mock_claims
+            )
+
+        assert exception.value.status_code == 404
+
+        assert self.mock_db.execute.call_count == 1
+        assert self.mock_db.rollback.call_count == 0
+        assert self.mock_db.add.call_count == 0
+        assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.refresh.call_count == 0
