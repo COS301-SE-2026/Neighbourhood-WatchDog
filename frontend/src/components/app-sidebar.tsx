@@ -424,6 +424,34 @@ export function AppSidebar() {
               )}
             </Tooltip>
           </SidebarMenuItem>
+          <SidebarMenuItem className="mt-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleLogout}
+                  className={cn(
+                    "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2",
+                    "text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors duration-150",
+                    !isExpanded && "justify-center",
+                  )}
+                >
+                  <LogOut className="h-4 w-4 shrink-0" />
+
+                  {isExpanded && (
+                    <span className="text-sm font-medium">
+                      Sign Out
+                    </span>
+                  )}
+                </button>
+              </TooltipTrigger>
+
+              {!isExpanded && (
+                <TooltipContent side="right">
+                  Sign Out
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
