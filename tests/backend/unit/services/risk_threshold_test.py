@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 from fastapi import HTTPException
 from app.services.risk_threshold_config_service import get_neighbourhood_risk_threshold_handler, update_neighbourhood_risk_threshold_handler
 from app.schemas.risk_threshold_config import RiskThresholdConfigRes, UpdateRiskThresholdConfigReq, NeighbourhoodRiskThresholdConfigRes
