@@ -24,7 +24,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 
     if TESTING:
         return {
-            "sub": sub,
+            "sub": request.headers.get("X-Mock-Sub", "00000000-0000-0000-0000-000000000000"),
             "given_name": "Test",
             "family_name": "User",
             "custom:role": "admin",
