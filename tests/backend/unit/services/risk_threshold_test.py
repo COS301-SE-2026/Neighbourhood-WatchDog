@@ -279,6 +279,7 @@ class TestUpdateRiskThresholdConfig:
         assert self.mock_db.commit.call_count == 1
         assert self.mock_db.refresh.call_count == 1
 
+    @pytest.mark.asyncio
     async def test_partial_update_existing_config(self):
         """Existing neighbourhood-specific config, PATCH only one field, other field untoched"""
         req = UpdateRiskThresholdConfigReq(medium_max=60)
@@ -297,3 +298,24 @@ class TestUpdateRiskThresholdConfig:
         assert self.mock_db.add.call_count == 0
         assert self.mock_db.commit.call_count == 1
         assert self.mock_db.refresh.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_partial_update_invalid_state(self):
+        """send one invalid field and combine it with existing config"""
+        req = UpdateRiskThresholdConfigReq(medium_max=15)
+
+        with pytest.raises(HTTPException) as exception:
+            update_neighbourhood_risk_threshold_handler(
+                self.neighbourhood_id,
+                req,
+                self.mock_db,
+                self.mock_claims
+            )
+
+        assert exception.value.status_code == 422
+
+        assert self.mock_db.execute.call_count == 1
+        assert self.mock_db.dd.call_count == 0
+        assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.refresh.call_count == 0
+        assert self.mock_db.rollback.call_count == 0
