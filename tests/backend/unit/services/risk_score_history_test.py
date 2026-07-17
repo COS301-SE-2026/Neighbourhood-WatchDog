@@ -72,3 +72,22 @@ class TestGetNeighbourhoodScore:
         assert self.mock_db.add.call_count == 0
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.refresh.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_risk_not_found(self):
+        self.reset_side_effects(neighbourhood_risk_history=None)
+
+        with pytest.raises(HTTPException) as exception:
+            get_neighbourhood_score_handler(
+                self.neighbourhood_id,
+                self.mock_db,
+                self.mock_claims
+            )
+
+        assert exception.value.status_code == 404
+
+        assert self.mock_db.execute.call_count == 1
+        assert self.mock_db.rollback.call_count == 0
+        assert self.mock_db.add.call_count == 0
+        assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.refresh.call_count == 0
