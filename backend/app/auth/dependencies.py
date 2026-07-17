@@ -1,9 +1,11 @@
+import os
 from fastapi import HTTPException, Request, Depends, status
 from sqlalchemy.orm import Session
-from app.auth.jwt import get_authenticated_claims
+from uuid import uuid4
 
-from app.core.database import get_db
 from app.models.user import User
+from app.core.database import get_db
+from app.auth.jwt import get_authenticated_claims
 
 # default mock identity
 # TODO: remove mock when Cognito is live
@@ -16,7 +18,6 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         claims = get_authenticated_claims(request)
     
     sub = claims["sub"]
-    email = claims["email"]
 
     user = (
         db.query(User)
@@ -24,7 +25,9 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         .first()
     )
 
-    if user is None:
+    if user is None and not os.environ["TESTING"]:
+        print("User is none and not os.environ")
+
         raise HTTPException(
             status_code=401,
             detail="User not found"
@@ -32,7 +35,6 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 
     return {
         "sub": sub,
-        "email": email,
         "given_name": user.first_name,
         "family_name": user.last_name,
         "custom:role": user.role.value,

@@ -1,4 +1,5 @@
 import jwt
+from jwt.algorithms import RSAAlgorithm
 
 import requests
 from fastapi import HTTPException, Request
@@ -16,10 +17,12 @@ def verify_jwt(token: str) -> dict:
     """Verifies the JWT and returns the claims (data from JWT)"""
     headers = jwt.get_unverified_header(token) #decode JWT headers
     kid = headers.get("kid") #key id to find which public key used
-    key = next((k for k in JWKS if k["kid"] == kid), None) #find which primary key was used
+    jwk = next((k for k in JWKS if k["kid"] == kid), None) #find which primary key was used
 
-    if key is None:
+    if jwk is None:
         raise jwt.PyJWTError("Unable to find matching public key.")
+
+    key = RSAAlgorithm.from_jwk(jwk)
 
     claims = jwt.decode(
         token,
