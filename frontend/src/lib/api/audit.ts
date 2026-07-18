@@ -1,8 +1,6 @@
 import { GetAuditLogRes, getAuditLogsResSchema, PaginatedResponse, AuditLog } from '../validators/audit'
 import { apiCall } from './client'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-
 export type AuditLogsFilters = {
   searchTerm?: string
   action?: 'UPDATE' | 'DELETE' | 'CREATE'

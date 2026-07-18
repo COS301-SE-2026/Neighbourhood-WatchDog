@@ -16,7 +16,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { Card } from "./ui/card"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -29,6 +28,7 @@ export function DataTable<TData, TValue>({
   data,
   renderMobileCard
 }: DataTableProps<TData, TValue>) {
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,

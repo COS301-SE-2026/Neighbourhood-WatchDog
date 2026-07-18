@@ -7,7 +7,7 @@ import { AuditLogsFilters, getAuditLogs } from "@/lib/api/audit"
 import { ColumnDef } from "@tanstack/react-table"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { AuditFilters } from "./audit-filters"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 
 const SIZE = 30
 
@@ -59,20 +59,30 @@ export function AuditLogTable() {
   const [selectedRow, setSelectedRow] = useState<AuditLog | null>(null)
   const [filters, setFilters] = useState<AuditLogsFilters>({})
 
-  async function fetchData(){
-    setLoading(true)
-    try{
-      const logs = await getAuditLogs(page, SIZE, filters)
-      setAuditLog(logs)
-    } catch(e) {
-      console.error(e)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    let ignore = false
+
+    async function fetchData(){
+      try{
+        const logs = await getAuditLogs(page, SIZE, filters)
+        if (!ignore) {
+          setAuditLog(logs)
+        }        
+      } catch(e) {
+        console.error(e)
+      } finally {
+        if (!ignore){
+          setLoading(false)
+        }
+
+      }
+    }
+
     fetchData()
+
+    return () => {
+      ignore = true
+    }
   }, [page, filters])
   
   const data = auditLog?.results ?? []
@@ -134,7 +144,7 @@ export function AuditLogTable() {
   return (
     <div className="bg-background rounded-radius-sm p-20 w-full max-w-full overflow-x-auto">
       { loading && <p>Loading...</p>}
-      <Dialog open={!!selectedRow} onOpenChange={(open) => setSelectedRow(null)}>
+      <Dialog open={!!selectedRow} onOpenChange={() => setSelectedRow(null)}>
         <DialogContent>
           {selectedRow && (
             <div>
@@ -149,14 +159,14 @@ export function AuditLogTable() {
           )}
         </DialogContent>
       </Dialog>
-      <AuditFilters filters={filters} onChange={(filters: AuditLogsFilters) => {setFilters(filters)}}/>
+      <AuditFilters filters={filters} onChange={(filters: AuditLogsFilters) => {setLoading(true); setFilters(filters)}}/>
       <DataTable columns={columns} data={data} renderMobileCard={renderAuditLogCard}/>
       <PaginationControls 
         previousDisabled={page==1}
         nextDisabled={page * SIZE >= (auditLog?.total ?? 0)}
         page={page}
         loading={loading}
-        onPageChange={(newPage) => {setPage(newPage)}} />
+        onPageChange={(newPage) => {setLoading(true); setPage(newPage)}} />
     </div>
   )
 }

@@ -5,7 +5,7 @@ from typing import Optional
 from app.core.database import DbSession
 from app.auth.dependencies import get_current_user
 from app.auth.rbac import require_role
-from app.schemas.audit_log import GetAuditLogsRes, AuditAction
+from app.schemas.audit_log import AuditAction
 from app.services.audit_service import get_audit_logs_handler
 
 PAGE = 1
@@ -23,7 +23,6 @@ async def get_audit_logs(
     action: Optional[AuditAction] = Query(None, description="Filter by action"),
     start_date: Optional[datetime] = Query(None, description="Logs on/after this date"),
     end_date: Optional[datetime] = Query(None, description="Logs on/before this date"),
-    target_entity_type: Optional[str] = Query(None, description="Filter by target entity type"),
     sort_order: Optional[str] = Query(None, description="ASC or DESC"),
 ):
     """Retrieves the all audit logs and returns them in a list."""

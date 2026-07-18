@@ -1,11 +1,9 @@
-from fastapi import HTTPException, Depends, Query
+from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import String, Text, select, func, or_, Enum, cast
+from sqlalchemy import String, select, func, or_, cast
 from uuid import uuid4, UUID
-from fastapi.exceptions import ResponseValidationError
 from datetime import datetime
 
-from app.auth.dependencies import get_current_user
 from app.models.audit_log import AuditAction
 from app.models.audit_log import AuditLog
 from app.core.database import DbSession
