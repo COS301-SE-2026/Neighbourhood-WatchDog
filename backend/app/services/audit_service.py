@@ -12,7 +12,7 @@ from app.schemas.audit_log import GetAuditLogsRes, PaginatedResponse, AuditLogSc
 PAGE = 1
 SIZE = 30
 
-async def create_audit_log_item(
+def create_audit_log_item(
     user_id: UUID, 
     action: AuditAction, 
     target_entity_type: str,
@@ -22,40 +22,9 @@ async def create_audit_log_item(
     db: DbSession
 ) -> AuditLog:
     """Receives an AuditLogScheme object and adds the audit log to the database."""
-    if not db:
-        raise HTTPException(400, "Could not create audit log item. No database session.")
+    _validate_required_create_fields(db, user_id, target_entity_type, target_entity_id, action)
+    old_values, new_values = _validate_action_values(action, old_values, new_values)
     
-    if not user_id:
-        raise HTTPException(400, "Could not create audit log item. No user id provided.")
-
-    if not target_entity_type:
-        raise HTTPException(400, "Could not create audit log item. No target entity type provided.")
-    
-    if not target_entity_id:
-        raise HTTPException(400, "Could not create audit log item. No target entity id provided.")
-    
-    if not action:
-        raise HTTPException(400, "Could not create audit log item. No action provided.")
-
-    if action == AuditAction.DELETE:
-        new_values = None
-
-        if not old_values: # old must exist
-            raise HTTPException(400, "Could not create audit log item. No old value provided.")
-   
-    elif action == AuditAction.UPDATE:
-        if not old_values or not new_values:
-            raise HTTPException(400, "Could not create audit log item. Either old or new values were not provided.")
-   
-    elif action == AuditAction.CREATE:
-        old_values = None
-
-        if not new_values:
-            raise HTTPException(400, "Could not create audit log item. New values were not provided.")
-
-    if old_values == new_values:
-        raise HTTPException(400, "Could not create audit log item. Old values and new values are the same.")
-
     try:
         #TODO: check that id in table actually exists
 
@@ -80,6 +49,40 @@ async def create_audit_log_item(
     except IntegrityError:
         db.rollback()
         raise HTTPException(400, "Could not create audit log item. Failed to add audit log item.")
+
+def _validate_required_create_fields(db, user_id, target_entity_type, target_entity_id, action):
+    required = {
+        "database_session": db,
+        "user id": user_id,
+        "target entity type": target_entity_type,
+        "target entity id": target_entity_id,
+        "action": action,
+    }
+
+    for name, value in required.items():
+        if not value:
+            raise HTTPException(400, f"Could not create audit log item. No {name} provided.")
+        
+def _validate_action_values(action, old_values, new_values):
+    if action == AuditAction.DELETE:
+        if not old_values: # old must exist
+            raise HTTPException(400, "Could not create audit log item. No old value provided.")
+        return old_values, None
+    
+    elif action == AuditAction.UPDATE:
+        if not old_values or not new_values:
+            raise HTTPException(400, "Could not create audit log item. Either old or new values were not provided.")
+        if old_values == new_values:
+            raise HTTPException(400, "Could not create audit log item. Old values and new values are the same.")
+        return old_values, new_values
+
+    elif action == AuditAction.CREATE:
+        if not new_values:
+            raise HTTPException(400, "Could not create audit log item. New values were not provided.")
+        return None, new_values
+    
+    return old_values, new_values
+
 
 async def get_audit_logs_handler(
     page: int,
@@ -154,3 +157,4 @@ async def get_audit_logs_handler(
     )
 
     return output
+
