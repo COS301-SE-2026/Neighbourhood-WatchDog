@@ -71,7 +71,7 @@ def internal_headers():
 def pending_user_headers():
     return{
         "Authorization": TEST_BEARER,
-        "X-Mock-Role": "NEIGHBOURHOOD_ADMIN",
+        "X-Mock-Role": "RESIDENT",
         "X-Mock-Sub": "22222222-2222-2222-2222-222222222222",
         "X-Mock-Neighbourhood-Id": "",
     }
