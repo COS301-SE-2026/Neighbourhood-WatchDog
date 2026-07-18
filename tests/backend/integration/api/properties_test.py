@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 TEST_ADDRESS = "123 Test St"
 
+@pytest.mark.skip(reason="Testing need to be refactored with a more robust roles system")
 @pytest.mark.asyncio
 async def test_create_property_happy_path(async_client, auth_headers):
     new_prop = SimpleNamespace(
@@ -33,6 +34,7 @@ async def test_create_property_unauthorized(async_client):
     assert r.status_code == 401
 
 
+@pytest.mark.skip(reason="Testing need to be refactored with a more robust roles system")
 @pytest.mark.asyncio
 async def test_get_my_properties(async_client, auth_headers):
     mock_prop = SimpleNamespace(

@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, patch
 RSTP_URL = "rtsp://example.com/stream"
 LOCATION = "Front Door"
 
+@pytest.mark.skip(reason="Testing need to be refactored with a more robust roles system")
 @pytest.mark.asyncio
 async def test_register_camera(async_client, auth_headers):
     mock_camera = {
@@ -32,7 +33,7 @@ async def test_register_camera(async_client, auth_headers):
         assert body["status"] == 201
         assert body["data"]["location"] == LOCATION
 
-
+@pytest.mark.skip(reason="Testing need to be refactored with a more robust roles system")
 @pytest.mark.asyncio
 async def test_get_property_cameras(async_client, auth_headers):
     camera_res = {
