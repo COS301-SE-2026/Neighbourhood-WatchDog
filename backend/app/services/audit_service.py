@@ -88,11 +88,11 @@ def get_audit_logs_handler(
     page: int,
     size: int,
     db: DbSession,
-    search_term: str = None,
-    action: AuditAction = None,
-    start_date: datetime = None,
-    end_date: datetime = None,
-    sort_order: str = None,
+    search_term: str | None = None,
+    action: AuditAction | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+    sort_order: str | None = None,
 ) -> GetAuditLogsRes:
     #TODO: consider returning the username as well
     if not db:
