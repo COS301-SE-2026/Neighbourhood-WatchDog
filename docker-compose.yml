@@ -81,7 +81,6 @@ services:
     build:
       context: ./backend
       target: development
-    # platform: linux/amd64
     ports:
       - "8000:8000"
     environment:
@@ -90,7 +89,12 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
+
       AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      S3_CLIPS_BUCKET: ${S3_CLIPS_BUCKET}
+
       COGNITO_REGION: ${COGNITO_REGION}
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
       COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
