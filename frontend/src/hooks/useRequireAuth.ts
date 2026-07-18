@@ -15,6 +15,7 @@ export function useRequireAuth() {
             return;
         }
 
+        // TODO: Send token to backend for JWT validation
         setLoading(false);
     }, [router]);
 
