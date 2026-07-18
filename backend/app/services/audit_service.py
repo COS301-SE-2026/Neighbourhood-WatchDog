@@ -84,7 +84,7 @@ def _validate_action_values(action, old_values, new_values):
     return old_values, new_values
 
 
-async def get_audit_logs_handler(
+def get_audit_logs_handler(
     page: int,
     size: int,
     db: DbSession,
@@ -98,23 +98,10 @@ async def get_audit_logs_handler(
     if not db:
         raise HTTPException(500, "No database.")
 
-    if page < 1:
-        raise HTTPException(422, "page must be >= 1.")
-    if size < 1:
-        raise HTTPException(422, "size must be >= 1.")
+    _validate_pagination(page, size)
 
     stmt = select(AuditLog)
-
-    # Filters
-    if search_term:
-        search_cols = [AuditLog.id, AuditLog.action, AuditLog.target_entity_type, AuditLog.target_entity_id]
-        conditions = [
-            cast(col, String).ilike(f"%{search_term}%") #non case sensitive search on any str field
-            for col in search_cols
-        ]
-        if conditions:
-            stmt = stmt.where(or_(*conditions))
-
+    stmt = _apply_filters(stmt, search_term, action, start_date, end_date)
     
     count_stmt = select(func.count()).select_from(stmt.subquery())
     total_count = db.scalar(count_stmt)
@@ -123,14 +110,7 @@ async def get_audit_logs_handler(
     if total_count and offset >= total_count:
         raise HTTPException(422, "Request is beyond the total number of audit logs.")
 
-    if sort_order and sort_order == "ASC":
-        stmt = stmt.order_by(AuditLog.timestamp.asc())
-    elif sort_order and sort_order == "DESC":
-        stmt = stmt.order_by(AuditLog.timestamp.desc())
-    else: 
-        stmt = stmt.order_by(AuditLog.id.desc())
-
-    stmt = stmt.offset(offset).limit(size)
+    stmt = _apply_sort(stmt, sort_order).offset(offset).limit(size)
     
     audit_logs = db.scalars(stmt).all()
 

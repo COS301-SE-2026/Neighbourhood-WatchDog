@@ -29,7 +29,7 @@ async def get_audit_logs(
     """Retrieves the all audit logs and returns them in a list."""
     require_role(claims, ["SYSTEM_ADMIN"])
     
-    return await get_audit_logs_handler(
+    return get_audit_logs_handler(
         search_term=search_term,
         action=action,
         start_date=start_date,
