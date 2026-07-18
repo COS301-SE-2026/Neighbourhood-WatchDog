@@ -172,3 +172,11 @@ def _apply_filters(stmt, search_term, action, start_date, end_date):
         stmt = stmt.where(AuditLog.timestamp <= end_date)
     
     return stmt
+
+def _apply_sort(stmt, sort_order: str):
+    sort_map = {
+        "ASC": AuditLog.timestamp.asc(),
+        "DESC": AuditLog.timestamp.desc(),
+    }
+
+    return stmt.order_by(sort_map.get(sort_order, AuditLog.id.desc()))
