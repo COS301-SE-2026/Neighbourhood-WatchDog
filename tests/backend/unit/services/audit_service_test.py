@@ -7,6 +7,9 @@ from app.models.user import UserRole
 from uuid import uuid4
 from datetime import datetime
 
+OLD_EMAIL = "john@example.com"
+NEW_EMAIL = "john@example.co.za"
+
 class TestCreateAuditLogItem:
     def setup_method(self):
         """Runs before the test method"""
@@ -32,7 +35,7 @@ class TestCreateAuditLogItem:
             target_entity_id=uuid4(),
             old_values={
                 "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                "email": "john@example.com",
+                "email": OLD_EMAIL,
                 "first_name": "John",
                 "last_name": "Doe",
                 "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -42,7 +45,7 @@ class TestCreateAuditLogItem:
             },
             new_values={
                 "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                "email": "john@example.co.za", #changed the email address
+                "email": NEW_EMAIL, #changed the email address
                 "first_name": "John",
                 "last_name": "Doe",
                 "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -69,7 +72,7 @@ class TestCreateAuditLogItem:
                 target_entity_id=uuid4(),
                 old_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.com",
+                    "email": OLD_EMAIL,
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -79,7 +82,7 @@ class TestCreateAuditLogItem:
                 },
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.com",
+                    "email": OLD_EMAIL,
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -105,7 +108,7 @@ class TestCreateAuditLogItem:
                 target_entity_id=uuid4(),
                 old_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.com",
+                    "email": OLD_EMAIL,
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -115,7 +118,7 @@ class TestCreateAuditLogItem:
                 },
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.co.za", #changed the email address
+                    "email": NEW_EMAIL, #changed the email address
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -141,7 +144,7 @@ class TestCreateAuditLogItem:
                 target_entity_id=uuid4(),
                 old_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.com",
+                    "email": OLD_EMAIL,
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -151,7 +154,7 @@ class TestCreateAuditLogItem:
                 },
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.co.za", #changed the email address
+                    "email": NEW_EMAIL, #changed the email address
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -177,7 +180,7 @@ class TestCreateAuditLogItem:
                 target_entity_id=uuid4(),
                 old_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.com",
+                    "email": OLD_EMAIL,
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -187,7 +190,7 @@ class TestCreateAuditLogItem:
                 },
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.co.za", #changed the email address
+                    "email": NEW_EMAIL, #changed the email address
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -213,7 +216,7 @@ class TestCreateAuditLogItem:
                 target_entity_id=None,
                 old_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.com",
+                    "email": OLD_EMAIL,
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -223,7 +226,7 @@ class TestCreateAuditLogItem:
                 },
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.co.za", #changed the email address
+                    "email": NEW_EMAIL, #changed the email address
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -250,7 +253,7 @@ class TestCreateAuditLogItem:
                 old_values=None,
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.co.za",
+                    "email": NEW_EMAIL,
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -276,7 +279,7 @@ class TestCreateAuditLogItem:
                 target_entity_id=uuid4(),
                 old_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.com",
+                    "email": OLD_EMAIL,
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -303,7 +306,7 @@ class TestCreateAuditLogItem:
                 target_entity_id=uuid4(),
                 old_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.com",
+                    "email": OLD_EMAIL,
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -331,7 +334,7 @@ class TestCreateAuditLogItem:
                 old_values=None,
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.co.za", 
+                    "email": NEW_EMAIL, 
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -369,7 +372,7 @@ class TestGetAuditLogsHandler:
                 old_values=None,
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.co.za", 
+                    "email": NEW_EMAIL, 
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -387,7 +390,7 @@ class TestGetAuditLogsHandler:
                 timestamp=datetime.now(),
                 old_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.com",
+                    "email": OLD_EMAIL,
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -397,7 +400,7 @@ class TestGetAuditLogsHandler:
                 },
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": "john@example.co.za", #changed the email address
+                    "email": NEW_EMAIL, #changed the email address
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",

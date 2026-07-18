@@ -13,13 +13,13 @@ PAGE = 1
 SIZE = 30
 
 def create_audit_log_item(
-    user_id: UUID, 
-    action: AuditAction, 
-    target_entity_type: str,
-    target_entity_id: UUID,
-    old_values: dict,
-    new_values: dict,
-    db: DbSession
+    db: DbSession,
+    user_id: UUID | None = None, 
+    action: AuditAction | None = None, 
+    target_entity_type: str | None = None,
+    target_entity_id: UUID | None = None,
+    old_values: dict | None = None,
+    new_values: dict | None = None,
 ) -> AuditLog:
     """Receives an AuditLogScheme object and adds the audit log to the database."""
     _validate_required_create_fields(db, user_id, target_entity_type, target_entity_id, action)
