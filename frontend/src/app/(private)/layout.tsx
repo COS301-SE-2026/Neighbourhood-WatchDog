@@ -7,11 +7,7 @@ export default function ProtectedLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const { loading } = useRequireAuth();
-
-    if (loading) {
-        return <div>Loading...</div>;
-    }
+    useRequireAuth();
 
     return <>{children}</>;
 }

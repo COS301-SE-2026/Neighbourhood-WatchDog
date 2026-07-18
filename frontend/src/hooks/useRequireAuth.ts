@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect} from "react"; //use state
 import { useRouter } from "next/navigation";
 
 export function useRequireAuth() {
     const router = useRouter();
-    const [loading, setLoading] = useState(true);
+    // const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const token = localStorage.getItem("accessToken");
@@ -16,8 +16,8 @@ export function useRequireAuth() {
         }
 
         // TODO: Send token to backend for JWT validation
-        setLoading(false);
+        // setLoading(false);
     }, [router]);
 
-    return { loading };
+    // return { loading };
 }
