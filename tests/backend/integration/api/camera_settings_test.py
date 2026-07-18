@@ -38,13 +38,13 @@ async def test_get_camera_settings_ok(async_client, admin_headers):
 @pytest.mark.skip(reason="Needs to be refacored")
 @pytest.mark.asyncio
 async def test_get_camera_settings_resident_forbidden(async_client, auth_headers):
-    RESIDENT_CLAIMS =  {
-        "sub": "a16cd2b8-c0c1-70f7-1fb6-17b5cea57bcf",
-        "given_name": "Test",
-        "family_name": "User",
-        "custom:role": "SYSTEM_ADMIN",
-        "custom:neighbourhood_id": None,
-    }
+    # RESIDENT_CLAIMS =  {
+    #     "sub": "a16cd2b8-c0c1-70f7-1fb6-17b5cea57bcf",
+    #     "given_name": "Test",
+    #     "family_name": "User",
+    #     "custom:role": "SYSTEM_ADMIN",
+    #     "custom:neighbourhood_id": None,
+    # }
     
     # main_module.app.dependency_overrides[get_current_user] = lambda: RESIDENT_CLAIMS
     r = await async_client.get(f"/cameras/{CAMERA_ID}/settings", headers=auth_headers)
