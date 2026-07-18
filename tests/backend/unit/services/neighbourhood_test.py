@@ -29,6 +29,12 @@ class TestCreateNeighbourhood:
         self.mock_neighbourhood.join_code = "ABC12345"
         self.mock_neighbourhood.created_at = datetime.now()
 
+        #mock creator user
+        self.mock_creator = Mock()
+        self.mock_creator.cognito_sub = "cognito-sub-123"
+        self.mock_creator.role = UserRole.RESIDENT
+        self.mock_creator.neighbourhood_id = None
+
         # mockin da queries
         self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
             None,  # join_code uniqueness check
