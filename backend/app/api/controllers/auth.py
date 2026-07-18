@@ -49,7 +49,7 @@ def confirm(payload: ConfirmSignUpRequest):
     return confirm_user(_payload_to_dict(payload))
 
 
-@router.get("/me", responses={401, {"description" : "Invalid token claims or user not found"}})
+@router.get("/me", responses={401: {"description" : "Invalid token claims or user not found"}})
 async def get_current_user_info(
     current_user: dict = Depends(get_current_user),
     db: DbSession = None
