@@ -53,6 +53,7 @@ jobs:
       COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
       COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
       FRONTEND_URL: https://testserver
+      TESTING: true
 
     services:
       postgres:
@@ -106,10 +107,10 @@ jobs:
       - name: Run database migrations
         run: cd backend && alembic upgrade head
 
-      - name: Seed test data (seed.sql)
-        env:
-          PGPASSWORD: test_password
-        run: psql -h localhost -U postgres -d watchdog -f seed.sql
+      # - name: Seed test data (seed.sql)
+      #   env:
+      #     PGPASSWORD: test_password
+      #   run: psql -h localhost -U postgres -d watchdog -f seed.sql
 
       - name: Seed test data
         run: cd backend && python seed.py
@@ -204,9 +205,8 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install Python dependencies
-        run: |
-          pip install -r backend/requirements.txt
+      - name: Install setuptools
+        run: pip install --upgrade "setuptools>=83.0.0"
 
       - name: Install security tools
         run: pip install bandit pip-audit

@@ -129,7 +129,7 @@ def seed_database(bulk_audit_count: int = 500):
             email="testuser@example.com",
             first_name="Test",
             last_name="User",
-            cognito_sub="00000000-0000-0000-0000-000000000001",
+            cognito_sub="a16cd2b8-c0c1-70f7-1fb6-17b5cea57bcf",
             role=UserRole.RESIDENT,
             neighbourhood_id=NEIGHBOURHOOD_ID
         )
@@ -234,7 +234,7 @@ def seed_database(bulk_audit_count: int = 500):
         print("\nDatabase seeded successfully!")
         print("\nTest Credentials:")
         print("Email: testuser@example.com")
-        print("Cognito Sub: 00000000-0000-0000-0000-000000000001")
+        print("Cognito Sub: a16cd2b8-c0c1-70f7-1fb6-17b5cea57bcf")
         print("Neighbourhood: Test Neighbourhood")
         print("Property Address: 123 Test Street")
 
