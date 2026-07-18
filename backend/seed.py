@@ -2,6 +2,7 @@
 """Database seeder script for development"""
 
 import secrets
+import random
 import sys
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4, UUID
@@ -73,9 +74,9 @@ def seed_bulk_audit_logs(db: Session, user_id: UUID, count: int = 500) -> int:
         entity_type = secrets.choice(TARGET_ENTITY_TYPES)
         entity_id = secrets.choice(ENTITY_IDS_BY_TYPE[entity_type])
         timestamp = now - timedelta(
-            days=secrets.randint(0, 90),
-            hours=secrets.randint(0, 23),
-            minutes=secrets.randint(0, 59),
+            days=random.randint(0, 90),
+            hours=random.randint(0, 23),
+            minutes=random.randint(0, 59),
         )
         old_values, new_values = _fake_values_for_action(action)
 
