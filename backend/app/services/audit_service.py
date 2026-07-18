@@ -158,3 +158,9 @@ async def get_audit_logs_handler(
 
     return output
 
+def _validate_pagination(page: int, size: int):
+    if page < 1:
+        raise HTTPException(422, "page must be >= 1")
+    if size < 1:
+        raise HTTPException(422, "size must be >= 1")
+    

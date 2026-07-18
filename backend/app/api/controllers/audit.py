@@ -22,6 +22,7 @@ async def get_audit_logs(
     search_term: Annotated[Optional[str], Query(description="Free-text search")] = None, 
     action: Annotated[Optional[AuditAction], Query(description="Filter by action")] = None,
     start_date: Annotated[Optional[datetime], Query(description="Logs on/after this date")] = None,
+    target_entity_type: Annotated[Optional[str], Query(description="Filter by target entity type")] = None,
     end_date: Annotated[Optional[datetime], Query(description="Logs on/before this date")] = None,
     sort_order: Annotated[Optional[str], Query(description="ASC or DESC")] = None, 
 ):

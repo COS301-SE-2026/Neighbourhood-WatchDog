@@ -3,7 +3,6 @@ from fastapi import HTTPException
 from unittest.mock import Mock
 from app.services.audit_service import create_audit_log_item, get_audit_logs_handler
 from app.models.audit_log import AuditAction, AuditLog
-from app.schemas.audit_log import GetAuditLogsRes
 from app.models.user import UserRole
 from uuid import uuid4
 from datetime import datetime
@@ -434,7 +433,7 @@ class TestGetAuditLogsHandler:
         self.page = 21
 
         with pytest.raises(HTTPException) as exception:
-            get_audit_log_res = await get_audit_logs_handler(
+            _ = await get_audit_logs_handler(
                 page=self.page,
                 size=self.size,
                 db=self.mock_db
@@ -451,7 +450,7 @@ class TestGetAuditLogsHandler:
         self.page = 21
 
         with pytest.raises(HTTPException) as exception:
-            get_audit_log_res = await get_audit_logs_handler(
+            _ = await get_audit_logs_handler(
                 page=self.page,
                 size=self.size,
                 db=None
