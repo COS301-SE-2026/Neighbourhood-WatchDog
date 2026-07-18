@@ -32,11 +32,11 @@ tomli==2.4.1
 # Auth (AWS Cognito)
 boto3==1.43.1
 botocore==1.43.1
-python-jose==3.5.0
+# python-jose[cryptography]==3.5.0
+PyJWT==2.13.0
 cryptography==48.0.1
 cffi==2.0.0
 pycparser==3.0
-ecdsa==0.19.2
 rsa==4.9.1
 pyasn1==0.6.3
 s3transfer==0.17.0
@@ -54,7 +54,7 @@ websockets==16.0
 # Environment & Config
 python-dotenv==1.2.2
 pydantic==2.13.3
-pydantic-settings==2.14.0
+pydantic-settings==2.14.2
 pydantic_core==2.46.3
 annotated-types==0.7.0
 typing-inspection==0.4.2
@@ -95,3 +95,5 @@ geoalchemy2==0.18.0
 
 #Twilio
 twilio==9.3.6
+# Setup Tools
+setuptools==83.0.0

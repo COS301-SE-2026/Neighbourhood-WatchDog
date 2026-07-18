@@ -14,6 +14,7 @@ except Exception:
 TEST_BEARER = "Bearer test"
 
 def pytest_configure(config):
+    os.environ["TESTING"] = "true"
     os.environ["SKIP_DB_INIT"] = "false"
     postgres_user = os.getenv("POSTGRES_USER", "postgres")
     postgres_password = os.getenv("POSTGRES_PASSWORD")
@@ -46,7 +47,7 @@ def auth_headers():
     return {
         "Authorization": TEST_BEARER,
         "X-Mock-Role": "RESIDENT",
-        "X-Mock-Sub": "00000000-0000-0000-0000-000000000001",
+        "X-Mock-Sub": "a16cd2b8-c0c1-70f7-1fb6-17b5cea57bcf",
     }
 
 
@@ -55,7 +56,7 @@ def admin_headers():
     return {
         "Authorization": TEST_BEARER,
         "X-Mock-Role": "NEIGHBOURHOOD_ADMIN",
-        "X-Mock-Sub": "11111111-1111-1111-1111-111111111111",
+        "X-Mock-Sub": "a16cd2b8-c0c1-70f7-1fb6-17b5cea57bcf",
     }
 
 
