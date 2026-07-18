@@ -1,18 +1,6 @@
 import os
-import main as main_module
 import pytest
 from httpx import AsyncClient
-
-os.environ["SKIP_DB_INIT"] = "false"
-
-TEST_BEARER = "Bearer test"
-
-postgres_user = os.getenv("POSTGRES_USER", "postgres")
-postgres_password = os.getenv("POSTGRES_PASSWORD")
-postgres_db = os.getenv("POSTGRES_DB", "watchdog")
-
-if not os.getenv("DATABASE_URL"):
-    os.environ["DATABASE_URL"] = f"postgresql://{postgres_user}:{postgres_password}@localhost:5432/{postgres_db}"
 
 try:
     # ASGITransport may be in different places depending on httpx version
@@ -23,11 +11,26 @@ except Exception:
     except Exception:
         ASGITransport = None 
 
+TEST_BEARER = "Bearer test"
+
+def pytest_configure(config):
+    os.environ["TESTING"] = "true"
+    os.environ["SKIP_DB_INIT"] = "false"
+    postgres_user = os.getenv("POSTGRES_USER", "postgres")
+    postgres_password = os.getenv("POSTGRES_PASSWORD")
+    postgres_db = os.getenv("POSTGRES_DB", "watchdog")
+    os.environ["DATABASE_URL"] = f"postgresql://{postgres_user}:{postgres_password}@localhost:5432/{postgres_db}"
+
+def _get_main_module():
+    import main as main_module
+    return main_module
+
 @pytest.fixture
 async def async_client():
     """Async HTTP client bound to the FastAPI app."""
     # AsyncClient supports creating with `app=` in newer httpx versions.
     # If that fails, fall back to creating an ASGITransport instance.
+    main_module = _get_main_module()
     try:
         async with AsyncClient(app=main_module.app, base_url="https://testserver") as ac:
             yield ac
