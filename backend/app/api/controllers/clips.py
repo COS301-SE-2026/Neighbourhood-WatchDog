@@ -83,7 +83,7 @@ def _check_rbac(claims: dict, camera: Camera, db: Session) -> None:
             )
         approved = (
             db.query(NeighbourhoodJoinRequest).filter_by(
-                neighbourhhod_id=camera.neighbourhood_id,
+                neighbourhood_id=camera.neighbourhood_id,
                 user_id=claims.get("sub"),
                 status="APPROVED",
             )
