@@ -47,12 +47,6 @@ const DEFAULT_HISTORY: RiskScorePoint[] = [
   { calculated_at: daysAgoISO(0), score: 81, classification: "HIGH" },
 ];
 
-function withAlpha(hex: string, alpha: number): string {
-  const match = hex.match(/^#([0-9a-f]{6})$/i);
-  if (!match) return hex;
-  const n = parseInt(match[1], 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
-}
 
 function useChartTheme() {
   const [theme, setTheme] = useState({
@@ -102,10 +96,11 @@ function thresholdBandsPlugin(lowMax: number, mediumMax: number, yMax: number, c
         [mediumMax, yMax, colors.threat],
       ];
       ctx.save();
+      ctx.globalAlpha = 0.08;
       for (const [from, to, color] of zones) {
         const top = y.getPixelForValue(to);
         const bottom = y.getPixelForValue(from);
-        ctx.fillStyle = withAlpha(color, 0.08);
+        ctx.fillStyle = color;
         ctx.fillRect(chartArea.left, top, chartArea.right - chartArea.left, bottom - top);
       }
       ctx.restore();
