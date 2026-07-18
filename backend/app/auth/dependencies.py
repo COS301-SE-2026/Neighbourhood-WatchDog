@@ -23,7 +23,7 @@ async def get_current_user(
 ) -> dict:
     role = x_mock_role or MOCK_ROLE
     sub = x_mock_sub or MOCK_SUB
-    neighbourhood_id = x_mock_neighbourhood_id or MOCK_NEIGHBOURHOOD_ID
+    neighbourhood_id = MOCK_NEIGHBOURHOOD_ID if x_mock_neighbourhood_id is None else x_mock_neighbourhood_id
     email = x_mock_email or MOCK_EMAIL
     first_name = x_mock_first_name or MOCK_FIRST_NAME
     last_name = x_mock_last_name or MOCK_LAST_NAME
