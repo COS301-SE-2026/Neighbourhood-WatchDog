@@ -35,7 +35,7 @@ def _format_whatsapp_message(
         f"Camera: {camera_id}\n"
         f"Detection: {formatted_type}\n"
         f"Time: {timestamp}\n\n"
-        f"Open the dashboard to review this alert."
+        "Open the dashboard to review this alert."
     )
 
 def _send_whatsapp(to_phone: str, message: str) -> tuple[bool, str | None]:
@@ -112,7 +112,7 @@ async def dispatch_notifications(
     
     severity = _classify_severity(confidence_score)
     timestamp_str = frame_timestamp.strftime("%d %b %Y, %H:%M:%S") if frame_timestamp else "Unknown"
-    whatsapp_message = _format_whatsapp_message(severity, detection_type, camera_id, timestamp_str)
+    whatsapp_message = _format_whatsapp_message(severity, detection_type, str(camera_id), timestamp_str)
 
     try:
         residents = db.execute(select(User).where(User.neighbourhood_id == neighbourhood_id, User.role == UserRole.RESIDENT,)).scalars().all()
