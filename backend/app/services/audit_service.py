@@ -115,14 +115,6 @@ async def get_audit_logs_handler(
         if conditions:
             stmt = stmt.where(or_(*conditions))
 
-    if action:
-        stmt = stmt.where(AuditLog.action == action)
-
-    if start_date:
-        stmt = stmt.where(AuditLog.timestamp >= start_date)
-
-    if end_date:
-        stmt = stmt.where(AuditLog.timestamp <= end_date)
     
     count_stmt = select(func.count()).select_from(stmt.subquery())
     total_count = db.scalar(count_stmt)
@@ -164,3 +156,19 @@ def _validate_pagination(page: int, size: int):
     if size < 1:
         raise HTTPException(422, "size must be >= 1")
     
+def _apply_filters(stmt, search_term, action, start_date, end_date):
+    if search_term:
+        search_cols = [AuditLog.id, AuditLog.action, AuditLog.target_entity_type, AuditLog.target_entity_id]
+        conditions = [cast(col, String).ilike(f"%{search_term}%") for col in search_cols]
+        stmt = stmt.where(or_(*conditions))
+
+    if action:
+        stmt = stmt.where(AuditLog.action == action)
+
+    if start_date:
+        stmt = stmt.where(AuditLog.timestamp >= start_date)
+
+    if end_date:
+        stmt = stmt.where(AuditLog.timestamp <= end_date)
+    
+    return stmt
