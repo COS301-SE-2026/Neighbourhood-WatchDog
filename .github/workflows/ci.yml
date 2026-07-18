@@ -204,6 +204,10 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install Python dependencies
+        run: |
+          pip install -r backend/requirements.txt
+
       - name: Install security tools
         run: pip install bandit pip-audit
 

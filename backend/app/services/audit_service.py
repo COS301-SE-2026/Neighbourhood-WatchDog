@@ -153,7 +153,10 @@ def _apply_filters(stmt, search_term, action, start_date, end_date):
     
     return stmt
 
-def _apply_sort(stmt, sort_order: str):
+def _apply_sort(
+        stmt,
+        sort_order: str | None = None
+    ):
     sort_map = {
         "ASC": AuditLog.timestamp.asc(),
         "DESC": AuditLog.timestamp.desc(),
