@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from datetime import datetime
-from typing import Optional
+from typing import Annotated, Optional
 
 from app.core.database import DbSession
 from app.auth.dependencies import get_current_user
@@ -16,14 +16,14 @@ router = APIRouter(prefix="/audit", tags=["properties"])
 @router.get("/get-audit-logs")
 async def get_audit_logs(
     db: DbSession,
-    claims: dict = Depends(get_current_user),
-    page: int = Query(PAGE, ge=1, description="Page number"),
-    size: int = Query(SIZE, ge=1, le=100, description="Items per page"),
-    search_term: Optional[str] = Query(None, description="Free-text search"),
-    action: Optional[AuditAction] = Query(None, description="Filter by action"),
-    start_date: Optional[datetime] = Query(None, description="Logs on/after this date"),
-    end_date: Optional[datetime] = Query(None, description="Logs on/before this date"),
-    sort_order: Optional[str] = Query(None, description="ASC or DESC"),
+    claims: Annotated[dict, Depends(get_current_user)],
+    page: Annotated[int, Query(ge=1, description="Page number")] = PAGE,
+    size: Annotated[int, Query(ge=1, le=100, description="Items per page")] = SIZE, 
+    search_term: Annotated[Optional[str], Query(description="Free-text search")] = None, 
+    action: Annotated[Optional[AuditAction], Query(description="Filter by action")] = None,
+    start_date: Annotated[Optional[datetime], Query(description="Logs on/after this date")] = None,
+    end_date: Annotated[Optional[datetime], Query(description="Logs on/before this date")] = None,
+    sort_order: Annotated[Optional[str], Query(description="ASC or DESC")] = None, 
 ):
     """Retrieves the all audit logs and returns them in a list."""
     require_role(claims, ["SYSTEM_ADMIN"])
