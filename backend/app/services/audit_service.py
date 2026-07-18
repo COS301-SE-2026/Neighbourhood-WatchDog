@@ -162,4 +162,5 @@ def _apply_sort(
         "DESC": AuditLog.timestamp.desc(),
     }
 
-    return stmt.order_by(sort_map.get(sort_order, AuditLog.id.desc()))
+    order_clause = stmt.order_by(sort_map.get(sort_order, AuditLog.id.desc())) if sort_order else AuditLog.id.desc()
+    return stmt.order_by(order_clause)
