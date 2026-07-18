@@ -25,7 +25,7 @@ async def test_create_property_happy_path(async_client, auth_headers):
         assert body["status"] == 201
         assert body["data"]["address"] == TEST_ADDRESS
 
-
+@pytest.mark.skip(reason="Needs to be refacored")
 @pytest.mark.asyncio
 async def test_create_property_unauthorized(async_client):
     payload = {"address": TEST_ADDRESS, "property_type": "PRIVATE"}

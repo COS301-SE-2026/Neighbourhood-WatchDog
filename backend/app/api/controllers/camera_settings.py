@@ -22,7 +22,7 @@ from app.services.camera_settings_service import (
 
 router = APIRouter(prefix="/cameras", tags=["camera-settings"])
 
-ZONE_EDITOR_ROLES = ["NEIGHBOURHOOD_ADMIN", "PROP_ADMIN", "SYSTEM_ADMIN"]
+ZONE_EDITOR_ROLES = ["NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN"]
 
 Claims = Annotated[dict, Depends(get_current_user)]
 

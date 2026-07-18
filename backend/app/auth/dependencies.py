@@ -1,7 +1,6 @@
 import os
 from fastapi import HTTPException, Request, Depends, status
 from sqlalchemy.orm import Session
-from uuid import uuid4
 
 from app.models.user import User
 from app.core.database import get_db
@@ -27,7 +26,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
             "sub": request.headers.get("X-Mock-Sub", "00000000-0000-0000-0000-000000000000"),
             "given_name": "Test",
             "family_name": "User",
-            "custom:role": "admin",
+            "custom:role": "SYSTEM_ADMIN",
             "custom:neighbourhood_id": None,
         }
 
