@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Database seeder script for development"""
 
-import random
+import secrets
 import sys
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4, UUID
@@ -35,19 +35,19 @@ ENTITY_IDS_BY_TYPE = {
 }
 TARGET_ENTITY_TYPES = list(ENTITY_IDS_BY_TYPE.keys())
 
-SAMPLE_LOCATIONS = ["Front Entrance", "Back Gate", "Garage", "Side Yard", "Driveway"]
+FRONT_ENTRANCE = "Front Entrance"
+SAMPLE_LOCATIONS = [FRONT_ENTRANCE, "Back Gate", "Garage", "Side Yard", "Driveway"]
 SAMPLE_VISIBILITIES = ["PRIVATE", "PUBLIC"]
 SAMPLE_STATUSES = ["ACTIVE", "INACTIVE"]
-
 
 def _fake_values_for_action(action: AuditAction):
     """Build plausible old/new value dicts depending on the action type."""
     action_name = getattr(action, "name", str(action)).upper()
 
     snapshot = {
-        "location": random.choice(SAMPLE_LOCATIONS),
-        "visibility": random.choice(SAMPLE_VISIBILITIES),
-        "status": random.choice(SAMPLE_STATUSES),
+        "location": secrets.choice(SAMPLE_LOCATIONS),
+        "visibility": secrets.choice(SAMPLE_VISIBILITIES),
+        "status": secrets.choice(SAMPLE_STATUSES),
     }
 
     if "CREATE" in action_name:
@@ -55,7 +55,7 @@ def _fake_values_for_action(action: AuditAction):
     if "DELETE" in action_name:
         return snapshot, None
     if "UPDATE" in action_name:
-        updated = {**snapshot, "visibility": random.choice(SAMPLE_VISIBILITIES)}
+        updated = {**snapshot, "visibility": secrets.choice(SAMPLE_VISIBILITIES)}
         return snapshot, updated
     # e.g. VIEW / LOGIN / other non-mutating actions -> no diff to show
     return None, None
@@ -69,13 +69,13 @@ def seed_bulk_audit_logs(db: Session, user_id: UUID, count: int = 500) -> int:
 
     logs = []
     for _ in range(count):
-        action = random.choice(actions)
-        entity_type = random.choice(TARGET_ENTITY_TYPES)
-        entity_id = random.choice(ENTITY_IDS_BY_TYPE[entity_type])
+        action = secrets.choice(actions)
+        entity_type = secrets.choice(TARGET_ENTITY_TYPES)
+        entity_id = secrets.choice(ENTITY_IDS_BY_TYPE[entity_type])
         timestamp = now - timedelta(
-            days=random.randint(0, 90),
-            hours=random.randint(0, 23),
-            minutes=random.randint(0, 59),
+            days=secrets.randint(0, 90),
+            hours=secrets.randint(0, 23),
+            minutes=secrets.randint(0, 59),
         )
         old_values, new_values = _fake_values_for_action(action)
 
@@ -164,7 +164,7 @@ def seed_database(bulk_audit_count: int = 500):
             property_id=PROPERTY_ID,
             neighbourhood_id=NEIGHBOURHOOD_ID,
             visibility=CameraVisibilityEnum.PRIVATE,
-            location="Front Entrance",
+            location=FRONT_ENTRANCE,
             rtsp_url="rtsp://camera.local:554/stream"
         )
         db.add(test_camera)
@@ -203,7 +203,7 @@ def seed_database(bulk_audit_count: int = 500):
             target_entity_id=CAMERA_ID,
             old_values=None,
             new_values={
-                "location": "Front Entrance",
+                "location": FRONT_ENTRANCE,
                 "visibility": "PRIVATE",
                 "rtsp_url": "rtsp://camera.local:554/stream",
             },
