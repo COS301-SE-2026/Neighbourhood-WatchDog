@@ -46,7 +46,7 @@ async def test_get_camera_settings_resident_forbidden(async_client, auth_headers
         "custom:neighbourhood_id": None,
     }
     
-    main_module.app.dependency_overrides[get_current_user] = lambda: RESIDENT_CLAIMS
+    # main_module.app.dependency_overrides[get_current_user] = lambda: RESIDENT_CLAIMS
     r = await async_client.get(f"/cameras/{CAMERA_ID}/settings", headers=auth_headers)
     assert r.status_code == 403
 
