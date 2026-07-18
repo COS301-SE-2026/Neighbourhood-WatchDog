@@ -90,7 +90,7 @@ def _log_notification(
         db.add(record)
         db.commit()
     except Exception:
-        logger.exception(f"Failed to log notification record")
+        logger.exception("Failed to log notification record")
         db.rollback()
 
 async def dispatch_notifications(
