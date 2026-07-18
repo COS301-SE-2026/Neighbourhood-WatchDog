@@ -28,13 +28,15 @@ export default function PaginationControls({
   onPageChange    
 }: PaginationControlsProps) {
   return (
-    <div>
+    <div className="flex justify-around p-5">
       <button 
+        className="bg-navy text-white rounded-lg w-25 p-2"
         disabled={previousDisabled || loading}
         onClick={() => onPageChange(page - 1)}>
         Previous
       </button>
       <button 
+        className="bg-navy text-white rounded-lg w-25 p-2"
         disabled={nextDisabled || loading}
         onClick={() => onPageChange(page + 1)}
         >Next
