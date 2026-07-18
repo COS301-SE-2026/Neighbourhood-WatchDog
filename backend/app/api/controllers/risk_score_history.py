@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 from typing import Annotated
 from fastapi import APIRouter, Depends, status
@@ -27,13 +28,13 @@ def get_neighbourhood_score(neighbourhood_id: UUID, db: DbSession, claims: Annot
     )
 
 @router.get("/neighbourhood/{neighbourhood_id}/history", status_code=status.HTTP_200_OK)
-def get_neighbourhood_score_history(neighbourhood_id: UUID, db: DbSession, claims: Annotated[dict, Depends(get_current_user)]):
+def get_neighbourhood_score_history(neighbourhood_id: UUID, granularity: str,db: DbSession, claims: Annotated[dict, Depends(get_current_user)], start: datetime | None = None, end: datetime | None = None,):
     """Get Risk Score History of a Neighbourhood"""
 
     require_role(claims=claims, allowed_roles=['NEIGHBOURHOOD_ADMIN'])
 
 
-    neighbourhood_risk_history = get_neighbourhood_score_history_handler(neighbourhood_id, db, claims)
+    neighbourhood_risk_history = get_neighbourhood_score_history_handler(neighbourhood_id, granularity, db, claims, start, end)
 
     return NeighbourhoodRiskScoreHistoryRes(
         status=200,

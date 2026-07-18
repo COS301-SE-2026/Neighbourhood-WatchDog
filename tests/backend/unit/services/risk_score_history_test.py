@@ -125,7 +125,7 @@ class TestGetNeighbourhoodScoreHistory:
 
         self.mock_list = [self.mock_risk_score1, self.mock_risk_score2, self.mock_risk_score3]
 
-        self.mock_db.execute.return_value.scalars.return_value.all.side_effect = [self.mock_list]
+        self.mock_db.execute.return_value.all.side_effect = [self.mock_list]
 
 
         self.mock_db.add = Mock()
@@ -135,12 +135,13 @@ class TestGetNeighbourhoodScoreHistory:
         self.mock_db.rollback = Mock()
 
     def reset_side_effects(self, history_list=None):
-        self.mock_db.execute.return_value.scalars.return_value.all.side_effect = [history_list]
+        self.mock_db.execute.return_value.all.side_effect = [history_list]
 
     @pytest.mark.asyncio
     async def test_happy_path(self):
         history = get_neighbourhood_score_history_handler(
             self.neighbourhood_id,
+            "day",
             self.mock_db,
             self.mock_claims
         )
@@ -161,6 +162,7 @@ class TestGetNeighbourhoodScoreHistory:
         with pytest.raises(HTTPException) as exception:
             get_neighbourhood_score_history_handler(
                 wrong_neighbourhood_id,
+                "day",
                 self.mock_db,
                 self.mock_claims
             )
@@ -173,11 +175,25 @@ class TestGetNeighbourhoodScoreHistory:
         assert self.mock_db.refresh.call_count == 0
 
     @pytest.mark.asyncio
+    async def test_invalid_granularity(self):
+        with pytest.raises(HTTPException) as exception:
+            get_neighbourhood_score_history_handler(
+                self.neighbourhood_id,
+                "mock_wrong",
+                self.mock_db,
+                self.mock_claims
+            )
+
+        assert exception.value.status_code == 400
+        assert self.mock_db.execute.call_count == 0
+
+    @pytest.mark.asyncio
     async def test_history_not_found(self):
         self.reset_side_effects(history_list=[])
         with pytest.raises(HTTPException) as exception:
             get_neighbourhood_score_history_handler(
                 self.neighbourhood_id,
+                "day",
                 self.mock_db,
                 self.mock_claims
             )
