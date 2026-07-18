@@ -15,6 +15,10 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
     "/{alert_id}",
     response_model=ListNotificationRes,
     summary="List all notifications for a given alert",
+    responses={
+        403: {"description": "Insufficient permissions to view notifications for this alert"},
+        404: {"description": "Alert not found"},
+    },
 )
 async def list_notifications_for_alert(
     alert_id: UUID,

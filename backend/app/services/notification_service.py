@@ -68,7 +68,7 @@ def _send_whatsapp(to_phone: str, message: str) -> tuple[bool, str | None]:
         return True, None
  
     except Exception as e:
-        logger.error(f"WhatsApp send failed to {to_phone}: {e}")
+        logger.exception(f"WhatsApp send failed to {to_phone}")
         return False, str(e)
     
 def _log_notification(
@@ -89,8 +89,8 @@ def _log_notification(
         )
         db.add(record)
         db.commit()
-    except Exception as e:
-        logger.error(f"Failed to log notification record: {e}")
+    except Exception:
+        logger.exception(f"Failed to log notification record")
         db.rollback()
 
 async def dispatch_notifications(
@@ -116,8 +116,8 @@ async def dispatch_notifications(
 
     try:
         residents = db.execute(select(User).where(User.neighbourhood_id == neighbourhood_id, User.role == UserRole.RESIDENT,)).scalars().all()
-    except Exception as e:
-        logger.error(f"Failed to fetch residents for neighbourhood {neighbourhood_id}: {e}")
+    except Exception:
+        logger.exception(f"Failed to fetch residents for neighbourhood {neighbourhood_id}")
         return
     
     if not residents:

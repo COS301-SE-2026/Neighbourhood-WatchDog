@@ -15,6 +15,7 @@ from app.services.notification_service import(
 )
 from app.models.notification import NotificationChannel, NotificationStatus
 
+WHATSAPP_TEST_NUMBER = "whatsapp:+27821234567"
 class TestClassifySeverity:
     def test_critical_at_upper_boundary(self):
         assert _classify_severity(1.0) == "CRITICAL"
@@ -100,7 +101,7 @@ class TestSendWhatsapp:
         assert error is None
         mock_client.messages.create.assert_called_once()
         call_kwargs = mock_client.messages.create.call_args.kwargs
-        assert call_kwargs["to"] == "whatsapp:+27821234567"
+        assert call_kwargs["to"] == WHATSAPP_TEST_NUMBER
  
     @patch.dict(os.environ, {"TWILIO_ACCOUNT_SID": "sid", "TWILIO_AUTH_TOKEN": "token"})
     @patch("twilio.rest.Client")
@@ -108,11 +109,11 @@ class TestSendWhatsapp:
         mock_client = Mock()
         mock_client_cls.return_value = mock_client
  
-        success, _ = _send_whatsapp("whatsapp:+27821234567", "hello")
+        success, _ = _send_whatsapp(WHATSAPP_TEST_NUMBER, "hello")
  
         assert success is True
         call_kwargs = mock_client.messages.create.call_args.kwargs
-        assert call_kwargs["to"] == "whatsapp:+27821234567"
+        assert call_kwargs["to"] == WHATSAPP_TEST_NUMBER
  
     @patch.dict(os.environ, {"TWILIO_ACCOUNT_SID": "sid", "TWILIO_AUTH_TOKEN": "token"})
     @patch("twilio.rest.Client")

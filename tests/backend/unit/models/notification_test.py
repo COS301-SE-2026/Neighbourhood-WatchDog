@@ -75,20 +75,24 @@ class TestNotificationRes:
             NotificationRes(**data)
  
     def test_invalid_id_raises_validation_error(self):
+        data = _make_notification_res(id="not-a-uuid")
         with pytest.raises(ValidationError):
-            NotificationRes(**_make_notification_res(id="not-a-uuid"))
+            NotificationRes(**data)
  
     def test_invalid_alert_id_raises_validation_error(self):
+        data = _make_notification_res(alert_id="not-a-uuid")
         with pytest.raises(ValidationError):
-            NotificationRes(**_make_notification_res(alert_id="not-a-uuid"))
+            NotificationRes(**data)
  
     def test_invalid_user_id_raises_validation_error(self):
+        data = _make_notification_res(user_id="not-a-uuid")
         with pytest.raises(ValidationError):
-            NotificationRes(**_make_notification_res(user_id="not-a-uuid"))
+            NotificationRes(**data)
  
     def test_invalid_sent_at_raises_validation_error(self):
+        data = _make_notification_res(sent_at="not-a-date")
         with pytest.raises(ValidationError):
-            NotificationRes(**_make_notification_res(sent_at="not-a-date"))
+            NotificationRes(**data)
  
     def test_from_attributes_config_present(self):
         assert NotificationRes.model_config.get("from_attributes") is True
