@@ -29,7 +29,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
             "sub": request.headers.get("X-Mock-Sub", "00000000-0000-0000-0000-000000000000"),
             "given_name": "Test",
             "family_name": "User",
-            CUSTOM_ROLE_CLAIM: "SYSTEM_ADMIN",
+            CUSTOM_ROLE_CLAIM: request.headers.get("X-Mock-Role", "SYSTEM_ADMIN"),
             CUSTOM_NEIGHBOURHOOD_CLAIM: None,
         }
 
@@ -39,13 +39,21 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         .first()
     )
 
-    if user is None and not TESTING:
-        print("User is none and not os.environ")
+    if user is None:
+        if not TESTING:
+            raise HTTPException(
+                status_code=401,
+                detail="User not found"
+            )
+        else:
+            return {
+                "sub": request.headers.get("X-Mock-Sub", "00000000-0000-0000-0000-000000000000"),
+                "given_name": "Test",
+                "family_name": "User",
+                CUSTOM_ROLE_CLAIM: request.headers.get("X-Mock-Role", "SYSTEM_ADMIN"),
+                CUSTOM_NEIGHBOURHOOD_CLAIM: None,
+            }
 
-        raise HTTPException(
-            status_code=401,
-            detail="User not found"
-        )
 
     return {
         "sub": sub,
