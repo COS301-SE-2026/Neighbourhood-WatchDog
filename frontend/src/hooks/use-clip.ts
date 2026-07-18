@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { apiFetch, ApiError } from "@/lib/api/alert";
 
 
-export type ClipStatus = "idle" | "loading" | "ready" | "unavailable" | "expired" | "forbidden" | "error";
+export type ClipStatus = "idle" | "loading" | "ready" | "unavailable" | "expired" | "forbidden" | "error" | "processing";
 
 
 interface ClipState {
@@ -19,6 +19,9 @@ interface UseClipResult extends ClipState {
 }
 
 
+const RETRY_DELAY = 5000;
+const MAX_RETRY_ATTEMPTS = 10;
+
 export function useClip(detectionEventId: string | null): UseClipResult {
     const [state, setState] = useState<ClipState>({
         url: null,
@@ -27,14 +30,19 @@ export function useClip(detectionEventId: string | null): UseClipResult {
             
     });
 
+            
+    const attemptsRef = useRef(0);
+
     const loadClip = useCallback(async () => {
         if (!detectionEventId) return;
 
-        setState({
-            url: null,
-            status: "loading",
+        setState((previous) => ({
+            url: previous.url,
+            status: attemptsRef.current === 0 ? "loading" : "processing",
             errorMessage: null
-        });
+        }));
+
+       
 
 
         try {
@@ -43,6 +51,8 @@ export function useClip(detectionEventId: string | null): UseClipResult {
                 expires_in: number
             }>
             (`/api/clips/${detectionEventId}`);
+
+            attemptsRef.current = 0;
             
             setState({
                 url: data.url,
@@ -105,6 +115,64 @@ export function useClip(detectionEventId: string | null): UseClipResult {
             }
         }
     }, [detectionEventId]);
+
+
+
+     //running as soon as the new detection event appears
+     useEffect(() => {
+
+        if (!detectionEventId) {
+            return;
+        }
+
+        attemptsRef.current = 0;
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+        let cancelled = false;
+
+
+        const pollForClip = async () => {
+            if (cancelled) {
+                return;
+            }
+
+
+            await loadClip();
+
+
+            if (attemptsRef.current < MAX_RETRY_ATTEMPTS) {
+                attemptsRef.current +=1;
+
+                timeoutId = setTimeout(() => {
+                    void pollForClip();
+
+                }, RETRY_DELAY);
+            }
+            else {
+                setState((previous) => 
+
+                    previous.status === "processing" ? 
+                    {
+                        url: null,
+                        status: "unavailable",
+                        errorMessage: "Footage cannot be made available after processing."
+                    } : previous
+                );
+            }
+        };
+
+
+        void pollForClip();
+
+
+        return () => {
+            cancelled = true;
+
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        };
+
+     }, [detectionEventId, loadClip]);
 
 
     return { ...state, loadClip };

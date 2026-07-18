@@ -62,24 +62,28 @@ def _check_rbac(claims: dict, camera: Camera, db: Session) -> None:
     #admins see everything
     if role in ADMIN_ROLES:
         return
+
+        if str(camera.neighbourhood_id) != str(user_neighbourhood):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to view footage from this neighbourhood."
+            )
     
     #security officers only see what is available in their neighbourhood
     if role == "SECURITY_OFFICER":
-        if str(camera.neighbourhood_id) != user_neighbourhood:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have access to footage from this neighbourhood,"
+        return
+    
+    if role == "RESIDENT":
 
-            )
         if camera.visibility != "PUBLIC":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have permission to view footage from this camera",
+                detail="Residents can only view public-camera footage.",
 
             )
         approved = (
             db.query(NeighbourhoodJoinRequest).filter_by(
-                neighbourhhod_id=camera.neighbourhood_id,
+                neighbourhood_id=camera.neighbourhood_id,
                 user_id=claims.get("sub"),
                 status="APPROVED",
             )
@@ -95,7 +99,7 @@ def _check_rbac(claims: dict, camera: Camera, db: Session) -> None:
     
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN, 
-        detail="Insufficient permissions to view footage",
+        detail="Insufficient permissions to view footage.",
 
     )
 

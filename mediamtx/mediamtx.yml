@@ -8,7 +8,7 @@ apiAddress: :9997
 
 paths:
   tapo-camera:
-    source: rtsp://Intrepid:password1234@192.168.50.143:554/stream2
+    source: rtsp://Intrepid:password1234@192.168.3.68:554/stream2
     sourceProtocol: tcp
 
 
