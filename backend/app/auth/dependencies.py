@@ -11,6 +11,9 @@ from app.auth.jwt import get_authenticated_claims
 # change these to test different baseline states without touching headers
 
 TESTING = os.environ.get("TESTING", "false").lower() == "true"
+CUSTOM_ROLE_CLAIM = "custom:role"
+CUSTOM_NEIGHBOURHOOD_CLAIM = "custom:neighbourhood_id"
+
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
 
@@ -26,8 +29,8 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
             "sub": request.headers.get("X-Mock-Sub", "00000000-0000-0000-0000-000000000000"),
             "given_name": "Test",
             "family_name": "User",
-            "custom:role": "SYSTEM_ADMIN",
-            "custom:neighbourhood_id": None,
+            CUSTOM_ROLE_CLAIM: "SYSTEM_ADMIN",
+            CUSTOM_NEIGHBOURHOOD_CLAIM: None,
         }
 
     user = (
@@ -48,8 +51,8 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         "sub": sub,
         "given_name": user.first_name,
         "family_name": user.last_name,
-        "custom:role": user.role.value,
-        "custom:neighbourhood_id": (
+        CUSTOM_ROLE_CLAIM: user.role.value,
+        CUSTOM_NEIGHBOURHOOD_CLAIM: (
             str(user.neighbourhood_id)
             if user.neighbourhood_id
             else None
@@ -60,7 +63,7 @@ def require_role(*allowed_roles: str):#input any number of roles that are allowe
     """Dependency function to check if the current user has one of the allowed roles. If allowed, then will return current user"""
     def role_checker(current_user: dict = Depends(get_current_user)):
 
-        user_role = current_user["custom:role"]
+        user_role = current_user[CUSTOM_ROLE_CLAIM]
 
         if user_role not in allowed_roles:
             raise HTTPException(
