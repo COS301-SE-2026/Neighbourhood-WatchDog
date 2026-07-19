@@ -5,19 +5,21 @@ from app.schemas.camera import RegisterCameraReq, CameraRes, RegisterCameraRes
 from app.models.camera import CameraVisibilityEnum
 from datetime import datetime
 
+TEST_RTSP_URL = "rtsp://192.168.2.10:554/stream"
+FRONT_DOOR = "Front Door"
 
 class TestRegisterCameraReq:
     def test_valid_request(self):
         """Happy path"""
         property_id = uuid4()
         req = RegisterCameraReq(
-            rtsp_url="rtsp://admin:password@192.168.1.100:554/Streaming/channels/101",
-            location="Front Door",
+            rtsp_url="rtsp://admin:password@192.168.2.10:554/Streaming/channels/101",
+            location=FRONT_DOOR,
             visibility=CameraVisibilityEnum.PRIVATE,
             property_id=property_id
         )
-        assert req.rtsp_url == "rtsp://admin:password@192.168.1.100:554/Streaming/channels/101"
-        assert req.location == "Front Door"
+        assert req.rtsp_url == "rtsp://admin:password@192.168.2.10:554/Streaming/channels/101"
+        assert req.location == FRONT_DOOR
         assert req.visibility == CameraVisibilityEnum.PRIVATE
         assert req.property_id == property_id
 
@@ -26,7 +28,7 @@ class TestRegisterCameraReq:
         with pytest.raises(ValidationError):
             RegisterCameraReq(
                 rtsp_url=None,
-                location="Front Door",
+                location=FRONT_DOOR,
                 visibility=CameraVisibilityEnum.PRIVATE,
                 property_id=uuid4()
             )
@@ -35,8 +37,8 @@ class TestRegisterCameraReq:
         """Test missing property_id raises ValidationError"""
         with pytest.raises(ValidationError):
             RegisterCameraReq(
-                rtsp_url="rtsp://192.168.1.100:554/stream",
-                location="Front Door",
+                rtsp_url=TEST_RTSP_URL,
+                location=FRONT_DOOR,
                 visibility=CameraVisibilityEnum.PRIVATE,
                 property_id=None
             )
@@ -45,7 +47,7 @@ class TestRegisterCameraReq:
         """Test empty location raises ValidationError"""
         with pytest.raises(ValidationError):
             RegisterCameraReq(
-                rtsp_url="rtsp://192.168.1.100:554/stream",
+                rtsp_url=TEST_RTSP_URL,
                 location="",
                 visibility=CameraVisibilityEnum.PRIVATE,
                 property_id=uuid4()
@@ -55,8 +57,8 @@ class TestRegisterCameraReq:
         """Test invalid visibility value raises ValidationError"""
         with pytest.raises(ValidationError):
             RegisterCameraReq(
-                rtsp_url="rtsp://192.168.1.100:554/stream",
-                location="Front Door",
+                rtsp_url=TEST_RTSP_URL,
+                location=FRONT_DOOR,
                 visibility="INVALID",
                 property_id=uuid4()
             )
@@ -75,12 +77,12 @@ class TestCameraRes:
             property_id=property_id,
             neighbourhood_id=neighbourhood_id,
             visibility=CameraVisibilityEnum.PRIVATE,
-            location="Front Door",
-            rtsp_url="rtsp://192.168.1.100:554/stream",
+            location=FRONT_DOOR,
+            rtsp_url=TEST_RTSP_URL,
             created_at=now
         )
         assert model.id == camera_id
-        assert model.location == "Front Door"
+        assert model.location == FRONT_DOOR
         assert model.visibility == CameraVisibilityEnum.PRIVATE
 
     def test_missing_location(self):
@@ -92,7 +94,7 @@ class TestCameraRes:
                 neighbourhood_id=uuid4(),
                 visibility=CameraVisibilityEnum.PRIVATE,
                 location=None,
-                rtsp_url="rtsp://192.168.1.100:554/stream",
+                rtsp_url=TEST_RTSP_URL,
                 created_at=datetime.now()
             )
 
@@ -104,7 +106,7 @@ class TestCameraRes:
                 property_id=uuid4(),
                 neighbourhood_id=uuid4(),
                 visibility=CameraVisibilityEnum.PRIVATE,
-                location="Front Door",
+                location=FRONT_DOOR,
                 rtsp_url="",
                 created_at=datetime.now()
             )
@@ -118,8 +120,8 @@ class TestRegisterCameraRes:
             property_id=uuid4(),
             neighbourhood_id=uuid4(),
             visibility=CameraVisibilityEnum.PRIVATE,
-            location="Front Door",
-            rtsp_url="rtsp://192.168.1.100:554/stream",
+            location=FRONT_DOOR,
+            rtsp_url=TEST_RTSP_URL,
             created_at=datetime.now()
         )
         response = RegisterCameraRes(
