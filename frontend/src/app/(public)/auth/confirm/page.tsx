@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { confirmSignUp, isAuthenticated, resendConfirmationCode } from "@/lib/auth/cognito";
-import { ConfirmCard } from "../../../components/auth-components/confirm-card";
+import { ConfirmCard } from "@/components/auth-components/confirm-card";
 
 export default function ConfirmPage() {
   const router = useRouter();

@@ -11,6 +11,9 @@ interface CameraCardProps {
     readonly id: string;
     readonly name: string;
     readonly rtspUrl?: string;
+    readonly location: string;
+    readonly visibility: "PUBLIC" | "PRIVATE" | "NEIGHBOURHOOD";
+    readonly enabled: boolean;
     readonly userRole?: string;
 }
 
@@ -18,7 +21,7 @@ function getStreamPath(rtspUrl: string): string {
     return rtspUrl.split("/").pop() || rtspUrl;
 }
 
-export default function CameraCard({ id, name, rtspUrl, userRole = "RESIDENT" }: CameraCardProps) {
+export default function CameraCard({ id, name, rtspUrl, location, visibility, enabled, userRole = "RESIDENT" }: CameraCardProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const streamUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream?url=${encodeURIComponent(rtspUrl)}` : null;
     const streamHealthUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream/health?url=${encodeURIComponent(rtspUrl)}` : null;
@@ -83,20 +86,23 @@ export default function CameraCard({ id, name, rtspUrl, userRole = "RESIDENT" }:
 
     return (
         <Dialog>
-            <Card className="cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
-                <CardHeader className="flex flex-row items-center justify-between p-4">
-                    <CardTitle className="text-sm font-medium">{name}</CardTitle>
-                    <div className="flex flex-row items-center">
-                        <Badge variant={effectiveStatus === "online" ? "success" : "destructive"}>
-                            {effectiveStatus}
-                        </Badge>
-                        <CameraDropdown
-                            camera_id={id}
-                            camera_name={name}
-                        />
-                    </div>
-                </CardHeader>
-                <DialogTrigger asChild>
+                <Card className="cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
+                    <CardHeader className="flex flex-row items-center justify-between p-4">
+                        <CardTitle className="text-sm font-medium">{name}</CardTitle>
+                        <div className="flex flex-row items-center">
+                            <Badge variant={effectiveStatus === "online" ? "success" : "destructive"}>
+                                {effectiveStatus}
+                            </Badge>
+                            <CameraDropdown
+                                camera_id={id}
+                                camera_name={name}
+                                camera_location={location}
+                                camera_visibility={visibility}
+                                camera_enabled={enabled}
+                            />
+                        </div>
+                    </CardHeader>
+                    <DialogTrigger asChild>
                     <CardContent className="p-4 pt-0">
                         {feedContent}
                     </CardContent>

@@ -162,10 +162,12 @@ def seed_database(bulk_audit_count: int = 500):
         #create test camera
         test_camera = Camera(
             id=CAMERA_ID,
+            name="Camera x",
             property_id=PROPERTY_ID,
             neighbourhood_id=NEIGHBOURHOOD_ID,
             visibility=CameraVisibilityEnum.PRIVATE,
-            location=FRONT_ENTRANCE,
+            enabled=True,
+            location="Front Entrance",
             rtsp_url="rtsp://camera.local:554/stream"
         )
         db.add(test_camera)
