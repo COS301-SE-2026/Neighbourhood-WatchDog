@@ -25,7 +25,7 @@ class TestRegisterCameraReq:
 
     def test_missing_rtsp_url(self):
         """Test missing RTSP URL raises ValidationError"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc_info:
             RegisterCameraReq(
                 rtsp_url=None,
                 location=FRONT_DOOR,
@@ -33,9 +33,12 @@ class TestRegisterCameraReq:
                 property_id=uuid4()
             )
 
+        errors = exc_info.value.errors()
+        assert any(error["loc"] == ("visibility",) for error in errors)
+
     def test_missing_property_id(self):
         """Test missing property_id raises ValidationError"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc_info:
             RegisterCameraReq(
                 rtsp_url=TEST_RTSP_URL,
                 location=FRONT_DOOR,
@@ -43,9 +46,12 @@ class TestRegisterCameraReq:
                 property_id=None
             )
 
+        errors = exc_info.value.errors()
+        assert any(error["loc"] == ("visibility",) for error in errors)
+
     def test_empty_location(self):
         """Test empty location raises ValidationError"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc_info:
             RegisterCameraReq(
                 rtsp_url=TEST_RTSP_URL,
                 location="",
@@ -53,15 +59,21 @@ class TestRegisterCameraReq:
                 property_id=uuid4()
             )
 
+        errors = exc_info.value.errors()
+        assert any(error["loc"] == ("visibility",) for error in errors)
+
     def test_invalid_visibility(self):
         """Test invalid visibility value raises ValidationError"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc_info:
             RegisterCameraReq(
                 rtsp_url=TEST_RTSP_URL,
                 location=FRONT_DOOR,
                 visibility="INVALID",
                 property_id=uuid4()
             )
+
+        errors = exc_info.value.errors()
+        assert any(error["loc"] == ("visibility",) for error in errors)
 
 
 class TestCameraRes:
@@ -87,7 +99,7 @@ class TestCameraRes:
 
     def test_missing_location(self):
         """Test missing location raises ValidationError"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc_info:
             CameraRes(
                 id=uuid4(),
                 property_id=uuid4(),
@@ -97,10 +109,13 @@ class TestCameraRes:
                 rtsp_url=TEST_RTSP_URL,
                 created_at=datetime.now()
             )
+        
+        errors = exc_info.value.errors()
+        assert any(error["loc"] == ("visibility",) for error in errors)
 
     def test_empty_rtsp_url(self):
         """Test empty RTSP URL raises ValidationError"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc_info:
             CameraRes(
                 id=uuid4(),
                 property_id=uuid4(),
@@ -111,6 +126,8 @@ class TestCameraRes:
                 created_at=datetime.now()
             )
 
+        errors = exc_info.value.errors()
+        assert any(error["loc"] == ("visibility",) for error in errors)
 
 class TestRegisterCameraRes:
     def test_response_with_data(self):
