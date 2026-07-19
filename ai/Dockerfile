@@ -29,9 +29,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /app/
-RUN pip install -r requirements.txt
-
-RUN addgroup --system usergroup && adduser --system --no-create-home --ingroup usergroup appuser
+RUN pip install -r requirements.txt \
+    && addgroup --system usergroup && adduser --system --no-create-home --ingroup usergroup appuser
 
 COPY . .
 
