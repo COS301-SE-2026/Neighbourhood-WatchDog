@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { apiFetch, ApiError } from "@/lib/api/alert";
 
 
@@ -14,10 +14,12 @@ interface ClipState {
 
 
 interface UseClipResult extends ClipState {
-    loadClip: () => void;
+    loadClip: () => Promise<void>;
 
 }
 
+
+type ClipRequestResult = "ready" | "retry" | "stop";
 
 const RETRY_DELAY = 5000;
 const MAX_RETRY_ATTEMPTS = 10;
@@ -30,21 +32,20 @@ export function useClip(detectionEventId: string | null): UseClipResult {
             
     });
 
-            
-    const attemptsRef = useRef(0);
 
-    const loadClip = useCallback(async () => {
-        if (!detectionEventId) return;
+    const requestClip = useCallback(async (): Promise<ClipRequestResult> => {
+        if (!detectionEventId){
+            return "stop";
+        }
 
         setState((previous) => ({
-            url: previous.url,
-            status: attemptsRef.current === 0 ? "loading" : "processing",
+            ...previous,
+            status: previous.status === "processing" ? "processing" : "loading",
             errorMessage: null
         }));
 
-       
 
-
+        
         try {
             const data = await apiFetch<{
                 url: string,
@@ -52,13 +53,14 @@ export function useClip(detectionEventId: string | null): UseClipResult {
             }>
             (`/api/clips/${detectionEventId}`);
 
-            attemptsRef.current = 0;
             
             setState({
                 url: data.url,
                 status: "ready",
                 errorMessage: null
             });
+
+            return "ready";
         }
         catch (err: unknown) {
             
@@ -70,51 +72,61 @@ export function useClip(detectionEventId: string | null): UseClipResult {
                     setState({
                         url: null,
                         status: "expired",
-                        errorMessage: "The clip has exired"
+                        errorMessage: "The clip has expired"
                     });
+
+                    return "stop";
                 }
 
-                else if (apiErr.statusCode === 403) {
+                if (apiErr.statusCode === 403) {
                     setState({
                         url: null,
                         status: "forbidden",
                         errorMessage: "You do not have permission to view this footage"
                     });
+
+                    return "stop";
                 }
 
-                else if (apiErr.statusCode === 404) {
+                if (apiErr.statusCode === 404) {
+                    setState({
+                        url: null,
+                        status: "processing",
+                        errorMessage: "Footage is being prepared..."
+                    });
+
+                    return "retry";
+                }
+
+                if (apiErr.statusCode === 503) {
                     setState({
                         url: null,
                         status: "unavailable",
-                        errorMessage: "No footage is available for this event"
+                        errorMessage: "Clip storage is unavailable."
                     });
+
+                    return "stop";
                 }
 
-                else if (apiErr.statusCode === 503) {
-                    setState({
-                        url: null,
-                        status: "unavailable",
-                        errorMessage: "Clip storage is not configured"
-                    });
-                }
+            }
 
-                else {
-                    setState({
-                        url: null,
-                        status: "error",
-                        errorMessage: "Failed to load footage"
-                    });
-                }
+            setState({
+                url: null,
+                status: "error",
+                errorMessage: "Failed to load footage"
+            });
+
+            return "stop";
+                
             }
-            else {
-                setState({
-                    url: null,
-                    status: "error",
-                    errorMessage: "Failed to load footage"
-                });
-            }
-        }
+        
     }, [detectionEventId]);
+    
+
+
+        const loadClip = useCallback(async () => {
+            await requestClip();
+        }, [requestClip]);
 
 
 
@@ -125,43 +137,41 @@ export function useClip(detectionEventId: string | null): UseClipResult {
             return;
         }
 
-        attemptsRef.current = 0;
+        let attempts = 0;
         let timeoutId: ReturnType<typeof setTimeout> | undefined;
         let cancelled = false;
 
+        const poll = async () => {
+            const result = await requestClip();
 
-        const pollForClip = async () => {
-            if (cancelled) {
+            if (cancelled || result !== "retry") {
                 return;
             }
 
 
-            await loadClip();
+            attempts +=1;
 
 
-            if (attemptsRef.current < MAX_RETRY_ATTEMPTS) {
-                attemptsRef.current +=1;
+            if (attempts >= MAX_RETRY_ATTEMPTS){
+                setState({
+                    url: null,
+                    status: "unavailable",
+                    errorMessage: "Footage was not available after processing."
+                });
 
-                timeoutId = setTimeout(() => {
-                    void pollForClip();
-
-                }, RETRY_DELAY);
+                return;
             }
-            else {
-                setState((previous) => 
 
-                    previous.status === "processing" ? 
-                    {
-                        url: null,
-                        status: "unavailable",
-                        errorMessage: "Footage cannot be made available after processing."
-                    } : previous
-                );
-            }
+            timeoutId = setTimeout(() => {
+                void poll();
+            }, RETRY_DELAY);
+
         };
 
+       
 
-        void pollForClip();
+
+        void poll();
 
 
         return () => {
@@ -172,7 +182,7 @@ export function useClip(detectionEventId: string | null): UseClipResult {
             }
         };
 
-     }, [detectionEventId, loadClip]);
+     }, [detectionEventId, requestClip]);
 
 
     return { ...state, loadClip };
