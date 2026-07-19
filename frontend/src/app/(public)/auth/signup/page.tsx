@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signUp, isAuthenticated } from "@/lib/auth/cognito";
-import { SignupCard } from "../../../components/auth-components/signup-card";
+import { SignupCard } from "@/components/auth-components/signup-card";
 
 export default function SignupPage() {
   const router = useRouter();
