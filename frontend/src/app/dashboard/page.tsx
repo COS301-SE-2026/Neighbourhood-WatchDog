@@ -1,29 +1,34 @@
 "use client"
 import CameraCard from "@/components/CameraCard"
-
+import type { Camera } from "@/lib/validators/camera"
 import { useAlerts } from "@/hooks/use-alerts"
 import { toast } from "sonner"
 import { useEffect, useState } from "react"
 
-
+import { addCamera as apiAddCamera, fetchCameras as apiFetchCameras } from "@/lib/api/camera"
 import { NewCameraCard } from "@/components/new-camera-card"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-interface Camera {
+interface CameraProp {
     id: string;
     name: string;
+    visibility: Camera["visibility"],
+    enabled: boolean
+    location: string
     rtspUrl?: string;
 }
 
-const initialCameras: Camera[] = [
-    { id: "1", name: "Camera 1 - Backyard" },
+const initialCameras: CameraProp[] = [
+    { id: "1", name: "Camera 1 - Backyard" , visibility: "PRIVATE", enabled: true, location: "Backyard"},
   //{ id: "2", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://Intrepid:password1234@172.20.10.2:554/stream2" },
-    { id: "40000000-0000-0000-0000-000000000001", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://localhost:8554/tapo-camera" },
-    { id: "3", name: "Camera 5 - Living Room" },
-    { id: "4", name: "Camera 3 - Bedroom 2" },
-    { id: "5", name: "Camera 4 - Kitchen" },
+    { id: "40000000-0000-0000-0000-000000000001", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://localhost:8554/tapo-camera", visibility: "PRIVATE", enabled: true, location: "Office Room" },
+    { id: "3", name: "Camera 5 - Living Room", visibility: "PRIVATE", enabled: true, location: "Living Room" },
+    { id: "4", name: "Camera 3 - Bedroom 2", visibility: "PRIVATE", enabled: true, location: "Bedroom" },
+    { id: "5", name: "Camera 4 - Kitchen", visibility: "PRIVATE",enabled: true, location: "Kitchen" },
 ]
+
+const PROPERTY_ID = "a79d1505-5000-438e-9813-ba0f5aecb5e2"; // TODO: replace once /properties/my-properties works
 
 export default function Dashboard() {
 
@@ -38,15 +43,47 @@ export default function Dashboard() {
     }, [alerts]);
 
     const [showCard, setShowCard] = useState(false);
-    const [cameras, setCameras] = useState<Camera[]>(initialCameras);
+    const [cameras, setCameras] = useState<CameraProp[]>([]);
 
-    const handleAcknowledge = (data: { cameraLocation: string; rtspUrl: string }) => {
-        const newCamera: Camera = {
-            id: crypto.randomUUID(),
-            name: data.cameraLocation,
-            rtspUrl: data.rtspUrl || undefined,
-        };
-        setCameras((prev) => [...prev, newCamera]);
+    useEffect(() => {
+        apiFetchCameras(PROPERTY_ID)
+            .then((data) => {
+                setCameras(
+                    data.map((c) => ({
+                        id: c.id,
+                        name: c.name,
+                        location: c.location,
+                        visibility: c.visibility,
+                        enabled: c.enabled,
+                        rtspUrl: c.rtsp_url,
+                    }))
+                );
+            })
+            .catch((err) => {
+                console.error("Failed to fetch cameras", err);
+                toast.error("Failed to load cameras");
+            });
+    }, []);
+
+    const handleAcknowledge = async (data: { name: string, location: string; rtspUrl: string }) => {
+        const newCamera = await apiAddCamera({
+            name: data.name,
+            location: data.location,
+            visibility: "PRIVATE",
+            enabled: true,
+            rtsp_url: data.rtspUrl,
+            property_id: PROPERTY_ID
+        });
+        setCameras((prev) => [...prev, 
+            {
+        id: newCamera.id,
+        name: newCamera.name,
+        location: newCamera.location,
+        visibility: newCamera.visibility,
+        enabled: newCamera.enabled,
+        rtspUrl: newCamera.rtsp_url,
+            }
+        ]);
         setShowCard(false);
     };
 
@@ -73,6 +110,9 @@ export default function Dashboard() {
                         key={camera.id}
                         id={camera.id}
                         name={camera.name}
+                        location={camera.location}
+                        visibility={camera.visibility}
+                        enabled={camera.enabled}
                         rtspUrl={camera.rtspUrl}
                         userRole="NEIGHBOURHOOD_ADMIN"
                     />

@@ -3,10 +3,12 @@ from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, delete
-from app.schemas.camera import RegisterCameraReq, CameraRes, CamerasRes
+from sqlalchemy.orm import Session
+from app.schemas.camera import RegisterCameraReq, CameraRes, CamerasRes, CameraEditReq
 from app.models.camera import Camera
 from app.models.property import Property
 from app.models.property_user import PropertyUser
+from app.models.user import User
 from app.core.database import DbSession
 from uuid import UUID
 
@@ -28,6 +30,7 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
 
         new_camera = Camera(
             property_id=req.property_id,
+            name=req.name,
             neighbourhood_id=property_obj.neighbourhood_id,
             rtsp_url=req.rtsp_url,
             visibility=req.visibility,
@@ -38,11 +41,13 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
 
         return CameraRes(
             id=new_camera.id,
+            name=new_camera.name,
             property_id=new_camera.property_id,
             neighbourhood_id=new_camera.neighbourhood_id,
             rtsp_url=new_camera.rtsp_url,
             visibility=new_camera.visibility,
             location=new_camera.location,
+            enabled=new_camera.enabled,
             created_at=new_camera.created_at,
         )
 
@@ -80,6 +85,65 @@ def deregister_camera_handler(camera_id: UUID, db: Optional[DbSession], claims: 
     except HTTPException as he:
         db.rollback()
         raise he
+    
+def edit_camera_handler(
+    camera_id: UUID, 
+    req: CameraEditReq,
+    db: Session, 
+    claims: dict
+    ) -> CameraRes:
+    
+    try:
+
+        update_data = req.model_dump(exclude_unset=True)
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No fields provided to update")
+    
+        stmt = select(Camera).where(Camera.id == camera_id)
+        camera_obj = db.execute(stmt).scalar_one_or_none()
+
+        if not camera_obj:
+            raise HTTPException(status_code=404, detail="Camera not found")
+        
+        prop_user = db.execute(
+            select(PropertyUser)
+            .join(PropertyUser.user)
+            .where(
+                PropertyUser.property_id == camera_obj.property_id,
+                User.cognito_sub == claims.get("sub")
+                
+                )
+            ).scalar_one_or_none()
+        
+        if not prop_user:
+            raise HTTPException(status_code=403, detail="Forbidden")
+        
+        for field, value in update_data.items():
+            setattr(camera_obj, field, value)
+
+        db.commit()
+        db.refresh(camera_obj)
+
+        return CameraRes(
+            id=camera_obj.id,
+            name=camera_obj.name,
+            property_id=camera_obj.property_id,
+            neighbourhood_id=camera_obj.neighbourhood_id,
+            rtsp_url=camera_obj.rtsp_url,
+            visibility=camera_obj.visibility,
+            location=camera_obj.location,
+            enabled=camera_obj.enabled,
+            created_at=camera_obj.created_at,
+        )
+    
+    except HTTPException as he:
+        db.rollback()
+        raise he
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update camera")
+
+
 
 async def list_cameras_handler(property_id: str, db: DbSession, claims: dict) -> CamerasRes:
     if not db:
@@ -117,11 +181,13 @@ async def list_cameras_handler(property_id: str, db: DbSession, claims: dict) ->
         data=[
             CameraRes(
                 id=c.id,
+                name=c.name,
                 property_id=c.property_id,
                 neighbourhood_id=c.neighbourhood_id,
                 rtsp_url=c.rtsp_url,
                 visibility=c.visibility,
                 location=c.location,
+                enabled=c.enabled,
                 created_at=c.created_at,
             )
             for c in cameras
