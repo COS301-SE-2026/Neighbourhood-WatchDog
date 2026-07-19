@@ -6,6 +6,7 @@ from app.models.user import UserRole
 from uuid import uuid4
 from datetime import datetime
 
+TEST_NEIGHBOURHOOD_NAME = "Test name"
 class TestCreateNeighbourhood:
     def setup_method(self):
         self.mock_db = Mock()
@@ -62,7 +63,7 @@ class TestCreateNeighbourhood:
     @pytest.mark.asyncio
     async def test_happy_path(self):
         neighbourhood = await create_neighbourhood_handler(
-            name = "Test name",
+            name = TEST_NEIGHBOURHOOD_NAME,
             location = "second location",
             property_id = uuid4(),
             db = self.mock_db,
@@ -70,7 +71,7 @@ class TestCreateNeighbourhood:
         )
 
         assert neighbourhood is not None
-        assert neighbourhood.name == "Test name"
+        assert neighbourhood.name == TEST_NEIGHBOURHOOD_NAME
         assert neighbourhood.location == "second location"
         assert neighbourhood.join_code is not None
 
@@ -304,7 +305,7 @@ class TestCreateNeighbourhood:
     @pytest.mark.asyncio
     async def test_creator_assigned_neighbourhood_admin_role(self):
         await create_neighbourhood_handler(
-            name="Test name",
+            name=TEST_NEIGHBOURHOOD_NAME,
             location="second location",
             property_id=uuid4(),
             db=self.mock_db,
@@ -317,7 +318,7 @@ class TestCreateNeighbourhood:
     @pytest.mark.asyncio
     async def test_creator_neighbourhood_id_matches_new_neighbourhood(self):
         neighbourhood = await create_neighbourhood_handler(
-            name="Test name",
+            name=TEST_NEIGHBOURHOOD_NAME,
             location="second location",
             property_id=uuid4(),
             db=self.mock_db,
@@ -334,12 +335,13 @@ class TestCreateNeighbourhood:
             self.mock_property_user,
             None,
         ]
+        property_id = uuid4()
 
         with pytest.raises(HTTPException) as exception:
             await create_neighbourhood_handler(
                 name="Name",
                 location="Location",
-                property_id=uuid4(),
+                property_id=property_id,
                 db=self.mock_db,
                 claims=self.claims,
             )

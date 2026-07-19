@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch
-
+from typing import cast
 import pytest
 from fastapi import HTTPException
 
@@ -14,7 +14,7 @@ from app.models.neighbourhood import Neighbourhood
 from app.models.neighbourhood_join_request import NeighbourhoodJoinRequest
 from app.models.user import User
 
-
+NEIGHBOURHOOD_PATCH = "app.services.neighbourhood_join_service.NeighbourhoodJoinRequest"
 class TestRequestToJoin:
     def setup_method(self):
         self.mock_db = Mock()
@@ -53,7 +53,7 @@ class TestRequestToJoin:
             new=Neighbourhood,
         )
         self.join_request_patcher = patch(
-            "app.services.neighbourhood_join_service.NeighbourhoodJoinRequest",
+            NEIGHBOURHOOD_PATCH,
             new=NeighbourhoodJoinRequest,
         )
         self.user_patcher = patch(
@@ -170,7 +170,7 @@ class TestResolveJoinRequest:
         }
 
         self.join_request_patcher = patch(
-            "app.services.neighbourhood_join_service.NeighbourhoodJoinRequest",
+            NEIGHBOURHOOD_PATCH,
             new=NeighbourhoodJoinRequest,
         )
         self.user_patcher = patch(
@@ -323,7 +323,7 @@ class TestListJoinRequests:
         }
  
         self.join_request_patcher = patch(
-            "app.services.neighbourhood_join_service.NeighbourhoodJoinRequest",
+            NEIGHBOURHOOD_PATCH,
             new=NeighbourhoodJoinRequest,
         )
         self.join_request_patcher.start()
@@ -334,14 +334,14 @@ class TestListJoinRequests:
     @pytest.mark.asyncio
     async def test_missing_db_raises_500(self):
         with pytest.raises(HTTPException) as exc:
-            await list_join_requests_handler(None, self.admin_claims)
+            await list_join_requests_handler(cast(Mock, None), self.admin_claims)
  
         assert exc.value.status_code == 500
  
     @pytest.mark.asyncio
     async def test_missing_claims_raises_401(self):
         with pytest.raises(HTTPException) as exc:
-            await list_join_requests_handler(self.mock_db, None)
+            await list_join_requests_handler(self.mock_db, cast(dict, None))
  
         assert exc.value.status_code == 401
  
