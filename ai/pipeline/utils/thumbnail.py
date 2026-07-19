@@ -12,9 +12,14 @@ def annotate_frame(frame: np.ndarray, tracks: list) -> np.ndarray:
         track_id = track['track_id']
         confidence = track['confidence']
 
+        detection_type = track.get('detection_type', 'person')
+
+        #update boundary boxes: green=human, red=weapon
+        colour = (255, 0, 0) if detection_type.lower() != 'person' else (0, 255, 0)
+
 
         #drawing the boundary box
-        cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        cv2.rectangle(annotated, (x1, y1), (x2, y2), colour, 2)
 
         #drawing the label
         label = f"ID:{track_id} {confidence:.2f}"
@@ -24,7 +29,7 @@ def annotate_frame(frame: np.ndarray, tracks: list) -> np.ndarray:
             (x1, y1-10),
             cv2.FONT_HERSHEY_SIMPLEX, 
             0.5,
-            (0, 255, 0), 
+            colour, 
             2
         )
     

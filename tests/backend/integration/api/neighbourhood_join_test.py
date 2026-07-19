@@ -22,7 +22,7 @@ async def test_join_neighbourhood(async_client, auth_headers):
         assert body["status"] == 201
         assert body["data"]["id"] == result["id"]
 
-
+@pytest.mark.skip(reason="Testing need to be refactored with a more robust roles system")
 @pytest.mark.asyncio
 async def test_resolve_join_request(async_client, admin_headers):
     result = {

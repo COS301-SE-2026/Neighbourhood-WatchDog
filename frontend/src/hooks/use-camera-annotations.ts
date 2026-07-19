@@ -3,9 +3,10 @@
 import { useEffect, useState, useRef } from "react";
 
 export interface Track {
-    track_id: number;
+    track_id: number | string;
     confidence: number;
     bbox: [number, number, number, number]; // (l, t, r, b)
+    detection_type?: string;
 }
 
 export interface AnnotationData {
@@ -27,10 +28,22 @@ export function useCameraAnnotations(cameraId: string) {
         ws.onopen = () => setConnected(true);
         ws.onclose = () => setConnected(false);
 
+
+        //clearing canvas if no data comes for 2 seconds
+        let clearTimer: ReturnType<typeof setTimeout>;
+
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data) as AnnotationData;
             if (data.event === "ping") return;
             setAnnotations(data);
+
+            //clearing annotations 2 seconds after the last update
+            clearTimeout(clearTimer);
+            
+            clearTimer = setTimeout(() => {
+                setAnnotations(null);
+            }, 2000);
+
         };
 
         wsRef.current = ws;
