@@ -16,10 +16,11 @@ TEST_BEARER = "Bearer test"
 def pytest_configure(config):
     os.environ["TESTING"] = "true"
     os.environ["SKIP_DB_INIT"] = "false"
-    postgres_user = os.getenv("POSTGRES_USER", "postgres")
-    postgres_password = os.getenv("POSTGRES_PASSWORD")
-    postgres_db = os.getenv("POSTGRES_DB", "watchdog")
-    os.environ["DATABASE_URL"] = f"postgresql://{postgres_user}:{postgres_password}@localhost:5432/{postgres_db}"
+    if not os.getenv("DATABASE_URL"):
+        postgres_user = os.getenv("POSTGRES_USER", "postgres")
+        postgres_password = os.getenv("POSTGRES_PASSWORD")
+        postgres_db = os.getenv("POSTGRES_DB", "watchdog")
+        os.environ["DATABASE_URL"] = f"postgresql://{postgres_user}:{postgres_password}@localhost:5432/{postgres_db}"
 
 def _get_main_module():
     import main as main_module
