@@ -34,7 +34,7 @@ class TestRegisterCameraReq:
             )
 
         errors = exc_info.value.errors()
-        assert any(error["loc"] == ("visibility",) for error in errors)
+        assert any(error["loc"] == ("rtsp_url",) for error in errors)
 
     def test_missing_property_id(self):
         """Test missing property_id raises ValidationError"""
@@ -47,7 +47,7 @@ class TestRegisterCameraReq:
             )
 
         errors = exc_info.value.errors()
-        assert any(error["loc"] == ("visibility",) for error in errors)
+        assert any(error["loc"] == ("property_id",) for error in errors)
 
     def test_empty_location(self):
         """Test empty location raises ValidationError"""
@@ -60,7 +60,7 @@ class TestRegisterCameraReq:
             )
 
         errors = exc_info.value.errors()
-        assert any(error["loc"] == ("visibility",) for error in errors)
+        assert any(error["loc"] == ("location",) for error in errors)
 
     def test_invalid_visibility(self):
         """Test invalid visibility value raises ValidationError"""
@@ -111,7 +111,7 @@ class TestCameraRes:
             )
         
         errors = exc_info.value.errors()
-        assert any(error["loc"] == ("visibility",) for error in errors)
+        assert any(error["loc"] == ("location",) for error in errors)
 
     def test_empty_rtsp_url(self):
         """Test empty RTSP URL raises ValidationError"""
@@ -127,7 +127,7 @@ class TestCameraRes:
             )
 
         errors = exc_info.value.errors()
-        assert any(error["loc"] == ("visibility",) for error in errors)
+        assert any(error["loc"] == ("rtsp_url",) for error in errors)
 
 class TestRegisterCameraRes:
     def test_response_with_data(self):
