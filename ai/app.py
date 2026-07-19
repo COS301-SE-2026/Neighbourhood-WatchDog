@@ -333,7 +333,11 @@ def _save_weapon_clip(weapon_label: str, conf: float) -> None:
         writer.release()
 
         s3 = boto3.client("s3", region_name=AWS_REGION)
-        s3.upload_file(tmp_path, S3_CLIPS_BUCKET, s3_key)
+        s3.upload_file(tmp_path, 
+                       S3_CLIPS_BUCKET, 
+                       s3_key,
+                       ExtraArgs={"ContentType": "video/mp4"}
+                       )
 
         clip_expires_at = datetime.now(timezone.utc) + timedelta(days=CLIP_RETENTION_DAYS)
 
