@@ -7,7 +7,9 @@ env:
 
 on:
   push:
-    branches-ignore: [ "main" ]
+    branches: [ "dev" ]
+  pull_request:
+    branches: [ "dev"]
 
 jobs:
   Deploy-Preview:
