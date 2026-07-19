@@ -5,7 +5,7 @@ import threading
 import tempfile
 from collections import deque
 from datetime import timedelta
-
+import subprocess
 import boto3
 from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI, Query
@@ -319,21 +319,54 @@ def _save_weapon_clip(weapon_label: str, conf: float) -> None:
     )
 
 
-    tmp_fd, tmp_path = tempfile.mkstemp(suffix=".mp4")
-    os.close(tmp_fd)
+    raw_fd, raw_path = tempfile.mkstemp(suffix=".mp4")
+    os.close(raw_fd)
 
-
+    h264_fd, h264_path = tempfile.mkstemp(suffix=".mp4")
+    os.close(h264_fd)
 
     try:
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        writer = cv2.VideoWriter(tmp_path, fourcc, 25, (w, h))
+        writer = cv2.VideoWriter(raw_path, fourcc, 25, (w, h))
+
+        if not writer.isOpened():
+            raise RuntimeError("OpenCV could not initialise the temporary clip writer")
 
         for f in all_frames:
             writer.write(f)
         writer.release()
 
+        
+        #conversion to broswer compatible h264 mp4
+        subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-i",
+            raw_path,
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "23",
+            "-movflags",
+            "+faststart",
+            "-an",
+            h264_path,
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
+
+
         s3 = boto3.client("s3", region_name=AWS_REGION)
-        s3.upload_file(tmp_path, 
+        s3.upload_file(h264_path, 
                        S3_CLIPS_BUCKET, 
                        s3_key,
                        ExtraArgs={"ContentType": "video/mp4"}
@@ -364,8 +397,9 @@ def _save_weapon_clip(weapon_label: str, conf: float) -> None:
         logger.error("Clip upload or encoding failed: %s", e)
         return
     finally:
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
+        for path in (raw_path, h264_path):
+            if os.path.exists(path):
+                os.unlink(path)
 
 
 
