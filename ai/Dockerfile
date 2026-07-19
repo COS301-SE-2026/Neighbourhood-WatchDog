@@ -31,7 +31,12 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt /app/
 RUN pip install -r requirements.txt
 
+RUN addgroup --system usergroup && adduser --system --no-create-home --ingroup usergroup appuser
+
 COPY . .
+
+RUN chown -R appuser:usergroup /app
+USER appuser
 
 EXPOSE 8001
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8001"]
