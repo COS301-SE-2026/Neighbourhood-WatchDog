@@ -37,7 +37,7 @@ async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims
         db.flush()
 
         if not user:
-            raise HTTPException(404, "User not round")
+            raise HTTPException(404, "User not found")
 
         #set user to prop admin
         new_property_user = PropertyUser(
