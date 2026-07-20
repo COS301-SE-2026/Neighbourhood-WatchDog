@@ -1,12 +1,11 @@
 name: ci
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: ["main", "dev"]
 
 jobs:
-
   python-lint:
     runs-on: ubuntu-latest
 
@@ -27,12 +26,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.9.0'
-          
+          node-version: "20.9.0"
+
       - name: Install pnpm
         run: npm install -g pnpm@8
 
@@ -40,7 +39,7 @@ jobs:
         run: cd frontend && pnpm install
 
       - name: Run ESLint
-        run: cd frontend && pnpm lint  
+        run: cd frontend && pnpm lint
 
   tests:
     runs-on: ubuntu-latest
@@ -54,16 +53,17 @@ jobs:
       COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
       COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
       FRONTEND_URL: https://testserver
+      TESTING: true
 
     services:
       postgres:
         image: postgis/postgis:15-3.4-alpine
-        env: 
+        env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: test_password
           POSTGRES_DB: watchdog
         ports:
-          - "5432:5432" 
+          - "5432:5432"
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
@@ -73,28 +73,28 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Verify Postgres Connection
         env:
           PGPASSWORD: test_password
         run: |
           sudo apt-get -yqq update
           sudo apt-get -yqq install postgresql-client
-          psql -h localhost -U postgres -d watchdog -c "SELECT 1;" 
+          psql -h localhost -U postgres -d watchdog -c "SELECT 1;"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.9.0'
-          
+          node-version: "20.9.0"
+
       - name: Install pnpm
         run: npm install -g pnpm@8
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: "3.11"
+          cache: "pip"
 
       - name: Install Python dependencies
         run: |
@@ -107,6 +107,11 @@ jobs:
       - name: Run database migrations
         run: cd backend && alembic upgrade head
 
+      # - name: Seed test data (seed.sql)
+      #   env:
+      #     PGPASSWORD: test_password
+      #   run: psql -h localhost -U postgres -d watchdog -f seed.sql
+
       - name: Seed test data
         run: cd backend && python seed.py
 
@@ -118,6 +123,21 @@ jobs:
 
       - name: Run frontend tests
         run: cd frontend && npx jest --coverage #pnpm test
+
+      - name: Start backend
+        run: |
+          cd backend
+          nohup uvicorn main:app --host 0.0.0.0 --port 8000 & 
+          npx wait-on tcp:8000 -t 60000
+
+      - name: Build frontend
+        run: cd frontend && pnpm build
+
+      - name: Start frontend
+        run: |
+          cd frontend
+          nohup pnpm start -p 3000 &
+          npx wait-on http://localhost:3000 -t 60000
 
       - name: Install E2E dependencies
         run: cd tests/e2e && pnpm install
@@ -144,7 +164,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.9.0'
+          node-version: "20.9.0"
 
       - name: Install pnpm
         run: npm install -g pnpm@8
@@ -165,7 +185,7 @@ jobs:
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install mypy
         run: pip install mypy
@@ -183,7 +203,10 @@ jobs:
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
+
+      - name: Install setuptools
+        run: pip install --upgrade "setuptools>=83.0.0"
 
       - name: Install security tools
         run: pip install bandit pip-audit

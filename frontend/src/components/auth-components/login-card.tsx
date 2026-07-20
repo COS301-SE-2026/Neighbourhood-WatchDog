@@ -11,6 +11,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { Alert, AlertDescription } from "@/components/ui/alert"; 
+import { Loader2 } from "lucide-react"; 
 
 type LoginCardProps = {
   className?: string;
@@ -22,6 +24,10 @@ type LoginCardProps = {
   setPassword: (v: string) => void;
 
   onSubmit: () => void;
+  onKeyDown?: (e: React.KeyboardEvent) => void; //Enter key
+  
+  isLoading?: boolean; //loading state
+  error?: string | null;
 };
 
 export function LoginCard({
@@ -31,6 +37,9 @@ export function LoginCard({
   password,
   setPassword,
   onSubmit,
+  onKeyDown,
+  isLoading = false,
+  error = null,
 }: LoginCardProps) {
   return (
     <Card
@@ -49,12 +58,20 @@ export function LoginCard({
         </CardDescription>
 
         <CardAction>
-          <Button variant="link">Sign Up</Button>
+          <Button variant="link" asChild>
+            <a href="/auth/signup">Sign Up</a>
+          </Button>
         </CardAction>
       </CardHeader>
 
       <CardContent>
         <div className="flex flex-col gap-6">
+          {/* Error Alert */}
+          {error && (
+            <Alert variant="destructive" className="mb-2">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
           {/* EMAIL */}
           <div className="grid gap-2">
@@ -64,7 +81,9 @@ export function LoginCard({
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={onKeyDown}
               placeholder="m@example.com"
+              disabled={isLoading} // Disable during loading
               required
             />
           </div>
@@ -77,10 +96,11 @@ export function LoginCard({
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={onKeyDown} //Pass key handler
+              disabled={isLoading} //Disable during loading
               required
             />
           </div>
-
         </div>
       </CardContent>
 
@@ -88,9 +108,17 @@ export function LoginCard({
         <Button
           type="button"
           onClick={onSubmit}
+          disabled={isLoading} //Disable during loading
           className="w-full bg-navy text-white hover:bg-steel"
         >
-          Login
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Logging in...
+            </>
+          ) : (
+            "Login"
+          )}
         </Button>
       </CardFooter>
     </Card>

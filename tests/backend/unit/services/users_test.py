@@ -46,7 +46,6 @@ class TestCreateUser:
     async def test_empty_email(self):
         with patch('app.services.user_service') as _MockUser:
 
-            self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
             with pytest.raises(HTTPException) as exception:
                 _ = await create_user(
                     email = "",
@@ -66,7 +65,6 @@ class TestCreateUser:
     async def test_empty_first_namel(self):
         with patch('app.services.user_service') as _MockUser:
 
-            self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
             with pytest.raises(HTTPException) as exception:
                 _ = await create_user(
                     email = "test@gmail.com",
@@ -86,7 +84,6 @@ class TestCreateUser:
     async def test_empty_last_name(self):
         with patch('app.services.user_service') as _MockUser:
 
-            self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
             with pytest.raises(HTTPException) as exception:
                 _ = await create_user(
                     email = "test@gmail.com",
@@ -105,7 +102,6 @@ class TestCreateUser:
     @pytest.mark.asyncio
     async def test_empty_cognito_sub(self):
 
-        self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
         with pytest.raises(HTTPException) as exception:
             await create_user(
                 email = "test@gmail.com",
@@ -123,7 +119,6 @@ class TestCreateUser:
 
     @pytest.mark.asyncio
     async def test_no_db(self):
-        self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
         with pytest.raises(HTTPException) as exception:
             await create_user(
                 email = "test@gmail.com",

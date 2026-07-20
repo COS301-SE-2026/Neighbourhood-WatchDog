@@ -9,25 +9,27 @@ import { Button } from "@/components/ui/button";
 
 interface NewCameraCardProps {
   onClose: () => void;
-  onAcknowledge: (data: { cameraLocation: string; rtspUrl: string }) => void;
+  onAcknowledge: (data: { name: string, location: string; rtspUrl: string }) => void;
 }
 
 export function NewCameraCard({ onClose, onAcknowledge }: NewCameraCardProps) {
-  const [cameraLocation, setCameraLocation] = useState("");
+  const [name, setName] = useState("")
+  const [location, setLocation] = useState("");
   const [rtspUrl, setRtspUrl] = useState("");
-  const [touched, setTouched] = useState({ cameraLocation: false, rtspUrl: false });
+  const [touched, setTouched] = useState({ name: false, location: false, rtspUrl: false });
 
   const errors = {
-    cameraLocation: touched.cameraLocation && cameraLocation.trim() === "",
+    name: touched.name && name.trim() === "",
+    location: touched.location && location.trim() === "",
     rtspUrl: touched.rtspUrl && rtspUrl.trim() === "",
   };
 
-  const isValid = cameraLocation.trim() !== "" && rtspUrl.trim() !== "";
+  const isValid = location.trim() !== "" && rtspUrl.trim() !== "";
 
   const handleSubmit = () => {
-    setTouched({ cameraLocation: true, rtspUrl: true });
+    setTouched({ name: true, location: true, rtspUrl: true });
     if (!isValid) return;
-    onAcknowledge({ cameraLocation, rtspUrl });
+    onAcknowledge({name ,location, rtspUrl });
   };
 
   return (
@@ -47,18 +49,31 @@ export function NewCameraCard({ onClose, onAcknowledge }: NewCameraCardProps) {
 
         <CardContent className="flex flex-col gap-5 pt-2">
           <div className="flex flex-col gap-1.5">
+            <Label htmlFor="camera-name" className="text-sm font-medium">
+              Camera Name
+            </Label>
+            <Input
+              id="camera-name"
+              placeholder="Enter Camera Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="bg-mist/10 border-mist/40"
+            />
+            {errors.name && <p className="text-xs text-threat">Camera name is required</p>}
+          </div>
+          <div className="flex flex-col gap-1.5">
             <Label htmlFor="camera-location" className="text-sm font-medium">
               Camera Location
             </Label>
             <Input
               id="camera-location"
               placeholder="Enter Camera Location"
-              value={cameraLocation}
-              onChange={(e) => setCameraLocation(e.target.value)}
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
               onBlur={() => setTouched((t) => ({ ...t, cameraLocation: true }))}
-              className={`bg-mist/10 border-mist/40 ${errors.cameraLocation ? "border-threat focus-visible:ring-threat" : ""}`}
+              className={`bg-mist/10 border-mist/40 ${errors.location ? "border-threat focus-visible:ring-threat" : ""}`}
             />
-            {errors.cameraLocation && (
+            {errors.location && (
               <p className="text-xs text-threat">Camera location is required.</p>
             )}
           </div>

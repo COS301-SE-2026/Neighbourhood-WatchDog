@@ -2,9 +2,11 @@ import pytest
 from fastapi import HTTPException
 from unittest.mock import Mock
 from app.services.neighbourhood_service import create_neighbourhood_handler
+from app.models.user import UserRole
 from uuid import uuid4
 from datetime import datetime
 
+TEST_NEIGHBOURHOOD_NAME = "Test name"
 class TestCreateNeighbourhood:
     def setup_method(self):
         self.mock_db = Mock()
@@ -28,11 +30,18 @@ class TestCreateNeighbourhood:
         self.mock_neighbourhood.join_code = "ABC12345"
         self.mock_neighbourhood.created_at = datetime.now()
 
+        #mock creator user
+        self.mock_creator = Mock()
+        self.mock_creator.cognito_sub = "cognito-sub-123"
+        self.mock_creator.role = UserRole.RESIDENT
+        self.mock_creator.neighbourhood_id = None
+
         # mockin da queries
         self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
             None,  # join_code uniqueness check
             self.mock_property,
-            self.mock_property_user
+            self.mock_property_user,
+            self.mock_creator,
         ]
 
         self.mock_db.add = Mock()
@@ -54,7 +63,7 @@ class TestCreateNeighbourhood:
     @pytest.mark.asyncio
     async def test_happy_path(self):
         neighbourhood = await create_neighbourhood_handler(
-            name = "Test name",
+            name = TEST_NEIGHBOURHOOD_NAME,
             location = "second location",
             property_id = uuid4(),
             db = self.mock_db,
@@ -62,7 +71,7 @@ class TestCreateNeighbourhood:
         )
 
         assert neighbourhood is not None
-        assert neighbourhood.name == "Test name"
+        assert neighbourhood.name == TEST_NEIGHBOURHOOD_NAME
         assert neighbourhood.location == "second location"
         assert neighbourhood.join_code is not None
 
@@ -292,3 +301,108 @@ class TestCreateNeighbourhood:
         assert self.mock_db.refresh.call_count == 1
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.rollback.call_count == 1
+    
+    @pytest.mark.asyncio
+    async def test_creator_assigned_neighbourhood_admin_role(self):
+        await create_neighbourhood_handler(
+            name=TEST_NEIGHBOURHOOD_NAME,
+            location="second location",
+            property_id=uuid4(),
+            db=self.mock_db,
+            claims=self.claims,
+        )
+
+        assert self.mock_creator.role == UserRole.NEIGHBOURHOOD_ADMIN
+        assert self.mock_creator.neighbourhood_id is not None
+    
+    @pytest.mark.asyncio
+    async def test_creator_neighbourhood_id_matches_new_neighbourhood(self):
+        neighbourhood = await create_neighbourhood_handler(
+            name=TEST_NEIGHBOURHOOD_NAME,
+            location="second location",
+            property_id=uuid4(),
+            db=self.mock_db,
+            claims=self.claims,
+        )
+
+        assert self.mock_creator.neighbourhood_id == neighbourhood.id
+    
+    @pytest.mark.asyncio
+    async def test_creator_not_found_in_db_raises_401(self):
+        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+            None,
+            self.mock_property,
+            self.mock_property_user,
+            None,
+        ]
+        property_id = uuid4()
+
+        with pytest.raises(HTTPException) as exception:
+            await create_neighbourhood_handler(
+                name="Name",
+                location="Location",
+                property_id=property_id,
+                db=self.mock_db,
+                claims=self.claims,
+            )
+
+        assert exception.value.status_code == 401
+        assert exception.value.detail == "Authenticated user not found in database"
+        
+        assert self.mock_db.commit.call_count == 0
+        assert self.mock_db.rollback.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_two_neighbourhoods_have_distinct_join_codes(self):
+        mock_db_2 = Mock()
+ 
+        mock_property_2 = Mock()
+        mock_property_2.id = uuid4()
+        mock_property_2.neighbourhood_id = None
+ 
+        mock_property_user_2 = Mock()
+        mock_property_user_2.property_id = uuid4()
+        mock_property_user_2.user = Mock()
+        mock_property_user_2.user.cognito_sub = "cognito-sub-123"
+ 
+        mock_creator_2 = Mock()
+        mock_creator_2.cognito_sub = "cognito-sub-123"
+        mock_creator_2.role = UserRole.RESIDENT
+        mock_creator_2.neighbourhood_id = None
+ 
+        mock_db_2.execute.return_value.scalar_one_or_none.side_effect = [
+            None,               # join_code uniqueness check
+            mock_property_2,
+            mock_property_user_2,
+            mock_creator_2,
+        ]
+        mock_db_2.add = Mock()
+        mock_db_2.commit = Mock()
+        mock_db_2.flush = Mock()
+        mock_db_2.rollback = Mock()
+ 
+        def mock_refresh_2(obj):
+            if hasattr(obj, 'id') and obj.id is None:
+                obj.id = uuid4()
+            if hasattr(obj, 'created_at') and obj.created_at is None:
+                obj.created_at = datetime.now()
+ 
+        mock_db_2.refresh = Mock(side_effect=mock_refresh_2)
+ 
+        nb1 = await create_neighbourhood_handler(
+            name="Neighbourhood One",
+            location="Location One",
+            property_id=uuid4(),
+            db=self.mock_db,
+            claims=self.claims,
+        )
+ 
+        nb2 = await create_neighbourhood_handler(
+            name="Neighbourhood Two",
+            location="Location Two",
+            property_id=uuid4(),
+            db=mock_db_2,
+            claims=self.claims,
+        )
+ 
+        assert nb1.join_code != nb2.join_code

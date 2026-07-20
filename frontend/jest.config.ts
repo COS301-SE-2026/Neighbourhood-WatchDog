@@ -8,6 +8,8 @@ import type {Config} from 'jest';
 const config: Config = {
   testEnvironment: 'jsdom',
 
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
+
   clearMocks: true,
   collectCoverage: true,
   coverageDirectory: '../tests/frontend/coverage',
@@ -21,6 +23,10 @@ const config: Config = {
   moduleDirectories: ["node_modules", "<rootDir>/node_modules", "<rootDir>/../node_modules"],
 
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
 
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
