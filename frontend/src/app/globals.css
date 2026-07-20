@@ -43,77 +43,77 @@
   --radius-xl: 16px;
   --radius-full: 9999px;
 
-  /* WatchDog brand tokens exposed to Tailwind */
-  --color-void:      #0A0E1A;
-  --color-abyss:     #0F1629;
-  --color-depth:     #161E35;
-  --color-slate:     #1E2944;
+  /* WatchDog brand tokens exposed to Tailwind — black/white/emerald system */
+  --color-void:      #0A0A0A;
+  --color-abyss:     #0D0D0D;
+  --color-depth:     #141414;
+  --color-slate:     #1E1E1E;
   --color-pulse:     #2D7EFF;
-  --color-green:     #3DD68C;
+  --color-green:     #10B981;
   --color-ice:       #6AB0FF;
-  --color-gunmetal:  #8892A4;
-  --color-frost:     #F1F5FF;
-  --color-ash:       #9CA3B8;
-  --color-steel-text:#4A5568;
-  --color-threat:    #F04444;
+  --color-gunmetal:  #8A8A8A;
+  --color-frost:     #F5F5F5;
+  --color-ash:       #A3A3A3;
+  --color-steel-text:#6B6B6B;
+  --color-threat:    #EF4444;
   --color-caution:   #F59E0B;
-  --color-safe:      #3DD68C;
+  --color-safe:      #10B981;
   --color-info:      #2D7EFF;
 }
 
 :root {
   /* ── shadcn variables dark palette ── */
-  --background:              #0A0E1A;   /* Void  */
-  --foreground:              #F1F5FF;   /* Frost */
-  --card:                    #161E35;   /* Depth */
-  --card-foreground:         #F1F5FF;   /* Frost */
-  --popover:                 #161E35;   /* Depth */
-  --popover-foreground:      #F1F5FF;   /* Frost */
-  --primary:                 #2D7EFF;   /* Pulse Blue */
-  --primary-foreground:      #FFFFFF;
-  --secondary:               #1E2944;   /* Slate */
-  --secondary-foreground:    #F1F5FF;   /* Frost */
-  --muted:                   #1E2944;   /* Slate */
-  --muted-foreground:        #9CA3B8;   /* Ash */
-  --accent:                  #1E2944;   /* Slate */
-  --accent-foreground:       #F1F5FF;   /* Frost */
-  --destructive:             #F04444;   /* Threat Red */
-  --border:                  rgba(136, 146, 164, 0.15); /* Gunmetal 15% */
-  --input:                   #1E2944;   /* Slate */
-  --ring:                    #2D7EFF;   /* Pulse Blue */
+  --background:              #0A0A0A;   /* Void */
+  --foreground:              #F5F5F5;   /* Frost */
+  --card:                    #141414;   /* Depth */
+  --card-foreground:         #F5F5F5;   /* Frost */
+  --popover:                 #141414;   /* Depth */
+  --popover-foreground:      #F5F5F5;   /* Frost */
+  --primary:                 #10B981;   /* Emerald — was Pulse Blue */
+  --primary-foreground:      #0A0A0A;   /* dark text on emerald fill */
+  --secondary:               #1E1E1E;   /* Slate */
+  --secondary-foreground:    #F5F5F5;   /* Frost */
+  --muted:                   #1E1E1E;   /* Slate */
+  --muted-foreground:        #A3A3A3;   /* Ash */
+  --accent:                  #1E1E1E;   /* Slate */
+  --accent-foreground:       #F5F5F5;   /* Frost */
+  --destructive:             #EF4444;   /* Threat Red */
+  --border:                  rgba(138, 138, 138, 0.15); /* Gunmetal 15%, neutral now */
+  --input:                   #1E1E1E;   /* Slate */
+  --ring:                    #10B981;   /* Emerald — was Pulse Blue */
 
   /* Chart palette */
-  --chart-1:  #2D7EFF;   /* Pulse Blue */
-  --chart-2:  #3DD68C;   /* Terminal Green */
+  --chart-1:  #10B981;   /* Emerald */
+  --chart-2:  #2D7EFF;   /* Pulse Blue */
   --chart-3:  #6AB0FF;   /* Ice */
   --chart-4:  #F59E0B;   /* Caution Amber */
-  --chart-5:  #8892A4;   /* Gunmetal */
+  --chart-5:  #8A8A8A;   /* Gunmetal */
 
   /* Sidebar */
-  --sidebar:                      #0F1629;   /* Abyss */
-  --sidebar-foreground:           #F1F5FF;   /* Frost */
-  --sidebar-primary:              #2D7EFF;   /* Pulse Blue */
-  --sidebar-primary-foreground:   #FFFFFF;
-  --sidebar-accent:               #1E2944;   /* Slate — hover */
-  --sidebar-accent-foreground:    #F1F5FF;
-  --sidebar-border:               rgba(136, 146, 164, 0.12);
-  --sidebar-ring:                 #2D7EFF;
+  --sidebar:                      #0D0D0D;   /* Abyss */
+  --sidebar-foreground:           #F5F5F5;   /* Frost */
+  --sidebar-primary:              #10B981;   /* Emerald */
+  --sidebar-primary-foreground:   #0A0A0A;
+  --sidebar-accent:               #1E1E1E;   /* Slate — hover */
+  --sidebar-accent-foreground:    #F5F5F5;
+  --sidebar-border:               rgba(138, 138, 138, 0.12);
+  --sidebar-ring:                 #10B981;
 
   /* ── WatchDog raw tokens (use these directly in components) ── */
-  --color-void:       #0A0E1A;
-  --color-abyss:      #0F1629;
-  --color-depth:      #161E35;
-  --color-slate:      #1E2944;
+  --color-void:       #0A0A0A;
+  --color-abyss:      #0D0D0D;
+  --color-depth:      #141414;
+  --color-slate:      #1E1E1E;
   --color-pulse:      #2D7EFF;
-  --color-green:      #3DD68C;
+  --color-green:      #10B981;
   --color-ice:        #6AB0FF;
-  --color-gunmetal:   #8892A4;
-  --color-frost:      #F1F5FF;
-  --color-ash:        #9CA3B8;
-  --color-steel-text: #4A5568;
-  --color-threat:     #F04444;
+  --color-gunmetal:   #8A8A8A;
+  --color-frost:      #F5F5F5;
+  --color-ash:        #A3A3A3;
+  --color-steel-text: #6B6B6B;
+  --color-threat:     #EF4444;
   --color-caution:    #F59E0B;
-  --color-safe:       #3DD68C;
+  --color-safe:       #10B981;
   --color-info:       #2D7EFF;
 
   /* Typography */
@@ -149,54 +149,54 @@
   --motion-slow:         350ms ease-in-out;
   --motion-alert-pulse:  1200ms ease-in-out infinite;
 
-  /* Shadows — updated to use Void tint instead of old navy */
-  --shadow-sm:    0 1px 3px rgba(10, 14, 26, 0.4);
-  --shadow-md:    0 4px 12px rgba(10, 14, 26, 0.5);
-  --shadow-lg:    0 8px 24px rgba(10, 14, 26, 0.6);
-  --shadow-alert: 0 0 0 3px rgba(240, 68, 68, 0.35);
+  /* Shadows — updated to use neutral Void tint instead of navy */
+  --shadow-sm:    0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md:    0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg:    0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-alert: 0 0 0 3px rgba(239, 68, 68, 0.35);
 
   /* Toast */
-  --toast-bg:     #161E35;   /* Depth */
-  --toast-text:   #F1F5FF;   /* Frost */
-  --toast-border: rgba(136, 146, 164, 0.15);
+  --toast-bg:     #141414;   /* Depth */
+  --toast-text:   #F5F5F5;   /* Frost */
+  --toast-border: rgba(138, 138, 138, 0.15);
 
-  --toast-success:      #3DD68C;
-  --toast-success-text: #0A0E1A;   /* Dark text on green */
+  --toast-success:      #10B981;
+  --toast-success-text: #0A0A0A;   /* Dark text on emerald */
   --toast-warning:      #F59E0B;
-  --toast-warning-text: #0A0E1A;
-  --toast-error:        #F04444;
+  --toast-warning-text: #0A0A0A;
+  --toast-error:        #EF4444;
   --toast-error-text:   #FFFFFF;
   --toast-info:         #2D7EFF;
   --toast-info-text:    #FFFFFF;
 }
 
 .dark {
-  --background:           #0A0E1A;
-  --foreground:           #F1F5FF;
-  --card:                 #161E35;
-  --card-foreground:      #F1F5FF;
-  --popover:              #161E35;
-  --popover-foreground:   #F1F5FF;
-  --primary:              #2D7EFF;
-  --primary-foreground:   #FFFFFF;
-  --secondary:            #1E2944;
-  --secondary-foreground: #F1F5FF;
-  --muted:                #1E2944;
-  --muted-foreground:     #9CA3B8;
-  --accent:               #1E2944;
-  --accent-foreground:    #F1F5FF;
-  --destructive:          #F04444;
-  --border:               rgba(136, 146, 164, 0.15);
-  --input:                #1E2944;
-  --ring:                 #2D7EFF;
-  --sidebar:              #0F1629;
-  --sidebar-foreground:   #F1F5FF;
-  --sidebar-primary:      #2D7EFF;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent:       #1E2944;
-  --sidebar-accent-foreground: #F1F5FF;
-  --sidebar-border:       rgba(136, 146, 164, 0.12);
-  --sidebar-ring:         #2D7EFF;
+  --background:           #0A0A0A;
+  --foreground:           #F5F5F5;
+  --card:                 #141414;
+  --card-foreground:      #F5F5F5;
+  --popover:              #141414;
+  --popover-foreground:   #F5F5F5;
+  --primary:              #10B981;
+  --primary-foreground:   #0A0A0A;
+  --secondary:            #1E1E1E;
+  --secondary-foreground: #F5F5F5;
+  --muted:                #1E1E1E;
+  --muted-foreground:     #A3A3A3;
+  --accent:               #1E1E1E;
+  --accent-foreground:    #F5F5F5;
+  --destructive:          #EF4444;
+  --border:               rgba(138, 138, 138, 0.15);
+  --input:                #1E1E1E;
+  --ring:                 #10B981;
+  --sidebar:              #0D0D0D;
+  --sidebar-foreground:   #F5F5F5;
+  --sidebar-primary:      #10B981;
+  --sidebar-primary-foreground: #0A0A0A;
+  --sidebar-accent:       #1E1E1E;
+  --sidebar-accent-foreground: #F5F5F5;
+  --sidebar-border:       rgba(138, 138, 138, 0.12);
+  --sidebar-ring:         #10B981;
 }
 
 @layer base {
