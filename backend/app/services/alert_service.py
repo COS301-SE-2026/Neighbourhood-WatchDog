@@ -4,13 +4,17 @@ from app.models.detection_event import DetectionEvent
 from app.schemas.alert import AlertCreate
 from fastapi import HTTPException
 from uuid import UUID
+from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 
 from app.core.database import DbSession
 from app.models.camera import Camera
 from app.schemas.alert import AlertRes
+
+DEFAULT_PAGE_SIZE = 25
+MAX_PAGE_SIZE = 100
 
 async def create_alert(db: Session, data: AlertCreate):
     try:
@@ -112,6 +116,12 @@ async def list_alerts_handler(
     db: DbSession,
     claims: dict,
     status_filter: str | None = None,
+    camera_id: UUID | None = None,
+    detection_type: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+    limit: int = DEFAULT_PAGE_SIZE,
+    offset: int = 0,
 ) -> list[AlertRes]:
     if not neighbourhood_id:
         raise HTTPException(400, "Neighbourhood id is required")
@@ -124,18 +134,39 @@ async def list_alerts_handler(
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
         raise HTTPException(403, "Not authorised for this neighbourhood")
 
+    if start_date and end_date and start_date > end_date:
+        raise HTTPException("400", "start_date must be less than end_date")
+
+    limit = max(1, min(limit, MAX_PAGE_SIZE))
+    offset = max(0, offset)
+
     try:
-        stmt = (
+        base_stmt = (
             select(Alert)
             .join(Camera, Alert.camera_id == Camera.id)
+            .join(DetectionEvent, Alert.detection_event_id == DetectionEvent.id)
             .where(Camera.neighbourhood_id == UUID(str(neighbourhood_id)))
         )
 
         if status_filter:
-            stmt = stmt.where(Alert.status == status_filter)
+            base_stmt = base_stmt.where(Alert.status == status_filter)
+        if camera_id:
+            base_stmt = base_stmt.where(Alert.camera_id == camera_id)
+        if detection_type:
+            base_stmt = base_stmt.where(Alert.detection_type == detection_type)
+        if start_date:
+            base_stmt = base_stmt.where(Alert.created_at >= start_date)
+        if end_date:
+            base_stmt = base_stmt.where(Alert.created_at <= end_date)
+
+        total = db.execute(select(func.count).select_from(base_stmt.subquery())).scalar_one()
+
+        stmt = (base_stmt.order_by(Alert.created_at.desc())
+                .limit(limit)
+                .offset(offset))
 
         alerts = db.execute(stmt).scalars().all()
-        return [_build_alert_res(a) for a in alerts]
+        return [_build_alert_res(a) for a in alerts], total
     except HTTPException as he:
         raise he
     except IntegrityError:
