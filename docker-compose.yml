@@ -18,7 +18,7 @@ services:
       retries: 10
       start_period: 10s
 
-  # redis: 
+  # redis:
   #   image: redis:7-alpine
   #   container_name: redis_cache
   #   restart: always
@@ -51,6 +51,10 @@ services:
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
       COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
       FRONTEND_URL: ${FRONTEND_URL}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM}
+      NOTIFICATION_ENABLED: ${NOTIFICATION_ENABLED}
       SKIP_DB_INIT: "true"
     volumes:
       - ./backend:/app
