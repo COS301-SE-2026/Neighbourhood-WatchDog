@@ -86,3 +86,32 @@ class AlertFrequencyMetricsRes(BaseModel):
 	status: int
 	message: str | None = None
 	data: NumberInPeriod | None = None
+
+
+class TrendGroupBy(str, Enum):
+	DAY = "DAY"
+	WEEK = "WEEK"
+	MONTH = "MONTH"
+
+
+class TrendDirection(str, Enum):
+	UP = "UP"
+	DOWN = "DOWN"
+	STABLE = "STABLE"
+
+
+class TrendBucket(BaseModel):
+	period: datetime
+	count: int
+
+
+class TrendData(BaseModel):
+	bucket: list[TrendBucket]
+	total_count: int
+	direnction: TrendDirection
+
+
+class TrendResponse(BaseModel):
+	status: int
+	message: str
+	data: TrendData | None = None
