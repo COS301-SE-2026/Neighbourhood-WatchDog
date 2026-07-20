@@ -30,7 +30,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
             "given_name": "Test",
             "family_name": "User",
             CUSTOM_ROLE_CLAIM: request.headers.get("X-Mock-Role", "SYSTEM_ADMIN"),
-            CUSTOM_NEIGHBOURHOOD_CLAIM: None,
+            CUSTOM_NEIGHBOURHOOD_CLAIM: request.headers.get("X-Mock-Neighbourhood-Id"),
         }
 
     user = (
@@ -51,7 +51,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
                 "given_name": "Test",
                 "family_name": "User",
                 CUSTOM_ROLE_CLAIM: request.headers.get("X-Mock-Role", "SYSTEM_ADMIN"),
-                CUSTOM_NEIGHBOURHOOD_CLAIM: None,
+                CUSTOM_NEIGHBOURHOOD_CLAIM: request.headers.get("X-Mock-Neighbourhood-Id"),
             }
 
 
