@@ -3,7 +3,7 @@ from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm import Session
 from app.models.alert import Alert
 from app.models.detection_event import DetectionEvent
-from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes, NumberInPeriod
+from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes, NumberInPeriod, TrendGroupBy, TrendDirection, TrendBucket, TrendData
 from fastapi import HTTPException
 from uuid import UUID
 
@@ -302,4 +302,28 @@ async def get_alert_frequency_metrics_handler(
         status=200,
         data=data
     )
+    
+
+def _resolve_start_date(time_period: TimePeriod | None) -> date_cls | None:
+
+
+    if not time_period:
+        return None
+    
+
+    today = date_cls.today()
+
+    if time_period == TimePeriod.WEEK:
+        return today - timedelta(days=7)
+    elif time_period == TimePeriod.MONTH:
+        return today - relativedelta(months=1)
+    elif time_period == TimePeriod.THREE_MONTHS:
+        return today - relativedelta(months=3)
+    elif time_period == TimePeriod.SIX_MONTHS:
+        return today - relativedelta(months=6)
+    elif time_period == TimePeriod.YEAR:
+        return today - relativedelta(years=1)
+    
+
+    return None
     
