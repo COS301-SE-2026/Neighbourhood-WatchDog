@@ -326,4 +326,23 @@ def _resolve_start_date(time_period: TimePeriod | None) -> date_cls | None:
     
 
     return None
+
+
+
+def _compute_trend_direction(buckets: list[TrendBucket]) -> TrendDirection:
+
+    if len(buckets) < 2:
+        return TrendDirection.STABLE
+
+
+    middle = len(buckets) // 2
+    first_half = sum(b.count for b in buckets[:middle])
+    second_half = sum(b.count for b in buckets[middle:])
+
+    if (first_half > second_half):
+        return TrendDirection.DOWN
     
+    if (first_half < second_half):
+        return TrendDirection.UP
+    
+    return TrendDirection.STABLE
