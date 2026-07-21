@@ -8,9 +8,9 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession, get_db
 from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, ListAlertsRes, TimePeriod
-from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler, get_response_metrics_handler, get_alert_frequency_metrics_handler
+from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler, get_response_metrics_handler, get_alert_frequency_metrics_handler, get_trends_handler
 from app.services import alert_service
-from app.schemas.alert import AlertMetricsRes, AlertFrequencyMetricsRes, TimeIntervalsEnum
+from app.schemas.alert import AlertMetricsRes, AlertFrequencyMetricsRes, TimeIntervalsEnum, TrendResponse, TrendGroupBy
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -93,6 +93,33 @@ async def dev_broadcast_alert(data: dict):
         "confidence": data.get("confidence", 0.0),
     })
     return {"status": "broadcasted"}
+
+
+
+@router.get("/trends", response_model=TrendResponse)
+async def get_alert_trends(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: dict,
+    group_by: TrendGroupBy=TrendGroupBy.DAY,
+    time_period: TimePeriod=TimePeriod.MONTH, 
+    incident_type: str | None=None, 
+    camera_id: UUID | None=None
+
+
+):
+    data = await get_trends_handler(
+        neighbourhood_id=neighbourhood_id,
+        db=db,
+        claims=claims,
+        group_by=group_by,
+        time_period=time_period, 
+        incident_type=incident_type, 
+        camera_id=camera_id 
+
+    )
+    return TrendResponse(status=200, data=data)
+
 
 @router.get(
     "/{neighbourhood_id}",
