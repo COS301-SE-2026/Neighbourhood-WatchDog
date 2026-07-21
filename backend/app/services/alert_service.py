@@ -304,6 +304,8 @@ async def get_alert_frequency_metrics_handler(
     )
     
 
+
+
 def _resolve_start_date(time_period: TimePeriod | None) -> date_cls | None:
 
 
@@ -346,3 +348,74 @@ def _compute_trend_direction(buckets: list[TrendBucket]) -> TrendDirection:
         return TrendDirection.UP
     
     return TrendDirection.STABLE
+
+
+async def get_trends_handler(neighbourhood_id: UUID, db: DbSession, claims: dict, group_by: TrendGroupBy=TrendGroupBy.DAY,
+                             time_period: TimePeriod=TimePeriod.MONTH, incident_type: str | None=None, camera_id=UUID) -> TrendData:
+    
+    if not db:
+        raise HTTPException(500, "No database session")
+    
+    if not claims:
+        raise HTTPException(401, "Not authenticated")
+    
+
+    caller_neighbourhood = claims.get("custom:neighbourhood_id")
+    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
+        raise HTTPException(403, "Not authorised for this neighbourhood")
+    
+
+    start_date = _resolve_start_date(time_period)
+
+
+    bucket = func.date_trunc(group_by.value, Alert.created_at).label("bucket")
+
+
+    stmt = (
+        select(bucket, func.count(Alert.id).label("count"))
+        .join(Camera, Alert.camera_id == Camera.id)
+        .join(DetectionEvent, Alert.detection_event_id == DetectionEvent.id)
+        .where(Camera.neighbourhood_id == UUID(str(neighbourhood_id)))
+    )
+
+    
+    if start_date:
+        stmt = stmt.where(Alert.created_at > start_date)
+
+
+    if camera_id:
+        stmt = stmt.where(Alert.camera_id == camera_id)
+
+    
+    if incident_type:
+        stmt = stmt.where(DetectionEvent.detection_type == incident_type)
+
+
+    stmt = stmt.group_by(bucket).order_by(bucket)
+
+
+
+    try:
+        rows = db.execute(stmt).all()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(500, "Failed to fetch trend data")
+    
+
+
+    buckets = [TrendBucket(period=row.bucket, count=row.count) for row in rows]
+    total_count = sum(b.count for b in buckets)
+    trend_direction = _compute_trend_direction(buckets)
+
+
+
+
+
+    return TrendData(
+        
+        buckets=buckets,
+        total_count=total_count,
+        trend_direction=trend_direction
+
+
+    )
