@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 from tkinter import Tk, messagebox, scrolledtext
-from tkinter import tkk
+from tkinter import ttk
 
 
 import json
@@ -142,3 +142,99 @@ class WatchDogAgentApp:
             self.show_run_screen()
         else:
             self.show_setup_screen()
+
+
+    #screen helper function
+    def clear_screen(self) -> None:
+        for child in self.root.winfo_children():
+            child.destroy()
+
+
+    def show_setup_screen(self, reason: str="") -> None:
+
+        self.clear_screen()
+
+        outer = ttk.Frame(self.root, padding=24)
+        outer.pack(fill="both", expand=True)
+
+        ttk.Label(
+            outer, 
+            text="WatchDog Agent Setup", 
+            font=("Segoe UI", 20, "bold") 
+        ).pack(anchor="w")
+
+
+        ttk.Label(
+            outer, 
+            text=(
+                "This one-time setup creates an isolated AI environment, "
+                "installs dependencies, and downloads the detection models."
+            ),
+            wraplength=680,
+            justify="left"
+        ).pack(anchor="w", pady=(8, 12))
+
+
+        python_text = (
+            f"Detected Python: {sys.version.split()[0]} "
+            f"({sys.executable})"
+        )   
+
+        ttk.Label(outer, text=python_text).pack(anchor="w")
+
+
+        if reason:
+            ttk.Label(
+                outer, 
+                text=reason,
+                foreground="#b45309", 
+                wraplength=680, 
+                justify="left"
+            ).pack(anchor="w", pady=(10, 0))
+
+
+        self.status_var = ttk.StringVar(value="Ready to set up the WatchDog Agent.")
+        ttk.Label(
+            outer, 
+            textvariable=self.status_var, 
+            font=("Segoe UI", 10, "bold")
+        ).pack(anchor="w", pady=(18, 6))
+
+
+        self.progress_var = ttk.DoubleVar(value=0)
+        self.progress_bar = ttk.Progressbar(
+            outer, 
+            variable=self.progress_var, 
+            maximum=100, 
+            mode="determinate"
+        )
+
+
+        self.progress_bar.pack(fill="x", pady=(0, 12))
+
+        self.log_box = scrolledtext.ScrolledText(
+            outer, 
+            height=18, 
+            wrap="word",
+            state="disabled", 
+            font=("Consolas", 9)
+        )
+        self.log_box.pack(fill="both", expand=True, pady=(0, 14))
+
+        controls = ttk.Frame(outer)
+        controls.pack(fill="x")
+
+
+        self.setup_button = ttk.Button(
+            controls, 
+            text="Set Up Agent",
+            command=self.start_setup
+        )
+        self.setup_button.pack(side="left")
+
+
+        ttk.Button(
+            controls, 
+            text="Exit", 
+            command=self.on_close 
+        ).pack(side="right")
