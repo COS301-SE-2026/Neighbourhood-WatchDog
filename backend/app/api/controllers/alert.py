@@ -4,6 +4,7 @@ from uuid import UUID
 from datetime import datetime
 from fastapi import APIRouter, Depends, Query, WebSocket
 from sqlalchemy.orm import Session
+from typing import Annotated
 
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession, get_db
@@ -71,12 +72,12 @@ async def list_alerts(
     db: DbSession,
     claims: dict = Depends(get_current_user),
     status_filter: str | None = Query(default=None, alias="status"),
-    camera_id: UUID | None = Query(default=None),
-    detection_type: str | None = Query(default=None),
-    start_date: datetime | None = Query(default=None),
-    end_date: datetime | None = Query(default=None),
-    limit: int = Query(default=DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
-    offset: int = Query(default=0, ge=0),
+    camera_id: Annotated[UUID | None, Query()] = None,
+    detection_type: Annotated[str | None, Query()] = None,
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None,  Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     results, total = await list_alerts_handler(
         str(neighbourhood_id), 
