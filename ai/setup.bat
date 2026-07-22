@@ -1,7 +1,24 @@
 @echo off
-title Neighbourhood Watchdog Setup
-@REM Our user will click on this file and then START our script
-@REM We send the script to the Bootstrap.py
-python bootstrap.py 
+@REM Only print what we want the user to see
 
-pause
+echo ======================================
+echo Neighbourhood Watchdog Installer
+echo ======================================
+
+python --version >nul 2>&1
+@REM check the previous command, if the output errorlvl is != 0 then we need to install python (0 means success and  != 0 means failure)
+IF %ERRORLEVEL% NEQ 0 (
+    echo Python not found.
+    echo Attempting installation...
+
+    winget install Python.Python.3.12
+    @REM Check if the install worked, if failed we print that they need to install python manually
+    IF %ERRORLEVEL% NEQ 0 (
+        echo Winget failed.
+        echo Please install Python manually.
+        pause
+        exit
+    )
+)
+
+python bootstrap.py
