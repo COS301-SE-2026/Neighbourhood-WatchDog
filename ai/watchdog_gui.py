@@ -16,6 +16,7 @@ import threading
 import traceback
 import urllib.error
 import urllib.request
+import time
 
 
 
@@ -39,7 +40,7 @@ INSTALL_SCHEMA_VERSION = 1
 THREAT_MODEL = {
     "name": "Threat-detection model (best.pt)", 
     "path": THREAT_MODEL_PATH,
-    "url": ("https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/releases/tag/weights-v1/best.pt"), 
+    "url": ("https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/releases/download/weights-v1/best.pt"), 
     "expected_bytes": 6251747 
 
 }
@@ -47,7 +48,7 @@ THREAT_MODEL = {
 PERSON_MODEL = {
     "name": "Human-detection model (yolov8n.pt)", 
     "path": PERSON_MODEL_PATH, 
-    "url": ("https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/releases/tag/weights-v1/yolov8n.pt"), 
+    "url": ("https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/releases/download/weights-v1/yolov8n.pt"), 
     "expected_bytes": 6549796 
 
 }
@@ -87,7 +88,7 @@ def model_is_valid(model: dict) -> bool:
 
     model_path: Path = model["path"]
 
-    return (model_path.is_file() and model_path.stat() == model["expected_bytes"])
+    return (model_path.is_file() and model_path.stat().st_size == model["expected_bytes"])
 
 
 def is_installation_valid() -> bool:
@@ -293,7 +294,7 @@ class WatchDogAgentApp:
 
 
         controls = ttk.Frame(outer)
-        controls.pack(fill="x", side="button", pady=(24, 0))
+        controls.pack(fill="x", side="bottom", pady=(24, 0))
 
 
         ttk.Button(
@@ -435,7 +436,7 @@ class WatchDogAgentApp:
 
             self.download_model(
                 model=THREAT_MODEL,
-                progess_start=50, 
+                progress_start=50, 
                 progress_span=23
             )
 
@@ -613,86 +614,103 @@ class WatchDogAgentApp:
 
 
 
-    def download_model(self, model: dict, progress_start: float, progress_span: float) -> None:
+    def download_model(self, model: dict, progress_start: float, progress_span: float,) -> None:
 
         model_path: Path = model["path"]
         expected_bytes: int = model["expected_bytes"]
 
         if model_is_valid(model):
-            self.emit("log", f"{model['name']} already exists and passed size validation - skipping.")
+            self.emit(
+                "log",
+                f"{model['name']} already exists and passed size validation — skipping.",
+            )
             self.emit("progress", progress_start + progress_span)
-
             return
 
+        curl_path = shutil.which("curl")
+
+        if curl_path is None:
+            raise RuntimeError(
+                "curl was not found. Install curl, then retry setup. "
+                "It is normally included with Windows 10/11 and Linux distributions."
+            )
 
         model_path.parent.mkdir(parents=True, exist_ok=True)
         temporary_path = model_path.with_suffix(model_path.suffix + ".part")
+        temporary_path.unlink(missing_ok=True)
 
-        if temporary_path.exists():
-            temporary_path.unlink()
-
-        self.emit("status", f"Downloading {model['name']}...")
-        self.emit("log", f"Downloading {model['name']} ({format_bytes(expected_bytes)})...")
-
-        request = urllib.request.Request(
-            model["url"],
-            headers={"User-Agent": "Neighbourhood-WatchDog-Agent/1.0"},
+        self.emit(
+            "status",
+            f"Downloading {model['name']}...",
+        )
+        self.emit(
+            "log",
+            f"Downloading {model['name']} ({format_bytes(expected_bytes)})...",
         )
 
-        try:
-            with urllib.request.urlopen(request, timeout=60) as response:
-                header_size = response.headers.get("Content-Length")
+        command = [
+            curl_path,
+            "--http1.1",
+            "--location",
+            "--fail",
+            "--silent",
+            "--show-error",
+            "--retry",
+            "3",
+            "--retry-delay",
+            "3",
+            "--connect-timeout",
+            "30",
+            "--output",
+            str(temporary_path),
+            model["url"],
+        ]
 
-                if header_size:
-                    reported_size = int(header_size)
+        process = subprocess.Popen(
+            command,
+            cwd=AI_DIR,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
 
-                    if reported_size != expected_bytes:
-                        self.emit(
-                            "log",
-                            (
-                                "Warning: server-reported size "
-                                f"({format_bytes(reported_size)}) differs from "
-                                f"the expected release size "
-                                f"({format_bytes(expected_bytes)}). "
-                                "The final local file size will still be validated."
-                            )
-                        )
+        # Poll the growing .part file to provide byte-level progress to Tkinter.
+        while process.poll() is None:
+            if temporary_path.exists():
+                downloaded = temporary_path.stat().st_size
+                ratio = min(downloaded / expected_bytes, 1.0)
 
-                downloaded = 0
-                chunk_size = 1024 * 256  # 256 kb
+                self.emit(
+                    "progress",
+                    progress_start + (progress_span * ratio),
+                )
+                self.emit(
+                    "status",
+                    (
+                        f"Downloading {model_path.name}: "
+                        f"{format_bytes(downloaded)} / "
+                        f"{format_bytes(expected_bytes)}"
+                    ),
+                )
 
-                with temporary_path.open("wb") as output:
-                    while True:
-                        chunk = response.read(chunk_size)
+            time.sleep(0.2)
 
-                        if not chunk:
-                            break
+        _, stderr_output = process.communicate()
 
-                        output.write(chunk)
-                        downloaded += len(chunk)
+        if process.returncode != 0:
+            temporary_path.unlink(missing_ok=True)
 
-                        ratio = min(downloaded / expected_bytes, 1)
-                        overall_progress = progress_start + (progress_span * ratio)
-
-                        self.emit("progress", overall_progress)
-                        self.emit(
-                            "status",
-                            (
-                                f"Downloading {model_path.name}: "
-                                f"{format_bytes(downloaded)} / "
-                                f"{format_bytes(expected_bytes)}"
-                            )
-                        )
-
-        except urllib.error.URLError as error:
             raise RuntimeError(
-                f"Could not download {model['name']}.\n"
-                f"URL: {model['url']}\n"
-                f"Reason: {error.reason}"
-            ) from error
+                f"Failed to download {model['name']} with curl.\n"
+                f"curl error:\n{stderr_output.strip()}"
+            )
 
-        except OSError as error:
-            raise RuntimeError(f"Could not save {model['name']} to {temporary_path}:\n{error}") from error
+        if not temporary_path.exists():
+            raise RuntimeError(
+                f"{model['name']} download finished but no temporary file was created."
+            )
 
         actual_size = temporary_path.stat().st_size
 
@@ -706,11 +724,15 @@ class WatchDogAgentApp:
 
         temporary_path.replace(model_path)
 
-        self.emit("log", f"Downloaded and validated {model['name']}.")
-        self.emit("progress", progress_start + progress_span)
-
-
-
+        self.emit(
+            "progress",
+            progress_start + progress_span,
+        )
+        self.emit(
+            "log",
+            f"Downloaded and validated {model['name']}.",
+        )
+    
     def write_install_state(self) -> None:
 
         state = {
