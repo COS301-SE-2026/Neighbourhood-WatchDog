@@ -97,13 +97,16 @@ services:
     command: uvicorn app:app --host 0.0.0.0 --port 8001 --reload
 
   mediamtx:
+    environment:
+      MTX_WEBRTCADDIONALHOSTS: stream-staging.neighbourhoodwatchdog.co.za, 13.245.213.174
+      
     build:
       context: ./mediamtx
     platform: linux/amd64
     ports:
       - "8554:8554"    # RTSP
       - "8889:8889"    # WebRTC
-      # - "8189:8189/udp"
+      - "8189:8189/udp"
       - "9997:9997"    # API
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx/mediamtx.yml
