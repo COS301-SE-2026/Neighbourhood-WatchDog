@@ -111,3 +111,34 @@ def is_installation_valid() -> bool:
 
 
     return (state.get("schema_version") == INSTALL_SCHEMA_VERSION and state.get("python_version", "").startswith("3.12"))
+
+
+
+class WatchDogAgentApp:
+
+    def __init__(self, root: Tk) -> None:
+
+        self.root = root
+        self.root.title("Neighbourhood WatchDog Agent")
+        self.root.geometry("760x560")
+        self.root.minsize(700, 500)
+
+        self.events: queue.Queue[tuple[str, object]] = queue.Queue()
+        self.setup_running = False
+
+        self.status_var = None
+        self.progress_var = None
+        self.progress_bar = None
+        self.setup_button = None
+        self.log_box = None
+
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+
+
+        #polling messages from background
+        self.root.after(100, self.process_ui_events)
+
+        if is_installation_valid():
+            self.show_run_screen()
+        else:
+            self.show_setup_screen()
