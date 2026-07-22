@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
-from tkinter import Tk, messagebox, scrolledtext
+from tkinter import Tk, messagebox, scrolledtext, StringVar, DoubleVar
 from tkinter import ttk
 
 
@@ -194,7 +194,7 @@ class WatchDogAgentApp:
             ).pack(anchor="w", pady=(10, 0))
 
 
-        self.status_var = ttk.StringVar(value="Ready to set up the WatchDog Agent.")
+        self.status_var = StringVar(value="Ready to set up the WatchDog Agent.")
         ttk.Label(
             outer, 
             textvariable=self.status_var, 
@@ -202,7 +202,7 @@ class WatchDogAgentApp:
         ).pack(anchor="w", pady=(18, 6))
 
 
-        self.progress_var = ttk.DoubleVar(value=0)
+        self.progress_var = DoubleVar(value=0)
         self.progress_bar = ttk.Progressbar(
             outer, 
             variable=self.progress_var, 
@@ -403,7 +403,7 @@ class WatchDogAgentApp:
             )
 
 
-            self.emit("status", "Installing AI depencies - this can take SEVERAL MINUTES...")
+            self.emit("status", "Installing AI dependencies - this can take SEVERAL MINUTES...")
             self.emit("log", "")
             self.emit("log", "Installing requirements.")
             self.emit("indeterminate", True)
