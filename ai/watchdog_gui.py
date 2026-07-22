@@ -570,7 +570,8 @@ class WatchDogAgentApp:
             )
 
 
-        patch_file = Path(result.stdout.strip())
+        patch_path_text = target_line.split(marker, 1)[1].strip()
+        patch_file = Path(patch_path_text)
 
         if not patch_file.is_file():
             raise RuntimeError(
