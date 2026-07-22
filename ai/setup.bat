@@ -1,3 +1,4 @@
+@REM SUMMARY: Start script AND check if Python is installed
 @echo off
 @REM Only print what we want the user to see
 
