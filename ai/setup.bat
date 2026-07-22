@@ -1,40 +1,55 @@
 @echo off
-
-echo ======================================
-echo Neighbourhood Watchdog Installer
-echo ======================================
-echo.
-
+echo Neighbourhood Watchdog Installer starting
 echo Checking for Python...
 
 python --version >nul 2>&1
 
-IF %ERRORLEVEL% NEQ 0 ( @REM Was a python version
+IF %ERRORLEVEL% NEQ 0 (
     echo Python not found.
-    echo Attempting installation with Winget...
+    echo Attempting installation using Winget...
 
-    winget install Python.Python.3.12 --accept-package-agreements --accept-source-agreements @REM download python with winget
+    @REM Try python installation with winget
+    winget install Python.Python.3.12 --accept-package-agreements --accept-source-agreements
 
-    IF %ERRORLEVEL% NEQ 0 ( @REM Check if installation succeeded
+    @REM Did Winget fail?
+    IF %ERRORLEVEL% NEQ 0 (
         echo Winget installation failed.
-        echo Direct download fallback not yet implemented.
-        @REM TODO: implement fallback download
-        pause
-        exit /b 1
+        echo Attempting direct download from python.org...
+
+        @REM Download the installer
+        powershell -Command "Invoke-WebRequest -Uri https://www.python.org/ftp/python/3.12.11/python-3.12.11-amd64.exe -OutFile python-installer.exe"
+
+        @REM Make sure the download succeeded
+        IF NOT EXIST python-installer.exe (
+            echo Failed to download the Python installer.
+            pause
+            exit /b 1
+        )
+
+        echo Installing Python...
+
+        @REM Install silently
+        python-installer.exe /quiet InstallAllUsers=0 PrependPath=1 Include_test=0
+
+        echo Cleaning up installer...
+        del python-installer.exe
+
     )
 
-    echo Verifying installation...
+    echo Verifying Python installation...
 
     python --version >nul 2>&1
-    @REM check version one last time
+
     IF %ERRORLEVEL% NEQ 0 (
-        echo Python installation could not be verified.
+        echo Python installation failed.
         pause
         exit /b 1
     )
 )
 
-echo Python found.
-echo Starting bootstrap...
+echo Python is ready.
+echo Launching bootstrap...
 
 python "%~dp0bootstrap.py"
+
+pause
