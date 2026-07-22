@@ -66,6 +66,8 @@ def requirements_need_installing():
 
 def main():
     try:
+        print(f"Using Python executable: {sys.executable}")
+        print(f"Python version: {sys.version}")
         create_venv()
 
         if requirements_need_installing():
