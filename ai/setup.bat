@@ -12,7 +12,7 @@ python --version >nul 2>&1
 IF %ERRORLEVEL% EQU 0 (
     echo Python detected.
     echo Launching installer...
-    python "%~dp0bootstrap.py"
+    python "%~dp0watchdog_gui.py"
     pause
     exit /b 0
 )

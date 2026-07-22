@@ -70,12 +70,7 @@ def main():
         print(f"Python version: {sys.version}")
         create_venv()
 
-        if requirements_need_installing():
-            install_requirements()
-        else:
-            print("Requirements already installed.")
-            
-        launch()
+        
 
     except subprocess.CalledProcessError as e:
         print(f"Bootstrap failed: {e}")
