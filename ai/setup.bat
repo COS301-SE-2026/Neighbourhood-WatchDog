@@ -20,5 +20,5 @@ IF %ERRORLEVEL% NEQ 0 (
         exit
     )
 )
-
+@REM Now we run the python script
 python bootstrap.py
