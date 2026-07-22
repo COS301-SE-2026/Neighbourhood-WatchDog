@@ -18,5 +18,4 @@ paths:
 webrtcAdditionalHosts:
   - localhost
 
-webrtcAllowOrigin:
-  - "https://neighbourhood-watch-rf4qu6v8h-teamintrepid.vercel.app"
+webrtcAllowOrigin: "https://neighbourhood-watch-rf4qu6v8h-teamintrepid.vercel.app"
