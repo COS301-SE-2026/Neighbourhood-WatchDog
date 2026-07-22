@@ -718,3 +718,68 @@ class WatchDogAgentApp:
 
         temporary_state.replace(STATE_FILE)
         self.emit("log", f"Installation state saved to: {STATE_FILE}")
+
+
+    def emit(self, event_type: str, payload: object) -> None:
+        self.events.put((event_type, payload))
+
+
+    def process_ui_events(self) -> None:
+
+        try:
+            while True:
+                event_type, payload = self.events.get_nowait()
+
+
+                if  event_type == "log":
+                    self.append_log(str(payload))
+
+                elif event_type == "status" and self.status_var is not None:
+                    self.status_var.set(str(payload))
+
+                elif event_type == "progress":
+                    self.stop_indeterminate_progress()
+                    if self.progress_var is not None:
+                        self.progress_var.set(float(payload))
+
+                elif event_type == "indeterminate":
+                    if bool(payload):
+                        self.start_indeterminate_progress()
+                    else:
+                        self.stop_indeterminate_progress()
+
+                elif event_type == "complete":
+                    self.setup_running = False
+                    self.show_run_screen()
+
+                elif event_type == "error":
+                    self.setup_running = False
+                    self.stop_indeterminate_progress()
+
+                    if self.status_var is not None:
+                        self.status_var.set("Setup failed. Review the log and retry.")
+
+                    self.append_log("")
+                    self.append_log(f"ERROR: {payload}")
+
+                    if (self.setup_button is not None):
+                        self.setup_button.configure(state="normal")
+
+
+
+                    messagebox.showerror(
+                        "WatchDog Agent Setup Failed",
+                        (
+                            "The agent was not fully installed.\n\n"
+                            "Review the setup log for details, correct the issue, "
+                            "and click Set Up Agent to retry."
+
+                        )
+                    )
+
+        except queue.Empty:
+            pass
+
+
+        self.root.after(100, self.process_ui_events)
+                
