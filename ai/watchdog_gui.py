@@ -782,4 +782,124 @@ class WatchDogAgentApp:
 
 
         self.root.after(100, self.process_ui_events)
-                
+
+
+    def start_indeterminate_progress(self) -> None:
+        if self.progress_bar is None:
+            return
+
+        self.progress_bar.configure(mode="indeterminate")
+        self.progress_bar.start(12)
+
+
+    def stop_indeterminate_progress(self) -> None:
+        if self.progress_bar is None:
+            return
+
+        self.progress_bar.stop()
+        self.progress_bar.configure(mode="determinate")
+
+
+    def append_log(self, message: str) -> None:
+        #add text to setup log if the screen is active
+        if self.log_box is None:
+            return
+
+        try:
+            self.log_box.configure(state="normal")
+            self.log_box.insert("end", f"{message}\n")
+            self.log_box.see("end")
+            self.log_box.configure(state="disabled")
+        except Exception:
+            #the screen may have changed while queued events were draining.
+            pass
+
+
+
+    def repair_installation(self) -> None:
+    
+        #remove only the venv and installation marker.
+        #model files are intentionally retained because they are large and may still be valid. Re-running setup validates them before reuse.
+
+        confirmed = messagebox.askyesno(
+            "Repair Installation",
+            (
+                "This removes the local Python environment and setup marker, "
+                "then returns to Setup.\n\n"
+                "Validated model files will be retained.\n\n"
+                "Continue?"
+            ),
+        )
+
+        if not confirmed:
+            return
+
+        try:
+            if VENV_DIR.exists():
+                shutil.rmtree(VENV_DIR)
+
+            STATE_FILE.unlink(missing_ok=True)
+
+        except OSError as error:
+            messagebox.showerror(
+                "Repair Failed",
+                f"Could not reset the installation:\n{error}",
+            )
+            return
+
+        self.show_setup_screen(
+            "Installation reset. Click Set Up Agent to recreate the environment."
+        )
+
+    def on_close(self) -> None:
+        #avoid closing the app during an active installation.
+        if self.setup_running:
+            messagebox.showwarning(
+                "Setup Is Running",
+                (
+                    "The WatchDog Agent is still installing dependencies or "
+                    "downloading models. Please wait for it to finish or fail "
+                    "before closing the application."
+                ),
+            )
+            return
+
+        self.root.destroy()
+
+def main() -> None:
+    if sys.version_info[:2] != SUPPORTED_PYTHON:
+        required = ".".join(map(str, SUPPORTED_PYTHON))
+        current = f"{sys.version_info.major}.{sys.version_info.minor}"
+
+        root = Tk()
+        root.withdraw()
+
+        messagebox.showerror(
+            "Unsupported Python Version",
+            (
+                f"WatchDog Agent requires Python {required}.x.\n\n"
+                f"Current Python: {current}\n\n"
+                "Install Python 3.12 and launch the application again."
+            ),
+        )
+
+        root.destroy()
+        raise SystemExit(1)
+
+    root = Tk()
+
+  
+    style = ttk.Style(root)
+    available_themes = style.theme_names()
+
+    if "vista" in available_themes and sys.platform == "win32":
+        style.theme_use("vista")
+    elif "clam" in available_themes:
+        style.theme_use("clam")
+
+    WatchDogAgentApp(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
