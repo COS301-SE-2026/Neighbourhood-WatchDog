@@ -307,3 +307,171 @@ class WatchDogAgentApp:
             text="Exit", 
             command=self.on_close
         ).pack(side="right")
+
+
+
+    #setup lifecycle
+    def start_setup(self) -> None:
+        #start the installation without blocking the tkninter thread
+
+        if self.setup_running:
+            return
+
+        if sys.version_info[:2] != SUPPORTED_PYTHON:
+            required = ".".join(map(str, SUPPORTED_PYTHON))
+            current = f"{sys.version_info.major}.{sys.version_info.minor}"
+
+            messagebox.showerror(
+                "Unsupported Python Version",
+                (
+                    f"WatchDog Agent currently requries Python {required}.x.\n\n"
+                    f"This GUI was launched with Python {current}.\n\n"
+                    "Install Python 3.12 and relaunch setup.bat."
+                )
+            )
+            return
+
+
+        if not REQUIREMENTS_FILE.is_file():
+            messagebox.showerror(
+                "Missing requirements.txt",
+                f"Could not find:\n{REQUIREMENTS_FILE}"
+            )
+            return
+
+        self.setup_running = True
+        self.setup_button.configure(state="disabled")
+        self.progress_var.set(0)
+
+        self.append_log("Starting WatchDog Agent setup...")
+        self.append_log(f"AI directory: {AI_DIR}")
+        self.append_log("")
+
+        worker = threading.Thread(
+            target=self.run_setup_worker,
+            name="watchdog-setup-worker",
+            daemon=True
+        )
+
+        worker.start()
+
+
+    def run_setup_worker(self) -> None:
+        try:
+            self.emit("status", "Preparing local folders...")
+            self.emit("progress", 3)
+
+            RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+            WEIGHTS_DIR.mkdir(parents=True, exist_ok=True)
+
+            venv_python = get_venv_python()
+
+            if not venv_python.is_file():
+                self.emit("log", "Creating Python virtual environment...")
+                self.emit("progess", 8)
+
+
+                self.run_command_stream(
+                    [sys.executable, "-m", "venv", str(VENV_DIR)],
+                    "Virtual environment creation"
+                )
+            else:
+                self.emit("log", "Existing virtual environment found - reusing it.")
+
+
+            if not venv_python.is_file():
+                raise RuntimeError(
+                    "Virtual environment creation completed, but the venv "
+                    "Python interpreter could not be found."
+                )
+
+
+            self.emit("status", "Upgrading pip...")
+            self.emit("progress", 15)
+            self.run_command_stream(
+                [
+                    str(venv_python), 
+                    "-m", 
+                    "pip", 
+                    "install", 
+                    "--upgrade",
+                    "pip", 
+                    "--disable-pip-version-check"
+                ], 
+                "Pip upgrade"
+            )
+
+
+            self.emit("status", "Installing AI depencies - this can take SEVERAL MINUTES...")
+            self.emit("log", "")
+            self.emit("log", "Installing requirements.")
+            self.emit("indeterminate", True)
+
+
+            try:
+                self.run_command_stream(
+                    [
+                        str(venv_python),
+                        "-m",
+                        "pip", 
+                        "install", 
+                        "-r", 
+                        str(REQUIREMENTS_FILE), 
+                        "--timeout",
+                        "300", 
+                        "--disable-pip-version-check"
+                    ],
+                    "Dependency installation"
+                )
+            finally:
+                self.emit("indeterminate", False)
+
+
+            self.emit("status", "Applying Python 3.12 DeepSORT compatibility patch...")
+            self.emit("progress", 45)
+
+            self.patch_deep_sort(venv_python)
+
+            self.download_model(
+                model=THREAT_MODEL,
+                progess_start=50, 
+                progress_span=23
+            )
+
+
+            self.download_model(
+                model=PERSON_MODEL,
+                progress_start=73, 
+                progress_span=22
+            )
+
+            self.emit("status", "Validating installations...")
+            self.emit("progress", 97)
+
+
+            if not model_is_valid(THREAT_MODEL):
+                raise RuntimeError(f"Threat model validation failed: {THREAT_MODEL_PATH}")
+
+            if not model_is_valid(PERSON_MODEL):
+                raise RuntimeError(f"Person model validation failed: {PERSON_MODEL_PATH}")
+
+
+            self.write_install_state()
+
+            self.emit("progress", 100)
+            self.emit("status", "Setup complete")
+            self.emit("complete", None)
+            
+
+
+
+        except Exception as error:
+            self.emit("indeterminate", False)
+            self.emit("error", str(error))
+            self.emit("log", "")
+            self.emit("log", "=== Detailed setup error ===")
+            self.emit("log", traceback.format_exc())
+            self.emit("log", "============================")
+
+
+    
