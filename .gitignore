@@ -33,3 +33,7 @@ __pycache__/
 .vercel
 
 ~/.cache/
+
+#WatchDog Agent
+ai/.watchdog-agent/
+ai/pipeline/models/weights/*.part
