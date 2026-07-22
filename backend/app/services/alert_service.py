@@ -122,7 +122,7 @@ async def list_alerts_handler(
     end_date: datetime | None = None,
     limit: int = DEFAULT_PAGE_SIZE,
     offset: int = 0,
-) -> list[AlertRes]:
+) -> tuple[list[AlertRes], int]:
     if not neighbourhood_id:
         raise HTTPException(400, "Neighbourhood id is required")
     if not db:
@@ -135,10 +135,7 @@ async def list_alerts_handler(
         raise HTTPException(403, "Not authorised for this neighbourhood")
 
     if start_date and end_date and start_date > end_date:
-        raise HTTPException("400", "start_date must be less than end_date")
-
-    limit = max(1, min(limit, MAX_PAGE_SIZE))
-    offset = max(0, offset)
+        raise HTTPException(400, "start_date must be less than end_date")
 
     try:
         base_stmt = (
@@ -153,13 +150,13 @@ async def list_alerts_handler(
         if camera_id:
             base_stmt = base_stmt.where(Alert.camera_id == camera_id)
         if detection_type:
-            base_stmt = base_stmt.where(Alert.detection_type == detection_type)
+            base_stmt = base_stmt.where(DetectionEvent.detection_type == detection_type)
         if start_date:
             base_stmt = base_stmt.where(Alert.created_at >= start_date)
         if end_date:
             base_stmt = base_stmt.where(Alert.created_at <= end_date)
 
-        total = db.execute(select(func.count).select_from(base_stmt.subquery())).scalar_one()
+        total = db.execute(select(func.count()).select_from(base_stmt.subquery())).scalar_one()
 
         stmt = (base_stmt.order_by(Alert.created_at.desc())
                 .limit(limit)
