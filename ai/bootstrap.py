@@ -43,3 +43,12 @@ def launch():
 
     print("Launching application...")
     subprocess.call([str(python),str(MAIN_FILE)]) #Start the application
+
+def main():
+    createVenv()
+    install_requirements()
+    launch()
+
+
+if __name__ == "__main__":
+    main()
