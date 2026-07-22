@@ -521,14 +521,18 @@ class WatchDogAgentApp:
 
     def patch_deep_sort(self, venv_python: Path) -> None:
 
+        marker = "WATCHDOG_PATCH_TARGET="
+
         locate_command = [
             str(venv_python),
             "-c", 
             (
-                "import deep_sort_realtime;"
-                "from pathlib import Path;"
-                "package = Path(deep_sort_realtime.__file__).resolve().parent;"
-                "print(package / 'embedder' / 'embedder_pythorch.py')"
+                "import importlib.util; "
+                "from pathlib import Path; "
+                "spec = importlib.util.find_spec('deep_sort_realtime'); "
+                "root = Path(next(iter(spec.submodule_search_locations))); "
+                f"print('{marker}' + str(root / 'embedder' / 'embedder_pytorch.py'))"
+
             )
         ]
 
@@ -550,6 +554,21 @@ class WatchDogAgentApp:
                 f"compatibility patch:\n{result.stderr.strip()}"
             )
 
+        target_line = next(
+        (
+            line
+            for line in result.stdout.splitlines()
+            if line.startswith(marker)
+        ),
+        None,
+        )
+
+        if target_line is None:
+            raise RuntimeError(
+                "Could not determine the DeepSORT patch target. "
+                f"Command output was:\n{result.stdout.strip()}"
+            )
+
 
         patch_file = Path(result.stdout.strip())
 
@@ -567,12 +586,8 @@ class WatchDogAgentApp:
             return
 
 
-        patched = content
         patched = patched.replace("import pkg_resources", "import os as _os")
-        patched = patched.replace(
-            "from setuptools import pkg_resources", 
-            "import os as _os"
-        )
+        patched = patched.replace("from setuptools import pkg_resources", "import os as _os")
 
 
 
