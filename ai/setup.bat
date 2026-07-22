@@ -1,26 +1,40 @@
-@REM SUMMARY: Start script AND check if Python is installed
 @echo off
-@REM Only print what we want the user to see
 
 echo ======================================
 echo Neighbourhood Watchdog Installer
 echo ======================================
+echo.
+
+echo Checking for Python...
 
 python --version >nul 2>&1
-@REM check the previous command, if the output errorlvl is != 0 then we need to install python (0 means success and  != 0 means failure)
-IF %ERRORLEVEL% NEQ 0 (
-    echo Python not found.
-    echo Attempting installation...
 
-    winget install Python.Python.3.12
-    @REM Check if the install worked, if failed we print that they need to install python manually
-    IF %ERRORLEVEL% NEQ 0 (
-        echo Winget failed.
-        echo Please install Python manually or try again.
-        @REM This lets the user see the error rather than closing the whole application
+IF %ERRORLEVEL% NEQ 0 ( @REM Was a python version
+    echo Python not found.
+    echo Attempting installation with Winget...
+
+    winget install Python.Python.3.12 --accept-package-agreements --accept-source-agreements @REM download python with winget
+
+    IF %ERRORLEVEL% NEQ 0 ( @REM Check if installation succeeded
+        echo Winget installation failed.
+        echo Direct download fallback not yet implemented.
+        @REM TODO: implement fallback download
         pause
-        exit
+        exit /b 1
+    )
+
+    echo Verifying installation...
+
+    python --version >nul 2>&1
+    @REM check version one last time
+    IF %ERRORLEVEL% NEQ 0 (
+        echo Python installation could not be verified.
+        pause
+        exit /b 1
     )
 )
-@REM Now we run the python script
-python bootstrap.py
+
+echo Python found.
+echo Starting bootstrap...
+
+python "%~dp0bootstrap.py"
