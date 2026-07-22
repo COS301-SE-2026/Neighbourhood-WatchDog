@@ -107,7 +107,7 @@ services:
       - "9997:9997"    # API
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx/mediamtx.yml
-      - /etc/letsencrypt/live/stream-staging.neighbourhoudwatchdog.co.za:/certs:ro
+      - /etc/letsencrypt/live/stream-staging.neighbourhoodwatchdog.co.za:/certs:ro
     restart: always
 
 volumes:
