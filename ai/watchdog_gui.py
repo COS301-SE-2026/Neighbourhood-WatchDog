@@ -238,3 +238,72 @@ class WatchDogAgentApp:
             text="Exit", 
             command=self.on_close 
         ).pack(side="right")
+
+
+    def show_run_screen(self) -> None:
+
+        self.clear_screen()
+
+        outer = ttk.Frame(self.root, padding=24)
+        outer.pack(fill="both", expand=True)
+
+
+        ttk.Label(
+            outer, 
+            text="WatchDog Agent", 
+            font=("Segou UI", 20, "bold")
+        ).pack(anchor="w")
+
+
+        ttk.Label(
+            outer, 
+            text="Setup complete: agent environment is ready.",
+            foreground="#15803d",
+            font=("Segoe UI", 11, "bold")
+        ).pack(anchor="w", pady=(14, 8))
+
+
+        ttk.Label(
+            outer, 
+            text=(
+                "NEED TO ADD STOP/START CONTROLS HERE."
+                "it'll launch the ai/app.py and the local ai service"
+                ), 
+                wraplength=680,
+                justify="left" 
+        ).pack(anchor="w", pady=(0, 24))
+
+
+
+        details = (
+            f"Python environment: {get_venv_python()}\n"
+            f"Threat model: {THREAT_MODEL_PATH.name}"
+            f"({format_bytes(THREAT_MODEL_PATH.stat().st_size)})\n"
+            f"Person model: {PERSON_MODEL_PATH.name}"
+            f"({format_bytes(PERSON_MODEL_PATH.stat().st_size)})\n"
+        )
+
+
+        ttk.Label(
+            outer, 
+            text=details, 
+            justify="left"
+        ).pack(anchor="w")
+
+
+        controls = ttk.Frame(outer)
+        controls.pack(fill="x", side="button", pady=(24, 0))
+
+
+        ttk.Button(
+            controls, 
+            text="Repair Installation", 
+            command=self.repair_installation
+        ).pack(side="left")
+
+
+        ttk.Button(
+            controls, 
+            text="Exit", 
+            command=self.on_close
+        ).pack(side="right")
