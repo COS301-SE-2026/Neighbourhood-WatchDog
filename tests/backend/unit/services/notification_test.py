@@ -201,106 +201,102 @@ class TestDispatchNotifications:
         self.mock_db.execute.assert_not_called()
  
     @pytest.mark.asyncio
-    @patch.dict(os.environ, {"NOTIFICATION_ENABLED": "false"})
     async def test_notifications_disabled_skips(self):
-        await dispatch_notifications(
-            db=self.mock_db,
-            alert_id=self.alert_id,
-            camera_id=self.camera_id,
-            neighbourhood_id=self.neighbourhood_id,
-            detection_type="LOITERING",
-            confidence_score=0.9,
-            frame_timestamp=self.frame_timestamp,
-        )
-        self.mock_db.execute.assert_not_called()
+        with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "false"}):
+            await dispatch_notifications(
+                db=self.mock_db,
+                alert_id=self.alert_id,
+                camera_id=self.camera_id,
+                neighbourhood_id=self.neighbourhood_id,
+                detection_type="LOITERING",
+                confidence_score=0.9,
+                frame_timestamp=self.frame_timestamp,
+            )
+            self.mock_db.execute.assert_not_called()
  
     @pytest.mark.asyncio
-    @patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"})
     @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
     async def test_notifies_all_residents_with_phone_numbers(self, mock_send):
         residents = [self._make_resident(), self._make_resident()]
         self.mock_db.execute.return_value.scalars.return_value.all.return_value = residents
- 
-        await dispatch_notifications(
-            db=self.mock_db,
-            alert_id=self.alert_id,
-            camera_id=self.camera_id,
-            neighbourhood_id=self.neighbourhood_id,
-            detection_type="LOITERING",
-            confidence_score=0.9,
-            frame_timestamp=self.frame_timestamp,
-        )
- 
-        assert mock_send.call_count == 2
+        with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}):
+            await dispatch_notifications(
+                db=self.mock_db,
+                alert_id=self.alert_id,
+                camera_id=self.camera_id,
+                neighbourhood_id=self.neighbourhood_id,
+                detection_type="LOITERING",
+                confidence_score=0.9,
+                frame_timestamp=self.frame_timestamp,
+            )
+    
+            assert mock_send.call_count == 2
  
     @pytest.mark.asyncio
-    @patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"})
     @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
     async def test_skips_residents_without_phone_number(self, mock_send):
         residents = [self._make_resident(phone_number=None), self._make_resident()]
         self.mock_db.execute.return_value.scalars.return_value.all.return_value = residents
- 
-        await dispatch_notifications(
-            db=self.mock_db,
-            alert_id=self.alert_id,
-            camera_id=self.camera_id,
-            neighbourhood_id=self.neighbourhood_id,
-            detection_type="LOITERING",
-            confidence_score=0.9,
-            frame_timestamp=self.frame_timestamp,
-        )
- 
-        assert mock_send.call_count == 1
+
+        with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}):
+            await dispatch_notifications(
+                db=self.mock_db,
+                alert_id=self.alert_id,
+                camera_id=self.camera_id,
+                neighbourhood_id=self.neighbourhood_id,
+                detection_type="LOITERING",
+                confidence_score=0.9,
+                frame_timestamp=self.frame_timestamp,
+            )
+    
+            assert mock_send.call_count == 1
  
     @pytest.mark.asyncio
-    @patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"})
     async def test_no_residents_found_does_not_error(self):
         self.mock_db.execute.return_value.scalars.return_value.all.return_value = []
- 
-        await dispatch_notifications(
-            db=self.mock_db,
-            alert_id=self.alert_id,
-            camera_id=self.camera_id,
-            neighbourhood_id=self.neighbourhood_id,
-            detection_type="LOITERING",
-            confidence_score=0.9,
-            frame_timestamp=self.frame_timestamp,
-        )
+        with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}):
+            await dispatch_notifications(
+                db=self.mock_db,
+                alert_id=self.alert_id,
+                camera_id=self.camera_id,
+                neighbourhood_id=self.neighbourhood_id,
+                detection_type="LOITERING",
+                confidence_score=0.9,
+                frame_timestamp=self.frame_timestamp,
+            )
  
     @pytest.mark.asyncio
-    @patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"})
     async def test_db_error_fetching_residents_is_handled(self):
         self.mock_db.execute.side_effect = Exception("db unavailable")
- 
-        await dispatch_notifications(
-            db=self.mock_db,
-            alert_id=self.alert_id,
-            camera_id=self.camera_id,
-            neighbourhood_id=self.neighbourhood_id,
-            detection_type="LOITERING",
-            confidence_score=0.9,
-            frame_timestamp=self.frame_timestamp,
-        )
+        with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}):
+            await dispatch_notifications(
+                db=self.mock_db,
+                alert_id=self.alert_id,
+                camera_id=self.camera_id,
+                neighbourhood_id=self.neighbourhood_id,
+                detection_type="LOITERING",
+                confidence_score=0.9,
+                frame_timestamp=self.frame_timestamp,
+            )
  
     @pytest.mark.asyncio
-    @patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"})
     @patch("app.services.notification_service._log_notification")
     @patch("app.services.notification_service._send_whatsapp", return_value=(False, "twilio error"))
     async def test_failed_send_is_logged(self, mock_send, mock_log):
         residents = [self._make_resident()]
         self.mock_db.execute.return_value.scalars.return_value.all.return_value = residents
- 
-        await dispatch_notifications(
-            db=self.mock_db,
-            alert_id=self.alert_id,
-            camera_id=self.camera_id,
-            neighbourhood_id=self.neighbourhood_id,
-            detection_type="LOITERING",
-            confidence_score=0.9,
-            frame_timestamp=self.frame_timestamp,
-        )
- 
-        mock_log.assert_called_once()
-        args = mock_log.call_args.args
-        assert args[4] is False
-        assert args[5] == "twilio error"
+        with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}):
+            await dispatch_notifications(
+                db=self.mock_db,
+                alert_id=self.alert_id,
+                camera_id=self.camera_id,
+                neighbourhood_id=self.neighbourhood_id,
+                detection_type="LOITERING",
+                confidence_score=0.9,
+                frame_timestamp=self.frame_timestamp,
+            )
+    
+            mock_log.assert_called_once()
+            args = mock_log.call_args.args
+            assert args[4] is False
+            assert args[5] == "twilio error"
