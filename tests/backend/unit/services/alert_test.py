@@ -151,6 +151,12 @@ class TestListAlerts:
         alert.detection_event = event
         return alert
 
+    def _mock_query_results(self, alerts, total=None):
+        self.mock_db.execute.return_value.scalars.return_value.all.return_value = alerts
+        self.mock_db.execute.return_value.scalar_one.return_value = (
+            total if total is not None else len(alerts)
+        )
+
     @pytest.mark.asyncio
     async def test_missing_neighbourhood_id_raises_400(self):
         with pytest.raises(HTTPException) as exc:
@@ -188,9 +194,9 @@ class TestListAlerts:
     @pytest.mark.asyncio
     async def test_list_alerts_happy_path(self):
         alerts = [self._make_alert("OPEN"), self._make_alert("ACKNOWLEDGED")]
-        self.mock_db.execute.return_value.scalars.return_value.all.return_value = alerts
+        self._mock_query_results(alerts)
 
-        results = await list_alerts_handler(
+        results, total = await list_alerts_handler(
             self.claims["custom:neighbourhood_id"],
             self.mock_db,
             self.claims,
@@ -198,4 +204,95 @@ class TestListAlerts:
         )
 
         assert len(results) == 2
-        assert self.mock_db.execute.call_count == 1
+        assert total == 2
+        assert self.mock_db.execute.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_filters_by_camera_id(self):
+        alert = self._make_alert("OPEN")
+        self._mock_query_results([alert], total=1)
+        results, total = await list_alerts_handler(
+            self.claims["custom:neighbourhood_id"],
+            self.mock_db,
+            self.claims,
+            None,
+            camera_id=alert.camera_id,
+        )
+
+        assert len(results) == 1
+        assert total == 1
+    
+    @pytest.mark.asyncio
+    async def test_filters_by_detetction_type(self):
+        alert = self._make_alert("OPEN")
+        self._mock_query_results([alert], total=1)
+        results, total = await list_alerts_handler(
+            self.claims["custom:neighbourhood_id"],
+            self.mock_db,
+            self.claims,
+            None,
+            detection_type="HUMAN_PRESENCE",
+        )
+
+        assert len(results) == 1
+        assert results[0].detection_type == "HUMAN_PRESENCE"
+
+    @pytest.mark.asyncio
+    async def test_filters_by_status(self):
+        alert = self._make_alert("OPEN")
+        self._mock_query_results([alert], total=1)
+        results, total = await list_alerts_handler(
+            self.claims["custom:neighbourhood_id"],
+            self.mock_db,
+            self.claims,
+            "OPEN",
+        )
+
+        assert len(results) == 1
+        assert results[0].status == "OPEN"
+
+    @pytest.mark.asyncio
+    async def test_date_range_is_applied(self):
+        alert = self._make_alert("OPEN")
+        self._mock_query_results([alert], total=1)
+        results, total = await list_alerts_handler(
+            self.claims["custom:neighbourhood_id"],
+            self.mock_db,
+            self.claims,
+            None,
+            start_date=datetime(2026,1,1, tzinfo=timezone.utc),
+            end_date=datetime(2026,12,31, tzinfo=timezone.utc),
+        )
+
+        assert len(results) == 1
+
+    @pytest.mark.asyncio
+    async def test_start_date_after_end_date_raises_400(self):
+        start=datetime(2026,7,10, tzinfo=timezone.utc)
+        end=datetime(2026,7,1, tzinfo=timezone.utc)
+
+        with pytest.raises(HTTPException) as exc:
+            await list_alerts_handler(
+                self.claims["custom:neighbourhood_id"],
+                self.mock_db,
+                self.claims,
+                None,
+                start_date=start,
+                end_date=end,
+            )
+
+        assert exc.value.status_code == 400
+        assert self.mock_db.execute.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_empty_result_is_valid(self):
+        self._mock_query_results([], total=0)
+        results, total = await list_alerts_handler(
+            self.claims["custom:neighbourhood_id"],
+            self.mock_db,
+            self.claims,
+            None,
+        )
+
+        assert results == []
+        assert total == 0
