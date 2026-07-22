@@ -229,7 +229,7 @@ class TestPagination:
         assert p.total == 42
         assert p.limit == 25
         assert p.offset == 0
-        assert p.has_more == True
+        assert p.has_more
 
     def test_missin_fields_raises_validation_error(self):
         with pytest.raises(ValidationError):
