@@ -8,6 +8,8 @@ VENV_DIR = PROJECT_ROOT / ".venv"
 REQUIREMENTS = PROJECT_ROOT / "requirements.txt"
 MAIN_FILE = PROJECT_ROOT / "main.py" #THIS IS THE MAIN FILE THAT WILL BE USED TO START THE APPLICATION
 
+MARKER_FILE = VENV_DIR / "requirements_installed" #used to check if the requirements were installed already
+
 def createVenv():
     print("Checking virtual environment...")
     if VENV_DIR.exists():
@@ -36,6 +38,7 @@ def install_requirements(): # Install requirements to python environment
     subprocess.check_call([str(python),"-m","pip","install","-r",str(REQUIREMENTS)]) #installs all requirements
 
     print("Dependencies installed")
+    MARKER_FILE.touch() #create marker file, used to check later
 
 def launch():
 
@@ -46,7 +49,10 @@ def launch():
 
 def main():
     createVenv()
-    install_requirements()
+    if not MARKER_FILE.exists():
+        install_requirements()
+    else:
+        print("requirements already installed, welcome back")
     launch()
 
 
