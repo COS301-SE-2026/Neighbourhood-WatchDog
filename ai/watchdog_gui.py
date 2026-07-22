@@ -6,6 +6,7 @@ from tkinter import ttk
 
 
 import json
+import os
 import queue
 import re
 import shutil
@@ -474,4 +475,246 @@ class WatchDogAgentApp:
             self.emit("log", "============================")
 
 
-    
+
+    def run_command_stream(self, command: list[str], description: str) -> None:
+        #running a command and streams the output lines to the gui log
+
+        self.emit("log", f"> {description}")
+        self.emit("log", f"$ {' '.join(command)}")
+
+
+        environment = os.environ.copy()
+        environment["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
+
+
+        process = subprocess.Popen(
+            command, 
+            cwd=AI_DIR,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8", 
+            errors="replace", 
+            bufsize=1, 
+            env=environment
+
+        )
+
+
+        assert process.stdout is not None
+
+
+        for line in process.stdout:
+            cleaned = line.rstrip()
+            if cleaned:
+                self.emit("log", cleaned)
+
+        return_code = process.wait()
+
+
+        if return_code != 0:
+            raise RuntimeError(
+                f"{description} failed with exit code {return_code}."
+                "Check the setup log above for the package that failed."
+            )
+
+
+    def patch_deep_sort(self, venv_python: Path) -> None:
+
+        locate_command = [
+            str(venv_python),
+            "-c", 
+            (
+                "import deep_sort_realtime;"
+                "from pathlib import Path;"
+                "package = Path(deep_sort_realtime.__file__).resolve().parent;"
+                "print(package / 'embedder' / 'embedder_pythorch.py')"
+            )
+        ]
+
+
+        result = subprocess.run(
+            locate_command, 
+            cwd = AI_DIR,
+            text=True, 
+            capture_output=True,
+            encoding="utf-8", 
+            errors="replace", 
+            check=False
+        )
+
+
+        if result.returncode != 0:
+            raise RuntimeError(
+                "Could not locate deep_sort_realtime for the Python 3.12"
+                f"compatibility patch:\n{result.stderr.strip()}"
+            )
+
+
+        patch_file = Path(result.stdout.strip())
+
+        if not patch_file.is_file():
+            raise RuntimeError(
+                f"DeepSORT patch target was not found:\n{patch_file}"
+
+            )
+
+        content = patch_file.read_text(encoding="utf-8")
+
+
+        if "pkg_resources" not in content:
+            self.emit("log", "DeepSORT compatibility patch is already applied or not required.")
+            return
+
+
+        patched = content
+        patched = patched.replace("import pkg_resources", "import os as _os")
+        patched = patched.replace(
+            "from setuptools import pkg_resources", 
+            "import os as _os"
+        )
+
+
+
+        patched = re.sub(
+            r"pkg_resources\.resource_filename\(\s*['\"]deep_sort_realtime['\"]\s*,\s*",
+            "_os.path.join(_os.path.dirname(_os.path.dirname(__file__)), ",
+            patched 
+        )
+
+
+
+        if patched == content or "pkg_resources" in patched:
+            raise RuntimeError(
+                "The DeepSORT compatibility patch could not safely transform "
+                "embedder_pytorch.py. Review the installed package source."
+            )
+
+
+        patch_file.write_text(patched, encoding="utf-8")
+        self.emit("log", "Applied DeepSORT Python 3.12 compatibility patch.")
+
+
+
+    def download_model(self, model: dict, progress_start: float, progress_span: float) -> None:
+
+        model_path: Path = model["path"]
+        expected_bytes: int = model["expected_bytes"]
+
+        if model_is_valid(model):
+            self.emit("log", f"{model['name']} already exists and passed size validation - skipping.")
+            self.emit("progress", progress_start + progress_span)
+
+            return
+
+
+        model_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path = model_path.with_suffix(model_path.suffix + ".part")
+
+        if temporary_path.exists():
+            temporary_path.unlink()
+
+        self.emit("status", f"Downloading {model['name']}...")
+        self.emit("log", f"Downloading {model['name']} ({format_bytes(expected_bytes)})...")
+
+        request = urllib.request.Request(
+            model["url"],
+            headers={"User-Agent": "Neighbourhood-WatchDog-Agent/1.0"},
+        )
+
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                header_size = response.headers.get("Content-Length")
+
+                if header_size:
+                    reported_size = int(header_size)
+
+                    if reported_size != expected_bytes:
+                        self.emit(
+                            "log",
+                            (
+                                "Warning: server-reported size "
+                                f"({format_bytes(reported_size)}) differs from "
+                                f"the expected release size "
+                                f"({format_bytes(expected_bytes)}). "
+                                "The final local file size will still be validated."
+                            )
+                        )
+
+                downloaded = 0
+                chunk_size = 1024 * 256  # 256 kb
+
+                with temporary_path.open("wb") as output:
+                    while True:
+                        chunk = response.read(chunk_size)
+
+                        if not chunk:
+                            break
+
+                        output.write(chunk)
+                        downloaded += len(chunk)
+
+                        ratio = min(downloaded / expected_bytes, 1)
+                        overall_progress = progress_start + (progress_span * ratio)
+
+                        self.emit("progress", overall_progress)
+                        self.emit(
+                            "status",
+                            (
+                                f"Downloading {model_path.name}: "
+                                f"{format_bytes(downloaded)} / "
+                                f"{format_bytes(expected_bytes)}"
+                            )
+                        )
+
+        except urllib.error.URLError as error:
+            raise RuntimeError(
+                f"Could not download {model['name']}.\n"
+                f"URL: {model['url']}\n"
+                f"Reason: {error.reason}"
+            ) from error
+
+        except OSError as error:
+            raise RuntimeError(f"Could not save {model['name']} to {temporary_path}:\n{error}") from error
+
+        actual_size = temporary_path.stat().st_size
+
+        if actual_size != expected_bytes:
+            temporary_path.unlink(missing_ok=True)
+
+            raise RuntimeError(
+                f"{model['name']} download is incomplete or invalid. "
+                f"Expected {expected_bytes} bytes but received {actual_size} bytes."
+            )
+
+        temporary_path.replace(model_path)
+
+        self.emit("log", f"Downloaded and validated {model['name']}.")
+        self.emit("progress", progress_start + progress_span)
+
+
+
+    def write_install_state(self) -> None:
+
+        state = {
+            "schema_version": INSTALL_SCHEMA_VERSION, 
+            "python_version": sys.version.split()[0], 
+            "installed_at": datetime.now(timezone.utc).isoformat(),
+            "models": {
+                THREAT_MODEL_PATH.name: THREAT_MODEL_PATH.stat().st_size, 
+                PERSON_MODEL_PATH.name: PERSON_MODEL_PATH.stat().st_size
+            }
+        }
+
+
+        temporary_state = STATE_FILE.with_suffix(".json.part")
+
+
+        temporary_state.write_text(
+            json.dumps(state, indent=2), 
+            encoding="utf-8"
+        )
+
+
+        temporary_state.replace(STATE_FILE)
+        self.emit("log", f"Installation state saved to: {STATE_FILE}")
