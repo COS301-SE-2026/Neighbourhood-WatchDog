@@ -587,6 +587,7 @@ class WatchDogAgentApp:
             return
 
 
+        patched = content
         patched = patched.replace("import pkg_resources", "import os as _os")
         patched = patched.replace("from setuptools import pkg_resources", "import os as _os")
 
