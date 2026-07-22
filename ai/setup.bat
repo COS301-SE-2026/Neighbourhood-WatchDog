@@ -15,7 +15,8 @@ IF %ERRORLEVEL% NEQ 0 (
     @REM Check if the install worked, if failed we print that they need to install python manually
     IF %ERRORLEVEL% NEQ 0 (
         echo Winget failed.
-        echo Please install Python manually.
+        echo Please install Python manually or try again.
+        @REM This lets the user see the error rather than closing the whole application
         pause
         exit
     )
