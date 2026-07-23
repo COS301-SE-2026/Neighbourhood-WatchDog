@@ -886,6 +886,25 @@ class WatchDogAgentApp:
                         )
                     )
 
+                elif event_type == "agent_log":
+                    self.append_agent_log(str(payload))
+
+                elif event_type == "agent_health":
+                    self.health_check_in_progress = False
+
+                    if (bool(payload) and self.agent_process is not None and self.agent_process.poll()) is None:
+                        if self.agent_status != "running":
+                            self.set_agent_ui_state("running", "Running: local AI service is healthy")
+
+                    elif event_type == "agent_stop_error":
+                        self.exit_after_stop = False
+                        self.set_agent_ui_state("error", "Could not stop service")
+
+                        self.append_agent_log(f"ERROR: {payload}")
+
+                        messagebox.showerror("Agent Stop Failed", str(payload))
+
+
         except queue.Empty:
             pass
 
@@ -1287,6 +1306,27 @@ class WatchDogAgentApp:
                 ),
             )
             return
+
+        agent_is_running = (self.agent_process is not None and self.agent_process.poll() is None)
+
+        if agent_is_running:
+            should_stop = messagebox.askyesno(
+                "Stop WatchDog Agent?", 
+                (
+                    "The local WatchDog AI service is still running.\n\n"
+                    "Stop the service and exit?\n\n"
+                    "Choosing No keeps the GUI open."
+                )
+            )
+
+            if not should_stop:
+                return
+
+            self.exit_after_stop = True
+            self.stop_agent()
+            return
+
+        
 
         self.root.destroy()
 
