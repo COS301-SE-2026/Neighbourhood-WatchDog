@@ -28,7 +28,9 @@ def list_enabled_cameras(db: DbSession) -> dict:
             {
                 "id": str(camera.id), 
                 "rtsp_url": camera.rtsp_url, 
-                "enabled": camera.enabled
+                "enabled": camera.enabled, 
+                "neighbourhood_id": str(camera.neighbourhood_id), 
+                "confidence_threshold": camera.confidence_threshold
             }
             for camera in cameras
         ]

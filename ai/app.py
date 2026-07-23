@@ -1,3 +1,5 @@
+from camera_runtime import CameraSpec, CameraSupervisor
+
 import os
 import cv2
 import time
@@ -23,12 +25,12 @@ person_model = YOLO("pipeline/models/weights/yolov8n.pt")
 
 
 
-#cache for the camera settings, refresh every 30 seconds ---- still need to test
-_camera_settings: dict =  {
-    "confidence_threshold": 0.5,
-    "zones": []
-}
-_settings_lock = threading.Lock()
+# #cache for the camera settings, refresh every 30 seconds ---- still need to test
+# _camera_settings: dict =  {
+#     "confidence_threshold": 0.5,
+#     "zones": []
+# }
+# _settings_lock = threading.Lock()
 
 
 
@@ -36,10 +38,14 @@ _settings_lock = threading.Lock()
 
 
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
-CAMERA_ID = "2"
-NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001"
-RTSP_URL = os.getenv("RTSP_URL", "rtsp://Intrepid:password1234@192.168.3.68:554/stream2")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8001")
+INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "dev-token")
+MEDIAMTX_RTSP_URL = os.getenv("MEDIAMTX_RTSP_URL", "rtsp://127.0.0.1:8554")
+
+_model_lock = threading.Lock()
+# CAMERA_ID = "2"
+# NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001"
+# RTSP_URL = os.getenv("RTSP_URL", "rtsp://Intrepid:password1234@192.168.3.68:554/stream2")
 
 
 
@@ -98,14 +104,18 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
         pass
 
 
-def _extract_detections(frame) -> tuple:
+def _extract_detections(frame, confidence_threshold: float, zones: list | None = None) -> tuple[list, list]:
     """Convert YOLO results to DeepSort detection format."""
 
+    zones = zones or []
 
-    #running yolo on frame, applying the confidendce threshold and zone filters
-    with _settings_lock:
-        threshold = _camera_settings["confidence_threshold"]
-        zones = list(_camera_settings["zones"])
+
+
+    # #running yolo on frame, applying the confidendce threshold and zone filters
+    # with _settings_lock:
+    #     threshold = _camera_settings["confidence_threshold"]
+    #     zones = list(_camera_settings["zones"])
+
 
 
     frame_h, frame_w = frame.shape[:2]
@@ -114,37 +124,43 @@ def _extract_detections(frame) -> tuple:
     person_detections = []
     weapon_detections = []
 
-    #threat detection
-    threat_results = threat_model.predict(
-        frame,
-        imgsz=640,
-        conf=threshold,
-        verbose=False
-    )
+
+    with _model_lock:
+
+        #threat detection
+        threat_results = threat_model.predict(
+            frame,
+            imgsz=640,
+            conf=confidence_threshold,
+            verbose=False
+        )
+
+
+        #person detection
+        person_results = person_model.predict(
+            frame,
+            imgsz=640,
+            conf=confidence_threshold,
+            classes=[0],
+            verbose=False
+            )
 
     for box in threat_results[0].boxes:
         x1, y1, x2, y2 = box.xyxy[0].tolist()
-        conf = float(box.conf[0])
+        confidence = float(box.conf[0])
 
         label = threat_model.names[int(box.cls[0])] # represents gun, knife, grenade
 
-        weapon_detections.append(([x1, y1, x2 - x1, y2 - y1], conf, label))
+        weapon_detections.append(([x1, y1, x2 - x1, y2 - y1], confidence, label))
 
 
 
-    #person detection
-    person_results = person_model.predict(
-        frame,
-        imgsz=640,
-        conf=threshold,
-        classes=[0],
-        verbose=False
-        )
+    
     
     for box in person_results[0].boxes:
         x1, y1, x2, y2 = box.xyxy[0].tolist()
-        conf = float(box.conf[0])
-        person_detections.append(([x1, y1, x2 - x1, y2 - y1], conf, "person"))
+        confidence = float(box.conf[0])
+        person_detections.append(([x1, y1, x2 - x1, y2 - y1], confidence, "person"))
 
 
 
