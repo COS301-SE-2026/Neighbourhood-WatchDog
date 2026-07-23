@@ -94,7 +94,7 @@ def model_is_valid(model: dict) -> bool:
 def is_installation_valid() -> bool:
 
     vevn_python = get_venv_python()
-    if not vevn_python:
+    if not vevn_python.is_file():
         return False
 
     if not model_is_valid(THREAT_MODEL):
@@ -293,11 +293,11 @@ class WatchDogAgentApp:
         status_row.pack(fill="x", pady=(0, 12))
 
 
-        self.agent_status_var = StringVar(value="&#9679; Stopped")
+        self.agent_status_var = StringVar(value="&#9679;" "Stopped")
         self.agent_status_label = ttk.Label(
             status_row, 
             textvariable=self.agent_status_var, 
-            foreground="b91c1c", 
+            foreground="#b91c1c", 
             font=("Segoe UI", 11, "bold")
 
         )
@@ -341,7 +341,7 @@ class WatchDogAgentApp:
             state="disabled", 
             font=("Consolas", 9) 
         )
-        self.agent_log_box(fill="both", expand=True, pady=(6, 12))
+        self.agent_log_box.pack(fill="both", expand=True, pady=(6, 12))
 
 
 
@@ -892,7 +892,7 @@ class WatchDogAgentApp:
                 elif event_type == "agent_health":
                     self.health_check_in_progress = False
 
-                    if (bool(payload) and self.agent_process is not None and self.agent_process.poll()) is None:
+                    if (bool(payload) and self.agent_process is not None and self.agent_process.poll() is None):
                         if self.agent_status != "running":
                             self.set_agent_ui_state("running", "Running: local AI service is healthy")
 
@@ -992,7 +992,7 @@ class WatchDogAgentApp:
     def append_agent_log(self, message: str) -> None:
         #appends the ai service line to the run screen live log
 
-        if self.agent_log_box is not None:
+        if self.agent_log_box is None:
             return
 
         try:
@@ -1025,7 +1025,7 @@ class WatchDogAgentApp:
 
         if not venv_python.is_file():
             messagebox.showerror(
-                "Missing Python Environment"
+                "Missing Python Environment. "
                 f"Could not find the agent interpreter:\n{venv_python}"
             )
             return
@@ -1040,7 +1040,8 @@ class WatchDogAgentApp:
             "--host", 
             "0.0.0.0", 
             "--port", 
-            "8001"
+            "8001", 
+            "--no-access-log"
         ]
 
 
@@ -1093,7 +1094,7 @@ class WatchDogAgentApp:
 
         threading.Thread(
             target=self.read_agent_output, 
-            args=(self.agent_process), 
+            args=(self.agent_process,), 
             name="watchdog-agent-log-reader", 
             daemon=True
 
@@ -1163,7 +1164,8 @@ class WatchDogAgentApp:
 
             return
 
-        if not self.health_check_in_progress:
+
+        if (self.agent_status == "starting" and not self.health_check_in_progress):
             self.health_check_in_progress = True
 
             threading.Thread(
@@ -1212,7 +1214,7 @@ class WatchDogAgentApp:
 
         threading.Thread(
             target=self.terminate_agent_process_tree, 
-            args=(process), 
+            args=(process,), 
             name="watchdog-agent-stop-worker", 
             daemon=True
             
