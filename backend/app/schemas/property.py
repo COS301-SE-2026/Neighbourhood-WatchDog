@@ -49,3 +49,12 @@ class PropertyDetailedRes(BaseModel):
     users: list[UserSummary]
     neighbourhood: Optional[NeighbourhoodSummary]
     cameras: list[CameraSummary]
+
+class LinkPropertyToken(BaseModel):
+    token: str
+    expires_at: int
+
+class LinkPropertyTokenRes(BaseModel):
+    status: int
+    message: str | None = None
+    data: LinkPropertyToken | None = None
