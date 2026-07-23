@@ -1,5 +1,5 @@
 from pydantic import BaseModel, StringConstraints
-from typing import Annotated, Optional
+from typing import Annotated
 from app.models.property import PropertyTypeEnum
 from uuid import UUID
 from datetime import datetime
@@ -49,12 +49,3 @@ class PropertyDetailedRes(BaseModel):
     users: list[UserSummary]
     neighbourhood: NeighbourhoodSummary | None = None
     cameras: list[CameraSummary]
-
-class LinkPropertyToken(BaseModel):
-    token: str
-    expires_at: int
-
-class LinkPropertyTokenRes(BaseModel):
-    status: int
-    message: str | None = None
-    data: LinkPropertyToken | None = None
