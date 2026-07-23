@@ -969,7 +969,120 @@ class WatchDogAgentApp:
                 )
             )
 
-            
+
+    def append_agent_log(self, message: str) -> None:
+        #appends the ai service line to the run screen live log
+
+        if self.agent_log_box is not None:
+            return
+
+        try:
+            self.agent_log_box.configure(state="normal")
+            self.agent_log_box.insert("end", f"{message}\n")
+            self.agent_log_box.see("end")
+            self.agent_log_box.configure(state="disabled")
+        except Exception:
+            pass
+
+
+    def start_agent(self) -> None:
+        #launches the ai/app.py through uvicorn
+
+        if not is_installation_valid():
+            messagebox.showerror(
+                "Installation needs repair", 
+                (
+                    "The WatchDog Agent environment is incomplete. "
+                    "Use Repair Installation before starting the service."
+                )
+            )
+            return
+
+        if self.agent_process is not None and self.agent_process.poll() is None:
+            return
+
+
+        venv_python = get_venv_python()
+
+        if not venv_python.is_file():
+            messagebox.showerror(
+                "Missing Python Environment"
+                f"Could not find the agent interpreter:\n{venv_python}"
+            )
+            return
+        
+
+        command = [
+            str(venv_python), 
+            "-u", 
+            "-m", 
+            "uvicorn", 
+            "app:app", 
+            "--host", 
+            "0.0.0.0", 
+            "--port", 
+            "8001"
+        ]
+
+
+        environment = os.environ.copy()
+        environment["PYTHONUNBUFFERED"] = "1"
+        environment["MKL_THREADING_LAYER"] = "GNU"
+
+        environment.setdefault("BACKEND_URL", "http://localhost:8000")
+
+        popen_options = {
+            "cwd": AI_DIR, 
+            "stdout": subprocess.PIPE, 
+            "stderr": subprocess.STDOUT, 
+            "text": True, 
+            "encoding": "utf-8", 
+            "errors": "replace", 
+            "bufsize": 1, 
+            "env": environment
+
+        }
+
+        if sys.platform == "win32":
+            popen_options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+        else:
+            popen_options["start_new_session"] = True
+
+
+        try:
+            self.agent_process = subprocess.Popen(command, **popen_options)
+        except OSError as error:
+            self.agent_process = None
+            self.set_agent_ui_state("error", "Could not start agent")
+            messagebox.showerror(
+                "Agent Start Failed",
+                f"Could not start the local AI service:\n{error}"
+            )
+            return
+
+        self.agent_stop_requested = False
+        self.health_check_in_progress = False
+
+        self.append_agent_log("")
+        self.append_agent_log("============================")
+        self.append_agent_log("Starting WatchDog AI Service...")
+        self.append_agent_log(f"$ {' '.join(command)}")
+        self.append_agent_log("============================")
+
+
+        self.set_agent_ui_state("starting", "Starting local AI service...")
+
+        threading.Thread(
+            target=self.read_agent_output, 
+            args=(self.agent_process), 
+            name="watchdog-agent-log-reader", 
+            daemon=True
+
+        ).start()
+
+
+        self.root.after(300, self.monitor_agent_process)
+        
 
 
     def repair_installation(self) -> None:
