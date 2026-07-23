@@ -2,7 +2,7 @@ from pydantic import ValidationError
 import pytest
 from uuid import uuid4
 from datetime import datetime, timezone
-from app.schemas.alert import AlertRes, AcknowledgeAlertRes, ListAlertsRes
+from app.schemas.alert import AlertRes, AcknowledgeAlertRes, ListAlertsRes, Pagination
 
 def _make_alert_res(**overrides):
     base = {
@@ -207,3 +207,32 @@ class TestListAlertsRes:
         """Each item in data must be a valid AlertRes"""
         with pytest.raises(ValidationError):
             ListAlertsRes(status=200, data=["not-an-alert-res"])
+
+    def test_pagination_none_by_default(self):
+        """Pagination is optional"""
+        res = ListAlertsRes(status=200, data=[])
+        assert res.pagination is None
+
+    def test_with_pagination(self):
+        pagination = Pagination(total=2, limit=25, offset=0, has_more=False)
+        res = ListAlertsRes(status=200, data=[], pagination=pagination)
+        assert res.pagination.total == 2
+        assert res.pagination.has_more is False
+
+class TestPagination:
+    def test_valid_pagination(self):
+        p = Pagination(total=42
+                       , limit=25
+                       , offset=0
+                       , has_more=True)
+        
+        assert p.total == 42
+        assert p.limit == 25
+        assert p.offset == 0
+        assert p.has_more
+
+    def test_missin_fields_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            Pagination(total=42
+                       , offset=0
+                       , has_more=True)
