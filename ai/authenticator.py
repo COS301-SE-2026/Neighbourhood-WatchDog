@@ -25,6 +25,8 @@ class WatchDogPinPage(ttk.Frame):
         self.log.see("end")
         self.log.config(state="disabled")
 
+        self.update_idletasks()
+
         # API endpoint (NEEDS TO BE CHANGED IN THE FUTURE!!!)
         base_url = "http://localhost:8000"
         url = f"{base_url}/pairing-token/{self.pairing_pin}"
