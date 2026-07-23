@@ -293,7 +293,7 @@ class WatchDogAgentApp:
         status_row.pack(fill="x", pady=(0, 12))
 
 
-        self.agent_status_var = StringVar(value="&#128309; Stopped")
+        self.agent_status_var = StringVar(value="&#9679; Stopped")
         self.agent_status_label = ttk.Label(
             status_row, 
             textvariable=self.agent_status_var, 
@@ -923,6 +923,53 @@ class WatchDogAgentApp:
             #the screen may have changed while queued events were draining.
             pass
 
+
+    def set_agent_ui_state(self, state: str, message: str) -> None:
+        #update run screen status and its button availabilitty
+        self.agent_status = state
+
+        colours = {
+            "stopped": "#b91c1c", 
+            "starting": "#b45309", 
+            "running": "#15803d", 
+            "stopping": "#b45309", 
+            "error": "#b91c1c"
+        }
+
+        status_icons = {
+            "stopped": "&#9679;", 
+            "starting": "&#9679;", 
+            "running": "&#9679;", 
+            "stopping": "&#9679;", 
+            "error": "&#9679;"
+        }
+
+        if self.agent_status_var is not None:
+            self.agent_status_var.set(f"{status_icons[state]} {message}")
+
+        if self.agent_status_label is not None:
+            self.agent_status_label.configure(foreground=colours.get(state, "#111827"))
+
+        if self.start_agent_button is not None:
+            self.start_agent_button.configure(
+                state=(
+                    "normal"
+                    if state in {"stopped", "error"}
+                    else "disabled"
+                )
+            )
+
+
+        if self.stop_agent_button is not None:
+            self.stop_agent_button.configure(
+                state=(
+                    "normal"
+                    if state in {"starting", "running"}
+                    else "disabled"
+                )
+            )
+
+            
 
 
     def repair_installation(self) -> None:
