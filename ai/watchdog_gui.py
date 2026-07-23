@@ -17,7 +17,7 @@ import traceback
 import urllib.error
 import urllib.request
 import time
-
+import signal
 
 
 #APPLICATION PATHS
@@ -127,6 +127,18 @@ class WatchDogAgentApp:
 
         self.events: queue.Queue[tuple[str, object]] = queue.Queue()
         self.setup_running = False
+
+        self.agent_process = None
+        self.agent_status = "stopped"
+        self.agent_stop_requested = False
+        self.health_check_in_progress = False
+        self.exit_after_stop = False
+
+        self.agent_status_var = None
+        self.agent_status_label = None
+        self.agent_log_box = None
+        self.start_agent_button = None
+        self.stop_agent_button = None
 
         self.status_var = None
         self.progress_var = None
@@ -262,18 +274,74 @@ class WatchDogAgentApp:
             text="Setup complete: agent environment is ready.",
             foreground="#15803d",
             font=("Segoe UI", 11, "bold")
-        ).pack(anchor="w", pady=(14, 8))
+        ).pack(anchor="w", pady=(10, 4))
 
 
         ttk.Label(
             outer, 
             text=(
-                "NEED TO ADD STOP/START CONTROLS HERE."
-                "it'll launch the ai/app.py and the local ai service"
+                "Start the local AI service to run detection and send"
+                "annotaion data to the backend"
                 ), 
                 wraplength=680,
                 justify="left" 
-        ).pack(anchor="w", pady=(0, 24))
+        ).pack(anchor="w", pady=(0, 16))
+
+
+        #service status row
+        status_row = ttk.Frame(outer)
+        status_row.pack(fill="x", pady=(0, 12))
+
+
+        self.agent_status_var = StringVar(value="&#128309; Stopped")
+        self.agent_status_label = ttk.Label(
+            status_row, 
+            textvariable=self.agent_status_var, 
+            foreground="b91c1c", 
+            font=("Segoe UI", 11, "bold")
+
+        )
+        self.agent_status_label.pack(side="left")
+
+
+        #start stop controls
+        action_row = ttk.Frame(outer)
+        action_row.pack(fill="x", pady=(0, 16))
+
+        self.start_agent_button = ttk.Button(
+            action_row, 
+            text="Start Agent", 
+            command=self.start_agent 
+
+        )
+        self.start_agent_button.pack(side="left")
+
+
+        self.stop_agent_button = ttk.Button(
+            action_row, 
+            text="Stop Agent", 
+            command=self.stop_agent, 
+            state="disabled" 
+
+        )
+        self.stop_agent_button.pack(side="left", padx=(10, 0))
+
+
+        #live service log
+        ttk.Label(
+            outer, 
+            text="Agent Log", 
+            font=("Segoe UI", 10, "bold") 
+        ).pack(anchor="w")
+
+        self.agent_log_box = scrolledtext.ScrolledText(
+            outer, 
+            height=16, 
+            wrap="word", 
+            state="disabled", 
+            font=("Consolas", 9) 
+        )
+        self.agent_log_box(fill="both", expand=True, pady=(6, 12))
 
 
 
@@ -290,11 +358,11 @@ class WatchDogAgentApp:
             outer, 
             text=details, 
             justify="left"
-        ).pack(anchor="w")
+        ).pack(anchor="w", pady=(0, 12))
 
 
         controls = ttk.Frame(outer)
-        controls.pack(fill="x", side="bottom", pady=(24, 0))
+        controls.pack(fill="x", side="bottom", pady=(8, 0))
 
 
         ttk.Button(
@@ -309,6 +377,8 @@ class WatchDogAgentApp:
             text="Exit", 
             command=self.on_close
         ).pack(side="right")
+
+        self.set_agent_ui_state("stopped", "Stopped")
 
 
 
