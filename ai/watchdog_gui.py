@@ -1098,8 +1098,83 @@ class WatchDogAgentApp:
             if cleaned:
                 self.emit("agent_log", cleaned)
 
+
     
+
+    def monitor_agent_process(self) -> None:
+        #tracks the actual process state --- like a health check
+
+        process = self.agent_process
+
+        if process is None:
+            return
+
         
+        exit_code = process.poll()
+
+
+        if exit_code is not None:
+            was_requested_stop = self.agent_stop_requested
+
+
+            self.agent_process = None
+            self.health_check_in_progress = False
+
+            if self.exit_after_stop:
+                self.root.destroy()
+                return
+
+            if was_requested_stop:
+                self.set_agent_ui_state(
+                    "stopped",
+                    f"Stopped (exit code {exit_code})"
+                )
+                self.append_agent_log("WatchDog AI service stopped.")
+            else:
+                self.set_agent_ui_state(
+                    "error", 
+                    f"Stopped unexpectedly (exit code {exit_code})"
+                )
+
+                self.append_agent_log(
+                    "ERROR: WatchDog AI service exited unexpectedly. "
+                    "Review the log above."
+                )
+
+
+            return
+
+        if not self.health_check_in_progress:
+            self.health_check_in_progress = True
+
+            threading.Thread(
+                target=self.check_agent_health, 
+                name="watchdog-agent-health-check", 
+                daemon=True 
+            ).start()
+
+
+            self.root.after(500, self.monitor_agent_process)
+
+
+    def check_agent_health(self) -> None:
+        #runs in another worker thread for health check
+
+        healthy = False
+
+        try:
+            with urllib.request.urlopen(
+                "http://127.0.0.1:8001/health", 
+                timeout=1.0
+
+            ) as response:
+                healthy = response.status == 200
+        except (urllib.error.URLError, TimeoutError, OSError):
+            healthy = False
+
+
+        self.emit("agent_health", healthy)
+
 
 
     def repair_installation(self) -> None:
