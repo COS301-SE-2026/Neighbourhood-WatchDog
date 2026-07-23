@@ -58,7 +58,11 @@ async def get_user_properties(
     ]
 
 @router.get("/{property_id}")
-async def get_property_details(property_id: UUID, db: DbSession, claims: dict = Depends(get_current_user)):
+async def get_property_details(
+    property_id: UUID,
+    db: DbSession,
+    claims: Annotated[dict, Depends(get_current_user)],
+):
     """Fetch property details including users, neighbourhood, and cameras"""
     require_role(claims, ['RESIDENT'])
     return await get_property_details_handler(property_id, db)
