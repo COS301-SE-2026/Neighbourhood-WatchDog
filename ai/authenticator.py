@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 import requests
 
+API_BASE_URL = "http://localhost:8000"
+
 
 class WatchDogPinPage(ttk.Frame):
     def connect_agent(self):
@@ -10,6 +12,7 @@ class WatchDogPinPage(ttk.Frame):
 
         # Validate PIN
         if not (self.pairing_pin.isdigit() and len(self.pairing_pin) == 9):
+            self.status_label.config(text="Status: Invalid PIN.")
             self.log.config(state="normal")
             self.log.insert("end", "[ERROR] PIN must be exactly 9 digits.\n")
             self.log.see("end")
@@ -17,6 +20,12 @@ class WatchDogPinPage(ttk.Frame):
             return
 
         print(f"Entered PIN: {self.pairing_pin}")
+
+        # Update UI
+        self.status_label.config(text="Status: Contacting server...")
+        self.connect_button.config(state="disabled")
+        self.progress.config(mode="indeterminate")
+        self.progress.start(10)
 
         # Log message
         self.log.config(state="normal")
@@ -28,18 +37,21 @@ class WatchDogPinPage(ttk.Frame):
         self.update_idletasks()
 
         # API endpoint (NEEDS TO BE CHANGED IN THE FUTURE!!!)
-        base_url = "http://localhost:8000"
-        url = f"{base_url}/pairing-token/{self.pairing_pin}"
+        url = f"{API_BASE_URL}/pairing-token/{self.pairing_pin}"
 
         try:
             response = requests.post(url, timeout=20)
 
             if response.ok:
+                self.status_label.config(text="Status: Pairing successful.")
+
                 self.log.config(state="normal")
                 self.log.insert("end", "[INFO] Pairing successful.\n")
                 self.log.see("end")
                 self.log.config(state="disabled")
             else:
+                self.status_label.config(text="Status: Pairing failed.")
+
                 self.log.config(state="normal")
                 self.log.insert(
                     "end",
@@ -49,10 +61,17 @@ class WatchDogPinPage(ttk.Frame):
                 self.log.config(state="disabled")
 
         except requests.RequestException as e:
+            self.status_label.config(text="Status: Connection failed.")
+
             self.log.config(state="normal")
             self.log.insert("end", f"[ERROR] Failed to connect: {e}\n")
             self.log.see("end")
             self.log.config(state="disabled")
+
+        finally:
+            self.progress.stop()
+            self.progress.config(mode="determinate")
+            self.connect_button.config(state="normal")
 
     def validate_pin_input(self, value):
         # Allow deleting everything
@@ -61,7 +80,7 @@ class WatchDogPinPage(ttk.Frame):
 
         # Only digits, maximum of 9 characters
         return value.isdigit() and len(value) <= 9
-    
+
     def __init__(self, parent):
         super().__init__(parent, padding=25)
 
@@ -86,7 +105,6 @@ class WatchDogPinPage(ttk.Frame):
         ).grid(row=1, column=0, sticky="w", pady=(10, 20))
 
         # Status
-
         self.status_label = ttk.Label(
             self,
             text="Status: Waiting for pairing PIN.",
@@ -95,7 +113,6 @@ class WatchDogPinPage(ttk.Frame):
         self.status_label.grid(row=2, column=0, sticky="w", pady=(0, 15))
 
         # PIN Entry
-
         pin_frame = ttk.Frame(self)
         pin_frame.grid(row=3, column=0, sticky="w")
 
@@ -137,7 +154,6 @@ class WatchDogPinPage(ttk.Frame):
         self.progress.grid(row=6, column=0, sticky="ew", pady=(5, 15))
 
         # Log Output
-
         ttk.Label(
             self,
             text="Connection Log",
@@ -181,8 +197,6 @@ class WatchDogPinPage(ttk.Frame):
             command=self.connect_agent
         )
         self.connect_button.grid(row=0, column=0, sticky="w")
-
-
 
         self.exit_button = ttk.Button(
             button_frame,
