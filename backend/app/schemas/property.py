@@ -25,8 +25,8 @@ class CreatePropertyRes(BaseModel):
 class UserSummary(BaseModel):
     id: UUID
     email: str
-    first_name: Optional[str]
-    last_name: Optional[str]
+    first_name: str | None = None
+    last_name: str | None = None
 
 class CameraSummary(BaseModel):
     id: UUID
@@ -47,7 +47,7 @@ class PropertyDetailedRes(BaseModel):
     property_type: PropertyTypeEnum
     created_at: datetime
     users: list[UserSummary]
-    neighbourhood: Optional[NeighbourhoodSummary]
+    neighbourhood: NeighbourhoodSummary | None = None
     cameras: list[CameraSummary]
 
 class LinkPropertyToken(BaseModel):
