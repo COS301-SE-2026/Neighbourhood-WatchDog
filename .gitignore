@@ -37,3 +37,4 @@ __pycache__/
 #WatchDog Agent
 ai/.watchdog-agent/
 ai/pipeline/models/weights/*.part
+ai/.env.example

@@ -15,6 +15,7 @@ from app.api.controllers.stream import router as stream_router
 from app.api.controllers.notification import router as notification_router
 from app.api.controllers.audit import router as audit_router
 from app.api.controllers.camera_settings import router as camera_settings_router
+from app.api.controllers.internal_cameras import router as internal_cameras_router
 from slowapi.middleware import SlowAPIMiddleware
 from app.auth.rate_limiter import limiter
 from app.core.database import engine, Base
@@ -50,6 +51,7 @@ app.include_router(auth_router)
 app.include_router(neighbourhood_join_router)
 app.include_router(alert_router)
 app.include_router(detection_router)
+app.include_router(internal_cameras_router)
 app.include_router(property_router)
 app.include_router(neighbourhood_router)
 app.include_router(camera_router)
