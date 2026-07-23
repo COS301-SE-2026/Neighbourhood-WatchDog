@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+import requests
 
 
 class WatchDogPinPage(ttk.Frame):
@@ -7,13 +8,49 @@ class WatchDogPinPage(ttk.Frame):
         # Get the PIN from the entry field
         self.pairing_pin = self.pin_entry.get().strip()
 
+        # Validate PIN
+        if not (self.pairing_pin.isdigit() and len(self.pairing_pin) == 9):
+            self.log.config(state="normal")
+            self.log.insert("end", "[ERROR] PIN must be exactly 9 digits.\n")
+            self.log.see("end")
+            self.log.config(state="disabled")
+            return
+
         print(f"Entered PIN: {self.pairing_pin}")
 
-        #log message
+        # Log message
         self.log.config(state="normal")
         self.log.insert("end", f"[INFO] Pairing PIN entered: {self.pairing_pin}\n")
+        self.log.insert("end", "[INFO] Contacting server...\n")
         self.log.see("end")
         self.log.config(state="disabled")
+
+        # API endpoint (NEEDS TO BE CHANGED IN THE FUTURE!!!)
+        base_url = "http://localhost:8000"
+        url = f"{base_url}/pairing-token/{self.pairing_pin}"
+
+        try:
+            response = requests.post(url, timeout=20)
+
+            if response.ok:
+                self.log.config(state="normal")
+                self.log.insert("end", "[INFO] Pairing successful.\n")
+                self.log.see("end")
+                self.log.config(state="disabled")
+            else:
+                self.log.config(state="normal")
+                self.log.insert(
+                    "end",
+                    f"[ERROR] Server returned {response.status_code}: {response.text}\n"
+                )
+                self.log.see("end")
+                self.log.config(state="disabled")
+
+        except requests.RequestException as e:
+            self.log.config(state="normal")
+            self.log.insert("end", f"[ERROR] Failed to connect: {e}\n")
+            self.log.see("end")
+            self.log.config(state="disabled")
 
     def validate_pin_input(self, value):
         # Allow deleting everything
