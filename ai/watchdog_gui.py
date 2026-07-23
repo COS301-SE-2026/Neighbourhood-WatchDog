@@ -1176,6 +1176,69 @@ class WatchDogAgentApp:
         self.emit("agent_health", healthy)
 
 
+    def stop_agent(self) -> None:
+        #stops the agent and any future child processes from the video-push thread issue
+
+        process = self.agent_process
+
+        if process is None or process.poll() is not None:
+            self.agent_process = None
+            self.set_agent_ui_state("stopped", "Stopped")
+            return
+
+
+        self.agent_stop_requested = True
+        self.set_agent_ui_state("stopping", "Stopping local AI service...")
+        self.append_agent_log("Stopping WatchDog AI service...")
+
+        threading.Thread(
+            target=self.terminate_agent_process_tree, 
+            args=(process), 
+            name="watchdog-agent-stop-worker", 
+            daemon=True
+            
+        ).start()
+
+
+    def terminate_agent_process_tree(self, process) -> None:
+        #terminate the ai service, and force-kill only if needed
+
+
+        try:
+            if sys.platform == "win32":
+                process.send_signal(signal.CTRL_BREAK_EVENT)
+            else:
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                self.emit("agent_log", "Stop timed out. Force-stopping remaining processes.")
+
+                if sys.platform == "win32":
+                    subprocess.run(
+                        [
+                            "taskkill", 
+                            "/PID", 
+                            str(process.pid), 
+                            "/T", 
+                            "/F", 
+                        
+                        ], 
+                        capture_output=True, 
+                        text=True,
+                        check=False
+                    )
+                else:
+                    os.kill(os.getpgid(process.pid), signal.SIGKILL)
+
+                process.wait(timeout=5)
+
+
+        except (OSError, subprocess.SubprocessError) as error:
+            self.emit("agent_stop_error", f"Could not stop the WatchDog AI service:\n{error}")
+
+
 
     def repair_installation(self) -> None:
     
