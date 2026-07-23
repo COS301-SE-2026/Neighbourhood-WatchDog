@@ -15,6 +15,14 @@ class WatchDogPinPage(ttk.Frame):
         self.log.see("end")
         self.log.config(state="disabled")
 
+    def validate_pin_input(self, value):
+        # Allow deleting everything
+        if value == "":
+            return True
+
+        # Only digits, maximum of 9 characters
+        return value.isdigit() and len(value) <= 9
+    
     def __init__(self, parent):
         super().__init__(parent, padding=25)
 
@@ -57,11 +65,15 @@ class WatchDogPinPage(ttk.Frame):
             text="Pairing PIN:"
         ).pack(side="left", padx=(0, 10))
 
+        vcmd = (self.register(self.validate_pin_input), "%P")
+
         self.pin_entry = ttk.Entry(
             pin_frame,
             width=18,
             font=("Consolas", 16),
-            justify="center"
+            justify="center",
+            validate="key",
+            validatecommand=vcmd,
         )
         self.pin_entry.pack(side="left")
 
