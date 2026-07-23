@@ -7,7 +7,7 @@ import designImage2 from "@/assets/images/heroImage2.png"
 export default function Hero() {
     return (<section className="py-24 overflow-x-clip">
         <div className="container mx-auto relative">
-            <div className="absolute -left-42 top-20">
+            <div className="absolute -left-42 top-20 hidden lg:block">
                 <Image 
                     src={designImage2} 
                     alt="Design Image 2"
@@ -16,7 +16,7 @@ export default function Hero() {
                 />
             </div>
 
-            <div className="absolute -right-64 top-4">
+            <div className="absolute -right-64 top-4 hidden lg:block">
                 <Image 
                     src={deisgnImage1} 
                     alt="Design Image 1"
@@ -25,12 +25,12 @@ export default function Hero() {
                 />
             </div>
 
-            <div className="absolute -left-0 top-62">
-                <Pointer/>
+            <div className="absolute -left-0 top-62 hidden lg:block">
+                <Pointer name="Jared" color="slate"/>
             </div>
 
-            <div className="absolute -right-0 top-115">
-                <Pointer/>
+            <div className="absolute -right-0 top-115 hidden lg:block">
+                <Pointer name="Zizou" color="emerald"/>
             </div>
             <div className="flex justify-center">
                 <div className="inline-flex py-1 px-3 bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full text-black font-semibold text-sm">
