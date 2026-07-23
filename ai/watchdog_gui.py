@@ -1082,6 +1082,23 @@ class WatchDogAgentApp:
 
 
         self.root.after(300, self.monitor_agent_process)
+
+
+    def read_agent_output(self, process) -> None:
+        #continuously reads the stdout and forwards to tkinter
+
+        if process.stdout is None:
+            return
+
+
+        for line in process.stdout:
+            cleaned = line.rstrip()
+
+
+            if cleaned:
+                self.emit("agent_log", cleaned)
+
+    
         
 
 
