@@ -3,6 +3,18 @@ from tkinter import ttk
 
 
 class WatchDogPinPage(ttk.Frame):
+    def connect_agent(self):
+        # Get the PIN from the entry field
+        self.pairing_pin = self.pin_entry.get().strip()
+
+        print(f"Entered PIN: {self.pairing_pin}")
+
+        #log message
+        self.log.config(state="normal")
+        self.log.insert("end", f"[INFO] Pairing PIN entered: {self.pairing_pin}\n")
+        self.log.see("end")
+        self.log.config(state="disabled")
+
     def __init__(self, parent):
         super().__init__(parent, padding=25)
 
@@ -114,9 +126,12 @@ class WatchDogPinPage(ttk.Frame):
 
         self.connect_button = ttk.Button(
             button_frame,
-            text="Connect Agent"
+            text="Connect Agent",
+            command=self.connect_agent
         )
         self.connect_button.grid(row=0, column=0, sticky="w")
+
+
 
         self.exit_button = ttk.Button(
             button_frame,
