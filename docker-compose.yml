@@ -52,7 +52,7 @@ services:
       target: development
     # platform: linux/amd64
     ports:
-      - "8000:8000"
+      - "8000:8000" # TODO: Remove 
     environment:
       APP_ENV: development
       DEBUG: "true"
