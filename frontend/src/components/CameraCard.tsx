@@ -52,7 +52,7 @@ export default function CameraCard({ id, name, location, visibility, enabled, us
     const [streamState, setStreamState] = useState<CameraStreamState>("idle");
     const statusLabel = getStatusLabel(enabled, streamState);
     const statusVariant = getStatusVariant(enabled, streamState);
-    const streamPath = `camera/${id}`;
+    const streamPath = `cameras/${id}`;
 
 
     function handleOpenChange(nextOpen: boolean){
@@ -86,7 +86,7 @@ export default function CameraCard({ id, name, location, visibility, enabled, us
                         <button
                             type="button"
                             onClick={() => setOpen(true)}
-                            className="flex spect-video w-full flex-col items-center justify-center gap-2 rounded-md bg-muted text-muted-foreground transition-colors hover:bg-muted/70"
+                            className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-md bg-muted text-muted-foreground transition-colors hover:bg-muted/70"
                             aria-label={`Open live stream for ${name}`}
                             >
                                 {enabled ? (
@@ -147,16 +147,7 @@ export default function CameraCard({ id, name, location, visibility, enabled, us
                     </div>
                     )}
 
-                    {enabled && open && streamState === "idle" && (
-                    <div className="hidden">
-                        <CameraFeed
-                        ref={videoRef}
-                        streamPath={streamPath}
-                        cameraId={id}
-                        onStreamStateChange={setStreamState}
-                        />
-                    </div>
-                    )}
+    
 
                     {enabled && streamState === "live" && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
