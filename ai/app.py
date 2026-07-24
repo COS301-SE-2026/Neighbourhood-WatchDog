@@ -171,7 +171,7 @@ def _extract_detections(frame, confidence_threshold: float, zones: list | None =
 
 
 
-    print(f"Threat boxes: {len(weapon_detections)}, Person boxes: {len(person_detections)}")
+    logger.debug("Threat boxes: %s, Person boxes: %s", len(weapon_detections), len(person_detections))
         
     
     return person_detections, weapon_detections
