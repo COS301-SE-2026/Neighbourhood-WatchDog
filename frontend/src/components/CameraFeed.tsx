@@ -1,19 +1,22 @@
 "use client"
 import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { useCameraAnnotations } from "@/hooks/use-camera-annotations";
+import { report } from "process";
+
+export type CameraStreamState = "idle" | "connecting" | "live" | "unavailable"
 
 interface AnnotatedCameraFeedProps {
   readonly streamPath: string;
   readonly cameraId: string;
-  readonly host?: string;
-  readonly port?: number;
+  readonly whepBaseUrl?: string;
+  readonly onStreamStateChange?: (state: CameraStreamState) => void;
 }
 
 
 const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProps> (
 
   function AnnotatedCameraFeed (
-    { streamPath, cameraId, host="localhost", port=8889 },
+    { streamPath, cameraId, whepBaseUrl=process.env.NEXT_PUBLIC_MEDIAMTX_WEBRTC_URL ?? "http://localhost:8889", onStreamStateChange},
     ref
   ){
 
@@ -26,7 +29,7 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
 
 
 
-    // Extracted: set video dimensions from a loaded video element
+    //Extracted: set video dimensions from a loaded video element
     function applyVideoDimensions(video: HTMLVideoElement) {
       if (video.videoWidth > 0) {
         setVideoWidth(video.videoWidth);
@@ -41,48 +44,99 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
 
 
 
-  // WebRTC connection setup
+  //WebRTC connection setup
   useEffect(() => {
-    const whepUrl = `http://${host}:${port}/${streamPath}/whep`;
-    let pc: RTCPeerConnection;
+    const baseUrl = whepBaseUrl.replace(/\/$/, "");
+    const whepUrl = `${baseUrl}/${streamPath}/whep`;
 
-    // Extracted outside connect() to reduce nesting depth
-    function handleTrack(event: RTCTrackEvent) {
-      const video = videoRef.current;
-      if (!video) return;
-      video.onloadedmetadata = () => applyVideoDimensions(video);
-      video.srcObject = event.streams[0];
-      applyVideoDimensions(video);
+
+    const controller = new AbortController();
+    let peerConnection: RTCPeerConnection | null = null;
+    let whepSessionUrl: string | null = null;
+    let disposed = false;
+
+    const reportState = (state: CameraStreamState) => {
+      if (!disposed) onStreamStateChange?.(state)
     }
 
-    async function connect() {
-      pc = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-      });
+    const connect = async () =>{
+      reportState("connecting");
 
-      pc.ontrack = handleTrack;   // ← just a reference, no inline nesting
+      peerConnection = new RTCPeerConnection({iceServers: [{urls: "stun.stun.l.google.com:19302"}]});
 
-      pc.addTransceiver("video", { direction: "recvonly" });
-      pc.addTransceiver("audio", { direction: "recvonly" });
+      peerConnection.ontrack = (event) => {
+        const video = videoRef.current;
+        
+        if (!video) return;
 
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
+        video.onloadedmetadata = () => applyVideoDimensions(video);
+        video.srcObject = event.streams[0];
+        void video.play().catch(() => undefined);
 
+        
+        applyVideoDimensions(video);
+
+        reportState("live");
+      }
+
+
+      peerConnection.onconnectionstatechange = () => {
+        if (peerConnection?.connectionState === "failed"){
+          reportState("unavailable");
+        }
+      }
+
+      peerConnection.addTransceiver("video", {direction:"recvonly"});
+
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
       const response = await fetch(whepUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/sdp" },
-        body: pc.localDescription!.sdp,
-      });
+        method: "POST", 
+        headers: {"Content-Type": "application/sdp"}, 
+        body: peerConnection.localDescription?.sdp,
+        signal: controller.signal
+      })
+
+      if (!response.ok) {
+        throw new Error(`WHEP request failed with HTTP ${response.status}`)
+      }
+
+      const location = response.headers.get("location");
+      if (location) whepSessionUrl = new URL(location, whepUrl).toString();
 
       const answerSdp = await response.text();
-      await pc.setRemoteDescription(
-        new RTCSessionDescription({ type: "answer", sdp: answerSdp })
-      );
+      await peerConnection.setRemoteDescription({
+        type: "answer", 
+        sdp: answerSdp 
+      })
     }
 
-    connect().catch(console.error);
-    return () => { if (pc) pc.close(); };
-  }, [streamPath, host, port, videoRef]);
+    void connect().catch((error: unknown) => {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+
+      console.warn(`WEBRTC stream unavailable for camera ${cameraId}:`, error);
+      reportState("unavailable");
+    })
+
+    return () => {
+      disposed = true;
+      controller.abort();
+
+      const video = videoRef.current;
+      if (video) video.srcObject = null;
+
+      
+      peerConnection?.close();
+
+      if (whepSessionUrl) {
+        void fetch(whepSessionUrl ,{
+          method: "DELETE", 
+          keepalive: true
+        }).catch(() => undefined)
+      }
+    }
+
+  }, [cameraId, onStreamStateChange, streamPath, videoRef, whepBaseUrl]);
 
   // Draw annotations on canvas overlay
   useEffect(() => {
