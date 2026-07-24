@@ -8,6 +8,7 @@ from app.services.pairing_token import get_pairing_token_handler, pair_agent_han
 from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends
+from app.auth.rate_limiter import limiter
 
 router = APIRouter(prefix="/pairing-token", tags=["pairing-token"])
 
@@ -23,6 +24,7 @@ async def get_pairing_token(
     return await get_pairing_token_handler(property_id, db)
 
 @router.get("/token/{pairing_token}")
+@limiter.limit("10/minute")
 async def pair_agent(
     pairing_token: str,
     db: DbSession,

@@ -22,6 +22,8 @@ from app.auth.rate_limiter import limiter
 from app.core.database import engine, Base
 from app import models  # noqa: F401  (imported for side effects: model registration)
 import os
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
 
 configure_logging()
 
@@ -35,6 +37,12 @@ app = FastAPI(
     redoc_url="/redoc" if config.debug else None,
 )
 
+app.state.limiter = limiter
+app.add_exception_handler(
+    RateLimitExceeded,
+    _rate_limit_exceeded_handler,
+)
+
 app.add_middleware(AuthMiddleware) #Which routes are public and private
 app.add_middleware(SlowAPIMiddleware) #Rate limiting 
 
@@ -46,7 +54,7 @@ app.add_middleware( #CORS (allow requests from frontend)
     allow_headers=["*"],
 )
 
-app.state.limiter = limiter
+
 
 app.include_router(auth_router)
 app.include_router(neighbourhood_join_router)
