@@ -303,7 +303,7 @@ def _reconnect_if_needed(cap, rtsp_url: str, stop_event: threading.Event):
     new_cap = _open_stream(rtsp_url)
     if new_cap is None:
         logger.warning("Published stream unavailable - retrying in 5s")
-        stop_event(5)
+        stop_event.wait(5)
         return None
     logger.info("Published MediaMTX stream connected")
     return new_cap

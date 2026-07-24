@@ -28,7 +28,8 @@ const initialCameras: CameraProp[] = [
     { id: "5", name: "Camera 4 - Kitchen", visibility: "PRIVATE",enabled: true, location: "Kitchen" },
 ]
 
-const PROPERTY_ID = "a79d1505-5000-438e-9813-ba0f5aecb5e2"; // TODO: replace once /properties/my-properties works
+// const PROPERTY_ID = "a79d1505-5000-438e-9813-ba0f5aecb5e2"; // TODO: replace once /properties/my-properties works
+const PROPERTY_ID = "30000000-0000-0000-0000-000000000001";
 
 export default function Dashboard() {
 

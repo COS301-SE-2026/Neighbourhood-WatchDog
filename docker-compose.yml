@@ -43,6 +43,7 @@ services:
     environment:
       APP_ENV: development
       DEBUG: "true"
+      TESTING: "true"
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       # REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
@@ -105,7 +106,7 @@ services:
     ports:
       - "8554:8554"    # RTSP
       - "8889:8889"    # WebRTC
-      # - "8189:8189/udp"
+      - "8189:8189/udp"
       - "9997:9997"    # API
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx/mediamtx.yml
