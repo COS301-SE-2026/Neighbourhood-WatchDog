@@ -9,7 +9,7 @@ class EdgeAgentCredential(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False, server_default=text("gen_random_uuid()"))
     property_id = Column(UUID(as_uuid=True), ForeignKey("property.id"), nullable=True)
-    key_hash = Column(String, nullable=False, unique=True, index=True) #ha
+    key_hash = Column(String, nullable=False, unique=True, index=True) #hashed api key value
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
     revoked_at = Column(TIMESTAMP(timezone=True), nullable=True)
 
