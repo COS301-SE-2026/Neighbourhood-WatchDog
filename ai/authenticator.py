@@ -54,7 +54,7 @@ class WatchDogPinPage(ttk.Frame):
         self.update_idletasks()
 
         # API endpoint (NEEDS TO BE CHANGED IN THE FUTURE!!!)
-        url = f"{API_BASE_URL}/pairing-token/{self.formatted_pairing_token}"
+        url = f"{API_BASE_URL}/pairing-token/token/{self.formatted_pairing_token}"
 
         try:
             response = requests.post(url, timeout=20)
