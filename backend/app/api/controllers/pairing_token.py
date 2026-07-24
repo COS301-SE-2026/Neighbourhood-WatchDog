@@ -18,4 +18,5 @@ async def get_pairing_token(
 ) -> LinkPropertyTokenRes:
     """Creates a pairing token and returns it to the user for the user to link their always on device."""
     require_role(claims, ['RESIDENT'])
-    return get_pairing_token_handler(property_id, db)
+
+    return await get_pairing_token_handler(property_id, db)

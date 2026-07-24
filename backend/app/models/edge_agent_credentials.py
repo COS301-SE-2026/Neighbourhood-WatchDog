@@ -1,7 +1,8 @@
 from app.core.database import Base
 from sqlalchemy import Column, text, ForeignKey, TIMESTAMP, String
 from sqlalchemy.orm import relationship
-from uuid import UUID
+from sqlalchemy.dialects.postgresql import UUID
+
 
 class EdgeAgentCredential(Base):
     __tablename__ = "edge_agents_credentials"
