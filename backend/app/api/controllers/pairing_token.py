@@ -2,7 +2,7 @@ from app.auth.rbac import require_role
 from app.core.database import DbSession
 from app.auth.dependencies import get_current_user
 from app.schemas.pairing_token import LinkPropertyTokenRes
-from app.schemas.pairing_token import EdgeAgentsCredentials
+from app.schemas.pairing_token import EdgeAgentsCredentialsRes
 from app.services.pairing_token import get_pairing_token_handler
 
 from typing import Annotated
@@ -26,7 +26,7 @@ async def get_pairing_token(
 async def pair_agent(
     pairing_token: str,
     db: DbSession,
-) -> EdgeAgentsCredentials:
+) -> EdgeAgentsCredentialsRes:
     """Creates an entry in the edge agents credentials table and returns the api key """
 
     return await pair_agent_handler(

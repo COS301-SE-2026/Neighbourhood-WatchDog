@@ -11,13 +11,13 @@ class LinkPropertyTokenRes(BaseModel):
     message: str | None = None
     data: LinkPropertyToken | None = None
 
-class EdgeAgentsCredentials(BaseModel):
+class EdgeAgentsCredentialsSchema(BaseModel):
     property_id: UUID
     address: str # the street address of the property so the user can know that they are connected to the right address
     api_key: str
     created_at: datetime
 
-class EdgeAgentsCredentials(BaseModel):
+class EdgeAgentsCredentialsRes(BaseModel):
     status: int
     message: str | None = None
-    data: EdgeAgentsCredentials | None = None
+    data: EdgeAgentsCredentialsSchema | None = None
