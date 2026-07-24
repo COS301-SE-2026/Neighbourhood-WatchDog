@@ -113,7 +113,6 @@ export default function Dashboard() {
                         location={camera.location}
                         visibility={camera.visibility}
                         enabled={camera.enabled}
-                        rtspUrl={camera.rtspUrl}
                         userRole="NEIGHBOURHOOD_ADMIN"
                     />
                 ))}
