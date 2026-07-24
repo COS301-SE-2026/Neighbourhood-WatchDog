@@ -56,6 +56,7 @@ services:
       TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM}
       NOTIFICATION_ENABLED: ${NOTIFICATION_ENABLED}
       SKIP_DB_INIT: "true"
+      MEDIAMTX_PUBLISH_MASTER_KEY: ${MEDIAMTX_PUBLISH_MASTER_KEY}
     volumes:
       - ./backend:/app
     depends_on:
