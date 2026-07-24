@@ -98,7 +98,7 @@ services:
 
   mediamtx:
     environment:
-      MTX_WEBRTCADDIONALHOSTS: stream-staging.neighbourhoodwatchdog.co.za, 13.245.213.174
+      MTX_WEBRTCADDITIONALHOSTS: stream-staging.neighbourhoodwatchdog.co.za,13.245.213.174
       
     build:
       context: ./mediamtx

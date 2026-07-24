@@ -3,7 +3,7 @@ rtcpAddress: :8003
 rtspAddress: :8554
 webrtcAddress: :8889
 
-webrtcEncryption: "optional" #TODO: Fix and make sure that the correct thing gets sent to the staging and the prod servers but "no" is used for dev
+webrtcEncryption: yes #TODO: Fix and make sure that the correct thing gets sent to the staging and the prod servers but "no" is used for dev
 webrtcServerCert: /certs/fullchain.pem
 webrtcServerKey: /certs/privkey.pem
 
@@ -11,9 +11,6 @@ api: yes
 apiAddress: :9997
 
 paths:
-  tapo-camera:
-    source: rtsp://Intrepid:password1234@192.168.3.68:554/stream2
-    sourceProtocol: tcp
   all_others:
 
 webrtcAdditionalHosts:
