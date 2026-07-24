@@ -85,25 +85,40 @@ class WatchDogPinPage(ttk.Frame):
             self.connect_button.config(state="normal")
 
     def format_pairing_token(self, *args):
+        # Current cursor position
+        cursor = self.pin_entry.index(tk.INSERT)
+
+        # Current text
         value = self.token_var.get()
 
-        # Remove dashes, convert to uppercase and keep only letters/numbers
+        # Count dashes before formatting
+        old_dashes = value.count("-")
+
+        # Remove dashes, uppercase, alphanumeric only
         value = "".join(
             c for c in value.replace("-", "").upper()
             if c.isalnum()
-        )
+        )[:9]
 
-        # Maximum of 9 characters
-        value = value[:9]
-
-        # Insert dashes every 3 characters
+        # Reformat
         formatted = "-".join(
             value[i:i + 3] for i in range(0, len(value), 3)
         )
 
-        # Prevent recursive updates
+        # Only update if necessary
         if formatted != self.token_var.get():
             self.token_var.set(formatted)
+
+            # Count new dashes
+            new_dashes = formatted.count("-")
+
+            # Move cursor to account for newly inserted dash
+            cursor += new_dashes - old_dashes
+
+            # Clamp cursor to end of text
+            cursor = min(cursor, len(formatted))
+
+            self.pin_entry.icursor(cursor)
 
     def __init__(self, parent):
         super().__init__(parent, padding=25)
