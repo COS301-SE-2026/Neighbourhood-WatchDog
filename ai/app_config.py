@@ -1,13 +1,13 @@
 import json
 import os
 import sys
-from pathlib import Pathv
+from pathlib import Path
 
 def get_app_data_dir():
     """Returns a persisten, OS-appropriate directory for storing app data."""
-    if sys.platform == "win32":
-        base = os.environ.get("APPDATA", str(Path))
-    elif sys.platform == "darwin":
+    if sys.platform == "win32": #Windows
+        base = os.environ.get("APPDATA", str(Path.home()))
+    elif sys.platform == "darwin": #mac
         base = str(Path.home() / "Library" / "Application Support")
     else: # Linux
         base = os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))

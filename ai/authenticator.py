@@ -1,6 +1,9 @@
+from app_config import save_config, load_config
+
 import tkinter as tk
 from tkinter import ttk
 import requests
+import keyring
 
 API_BASE_URL = "http://localhost:8000" #TODO: Change to server IP address
 
@@ -60,12 +63,29 @@ class WatchDogPinPage(ttk.Frame):
             response = requests.post(url, timeout=20)
 
             if response.ok:
-                self.status_label.config(text="Status: Pairing successful.")
+                data = response.json()
+                inner = data.get("data", {})
+                api_key = inner.get("api_key")
 
-                self.log.config(state="normal")
-                self.log.insert("end", "[INFO] Pairing successful.\n")
-                self.log.see("end")
-                self.log.config(state="disabled")
+                if api_key:
+                    config_data = {k: v for k, v in inner.items() if k != "api_key"}
+                    save_config(config_data) #TODO: Extract the other things and store them 
+                    keyring.set_password("WatchDog", "api_key", api_key)
+                    # to get the key back you say:  "vaeriable = keyring.get_password("Watchdog", "api_key")"
+                    
+                    self.status_label.config(text="Status: Pairing successful.")
+                    self.log.config(state="normal")
+                    self.log.insert("end", "[INFO] Pairing successful.\n")
+                    self.log.see("end")
+                    self.log.config(state="disabled")
+                else:
+                    self.status_label.config(text="Status: Pairing failed.")
+                    self.log.config(state="normal")
+                    self.log.insert("end", "[ERROR] NO api_key found in server response.\n")
+                    self.log.see("end")
+                    self.log.config(state="disabled")
+
+                
             else:
                 self.status_label.config(text="Status: Pairing failed.")
 
