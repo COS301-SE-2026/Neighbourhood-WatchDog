@@ -1,8 +1,9 @@
 from pydantic import BaseModel
+from datetime import datetime
 
 class LinkPropertyToken(BaseModel):
     token: str
-    expires_at: int
+    expires_at: datetime
 
 class LinkPropertyTokenRes(BaseModel):
     status: int

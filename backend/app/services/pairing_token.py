@@ -15,6 +15,8 @@ async def get_pairing_token_handler(
     property_id: UUID,
     db: DbSession,
 ) -> LinkPropertyTokenRes:
+    print("test 1")
+    
     if not property_id:
         raise HTTPException(400, "No property provided")
 
@@ -37,9 +39,14 @@ async def get_pairing_token_handler(
             new_token = PairingToken(token=token, property_id=property_id)
             db.add(new_token)
             db.commit()
-            return LinkPropertyToken(
+            link_prop_token = LinkPropertyToken(
                 token=token,
                 expires_at=new_token.expires_at
+            )
+
+            return LinkPropertyTokenRes(
+                status=200,
+                data=link_prop_token
             )
         except IntegrityError:
             db.rollback()
