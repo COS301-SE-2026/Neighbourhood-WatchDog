@@ -11,7 +11,11 @@ class WatchDogPinPage(ttk.Frame):
         part2 = self.token_entry_2.get().strip().upper()
         part3 = self.token_entry_3.get().strip().upper()
 
+        # Token with no dashes (useful if you ever need it)
         self.pairing_token = part1 + part2 + part3
+
+        # Token in the format expected by the API
+        self.formatted_pairing_token = f"{part1}-{part2}-{part3}"
 
         # Validate token
         if (len(part1) != 3 or len(part2) != 3 or len(part3) != 3 or not self.pairing_token.isalnum()):
