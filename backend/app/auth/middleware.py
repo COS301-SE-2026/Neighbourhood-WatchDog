@@ -15,7 +15,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         PUBLIC_EXACT = {"/health", "/docs", "/openapi.json", "/redoc"}
-        PUBLIC_PREFIXES = ["/stream", "/alerts", "/api/stream", "/auth", "/internal"]
+        PUBLIC_PREFIXES = ["/stream", "/alerts", "/api/stream", "/auth", "/internal", "/pairing-token/token"]
 
 
         is_public = (
