@@ -29,7 +29,7 @@ class WatchDogPinPage(ttk.Frame):
             self.log.config(state="disabled")
             return
 
-        print(f"Entered Token: {self.pairing_token}")
+        print(f"Entered Token: {self.formatted_pairing_token}")
 
         # Update UI
         self.status_label.config(text="Status: Contacting server...")
@@ -41,7 +41,7 @@ class WatchDogPinPage(ttk.Frame):
         self.log.config(state="normal")
         self.log.insert(
             "end",
-            f"[INFO] Pairing token entered: {self.pairing_token}\n"
+            f"[INFO] Pairing token entered: {self.formatted_pairing_token}\n"
         )
         self.log.insert("end", "[INFO] Contacting server...\n")
         self.log.see("end")
@@ -50,7 +50,7 @@ class WatchDogPinPage(ttk.Frame):
         self.update_idletasks()
 
         # API endpoint (NEEDS TO BE CHANGED IN THE FUTURE!!!)
-        url = f"{API_BASE_URL}/pairing-token/{self.pairing_token}"
+        url = f"{API_BASE_URL}/pairing-token/{self.formatted_pairing_token}"
 
         try:
             response = requests.post(url, timeout=20)
