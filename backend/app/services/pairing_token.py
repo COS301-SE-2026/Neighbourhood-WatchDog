@@ -65,7 +65,7 @@ def generate_pairing_token() -> str:
     return f"{raw_num[:3]}-{raw_num[3:6]}-{raw_num[6:]}"
 
 
-async def pair_agent(
+async def pair_agent_handler(
     pairing_token: str,
     db: DbSession,
 ) -> EdgeAgentsCredentialsRes:

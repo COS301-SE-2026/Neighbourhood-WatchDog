@@ -3,7 +3,7 @@ from app.core.database import DbSession
 from app.auth.dependencies import get_current_user
 from app.schemas.pairing_token import LinkPropertyTokenRes
 from app.schemas.pairing_token import EdgeAgentsCredentialsRes
-from app.services.pairing_token import get_pairing_token_handler
+from app.services.pairing_token import get_pairing_token_handler, pair_agent_handler
 
 from typing import Annotated
 from uuid import UUID
@@ -22,7 +22,7 @@ async def get_pairing_token(
 
     return await get_pairing_token_handler(property_id, db)
 
-@router.get("/{pairing_token}")
+@router.get("/token/{pairing_token}")
 async def pair_agent(
     pairing_token: str,
     db: DbSession,
