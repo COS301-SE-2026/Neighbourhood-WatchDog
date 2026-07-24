@@ -24,7 +24,6 @@ async def get_pairing_token(
     return await get_pairing_token_handler(property_id, db)
 
 @router.get("/token/{pairing_token}")
-@limiter.limit("10/minute")
 async def pair_agent(
     pairing_token: str,
     db: DbSession,
