@@ -6,6 +6,10 @@ API_BASE_URL = "http://localhost:8000" #TODO: Change to EC2 instance from .env
 
 
 class WatchDogPinPage(ttk.Frame):
+
+    def exit_application(self):
+        self.winfo_toplevel().destroy()
+    
     def connect_agent(self):
         part1 = self.token_entry_1.get().strip().upper()
         part2 = self.token_entry_2.get().strip().upper()
@@ -239,7 +243,8 @@ class WatchDogPinPage(ttk.Frame):
 
         self.exit_button = ttk.Button(
             button_frame,
-            text="Exit"
+            text="Exit",
+            command=self.exit_application
         )
         self.exit_button.grid(row=0, column=1, sticky="e")
 
