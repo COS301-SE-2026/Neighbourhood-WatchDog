@@ -27,6 +27,7 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
+      - /var/www/certbot:/var/www/certbot
     depends_on:
       - backend
 

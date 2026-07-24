@@ -1,3 +1,14 @@
+:80 {
+    @acme path /.well-known/acme-challenge/*
+    handle @acme {
+        root * /var/www/certbot
+        file_server
+    }
+    handle {
+        redir https://{host}{url} permanent
+    }
+}
+
 api-staging.neighbourhoodwatchdog.co.za {
     reverse_proxy backend:8000
 }
