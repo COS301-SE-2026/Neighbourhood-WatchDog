@@ -74,6 +74,7 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
       NEXT_PUBLIC_AI_URL: http://localhost:8001
+      NEXT_PUBLIC_MEDIAMTX_WEBRTC_URL: http://localhost:8889
     volumes:
       - ./frontend:/app
       - /app/node_modules
