@@ -7,19 +7,27 @@ API_BASE_URL = "http://localhost:8000"
 
 class WatchDogPinPage(ttk.Frame):
     def connect_agent(self):
-        # Get the PIN from the entry field
-        self.pairing_pin = self.pin_entry.get().strip()
+        # Get the pairing token from the entry field
+        self.pairing_token = (
+            self.pin_entry.get()
+            .replace("-", "")
+            .strip()
+            .upper()
+        )
 
-        # Validate PIN
-        if not (self.pairing_pin.isdigit() and len(self.pairing_pin) == 9):
-            self.status_label.config(text="Status: Invalid PIN.")
+        # Validate token
+        if not (self.pairing_token.isalnum() and len(self.pairing_token) == 9):
+            self.status_label.config(text="Status: Invalid pairing token.")
             self.log.config(state="normal")
-            self.log.insert("end", "[ERROR] PIN must be exactly 9 digits.\n")
+            self.log.insert(
+                "end",
+                "[ERROR] Pairing token must contain exactly 9 letters/numbers.\n"
+            )
             self.log.see("end")
             self.log.config(state="disabled")
             return
 
-        print(f"Entered PIN: {self.pairing_pin}")
+        print(f"Entered Token: {self.pairing_token}")
 
         # Update UI
         self.status_label.config(text="Status: Contacting server...")
@@ -29,7 +37,10 @@ class WatchDogPinPage(ttk.Frame):
 
         # Log message
         self.log.config(state="normal")
-        self.log.insert("end", f"[INFO] Pairing PIN entered: {self.pairing_pin}\n")
+        self.log.insert(
+            "end",
+            f"[INFO] Pairing token entered: {self.pairing_token}\n"
+        )
         self.log.insert("end", "[INFO] Contacting server...\n")
         self.log.see("end")
         self.log.config(state="disabled")
@@ -37,7 +48,7 @@ class WatchDogPinPage(ttk.Frame):
         self.update_idletasks()
 
         # API endpoint (NEEDS TO BE CHANGED IN THE FUTURE!!!)
-        url = f"{API_BASE_URL}/pairing-token/{self.pairing_pin}"
+        url = f"{API_BASE_URL}/pairing-token/{self.pairing_token}"
 
         try:
             response = requests.post(url, timeout=20)
@@ -73,13 +84,26 @@ class WatchDogPinPage(ttk.Frame):
             self.progress.config(mode="determinate")
             self.connect_button.config(state="normal")
 
-    def validate_pin_input(self, value):
-        # Allow deleting everything
-        if value == "":
-            return True
+    def format_pairing_token(self, *args):
+        value = self.token_var.get()
 
-        # Only digits, maximum of 9 characters
-        return value.isdigit() and len(value) <= 9
+        # Remove dashes, convert to uppercase and keep only letters/numbers
+        value = "".join(
+            c for c in value.replace("-", "").upper()
+            if c.isalnum()
+        )
+
+        # Maximum of 9 characters
+        value = value[:9]
+
+        # Insert dashes every 3 characters
+        formatted = "-".join(
+            value[i:i + 3] for i in range(0, len(value), 3)
+        )
+
+        # Prevent recursive updates
+        if formatted != self.token_var.get():
+            self.token_var.set(formatted)
 
     def __init__(self, parent):
         super().__init__(parent, padding=25)
@@ -96,7 +120,7 @@ class WatchDogPinPage(ttk.Frame):
             self,
             text=(
                 "To connect this computer to your WatchDog account, "
-                "enter the 9-digit pairing PIN generated on the website. "
+                "enter the 9-character pairing token generated on the website. "
                 "Once verified, the application will securely download "
                 "your camera configuration and continue the setup."
             ),
@@ -107,35 +131,35 @@ class WatchDogPinPage(ttk.Frame):
         # Status
         self.status_label = ttk.Label(
             self,
-            text="Status: Waiting for pairing PIN.",
+            text="Status: Waiting for pairing token.",
             font=("Segoe UI", 10, "bold")
         )
         self.status_label.grid(row=2, column=0, sticky="w", pady=(0, 15))
 
-        # PIN Entry
-        pin_frame = ttk.Frame(self)
-        pin_frame.grid(row=3, column=0, sticky="w")
+        # Token Entry
+        token_frame = ttk.Frame(self)
+        token_frame.grid(row=3, column=0, sticky="w")
 
         ttk.Label(
-            pin_frame,
-            text="Pairing PIN:"
+            token_frame,
+            text="Pairing Token:"
         ).pack(side="left", padx=(0, 10))
 
-        vcmd = (self.register(self.validate_pin_input), "%P")
+        self.token_var = tk.StringVar()
+        self.token_var.trace_add("write", self.format_pairing_token)
 
         self.pin_entry = ttk.Entry(
-            pin_frame,
+            token_frame,
             width=18,
             font=("Consolas", 16),
             justify="center",
-            validate="key",
-            validatecommand=vcmd,
+            textvariable=self.token_var,
         )
         self.pin_entry.pack(side="left")
 
         ttk.Label(
             self,
-            text="Example: 123456789",
+            text="Example: ABC-123-XYZ",
             foreground="gray"
         ).grid(row=4, column=0, sticky="w", pady=(8, 20))
 
@@ -180,7 +204,7 @@ class WatchDogPinPage(ttk.Frame):
         scrollbar.config(command=self.log.yview)
 
         # Example log lines
-        self.log.insert("end", "[INFO] Waiting for pairing PIN...\n")
+        self.log.insert("end", "[INFO] Waiting for pairing token...\n")
         self.log.insert("end", "[INFO] Agent is not yet connected.\n")
         self.log.config(state="disabled")
 
