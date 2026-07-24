@@ -1,5 +1,7 @@
 from app.core.database import DbSession
 from app.models.property import Property
+from app.models.camera import Camera
+from app.schemas.camera import CameraRes
 from app.models.pairing_token import PairingToken
 from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.schemas.pairing_token import LinkPropertyToken, LinkPropertyTokenRes, EdgeAgentsCredentialsSchema, EdgeAgentsCredentialsRes
@@ -107,10 +109,30 @@ async def pair_agent_handler(
         db.flush()
         db.commit()
 
+        #getting the cameras related to the property
+        stmt = Select(Camera).where(Camera.property_id == property_record.id)
+        cameras = db.execute(stmt).scalars().all()
+
+        cameras_data = [
+            CameraRes(
+                id=c.id,
+                name=c.name,
+                property_id=c.property_id,
+                neighbourhood_id=c.neighbourhood_id,
+                rtsp_url=c.rtsp_url,
+                visibility=c.visibility,
+                location=c.location,
+                enabled=c.enabled,
+                created_at=c.created_at,
+            )
+            for c in cameras
+        ]
+
         agent_creds = EdgeAgentsCredentialsSchema( #Note this is the schema
             property_id=property_record.id,
             address=property_record.address,
             api_key=api_key,
+            cameras=cameras_data,
             created_at=new_edge_agent.created_at
         )
 
