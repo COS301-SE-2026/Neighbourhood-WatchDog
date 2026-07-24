@@ -8,6 +8,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 from typing import Callable
+from urllib.parse import quote
 
 import httpx
 
@@ -19,6 +20,8 @@ logger = logging.getLogger("watchdog.ai.runtime")
 class CameraSpec:
     id: str
     rtsp_url: str
+    publish_username: str
+    publish_password: str
     neighbourhood_id: str | None = None
     confidence_threshold: float = 0.5
 
@@ -38,15 +41,7 @@ DetectionTarget = Callable[[CameraSpec, str, threading.Event], None]
 
 class CameraSupervisor:
 
-    def __init__(
-        self,
-        *,
-        backend_url: str,
-        internal_token: str,
-        mediamtx_rtsp_url: str,
-        detection_target: DetectionTarget,
-        reconcile_interval_seconds: float = 5.0,
-    ) -> None:
+    def __init__(self, *, backend_url: str, internal_token: str, mediamtx_rtsp_url: str, detection_target: DetectionTarget, reconcile_interval_seconds: float = 5.0) -> None:
         self.backend_url = backend_url.rstrip("/")
         self.internal_token = internal_token
         self.mediamtx_rtsp_url = mediamtx_rtsp_url.rstrip("/")
@@ -114,6 +109,8 @@ class CameraSupervisor:
             result[camera_id] = CameraSpec(
                 id=camera_id,
                 rtsp_url=str(camera["rtsp_url"]),
+                publish_username=str(camera["publish_username"]), 
+                publish_password=str(camera["publish_password"]),
                 neighbourhood_id=(
                     str(camera["neighbourhood_id"])
                     if camera.get("neighbourhood_id")
@@ -177,6 +174,8 @@ class CameraSupervisor:
         camera_id = runtime.spec.id
         published_url = self._published_rtsp_url(camera_id)
 
+        publisher_url = self._authenticated_publish_rtsp_url(runtime.spec)
+
         command = [
             "ffmpeg",
             "-hide_banner",
@@ -195,7 +194,7 @@ class CameraSupervisor:
             "rtsp",
             "-rtsp_transport",
             "tcp",
-            published_url,
+            publisher_url,
         ]
 
         try:
@@ -305,3 +304,12 @@ class CameraSupervisor:
 
     def _published_rtsp_url(self, camera_id: str) -> str:
         return f"{self.mediamtx_rtsp_url}/cameras/{camera_id}"
+
+    def _authenticated_publish_rtsp_url(self, camera: CameraSpec) -> str:
+
+        username = quote(camera.publish_username, safe="")
+        password = quote(camera.publish_password, safe="")
+
+        public_url = self._published_rtsp_url(camera.id)
+
+        return public_url.replace("rtsp://", f"rtsp://{username}:{password}@", 1)
