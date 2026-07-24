@@ -46,10 +46,6 @@ function getStatusVariant(enabled: boolean, streamState: CameraStreamState): "su
 
 
 
-function getStreamPath(rtspUrl: string): string {
-    return rtspUrl.split("/").pop() || rtspUrl;
-}
-
 export default function CameraCard({ id, name, location, visibility, enabled, userRole = "RESIDENT" }: CameraCardProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [open, setOpen] = useState(false);
@@ -68,8 +64,8 @@ export default function CameraCard({ id, name, location, visibility, enabled, us
     
 
     return (
-        <Dialog>
-                <Card className="cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+                <Card className="transition-all hover:ring-2 hover:ring-primary/50">
                     <CardHeader className="flex flex-row items-center justify-between p-4">
                         <CardTitle className="text-sm font-medium">{name}</CardTitle>
 

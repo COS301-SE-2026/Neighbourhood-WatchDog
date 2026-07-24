@@ -1,7 +1,6 @@
 "use client"
 import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { useCameraAnnotations } from "@/hooks/use-camera-annotations";
-import { report } from "process";
 
 export type CameraStreamState = "idle" | "connecting" | "live" | "unavailable"
 
@@ -48,6 +47,7 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
   useEffect(() => {
     const baseUrl = whepBaseUrl.replace(/\/$/, "");
     const whepUrl = `${baseUrl}/${streamPath}/whep`;
+    const video = videoRef.current;
 
 
     const controller = new AbortController();
@@ -62,10 +62,9 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
     const connect = async () =>{
       reportState("connecting");
 
-      peerConnection = new RTCPeerConnection({iceServers: [{urls: "stun.stun.l.google.com:19302"}]});
+      peerConnection = new RTCPeerConnection({iceServers: [{urls: "stun:stun.l.google.com:19302"}]});
 
       peerConnection.ontrack = (event) => {
-        const video = videoRef.current;
         
         if (!video) return;
 
@@ -122,7 +121,6 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
       disposed = true;
       controller.abort();
 
-      const video = videoRef.current;
       if (video) video.srcObject = null;
 
       
