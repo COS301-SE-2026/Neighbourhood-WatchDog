@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import requests
 
-API_BASE_URL = "http://localhost:8000"
+API_BASE_URL = "http://localhost:8000" #TODO: Change to EC2 instance from .env
 
 
 class WatchDogPinPage(ttk.Frame):
