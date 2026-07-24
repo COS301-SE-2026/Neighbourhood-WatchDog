@@ -1,6 +1,5 @@
 import CameraColumn from "@/components/CamerasColumn";
 import Tag from "@/components/Tag";
-import Image from "next/image";
 
 import tapoImage from "@/assets/images/tapo.svg"
 import foscamImage from "@/assets/images/foscam.svg"
@@ -32,7 +31,7 @@ export default function Integrations() {
                         </h2>
                         <p className="text-white/50 mt-4 text-lg">
                             seamlessly connect with different cameras,
-                            we've made it easy, connect your camera 
+                            we&apos;ve made it easy, connect your camera 
                             and your stream is up and running.
                         </p>
                     </div>
@@ -40,7 +39,7 @@ export default function Integrations() {
                     <div>
                         <div className="h-[400px] lg:h-[800px] mt-8 lg:mt-0 overflow-hidden grid md:grid-cols-2 gap-4 [mask-image:linear-gradient(to_bottom, transparent,black_10%,black_90%,transparent)]">
                             <CameraColumn cameras={cameras}/>
-                            <CameraColumn cameras={cameras.slice().reverse()} className="hideen md:flex"/>
+                            <CameraColumn cameras={cameras.slice().reverse()} className="hidden md:flex"/>
                         </div>
                     </div>
                 </div>
