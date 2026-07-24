@@ -7,16 +7,14 @@ API_BASE_URL = "http://localhost:8000"
 
 class WatchDogPinPage(ttk.Frame):
     def connect_agent(self):
-        # Get the pairing token from the entry field
-        self.pairing_token = (
-            self.pin_entry.get()
-            .replace("-", "")
-            .strip()
-            .upper()
-        )
+        part1 = self.token_entry_1.get().strip().upper()
+        part2 = self.token_entry_2.get().strip().upper()
+        part3 = self.token_entry_3.get().strip().upper()
+
+        self.pairing_token = part1 + part2 + part3
 
         # Validate token
-        if not (self.pairing_token.isalnum() and len(self.pairing_token) == 9):
+        if (len(part1) != 3 or len(part2) != 3 or len(part3) != 3 or not self.pairing_token.isalnum()):
             self.status_label.config(text="Status: Invalid pairing token.")
             self.log.config(state="normal")
             self.log.insert(
@@ -84,41 +82,17 @@ class WatchDogPinPage(ttk.Frame):
             self.progress.config(mode="determinate")
             self.connect_button.config(state="normal")
 
-    def format_pairing_token(self, *args):
-        # Current cursor position
-        cursor = self.pin_entry.index(tk.INSERT)
 
-        # Current text
-        value = self.token_var.get()
+    def uppercase_entry(self, event):
+        widget = event.widget
+        value = widget.get().upper()
 
-        # Count dashes before formatting
-        old_dashes = value.count("-")
+        value = "".join(c for c in value if c.isalnum())
+        value = value[:3]
 
-        # Remove dashes, uppercase, alphanumeric only
-        value = "".join(
-            c for c in value.replace("-", "").upper()
-            if c.isalnum()
-        )[:9]
-
-        # Reformat
-        formatted = "-".join(
-            value[i:i + 3] for i in range(0, len(value), 3)
-        )
-
-        # Only update if necessary
-        if formatted != self.token_var.get():
-            self.token_var.set(formatted)
-
-            # Count new dashes
-            new_dashes = formatted.count("-")
-
-            # Move cursor to account for newly inserted dash
-            cursor += new_dashes - old_dashes
-
-            # Clamp cursor to end of text
-            cursor = min(cursor, len(formatted))
-
-            self.pin_entry.icursor(cursor)
+        widget.delete(0, tk.END)
+        widget.insert(0, value)
+    
 
     def __init__(self, parent):
         super().__init__(parent, padding=25)
@@ -160,17 +134,39 @@ class WatchDogPinPage(ttk.Frame):
             text="Pairing Token:"
         ).pack(side="left", padx=(0, 10))
 
-        self.token_var = tk.StringVar()
-        self.token_var.trace_add("write", self.format_pairing_token)
-
-        self.pin_entry = ttk.Entry(
+        # First block
+        self.token_entry_1 = ttk.Entry(
             token_frame,
-            width=18,
+            width=4,
             font=("Consolas", 16),
-            justify="center",
-            textvariable=self.token_var,
+            justify="center"
         )
-        self.pin_entry.pack(side="left")
+        self.token_entry_1.pack(side="left")
+        self.token_entry_1.bind("<KeyRelease>", self.uppercase_entry)
+
+        ttk.Label(token_frame, text="-").pack(side="left", padx=5)
+
+        # Second block
+        self.token_entry_2 = ttk.Entry(
+            token_frame,
+            width=4,
+            font=("Consolas", 16),
+            justify="center"
+        )
+        self.token_entry_2.pack(side="left")
+        self.token_entry_2.bind("<KeyRelease>", self.uppercase_entry)
+
+        ttk.Label(token_frame, text="-").pack(side="left", padx=5)
+
+        # Third block
+        self.token_entry_3 = ttk.Entry(
+            token_frame,
+            width=4,
+            font=("Consolas", 16),
+            justify="center"
+        )
+        self.token_entry_3.pack(side="left")
+        self.token_entry_3.bind("<KeyRelease>", self.uppercase_entry)
 
         ttk.Label(
             self,
