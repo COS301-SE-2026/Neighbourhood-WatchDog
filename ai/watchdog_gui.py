@@ -1405,7 +1405,7 @@ class WatchDogAgentApp(ttk.Frame):
 
             ) as response:
                 healthy = response.status == 200
-        except (urllib.error.URLError, TimeoutError, OSError):
+        except (urllib.error.URLError):
             healthy = False
 
 

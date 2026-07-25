@@ -43,53 +43,7 @@ INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "dev-token")
 MEDIAMTX_RTSP_URL = os.getenv("MEDIAMTX_RTSP_URL", "rtsp://stream-staging.neighbourhoodwatchdog.co.za:8554")
 
 _model_lock = threading.Lock()
-# CAMERA_ID = "2"
-# NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001"
-# RTSP_URL = os.getenv("RTSP_URL", "rtsp://Intrepid:password1234@192.168.3.68:554/stream2")
 
-
-
-# def _fetch_camera_settings(backend_url: str, camera_id: str) -> None:
-
-#     #fetching the zone and threshold settings from the backend, and then updating the cache
-
-#     try:
-#         resp = httpx.get(
-#             f"{backend_url}/cameras/{camera_id}/settings",
-
-#             headers={
-#                 "Authorization": "Bearer mock-token",
-#                 "X-Mock-Role": "NEIGHBOURHOOD_ADMIN",
-#                 "X-Mock-Sub": "20000000-0000-0000-0000-000000000001"
-                    
-#                 },
-
-#             timeout=2.0
-
-#         )
-
-
-#         if resp.status_code == 200:
-#             data = resp.json()
-#             with _settings_lock:
-#                 _camera_settings["confidence_threshold"] = data.get("confidence_threshold", 0.5)
-#                 _camera_settings["zones"] = [
-#                     z["polygon"]
-#                     for z in data.get("zones", [])
-
-#                 ]
-
-#     except Exception:
-#         pass #we can keep using the cached settings on failure
-
-
-
-# def _settings_refresh_loop(backend_url: str, camera_id: str) -> None:
-
-#     #refresh camera settings every 30 seconds
-#     while True:
-#         _fetch_camera_settings(backend_url, camera_id)
-#         time.sleep(30)
 
 
 def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp: str) -> None:

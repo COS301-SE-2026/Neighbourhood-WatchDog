@@ -13,6 +13,14 @@ interface AnnotatedCameraFeedProps {
 
 }
 
+  function handleConnectionStateChange(pc: RTCPeerConnection, reportState: (state: CameraStreamState) => void){
+
+      if (pc.connectionState === "failed") {
+        reportState("unavailable");
+
+      }
+  }
+
 const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProps>(function AnnotatedCameraFeed({ streamPath, cameraId, whepBaseUrl=process.env.NEXT_PUBLIC_MEDIAMTX_WEBRTC_URL ?? "http://localhost:8889", onStreamStateChange,},ref) {
   const internalVideoRef = useRef<HTMLVideoElement>(null);
   const videoRef =(ref as React.RefObject<HTMLVideoElement>) ?? internalVideoRef;
@@ -55,13 +63,7 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
 
   }
 
-  function handleConnectionStateChange(pc: RTCPeerConnection, reportState: (state: CameraStreamState) => void){
-
-    if (pc.connectionState === "failed") {
-      reportState("unavailable");
-
-    }
-  }
+  
 
   useEffect(() => {
     const baseUrl = whepBaseUrl.replace(/\/$/, "");

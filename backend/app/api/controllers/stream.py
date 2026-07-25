@@ -1,7 +1,8 @@
 import asyncio
 import json
-import os 
+import os
 import secrets
+from typing import Annotated
 
 from fastapi import APIRouter, Header, HTTPException, WebSocket, status
 
@@ -10,16 +11,20 @@ router = APIRouter(prefix="/api/stream", tags=["stream"])
 # Camera annotation connections: {camera_id: set[WebSocket]}
 _annotation_connections: dict[str, set[WebSocket]] = {}
 
+
 def _get_camera_bucket(camera_id: str) -> set[WebSocket]:
     if camera_id not in _annotation_connections:
         _annotation_connections[camera_id] = set()
     return _annotation_connections[camera_id]
 
+
 def register_camera_connection(camera_id: str, websocket: WebSocket) -> None:
     _get_camera_bucket(camera_id).add(websocket)
 
+
 def remove_camera_connection(camera_id: str, websocket: WebSocket) -> None:
-    _get_camera_bucket(camera_id).discard(websocket)
+    _get_camera_bucket(camera_id, ).discard(websocket)
+
 
 async def broadcast_annotation(camera_id: str, annotation_data: dict) -> None:
     """Broadcast annotation data (bounding boxes, confidence, etc) to all connected clients"""
@@ -27,6 +32,7 @@ async def broadcast_annotation(camera_id: str, annotation_data: dict) -> None:
     dead: set[WebSocket] = set()
 
     payload = json.dumps(annotation_data)
+
     for ws in connections:
         try:
             await ws.send_text(payload)
@@ -36,25 +42,41 @@ async def broadcast_annotation(camera_id: str, annotation_data: dict) -> None:
     for ws in dead:
         connections.discard(ws)
 
-@router.post("/cameras/{camera_id}/annotations")
-async def receive_annotation(camera_id: str, data: dict, x_internal_token: str | None = Header(default=None)):
 
+@router.post("/cameras/{camera_id}/annotations")
+async def receive_annotation(
+    camera_id: str,
+    data: dict,
+    x_internal_token: Annotated[str | None, Header()] = None,
+):
     expected_token = os.environ.get("INTERNAL_API_TOKEN")
 
     if not expected_token:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Annotation ingestion is not configured.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Annotation ingestion is not configured.",
+        )
 
+    if not x_internal_token or not secrets.compare_digest(
+        x_internal_token,
+        expected_token,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid internal token.",
+        )
 
-    if not x_internal_token or not secrets.compare_digest(x_internal_token, expected_token):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid internal token.")
+    await broadcast_annotation(
+        camera_id,
+        {
+            "camera_id": camera_id,
+            "event": "annotation",
+            **data,
+        },
+    )
 
-
-    await broadcast_annotation(camera_id, {
-        "camera_id": camera_id, 
-        "event": "annotation",
-        **data,
-    })
     return {"status": "broadcasted"}
+
 
 @router.websocket("/cameras/{camera_id}/annotations/ws")
 async def camera_annotation_websocket(camera_id: str, websocket: WebSocket):
