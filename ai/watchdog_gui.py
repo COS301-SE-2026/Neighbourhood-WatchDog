@@ -34,7 +34,7 @@ RUNTIME_DIR = AI_DIR / ".watchdog-agent"
 VENV_DIR = RUNTIME_DIR / "venv"
 STATE_FILE = RUNTIME_DIR / "install-state.json"
 CONNECTION_SETTINGS_FILE = RUNTIME_DIR / "connection-settings.json"
-REQUIREMENTS_FILE = _resolve_requirements_file()
+REQUIREMENTS_FILE = "requirements-linux.txt"
 
 WEIGHTS_DIR = AI_DIR / "pipeline" / "models" / "weights"
 THREAT_MODEL_PATH = WEIGHTS_DIR / "best.pt"
