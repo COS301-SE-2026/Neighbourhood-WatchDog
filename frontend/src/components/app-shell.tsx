@@ -1,9 +1,9 @@
 "use client"
 
-import DashboardPage from "@/app/dashboard/page"
-import AlertsPage from "@/app/alert/AlertsPage"
-import JoinNeighbourhoodPage from "@/app/joinNeighbourhood/page"
-import PropertyPage from "@/app/property/page"
+import DashboardPage from "@/app/(private)/dashboard/page"
+import AlertsPage from "@/app/(private)/alert/AlertsPage"
+import JoinNeighbourhoodPage from "@/app/(private)/joinNeighbourhood/page"
+import PropertyPage from "@/app/(private)/property/page"
 import { Card } from "@/components/ui/card"
 import { useAppView } from "@/components/app-view-context"
 

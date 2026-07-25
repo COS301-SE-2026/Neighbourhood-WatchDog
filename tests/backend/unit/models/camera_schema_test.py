@@ -5,61 +5,78 @@ from app.schemas.camera import RegisterCameraReq, CameraRes, RegisterCameraRes
 from app.models.camera import CameraVisibilityEnum
 from datetime import datetime
 
+TEST_RTSP_URL = "rtsp://192.168.2.10:554/stream"
+FRONT_DOOR = "Front Door"
+TEST_CAMERA_NAME = "Camera 1"
 
 class TestRegisterCameraReq:
     def test_valid_request(self):
         """Happy path"""
         property_id = uuid4()
         req = RegisterCameraReq(
+            name=TEST_CAMERA_NAME,
             rtsp_url="rtsp://admin:password@192.168.1.100:554/Streaming/channels/101",
-            location="Front Door",
+            location=FRONT_DOOR,
             visibility=CameraVisibilityEnum.PRIVATE,
             property_id=property_id
         )
+        assert req.name == TEST_CAMERA_NAME
         assert req.rtsp_url == "rtsp://admin:password@192.168.1.100:554/Streaming/channels/101"
-        assert req.location == "Front Door"
+        assert req.location == FRONT_DOOR
         assert req.visibility == CameraVisibilityEnum.PRIVATE
         assert req.property_id == property_id
 
     def test_missing_rtsp_url(self):
         """Test missing RTSP URL raises ValidationError"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc_info:
             RegisterCameraReq(
                 rtsp_url=None,
-                location="Front Door",
+                location=FRONT_DOOR,
                 visibility=CameraVisibilityEnum.PRIVATE,
                 property_id=uuid4()
             )
 
+        errors = exc_info.value.errors()
+        assert any(error["loc"] == ("rtsp_url",) for error in errors)
+
     def test_missing_property_id(self):
         """Test missing property_id raises ValidationError"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc_info:
             RegisterCameraReq(
-                rtsp_url="rtsp://192.168.1.100:554/stream",
-                location="Front Door",
+                rtsp_url=TEST_RTSP_URL,
+                location=FRONT_DOOR,
                 visibility=CameraVisibilityEnum.PRIVATE,
                 property_id=None
             )
 
+        errors = exc_info.value.errors()
+        assert any(error["loc"] == ("property_id",) for error in errors)
+
     def test_empty_location(self):
         """Test empty location raises ValidationError"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc_info:
             RegisterCameraReq(
-                rtsp_url="rtsp://192.168.1.100:554/stream",
+                rtsp_url=TEST_RTSP_URL,
                 location="",
                 visibility=CameraVisibilityEnum.PRIVATE,
                 property_id=uuid4()
             )
 
+        errors = exc_info.value.errors()
+        assert any(error["loc"] == ("location",) for error in errors)
+
     def test_invalid_visibility(self):
         """Test invalid visibility value raises ValidationError"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc_info:
             RegisterCameraReq(
-                rtsp_url="rtsp://192.168.1.100:554/stream",
-                location="Front Door",
+                rtsp_url=TEST_RTSP_URL,
+                location=FRONT_DOOR,
                 visibility="INVALID",
                 property_id=uuid4()
             )
+
+        errors = exc_info.value.errors()
+        assert any(error["loc"] == ("visibility",) for error in errors)
 
 
 class TestCameraRes:
@@ -74,41 +91,50 @@ class TestCameraRes:
             id=camera_id,
             property_id=property_id,
             neighbourhood_id=neighbourhood_id,
+            name=TEST_CAMERA_NAME,
             visibility=CameraVisibilityEnum.PRIVATE,
-            location="Front Door",
+            location=FRONT_DOOR,
             rtsp_url="rtsp://192.168.1.100:554/stream",
+            enabled=True,
             created_at=now
         )
         assert model.id == camera_id
-        assert model.location == "Front Door"
+        assert model.name == TEST_CAMERA_NAME
+        assert model.location == FRONT_DOOR
         assert model.visibility == CameraVisibilityEnum.PRIVATE
+        assert model.enabled
 
     def test_missing_location(self):
         """Test missing location raises ValidationError"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc_info:
             CameraRes(
                 id=uuid4(),
                 property_id=uuid4(),
                 neighbourhood_id=uuid4(),
                 visibility=CameraVisibilityEnum.PRIVATE,
                 location=None,
-                rtsp_url="rtsp://192.168.1.100:554/stream",
+                rtsp_url=TEST_RTSP_URL,
                 created_at=datetime.now()
             )
+        
+        errors = exc_info.value.errors()
+        assert any(error["loc"] == ("location",) for error in errors)
 
     def test_empty_rtsp_url(self):
         """Test empty RTSP URL raises ValidationError"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc_info:
             CameraRes(
                 id=uuid4(),
                 property_id=uuid4(),
                 neighbourhood_id=uuid4(),
                 visibility=CameraVisibilityEnum.PRIVATE,
-                location="Front Door",
+                location=FRONT_DOOR,
                 rtsp_url="",
                 created_at=datetime.now()
             )
 
+        errors = exc_info.value.errors()
+        assert any(error["loc"] == ("rtsp_url",) for error in errors)
 
 class TestRegisterCameraRes:
     def test_response_with_data(self):
@@ -117,9 +143,11 @@ class TestRegisterCameraRes:
             id=uuid4(),
             property_id=uuid4(),
             neighbourhood_id=uuid4(),
+            name=TEST_CAMERA_NAME,
+            enabled=True,
             visibility=CameraVisibilityEnum.PRIVATE,
-            location="Front Door",
-            rtsp_url="rtsp://192.168.1.100:554/stream",
+            location=FRONT_DOOR,
+            rtsp_url=TEST_RTSP_URL,
             created_at=datetime.now()
         )
         response = RegisterCameraRes(

@@ -1,0 +1,37 @@
+name: Preview Deployment
+
+env: 
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+on:
+  push:
+    branches: [ "dev" ]
+  pull_request:
+    branches: [ "dev"]
+
+jobs:
+  Deploy-Preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 #v4
+        with:
+          version: 10
+
+      - name: Install Vercel client 
+        run: npm install --global vercel
+
+      - name: Pull Vercel Environment Information
+        run:  vercel pull --yes --environment=preview --token=${VERCEL_TOKEN}
+
+      - name: Build
+        run: vercel build --token=${VERCEL_TOKEN}
+       
+      - name: Deploy 
+        run: vercel deploy --prebuilt --token=${VERCEL_TOKEN}
+      

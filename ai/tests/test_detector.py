@@ -31,7 +31,7 @@ IOU_THRESHOLD     = 0.3
 INFER_SIZE        = 320
 
 # models 
-model = YOLO("ai/pipeline/models/weights/yolov8n.pt")
+model = YOLO("ai/pipeline/models/weights/best.pt")
 
 tracker = DeepSort(
     max_age=30,

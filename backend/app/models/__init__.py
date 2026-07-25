@@ -10,3 +10,5 @@ from app.models.property_user import *  # noqa: F403
 from app.models.retention_policy import *  # noqa: F403
 from app.models.user_property import *  # noqa: F403
 from app.models.zone import *  # noqa: F403
+from app.models.camera_detection_zone import *  # noqa: F403
+from app.models.notification import * # noqa: F403

@@ -29,7 +29,10 @@ FROM python:3.11-slim AS production
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y gcc && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y gcc && rm -rf /var/lib/apt/lists/* \
+    && addgroup --system usergroup && adduser --system --no-create-home --ingroup usergroup appuser 
+
+#second part of the above run is to create the suer
 
 # Only copy production requirements
 COPY requirements.txt .
@@ -39,6 +42,9 @@ RUN pip install -r requirements.txt
 COPY --from=builder /app/main.py .
 COPY --from=builder /app/app ./app
 COPY --from=builder /app/alembic ./alembic
+
+RUN chown -R appuser:usergroup /app
+USER appuser
 
 EXPOSE 8000
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
