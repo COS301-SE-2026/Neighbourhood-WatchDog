@@ -1225,7 +1225,11 @@ class WatchDogAgentApp(ttk.Frame):
         environment["PYTHONUNBUFFERED"] = "1"
         environment["MKL_THREADING_LAYER"] = "GNU"
 
-        environment.setdefault("BACKEND_URL", "http://localhost:8000")
+        environment["BACKEND_URL"] = self.connection_settings["backend_url"]
+        environment["MEDIAMTX_RTSP_URL"] = self.connection_settings["mediamtx_rtsp_url"]
+        environment["INTERNAL_API_TOKEN"] = self.connection_settings["internal_api_token"]
+
+        
 
         popen_options = {
             "cwd": AI_DIR, 
