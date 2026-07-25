@@ -1,9 +1,50 @@
 import tkinter as tk
-# This will start the Tkinter application
-root = tk.Tk()
-root.title("Neighbourhood Watchdog")
+from tkinter import ttk
 
-label = tk.Label(root, text="Hello World!")
-label.pack(padx=20, pady=20)
+from installer_page import WatchDogAgentApp
+from pairing_page import WatchDogPinPage
 
-root.mainloop()
+
+class WatchDogDesktopApp:
+    def __init__(self):
+
+        self.root = tk.Tk()
+        self.root.title("WatchDog Agent")
+        self.root.geometry("800x650")
+
+        style = ttk.Style(self.root)
+
+        if "vista" in style.theme_names():
+            style.theme_use("vista")
+        elif "clam" in style.theme_names():
+            style.theme_use("clam")
+
+        # Shared data
+        self.api_key = None
+        self.agent_id = None
+        self.current_frame = None
+
+        self.show_installer()
+
+        self.root.mainloop()
+
+    def show_page(self, page_class):
+        if self.current_frame:
+            self.current_frame.destroy()
+
+        self.current_frame = page_class(
+            self.root,
+            controller=self,
+        )
+
+        self.current_frame.pack(fill="both", expand=True)
+
+    def show_installer(self):
+        self.show_page(WatchDogAgentApp)
+
+    def show_pairing(self):
+        self.show_page(WatchDogPinPage)
+
+
+if __name__ == "__main__":
+    WatchDogDesktopApp()
