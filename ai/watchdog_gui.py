@@ -27,6 +27,11 @@ def _resolve_requirements_file() -> Path:#Determine what OS user is using, windo
             return candidate
     return Path(__file__).parent / "requirements.txt"
 
+# CONSTANTS
+SEGOE_FONT = "Segoe UI"
+PARTITION_LINE = "============================"
+ICON_CODE = "&#9679;"
+
 #APPLICATION PATHS
 
 AI_DIR = Path(__file__).resolve().parent
@@ -224,7 +229,7 @@ class WatchDogAgentApp(ttk.Frame):
         ttk.Label(
             outer, 
             text="WatchDog Agent Setup", 
-            font=("Segoe UI", 20, "bold") 
+            font=(SEGOE_FONT, 20, "bold") 
         ).pack(anchor="w")
 
 
@@ -261,7 +266,7 @@ class WatchDogAgentApp(ttk.Frame):
         ttk.Label(
             outer, 
             textvariable=self.status_var, 
-            font=("Segoe UI", 10, "bold")
+            font=(SEGOE_FONT, 10, "bold")
         ).pack(anchor="w", pady=(18, 6))
 
 
@@ -323,7 +328,7 @@ class WatchDogAgentApp(ttk.Frame):
             outer, 
             text="Setup complete: agent environment is ready.",
             foreground="#15803d",
-            font=("Segoe UI", 11, "bold")
+            font=(SEGOE_FONT, 11, "bold")
         ).pack(anchor="w", pady=(10, 4))
 
 
@@ -348,7 +353,7 @@ class WatchDogAgentApp(ttk.Frame):
             status_row, 
             textvariable=self.agent_status_var, 
             foreground="#b91c1c", 
-            font=("Segoe UI", 11, "bold")
+            font=(SEGOE_FONT, 11, "bold")
 
         )
         self.agent_status_label.pack(side="left")
@@ -393,7 +398,7 @@ class WatchDogAgentApp(ttk.Frame):
         ttk.Label(
             outer, 
             text="Agent Log", 
-            font=("Segoe UI", 10, "bold") 
+            font=(SEGOE_FONT, 10, "bold") 
         ).pack(anchor="w")
 
         self.agent_log_box = scrolledtext.ScrolledText(
@@ -605,7 +610,7 @@ class WatchDogAgentApp(ttk.Frame):
             self.emit("log", "")
             self.emit("log", "=== Detailed setup error ===")
             self.emit("log", traceback.format_exc())
-            self.emit("log", "============================")
+            self.emit("log", PARTITION_LINE)
 
 
 
@@ -1018,11 +1023,11 @@ class WatchDogAgentApp(ttk.Frame):
         }
 
         status_icons = {
-            "stopped": "&#9679;", 
-            "starting": "&#9679;", 
-            "running": "&#9679;", 
-            "stopping": "&#9679;", 
-            "error": "&#9679;"
+            "stopped": ICON_CODE, 
+            "starting": ICON_CODE, 
+            "running": ICON_CODE, 
+            "stopping": ICON_CODE, 
+            "error": ICON_CODE
         }
 
         if self.agent_status_var is not None:
@@ -1085,7 +1090,7 @@ class WatchDogAgentApp(ttk.Frame):
         ttk.Label(
             content,
             text="Remote Connection Settings", 
-            font=("Segoe UI", 14, "bold")
+            font=(SEGOE_FONT, 14, "bold")
         ).grid(row=0, column=0, columnspan=2, sticky="w")
 
 
@@ -1272,10 +1277,10 @@ class WatchDogAgentApp(ttk.Frame):
         self.health_check_in_progress = False
 
         self.append_agent_log("")
-        self.append_agent_log("============================")
+        self.append_agent_log(PARTITION_LINE)
         self.append_agent_log("Starting WatchDog AI Service...")
         self.append_agent_log(f"$ {' '.join(command)}")
-        self.append_agent_log("============================")
+        self.append_agent_log(PARTITION_LINE)
 
 
         self.set_agent_ui_state("starting", "Starting local AI service...")
