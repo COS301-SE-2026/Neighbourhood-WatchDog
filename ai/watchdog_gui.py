@@ -1076,8 +1076,64 @@ class WatchDogAgentApp(ttk.Frame):
 
         ttk.Label(
             content,
-                
-        )
+            text="Remote Connection Settings", 
+            font=("Segoe UI", 14, "bold")
+        ).grid(row=0, column=0, columnspan=2, sticky="w")
+
+
+        ttk.Label(
+            content, 
+            text=("These values are saved only on this device and are passed to "
+                  "to the local AI worker when you start the agent."
+                  ),
+            wraplength=520, 
+            justify="left"
+        ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(6, 18))
+
+
+        backend_var = StringVar(value=self.connection_settings["backend_url"])
+        mediamtx_var = StringVar(value=self.connection_settings["mediamtx_rtsp_url"])
+        token_var = StringVar(value=self.connection_settings["internal_api_token"])
+
+
+        ttk.Label(
+            content,
+            text="Backend API URL"
+        ).grid(row=2, column=0, sticky="w", pady=(0, 4))
+
+        ttk.Entry(
+            content, 
+            textvariable=backend_var, width=62
+        ).grid(row=3, column=0, columnspan=2, sticky="ew", pady=(0, 12))
+
+
+        ttk.Label(
+            content,
+            text="MediaMTX RTSP base URL"
+        ).grid(row=4, column=0, sticky="w", pady=(0, 4))
+
+
+        ttk.Entry(
+            content,
+            textvariable=mediamtx_var, 
+            width=62
+        ).grid(row=5, column=0, columnspan=2, sticky="ew", pady=(0, 12))
+
+
+        ttk.Label(
+            content, 
+            text="Internal agent token"
+        ).grid(row=6, column=0, sticky="w", pady=(0, 4))
+
+
+        ttk.Entry(
+            content, 
+            textvariable=token_var, 
+            width=62, 
+            show="o"
+        ).grid(row=7, column=0, columnspan=2, sticky="ew", pady=(0, 16))
+
+        
 
 
     def start_agent(self) -> None:
