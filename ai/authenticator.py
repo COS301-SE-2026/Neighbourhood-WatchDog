@@ -6,7 +6,8 @@ import requests
 import keyring
 
 API_BASE_URL = "http://localhost:8000" #TODO: Change to server IP address
-
+SEGOE_FONT = "Segoe UI"
+KEY_RELEASE = "<KeyRelease>"
 
 class WatchDogPinPage(ttk.Frame):
 
@@ -132,7 +133,7 @@ class WatchDogPinPage(ttk.Frame):
         ttk.Label(
             self,
             text="WatchDog Agent Setup",
-            font=("Segoe UI", 18, "bold")
+            font=(SEGOE_FONT, 18, "bold")
         ).grid(row=0, column=0, sticky="w")
 
         ttk.Label(
@@ -151,7 +152,7 @@ class WatchDogPinPage(ttk.Frame):
         self.status_label = ttk.Label(
             self,
             text="Status: Waiting for pairing token.",
-            font=("Segoe UI", 10, "bold")
+            font=(SEGOE_FONT, 10, "bold")
         )
         self.status_label.grid(row=2, column=0, sticky="w", pady=(0, 15))
 
@@ -172,7 +173,7 @@ class WatchDogPinPage(ttk.Frame):
             justify="center"
         )
         self.token_entry_1.pack(side="left")
-        self.token_entry_1.bind("<KeyRelease>", self.uppercase_entry)
+        self.token_entry_1.bind(KEY_RELEASE, self.uppercase_entry)
 
         ttk.Label(token_frame, text="-").pack(side="left", padx=5)
 
@@ -184,7 +185,7 @@ class WatchDogPinPage(ttk.Frame):
             justify="center"
         )
         self.token_entry_2.pack(side="left")
-        self.token_entry_2.bind("<KeyRelease>", self.uppercase_entry)
+        self.token_entry_2.bind(KEY_RELEASE, self.uppercase_entry)
 
         ttk.Label(token_frame, text="-").pack(side="left", padx=5)
 
@@ -196,7 +197,7 @@ class WatchDogPinPage(ttk.Frame):
             justify="center"
         )
         self.token_entry_3.pack(side="left")
-        self.token_entry_3.bind("<KeyRelease>", self.uppercase_entry)
+        self.token_entry_3.bind(KEY_RELEASE, self.uppercase_entry)
 
         ttk.Label(
             self,
@@ -208,7 +209,7 @@ class WatchDogPinPage(ttk.Frame):
         ttk.Label(
             self,
             text="Connection Progress",
-            font=("Segoe UI", 10, "bold")
+            font=(SEGOE_FONT, 10, "bold")
         ).grid(row=5, column=0, sticky="w")
 
         self.progress = ttk.Progressbar(
@@ -222,7 +223,7 @@ class WatchDogPinPage(ttk.Frame):
         ttk.Label(
             self,
             text="Connection Log",
-            font=("Segoe UI", 10, "bold")
+            font=(SEGOE_FONT, 10, "bold")
         ).grid(row=7, column=0, sticky="w")
 
         log_frame = ttk.Frame(self)
