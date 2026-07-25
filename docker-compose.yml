@@ -58,6 +58,7 @@ services:
       NOTIFICATION_ENABLED: ${NOTIFICATION_ENABLED}
       SKIP_DB_INIT: "true"
       MEDIAMTX_PUBLISH_MASTER_KEY: ${MEDIAMTX_PUBLISH_MASTER_KEY}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
     volumes:
       - ./backend:/app
     depends_on:
