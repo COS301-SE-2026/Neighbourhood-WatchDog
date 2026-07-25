@@ -38,3 +38,5 @@ __pycache__/
 ai/.watchdog-agent/
 ai/pipeline/models/weights/*.part
 ai/.env.example
+
+watchdog-ec2-key.pem
