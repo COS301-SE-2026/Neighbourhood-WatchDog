@@ -169,7 +169,8 @@ class WatchDogAgentApp(ttk.Frame):
         super().__init__(parent, padding=20)
 
         self.controller = controller
-        # self.root = root
+        self.root = parent
+        self.connection_settings = load_connection_settings()
         # self.root.title("Neighbourhood WatchDog Agent")
         # self.root.geometry("760x560")
         # self.root.minsize(700, 500)
@@ -1236,7 +1237,7 @@ class WatchDogAgentApp(ttk.Frame):
         environment["MEDIAMTX_RTSP_URL"] = self.connection_settings["mediamtx_rtsp_url"]
         environment["INTERNAL_API_TOKEN"] = self.connection_settings["internal_api_token"]
 
-        
+
 
         popen_options = {
             "cwd": AI_DIR, 
