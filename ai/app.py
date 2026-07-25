@@ -38,9 +38,9 @@ person_model = YOLO("pipeline/models/weights/yolov8n.pt")
 
 
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8001")
+BACKEND_URL = os.getenv("BACKEND_URL", "https://api-staging.neighbourhoodwatchdog.co.za")
 INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "dev-token")
-MEDIAMTX_RTSP_URL = os.getenv("MEDIAMTX_RTSP_URL", "rtsp://127.0.0.1:8554")
+MEDIAMTX_RTSP_URL = os.getenv("MEDIAMTX_RTSP_URL", "rtsp://stream-staging.neighbourhoodwatchdog.co.za:8554")
 
 _model_lock = threading.Lock()
 # CAMERA_ID = "2"

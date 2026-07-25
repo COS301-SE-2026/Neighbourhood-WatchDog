@@ -1049,7 +1049,26 @@ class WatchDogAgentApp:
             pass
 
 
+def show_connection_settings(self) -> None:
+    if self.agent_process is not None and self.agent_process.poll() is None:
+        messagebox.showwarning("Stop the Agent First", "Stop the AI service before changing connection settings.")
+        return
 
+
+    dialog = Toplevel(self.root)
+    dialog.title("WatchDog Agent Connection Settings")
+    dialog.resizable(False, False)
+    dialog.transient(self.root)
+    dialog.grab_set()
+
+
+    content = ttk.Frame(dialog, padding=20)
+    content.pack(fill="both", expand=True)
+
+    ttk.Label(
+        content,
+            
+    )
 
 
     def start_agent(self) -> None:
