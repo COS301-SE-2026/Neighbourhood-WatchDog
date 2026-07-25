@@ -56,7 +56,6 @@ def _camera_publish_credentials(camera_id: str) -> tuple[str, str]:
 
 @router.get(
     "/cameras/enabled", 
-    dependencies=[Depends(verify_internal_token)], 
     summary="List enabled cameras for the AI worker"
 )
 def list_enabled_cameras(
@@ -82,7 +81,7 @@ def list_enabled_cameras(
                 "id": camera.id, 
                 "rtsp_url": camera.rtsp_url, 
                 "enabled": camera.enabled, 
-                "neighbourhood_id": str(camera.neighbourhood_id), 
+                "neighbourhood_id": str(camera.neighbourhood_id) if camera.neighbourhood_id else None, 
                 "confidence_threshold": camera.confidence_threshold, 
                 "publish_username": publish_username, 
                 "publish_password": publish_password

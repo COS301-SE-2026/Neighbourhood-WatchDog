@@ -1,6 +1,7 @@
 from fastapi import HTTPException, Request, Depends, status, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import Select
+from typing import Annotated
 import os
 import hmac
 import hashlib
@@ -90,8 +91,8 @@ def require_role(*allowed_roles: str):#input any number of roles that are allowe
 # edge agents auth stuff
 
 def get_authenticated_edge_agent(
-    x_internal_token: str = Header(...),
-    db: DbSession = Depends(),
+    db: DbSession,
+    x_internal_token: Annotated[str, Header()],
 ) -> EdgeAgentCredential:
     provided_hash = hashlib.sha256(x_internal_token.encode()).hexdigest()
 
