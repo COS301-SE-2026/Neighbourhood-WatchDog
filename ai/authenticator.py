@@ -122,8 +122,9 @@ class WatchDogPinPage(ttk.Frame):
         widget.insert(0, value)
     
 
-    def __init__(self, parent):
+    def __init__(self, parent, controller=None):
         super().__init__(parent, padding=25)
+        self.controller = controller
 
         self.columnconfigure(0, weight=1)
 

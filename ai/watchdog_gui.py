@@ -156,14 +156,16 @@ def save_connection_settings(settings: dict[str, str]) -> None:
     temporary_file.replace(CONNECTION_SETTINGS_FILE)
 
 
-class WatchDogAgentApp:
+class WatchDogAgentApp(ttk.Frame):
 
-    def __init__(self, root: Tk) -> None:
+    def __init__(self, parent, controller) -> None:
+        super().__init__(parent, padding=20)
 
-        self.root = root
-        self.root.title("Neighbourhood WatchDog Agent")
-        self.root.geometry("760x560")
-        self.root.minsize(700, 500)
+        self.controller = controller
+        # self.root = root
+        # self.root.title("Neighbourhood WatchDog Agent")
+        # self.root.geometry("760x560")
+        # self.root.minsize(700, 500)
 
         self.events: queue.Queue[tuple[str, object]] = queue.Queue()
         self.setup_running = False
@@ -186,11 +188,11 @@ class WatchDogAgentApp:
         self.setup_button = None
         self.log_box = None
 
-        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.winfo_toplevel().protocol("WM_DELETE_WINDOW", self.on_close)
 
 
         #polling messages from background
-        self.root.after(100, self.process_ui_events)
+        self.after(100, self.process_ui_events)
 
         if is_installation_valid():
             self.show_run_screen()
@@ -200,7 +202,7 @@ class WatchDogAgentApp:
 
     #screen helper function
     def clear_screen(self) -> None:
-        for child in self.root.winfo_children():
+        for child in self.winfo_children():
             child.destroy()
 
 
@@ -208,7 +210,7 @@ class WatchDogAgentApp:
 
         self.clear_screen()
 
-        outer = ttk.Frame(self.root, padding=24)
+        outer = ttk.Frame(self, padding=24)
         outer.pack(fill="both", expand=True)
 
         ttk.Label(
@@ -298,7 +300,7 @@ class WatchDogAgentApp:
 
         self.clear_screen()
 
-        outer = ttk.Frame(self.root, padding=24)
+        outer = ttk.Frame(self, padding=24)
         outer.pack(fill="both", expand=True)
 
 
@@ -954,7 +956,7 @@ class WatchDogAgentApp:
             pass
 
 
-        self.root.after(100, self.process_ui_events)
+        self.after(100, self.process_ui_events)
 
 
     def start_indeterminate_progress(self) -> None:
@@ -1168,7 +1170,7 @@ class WatchDogAgentApp:
         ).start()
 
 
-        self.root.after(300, self.monitor_agent_process)
+        self.after(300, self.monitor_agent_process)
 
 
     def read_agent_output(self, process) -> None:
@@ -1208,7 +1210,7 @@ class WatchDogAgentApp:
             self.health_check_in_progress = False
 
             if self.exit_after_stop:
-                self.root.destroy()
+                self.winfo_toplevel().destroy()
                 return
 
             if was_requested_stop:
@@ -1242,7 +1244,7 @@ class WatchDogAgentApp:
             ).start()
 
 
-            self.root.after(500, self.monitor_agent_process)
+            self.after(500, self.monitor_agent_process)
 
 
     def check_agent_health(self) -> None:
@@ -1397,7 +1399,7 @@ class WatchDogAgentApp:
 
         
 
-        self.root.destroy()
+        self.winfo_toplevel().destroy()
 
 def main() -> None:
     if sys.version_info[:2] != SUPPORTED_PYTHON:
