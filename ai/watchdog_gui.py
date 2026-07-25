@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from tkinter import Tk, Toplevel, messagebox, scrolledtext, StringVar, DoubleVar
 from tkinter import ttk
+import platform
 
 
 import json
@@ -19,6 +20,12 @@ import urllib.request
 import time
 import signal
 
+def _resolve_requirements_file() -> Path:#Determine what OS user is using, windows -> requirements.txt | WSL/Linux -> requirements-linux.txt
+    if platform.system() == "Linux":
+        candidate = Path(__file__).parent / "requirements-linux.txt"
+        if candidate.is_file():
+            return candidate
+    return Path(__file__).parent / "requirements.txt"
 
 #APPLICATION PATHS
 
@@ -27,7 +34,7 @@ RUNTIME_DIR = AI_DIR / ".watchdog-agent"
 VENV_DIR = RUNTIME_DIR / "venv"
 STATE_FILE = RUNTIME_DIR / "install-state.json"
 CONNECTION_SETTINGS_FILE = RUNTIME_DIR / "connection-settings.json"
-REQUIREMENTS_FILE = AI_DIR / "requirements.txt"
+REQUIREMENTS_FILE = _resolve_requirements_file()
 
 WEIGHTS_DIR = AI_DIR / "pipeline" / "models" / "weights"
 THREAT_MODEL_PATH = WEIGHTS_DIR / "best.pt"
