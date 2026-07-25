@@ -1,8 +1,6 @@
 "use client"
 
-import { clear } from "console";
 import { useEffect, useState, useRef } from "react";
-import { ur } from "zod/locales";
 
 export interface Track {
     track_id: number | string;
@@ -43,7 +41,7 @@ export function useCameraAnnotations(cameraId: string) {
 
     useEffect(() => {
         const baseUrl = getAnnotationWebSocketBaseUrl();
-        const ws = new WebSocket(`${baseUrl}://localhost:8000/api/stream/cameras/${cameraId}/annotations/ws`);
+        const ws = new WebSocket(`${baseUrl}/api/stream/cameras/${cameraId}/annotations/ws`);
 
 
          //clearing canvas if no data comes for 2 seconds

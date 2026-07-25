@@ -56,7 +56,6 @@ export default function Dashboard() {
                         location: c.location,
                         visibility: c.visibility,
                         enabled: c.enabled,
-                        rtspUrl: c.rtsp_url,
                     }))
                 );
             })
@@ -82,7 +81,6 @@ export default function Dashboard() {
         location: newCamera.location,
         visibility: newCamera.visibility,
         enabled: newCamera.enabled,
-        rtspUrl: newCamera.rtsp_url,
             }
         ]);
         setShowCard(false);
