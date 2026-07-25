@@ -13,7 +13,10 @@ router = APIRouter(prefix="/camera", tags=["cameras"])
 
 
 @router.post("/register-camera")
-async def register_camera(req: RegisterCameraReq, db: DbSession, claims: dict = Depends(get_current_user)):
+async def register_camera(req: RegisterCameraReq,
+    db: DbSession,
+    claims: Annotated[dict, Depends(get_current_user)]
+) -> RegisterCameraRes:
     """Creates a new camera and links it to the property of the user."""
     
     require_role(claims = claims, allowed_roles= ['RESIDENT'])
@@ -26,7 +29,10 @@ async def register_camera(req: RegisterCameraReq, db: DbSession, claims: dict = 
     )
 
 @router.delete("/{camera_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def deregister_camera(camera_id: UUID, db: DbSession, claims: Annotated[dict, Depends(get_current_user)]):
+async def deregister_camera(camera_id: UUID,
+    db: DbSession,
+    claims: Annotated[dict, Depends(get_current_user)]
+):
     """Permanently remove a camera from a users property and the system."""
     require_role(claims = claims, allowed_roles= ['RESIDENT'])
 
@@ -36,7 +42,7 @@ async def deregister_camera(camera_id: UUID, db: DbSession, claims: Annotated[di
 async def get_property_cameras(
     property_id: str,
     db: DbSession,
-    claims: dict = Depends(get_current_user),
+    claims: Annotated[dict, Depends(get_current_user)],
 ) -> CamerasRes:
     require_role(claims, ["RESIDENT"])
     return await list_cameras_handler(property_id, db, claims)
@@ -47,7 +53,7 @@ async def edit_camera(
     req: CameraEditReq,
     db: DbSession, 
     claims: Annotated[dict, Depends(get_current_user)]
-    ):
+) -> EditCameraRes:
     """Edit a camera"""
     require_role(claims = claims, allowed_roles= ['RESIDENT'])
 

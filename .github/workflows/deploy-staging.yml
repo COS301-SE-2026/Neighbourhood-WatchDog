@@ -31,6 +31,7 @@ jobs:
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
           TWILIO_WHATSAPP_FROM: ${{ secrets.TWILIO_WHATSAPP_FROM }}
           NOTIFICATION_ENABLED: ${{ secrets.NOTIFICATION_ENABLED }}
+          RTSP_ENCRYPTION_KEY: ${{ secrets.RTSP_ENCRYPTION_KEY }}
           TESTING: ${{ secrets.TESTING }}
           DEBUG: ${{ secrets.DEBUG }}
         run: |
@@ -52,6 +53,7 @@ jobs:
           TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
           TWILIO_WHATSAPP_FROM=${TWILIO_WHATSAPP_FROM}
           NOTIFICATION_ENABLED=${NOTIFICATION_ENABLED}
+          RTSP_ENCRYPTION_KEY=${RTSP_ENCRYPTION_KEY}
           TESTING=${TESTING}
           DEBUG=${DEBUG}
           DETECTION_CONFIDENCE_THRESHOLD=0.6
