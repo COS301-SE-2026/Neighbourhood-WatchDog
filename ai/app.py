@@ -93,15 +93,17 @@ _model_lock = threading.Lock()
 
 
 def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp: str) -> None:
-    """Fire-and-forget: POST track data to backend so it can broadcast via WebSocket."""
+    """POST detection track data to backend so it can broadcast via WebSocket."""
     try:
-        httpx.post(
+        response = httpx.post(
             f"{backend_url}/api/stream/cameras/{camera_id}/annotations",
+            headers={"X-Internal-Token": INTERNAL_API_TOKEN}, 
             json={"tracks": tracks, "timestamp": timestamp},
             timeout=0.5,
         )
-    except Exception:
-        pass
+        response.raise_for_status()
+    except httpx.Exception as error:
+        logger.warning("Could not push annotations for camera %s: %s", camera_id, error)
 
 
 def _extract_detections(frame, confidence_threshold: float, zones: list | None = None) -> tuple[list, list]:
