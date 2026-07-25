@@ -8,7 +8,6 @@ from app.services.pairing_token import get_pairing_token_handler, pair_agent_han
 from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends
-from app.auth.rate_limiter import limiter
 
 router = APIRouter(prefix="/pairing-token", tags=["pairing-token"])
 

@@ -10,7 +10,6 @@ from sqlalchemy import select, Select
 from pydantic import BaseModel
 from typing import Annotated
 
-from app.api.controllers.detection import verify_internal_token
 from app.core.database import DbSession
 from app.models.camera import Camera
 from app.models.edge_agent_credentials import EdgeAgentCredential

@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import Select
 from typing import Annotated
 import os
-import hmac
 import hashlib
 
 from app.models.user import User
