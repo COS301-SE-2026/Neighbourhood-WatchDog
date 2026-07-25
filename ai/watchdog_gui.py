@@ -330,7 +330,7 @@ class WatchDogAgentApp(ttk.Frame):
             outer, 
             text=(
                 "Start the local AI service to run detection and send"
-                "annotaion data to the backend"
+                " annotaion data to the backend"
                 ), 
                 wraplength=680,
                 justify="left" 
