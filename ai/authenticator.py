@@ -263,12 +263,12 @@ class WatchDogPinPage(ttk.Frame):
         )
         self.connect_button.grid(row=0, column=0, sticky="w")
 
-        self.exit_button = ttk.Button(
+        self.back_button = ttk.Button(
             button_frame,
-            text="Exit",
-            command=self.exit_application
+            text="Back",
+            command=self.controller.show_installer
         )
-        self.exit_button.grid(row=0, column=1, sticky="e")
+        self.back_button.grid(row=0, column=1, sticky="e")
 
 
 if __name__ == "__main__":
