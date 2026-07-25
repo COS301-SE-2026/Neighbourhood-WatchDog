@@ -69,9 +69,9 @@ class WatchDogPinPage(ttk.Frame):
 
                 if api_key:
                     config_data = {k: v for k, v in inner.items() if k != "api_key"}
-                    save_config(config_data) #TODO: Extract the other things and store them 
+                    save_config(config_data)
                     keyring.set_password("WatchDog", "api_key", api_key)
-                    # to get the key back you say:  "vaeriable = keyring.get_password("Watchdog", "api_key")"
+                    # to get the key back you say:  "api_key = keyring.get_password("Watchdog", "api_key")"
                     
                     self.status_label.config(text="Status: Pairing successful.")
                     self.log.config(state="normal")

@@ -1,10 +1,14 @@
-import os
-from fastapi import HTTPException, Request, Depends, status
+from fastapi import HTTPException, Request, Depends, status, Header
 from sqlalchemy.orm import Session
+from sqlalchemy import Select
+import os
+import hmac
+import hashlib
 
 from app.models.user import User
-from app.core.database import get_db
+from app.core.database import get_db, DbSession
 from app.auth.jwt import get_authenticated_claims
+from app.models.edge_agent_credentials import EdgeAgentCredential
 
 # default mock identity
 # TODO: remove mock when Cognito is live
@@ -82,3 +86,22 @@ def require_role(*allowed_roles: str):#input any number of roles that are allowe
         return current_user
 
     return role_checker
+
+# edge agents auth stuff
+
+def get_authenticated_edge_agent(
+    x_internal_token: str = Header(...),
+    db: DbSession = Depends(),
+) -> EdgeAgentCredential:
+    provided_hash = hashlib.sha256(x_internal_token.encode()).hexdigest()
+
+    stmt = Select(EdgeAgentCredential).where(
+        EdgeAgentCredential.key_hash == provided_hash,
+        EdgeAgentCredential.revoked_at.is_(None),
+    )
+    credential = db.execute(stmt).scalar_one_or_none()
+
+    if credential is None:
+        raise HTTPException(401, "Invalid or revoked edge agent credential.")
+
+    return credential

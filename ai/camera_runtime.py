@@ -11,6 +11,7 @@ from typing import Callable
 from urllib.parse import quote
 
 import httpx
+import keyring
 
 
 logger = logging.getLogger("watchdog.ai.runtime")
@@ -93,9 +94,14 @@ class CameraSupervisor:
             self._stop_event.wait(self.reconcile_interval_seconds)
 
     def _fetch_enabled_cameras(self) -> dict[str, CameraSpec]:
+        api_key = keyring.get_password("Watchdog", "api_key")
+
+        if not api_key:
+            raise RuntimeError("No paired API key found in keyring. Run agent pairing before starting the agent.")
+
         response = httpx.get(
             f"{self.backend_url}/internal/cameras/enabled",
-            headers={"X-Internal-Token": self.internal_token},
+            headers={"X-Internal-Token": api_key},
             timeout=5.0,
         )
         response.raise_for_status()

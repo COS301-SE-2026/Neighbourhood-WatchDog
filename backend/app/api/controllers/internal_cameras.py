@@ -6,12 +6,15 @@ import re
 
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select
+from sqlalchemy import select, Select
 from pydantic import BaseModel
+from typing import Annotated
 
 from app.api.controllers.detection import verify_internal_token
 from app.core.database import DbSession
 from app.models.camera import Camera
+from app.models.edge_agent_credentials import EdgeAgentCredential
+from app.auth.dependencies import get_authenticated_edge_agent
 
 
 router = APIRouter(prefix="/internal", tags=["internal"])
@@ -56,14 +59,16 @@ def _camera_publish_credentials(camera_id: str) -> tuple[str, str]:
     dependencies=[Depends(verify_internal_token)], 
     summary="List enabled cameras for the AI worker"
 )
-def list_enabled_cameras(db: DbSession) -> dict:
+def list_enabled_cameras(
+    db: DbSession,
+    credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)],
+) -> dict:
 
-    cameras = db.execute(
-        select(Camera)
-        .where(Camera.enabled.is_(True))
-        .order_by(Camera.created_at.asc())
-    ).scalars().all()
-
+    stmt = Select(Camera).where(
+        Camera.property_id == credential.property_id,
+        Camera.enabled.is_(True)
+    ).order_by(Camera.created_at.asc())
+    cameras = db.execute(stmt).scalars().all()
 
     data = []
 
