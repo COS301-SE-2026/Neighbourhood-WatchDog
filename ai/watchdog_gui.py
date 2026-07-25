@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
-from tkinter import Tk, messagebox, scrolledtext, StringVar, DoubleVar
+from tkinter import Tk, Toplevel, messagebox, scrolledtext, StringVar, DoubleVar
 from tkinter import ttk
 
 
@@ -26,6 +26,7 @@ AI_DIR = Path(__file__).resolve().parent
 RUNTIME_DIR = AI_DIR / ".watchdog-agent"
 VENV_DIR = RUNTIME_DIR / "venv"
 STATE_FILE = RUNTIME_DIR / "install-state.json"
+CONNECTION_SETTINGS_FILE = RUNTIME_DIR / "connection-settings.json"
 REQUIREMENTS_FILE = AI_DIR / "requirements.txt"
 
 WEIGHTS_DIR = AI_DIR / "pipeline" / "models" / "weights"
@@ -114,6 +115,45 @@ def is_installation_valid() -> bool:
 
     return (state.get("schema_version") == INSTALL_SCHEMA_VERSION and state.get("python_version", "").startswith("3.12"))
 
+
+def load_connection_settings() -> dict[str, str]:
+
+    defaults = {
+        "backend_url": os.getenv("BACKEND_URL", "http://localhost:8000"),
+        "mediamtx_rtsp_url": os.getenv("MEDIAMTX_RTSP_URL", "rtsp://127.0.0.1:8554"),
+        "internal_api_token": os.getenv("INTERNAL_API_TOKEN", "dev-token")
+    }
+
+    if not CONNECTION_SETTINGS_FILE.is_file():
+        return defaults
+
+
+    try:
+        saved = json.loads(CONNECTION_SETTINGS_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return defaults
+
+
+
+    for key in defaults:
+        value = saved.get(key)
+
+        if isinstance(value, str) and value.strip():
+            defaults[key] = value.strip()
+
+
+    return defaults
+
+
+
+
+def save_connection_settings(settings: dict[str, str]) -> None:
+
+    RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+
+    temporary_file = CONNECTION_SETTINGS_FILE.with_suffix(".tmp")
+    temporary_file.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+    temporary_file.replace(CONNECTION_SETTINGS_FILE)
 
 
 class WatchDogAgentApp:
@@ -325,6 +365,11 @@ class WatchDogAgentApp:
 
         )
         self.stop_agent_button.pack(side="left", padx=(10, 0))
+
+
+        ttk.Button(
+            action_row, text="Connection Settings", command=self.show_connection_settings
+        ).pack(side="left", padx=(10, 0))
 
 
         #live service log
@@ -1002,6 +1047,9 @@ class WatchDogAgentApp:
             self.agent_log_box.configure(state="disabled")
         except Exception:
             pass
+
+
+
 
 
     def start_agent(self) -> None:
