@@ -40,7 +40,9 @@ def verify_jwt(token: str) -> dict:
     """Verifies the JWT and returns the claims (data from JWT)"""
     headers = jwt.get_unverified_header(token) #decode JWT headers
     kid = headers.get("kid") #key id to find which public key used
-    jwk = next((k for k in JWKS if k["kid"] == kid), None) #find which primary key was used
+    jwk = None
+    if JWKS:
+        jwk = next((k for k in JWKS if k["kid"] == kid), None) #find which primary key was used
 
     if jwk is None:
         raise jwt.PyJWTError("Unable to find matching public key.")

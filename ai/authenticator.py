@@ -1,4 +1,4 @@
-from app_config import save_config, load_config
+from app_config import save_config
 
 import tkinter as tk
 from tkinter import ttk
