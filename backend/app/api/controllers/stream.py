@@ -1,6 +1,9 @@
 import asyncio
 import json
-from fastapi import APIRouter, WebSocket
+import os 
+import secrets
+
+from fastapi import APIRouter, Header, HTTPException, WebSocket, status
 
 router = APIRouter(prefix="/api/stream", tags=["stream"])
 
@@ -34,12 +37,22 @@ async def broadcast_annotation(camera_id: str, annotation_data: dict) -> None:
         connections.discard(ws)
 
 @router.post("/cameras/{camera_id}/annotations")
-async def receive_annotation(camera_id: str, data: dict):
-    """Receive annotation data from detector and broadcast to connected clients"""
+async def receive_annotation(camera_id: str, data: dict, x_internal_token: str | None = Header(default=None)):
+
+    expected_token = os.environ.get("INTERNAL_API_TOKEN")
+
+    if not expected_token:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Annotation ingestion is not configured.")
+
+
+    if not x_internal_token or not secrets.compare_digest(x_internal_token, expected_token):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid internal token.")
+
+
     await broadcast_annotation(camera_id, {
-        "camera_id": camera_id,
+        "camera_id": camera_id, 
         "event": "annotation",
-        **data  # Contains: tracks (list of {track_id, confidence, bbox}), timestamp
+        **data,
     })
     return {"status": "broadcasted"}
 
