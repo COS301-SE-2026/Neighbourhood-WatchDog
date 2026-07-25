@@ -1133,7 +1133,51 @@ class WatchDogAgentApp(ttk.Frame):
             show="o"
         ).grid(row=7, column=0, columnspan=2, sticky="ew", pady=(0, 16))
 
-        
+
+        def save_settings() -> None:
+            backend_url = backend_var.get().strip().rstrip("/")
+            mediamtx_rtsp_url = mediamtx_var.get().strip().rstrip("/")
+            internal_api_token = token_var.get().strip()
+
+
+            if not backend_url.startswith(("http://", "https://")):
+                messagebox.showerror("Invalid Backend URL", "Backend API URL must start with http:// or https://", parent=dialog)
+
+                return
+
+
+            if not mediamtx_rtsp_url.startswith("rtsp://"):
+                messagebox.showerror("Invalid MediaMTX URL", "MediaMTX RTSP base URL must start with rtsp://", parent=dialog)
+                return
+
+            if not internal_api_token:
+                messagebox.showerror("Missing Internal Token", "An internal agent token is required.", parent=dialog)
+
+                return
+
+            
+            self.connection_settings = {
+                "backend_url": backend_url, 
+                "mediamtx_rtsp_url": mediamtx_rtsp_url, 
+                "internal_api_token": internal_api_token 
+
+            }
+
+            save_connection_settings(self.connection_settings)
+
+
+            dialog.destroy()
+            messagebox.showinfo("Connection Settings Saved", "The new settings will apply the next time you start the agent.")
+
+
+        button_row = ttk.Frame(content)
+        button_row.grid(row=8, column=0, columnspan=2, sticky="ew")
+
+
+        ttk.Button(button_row, text="Save", command=save_settings).pack(side="left")
+
+        ttk.Button(button_row, text="Cancel", command=dialog.destroy).pack(side="right")
+                
 
 
     def start_agent(self) -> None:
