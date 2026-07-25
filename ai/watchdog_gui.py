@@ -380,6 +380,13 @@ class WatchDogAgentApp(ttk.Frame):
             action_row, text="Connection Settings", command=self.show_connection_settings
         ).pack(side="left", padx=(10, 0))
 
+        self.pair_button = ttk.Button(
+            action_row,
+            text="Pair Agent",
+            command=self.controller.show_pairing,
+        )
+        self.pair_button.pack(side="left", padx=5)
+
 
         #live service log
         ttk.Label(

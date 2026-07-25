@@ -78,6 +78,7 @@ class WatchDogPinPage(ttk.Frame):
                     self.log.insert("end", "[INFO] Pairing successful.\n")
                     self.log.see("end")
                     self.log.config(state="disabled")
+                    self.controller.show_installer()
                 else:
                     self.status_label.config(text="Status: Pairing failed.")
                     self.log.config(state="normal")
