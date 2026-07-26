@@ -185,8 +185,8 @@ export default function AlertsPage({
   const [selectedSeverities, setSelectedSeverities] = useState<
     Set<AlertSeverity>
   >(new Set(ALL_SEVERITIES));
-  const [selectedStatuses, setSelectedStatuses] = useState<Set<AlertStatus>>(
-    new Set(["NEW", "ACKNOWLEDGED"]),
+  const [selectedStatus, setSelectedStatus] = useState<AlertStatus | null>(
+    null,
   );
 
   function triggerRefresh() {
@@ -246,7 +246,11 @@ export default function AlertsPage({
 
     const controller = new AbortController();
 
-    fetchAlerts(neighbourhoodId, undefined, controller.signal)
+    fetchAlerts(
+      neighbourhoodId,
+      selectedStatus ? { status: selectedStatus } : undefined,
+      controller.signal,
+    )
       .then(({ alerts: fetched }) => {
         if (!mountedRef.current) return;
         dispatch({ type: "FETCH_SUCCESS", payload: fetched });
@@ -261,7 +265,7 @@ export default function AlertsPage({
       });
 
     return () => controller.abort();
-  }, [neighbourhoodId, fetchTick]);
+  }, [neighbourhoodId, fetchTick, selectedStatus]);
 
   useEffect(() => {
     if (!neighbourhoodId) return;
@@ -359,19 +363,13 @@ export default function AlertsPage({
     () =>
       alerts.filter((a) => {
         const sev = getSeverity(a.detection_type);
-        return (
-          selectedSeverities.has(sev) &&
-          selectedStatuses.has(a.status as AlertStatus)
-        );
+        return selectedSeverities.has(sev);
       }),
-    [alerts, selectedSeverities, selectedStatuses],
+    [alerts, selectedSeverities],
   );
 
   const hasActiveFilters =
-    selectedSeverities.size < ALL_SEVERITIES.length ||
-    !selectedStatuses.has("NEW") ||
-    !selectedStatuses.has("ACKNOWLEDGED") ||
-    selectedStatuses.has("RESOLVED");
+    selectedSeverities.size < ALL_SEVERITIES.length || selectedStatus !== null;
 
   const newCount = alerts.filter((a) => a.status === "NEW").length;
   const criticalCount = alerts.filter(
