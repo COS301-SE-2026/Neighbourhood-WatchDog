@@ -62,7 +62,7 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
             timeout=0.5,
         )
         response.raise_for_status()
-    except httpx.Exception as error:
+    except httpx.RequestError as error:
         logger.warning("Could not push annotations for camera %s: %s", camera_id, error)
 
 
