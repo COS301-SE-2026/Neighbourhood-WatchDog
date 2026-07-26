@@ -15,7 +15,7 @@ from pipeline.utils.zone_config import filter_detections_by_zones
 import httpx
 from datetime import datetime, timezone
 import logging
-
+import keyring
 
 logger = logging.getLogger("watchdog.ai")
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
@@ -48,10 +48,15 @@ _model_lock = threading.Lock()
 
 def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp: str) -> None:
     """POST detection track data to backend so it can broadcast via WebSocket."""
+    api_key = keyring.get_password("WatchDog", "api_key")
+    if not api_key:
+        logger.warning("No paired API key found. Cannot push annotations")
+
+
     try:
         response = httpx.post(
             f"{backend_url}/api/stream/cameras/{camera_id}/annotations",
-            headers={"X-Internal-Token": INTERNAL_API_TOKEN}, 
+            headers={"X-Internal-Token": api_key}, 
             json={"tracks": tracks, "timestamp": timestamp},
             timeout=0.5,
         )
