@@ -4,14 +4,16 @@ from app.auth.dependencies import get_current_user
 from app.schemas.pairing_token import LinkPropertyTokenRes
 from app.schemas.pairing_token import EdgeAgentsCredentialsRes
 from app.services.pairing_token import get_pairing_token_handler, pair_agent_handler
+from app.auth.rate_limiter import limiter
 
 from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends
 
+
 router = APIRouter(prefix="/pairing-token", tags=["pairing-token"])
 
-@router.get("/{property_id}")
+@router.get("/{property_id}") #TODO: make private, only accessible by internal services
 async def get_pairing_token(
     property_id: UUID,
     db: DbSession,
@@ -22,7 +24,8 @@ async def get_pairing_token(
 
     return await get_pairing_token_handler(property_id, db)
 
-@router.get("/token/{pairing_token}")
+@router.get("/token/{pairing_token}")#TODO: needs to be public
+@limiter.limit("10/minute")  # Limit to 10 requests per minute
 async def pair_agent(
     pairing_token: str,
     db: DbSession,
