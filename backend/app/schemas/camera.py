@@ -28,7 +28,7 @@ class CameraRes(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     property_id: UUID
-    neighbourhood_id: UUID
+    neighbourhood_id: UUID | None = None
     name: NonEmptyString
     visibility: CameraVisibilityEnum
     location: NonEmptyString
