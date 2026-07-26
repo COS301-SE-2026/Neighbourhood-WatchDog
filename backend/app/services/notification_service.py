@@ -1,22 +1,96 @@
-<<<<<<< HEAD
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import datetime
-import time
 
 import os
 import dotenv
 
+import logging
+from uuid import UUID
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.models.notification import Notification, NotificationChannel, NotificationStatus
+from app.models.user import User, UserRole
+from app.models.camera import Camera
+from app.models.property_user import PropertyUser
+
 dotenv.load_dotenv()
+logger = logging.getLogger(__name__)
 
 
 SMTP_SERVER = 'smtp.gmail.com'
 SMTP_PORT = 587
 SENDER_EMAIL = os.getenv('SMTP_SENDER_EMAIL')
 SENDER_PASSWORD = os.getenv('SMTP_APP_PASSWORD')
-RECIPIENT_EMAIL = os.getenv('SMTP_RECIPIENT_EMAIL')
 
+CRITICAL_TYPES = {"WEAPON_DETECTED", "FALL_DETECTED"}
+
+def _classify_severity(detection_type: str, confidence_score: float) -> str:
+
+    if detection_type in CRITICAL_TYPES:
+        return "CRITICAL"
+    elif confidence_score >= 0.65:
+        return "HIGH"
+    elif confidence_score >= 0.45:
+        return "MEDIUM"
+    return "LOW"
+
+def should_notify(detection_type: str, confidence_score: float) -> bool:
+    severity = _classify_severity(detection_type, confidence_score)
+    return severity in ("HIGH", "CRITICAL")
+
+def _format_whatsapp_message(
+        severity: str,
+        detection_type: str,
+        camera_name: str,
+        timestamp: str
+        
+) -> str:
+    severity_emoji = "🔴" if severity == "CRITICAL" else "🟡"
+    formatted_type = detection_type.replace("_", " ").title()
+    return(
+        f"{severity_emoji} *{severity} ALERT - Neighbourhood Watchdog*\n\n"
+        f"Camera: {camera_name}\n"
+        f"Detection: {formatted_type}\n"
+        f"Time: {timestamp}\n\n"
+        "Open the dashboard to review this alert."
+    )
+
+def _send_whatsapp(to_phone: str, message: str) -> tuple[bool, str | None]:
+    """Send whatsapp message using twilio snadbox. Recipient must be part of sandbox to receive messages"""
+    try:
+        from twilio.rest import Client
+ 
+        account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+        auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+        from_number = os.getenv("TWILIO_WHATSAPP_FROM", "whatsapp:+14155238886")
+ 
+        if not account_sid or not auth_token:
+            return False, "Twilio credentials not configured"
+ 
+        #Ennsures number has whatsapp prefix and +27 country code e.g. 0821234567 -> whatsapp:+27821234567
+        normalised = to_phone.strip()
+        if not normalised.startswith("whatsapp:"):
+            if normalised.startswith("0"):
+                normalised = "+27" + normalised[1:]
+            if not normalised.startswith("+"):
+                normalised = "+" + normalised
+            normalised = f"whatsapp:{normalised}"
+ 
+        client = Client(account_sid, auth_token)
+        client.messages.create(
+            from_=from_number,
+            to=normalised,
+            body=message,
+        )
+        return True, None
+ 
+    except Exception as e:
+        logger.exception(f"WhatsApp send failed to {to_phone}")
+        return False, str(e)
+    
 
 def build_alert_email(alert_type: str, camera_name: str, location: str,
                       risk_level: str = "HIGH", dashboard_url: str | None = None) -> str:
@@ -32,7 +106,7 @@ def build_alert_email(alert_type: str, camera_name: str, location: str,
                     <td align="center" bgcolor="#10B981">
                       <a href="{dashboard_url}" 
                          style="display: inline-block; padding: 14px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: bold; color: #000000; text-decoration: none; letter-spacing: 0.5px; text-transform: uppercase;">
-                        Review Footage &rarr;
+                        Review Alerts &rarr;
                       </a>
                     </td>
                   </tr>
@@ -163,14 +237,14 @@ def build_alert_email(alert_type: str, camera_name: str, location: str,
 </html>
 """
 
-def send_alert_email(alert_type: str, camera_name: str, location: str,
-                      risk_level: str = "HIGH", dashboard_url: str | None = None):
+def send_alert_email(recipient_email: str, alert_type: str, camera_name: str, location: str,
+                      risk_level: str = "HIGH", dashboard_url: str | None = None)-> tuple[bool, str | None]:
     try:
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         server.login(SENDER_EMAIL, SENDER_PASSWORD)
 
-        subject = f"Critical Alert: {alert_type} at {location}"
+        subject = f"{risk_level} severity alert: {alert_type} at {location}"
         plain_body = (
             f"{alert_type} detected at {camera_name} ({location}).\n"
             f"Risk level: {risk_level}\n"
@@ -179,107 +253,21 @@ def send_alert_email(alert_type: str, camera_name: str, location: str,
 
         msg = MIMEMultipart('alternative')
         msg['From'] = f"Neighbourhood WatchDog <{SENDER_EMAIL}>"
-        msg['To'] = RECIPIENT_EMAIL
+        msg['To'] = recipient_email
         msg['Subject'] = subject
 
         msg.attach(MIMEText(plain_body, 'plain'))
         msg.attach(MIMEText(build_alert_email(alert_type, camera_name, location, risk_level, dashboard_url), 'html'))
 
-        server.sendmail(SENDER_EMAIL, RECIPIENT_EMAIL, msg.as_string())
-        print('Critical alert email sent successfully!')
+        server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
+        logger.info('Alert email sent successfully!')
 
         server.quit()
-    except Exception as e:
-        print('Error sending alert email:', e)
-
-
-def main():
-
-    send_alert_email(
-        alert_type="Weapon Detected",
-        camera_name="CAM 03",
-        location="Front Gate",
-        risk_level="HIGH",
-        dashboard_url="https://neighbourhoodwatchdog.co.za/alerts",
-    )
-
-
-if __name__ == '__main__':
-    main()
-=======
-import os
-import logging
-from uuid import UUID
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
-from app.models.notification import Notification, NotificationChannel, NotificationStatus
-from app.models.user import User, UserRole
-
-logger = logging.getLogger(__name__)
-
-def _classify_severity(confidence_score: float) -> str:
-    if confidence_score >= 0.85:
-        return "CRITICAL"
-    elif confidence_score >= 0.65:
-        return "HIGH"
-    elif confidence_score >= 0.45:
-        return "MEDIUM"
-    return "LOW"
-
-def should_notify(confidence_score: float) -> bool:
-    severity = _classify_severity(confidence_score)
-    return severity in ("HIGH", "CRITICAL")
-
-def _format_whatsapp_message(
-        severity: str,
-        detection_type: str,
-        camera_id: str,
-        timestamp: str,
-) -> str:
-    severity_emoji = "🔴" if severity == "CRITICAL" else "🟡"
-    formatted_type = detection_type.replace("_", " ").title()
-    return(
-        f"{severity_emoji} *{severity} ALERT - Neighbourhood Watchdog*\n\n"
-        f"Camera: {camera_id}\n"
-        f"Detection: {formatted_type}\n"
-        f"Time: {timestamp}\n\n"
-        "Open the dashboard to review this alert."
-    )
-
-def _send_whatsapp(to_phone: str, message: str) -> tuple[bool, str | None]:
-    """Send whatsapp message using twilio snadbox. Recipient must be part of sandbox to receive messages"""
-    try:
-        from twilio.rest import Client
- 
-        account_sid = os.getenv("TWILIO_ACCOUNT_SID")
-        auth_token = os.getenv("TWILIO_AUTH_TOKEN")
-        from_number = os.getenv("TWILIO_WHATSAPP_FROM", "whatsapp:+14155238886")
- 
-        if not account_sid or not auth_token:
-            return False, "Twilio credentials not configured"
- 
-        #Ennsures number has whatsapp prefix and +27 country code e.g. 0821234567 -> whatsapp:+27821234567
-        normalised = to_phone.strip()
-        if not normalised.startswith("whatsapp:"):
-            if normalised.startswith("0"):
-                normalised = "+27" + normalised[1:]
-            if not normalised.startswith("+"):
-                normalised = "+" + normalised
-            normalised = f"whatsapp:{normalised}"
- 
-        client = Client(account_sid, auth_token)
-        client.messages.create(
-            from_=from_number,
-            to=normalised,
-            body=message,
-        )
         return True, None
- 
     except Exception as e:
-        logger.exception(f"WhatsApp send failed to {to_phone}")
+        logger.exception(f"Error sending alert email to {recipient_email}")
         return False, str(e)
-    
+
 def _log_notification(
         db: Session,
         alert_id: UUID,
@@ -311,38 +299,74 @@ async def dispatch_notifications(
         confidence_score: float,
         frame_timestamp,
 ) -> None:
-    if not should_notify(confidence_score):
+    if not should_notify(detection_type, confidence_score):
         logger.info(f"Alert {alert_id}: confidence {confidence_score:.2f} below notification threshold, skipping")
         return
     
     if os.getenv("NOTIFICATION_ENABLED", "false").lower() != "true":
         logger.info(f"Alert {alert_id}: NOTIFICATION_ENABLED is not 'true', skipping")
         return
-    
-    severity = _classify_severity(confidence_score)
-    timestamp_str = frame_timestamp.strftime("%d %b %Y, %H:%M:%S") if frame_timestamp else "Unknown"
-    whatsapp_message = _format_whatsapp_message(severity, detection_type, str(camera_id), timestamp_str)
 
-    try:
-        residents = db.execute(select(User).where(User.neighbourhood_id == neighbourhood_id, User.role == UserRole.RESIDENT,)).scalars().all()
-    except Exception:
-        logger.exception(f"Failed to fetch residents for neighbourhood {neighbourhood_id}")
+    camera = db.execute(select(Camera).where(Camera.id == camera_id)).scalar_one_or_none()
+
+    if not camera:
+        logger.error(f"Camera with id {camera_id} does not exist")
         return
-    
-    if not residents:
-        logger.info(f"Alert {alert_id}: no residents found in neighbourhood {neighbourhood_id}.")
 
-    logger.info(f"Alert {alert_id} [{severity}]: notifying {len(residents)} resident(s) via WhatsApp")
+    severity = _classify_severity(detection_type, confidence_score)
+    timestamp_str = frame_timestamp.strftime("%d %b %Y, %H:%M:%S") if frame_timestamp else "Unknown"
+    whatsapp_message = _format_whatsapp_message(severity, detection_type, camera.name, timestamp_str)
 
-    for user in residents:
+
+    if severity == "CRITICAL":
+        try:
+            residents = db.execute(
+                select(User).where(User.neighbourhood_id == neighbourhood_id, User.role == UserRole.RESIDENT)
+            ).scalars().all()
+        except Exception:
+            logger.exception(f"Failed to fetch residents for neighbourhood {neighbourhood_id}")
+            return
+
+        if not residents:
+            logger.info(f"Alert {alert_id}: no residents found in neighbourhood {neighbourhood_id}.")
+
+        logger.info(f"Alert {alert_id} [{severity}]: notifying {len(residents)} resident(s) via WhatsApp & Email")
+        _notify_users(db, alert_id, residents, whatsapp_message, detection_type, camera, severity)
+
+    else:
+        users = db.execute(
+            select(User).join(PropertyUser, PropertyUser.user_id == User.id)
+            .where(PropertyUser.property_id == camera.property_id)
+        ).scalars().all()
+
+        logger.info(f"Alert {alert_id} [{severity}]: notifying {len(users)} property resident(s) via WhatsApp & Email")
+        _notify_users(db, alert_id, users, whatsapp_message, detection_type, camera, severity)
+
+
+def _notify_users(
+        db: Session,
+        alert_id: UUID,
+        users: list[User],
+        whatsapp_message: str,
+        detection_type: str,
+        camera: Camera,
+        severity: str,
+) -> None:
+    for user in users:
         if user.phone_number:
             success, error = _send_whatsapp(user.phone_number, whatsapp_message)
             _log_notification(db, alert_id, user.id, NotificationChannel.WHATSAPP, success, error)
-
             if not success:
                 logger.warning(f"WhatsApp failed for user {user.id}: {error}")
             else:
                 logger.info(f"Whatsapp sent successfully to user {user.id}")
         else:
             logger.info(f"User {user.id} has no phone_number, skipping")
->>>>>>> dev
+
+        if user.email:
+            success, error = send_alert_email(user.email, detection_type, camera.name, camera.location, severity)
+            _log_notification(db, alert_id, user.id, NotificationChannel.EMAIL, success, error)
+            if not success:
+                logger.warning(f"Email failed for user {user.id}: {error}")
+        else:
+            logger.info(f"User {user.id} has no email, skipping")
