@@ -19,7 +19,9 @@ export function getAuthHeaders(extraHeaders: HeadersInit = {}): HeadersInit {
 }
 
 export function getApiBaseUrl(): string {
-  const url = process.env.NEXT_PUBLIC_API_URL?.trim() ||
-    process.env.NEXT_PUBLIC_API_BASE_URL?.trim()
-  return url || "https://api-staging.neighbourhoodwatchdog.co.za"
+  return (
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    "https://api-staging.neighbourhoodwatchdog.co.za"
+  );
 }
