@@ -39,7 +39,7 @@ def auth_ping():
     }
 
 @router.post("/signup")
-@limiter.limit("3/minute")  # Limit to 5 requests per minute
+@limiter.limit("3/minute")  # Limit to 3 requests per minute
 def signup(request: Request, payload: SignUpRequest):
     return register_user(_payload_to_dict(payload))
 
@@ -49,7 +49,7 @@ def login(request: Request, payload: LoginRequest):
     return authenticate_user(_payload_to_dict(payload))
 
 @router.post("/confirm")
-@limiter.limit("15/minute")  # Limit to 3 requests per minute
+@limiter.limit("15/minute")  # Limit to 15 requests per minute
 def confirm(request: Request, payload: ConfirmSignUpRequest):
     return confirm_user(_payload_to_dict(payload))
 
