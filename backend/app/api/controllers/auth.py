@@ -4,6 +4,8 @@ from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
 from app.services.user_service import create_user
 from app.models.user import User
+from fastapi import APIRouter, Request
+from app.auth.rate_limiter import limiter
 
 from app.schemas.auth import ( #Check payloads from schemas
     SignUpRequest,
@@ -37,19 +39,23 @@ def auth_ping():
     }
 
 @router.post("/signup")
+@limiter.limit("3/minute")  # Limit to 5 requests per minute
 def signup(payload: SignUpRequest):
     return register_user(_payload_to_dict(payload))
 
 @router.post("/login")
+@limiter.limit("5/minute")  # Limit to 5 requests per minute
 def login(payload: LoginRequest):
     return authenticate_user(_payload_to_dict(payload))
 
 @router.post("/confirm")
+@limiter.limit("15/minute")  # Limit to 3 requests per minute
 def confirm(payload: ConfirmSignUpRequest):
     return confirm_user(_payload_to_dict(payload))
 
 
 @router.get("/me", responses={401: {"description" : "Invalid token claims or user not found"}})
+@limiter.limit("10/minute")  # Limit to 10 requests per minute
 async def get_current_user_info(
     current_user: dict = Depends(get_current_user),
     db: DbSession = None
@@ -80,10 +86,12 @@ async def get_current_user_info(
     return user_output
 
 @router.post("/logout")
+@limiter.limit("10/minute")  # Limit to 10 requests per minute
 async def logout(current_user: dict = Depends(get_current_user)):
     """Logout endpoint"""
     return {"message": "Logged out"}
 
 @router.post("/resend-code")
+@limiter.limit("10/minute")  # Limit to 10 requests per minute
 def resend_code(payload: ResendCodeRequest):
     return resend_confirmation_code(_payload_to_dict(payload))
