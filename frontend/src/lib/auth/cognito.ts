@@ -26,7 +26,6 @@ const apiClient = async <T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> => {
-  console.log("API base URL: ", getApiBaseUrl())
   const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
     ...options,
     headers: {
