@@ -94,7 +94,9 @@ class CameraSupervisor:
             self._stop_event.wait(self.reconcile_interval_seconds)
 
     def _fetch_enabled_cameras(self) -> dict[str, CameraSpec]:
-        api_key = keyring.get_password("Watchdog", "api_key")
+        print("Fetching cameras from: ", self.backend_url)
+
+        api_key = keyring.get_password("WatchDog", "api_key")
 
         if not api_key:
             raise RuntimeError("No paired API key found in keyring. Run agent pairing before starting the agent.")

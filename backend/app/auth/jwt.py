@@ -42,7 +42,6 @@ def verify_jwt(token: str) -> dict:
     kid = headers.get("kid") #key id to find which public key used
 
     jwks = get_jwks()
-    jwk = None
     jwk = next((k for k in jwks if k["kid"] == kid), None) #find which primary key was used
 
     if jwk is None:

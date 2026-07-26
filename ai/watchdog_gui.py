@@ -131,8 +131,8 @@ def is_installation_valid() -> bool:
 def load_connection_settings() -> dict[str, str]:
 
     defaults = {
-        "backend_url": os.getenv("BACKEND_URL", "http://localhost:8000"),
-        "mediamtx_rtsp_url": os.getenv("MEDIAMTX_RTSP_URL", "rtsp://127.0.0.1:8554"),
+        "backend_url": os.getenv("BACKEND_URL", "https://api-staging.neighbourhoodwatchdog.co.za"),
+        "mediamtx_rtsp_url": os.getenv("MEDIAMTX_RTSP_URL", "rtsp://api-staging.neighbourhoodwatchdog.co.za:8554"),
         "internal_api_token": os.getenv("INTERNAL_API_TOKEN", "dev-token")
     }
 
