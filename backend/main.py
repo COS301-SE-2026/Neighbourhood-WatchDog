@@ -48,7 +48,8 @@ app.add_middleware(SlowAPIMiddleware) #Rate limiting
 
 app.add_middleware( #CORS (allow requests from frontend)
     CORSMiddleware,
-    allow_origins=[config.frontend_url.rstrip("/")],
+    allow_origins=[config.frontend_url.rstrip("/"), "https://neighbourhood-watch-dog.vercel.app", ],
+    allow_origin_regex=(r"^https://neighbourhood-watch-[a-z0-9-]+\.vercel\.app$"),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
