@@ -50,7 +50,8 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
     """POST detection track data to backend so it can broadcast via WebSocket."""
     api_key = keyring.get_password("WatchDog", "api_key")
     if not api_key:
-        logger.warning("No paired API key found. Cannot push annotations")
+        logger.warning("Cannot push annotations for camera %s: no paired API key found. Run agent pairing first.", camera_id)
+        return
 
 
     try:
