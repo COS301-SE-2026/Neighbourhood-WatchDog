@@ -246,10 +246,10 @@ export default function AlertsPage({
 
     const controller = new AbortController();
 
-    fetchAlerts(neighbourhoodId, controller.signal)
-      .then((data) => {
+    fetchAlerts(neighbourhoodId, undefined, controller.signal)
+      .then(({ alerts: fetched }) => {
         if (!mountedRef.current) return;
-        dispatch({ type: "FETCH_SUCCESS", payload: data });
+        dispatch({ type: "FETCH_SUCCESS", payload: fetched });
       })
       .catch((err: unknown) => {
         if (!mountedRef.current) return;
@@ -445,8 +445,10 @@ export default function AlertsPage({
                   <span
                     className="inline-flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1"
                     style={{
-                      backgroundColor: "color-mix(in srgb, var(--color-blue) 12%, transparent)",
-                      border: "1px solid color-mix(in srgb, var(--color-blue) 25%, transparent)",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--color-blue) 12%, transparent)",
+                      border:
+                        "1px solid color-mix(in srgb, var(--color-blue) 25%, transparent)",
                       color: "var(--color-blue)",
                     }}
                   >
@@ -461,8 +463,10 @@ export default function AlertsPage({
                   <span
                     className="inline-flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1"
                     style={{
-                      backgroundColor: "color-mix(in srgb, var(--color-threat) 12%, transparent)",
-                      border: "1px solid color-mix(in srgb, var(--color-threat) 25%, transparent)",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--color-threat) 12%, transparent)",
+                      border:
+                        "1px solid color-mix(in srgb, var(--color-threat) 25%, transparent)",
                       color: "var(--color-threat)",
                     }}
                   >
