@@ -239,7 +239,7 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
                 if t.get("confidence", 0) > 0.1 or str(t.get("track_id", "")).startswith("threat_")]
             
 
-        _push_annotations(BACKEND_URL, camera.id, tracks_payload, datetime.now(timezone.utc).isoformat())
+            _push_annotations(BACKEND_URL, camera.id, tracks_payload, datetime.now(timezone.utc).isoformat())
 
     except Exception:
         logger.exception("Detection worker crashed for camera %s", camera.id)
