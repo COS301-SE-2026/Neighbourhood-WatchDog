@@ -28,10 +28,12 @@ import {
   normaliseAlert,
   getAuthToken,
   WS_BASE,
+  AlertFilters,
 } from "@/lib/api/alert";
 
 const ALL_SEVERITIES: AlertSeverity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "RESOLVED"];
+const CURRENT_CUTOFF = 24 * 60 * 60 * 1000; //24h
 
 const SEVERITY_LABELS: Record<AlertSeverity, string> = {
   CRITICAL: "Critical",
@@ -188,6 +190,21 @@ export default function AlertsPage({
   const [selectedStatus, setSelectedStatus] = useState<AlertStatus | null>(
     null,
   );
+  const [activeTab, setActiveTab] = useState<"current" | "history">("current");
+  const [historyStartDate, setHisoryStartDate] = useState("");
+  const [historyEndDate, setHisoryEndDate] = useState("");
+
+  const alertFilters = useMemo<AlertFilters>(() => {
+    const base: AlertFilters = {};
+    if (selectedStatus) base.status = selectedStatus;
+
+    if (activeTab === "history") {
+      if (historyStartDate) base.startDate = new Date(historyStartDate);
+      if (historyEndDate) base.endDate = new Date(historyEndDate);
+    }
+
+    return base;
+  }, [activeTab, selectedStatus, historyStartDate, historyEndDate]);
 
   function triggerRefresh() {
     dispatch({ type: "FETCH_START" });
@@ -246,11 +263,15 @@ export default function AlertsPage({
 
     const controller = new AbortController();
 
-    fetchAlerts(
-      neighbourhoodId,
-      selectedStatus ? { status: selectedStatus } : undefined,
-      controller.signal,
-    )
+    const filters: AlertFilters =
+      activeTab === "current"
+        ? {
+            ...alertFilters,
+            startDate: new Date(Date.now() - CURRENT_CUTOFF),
+          }
+        : alertFilters;
+
+    fetchAlerts(neighbourhoodId, filters, controller.signal)
       .then(({ alerts: fetched }) => {
         if (!mountedRef.current) return;
         dispatch({ type: "FETCH_SUCCESS", payload: fetched });
@@ -265,10 +286,10 @@ export default function AlertsPage({
       });
 
     return () => controller.abort();
-  }, [neighbourhoodId, fetchTick, selectedStatus]);
+  }, [neighbourhoodId, fetchTick, alertFilters, activeTab]);
 
   useEffect(() => {
-    if (!neighbourhoodId) return;
+    if (!neighbourhoodId || activeTab !== "current") return;
 
     const token = getAuthToken();
     const url = `${WS_BASE}/alerts/${neighbourhoodId}/ws${token ? `?token=${token}` : ""}`;
@@ -334,7 +355,7 @@ export default function AlertsPage({
         ws.close();
       }
     };
-  }, [neighbourhoodId]);
+  }, [neighbourhoodId, activeTab]);
 
   async function handleAcknowledge(id: string) {
     const original = alerts.find((a) => a.id === id);
@@ -369,7 +390,10 @@ export default function AlertsPage({
   );
 
   const hasActiveFilters =
-    selectedSeverities.size < ALL_SEVERITIES.length || selectedStatus !== null;
+    selectedSeverities.size < ALL_SEVERITIES.length ||
+    selectedStatus !== null ||
+    (activeTab === "history" &&
+      (historyStartDate !== "" || historyEndDate !== ""));
 
   const newCount = alerts.filter((a) => a.status === "NEW").length;
   const criticalCount = alerts.filter(
