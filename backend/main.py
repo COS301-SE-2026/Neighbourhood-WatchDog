@@ -37,6 +37,9 @@ app = FastAPI(
     redoc_url="/redoc" if config.debug else None,
 )
 
+if config.testing: #Disable the limiter during testing, preventing exception 429
+    limiter.enabled = False
+
 app.state.limiter = limiter
 app.add_exception_handler(
     RateLimitExceeded,
