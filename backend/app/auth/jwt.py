@@ -6,7 +6,7 @@ import requests
 from fastapi import HTTPException, Request
 
 from app.core.config import config
-
+from app.core.logging import logging
 
 JWKS_URL = (f"https://cognito-idp.{config.aws_region}.amazonaws.com/{config.cognito_user_pool_id}/.well-known/jwks.json") #get public keys from AWS to verify
 ISSUER = (f"https://cognito-idp.{config.aws_region}.amazonaws.com/{config.cognito_user_pool_id}") #did this JWT come from our user pool
@@ -40,9 +40,10 @@ def verify_jwt(token: str) -> dict:
     """Verifies the JWT and returns the claims (data from JWT)"""
     headers = jwt.get_unverified_header(token) #decode JWT headers
     kid = headers.get("kid") #key id to find which public key used
+
+    jwks = get_jwks()
     jwk = None
-    if JWKS:
-        jwk = next((k for k in JWKS if k["kid"] == kid), None) #find which primary key was used
+    jwk = next((k for k in jwks if k["kid"] == kid), None) #find which primary key was used
 
     if jwk is None:
         raise jwt.PyJWTError("Unable to find matching public key.")
@@ -98,7 +99,8 @@ def get_authenticated_claims(request: Request) -> dict:
 
     try:
         claims = verify_jwt(token)
-    except jwt.PyJWTError:
+    except jwt.PyJWTError as e:
+        logging.warning("JWT validation failed: %s", e)
         raise HTTPException(
             status_code=401,
             detail="Invalid or expired token",
