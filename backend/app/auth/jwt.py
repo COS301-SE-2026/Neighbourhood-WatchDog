@@ -11,14 +11,38 @@ from app.core.config import config
 JWKS_URL = (f"https://cognito-idp.{config.aws_region}.amazonaws.com/{config.cognito_user_pool_id}/.well-known/jwks.json") #get public keys from AWS to verify
 ISSUER = (f"https://cognito-idp.{config.aws_region}.amazonaws.com/{config.cognito_user_pool_id}") #did this JWT come from our user pool
 
-JWKS = requests.get(JWKS_URL, timeout= 7).json()["keys"] #public keys for user pool
+# JWKS = requests.get(JWKS_URL, timeout= 7).json()["keys"] #public keys for user pool
 #Can possibly cache this data so that we do not have to make a req every time
+
+JWKS: list[dict] | None = None
+
+def get_jwks() -> list[dict]:
+    global JWKS
+
+    if JWKS is not None:
+        return JWKS
+
+    try:
+        response = requests.get(JWKS_URL, timeout=7)
+        response.raise_for_status()
+        payload = response.json()
+    except (requests.RequestException, ValueError) as exc:
+        raise jwt.PyJWTError("Unable to retreive Cognito signing keys.") from exc
+
+    keys = payload.get("keys")
+    if not isinstance(keys, list):
+        raise jwt.PyJWTError("Cognito JWKS response does not contain a valid 'keys' list.")
+
+    JWKS = keys
+    return JWKS
 
 def verify_jwt(token: str) -> dict:
     """Verifies the JWT and returns the claims (data from JWT)"""
     headers = jwt.get_unverified_header(token) #decode JWT headers
     kid = headers.get("kid") #key id to find which public key used
-    jwk = next((k for k in JWKS if k["kid"] == kid), None) #find which primary key was used
+    jwk = None
+    if JWKS:
+        jwk = next((k for k in JWKS if k["kid"] == kid), None) #find which primary key was used
 
     if jwk is None:
         raise jwt.PyJWTError("Unable to find matching public key.")

@@ -17,7 +17,6 @@ export const cameraSchema = z.object({
   name: z.string(),
   visibility: z.enum(['PUBLIC', 'PRIVATE', 'NEIGHBOURHOOD']),
   location: z.string(),
-  rtsp_url: z.string(),
   enabled: z.boolean(),
   created_at: z.iso.datetime(),
 })

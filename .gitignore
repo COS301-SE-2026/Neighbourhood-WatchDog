@@ -31,3 +31,12 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .vercel
+
+~/.cache/
+
+#WatchDog Agent
+ai/.watchdog-agent/
+ai/pipeline/models/weights/*.part
+ai/.env.example
+
+watchdog-ec2-key.pem

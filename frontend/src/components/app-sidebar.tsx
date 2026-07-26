@@ -17,7 +17,7 @@ import {
   LogOut
 } from "lucide-react"
 
-import { CreatePropertyDialog } from "./create-property-dialogue"
+import { CreatePropertyDialog } from "./property-components/create-property-dialogue"
 
 import {
   Sidebar,

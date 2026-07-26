@@ -23,7 +23,10 @@ from deep_sort_realtime.deepsort_tracker import DeepSort
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
 # config
-MEDIAMTX_RTSP_URL = "rtsp://localhost:8554/tapo-camera"
+MEDIAMTX_RTSP_URL = (
+    "rtsp://localhost:8554/"
+    "cameras/40000000-0000-0000-0000-000000000001"
+)
 BACKEND_URL       = "http://localhost:8000"
 CAMERA_ID         = "2"
 CONF_THRESHOLD    = 0.4
