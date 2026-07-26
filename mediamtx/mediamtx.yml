@@ -10,8 +10,24 @@ webrtcServerKey: /certs/privkey.pem
 api: yes
 apiAddress: :9997
 
+# MediaMTX calls the backend for every publish attempt.
+# The backend permits only the credential derived for the requested
+# cameras/<camera-uuid> path.
+authMethod: http
+authHTTPAddress: http://backend:8000/internal/mediamtx/auth
+
+# Preserve the current public dashboard/video-reading behaviour.
+# Publishing is deliberately NOT excluded and must pass HTTP auth.
+authHTTPExclude:
+  - action: read
+  - action: playback
+
 paths:
+  # Accept dynamic publisher-owned paths such as:
+  # cameras/<camera-uuid>
   all_others:
+    source: publisher
+    overridePublisher: true
 
 webrtcAdditionalHosts:
   - localhost

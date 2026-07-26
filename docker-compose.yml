@@ -56,6 +56,7 @@ services:
     environment:
       APP_ENV: development
       DEBUG: "true"
+      TESTING: "true"
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       # REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
@@ -70,6 +71,8 @@ services:
       NOTIFICATION_ENABLED: ${NOTIFICATION_ENABLED}
       RTSP_ENCRYPTION_KEY: ${RTSP_ENCRYPTION_KEY}
       SKIP_DB_INIT: "true"
+      MEDIAMTX_PUBLISH_MASTER_KEY: ${MEDIAMTX_PUBLISH_MASTER_KEY}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
     volumes:
       - ./backend:/app
     depends_on:
@@ -87,6 +90,7 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
       NEXT_PUBLIC_AI_URL: http://localhost:8001
+      NEXT_PUBLIC_MEDIAMTX_WEBRTC_URL: http://localhost:8889
     volumes:
       - ./frontend:/app
       - /app/node_modules

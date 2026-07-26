@@ -10,6 +10,7 @@
     "test": "jest --passWithNoTests"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-table": "^8.21.3",
     "amazon-cognito-identity-js": "^6.3.16",
     "class-variance-authority": "^0.7.1",
@@ -46,7 +47,6 @@
     "ts-node": "^10",
     "typescript": "^5"
   },
-
   "pnpm": {
     "overrides": {
       "@babel/core@<=7.29.0": ">=7.29.6 <8",

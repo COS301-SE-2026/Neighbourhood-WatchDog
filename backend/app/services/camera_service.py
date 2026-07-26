@@ -1,4 +1,10 @@
-from app.schemas.camera import RegisterCameraReq, CameraRes, CamerasRes, CameraEditReq
+from typing import Optional
+
+from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select, delete
+from sqlalchemy.orm import Session
+from app.schemas.camera import RegisterCameraReq, CameraRes, CameraListItemRes, CamerasRes, CameraEditReq
 from app.models.camera import Camera
 from app.models.property import Property
 from app.models.property_user import PropertyUser
@@ -184,7 +190,7 @@ async def list_cameras_handler(property_id: str, db: DbSession, claims: dict) ->
         status=200,
         message="Cameras fetched successfully",
         data=[
-            CameraRes(
+            CameraListItemRes(
                 id=c.id,
                 name=c.name,
                 property_id=c.property_id,
