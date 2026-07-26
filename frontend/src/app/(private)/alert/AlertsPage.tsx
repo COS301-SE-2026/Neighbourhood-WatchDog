@@ -578,23 +578,23 @@ export default function AlertsPage({
                   >
                     Status
                   </DropdownMenuLabel>
+                  <DropdownMenuCheckboxItem
+                    className="text-sm cursor-pointer"
+                    style={{ color: "var(--color-ink)" }}
+                    checked={selectedStatus === null}
+                    onCheckedChange={() => setSelectedStatus(null)}
+                  >
+                    All
+                  </DropdownMenuCheckboxItem>
                   {ALL_STATUSES.map((st) => (
                     <DropdownMenuCheckboxItem
                       key={st}
                       className="text-sm cursor-pointer"
                       style={{ color: "var(--color-ink)" }}
-                      checked={selectedStatuses.has(st)}
-                      onCheckedChange={(checked) => {
-                        setSelectedStatuses((prev) => {
-                          const next = new Set(prev);
-                          if (checked) {
-                            next.add(st);
-                          } else {
-                            next.delete(st);
-                          }
-                          return next;
-                        });
-                      }}
+                      checked={selectedStatus === st}
+                      onCheckedChange={(checked) =>
+                        setSelectedStatus(checked ? st : null)
+                      }
                     >
                       {STATUS_LABELS[st]}
                     </DropdownMenuCheckboxItem>
@@ -609,7 +609,7 @@ export default function AlertsPage({
                       <button
                         onClick={() => {
                           setSelectedSeverities(new Set(ALL_SEVERITIES));
-                          setSelectedStatuses(new Set(["NEW", "ACKNOWLEDGED"]));
+                          setSelectedStatus(null);
                         }}
                         className="w-full text-left px-2 py-1.5 text-xs transition-colors"
                         style={{ color: "var(--color-blue)" }}
