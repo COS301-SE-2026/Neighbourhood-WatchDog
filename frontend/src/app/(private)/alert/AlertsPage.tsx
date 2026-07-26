@@ -506,6 +506,29 @@ export default function AlertsPage({
             />
           )}
 
+          <div className="flex gap-2 mb-4 justify-center" role="tablist">
+            <Button
+              role="tab"
+              aria-selected={activeTab === "current"}
+              size="sm"
+              variant={activeTab === "current" ? "default" : "outline"}
+              onClick={() => setActiveTab("current")}
+              className="text-xs font-medium"
+            >
+              Current
+            </Button>
+            <Button
+              role="tab"
+              aria-selected={activeTab === "history"}
+              size="sm"
+              variant={activeTab === "history" ? "default" : "outline"}
+              onClick={() => setActiveTab("history")}
+              className="text-xs font-medium"
+            >
+              History
+            </Button>
+          </div>
+
           <Card className="bg-steel/40 border-steel rounded-xl">
             {/* Toolbar */}
             <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-steel rounded-t-xl">
