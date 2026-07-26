@@ -52,6 +52,7 @@ jobs:
       COGNITO_REGION: ${{ secrets.COGNITO_REGION }}
       COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
       COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
+      RTSP_ENCRYPTION_KEY: ${{ secrets.RTSP_ENCRYPTION_KEY }}
       FRONTEND_URL: https://testserver
       TESTING: true
 

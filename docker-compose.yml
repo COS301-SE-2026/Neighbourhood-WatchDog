@@ -18,6 +18,19 @@ services:
       retries: 10
       start_period: 10s
 
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - /var/www/certbot:/var/www/certbot
+    depends_on:
+      - backend
+
   # redis:
   #   image: redis:7-alpine
   #   container_name: redis_cache
@@ -39,7 +52,7 @@ services:
       target: development
     # platform: linux/amd64
     ports:
-      - "8000:8000"
+      - "8000:8000" # TODO: Remove 
     environment:
       APP_ENV: development
       DEBUG: "true"
@@ -56,6 +69,7 @@ services:
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
       TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM}
       NOTIFICATION_ENABLED: ${NOTIFICATION_ENABLED}
+      RTSP_ENCRYPTION_KEY: ${RTSP_ENCRYPTION_KEY}
       SKIP_DB_INIT: "true"
       MEDIAMTX_PUBLISH_MASTER_KEY: ${MEDIAMTX_PUBLISH_MASTER_KEY}
       INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
@@ -101,6 +115,9 @@ services:
     command: uvicorn app:app --host 0.0.0.0 --port 8001 --reload
 
   mediamtx:
+    environment:
+      MTX_WEBRTCADDITIONALHOSTS: stream-staging.neighbourhoodwatchdog.co.za,13.245.213.174
+      
     build:
       context: ./mediamtx
     platform: linux/amd64
@@ -111,9 +128,11 @@ services:
       - "9997:9997"    # API
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx/mediamtx.yml
+      - /opt/mediamtx-certs:/certs:ro
     restart: always
 
 volumes:
   postgres_data:
+  caddy_data:
   # redis_data:
   # frontend_node_modules:
