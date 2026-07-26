@@ -1,9 +1,3 @@
-from typing import Optional
-
-from fastapi import HTTPException
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select, delete
-from sqlalchemy.orm import Session
 from app.schemas.camera import RegisterCameraReq, CameraRes, CameraListItemRes, CamerasRes, CameraEditReq
 from app.models.camera import Camera
 from app.models.property import Property
