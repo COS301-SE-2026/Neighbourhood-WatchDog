@@ -40,23 +40,24 @@ def auth_ping():
 
 @router.post("/signup")
 @limiter.limit("3/minute")  # Limit to 5 requests per minute
-def signup(payload: SignUpRequest):
+def signup(request: Request, payload: SignUpRequest):
     return register_user(_payload_to_dict(payload))
 
 @router.post("/login")
 @limiter.limit("5/minute")  # Limit to 5 requests per minute
-def login(payload: LoginRequest):
+def login(request: Request, payload: LoginRequest):
     return authenticate_user(_payload_to_dict(payload))
 
 @router.post("/confirm")
 @limiter.limit("15/minute")  # Limit to 3 requests per minute
-def confirm(payload: ConfirmSignUpRequest):
+def confirm(request: Request, payload: ConfirmSignUpRequest):
     return confirm_user(_payload_to_dict(payload))
 
 
 @router.get("/me", responses={401: {"description" : "Invalid token claims or user not found"}})
 @limiter.limit("10/minute")  # Limit to 10 requests per minute
 async def get_current_user_info(
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db: DbSession = None
 ):
@@ -87,11 +88,11 @@ async def get_current_user_info(
 
 @router.post("/logout")
 @limiter.limit("10/minute")  # Limit to 10 requests per minute
-async def logout(current_user: dict = Depends(get_current_user)):
+async def logout(request: Request, current_user: dict = Depends(get_current_user)):
     """Logout endpoint"""
     return {"message": "Logged out"}
 
 @router.post("/resend-code")
 @limiter.limit("10/minute")  # Limit to 10 requests per minute
-def resend_code(payload: ResendCodeRequest):
+def resend_code(request: Request, payload: ResendCodeRequest):
     return resend_confirmation_code(_payload_to_dict(payload))
