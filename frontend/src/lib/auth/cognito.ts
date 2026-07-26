@@ -27,7 +27,12 @@ const apiClient = async <T>(
   options: RequestInit = {}
 ): Promise<T> => {
   console.log("API base URL: ", getApiBaseUrl())
-  const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+
+  const baseUrl = getApiBaseUrl().replace(/\/$/, "")
+  const cleanEndpoint = endpoint.replace(/\//, "")
+  const fullUrl = `${baseUrl}/${cleanEndpoint}`
+
+  const response = await fetch(fullUrl, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
