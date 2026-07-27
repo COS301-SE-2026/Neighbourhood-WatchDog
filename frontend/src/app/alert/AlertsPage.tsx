@@ -11,8 +11,6 @@ import {
 } from "@/components/shared/AlertCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { AlertMetrics } from "@/components/shared/AlertMetrics";
-import { IncidentTrends } from "@/components/shared/IncidentTrends";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -411,299 +409,281 @@ export default function AlertsPage({
 
   return (
     <>
-    {/*response time metrics - visible to admins */}
-    <div className="max-w-4xl mx-auto mb-6">
-        <details className="group">
-            <summary className="cursor-pointer text-sm font-semibold text-sky list-none flex items-center gap-2 mb-3">
-                <span className="group-open:rotate-90 transition-transform inline-block">&#x25B6;</span>
-                Response Time Metrics
-            </summary>
-            <AlertMetrics
-                neighbourhoodId={neighbourhoodId}
-            />
-        </details>
-    </div>
+      <TooltipProvider>
+        <div className="w-full flex flex-col items-center px-8 py-10 bg-navy min-h-full font-sans">
+          <div className="w-full max-w-2xl">
+            <header className="mb-6 text-center">
+              <div className="flex items-center justify-center gap-2">
+                <h1 className="text-[2rem] font-bold leading-[2.5rem] text-white">
+                  Alerts
+                </h1>
+                <span
+                  title={
+                    wsConnected
+                      ? "Live updates connected"
+                      : "Live updates disconnected"
+                  }
+                  aria-label={wsConnected ? "Live" : "Offline"}
+                >
+                  {wsConnected ? (
+                    <Wifi className="h-4 w-4 text-safe mt-1" />
+                  ) : (
+                    <WifiOff className="h-4 w-4 text-mist/50 mt-1" />
+                  )}
+                </span>
+              </div>
 
-    {/*incident trend analysis*/}
-    <div className="max-w-4x1 mx-auto mb-6">
-      <details className="group">
-        <summary className="cursor-pointer text-sm font-semibold text-sky list-none flex items-center gap-2 mb-3">
-          <span className="group-open:rotate-90 transition-transform inline-block">&#x25B6;</span>
-          Incident Trends
-        </summary>
-        <IncidentTrends neighbourhoodId={neighbourhoodId} />
-      </details>
-    </div>
-
-    <TooltipProvider>
-      <div className="w-full flex flex-col items-center px-8 py-10 bg-navy min-h-full font-sans">
-        <div className="w-full max-w-2xl">
-          <header className="mb-6 text-center">
-            <div className="flex items-center justify-center gap-2">
-              <h1 className="text-[2rem] font-bold leading-[2.5rem] text-white">
-                Alerts
-              </h1>
-              <span
-                title={
-                  wsConnected
-                    ? "Live updates connected"
-                    : "Live updates disconnected"
-                }
-                aria-label={wsConnected ? "Live" : "Offline"}
-              >
-                {wsConnected ? (
-                  <Wifi className="h-4 w-4 text-safe mt-1" />
-                ) : (
-                  <WifiOff className="h-4 w-4 text-mist/50 mt-1" />
-                )}
-              </span>
-            </div>
-
-            {(newCount > 0 || criticalCount > 0) && (
-              <div
-                className="flex gap-2 mt-3 flex-wrap justify-center"
-                aria-live="polite"
-              >
-                {newCount > 0 && (
-                  /*
+              {(newCount > 0 || criticalCount > 0) && (
+                <div
+                  className="flex gap-2 mt-3 flex-wrap justify-center"
+                  aria-live="polite"
+                >
+                  {newCount > 0 && (
+                    /*
                     "New" informational badge: --color-blue tint bg, --color-blue text.
                     --color-blue on white-ish fog meets ≥ 4.5:1 for small text.
                   */
-                  <span
-                    className="inline-flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1"
-                    style={{
-                      backgroundColor: "color-mix(in srgb, var(--color-blue) 12%, transparent)",
-                      border: "1px solid color-mix(in srgb, var(--color-blue) 25%, transparent)",
-                      color: "var(--color-blue)",
-                    }}
-                  >
-                    {newCount} new
-                  </span>
-                )}
-                {criticalCount > 0 && (
-                  /*
+                    <span
+                      className="inline-flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1"
+                      style={{
+                        backgroundColor:
+                          "color-mix(in srgb, var(--color-blue) 12%, transparent)",
+                        border:
+                          "1px solid color-mix(in srgb, var(--color-blue) 25%, transparent)",
+                        color: "var(--color-blue)",
+                      }}
+                    >
+                      {newCount} new
+                    </span>
+                  )}
+                  {criticalCount > 0 && (
+                    /*
                     Critical badge: --color-threat tint bg, --color-threat text.
                     Solid threat red on light bg comfortably exceeds 4.5:1.
                   */
-                  <span
-                    className="inline-flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1"
-                    style={{
-                      backgroundColor: "color-mix(in srgb, var(--color-threat) 12%, transparent)",
-                      border: "1px solid color-mix(in srgb, var(--color-threat) 25%, transparent)",
-                      color: "var(--color-threat)",
-                    }}
-                  >
-                    {criticalCount} critical
-                  </span>
-                )}
-              </div>
+                    <span
+                      className="inline-flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1"
+                      style={{
+                        backgroundColor:
+                          "color-mix(in srgb, var(--color-threat) 12%, transparent)",
+                        border:
+                          "1px solid color-mix(in srgb, var(--color-threat) 25%, transparent)",
+                        color: "var(--color-threat)",
+                      }}
+                    >
+                      {criticalCount} critical
+                    </span>
+                  )}
+                </div>
+              )}
+            </header>
+
+            {actionError && (
+              <ActionErrorBanner
+                message={actionError}
+                onDismiss={() => setActionError(null)}
+              />
             )}
-          </header>
 
-          {actionError && (
-            <ActionErrorBanner
-              message={actionError}
-              onDismiss={() => setActionError(null)}
-            />
-          )}
-
-          <Card className="bg-steel/40 border-steel rounded-xl">
-            {/* Toolbar */}
-            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-steel rounded-t-xl">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs font-medium transition-colors"
-                    style={{
-                      /*
+            <Card className="bg-steel/40 border-steel rounded-xl">
+              {/* Toolbar */}
+              <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-steel rounded-t-xl">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs font-medium transition-colors"
+                      style={{
+                        /*
                         Default: --color-mist border, --color-body text (readable on white).
                         Active: --color-blue border + text to signal filter is on.
                       */
-                      borderColor: hasActiveFilters
-                        ? "var(--color-blue)"
-                        : "var(--color-mist)",
-                      backgroundColor: "transparent",
-                      color: hasActiveFilters
-                        ? "var(--color-blue)"
-                        : "var(--color-body)",
-                    }}
-                    aria-label="Open filter options"
-                  >
-                    <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
-                    Filter
-                    {hasActiveFilters && (
-                      /*
+                        borderColor: hasActiveFilters
+                          ? "var(--color-blue)"
+                          : "var(--color-mist)",
+                        backgroundColor: "transparent",
+                        color: hasActiveFilters
+                          ? "var(--color-blue)"
+                          : "var(--color-body)",
+                      }}
+                      aria-label="Open filter options"
+                    >
+                      <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
+                      Filter
+                      {hasActiveFilters && (
+                        /*
                         Active-filter pip: --color-blue fill, white label.
                         White on --color-blue ≥ 4.5:1 per spec contrast table.
                       */
-                      <span
-                        className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full text-xs font-bold"
-                        style={{
-                          backgroundColor: "var(--color-blue)",
-                          color: "var(--color-white)",
-                        }}
-                      >
-                        !
-                      </span>
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
+                        <span
+                          className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full text-xs font-bold"
+                          style={{
+                            backgroundColor: "var(--color-blue)",
+                            color: "var(--color-white)",
+                          }}
+                        >
+                          !
+                        </span>
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
 
-                {/*
+                  {/*
                   Dropdown: white bg, mist border, ink text.
                   The dropdown sits above the light page so it stays white (not navy).
                 */}
-                <DropdownMenuContent
-                  align="start"
-                  className="w-52"
-                  style={{
-                    backgroundColor: "var(--color-white)",
-                    borderColor: "var(--color-mist)",
-                    color: "var(--color-ink)",
-                  }}
-                >
-                  {/* Section label: caption-weight, --color-body for subdued tone */}
-                  <DropdownMenuLabel
-                    className="text-xs uppercase tracking-wider"
-                    style={{ color: "var(--color-body)" }}
+                  <DropdownMenuContent
+                    align="start"
+                    className="w-52"
+                    style={{
+                      backgroundColor: "var(--color-white)",
+                      borderColor: "var(--color-mist)",
+                      color: "var(--color-ink)",
+                    }}
                   >
-                    Severity
-                  </DropdownMenuLabel>
-                  {ALL_SEVERITIES.map((sev) => (
-                    <DropdownMenuCheckboxItem
-                      key={sev}
-                      className="text-sm cursor-pointer"
-                      style={{ color: "var(--color-ink)" }}
-                      checked={selectedSeverities.has(sev)}
-                      onCheckedChange={(checked) => {
-                        setSelectedSeverities((prev) => {
-                          const next = new Set(prev);
-                          if (checked) {
-                            next.add(sev);
-                          } else {
-                            next.delete(sev);
-                          }
-                          return next;
-                        });
-                      }}
+                    {/* Section label: caption-weight, --color-body for subdued tone */}
+                    <DropdownMenuLabel
+                      className="text-xs uppercase tracking-wider"
+                      style={{ color: "var(--color-body)" }}
                     >
-                      {SEVERITY_LABELS[sev]}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-
-                  <DropdownMenuSeparator
-                    style={{ backgroundColor: "var(--color-mist)" }}
-                  />
-
-                  <DropdownMenuLabel
-                    className="text-xs uppercase tracking-wider"
-                    style={{ color: "var(--color-body)" }}
-                  >
-                    Status
-                  </DropdownMenuLabel>
-                  {ALL_STATUSES.map((st) => (
-                    <DropdownMenuCheckboxItem
-                      key={st}
-                      className="text-sm cursor-pointer"
-                      style={{ color: "var(--color-ink)" }}
-                      checked={selectedStatuses.has(st)}
-                      onCheckedChange={(checked) => {
-                        setSelectedStatuses((prev) => {
-                          const next = new Set(prev);
-                          if (checked) {
-                            next.add(st);
-                          } else {
-                            next.delete(st);
-                          }
-                          return next;
-                        });
-                      }}
-                    >
-                      {STATUS_LABELS[st]}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-
-                  {hasActiveFilters && (
-                    <>
-                      <DropdownMenuSeparator
-                        style={{ backgroundColor: "var(--color-mist)" }}
-                      />
-                      {/* Ghost: --color-blue text, no border — readable on white */}
-                      <button
-                        onClick={() => {
-                          setSelectedSeverities(new Set(ALL_SEVERITIES));
-                          setSelectedStatuses(new Set(["NEW", "ACKNOWLEDGED"]));
+                      Severity
+                    </DropdownMenuLabel>
+                    {ALL_SEVERITIES.map((sev) => (
+                      <DropdownMenuCheckboxItem
+                        key={sev}
+                        className="text-sm cursor-pointer"
+                        style={{ color: "var(--color-ink)" }}
+                        checked={selectedSeverities.has(sev)}
+                        onCheckedChange={(checked) => {
+                          setSelectedSeverities((prev) => {
+                            const next = new Set(prev);
+                            if (checked) {
+                              next.add(sev);
+                            } else {
+                              next.delete(sev);
+                            }
+                            return next;
+                          });
                         }}
-                        className="w-full text-left px-2 py-1.5 text-xs transition-colors"
-                        style={{ color: "var(--color-blue)" }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.color = "var(--color-navy)")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.color = "var(--color-blue)")
-                        }
                       >
-                        Clear all filters
-                      </button>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                        {SEVERITY_LABELS[sev]}
+                      </DropdownMenuCheckboxItem>
+                    ))}
 
-              {/*
+                    <DropdownMenuSeparator
+                      style={{ backgroundColor: "var(--color-mist)" }}
+                    />
+
+                    <DropdownMenuLabel
+                      className="text-xs uppercase tracking-wider"
+                      style={{ color: "var(--color-body)" }}
+                    >
+                      Status
+                    </DropdownMenuLabel>
+                    {ALL_STATUSES.map((st) => (
+                      <DropdownMenuCheckboxItem
+                        key={st}
+                        className="text-sm cursor-pointer"
+                        style={{ color: "var(--color-ink)" }}
+                        checked={selectedStatuses.has(st)}
+                        onCheckedChange={(checked) => {
+                          setSelectedStatuses((prev) => {
+                            const next = new Set(prev);
+                            if (checked) {
+                              next.add(st);
+                            } else {
+                              next.delete(st);
+                            }
+                            return next;
+                          });
+                        }}
+                      >
+                        {STATUS_LABELS[st]}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+
+                    {hasActiveFilters && (
+                      <>
+                        <DropdownMenuSeparator
+                          style={{ backgroundColor: "var(--color-mist)" }}
+                        />
+                        {/* Ghost: --color-blue text, no border — readable on white */}
+                        <button
+                          onClick={() => {
+                            setSelectedSeverities(new Set(ALL_SEVERITIES));
+                            setSelectedStatuses(
+                              new Set(["NEW", "ACKNOWLEDGED"]),
+                            );
+                          }}
+                          className="w-full text-left px-2 py-1.5 text-xs transition-colors"
+                          style={{ color: "var(--color-blue)" }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.color = "var(--color-navy)")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.color = "var(--color-blue)")
+                          }
+                        >
+                          Clear all filters
+                        </button>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/*
                 Ghost refresh button: --color-blue text on white card.
                 Hover darkens to --color-navy, staying within the brand palette.
               */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={triggerRefresh}
-                disabled={loading}
-                className="text-sky hover:text-white hover:bg-steel transition-colors text-xs"
-                aria-label="Refresh alerts"
-              >
-                <RefreshCw
-                  className={`h-3.5 w-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`}
-                />
-                Refresh
-              </Button>
-            </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={triggerRefresh}
+                  disabled={loading}
+                  className="text-sky hover:text-white hover:bg-steel transition-colors text-xs"
+                  aria-label="Refresh alerts"
+                >
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`}
+                  />
+                  Refresh
+                </Button>
+              </div>
 
-            {/* Alert list */}
-            <section
-              aria-label="Alert list"
-              aria-live="polite"
-              className="p-4 rounded-b-xl"
-            >
-              {loading && alerts.length === 0 ? (
-                <div className="flex items-center justify-center py-20">
-                  <RefreshCw className="h-5 w-5 animate-spin text-sky" />
-                </div>
-              ) : error ? (
-                <ErrorState
-                  message={error}
-                  onRetry={() => setFetchTick((t) => t + 1)}
-                />
-              ) : filtered.length === 0 ? (
-                <EmptyState />
-              ) : (
-                <div className="space-y-3">
-                  {filtered.map((alert) => (
-                    <AlertCard
-                      key={alert.id}
-                      alert={alert}
-                      onAcknowledge={handleAcknowledge}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-          </Card>
+              {/* Alert list */}
+              <section
+                aria-label="Alert list"
+                aria-live="polite"
+                className="p-4 rounded-b-xl"
+              >
+                {loading && alerts.length === 0 ? (
+                  <div className="flex items-center justify-center py-20">
+                    <RefreshCw className="h-5 w-5 animate-spin text-sky" />
+                  </div>
+                ) : error ? (
+                  <ErrorState
+                    message={error}
+                    onRetry={() => setFetchTick((t) => t + 1)}
+                  />
+                ) : filtered.length === 0 ? (
+                  <EmptyState />
+                ) : (
+                  <div className="space-y-3">
+                    {filtered.map((alert) => (
+                      <AlertCard
+                        key={alert.id}
+                        alert={alert}
+                        onAcknowledge={handleAcknowledge}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            </Card>
+          </div>
         </div>
-      </div>
-    </TooltipProvider>
+      </TooltipProvider>
     </>
   );
 }
