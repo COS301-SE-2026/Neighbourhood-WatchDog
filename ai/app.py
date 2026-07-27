@@ -189,7 +189,7 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
     logger.info("Detection loop starting for %s", camera.id, rtsp_url)
 
     tracker = DeepSort(
-        max_age=150,
+        max_age=10,
         n_init=3,
         max_iou_distance=0.5,  #for stricter matching and less duplicate boxes
         embedder="mobilenet",
@@ -275,7 +275,7 @@ def _collect_tracks(tracks, alerted_ids: set, camera: CameraSpec) -> list:
     """Build the annotation payload from confirmed tracks, firing alerts for new persons."""
     payload = []
     for track in tracks:
-        if not track.is_confirmed():
+        if not track.is_confirmed() or track.time_since_update > 0:
             continue
 
 
