@@ -183,6 +183,68 @@ def _open_stream(rtsp_url: str):
 
     return cap
 
+class LatestFrameReader:
+    """Retain newest frame. Prevents detector from working through a backlog of old frames"""
+
+    def __init__(self, rtsp_url: str, stop_event: threading.Event):
+        self.rtsp_url = rtsp_url
+        self.stop_event = stop_event
+        self._ock = threading.Lock()
+        self._frame = None
+        self._sequence = 0
+
+        self._closed = threading.Event()
+        self._thread = threading.Thread(target=self._run, name="watchdog-latest-frame-reader", daemon=True)
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def get_latest_after(self, previous_sequence: int):
+        """returns newer frame"""
+
+        with self._lock:
+            if self._frame is None or self._sequence == previous_sequence:
+                return None, previous_sequence
+
+
+            return self._frame, self._sequence
+
+
+    def close(self) -> None:
+        self._closed.set()
+        self._thread.join(timeout=2)
+
+
+    def _run(self) -> None:
+        cap = None
+
+        try:
+            while not self.stop_event.is_set() and not self._closed.is_set():
+                if cap is None or not cap.isOpened():
+                    cap = _open_stream(self.rtsp_url)
+
+
+                    if cap is None:
+                        self.stop_event.wait(1)
+                        continue
+
+
+                ok, frame = cap.read()
+
+                if not ok:
+                    cap.release()
+                    cap = None
+                    self.stop_event.wait(0.1)
+
+                    continue
+
+                with self._lock:
+                    self._frame = frame
+                    self._sequence += 1
+
+        finally:
+            if cap is not None:
+                cap.release()
 
 def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Event) -> None:
     """
