@@ -16,7 +16,7 @@ class CameraListItemRes(BaseModel):
 
     id: UUID
     property_id: UUID
-    neighbourhood_id: UUID
+    neighbourhood_id: UUID | None = None
     name: NonEmptyString
     visibility: CameraVisibilityEnum
     location: NonEmptyString
