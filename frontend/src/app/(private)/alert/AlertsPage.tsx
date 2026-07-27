@@ -679,7 +679,7 @@ export default function AlertsPage({
                           To
                           <input
                             type="date"
-                            value={historyStartDate}
+                            value={historyEndDate}
                             onChange={(e) => setHisoryEndDate(e.target.value)}
                             className="mt-1 w-full rounded border px-2 py-1 text-xs"
                             style={{
