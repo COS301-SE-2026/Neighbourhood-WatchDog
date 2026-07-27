@@ -134,5 +134,5 @@ services:
 volumes:
   postgres_data:
   caddy_data:
-  # redis_data:
+  redis_data:
   # frontend_node_modules:

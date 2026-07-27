@@ -8,7 +8,7 @@ from app.auth.rate_limiter import limiter
 
 from typing import Annotated
 from uuid import UUID
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 
 router = APIRouter(prefix="/pairing-token", tags=["pairing-token"])
@@ -16,6 +16,7 @@ router = APIRouter(prefix="/pairing-token", tags=["pairing-token"])
 @router.get("/{property_id}") #Private
 @limiter.limit("20/minute")
 async def get_pairing_token(
+    request: Request,
     property_id: UUID,
     db: DbSession,
     claims: Annotated[dict, Depends(get_current_user)],
@@ -28,6 +29,7 @@ async def get_pairing_token(
 @router.get("/token/{pairing_token}")
 @limiter.limit("10/minute")  # Limit to 10 requests per minute
 async def pair_agent(
+    request: Request,
     pairing_token: str,
     db: DbSession,
 ) -> EdgeAgentsCredentialsRes:
