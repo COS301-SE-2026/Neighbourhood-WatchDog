@@ -18,7 +18,7 @@ import logging
 import keyring
 
 logger = logging.getLogger("watchdog.ai")
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = ("rtsp_transport;tcp|fflags;nobuffer|flags;low_delay")
 
 threat_model = YOLO("pipeline/models/weights/best.pt")
 person_model = YOLO("pipeline/models/weights/yolov8n.pt")
@@ -92,7 +92,7 @@ def _extract_detections(frame, confidence_threshold: float, zones: list | None =
         #threat detection
         threat_results = threat_model.predict(
             frame,
-            imgsz=640,
+            imgsz=512,
             conf=confidence_threshold,
             verbose=False
         )
@@ -101,7 +101,7 @@ def _extract_detections(frame, confidence_threshold: float, zones: list | None =
         #person detection
         person_results = person_model.predict(
             frame,
-            imgsz=640,
+            imgsz=512,
             conf=confidence_threshold,
             classes=[0],
             verbose=False
@@ -177,7 +177,10 @@ def _open_stream(rtsp_url: str):
     """Open an RTSP stream, returning None if unavailable."""
     cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
     if not cap.isOpened():
-        cap = None
+        return None
+    
+    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
     return cap
 
 
