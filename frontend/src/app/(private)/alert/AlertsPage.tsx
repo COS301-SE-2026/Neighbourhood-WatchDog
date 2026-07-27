@@ -614,11 +614,9 @@ export default function AlertsPage({
                       {SEVERITY_LABELS[sev]}
                     </DropdownMenuCheckboxItem>
                   ))}
-
                   <DropdownMenuSeparator
                     style={{ backgroundColor: "var(--color-mist)" }}
                   />
-
                   <DropdownMenuLabel
                     className="text-xs uppercase tracking-wider"
                     style={{ color: "var(--color-body)" }}
@@ -646,7 +644,53 @@ export default function AlertsPage({
                       {STATUS_LABELS[st]}
                     </DropdownMenuCheckboxItem>
                   ))}
-
+                  {activeTab === "history"} && (
+                  <>
+                    <DropdownMenuSeparator
+                      style={{ color: "var(--color-mist)" }}
+                    />
+                    <DropdownMenuLabel
+                      className="text-xs uppercase tracking-wider"
+                      style={{ color: "var(--color-body)" }}
+                    >
+                      Date range
+                    </DropdownMenuLabel>
+                    <div className="px-2 py-1.5 flex flex-col gap-2">
+                      <label
+                        className="text-xs"
+                        style={{ color: "var(--color-body)" }}
+                      >
+                        From
+                        <input
+                          type="date"
+                          value={historyStartDate}
+                          onChange={(e) => setHisoryStartDate(e.target.value)}
+                          className="mt-1 w-full rounded border px-2 py-1 text-xs"
+                          style={{
+                            borderColor: "var(--color-mist)",
+                            color: "var(--color-ink)",
+                          }}
+                        />
+                      </label>
+                      <label
+                        className="text-xs"
+                        style={{ color: "var(--color-body)" }}
+                      >
+                        To
+                        <input
+                          type="date"
+                          value={historyStartDate}
+                          onChange={(e) => setHisoryEndDate(e.target.value)}
+                          className="mt-1 w-full rounded border px-2 py-1 text-xs"
+                          style={{
+                            borderColor: "var(--color-mist)",
+                            color: "var(--color-ink)",
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </>
+                  )
                   {hasActiveFilters && (
                     <>
                       <DropdownMenuSeparator
@@ -657,6 +701,8 @@ export default function AlertsPage({
                         onClick={() => {
                           setSelectedSeverities(new Set(ALL_SEVERITIES));
                           setSelectedStatus(null);
+                          setHisoryStartDate("");
+                          setHisoryEndDate("");
                         }}
                         className="w-full text-left px-2 py-1.5 text-xs transition-colors"
                         style={{ color: "var(--color-blue)" }}
