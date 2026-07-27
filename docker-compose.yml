@@ -31,20 +31,20 @@ services:
     depends_on:
       - backend
 
-  # redis:
-  #   image: redis:7-alpine
-  #   container_name: redis_cache
-  #   restart: always
-  #   ports:
-  #     - "6379:6379"
-  #   volumes:
-  #     - redis_data:/data
-  #   healthcheck:
-  #     test: ["CMD", "redis-cli", "ping"]
-  #     interval: 1m30s
-  #     timeout: 30s
-  #     retries: 5
-  #     start_period: 30s
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
 
   backend:
     build:
@@ -134,5 +134,5 @@ services:
 volumes:
   postgres_data:
   caddy_data:
-  # redis_data:
+  redis_data:
   # frontend_node_modules:

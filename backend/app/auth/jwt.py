@@ -62,7 +62,7 @@ def verify_jwt(token: str) -> dict:
     return claims
 
 
-def get_authenticated_claims(request: Request) -> dict:
+def get_authenticated_claims(request: Request) -> dict: #Send JWT to verify_jwt 
     TESTING = os.environ.get("TESTING", "false").lower() == "true"
     if TESTING:
         return {

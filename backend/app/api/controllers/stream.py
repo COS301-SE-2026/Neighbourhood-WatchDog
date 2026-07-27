@@ -26,7 +26,7 @@ def remove_camera_connection(camera_id: str, websocket: WebSocket) -> None:
     _get_camera_bucket(camera_id, ).discard(websocket)
 
 
-async def broadcast_annotation(camera_id: str, annotation_data: dict) -> None:
+async def broadcast_annotation(camera_id: str, annotation_data: dict) -> None: #TODO: make private, only accessible by internal services
     """Broadcast annotation data (bounding boxes, confidence, etc) to all connected clients"""
     connections = _get_camera_bucket(camera_id)
     dead: set[WebSocket] = set()
@@ -43,7 +43,7 @@ async def broadcast_annotation(camera_id: str, annotation_data: dict) -> None:
         connections.discard(ws)
 
 
-@router.post("/cameras/{camera_id}/annotations")
+@router.post("/cameras/{camera_id}/annotations") #TODO: make private, only accessible by internal services
 async def receive_annotation(
     camera_id: str,
     data: dict,
