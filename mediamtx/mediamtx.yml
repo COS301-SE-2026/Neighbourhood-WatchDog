@@ -21,6 +21,7 @@ authHTTPAddress: http://backend:8000/internal/mediamtx/auth
 authHTTPExclude:
   - action: read
   - action: playback
+  - action: api
 
 paths:
   # Accept dynamic publisher-owned paths such as:
@@ -32,4 +33,4 @@ paths:
 webrtcAdditionalHosts:
   - localhost
 
-webrtcAllowOrigin: "https://neighbourhood-watch-rf4qu6v8h-teamintrepid.vercel.app"
+webrtcAllowOrigin: "https://neighbourhood-watch-dog-intrepidcapstone-4790-teamintrepid.vercel.app/"
