@@ -262,28 +262,19 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
         nms_max_overlap=0.5 #to suppress overlapping boxes
     )
 
-    cap = None
-    frame_count = 0
     alerted_ids: set = set()
+    latest_frame_reader = LatestFrameReader(rtsp_url, stop_event)
+    latest_frame_reader.start()
+    last_processed_sequence = -1
 
     try:
         while not stop_event.is_set():
-            cap = _reconnect_if_needed(cap, rtsp_url, stop_event)
+            frame, last_processed_sequence = latest_frame_reader.get_latest_after(last_processed_sequence)
 
-            if cap is None:
+            if frame is None:
+                stop_event.wait(0.01)
                 continue
-
-            ret, frame = cap.read()
-            if not ret:
-                logger.warning("Empty frame - reconnecting in 2s", camera.id)
-                cap.release()
-                cap = None
-                time.sleep(2)
-                continue
-    
-            frame_count += 1
-            if frame_count % 4 != 0:
-                continue
+                
 
             person_detections, weapon_detections = _extract_detections(frame, camera.confidence_threshold)
             
@@ -315,9 +306,8 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
     except Exception:
         logger.exception("Detection worker crashed for camera %s", camera.id)
     finally:
-        if cap is not None:
-            cap.release()
-
+        latest_frame_reader.close()
+        logger.info("Detection worker stopped for camera %s", camera.id)
 
         logger.info("Detection worker stopped for camera %s", camera.id)
 
