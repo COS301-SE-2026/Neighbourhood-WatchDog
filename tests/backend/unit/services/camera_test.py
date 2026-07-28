@@ -89,7 +89,7 @@ class TestRegisterCamera:
             assert camera.created_at == self.mock_camera.created_at
             assert camera.neighbourhood_id == self.mock_camera.neighbourhood_id
 
-            assert self.mock_db.add.call_count == 2
+            assert self.mock_db.add.call_count == 1
             assert self.mock_db.flush.call_count == 1
             assert self.mock_db.refresh.call_count == 0
             assert self.mock_db.commit.call_count == 1
@@ -196,7 +196,7 @@ class TestDeregisterCamera:
             claims=self.claims
         )
 
-        assert self.mock_db.execute.call_count == 3  
+        assert self.mock_db.execute.call_count == 2  
         assert self.mock_db.commit.call_count == 1
         assert self.mock_db.rollback.call_count == 0
 

@@ -5,6 +5,7 @@ from app.services.neighbourhood_service import create_neighbourhood_handler
 from app.models.user import UserRole
 from uuid import uuid4
 from datetime import datetime
+from app.models.neighbourhood import Neighbourhood
 
 AUDIT_PATCH = "app.services.neighbourhood_service.create_audit_log_item"
 
@@ -55,7 +56,12 @@ class TestCreateNeighbourhood:
             self.mock_creator,
         ]
 
-        self.mock_db.add = Mock()
+        def mock_add(obj):
+            if isinstance(obj, Neighbourhood):
+                obj.id = uuid4()
+                obj.created_at = datetime.now()
+
+        self.mock_db.add = Mock(side_effect=mock_add)
         self.mock_db.commit = Mock()
         self.mock_db.flush = Mock()
         self.mock_db.rollback = Mock()
@@ -312,10 +318,10 @@ class TestCreateNeighbourhood:
 
         assert exception.value.status_code == 403
         assert exception.value.detail == "User does not live in the property they are trying to link"
-        
+
         assert self.mock_db.add.call_count == 1
         assert self.mock_db.flush.call_count == 1
-        assert self.mock_db.refresh.call_count == 1
+        assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.rollback.call_count == 1
     
