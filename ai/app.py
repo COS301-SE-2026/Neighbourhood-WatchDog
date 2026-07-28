@@ -188,7 +188,7 @@ class LatestFrameReader:
     def __init__(self, rtsp_url: str, stop_event: threading.Event):
         self.rtsp_url = rtsp_url
         self.stop_event = stop_event
-        self._ock = threading.Lock()
+        self._lock = threading.Lock()
         self._frame = None
         self._sequence = 0
 

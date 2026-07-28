@@ -244,11 +244,11 @@ class CameraSupervisor:
             )
 
     def _start_detection_thread(self, runtime: CameraRuntime) -> None:
-        # published_url = self._published_rtsp_url(runtime.spec.id)
+        published_url = self._published_rtsp_url(runtime.spec.id)
 
         runtime.detection_thread = threading.Thread(
             target=self.detection_target,
-            args=(runtime.spec, runtime.spec.rtsp_url, runtime.stop_event),
+            args=(runtime.spec, published_url, runtime.stop_event),
             name=f"watchdog-detection-{runtime.spec.id}",
             daemon=True,
         )
