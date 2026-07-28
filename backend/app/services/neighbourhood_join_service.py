@@ -5,6 +5,9 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from app.services.audit_service import create_audit_log_item
+from app.models.audit_log import AuditAction
+
 from app.core.database import DbSession
 from app.models.neighbourhood import Neighbourhood
 from app.models.neighbourhood_join_request import NeighbourhoodJoinRequest
@@ -57,6 +60,19 @@ async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -
         db.add(join_request)
         db.flush()
         db.commit()
+        db.refresh(join_request)
+        create_audit_log_item(
+            db=db,
+            user_id=user.id,
+            action=AuditAction.CREATE,
+            target_entity_type="NeighbourhoodJoinRequest",
+            target_entity_id=join_request.id,
+            new_values={
+                "user_id": str(user.id),
+                "neighbourhood_id": str(join_request.neighbourhood_id),
+                "status": join_request.status,
+            },
+        )
         return JoinRequestRes.model_validate(join_request)
     except HTTPException as he:
         raise he
@@ -122,6 +138,9 @@ async def resolve_join_request_handler(request_id, action: str, db: DbSession, c
         if not user:
             raise HTTPException(404, "User not found")
 
+        old_values = {
+            "status": join_request.status,
+        }
         if action == "APPROVE":
             user.role = "RESIDENT"
             user.neighbourhood_id = join_request.neighbourhood_id
@@ -131,6 +150,20 @@ async def resolve_join_request_handler(request_id, action: str, db: DbSession, c
 
         join_request.resolved_at = datetime.now(timezone.utc)
         db.commit()
+        db.refresh(join_request)
+        create_audit_log_item(
+            db=db,
+            user_id=UUID(claims["id"]),
+            action=AuditAction.UPDATE,
+            target_entity_type="NeighbourhoodJoinRequest",
+            target_entity_id=join_request.id,
+            old_values=old_values,
+            new_values={
+                "user_id": str(user.id),
+                "status": join_request.status,
+                "resolved_at": join_request.resolved_at.isoformat(),
+            },
+        )
         return JoinRequestRes.model_validate(join_request)
     except HTTPException as he:
         raise he
