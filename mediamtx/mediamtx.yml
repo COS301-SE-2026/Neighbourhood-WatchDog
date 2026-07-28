@@ -33,4 +33,4 @@ paths:
 webrtcAdditionalHosts:
   - localhost
 
-webrtcAllowOrigin: "https://neighbourhood-watch-dog-intrepidcapstone-4790-teamintrepid.vercel.app/"
+webrtcAllowOrigin: "*"
