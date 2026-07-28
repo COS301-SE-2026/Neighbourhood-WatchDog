@@ -173,6 +173,16 @@ class TestSendAlertEmail:
         mock_server.sendmail.assert_called_once()
         mock_server.quit.assert_called_once()
 
+    @patch("app.services.notification_service.SENDER_EMAIL", None)
+    @patch("app.services.notification_service.SENDER_PASSWORD", None)
+    def test_missing_smtp_credentials_returns_failure(self, *_):
+        success, error = send_alert_email(
+            "resident@example.com", "WEAPON_DETECTED", "CAM 03", "Front Gate", "CRITICAL"
+        )
+
+        assert success is False
+        assert error == "SMTP credentials not configured"
+
     @patch.dict(os.environ, {"SMTP_SENDER_EMAIL": "bot@watchdog.com", "SMTP_APP_PASSWORD": "pw"})
     @patch("app.services.notification_service.smtplib.SMTP")
     def test_smtp_exception_returns_failure(self, mock_smtp_cls):
@@ -466,3 +476,81 @@ class TestDispatchNotifications:
             assert args[3] == NotificationChannel.EMAIL
             assert args[4] is False
             assert args[5] == "smtp error"
+
+class TestNotifyUsers:
+    def setup_method(self):
+        self.mock_db = Mock()
+        self.alert_id = uuid.uuid4()
+        self.camera = Mock()
+        self.camera.name = "CAM 03"
+        self.camera.location = "Front Gate"
+        self.whatsapp_message = "some formatted whatsapp message"
+
+    def _make_user(self, phone_number="0821234567", email="resident@gmail.com"):
+        user = Mock()
+        user.id = uuid.uuid4()
+        user.phone_number = phone_number
+        user.email = email
+        return user
+
+    @patch("app.services.notification_service._log_notification")
+    @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
+    @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
+    def test_user_with_both_channels_gets_both_sends_and_logs(self, mock_send, mock_email, mock_log):
+        user = self._make_user()
+
+        _notify_users(
+            self.mock_db, self.alert_id, [user], self.whatsapp_message,
+            "LOITERING", self.camera, "HIGH",
+        )
+
+        mock_send.assert_called_once_with(user.phone_number, self.whatsapp_message)
+        mock_email.assert_called_once_with(user.email, "LOITERING", self.camera.name, self.camera.location, "HIGH")
+        assert mock_log.call_count == 2
+
+    @patch("app.services.notification_service._log_notification")
+    @patch("app.services.notification_service.send_alert_email")
+    @patch("app.services.notification_service._send_whatsapp")
+    def test_user_with_no_contact_info_skips_both_channels(self, mock_send, mock_email, mock_log):
+        user = self._make_user(phone_number=None, email=None)
+
+        _notify_users(
+            self.mock_db, self.alert_id, [user], self.whatsapp_message,
+            "LOITERING", self.camera, "HIGH",
+        )
+
+        mock_send.assert_not_called()
+        mock_email.assert_not_called()
+        mock_log.assert_not_called()
+
+    @patch("app.services.notification_service._log_notification")
+    @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
+    @patch("app.services.notification_service._send_whatsapp", return_value=(False, "twilio error"))
+    def test_whatsapp_failure_still_attempts_email_independently(self, mock_send, mock_email, mock_log):
+        user = self._make_user()
+
+        _notify_users(
+            self.mock_db, self.alert_id, [user], self.whatsapp_message,
+            "LOITERING", self.camera, "HIGH",
+        )
+
+        mock_email.assert_called_once()  
+        assert mock_log.call_count == 2
+        whatsapp_log_call = mock_log.call_args_list[0]
+        assert whatsapp_log_call.args[3] == NotificationChannel.WHATSAPP
+        assert whatsapp_log_call.args[4] is False
+        assert whatsapp_log_call.args[5] == "twilio error"
+
+    @patch("app.services.notification_service._log_notification")
+    @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
+    @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
+    def test_multiple_users_processed_independently(self, mock_send, mock_email, mock_log):
+        users = [self._make_user(), self._make_user(phone_number=None), self._make_user(email=None)]
+
+        _notify_users(
+            self.mock_db, self.alert_id, users, self.whatsapp_message,
+            "LOITERING", self.camera, "HIGH",
+        )
+
+        assert mock_send.call_count == 2  
+        assert mock_email.call_count == 2  
