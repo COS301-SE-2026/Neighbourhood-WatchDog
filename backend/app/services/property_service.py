@@ -50,7 +50,7 @@ async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims
         )
         db.add(new_property_user)
         db.flush()
-        db.commit()
+
         create_audit_log_item(
             db=db,
             user_id=user.id,
@@ -63,11 +63,15 @@ async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims
             },
         )
 
+        db.commit()
+        return new_property
+    
     except IntegrityError:
         db.rollback()
         raise HTTPException(500, "Failed to add to property database")
-
-    return new_property
+    except HTTPException as he:
+        db.rollback()
+        raise he
 
 
 async def get_user_properties_handler(claims: dict, db: DbSession) -> List[Property]:

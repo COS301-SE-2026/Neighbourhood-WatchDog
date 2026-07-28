@@ -13,14 +13,13 @@ def register_user(payload, db: Session):
     response = sign_up(
         email=payload["email"],
         password=payload["password"],
-        name=payload["firstName"] + " " + payload["lastName"], # combine first and last name to meet the "full name"
+        name=payload["firstName"] + " " + payload["lastName"],
         address=payload["address"]
     )
 
     user_sub = response.get("UserSub", response.get("user_sub"))
     user_confirmed = response.get("UserConfirmed", response.get("user_confirmed"))
 
-    #Add user to db
     new_user = User(
         email=payload["email"],
         first_name=payload["firstName"],
@@ -30,8 +29,9 @@ def register_user(payload, db: Session):
         neighbourhood_id=None
     )
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+
+    # Generate ID before audit entry
+    db.flush()
 
     create_audit_log_item(
         db=db,
@@ -51,6 +51,7 @@ def register_user(payload, db: Session):
             ),
         },
     )
+    db.commit()
 
     return {
         "success": True,

@@ -45,7 +45,7 @@ async def get_pairing_token_handler(
         try: 
             new_token = PairingToken(token=token, property_id=property_id)
             db.add(new_token)
-            db.commit()
+            db.flush()
 
             create_audit_log_item(
                 db=db,
@@ -58,6 +58,8 @@ async def get_pairing_token_handler(
                     "expires_at": new_token.expires_at.isoformat(),
                 },
             )
+
+            db.commit()
             
             link_prop_token = LinkPropertyToken(
                 token=token,
@@ -124,6 +126,18 @@ async def pair_agent_handler(
 
         db.add(new_edge_agent)
         db.flush()
+
+        create_audit_log_item(
+            db=db,
+            user_id=None, # user not authenticated :(
+            action=AuditAction.CREATE,
+            target_entity_type="EdgeAgentCredential",
+            target_entity_id=new_edge_agent.id,
+            new_values={
+                "property_id": str(new_edge_agent.property_id),
+            },
+        )
+
         db.commit()
 
         #getting the cameras related to the property

@@ -38,14 +38,13 @@ async def create_alert(db: Session, data: AlertCreate, claims: dict):
             detection_event_id=detection_event.id,
             status="OPEN",
         )
-        db.add(alert)
-        db.commit()
-        db.refresh(alert)
 
-        #Audit the entry into DB
-        create_audit_log_item( 
+        db.add(alert)
+        db.flush()  # Get alert.id before audit
+
+        create_audit_log_item(
             db=db,
-            user_id=UUID(claims["id"]), #CONVERT string into UUID format
+            user_id=UUID(claims["id"]),
             action=AuditAction.CREATE,
             target_entity_type="Alert",
             target_entity_id=alert.id,
@@ -55,6 +54,8 @@ async def create_alert(db: Session, data: AlertCreate, claims: dict):
                 "status": alert.status,
             },
         )
+        db.commit()
+        db.refresh(alert)
 
         from app.api.controllers.alert import broadcast
         await broadcast(str(data.neighbourhood_id), {
@@ -119,8 +120,6 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
         }
 
         alert.status = "ACKNOWLEDGED"
-        db.commit()
-        db.refresh(alert)
 
         new_values = {
             "status": alert.status,
@@ -135,6 +134,7 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
             old_values=old_values,
             new_values=new_values,
         )
+        db.commit()
 
         alert_res = _build_alert_res(alert)
 

@@ -58,9 +58,9 @@ async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -
             status="PENDING",
         )
         db.add(join_request)
+        # Generate join_request.id
         db.flush()
-        db.commit()
-        db.refresh(join_request)
+
         create_audit_log_item(
             db=db,
             user_id=user.id,
@@ -73,8 +73,11 @@ async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -
                 "status": join_request.status,
             },
         )
+        db.commit()
+
         return JoinRequestRes.model_validate(join_request)
     except HTTPException as he:
+        db.rollback()
         raise he
     except IntegrityError:
         db.rollback()
@@ -103,6 +106,7 @@ async def list_join_requests_handler(db: DbSession, claims: dict) -> list[JoinRe
         ).scalars().all()
         return [JoinRequestRes.model_validate(request) for request in requests]
     except HTTPException as he:
+        db.rollback()
         raise he
     except IntegrityError:
         db.rollback()
@@ -149,8 +153,7 @@ async def resolve_join_request_handler(request_id, action: str, db: DbSession, c
             join_request.status = "DENIED"
 
         join_request.resolved_at = datetime.now(timezone.utc)
-        db.commit()
-        db.refresh(join_request)
+
         create_audit_log_item(
             db=db,
             user_id=UUID(claims["id"]),
@@ -164,8 +167,10 @@ async def resolve_join_request_handler(request_id, action: str, db: DbSession, c
                 "resolved_at": join_request.resolved_at.isoformat(),
             },
         )
+        db.commit()
         return JoinRequestRes.model_validate(join_request)
     except HTTPException as he:
+        db.rollback()
         raise he
     except IntegrityError:
         db.rollback()

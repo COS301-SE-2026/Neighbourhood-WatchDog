@@ -115,6 +115,7 @@ def deregister_camera_handler(camera_id: UUID, db: Optional[DbSession], claims: 
             "location": camera_obj.location,
         }
 
+        db.delete(camera_obj)
 
         create_audit_log_item(
             db=db,
@@ -125,14 +126,17 @@ def deregister_camera_handler(camera_id: UUID, db: Optional[DbSession], claims: 
             old_values=old_values,
         )
 
-
-        db.delete(camera_obj)
-
         db.commit()
         
     except HTTPException as he:
         db.rollback()
         raise he
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(500, "Could not deregister camera")
+    except Exception:
+        db.rollback()
+        raise HTTPException(500, "Failed to delete camera")
     
 def edit_camera_handler(
     camera_id: UUID, 

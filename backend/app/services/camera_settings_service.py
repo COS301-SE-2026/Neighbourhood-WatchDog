@@ -165,16 +165,18 @@ def delete_zone_handler(camera_id: UUID,zone_id: UUID,db: DbSession,claims: dict
             "polygon": zone.polygon,
         }
 
+        zone_id = zone.id
+
+        db.delete(zone)
+
         create_audit_log_item(
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.DELETE,
             target_entity_type="CameraDetectionZone",
-            target_entity_id=zone.id,
+            target_entity_id=zone_id,
             old_values=old_values,
         )
-
-        db.delete(zone)
 
         db.commit()
 
