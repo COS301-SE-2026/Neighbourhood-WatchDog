@@ -5,31 +5,21 @@ import deisgnImage1 from "@/assets/images/heroImage1.png"
 import designImage2 from "@/assets/images/heroImage2.png"
 
 export default function Hero() {
-    return (<section className="py-24 overflow-x-clip">
+    return (<section className="py-24 overflow-x-clip overflow-y-visible">
         <div className="container mx-auto relative">
-            <div className="absolute -left-42 top-20 hidden lg:block">
-                <Image 
-                    src={designImage2} 
-                    alt="Design Image 2"
-                    width={400}
-                    height={200}
-                />
+            <div className="absolute -left-10 top-20 hidden min-[1280px]:block">
+                <Image src={designImage2} alt="Design Image 2" width={400} height={200} />
             </div>
 
-            <div className="absolute -right-64 top-4 hidden lg:block">
-                <Image 
-                    src={deisgnImage1} 
-                    alt="Design Image 1"
-                    width={400}
-                    height={200}
-                />
+            <div className="absolute -right-25 top-20 min-[1280px]:top-45  hidden min-[1280px]:block">
+                <Image src={deisgnImage1} alt="Design Image 1" width={350} height={180} />
             </div>
 
-            <div className="absolute -left-0 top-62 hidden lg:block">
+            <div className="absolute left-12 top-62 hidden min-[1280px]:block">
                 <Pointer name="Jared" color="slate"/>
             </div>
 
-            <div className="absolute -right-0 top-115 hidden lg:block">
+            <div className="absolute right-20 top-120 min-[1280px]:top-145 hidden min-[1280px]:block">
                 <Pointer name="Zizou" color="emerald"/>
             </div>
             <div className="flex justify-center">
@@ -38,7 +28,7 @@ export default function Hero() {
                 </div>
             </div>
             <h1 className="text-4xl md:text-6xl sm:text-5xl lg:text-8xl font-medium text-center mt-6 text-balance">
-                Your Neighbourhood. Watched.
+                Your Neighbourhood, <br/>Watched.
             </h1>
             <p className="text-center text-xl text-white/50 mt-8 max-w-2xl mx-auto">
                 From live camera feeds to instant alerts, 
