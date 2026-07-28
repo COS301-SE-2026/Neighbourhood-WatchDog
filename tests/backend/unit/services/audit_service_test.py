@@ -63,13 +63,15 @@ class TestCreateAuditLogItem:
 
     @pytest.mark.asyncio
     async def test_same_old_new_values(self):
+        user_id = uuid4()
+        target_entity_id = uuid4()
         with pytest.raises(HTTPException) as exception:
             now = datetime.now()
             _ = create_audit_log_item(
-                user_id=uuid4(),
+                user_id=user_id,
                 action=AuditAction.UPDATE,
                 target_entity_type="USER",
-                target_entity_id=uuid4(),
+                target_entity_id=target_entity_id,
                 old_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
                     "email": OLD_EMAIL,
@@ -101,11 +103,14 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_empty_user_id(self):
         with pytest.raises(HTTPException) as exception:
+            user_id = None
+            target_entity_id = uuid4()
+            created_at = datetime.now()
             _ = create_audit_log_item(
-                user_id=None,
+                user_id=user_id,
                 action=AuditAction.UPDATE,
                 target_entity_type="USER",
-                target_entity_id=uuid4(),
+                target_entity_id=target_entity_id,
                 old_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
                     "email": OLD_EMAIL,
@@ -114,7 +119,7 @@ class TestCreateAuditLogItem:
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
                     "role": UserRole.RESIDENT,
                     "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "created_at": datetime.now()
+                    "created_at": created_at
                 },
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
@@ -124,7 +129,7 @@ class TestCreateAuditLogItem:
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
                     "role": UserRole.RESIDENT,
                     "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "created_at": datetime.now()
+                    "created_at": created_at
                 },
                 db=self.mock_db
             )
@@ -137,11 +142,14 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_empty_action(self):
         with pytest.raises(HTTPException) as exception:
+            user_id = uuid4()
+            target_entity_id = uuid4()
+            created_at = datetime.now()
             _ = create_audit_log_item(
-                user_id=uuid4(),
+                user_id=user_id,
                 action=None,
                 target_entity_type="USER",
-                target_entity_id=uuid4(),
+                target_entity_id=target_entity_id,
                 old_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
                     "email": OLD_EMAIL,
@@ -150,7 +158,7 @@ class TestCreateAuditLogItem:
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
                     "role": UserRole.RESIDENT,
                     "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "created_at": datetime.now()
+                    "created_at": created_at
                 },
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
@@ -160,7 +168,7 @@ class TestCreateAuditLogItem:
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
                     "role": UserRole.RESIDENT,
                     "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "created_at": datetime.now()
+                    "created_at": created_at
                 },
                 db=self.mock_db
             )
@@ -172,12 +180,16 @@ class TestCreateAuditLogItem:
 
     @pytest.mark.asyncio
     async def test_empty_target_entity_type(self):
+        user_id = uuid4()
+        target_entity_type = None
+        target_entity_id = uuid4()
+        created_at = datetime.now()
         with pytest.raises(HTTPException) as exception:
             _ = create_audit_log_item(
-                user_id=uuid4(),
+                user_id=user_id,
                 action=AuditAction.UPDATE,
-                target_entity_type=None,
-                target_entity_id=uuid4(),
+                target_entity_type=target_entity_id,
+                target_entity_id=target_entity_id,
                 old_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
                     "email": OLD_EMAIL,
@@ -186,7 +198,7 @@ class TestCreateAuditLogItem:
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
                     "role": UserRole.RESIDENT,
                     "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "created_at": datetime.now()
+                    "created_at": created_at
                 },
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
@@ -196,7 +208,7 @@ class TestCreateAuditLogItem:
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
                     "role": UserRole.RESIDENT,
                     "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "created_at": datetime.now()
+                    "created_at": created_at
                 },
                 db=self.mock_db
             )
@@ -208,12 +220,15 @@ class TestCreateAuditLogItem:
 
     @pytest.mark.asyncio
     async def test_empty_target_entity_id(self):
+        user_id = uuid4()
+        target_entity_id = None
+        created_at = datetime.now()
         with pytest.raises(HTTPException) as exception:
             _ = create_audit_log_item(
-                user_id=uuid4(),
+                user_id=user_id,
                 action=AuditAction.UPDATE,
                 target_entity_type="USER",
-                target_entity_id=None,
+                target_entity_id=target_entity_id,
                 old_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
                     "email": OLD_EMAIL,
@@ -222,7 +237,7 @@ class TestCreateAuditLogItem:
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
                     "role": UserRole.RESIDENT,
                     "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "created_at": datetime.now()
+                    "created_at": created_at
                 },
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
@@ -244,12 +259,15 @@ class TestCreateAuditLogItem:
 
     @pytest.mark.asyncio
     async def test_update_empty_old(self):
+        user_id = uuid4()
+        target_entity_id = uuid4()
+        created_at = datetime.now()
         with pytest.raises(HTTPException) as exception:
             _ = create_audit_log_item(
-                user_id=uuid4(),
+                user_id=user_id,
                 action=AuditAction.UPDATE,
                 target_entity_type="USER",
-                target_entity_id=uuid4(),
+                target_entity_id=target_entity_id,
                 old_values=None,
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
@@ -259,7 +277,7 @@ class TestCreateAuditLogItem:
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
                     "role": UserRole.RESIDENT,
                     "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "created_at": datetime.now()
+                    "created_at": created_at
                 },
                 db=self.mock_db
             )
@@ -272,11 +290,14 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_update_empty_new(self):
         with pytest.raises(HTTPException) as exception:
+            user_id = uuid4()
+            target_entity_id = uuid4()
+            created_at = datetime.now()
             _ = create_audit_log_item(
-                user_id=uuid4(),
+                user_id=user_id,
                 action=AuditAction.UPDATE,
                 target_entity_type="USER",
-                target_entity_id=uuid4(),
+                target_entity_id=target_entity_id,
                 old_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
                     "email": OLD_EMAIL,
@@ -285,7 +306,7 @@ class TestCreateAuditLogItem:
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
                     "role": UserRole.RESIDENT,
                     "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "created_at": datetime.now()
+                    "created_at": created_at
                 },
                 new_values=None,
                 db=self.mock_db
@@ -325,12 +346,15 @@ class TestCreateAuditLogItem:
 
     @pytest.mark.asyncio
     async def test_delete_empty_old(self):
+        user_id = uuid4()
+        target_entity_id = uuid4()
+        created_at = datetime.now()
         with pytest.raises(HTTPException) as exception:
             _ = create_audit_log_item(
-                user_id=uuid4(),
+                user_id=user_id,
                 action=AuditAction.DELETE,
                 target_entity_type="USER",
-                target_entity_id=uuid4(),
+                target_entity_id=target_entity_id,
                 old_values=None,
                 new_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
@@ -340,7 +364,7 @@ class TestCreateAuditLogItem:
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
                     "role": UserRole.RESIDENT,
                     "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "created_at": datetime.now()
+                    "created_at": created_at
                 },
                 db=self.mock_db
             )

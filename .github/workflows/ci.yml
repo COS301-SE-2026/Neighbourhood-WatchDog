@@ -117,7 +117,7 @@ jobs:
         run: cd backend && python seed.py
 
       - name: Install PyTest Cov
-        run: pip installpytest-cov
+        run: pip install pytest-cov
 
       - name: Run backend tests
         run: cd tests/backend && pytest --cov --cov-branch --cov-report=xml
