@@ -2,7 +2,13 @@
 
 ## Introduction
 
-Rising crime rates in South African communities have highlighted the need for smarter, more proactive security solutions. Neighbourhood WatchDog is a centralised, AI-assisted security platform designed to enhance safety within residential neighbourhoods. The system integrates with existing CCTV infrastructure and applies real-time computer vision techniques, including object detection and behavioural classification, to identify suspicious activity such as loitering, perimeter scanning, and unauthorised presence. By delivering actionable alerts to residents and security personnel in real time, Neighbourhood WatchDog aims to reduce response times and strengthen community-driven crime prevention efforts.
+### 1.1 Purpose
+Neighbourhood WatchDog is an AI-assisted neighbourhood-security platform. It allows authorised residents, property administrators and security personnel to register cameras, connect a paired local WatchDog Agent, relay camera video securely, detect people in configured zones, and surface alerts to an operational dashboard.
+
+### 1.2 Business need and scope
+Neighbourhood CCTV is often fragmented: a camera may be visible only on a local network, with no common access model, automated detection, or coordinated alert workflow. WatchDog provides a control plane for registered cameras and paired site agents, a relay path for authorised playback, and a dashboard for detection and alert response.
+
+The system concentrates on the integrated development from camera registration and Agent pairing through enabled-camera reconciliation, secure streaming, person detection, protected-zone configuration, and alert presentation. Advanced behaviour classification and risk prediction remain active requirements.
 
 ## User Stories
 
@@ -12,6 +18,7 @@ Rising crime rates in South African communities have highlighted the need for sm
 - **US-02**: As a registered user, I want to log in with a one-time verification code in addition to my password so that my account stays secure even if my password is compromised.
 - **US-03**: As a logged-in user, I want to sign out of the platform so that my account is not accessible to anyone else using my device.
 - **US-04**: As a system admin, I want to view a complete, read-only audit log of all user activity so that I can investigate any suspicious behaviour or access disputes.
+
 
 ### E2: Neighbourhood & Property Management
 
@@ -66,6 +73,11 @@ Rising crime rates in South African communities have highlighted the need for sm
 - **US-32**: As a neighbourhood admin, I want to see predictions of which time windows and camera zones are at highest risk so that I can schedule patrols proactively rather than just reacting to incidents.
 - **US-33**: As a security officer, I want to be notified when a zone's predicted risk level rises significantly so that I can increase my attention to that area before an incident actually occurs.
 
+### E10: Agent Workflow
+- **US-34**: As a resident or property owner, I want my enabled camera automatically connected to the paired WatchDog Agent for streaming and detection so that monitoring does not require manual runtime configuration.
+- **US-35:** As an authorised user, I want playback to connect only when I select a camera so that video connections and resources are used deliberately.
+- **US-36:** As a security officer, I want a fault or shutdown in one camera runtime not to interrupt other enabled cameras so that a local failure does not blind the property.
+
 ---
 
 ## Functional Requirements
@@ -75,10 +87,12 @@ Rising crime rates in South African communities have highlighted the need for sm
         R1.1.1: The system shall accept live video streams from IP cameras.
         R1.1.2: The system shall accept simulated video feeds (such as pre-recorded video files). 
         R1.1.3: The system shall support multiple simultaneous incoming streams.
+        R1.1.4: The Agent shall retrieve its assigned enabled-camera configuration and reconcile local runtime state with camera enablement.
     R1.2: Stream Relay
         R1.2.1: The system shall relay incoming camera streams, decoupling the cameras from downstream services.
         R1.2.2: The system shall allow multiple services to consume the same camera stream simultaneously without connecting directly to the camera.
-        R1.2.3 The system shall output each relayed stream in an HTTP Live Streaming (HLS) format for a browser-based preview.
+        R1.2.3: The system shall output each relayed stream in an HTTP Live Streaming (HLS) format for a browser-based preview.
+        R1.2.4: The system shall provide on-demand WebRTC/WHEP playback only after a user explicitly selects a camera.
     R1.3: Frame Extraction       
         R1.3.1: The system shall extract frames from incoming video streams.
         R1.3.2: Extracted frames shall be pushed to a queue for distribution to AI processing workers.
@@ -91,6 +105,7 @@ Rising crime rates in South African communities have highlighted the need for sm
         R2.1.2: Video frames shall be preprocessed before analysis to improve detection accuracy.
         R2.1.3: A detection event shall be generated for each confirmed human presence, containing a confidence score, timestamp, and camera identifier. 
         R2.1.4: Detection frames shall be processed asynchronously to ensure continuous camera monitoring without interruption.
+        R2.1.5:	The Agent shall submit events/annotations with a paired internal credential; invalid or revoked credentials shall be rejected.
     R2.2: Scored (Emergency-Rating) Detection Events
         R2.2.1: Severity rating (LOW, MEDIUM, HIGH, or CRITICAL) will be assigned to each detection event based on its confidence score and detected behaviour type.
         R2.2.2: Alert record to be triggered only when a detection event's confidence score exceeds a configurable threshold.
@@ -110,23 +125,25 @@ Rising crime rates in South African communities have highlighted the need for sm
     R3.2: Alert logging (record) and history
         R3.2.1: The footage that triggered the alert should be saved and timestamped so that the user can review it later.
         R3.2.2: Shall allow user to view footage of alerts.
-        R3.2.3 Access to the recordings will be scoped by the same role-based permissions as the access to the video stream.
+        R3.2.3: Access to the recordings will be scoped by the same role-based permissions as the access to the video stream.
     R3.3: Notifications
         R3.3.1: Notify the user via WhatsApp and Email when an alert is triggered providing important information about the event (e.g. time).
-        R3.3.2 Other users in the neighbourhood should be alerted when there is a severe alert.
+        R3.3.2: Other users in the neighbourhood should be alerted when there is a severe alert.
 #### R4: User/Access Control
-    R4.1 Scoped permissions
-        R4.1.1 The system should categorise video feeds by 3 different visibilities: public, restricted and private. Restricted video feeds are those which residents have selected to make viewable by security officers.
-        R4.1.2 Security officers and neighbourhood admins may view all public, and restricted video streams
-        R4.1.3 Residents may view their own private and restricted video streams of cameras on their own property and all public streams. 
-        R4.1.4 System admin may see all public video streams.
-    R4.2 Select visibility of video feeds
-        R4.2.1 Shall allow residents to choose which cameras’ streams will be public, restricted or private.
-        R4.2.2 Shall allow neighbourhood admins to add camera streams that will be public
-    R4.3 Multi-Factor Authentication
-        R4.3.1 Will require all users to log in using Multi-Factor Authentication methods.
-    R4.4 Audit Trail
-        R4.4.1 Log all user activity for  audit purposes.
+    R4.1: Scoped permissions
+        R4.1.1: The system should categorise video feeds by 3 different visibilities: public, restricted and private. Restricted video feeds are those which residents have selected to make viewable by security officers.
+        R4.1.2: Security officers and neighbourhood admins may view all public, and restricted video streams
+        R4.1.3: Residents may view their own private and restricted video streams of cameras on their own property and all public streams. 
+        R4.1.4: System admin may see all public video streams.
+        R4.1.5:	Stream-viewing and alert access shall be checked against the same relevant camera-visibility and role policy before playback is offered.
+        R4.1.6:	RTSP URLs, Agent credentials, MediaMTX publisher credentials and backend internal tokens shall not be returned to ordinary browser clients.
+    R4.2: Select visibility of video feeds
+        R4.2.1: Shall allow residents to choose which cameras’ streams will be public, restricted or private.
+        R4.2.2: Shall allow neighbourhood admins to add camera streams that will be public
+    R4.3: Multi-Factor Authentication
+        R4.3.1: Will require all users to log in using Multi-Factor Authentication methods.
+    R4.4: Audit Trail
+        R4.4.1: Log all user activity for  audit purposes.
 
 #### R5: Dashboard
     R5.1: Live Alert Feed
@@ -189,6 +206,7 @@ Rising crime rates in South African communities have highlighted the need for sm
         R7.4.1 Allow user to register a new camera
             R7.4.1.1 User must select a privacy type for the camera
             R7.4.1.2 User may select a name and location for camera
+            R7.4.1.3 An authorised user shall assign a camera to the appropriate paired WatchDog Agent/site runtime where applicable.
         R7.4.2 Allow user edit properties of camera
             R7.4.2.1 User able to change name and location
             R7.4.2.2 Disable camera permanently or temporarily
@@ -234,7 +252,6 @@ Rising crime rates in South African communities have highlighted the need for sm
         R9.3.6 View all invites to neighbourhoods
 	    R9.3.6.1 Company can choose to view the neighbourhood and its details
 	    R9.3.6.2 Company is able to accept or decline requests to join the neighbourhoods
-
     R9.4 Security Response Management
         R9.4.1 View all alerts that have been dispatched
         R9.4.2 Change the status of the alerts list the alsert statuss here
@@ -564,7 +581,44 @@ High-Level:
 TUCBW: The Neighbourhood Administrator can select a Security Officer to invite to the neighbourhood from a list of existing officers.
 TUCEW: The Security Officer can accept or reject the invitation to join the neighbourhood.
 
+R8 WatchDog Agent anf Camera Management
 
+UC8.1 Pair a WatchDog Agent with an Account (Abstract)
+High-Level:
+TUCBW: A Resident or Neighbourhood Administrator opens the WatchDog desktop agent and enters the pairing token generated from their Neighbourhood WatchDog account.
+TUCEW: The WatchDog Agent is securely linked to the user’s account and is authorised to retrieve and manage the cameras assigned to that user.
+
+UC8.2 - Automatically Monitor Enabled Camera Streams (Abstract)
+High-Level:
+TUCBW: A Resident or Neighbourhood Administrator enables one or more registered cameras in the Neighbourhood WatchDog platform.
+TUCEW: The paired WatchDog Agent automatically detects the enabled cameras, starts the required video publishing and detection processes, and makes the available camera streams accessible through the platform.
+
+UC8.3 - Stop Monitoring a Disabled Camera (Abstract)
+High-Level:
+TUCBW: A Resident or Neighbourhood Administrator disables a registered camera through the camera settings page.
+TUCEW: The WatchDog Agent automatically stops the video publishing and detection processes for the disabled camera, and the camera is no longer available for live viewing or monitoring.
+
+UC8.4 - Isolate a Camera Runtime Failure (Abstract)
+High-Level:
+TUCBW: A camera stream, video publisher, or detection process fails while other cameras are being monitored by the WatchDog Agent.
+TUCEW: The affected camera is marked as unavailable or offline, while the WatchDog Agent continues monitoring all other operational cameras without interruption.
+
+
+R9: Secure On-Demand Camera Playback
+UC9.1 - Request Secure Live Camera Playback (Abstract)
+High-Level:
+TUCBW: An authorised user selects an available camera from the dashboard and opens the live camera view.
+TUCEW: The user receives an authorised, secure live video stream for the selected camera in their browser.
+
+UC9.2 - Start Playback Only When Requested (Abstract)
+High-Level:
+TUCBW: An authorised user selects a camera and chooses to view its live stream.
+TUCEW: The platform establishes the live video connection only for the selected camera, reducing unnecessary network and processing usage for cameras that are not actively being viewed.
+
+UC9.3 - Prevent Unauthorised Camera Playback (Abstract)
+High-Level:
+TUCBW: A user attempts to request playback for a camera stream that they are not permitted to view.
+TUCEW: The platform denies access to the camera stream and does not establish a live playback connection.
 ---
 
 ## Domain Model
