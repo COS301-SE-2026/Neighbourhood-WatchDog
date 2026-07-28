@@ -119,7 +119,9 @@ services:
   mediamtx:
     environment:
       MTX_WEBRTCADDITIONALHOSTS: stream-staging.neighbourhoodwatchdog.co.za,13.245.213.174
-      
+      MTX_WEBRTCENCRYPTION: "yes"
+      MTX_WEBRTCSERVERCERT: /certs/fullchain.pem
+      MTX_WEBRTCSERVERKEY: /certs/privkey.pem
     build:
       context: ./mediamtx
     platform: linux/amd64

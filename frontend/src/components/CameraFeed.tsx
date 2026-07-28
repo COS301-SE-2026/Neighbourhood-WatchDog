@@ -21,7 +21,14 @@ interface AnnotatedCameraFeedProps {
       }
   }
 
-const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProps>(function AnnotatedCameraFeed({ streamPath, cameraId, whepBaseUrl=process.env.NEXT_PUBLIC_MEDIAMTX_WEBRTC_URL ?? "http://localhost:8889", onStreamStateChange,},ref) {
+const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProps>(
+  function AnnotatedCameraFeed({ 
+    streamPath, 
+    cameraId, 
+    whepBaseUrl=process.env.NEXT_PUBLIC_MEDIAMTX_WEBRTC_URL ?? "http://localhost:8889", onStreamStateChange,
+  }
+  ,ref
+) {
   const internalVideoRef = useRef<HTMLVideoElement>(null);
   const videoRef =(ref as React.RefObject<HTMLVideoElement>) ?? internalVideoRef;
 

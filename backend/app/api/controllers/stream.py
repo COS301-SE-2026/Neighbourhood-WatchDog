@@ -1,10 +1,10 @@
 import asyncio
 import json
-import os
-import secrets
 from typing import Annotated
+from fastapi import APIRouter, Depends,WebSocket
 
-from fastapi import APIRouter, Header, HTTPException, WebSocket, status
+from app.models.edge_agent_credentials import EdgeAgentCredential
+from app.api.controllers.internal_cameras import get_authenticated_edge_agent
 
 router = APIRouter(prefix="/api/stream", tags=["stream"])
 
@@ -47,24 +47,9 @@ async def broadcast_annotation(camera_id: str, annotation_data: dict) -> None: #
 async def receive_annotation(
     camera_id: str,
     data: dict,
-    x_internal_token: Annotated[str | None, Header()] = None,
-):
-    expected_token = os.environ.get("INTERNAL_API_TOKEN")
-
-    if not expected_token:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Annotation ingestion is not configured.",
-        )
-
-    if not x_internal_token or not secrets.compare_digest(
-        x_internal_token,
-        expected_token,
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid internal token.",
-        )
+    x_internal_token: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)],
+) -> dict:
+    
 
     await broadcast_annotation(
         camera_id,

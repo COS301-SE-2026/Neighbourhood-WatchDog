@@ -2,7 +2,6 @@ from camera_runtime import CameraSpec, CameraSupervisor
 
 import os
 import cv2
-import time
 import threading
 from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI, Query
@@ -15,10 +14,10 @@ from pipeline.utils.zone_config import filter_detections_by_zones
 import httpx
 from datetime import datetime, timezone
 import logging
-
+import keyring
 
 logger = logging.getLogger("watchdog.ai")
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = ("rtsp_transport;tcp|fflags;nobuffer|flags;low_delay")
 
 threat_model = YOLO("pipeline/models/weights/best.pt")
 person_model = YOLO("pipeline/models/weights/yolov8n.pt")
@@ -48,15 +47,21 @@ _model_lock = threading.Lock()
 
 def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp: str) -> None:
     """POST detection track data to backend so it can broadcast via WebSocket."""
+    api_key = keyring.get_password("WatchDog", "api_key")
+    if not api_key:
+        logger.warning("Cannot push annotations for camera %s: no paired API key found. Run agent pairing first.", camera_id)
+        return
+
+
     try:
         response = httpx.post(
             f"{backend_url}/api/stream/cameras/{camera_id}/annotations",
-            headers={"X-Internal-Token": INTERNAL_API_TOKEN}, 
+            headers={"X-Internal-Token": api_key}, 
             json={"tracks": tracks, "timestamp": timestamp},
             timeout=0.5,
         )
         response.raise_for_status()
-    except httpx.Exception as error:
+    except httpx.RequestError as error:
         logger.warning("Could not push annotations for camera %s: %s", camera_id, error)
 
 
@@ -86,7 +91,7 @@ def _extract_detections(frame, confidence_threshold: float, zones: list | None =
         #threat detection
         threat_results = threat_model.predict(
             frame,
-            imgsz=640,
+            imgsz=512,
             conf=confidence_threshold,
             verbose=False
         )
@@ -95,7 +100,7 @@ def _extract_detections(frame, confidence_threshold: float, zones: list | None =
         #person detection
         person_results = person_model.predict(
             frame,
-            imgsz=640,
+            imgsz=512,
             conf=confidence_threshold,
             classes=[0],
             verbose=False
@@ -171,9 +176,74 @@ def _open_stream(rtsp_url: str):
     """Open an RTSP stream, returning None if unavailable."""
     cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
     if not cap.isOpened():
-        cap = None
+        return None
+    
+    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
     return cap
 
+class LatestFrameReader:
+    """Retain newest frame. Prevents detector from working through a backlog of old frames"""
+
+    def __init__(self, rtsp_url: str, stop_event: threading.Event):
+        self.rtsp_url = rtsp_url
+        self.stop_event = stop_event
+        self._lock = threading.Lock()
+        self._frame = None
+        self._sequence = 0
+
+        self._closed = threading.Event()
+        self._thread = threading.Thread(target=self._run, name="watchdog-latest-frame-reader", daemon=True)
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def get_latest_after(self, previous_sequence: int):
+        """returns newer frame"""
+
+        with self._lock:
+            if self._frame is None or self._sequence == previous_sequence:
+                return None, previous_sequence
+
+
+            return self._frame, self._sequence
+
+
+    def close(self) -> None:
+        self._closed.set()
+        self._thread.join(timeout=2)
+
+
+    def _run(self) -> None:
+        cap = None
+
+        try:
+            while not self.stop_event.is_set() and not self._closed.is_set():
+                if cap is None or not cap.isOpened():
+                    cap = _open_stream(self.rtsp_url)
+
+
+                    if cap is None:
+                        self.stop_event.wait(1)
+                        continue
+
+
+                ok, frame = cap.read()
+
+                if not ok:
+                    cap.release()
+                    cap = None
+                    self.stop_event.wait(0.1)
+
+                    continue
+
+                with self._lock:
+                    self._frame = frame
+                    self._sequence += 1
+
+        finally:
+            if cap is not None:
+                cap.release()
 
 def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Event) -> None:
     """
@@ -183,7 +253,7 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
     logger.info("Detection loop starting for %s", camera.id, rtsp_url)
 
     tracker = DeepSort(
-        max_age=150,
+        max_age=10,
         n_init=3,
         max_iou_distance=0.5,  #for stricter matching and less duplicate boxes
         embedder="mobilenet",
@@ -191,28 +261,19 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
         nms_max_overlap=0.5 #to suppress overlapping boxes
     )
 
-    cap = None
-    frame_count = 0
     alerted_ids: set = set()
+    latest_frame_reader = LatestFrameReader(rtsp_url, stop_event)
+    latest_frame_reader.start()
+    last_processed_sequence = -1
 
     try:
         while not stop_event.is_set():
-            cap = _reconnect_if_needed(cap, rtsp_url, stop_event)
+            frame, last_processed_sequence = latest_frame_reader.get_latest_after(last_processed_sequence)
 
-            if cap is None:
+            if frame is None:
+                stop_event.wait(0.01)
                 continue
-
-            ret, frame = cap.read()
-            if not ret:
-                logger.warning("Empty frame - reconnecting in 2s", camera.id)
-                cap.release()
-                cap = None
-                time.sleep(2)
-                continue
-    
-            frame_count += 1
-            if frame_count % 4 != 0:
-                continue
+                
 
             person_detections, weapon_detections = _extract_detections(frame, camera.confidence_threshold)
             
@@ -239,14 +300,13 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
                 if t.get("confidence", 0) > 0.1 or str(t.get("track_id", "")).startswith("threat_")]
             
 
-        _push_annotations(BACKEND_URL, camera.id, tracks_payload, datetime.now(timezone.utc).isoformat())
+            _push_annotations(BACKEND_URL, camera.id, tracks_payload, datetime.now(timezone.utc).isoformat())
 
     except Exception:
         logger.exception("Detection worker crashed for camera %s", camera.id)
     finally:
-        if cap is not None:
-            cap.release()
-
+        latest_frame_reader.close()
+        logger.info("Detection worker stopped for camera %s", camera.id)
 
         logger.info("Detection worker stopped for camera %s", camera.id)
 
@@ -269,7 +329,7 @@ def _collect_tracks(tracks, alerted_ids: set, camera: CameraSpec) -> list:
     """Build the annotation payload from confirmed tracks, firing alerts for new persons."""
     payload = []
     for track in tracks:
-        if not track.is_confirmed():
+        if not track.is_confirmed() or track.time_since_update > 0:
             continue
 
 

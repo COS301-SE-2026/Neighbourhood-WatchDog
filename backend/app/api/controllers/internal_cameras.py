@@ -14,6 +14,7 @@ from app.core.database import DbSession
 from app.models.camera import Camera
 from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.auth.dependencies import get_authenticated_edge_agent
+from app.services.rtsp_encryption import decrypt_rtsp_url
 
 
 router = APIRouter(prefix="/internal", tags=["internal"])
@@ -78,7 +79,7 @@ def list_enabled_cameras(
         data.append(
             {
                 "id": camera.id, 
-                "rtsp_url": camera.rtsp_url, 
+                "rtsp_url": decrypt_rtsp_url(camera.rtsp_url),
                 "enabled": camera.enabled, 
                 "neighbourhood_id": str(camera.neighbourhood_id) if camera.neighbourhood_id else None, 
                 "confidence_threshold": camera.confidence_threshold, 

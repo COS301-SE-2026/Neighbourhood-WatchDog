@@ -2,7 +2,7 @@ name: Deploy to Staging
 
 on:
   push:
-    branches: ["dev"]
+    branches: ["dev", "fix/edge-agent"]
 
 jobs: 
   deploy:
@@ -32,6 +32,7 @@ jobs:
           TWILIO_WHATSAPP_FROM: ${{ secrets.TWILIO_WHATSAPP_FROM }}
           NOTIFICATION_ENABLED: ${{ secrets.NOTIFICATION_ENABLED }}
           RTSP_ENCRYPTION_KEY: ${{ secrets.RTSP_ENCRYPTION_KEY }}
+          MEDIAMTX_PUBLISH_MASTER_KEY: ${{ secrets.MEDIAMTX_PUBLISH_MASTER_KEY }}
           TESTING: ${{ secrets.TESTING }}
           DEBUG: ${{ secrets.DEBUG }}
         run: |
@@ -54,6 +55,7 @@ jobs:
           TWILIO_WHATSAPP_FROM=${TWILIO_WHATSAPP_FROM}
           NOTIFICATION_ENABLED=${NOTIFICATION_ENABLED}
           RTSP_ENCRYPTION_KEY=${RTSP_ENCRYPTION_KEY}
+          MEDIAMTX_PUBLISH_MASTER_KEY=${MEDIAMTX_PUBLISH_MASTER_KEY}
           TESTING=${TESTING}
           DEBUG=${DEBUG}
           DETECTION_CONFIDENCE_THRESHOLD=0.6

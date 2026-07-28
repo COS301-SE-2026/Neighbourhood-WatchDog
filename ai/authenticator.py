@@ -5,7 +5,7 @@ from tkinter import ttk
 import requests
 import keyring
 
-API_BASE_URL = "http://localhost:8000" #TODO: Change to server IP address
+API_BASE_URL = "https://api-staging.neighbourhoodwatchdog.co.za"
 SEGOE_FONT = "Segoe UI"
 KEY_RELEASE = "<KeyRelease>"
 
@@ -61,7 +61,7 @@ class WatchDogPinPage(ttk.Frame):
         url = f"{API_BASE_URL}/pairing-token/token/{self.formatted_pairing_token}"
 
         try:
-            response = requests.post(url, timeout=20)
+            response = requests.get(url, timeout=20)
 
             if response.ok:
                 data = response.json()
@@ -108,9 +108,11 @@ class WatchDogPinPage(ttk.Frame):
             self.log.config(state="disabled")
 
         finally:
-            self.progress.stop()
-            self.progress.config(mode="determinate")
-            self.connect_button.config(state="normal")
+            if self.progress.winfo_exists():
+                self.progress.stop()
+                self.progress.config(mode="determinate")
+            if self.connect_button.winfo_exists():
+                self.connect_button.config(state="normal")
 
 
     def uppercase_entry(self, event):
