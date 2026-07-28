@@ -5,6 +5,7 @@ from app.schemas.neighbourhood import NeighbourhoodRes
 from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property
 from app.models.property_user import PropertyUser
+from app.models.user import User, UserRole
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 import secrets
@@ -71,6 +72,16 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
             raise HTTPException(403, "This user does not live in the property they are trying to add to the neighbourhood they are creating")
         
         property.neighbourhood_id = new_neighbourhood.id
+
+        #Fetch user and asssign neighbourhood admin role
+        stmt = select(User).where(User.cognito_sub == claims['sub'])
+        creator = db.execute(stmt).scalar_one_or_none()
+
+        if not creator:
+            raise HTTPException(401, "Authenticated user not found in database")
+        
+        creator.role = UserRole.NEIGHBOURHOOD_ADMIN
+        creator.neighbourhood_id = new_neighbourhood.id
 
         db.flush()
         db.commit()

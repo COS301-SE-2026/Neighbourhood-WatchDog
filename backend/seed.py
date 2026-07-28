@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Database seeder script for development"""
 
+import secrets
+import random
 import sys
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4, UUID
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal, engine, Base
@@ -12,6 +15,8 @@ from app.models.property_user import PropertyUser
 from app.models.camera import Camera, CameraVisibilityEnum
 from app.models.zone import GeospatialZone, SensitivityLevel
 from app.models.retention_policy import RetentionPolicy
+from app.models.audit_log import AuditLog, AuditAction
+from app.services.rtsp_encryption import encrypt_rtsp_url
 
 # Fixed UUIDs for testing
 NEIGHBOURHOOD_ID = UUID("10000000-0000-0000-0000-000000000001")
@@ -19,8 +24,82 @@ USER_ID = UUID("20000000-0000-0000-0000-000000000001")
 PROPERTY_ID = UUID("30000000-0000-0000-0000-000000000001")
 CAMERA_ID = UUID("40000000-0000-0000-0000-000000000001")
 ZONE_ID = UUID("50000000-0000-0000-0000-000000000001")
+AUDIT_LOG_ID = UUID("60000000-0000-0000-0000-000000000001")
 
-def seed_database():
+# Entity types + the real IDs we have on hand for each, so target_entity_id
+# points at something that actually exists (in case there's ever an FK added).
+ENTITY_IDS_BY_TYPE = {
+    "CAMERA": [CAMERA_ID],
+    "PROPERTY": [PROPERTY_ID],
+    "ZONE": [ZONE_ID],
+    "USER": [USER_ID],
+    "NEIGHBOURHOOD": [NEIGHBOURHOOD_ID],
+}
+TARGET_ENTITY_TYPES = list(ENTITY_IDS_BY_TYPE.keys())
+
+FRONT_ENTRANCE = "Front Entrance"
+SAMPLE_LOCATIONS = [FRONT_ENTRANCE, "Back Gate", "Garage", "Side Yard", "Driveway"]
+SAMPLE_VISIBILITIES = ["PRIVATE", "PUBLIC"]
+SAMPLE_STATUSES = ["ACTIVE", "INACTIVE"]
+
+def _fake_values_for_action(action: AuditAction):
+    """Build plausible old/new value dicts depending on the action type."""
+    action_name = getattr(action, "name", str(action)).upper()
+
+    snapshot = {
+        "location": secrets.choice(SAMPLE_LOCATIONS),
+        "visibility": secrets.choice(SAMPLE_VISIBILITIES),
+        "status": secrets.choice(SAMPLE_STATUSES),
+    }
+
+    if "CREATE" in action_name:
+        return None, snapshot
+    if "DELETE" in action_name:
+        return snapshot, None
+    if "UPDATE" in action_name:
+        updated = {**snapshot, "visibility": secrets.choice(SAMPLE_VISIBILITIES)}
+        return snapshot, updated
+    # e.g. VIEW / LOGIN / other non-mutating actions -> no diff to show
+    return None, None
+
+
+def seed_bulk_audit_logs(db: Session, user_id: UUID, count: int = 500) -> int:
+    """Generate `count` randomized audit log rows spread across the last 90 days,
+    so pagination, filtering, and sorting can actually be exercised."""
+    actions = list(AuditAction)
+    now = datetime.now(timezone.utc)
+
+    logs = []
+    for _ in range(count):
+        action = secrets.choice(actions)
+        entity_type = secrets.choice(TARGET_ENTITY_TYPES)
+        entity_id = secrets.choice(ENTITY_IDS_BY_TYPE[entity_type])
+        timestamp = now - timedelta(
+            days=random.randint(0, 90),
+            hours=random.randint(0, 23),
+            minutes=random.randint(0, 59),
+        )
+        old_values, new_values = _fake_values_for_action(action)
+
+        logs.append(
+            AuditLog(
+                id=uuid4(),
+                user_id=user_id,
+                action=action,
+                target_entity_type=entity_type,
+                target_entity_id=entity_id,
+                old_values=old_values,
+                new_values=new_values,
+                timestamp=timestamp,
+            )
+        )
+
+    db.add_all(logs)
+    db.flush()
+    return len(logs)
+
+
+def seed_database(bulk_audit_count: int = 500):
     """Seed the database with test data"""
     Base.metadata.create_all(bind=engine)
     db: Session = SessionLocal()
@@ -52,7 +131,7 @@ def seed_database():
             email="testuser@example.com",
             first_name="Test",
             last_name="User",
-            cognito_sub="00000000-0000-0000-0000-000000000001",
+            cognito_sub="a16cd2b8-c0c1-70f7-1fb6-17b5cea57bcf",
             role=UserRole.RESIDENT,
             neighbourhood_id=NEIGHBOURHOOD_ID
         )
@@ -82,13 +161,18 @@ def seed_database():
         print("Linked user to property")
 
         #create test camera
+        plaintext_rtsp_url = "rtsp://camera.local:554/stream"
+        ciphertext_rtsp_url = encrypt_rtsp_url(plaintext_rtsp_url)
+
         test_camera = Camera(
             id=CAMERA_ID,
+            name="Camera x",
             property_id=PROPERTY_ID,
             neighbourhood_id=NEIGHBOURHOOD_ID,
             visibility=CameraVisibilityEnum.PRIVATE,
+            enabled=True,
             location="Front Entrance",
-            rtsp_url="rtsp://camera.local:554/stream"
+            rtsp_url=ciphertext_rtsp_url
         )
         db.add(test_camera)
         db.flush()
@@ -118,12 +202,46 @@ def seed_database():
         db.flush()
         print("Created test zone")
 
+        audit_create = AuditLog(
+            id=AUDIT_LOG_ID,
+            user_id=USER_ID,
+            action=AuditAction.CREATE,
+            target_entity_type="CAMERA",
+            target_entity_id=CAMERA_ID,
+            old_values=None,
+            new_values={
+                "location": FRONT_ENTRANCE,
+                "visibility": "PRIVATE",
+                "rtsp_url": ciphertext_rtsp_url,
+            },
+        )
+        db.add(audit_create)
+
+        audit_update = AuditLog(
+            id=uuid4(),
+            user_id=USER_ID,
+            action=AuditAction.UPDATE,
+            target_entity_type="CAMERA",
+            target_entity_id=CAMERA_ID,
+            old_values={"visibility": "PRIVATE"},
+            new_values={"visibility": "PUBLIC"}
+        )
+        db.add(audit_update)
+
+        db.flush()
+        print("Created test audit logs")
+
+        # Bulk audit logs for pagination/filtering/sorting testing
+        print(f"Creating {bulk_audit_count} bulk audit log records...")
+        created = seed_bulk_audit_logs(db, USER_ID, count=bulk_audit_count)
+        print(f"Created {created} bulk audit log records")
+
         #commit all changes
         db.commit()
         print("\nDatabase seeded successfully!")
         print("\nTest Credentials:")
         print("Email: testuser@example.com")
-        print("Cognito Sub: 00000000-0000-0000-0000-000000000001")
+        print("Cognito Sub: a16cd2b8-c0c1-70f7-1fb6-17b5cea57bcf")
         print("Neighbourhood: Test Neighbourhood")
         print("Property Address: 123 Test Street")
 
@@ -137,4 +255,6 @@ def seed_database():
         db.close()
 
 if __name__ == "__main__":
-    seed_database()
+    # Optional: override the number of bulk audit logs, e.g. `python seed.py 2000`
+    bulk_count = int(sys.argv[1]) if len(sys.argv) > 1 else 500
+    seed_database(bulk_audit_count=bulk_count)

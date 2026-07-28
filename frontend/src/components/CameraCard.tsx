@@ -1,107 +1,169 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useRef, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import CameraFeed from "./CameraFeed"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { CameraOff, LoaderCircle, Radio, Video } from "lucide-react"
+import CameraFeed, {type CameraStreamState} from "./CameraFeed"
+import { CameraSettingsPanel } from "./CameraSettingsPanel"
+import CameraDropdown from "./camera-dropdown"
 
 interface CameraCardProps {
     readonly id: string;
     readonly name: string;
-    readonly rtspUrl?: string;
+    readonly location: string;
+    readonly visibility: "PUBLIC" | "PRIVATE" | "NEIGHBOURHOOD";
+    readonly enabled: boolean;
+    readonly userRole?: string;
 }
 
-function getStreamPath(rtspUrl: string): string {
-    return rtspUrl.split("/").pop() || rtspUrl;
+
+function getStatusLabel(enabled: boolean, streamState: CameraStreamState): string{
+    if (!enabled) return "disabled";
+
+    switch (streamState){
+        case "connecting":
+            return "connecting";
+        case "live":
+            return "live";
+        case "unavailable":
+            return "unavailable";
+        
+        default:
+            return "ready";
+    }
 }
 
-export default function CameraCard({ id, name, rtspUrl }: CameraCardProps) {
-    const streamUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream?url=${encodeURIComponent(rtspUrl)}` : null;
-    const streamHealthUrl = rtspUrl ? `${process.env.NEXT_PUBLIC_AI_URL}/stream/health?url=${encodeURIComponent(rtspUrl)}` : null;
-    const [streamHealth, setStreamHealth] = useState<{ url: string | null; available: boolean; error: boolean }>({
-        url: null,
-        available: false,
-        error: false,
-    })
 
-    useEffect(() => {
-        if (!streamHealthUrl) return
+function getStatusVariant(enabled: boolean, streamState: CameraStreamState): "success" | "destructive" | "secondary"{
+    if (!enabled || streamState === "unavailable") return "destructive";
 
-        const controller = new AbortController()
+    if (streamState === "live") return "success";
 
-        const checkStreamHealth = async () => {
-            try {
-                const response = await fetch(streamHealthUrl, { signal: controller.signal })
-                if (!response.ok) throw new Error("Health check failed")
-                const data = await response.json()
-                setStreamHealth({ url: streamUrl, available: Boolean(data.available), error: false })
-            } catch {
-                if (!controller.signal.aborted) {
-                    setStreamHealth({ url: streamUrl, available: false, error: true })
-                }
-            }
-        }
+    return "secondary";
+}
 
-        void checkStreamHealth()
-        return () => controller.abort()
-    }, [streamHealthUrl, streamUrl])
 
-    const streamOnline =
-        Boolean(streamUrl) &&
-        streamHealth.url === streamUrl &&
-        streamHealth.available &&
-        !streamHealth.error;
 
-    const effectiveStatus = streamOnline ? "online" : "offline"
 
-    const feedContent = (
-        <div className="aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative">
-            {streamUrl ? (
-                <>
-                    <CameraFeed
-                        streamPath={getStreamPath(rtspUrl ?? "")}
-                        cameraId={id}
-                        host="localhost"
-                        port={8889}
-                    />
-                    {!(streamHealth.url === streamUrl && streamHealth.available && !streamHealth.error) && (
-                        <span className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
-                            {streamHealth.error ? "Stream unavailable" : "Connecting..."}
-                        </span>
-                    )}
-                </>
-            ) : (
-                <span className="text-xs text-muted-foreground">No stream configured</span>
-            )}
-        </div>
-    )
+export default function CameraCard({ id, name, location, visibility, enabled, userRole = "RESIDENT" }: CameraCardProps) {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const [open, setOpen] = useState(false);
+    const [streamState, setStreamState] = useState<CameraStreamState>("idle");
+    const statusLabel = getStatusLabel(enabled, streamState);
+    const statusVariant = getStatusVariant(enabled, streamState);
+    const streamPath = `cameras/${id}`;
+
+
+    function handleOpenChange(nextOpen: boolean){
+        setOpen(nextOpen);
+
+        if (!nextOpen) setStreamState("idle");
+    }
+
+    
 
     return (
-        <Dialog>
-            <DialogTrigger asChild>
-                <Card className="cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+                <Card className="transition-all hover:ring-2 hover:ring-primary/50">
                     <CardHeader className="flex flex-row items-center justify-between p-4">
                         <CardTitle className="text-sm font-medium">{name}</CardTitle>
-                        <Badge variant={effectiveStatus === "online" ? "success" : "destructive"}>
-                            {effectiveStatus}
-                        </Badge>
+
+                        <div className="flex flex-row items-center gap-2">
+                            <Badge variant={statusVariant}>{statusLabel}</Badge>
+
+                            <CameraDropdown
+                                camera_id={id}
+                                camera_name={name}
+                                camera_location={location}
+                                camera_visibility={visibility}
+                                camera_enabled={enabled}
+                            />
+                        </div>
                     </CardHeader>
+
                     <CardContent className="p-4 pt-0">
-                        {feedContent}
+                        <button
+                            type="button"
+                            onClick={() => setOpen(true)}
+                            className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-md bg-muted text-muted-foreground transition-colors hover:bg-muted/70"
+                            aria-label={`Open live stream for ${name}`}
+                            >
+                                {enabled ? (
+                                    <>
+                                        <Video className="h-8 w-8" />
+                                        <span className="text-sm">Select to play live stream</span>
+                                    </>
+                                ): (
+                                    <>
+                                        <CameraOff className="h-8 w-8" />
+                                        <span className="text-sm">Camera is disabled</span>
+                                    </>
+                                )}
+                            </button>
                     </CardContent>
                 </Card>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl w-full">
-                <DialogHeader>
+
+                <DialogContent className="max-h-[90vh] w-full max-w-4xl overflow-y-auto">
+                    <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         {name}
-                        <Badge variant={effectiveStatus === "online" ? "success" : "destructive"}>
-                            {effectiveStatus}
-                        </Badge>
+                        <Badge variant={statusVariant}>{statusLabel}</Badge>
                     </DialogTitle>
-                </DialogHeader>
-                {feedContent}
-            </DialogContent>
+                    </DialogHeader>
+
+                    {!enabled && (
+                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-muted text-muted-foreground">
+                        <CameraOff className="h-10 w-10" />
+                        <p className="text-sm">This camera is currently disabled.</p>
+                    </div>
+                    )}
+
+                    {enabled && streamState === "connecting" && (
+                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-muted text-muted-foreground">
+                        <LoaderCircle className="h-8 w-8 animate-spin" />
+                        <p className="text-sm">Connecting to live stream…</p>
+                    </div>
+                    )}
+
+                    {enabled && streamState === "unavailable" && (
+                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-muted text-muted-foreground">
+                        <CameraOff className="h-10 w-10" />
+                        <p className="text-sm">Live stream is currently unavailable.</p>
+                        <p className="text-xs">
+                        Confirm that the camera is enabled and actively publishing.
+                        </p>
+                    </div>
+                    )}
+
+                    {enabled && open && streamState !== "unavailable" && (
+                    <div className={streamState === "connecting" ? "hidden" : undefined}>
+                        <CameraFeed
+                        ref={videoRef}
+                        streamPath={streamPath}
+                        cameraId={id}
+                        onStreamStateChange={setStreamState}
+                        />
+                    </div>
+                    )}
+
+    
+
+                    {enabled && streamState === "live" && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Radio className="h-3 w-3 text-green-500" />
+                        Live via MediaMTX WebRTC
+                    </div>
+                    )}
+
+                    <CameraSettingsPanel
+                    cameraId={id}
+                    userRole={userRole}
+                    videoRef={videoRef}
+                    />
+                </DialogContent>
+
         </Dialog>
+            
     )
 }

@@ -17,6 +17,7 @@ node_modules
 
 # Python
 venv/
+.venv/
 backend/__pycache__/
 backend/*.py[cod]
 backend/*$py.class
@@ -30,3 +31,13 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .vercel
+
+ai/.watchdog-agent/install-state.json
+~/.cache/
+
+#WatchDog Agent
+ai/.watchdog-agent/
+ai/pipeline/models/weights/*.part
+ai/.env.example
+
+watchdog-ec2-key.pem

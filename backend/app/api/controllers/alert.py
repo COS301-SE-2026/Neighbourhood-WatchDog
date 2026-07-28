@@ -1,20 +1,21 @@
 import asyncio
 import json
 from uuid import UUID
-
+from datetime import datetime
 from fastapi import APIRouter, Depends, Query, WebSocket
 from sqlalchemy.orm import Session
+from typing import Annotated
 
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession, get_db
-from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, ListAlertsRes
-from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler
+from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, ListAlertsRes, Pagination
+from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler, MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE
 from app.services import alert_service
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 _connections: dict[str, set[WebSocket]] = {}
-
+#TODO: NOTHING HERE SHOULD BE PUBLIC, NEED TO MAKE EVERYTHING PRIVATE 
 
 def _get_bucket(neighbourhood_id: str) -> set[WebSocket]:
     if neighbourhood_id not in _connections:
@@ -45,11 +46,11 @@ async def broadcast(neighbourhood_id: str, message: dict) -> None:
         connections.discard(ws)
 
 
-@router.post("/", response_model=AlertResponse)
+@router.post("/", response_model=AlertResponse) # TODO: need to be private
 async def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
     return await alert_service.create_alert(db, alert)
 
-@router.post("/dev/broadcast")
+@router.post("/dev/broadcast") #TODO: remove before production
 async def dev_broadcast_alert(data: dict):
     """Dev-only: broadcast alert without DB. Remove before production."""
     neighbourhood_id = data.get("neighbourhood_id", "10000000-0000-0000-0000-000000000001")
@@ -71,9 +72,33 @@ async def list_alerts(
     db: DbSession,
     claims: dict = Depends(get_current_user),
     status_filter: str | None = Query(default=None, alias="status"),
+    camera_id: Annotated[UUID | None, Query()] = None,
+    detection_type: Annotated[str | None, Query()] = None,
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None,  Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
-    results = await list_alerts_handler(str(neighbourhood_id), db, claims, status_filter)
-    return ListAlertsRes(status=200, data=results)
+    results, total = await list_alerts_handler(
+        str(neighbourhood_id), 
+        db, 
+        claims, 
+        status_filter=status_filter, 
+        camera_id=camera_id, 
+        detection_type=detection_type,
+        start_date=start_date,
+        end_date=end_date,
+        limit=limit,
+        offset=offset,)
+    return ListAlertsRes(
+        status=200, 
+        data=results,
+        pagination=Pagination(
+            total=total,
+            limit=limit,
+            offset=offset,
+            has_more=(offset + limit) < total,
+        ))
 
 
 @router.patch(

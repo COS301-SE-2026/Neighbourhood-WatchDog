@@ -1,6 +1,10 @@
+from fastapi import HTTPException
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+
+from app.auth.jwt import get_authenticated_claims
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -11,7 +15,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         PUBLIC_EXACT = {"/health", "/docs", "/openapi.json", "/redoc"}
-        PUBLIC_PREFIXES = ["/stream", "/alerts", "/api/stream", "/auth"]
+        PUBLIC_PREFIXES = ["/stream", "/alerts", "/api/stream", "/auth", "/internal", "/pairing-token/token"]
 
 
         is_public = (
@@ -19,8 +23,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
             any(request.url.path.startswith(p) for p in PUBLIC_PREFIXES)
         )
 
-        if not is_public:
-            if not request.headers.get("Authorization"):
-                return JSONResponse({"detail": "No Authorization header"}, status_code=401)
+        if is_public:
+            return await call_next(request)
+
+        try:
+            get_authenticated_claims(request) #verify JWT and set claims(data from JWT)
+        except HTTPException as e:
+            return JSONResponse(
+                {"detail": e.detail},
+                status_code=e.status_code,
+            )
 
         return await call_next(request)

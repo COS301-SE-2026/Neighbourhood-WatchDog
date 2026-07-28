@@ -16,5 +16,8 @@ class Config(BaseSettings):
     cognito_client_id: str
 
     frontend_url: str = "http://localhost:3000"
+    
+    testing: bool = False
+    rtsp_encryption_key: str
 
 config = Config()
