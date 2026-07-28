@@ -5,6 +5,9 @@ from app.core.database import DbSession
 from app.models.camera import Camera
 from app.models.camera_detection_zone import CameraDetectionZone
 
+from app.services.audit_service import create_audit_log_item
+from app.models.audit_log import AuditAction
+
 CAMERA_NOT_FOUND = "Camera not found"
 
 
@@ -35,7 +38,7 @@ def get_camera_settings_handler(camera_id: UUID, db: DbSession) -> dict:
     }
 
 
-def update_camera_settings_handler(camera_id: UUID, confidence_threshold: float, db: DbSession) -> dict:
+def update_camera_settings_handler(camera_id: UUID, confidence_threshold: float, db: DbSession, claims: dict) -> dict:
     camera = db.execute(
         select(Camera).where(Camera.id == camera_id)
     ).scalar_one_or_none()
@@ -43,9 +46,27 @@ def update_camera_settings_handler(camera_id: UUID, confidence_threshold: float,
     if not camera:
         raise HTTPException(404, CAMERA_NOT_FOUND)
 
+    old_values = {
+        "confidence_threshold": camera.confidence_threshold
+    }
     camera.confidence_threshold = confidence_threshold
+    
     db.commit()
     db.refresh(camera)
+
+    new_values = {
+        "confidence_threshold": camera.confidence_threshold
+    }
+
+    create_audit_log_item(
+        db=db,
+        user_id=UUID(claims["id"]),
+        action=AuditAction.UPDATE,
+        target_entity_type="CameraSettings",
+        target_entity_id=camera.id,
+        old_values=old_values,
+        new_values=new_values,
+    )
 
     return {
         "camera_id": camera.id,

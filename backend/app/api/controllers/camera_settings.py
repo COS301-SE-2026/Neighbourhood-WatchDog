@@ -28,20 +28,13 @@ Claims = Annotated[dict, Depends(get_current_user)]
 
 
 @router.get("/{camera_id}/settings", response_model=CameraSettingsResponse)
-async def get_settings(
-    camera_id: UUID,
-    db: DbSession,
-    claims: Claims,
-):
+async def get_settings(camera_id: UUID, db: DbSession, claims: Claims):
     """Getting the confidence threshold and detection zones for a camera"""
     require_role(claims, ZONE_EDITOR_ROLES)
     return get_camera_settings_handler(camera_id, db)
 
 
-@router.patch(
-    "/{camera_id}/settings",
-    responses={400: {"description": "confidence_threshold is required"}},
-)
+@router.patch("/{camera_id}/settings",responses={400: {"description": "confidence_threshold is required"}})
 async def update_settings(
     camera_id: UUID,
     payload: UpdateCameraSettingsRequest,
@@ -52,7 +45,7 @@ async def update_settings(
     require_role(claims, ZONE_EDITOR_ROLES)
     if payload.confidence_threshold is None:
         raise HTTPException(400, "confidence_threshold is required")
-    return update_camera_settings_handler(camera_id, payload.confidence_threshold, db)
+    return update_camera_settings_handler(camera_id, payload.confidence_threshold, db, claims)
 
 
 @router.post("/{camera_id}/zones", response_model=ZoneResponse, status_code=201)
