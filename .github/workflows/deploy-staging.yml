@@ -2,7 +2,7 @@ name: Deploy to Staging
 
 on:
   push:
-    branches: ["dev", "fix/edge-agent"]
+    branches: ["dev", "test/server"]
 
 jobs: 
   deploy:
