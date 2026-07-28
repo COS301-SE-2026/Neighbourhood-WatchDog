@@ -48,13 +48,14 @@ const apiClient = async <T>(
 export const signUp = async (
   email: string,
   password: string,
-  name: string,
+  firstName: string,
+  lastName: string,
   address: string
 ): Promise<{ userSub: string; confirmed: boolean }> => {//expects to return these back
   try {
     const response = await apiClient<SignUpResponse>('/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ email, password, name, address }),//create JSON for API Post
+      body: JSON.stringify({ email, password, firstName, lastName, address }),//create JSON for API Post
     });
 
     return {//Handle API response

@@ -69,6 +69,8 @@ services:
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
       TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM}
       NOTIFICATION_ENABLED: ${NOTIFICATION_ENABLED}
+      SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL}
+      SMTP_APP_PASSWORD: ${SMTP_APP_PASSWORD}
       RTSP_ENCRYPTION_KEY: ${RTSP_ENCRYPTION_KEY}
       SKIP_DB_INIT: "true"
       MEDIAMTX_PUBLISH_MASTER_KEY: ${MEDIAMTX_PUBLISH_MASTER_KEY}
@@ -117,7 +119,9 @@ services:
   mediamtx:
     environment:
       MTX_WEBRTCADDITIONALHOSTS: stream-staging.neighbourhoodwatchdog.co.za,13.245.213.174
-      
+      MTX_WEBRTCENCRYPTION: "yes"
+      MTX_WEBRTCSERVERCERT: /certs/fullchain.pem
+      MTX_WEBRTCSERVERKEY: /certs/privkey.pem
     build:
       context: ./mediamtx
     platform: linux/amd64
