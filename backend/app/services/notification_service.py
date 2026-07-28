@@ -239,10 +239,12 @@ def build_alert_email(alert_type: str, camera_name: str, location: str,
 
 def send_alert_email(recipient_email: str, alert_type: str, camera_name: str, location: str,
                       risk_level: str = "HIGH", dashboard_url: str | None = None)-> tuple[bool, str | None]:
+
+    if not SENDER_EMAIL or not SENDER_PASSWORD:
+        logger.error("SMTP_SENDER_EMAIL or SMTP_APP_PASSWORD not configured")
+        return False, "SMTP credentials not configured"
+
     try:
-        if not SENDER_EMAIL or not SENDER_PASSWORD:
-          logger.error("SMTP_SENDER_EMAIL or SMTP_APP_PASSWORD not configured")
-          return False, "SMTP credentials not configured"
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         server.login(SENDER_EMAIL, SENDER_PASSWORD)
