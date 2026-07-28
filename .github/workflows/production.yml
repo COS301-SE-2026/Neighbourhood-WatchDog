@@ -22,7 +22,7 @@ jobs:
           version: 10
 
       - name: Install Vercel client 
-        run: npm install --global vercel
+        run: npm install --global vercel --ignore-scripts
 
       - name: Pull Vercel Environment Information
         run:  vercel pull --yes --environment=production --token=${VERCEL_TOKEN}

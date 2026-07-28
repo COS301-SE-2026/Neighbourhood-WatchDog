@@ -33,10 +33,10 @@ jobs:
           node-version: "20.9.0"
 
       - name: Install pnpm
-        run: npm install -g pnpm@8
+        run: npm install --ignore-scripts -g pnpm@11.17
 
       - name: Install frontend dependencies
-        run: cd frontend && pnpm install
+        run: cd frontend && pnpm install --ignore-scripts
 
       - name: Run ESLint
         run: cd frontend && pnpm lint
@@ -89,7 +89,7 @@ jobs:
           node-version: "20.9.0"
 
       - name: Install pnpm
-        run: npm install -g pnpm@8
+        run: npm install -g --ignore-scripts pnpm@11.17
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
@@ -99,11 +99,11 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install -r backend/requirements.txt
-          pip install -r backend/requirements-dev.txt
+          pip install -r --only-binary :all: backend/requirements.txt
+          pip install -r --only-binary :all: backend/requirements-dev.txt
 
       - name: Install frontend dependencies
-        run: cd frontend && pnpm install
+        run: cd frontend && pnpm install --ignore-scripts
 
       - name: Run database migrations
         run: cd backend && alembic upgrade head
@@ -117,13 +117,13 @@ jobs:
         run: cd backend && python seed.py
 
       - name: Install PyTest Cov
-        run: pip install pytest-cov
+        run: pip install --only-binary :all:pytest-cov
 
       - name: Run backend tests
         run: cd tests/backend && pytest --cov --cov-branch --cov-report=xml
 
       - name: Run frontend tests
-        run: cd frontend && npx jest --coverage #pnpm test
+        run: cd frontend && npx jest@30.4.2 --coverage #pnpm test
 
       - name: Start backend
         run: |
@@ -141,10 +141,10 @@ jobs:
           npx wait-on http://localhost:3000 -t 60000
 
       - name: Install E2E dependencies
-        run: cd tests/e2e && pnpm install
+        run: cd tests/e2e && pnpm install --ignore-scripts
 
       - name: Install Playwright browsers
-        run: cd tests/e2e && pnpm exec playwright install
+        run: cd tests/e2e && pnpm exec playwright install --ignore-scripts
 
       - name: Run E2E tests
         run: cd tests/e2e && pnpm test
@@ -168,10 +168,10 @@ jobs:
           node-version: "20.9.0"
 
       - name: Install pnpm
-        run: npm install -g pnpm@8
+        run: npm install -g pnpm@11.17 --ignore-scripts
 
       - name: Install frontend dependencies
-        run: cd frontend && pnpm install
+        run: cd frontend && pnpm install --ignore-scripts
 
       - name: Build frontend
         run: cd frontend && pnpm build
@@ -188,7 +188,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install mypy
+      - name: Install mypy@7.1.0
         run: pip install mypy
 
       - name: Type check backend
