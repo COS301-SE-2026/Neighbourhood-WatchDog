@@ -158,7 +158,8 @@ class TestSendWhatsapp:
         assert error == "network error"
 
 class TestSendAlertEmail:
-    @patch.dict(os.environ, {"SMTP_SENDER_EMAIL": "bot@watchdog.com", "SMTP_APP_PASSWORD": "pw"})
+    @patch("app.services.notification_service.SENDER_EMAIL", "bot@watchdog.com")
+    @patch("app.services.notification_service.SENDER_PASSWORD", "pw")
     @patch("app.services.notification_service.smtplib.SMTP")
     def test_successful_send_returns_true(self, mock_smtp_cls):
         mock_server = Mock()
@@ -183,7 +184,8 @@ class TestSendAlertEmail:
         assert success is False
         assert error == "SMTP credentials not configured"
 
-    @patch.dict(os.environ, {"SMTP_SENDER_EMAIL": "bot@watchdog.com", "SMTP_APP_PASSWORD": "pw"})
+    @patch("app.services.notification_service.SENDER_EMAIL", "bot@watchdog.com")
+    @patch("app.services.notification_service.SENDER_PASSWORD", "pw")
     @patch("app.services.notification_service.smtplib.SMTP")
     def test_smtp_exception_returns_failure(self, mock_smtp_cls):
         mock_server = Mock()
