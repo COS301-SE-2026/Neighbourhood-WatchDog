@@ -18,5 +18,6 @@ class Config(BaseSettings):
     frontend_url: str = "http://localhost:3000"
     
     testing: bool = False
+    rtsp_encryption_key: str
 
 config = Config()

@@ -15,7 +15,7 @@ from app.services import alert_service
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 _connections: dict[str, set[WebSocket]] = {}
-
+#TODO: NOTHING HERE SHOULD BE PUBLIC, NEED TO MAKE EVERYTHING PRIVATE 
 
 def _get_bucket(neighbourhood_id: str) -> set[WebSocket]:
     if neighbourhood_id not in _connections:
@@ -46,11 +46,11 @@ async def broadcast(neighbourhood_id: str, message: dict) -> None:
         connections.discard(ws)
 
 
-@router.post("/", response_model=AlertResponse)
+@router.post("/", response_model=AlertResponse) # TODO: need to be private
 async def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
     return await alert_service.create_alert(db, alert)
 
-@router.post("/dev/broadcast")
+@router.post("/dev/broadcast") #TODO: remove before production
 async def dev_broadcast_alert(data: dict):
     """Dev-only: broadcast alert without DB. Remove before production."""
     neighbourhood_id = data.get("neighbourhood_id", "10000000-0000-0000-0000-000000000001")

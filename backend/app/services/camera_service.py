@@ -1,16 +1,17 @@
-from typing import Optional
-
-from fastapi import HTTPException
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select, delete
-from sqlalchemy.orm import Session
-from app.schemas.camera import RegisterCameraReq, CameraRes, CamerasRes, CameraEditReq
+from app.schemas.camera import RegisterCameraReq, CameraRes, CameraListItemRes, CamerasRes, CameraEditReq
 from app.models.camera import Camera
 from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.user import User
 from app.core.database import DbSession
+from app.services.rtsp_encryption import encrypt_rtsp_url, decrypt_rtsp_url
+
 from uuid import UUID
+from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select, delete
+from sqlalchemy.orm import Session
+from typing import Optional
 
 NO_DB_SESSION = "No database session"
 NOT_AUTHENTICATED = "Not authenticated"
@@ -28,11 +29,15 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
         if not property_obj:
             raise HTTPException(404, "Property not found")
 
+        # encrypting the rtsp url
+        plaintext_rtsp_url = req.rtsp_url
+        ciphertext_rtsp_url = encrypt_rtsp_url(plaintext_rtsp_url)
+
         new_camera = Camera(
             property_id=req.property_id,
             name=req.name,
             neighbourhood_id=property_obj.neighbourhood_id,
-            rtsp_url=req.rtsp_url,
+            rtsp_url=ciphertext_rtsp_url,
             visibility=req.visibility,
             location=req.location,
         )
@@ -179,12 +184,12 @@ async def list_cameras_handler(property_id: str, db: DbSession, claims: dict) ->
         status=200,
         message="Cameras fetched successfully",
         data=[
-            CameraRes(
+            CameraListItemRes(
                 id=c.id,
                 name=c.name,
                 property_id=c.property_id,
                 neighbourhood_id=c.neighbourhood_id,
-                rtsp_url=c.rtsp_url,
+                rtsp_url=decrypt_rtsp_url(c.rtsp_url),
                 visibility=c.visibility,
                 location=c.location,
                 enabled=c.enabled,

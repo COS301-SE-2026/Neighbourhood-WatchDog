@@ -16,6 +16,7 @@ from app.models.camera import Camera, CameraVisibilityEnum
 from app.models.zone import GeospatialZone, SensitivityLevel
 from app.models.retention_policy import RetentionPolicy
 from app.models.audit_log import AuditLog, AuditAction
+from app.services.rtsp_encryption import encrypt_rtsp_url
 
 # Fixed UUIDs for testing
 NEIGHBOURHOOD_ID = UUID("10000000-0000-0000-0000-000000000001")
@@ -160,6 +161,9 @@ def seed_database(bulk_audit_count: int = 500):
         print("Linked user to property")
 
         #create test camera
+        plaintext_rtsp_url = "rtsp://camera.local:554/stream"
+        ciphertext_rtsp_url = encrypt_rtsp_url(plaintext_rtsp_url)
+
         test_camera = Camera(
             id=CAMERA_ID,
             name="Camera x",
@@ -168,7 +172,7 @@ def seed_database(bulk_audit_count: int = 500):
             visibility=CameraVisibilityEnum.PRIVATE,
             enabled=True,
             location="Front Entrance",
-            rtsp_url="rtsp://camera.local:554/stream"
+            rtsp_url=ciphertext_rtsp_url
         )
         db.add(test_camera)
         db.flush()
@@ -208,7 +212,7 @@ def seed_database(bulk_audit_count: int = 500):
             new_values={
                 "location": FRONT_ENTRANCE,
                 "visibility": "PRIVATE",
-                "rtsp_url": "rtsp://camera.local:554/stream",
+                "rtsp_url": ciphertext_rtsp_url,
             },
         )
         db.add(audit_create)
