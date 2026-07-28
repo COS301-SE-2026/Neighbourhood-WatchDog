@@ -35,8 +35,8 @@ else
 fi
 
 source .venv/bin/activate
-pip install --only-binary :all: --quiet --upgrade pip
-pip install --only-binary :all: --quiet -r requirements.txt
+pip install --quiet --upgrade pip
+pip install --quiet -r requirements.txt
 echo "      Python dependencies installed"
 
 #  Step 3: Download model weights 

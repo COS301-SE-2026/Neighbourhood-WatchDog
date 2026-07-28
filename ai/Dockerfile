@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /app/
-RUN pip install -r --only-binary :all: requirements.txt
+RUN pip install -r requirements.txt
 
 EXPOSE 8001
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /app/
-RUN pip install -r --only-binary :all: requirements.txt \
+RUN pip install -r requirements.txt \
     && addgroup --system usergroup && adduser --system --no-create-home --ingroup usergroup appuser
 
 COPY . .

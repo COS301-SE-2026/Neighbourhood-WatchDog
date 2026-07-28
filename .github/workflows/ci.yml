@@ -99,8 +99,8 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install -r --only-binary :all: backend/requirements.txt
-          pip install -r --only-binary :all: backend/requirements-dev.txt
+          pip install -r backend/requirements.txt
+          pip install -r backend/requirements-dev.txt
 
       - name: Install frontend dependencies
         run: cd frontend && pnpm install --ignore-scripts
@@ -117,7 +117,7 @@ jobs:
         run: cd backend && python seed.py
 
       - name: Install PyTest Cov
-        run: pip install --only-binary :all:pytest-cov
+        run: pip installpytest-cov
 
       - name: Run backend tests
         run: cd tests/backend && pytest --cov --cov-branch --cov-report=xml
