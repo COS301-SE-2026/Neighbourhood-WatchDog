@@ -41,7 +41,7 @@ class TestCreateNeighbourhood:
         self.mock_neighbourhood.created_at = datetime.now()
 
         #mock creator user
-        self.mock_creator = Mock()
+        self.mock_creator = Mock(spec=["cognito_sub", "role", "neighbourhood_id"])
         self.mock_creator.cognito_sub = "cognito-sub-123"
         self.mock_creator.role = UserRole.RESIDENT
         self.mock_creator.neighbourhood_id = None
@@ -238,7 +238,6 @@ class TestCreateNeighbourhood:
         self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
             None,  # join_code uniqueness check
             None,  # Property not found
-            self.mock_property_user
         ]
 
         with pytest.raises(HTTPException) as exception:
@@ -255,7 +254,7 @@ class TestCreateNeighbourhood:
 
         assert self.mock_db.add.call_count == 1
         assert self.mock_db.flush.call_count == 1
-        assert self.mock_db.refresh.call_count == 1
+        assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.rollback.call_count == 1
 
@@ -282,7 +281,7 @@ class TestCreateNeighbourhood:
 
         assert self.mock_db.add.call_count == 1
         assert self.mock_db.flush.call_count == 1
-        assert self.mock_db.refresh.call_count == 1
+        assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.rollback.call_count == 1
 
@@ -294,6 +293,7 @@ class TestCreateNeighbourhood:
             self.mock_property,
             self.mock_property_user  # PropertyUser found but cognito_sub doesn't match
         ]
+        self.mock_property_user.user.cognito_sub = "different-user"
 
         self.claims = {
             "id": str(uuid4()),

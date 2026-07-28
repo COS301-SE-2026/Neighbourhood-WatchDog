@@ -52,7 +52,7 @@ class TestRegisterCamera:
             property_id=uuid4()
         )
 
-        self.claims = {"sub" : "user-sub-123"}
+        self.claims = {"sub" : "user-sub-123", "id": str(uuid4())}
 
     @pytest.mark.asyncio
     async def test_happy_path(self):

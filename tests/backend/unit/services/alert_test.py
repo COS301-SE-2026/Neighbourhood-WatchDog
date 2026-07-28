@@ -120,7 +120,7 @@ class TestAcknowledgeAlert:
         assert result.status == "ACKNOWLEDGED"
         assert alert.status == "ACKNOWLEDGED"
         assert self.mock_db.commit.call_count == 1
-        assert self.mock_db.refresh.call_count == 1
+        assert self.mock_db.refresh.call_count == 0
         assert mock_broadcast.call_count == 1
 
 
