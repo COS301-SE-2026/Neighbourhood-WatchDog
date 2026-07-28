@@ -195,14 +195,16 @@ class TestResolveJoinRequest:
     @pytest.mark.asyncio
     async def test_missing_db_raises_500(self):
         with pytest.raises(HTTPException) as exc:
-            await resolve_join_request_handler(uuid.uuid4(), "APPROVE", None, self.admin_claims)
+            unique_id = uuid.uuid4()
+            await resolve_join_request_handler(unique_id, "APPROVE", None, self.admin_claims)
 
         assert exc.value.status_code == 500
 
     @pytest.mark.asyncio
     async def test_missing_claims_raises_401(self):
         with pytest.raises(HTTPException) as exc:
-            await resolve_join_request_handler(uuid.uuid4(), "APPROVE", self.mock_db, None)
+            unique_id = uuid.uuid4()
+            await resolve_join_request_handler(unique_id, "APPROVE", self.mock_db, None)
 
         assert exc.value.status_code == 401
 
@@ -211,7 +213,8 @@ class TestResolveJoinRequest:
         self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [None]
 
         with pytest.raises(HTTPException) as exc:
-            await resolve_join_request_handler(uuid.uuid4(), "APPROVE", self.mock_db, self.admin_claims)
+            unique_id = uuid.uuid4()
+            await resolve_join_request_handler(unique_id, "APPROVE", self.mock_db, self.admin_claims)
 
         assert exc.value.status_code == 404
 
@@ -227,7 +230,8 @@ class TestResolveJoinRequest:
 
         claims = {"sub": "cognito-sub-123", "custom:role": "RESIDENT"}
         with pytest.raises(HTTPException) as exc:
-            await resolve_join_request_handler(uuid.uuid4(), "APPROVE", self.mock_db, claims)
+            unique_id = uuid.uuid4()
+            await resolve_join_request_handler(unique_id, "APPROVE", self.mock_db, claims)
 
         assert exc.value.status_code == 403
 
@@ -242,7 +246,8 @@ class TestResolveJoinRequest:
         ]
 
         with pytest.raises(HTTPException) as exc:
-            await resolve_join_request_handler(uuid.uuid4(), "DENY", self.mock_db, self.admin_claims)
+            unique_id = uuid.uuid4()
+            await resolve_join_request_handler(unique_id, "DENY", self.mock_db, self.admin_claims)
 
         assert exc.value.status_code == 409
 
@@ -258,7 +263,8 @@ class TestResolveJoinRequest:
         ]
 
         with pytest.raises(HTTPException) as exc:
-            await resolve_join_request_handler(uuid.uuid4(), "APPROVE", self.mock_db, self.admin_claims)
+            unique_id = uuid.uuid4()
+            await resolve_join_request_handler(unique_id, "APPROVE", self.mock_db, self.admin_claims)
 
         assert exc.value.status_code == 404
 
@@ -340,8 +346,9 @@ class TestListJoinRequests:
  
     @pytest.mark.asyncio
     async def test_missing_claims_raises_401(self):
+        claims = cast(dict, None)
         with pytest.raises(HTTPException) as exc:
-            await list_join_requests_handler(self.mock_db, cast(dict, None))
+            await list_join_requests_handler(self.mock_db, claims)
  
         assert exc.value.status_code == 401
  
