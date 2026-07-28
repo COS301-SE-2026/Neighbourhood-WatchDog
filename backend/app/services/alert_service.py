@@ -15,6 +15,7 @@ from app.schemas.alert import AlertRes
 
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction
+from uuid import UUID
 
 DEFAULT_PAGE_SIZE = 25
 MAX_PAGE_SIZE = 100
@@ -44,7 +45,7 @@ async def create_alert(db: Session, data: AlertCreate, claims: dict):
         #Audit the entry into DB
         create_audit_log_item( 
             db=db,
-            user_id=claims["id"],
+            user_id=UUID(claims["id"]), #CONVERT string into UUID format
             action=AuditAction.CREATE,
             target_entity_type="Alert",
             target_entity_id=alert.id,
