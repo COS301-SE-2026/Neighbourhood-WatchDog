@@ -10,6 +10,9 @@ from sqlalchemy.exc import IntegrityError
 from typing import List
 from uuid import UUID
 
+from app.services.audit_service import create_audit_log_item
+from app.models.audit_log import AuditAction
+
 async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims: dict, db: DbSession) -> Property:
     
     if not addr or addr == "":
@@ -48,6 +51,17 @@ async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims
         db.add(new_property_user)
         db.flush()
         db.commit()
+        create_audit_log_item(
+            db=db,
+            user_id=user.id,
+            action=AuditAction.CREATE,
+            target_entity_type="Property",
+            target_entity_id=new_property.id,
+            new_values={
+                "address": new_property.address,
+                "property_type": new_property.property_type.value,
+            },
+        )
 
     except IntegrityError:
         db.rollback()

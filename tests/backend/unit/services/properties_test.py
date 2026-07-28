@@ -5,6 +5,14 @@ from app.services.property_service import create_property_handler, get_user_prop
 from app.models.property import PropertyTypeEnum
 from uuid import uuid4
 
+@pytest.fixture(autouse=True)
+def mock_audit():
+    with patch(
+        "app.services.property_service.create_audit_log_item",
+        new=Mock(),
+    ):
+        yield
+
 # create_property_handler tests
 class TestCreateProperty:
     def setup_method(self):
@@ -85,7 +93,7 @@ class TestCreateProperty:
             assert self.mock_db.commit.call_count == 0
 
     @pytest.mark.asyncio
-    async def test_no_user(self):
+    async def test_no_user(self): #May be incorrect
         with patch('app.services.property_service.Property') as MockProperty, \
             patch('app.services.property_service.PropertyUser') as _MockPropertyUser:
 
