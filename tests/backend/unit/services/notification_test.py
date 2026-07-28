@@ -72,31 +72,31 @@ class TestShouldNotify:
         assert should_notify("FALL_DETECTED", 0.05) is True
 
 class TestFormatWhatsappMessage:
-    CAMERA_ID = "22222222-2222-2222-2222-222222222222"
+    CAMERA_NAME = "CAM 03"
     TIMESTAMP = "01 Jan 2024, 12:00:00"
 
     def test_critical_includes_red_emoji(self):
-        msg = _format_whatsapp_message("CRITICAL", "HUMAN_PRESENCE", self.CAMERA_ID, self.TIMESTAMP)
+        msg = _format_whatsapp_message("CRITICAL", "HUMAN_PRESENCE", self.CAMERA_NAME, self.TIMESTAMP)
         assert "🔴" in msg
 
     def test_high_includes_yellow_emoji(self):
-        msg = _format_whatsapp_message("HIGH", "LOITERING", self.CAMERA_ID, self.TIMESTAMP)
+        msg = _format_whatsapp_message("HIGH", "LOITERING", self.CAMERA_NAME, self.TIMESTAMP)
         assert "🟡" in msg
 
-    def test_contains_camera_id(self):
-        msg = _format_whatsapp_message("HIGH", "LOITERING", self.CAMERA_ID, self.TIMESTAMP)
-        assert self.CAMERA_ID in msg
+    def test_contains_camera_name(self):
+        msg = _format_whatsapp_message("HIGH", "LOITERING", self.CAMERA_NAME, self.TIMESTAMP)
+        assert self.CAMERA_NAME in msg
 
     def test_contains_timestamp(self):
-        msg = _format_whatsapp_message("HIGH", "LOITERING", self.CAMERA_ID, self.TIMESTAMP)
+        msg = _format_whatsapp_message("HIGH", "LOITERING", self.CAMERA_NAME, self.TIMESTAMP)
         assert self.TIMESTAMP in msg
 
     def test_detection_type_formatted(self):
-        msg = _format_whatsapp_message("CRITICAL", "WEAPON_DETECTED", self.CAMERA_ID, self.TIMESTAMP)
+        msg = _format_whatsapp_message("CRITICAL", "WEAPON_DETECTED", self.CAMERA_NAME, self.TIMESTAMP)
         assert "Weapon Detected" in msg
 
     def test_contains_severity_label(self):
-        msg = _format_whatsapp_message("CRITICAL", "WEAPON_DETECTED", self.CAMERA_ID, self.TIMESTAMP)
+        msg = _format_whatsapp_message("CRITICAL", "WEAPON_DETECTED", self.CAMERA_NAME, self.TIMESTAMP)
         assert "CRITICAL" in msg
 
 class TestSendWhatsapp:
