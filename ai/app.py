@@ -2,7 +2,6 @@ from camera_runtime import CameraSpec, CameraSupervisor
 
 import os
 import cv2
-import time
 import threading
 from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI, Query
