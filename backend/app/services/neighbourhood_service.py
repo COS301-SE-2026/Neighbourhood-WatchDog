@@ -87,8 +87,6 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
         creator.neighbourhood_id = new_neighbourhood.id
 
         db.flush()
-        db.commit()
-        db.refresh(new_neighbourhood)
         create_audit_log_item(
             db=db,
             user_id=UUID(claims["id"]),
@@ -103,6 +101,9 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
                 "creator_id": str(creator.id),
             },
         )
+        
+        db.commit()
+        db.refresh(new_neighbourhood)
 
         return NeighbourhoodRes(
             id = new_neighbourhood.id,

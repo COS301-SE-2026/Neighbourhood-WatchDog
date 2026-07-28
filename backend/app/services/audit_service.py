@@ -21,34 +21,36 @@ def create_audit_log_item(
     old_values: dict | None = None,
     new_values: dict | None = None,
 ) -> AuditLog:
-    """Receives an AuditLogScheme object and adds the audit log to the database."""
-    _validate_required_create_fields(db, user_id, target_entity_type, target_entity_id, action)
-    old_values, new_values = _validate_action_values(action, old_values, new_values)
-    
-    try:
-        #TODO: check that id in table actually exists
+    """Creates an audit log entry and adds it to the current transaction."""
+    _validate_required_create_fields(
+        db,
+        user_id,
+        target_entity_type,
+        target_entity_id,
+        action
+    )
 
-        #TODO: check the cases around the action and what is being done
+    old_values, new_values = _validate_action_values(
+        action,
+        old_values,
+        new_values
+    )
+    #TODO: check that id in table actually exists 
+    #TODO: check the cases around the action and what is being done
 
-        new_audit_log_item = AuditLog(
-            id = uuid4(),
-            user_id = user_id,
-            action = action,
-            target_entity_type = target_entity_type,
-            target_entity_id = target_entity_id,
-            new_values = new_values,
-            old_values = old_values 
-        )
+    new_audit_log_item = AuditLog(
+        id=uuid4(),
+        user_id=user_id,
+        action=action,
+        target_entity_type=target_entity_type,
+        target_entity_id=target_entity_id,
+        new_values=new_values,
+        old_values=old_values
+    )
 
-        db.add(new_audit_log_item)
-        db.commit()
-        db.refresh(new_audit_log_item)
+    db.add(new_audit_log_item)
 
-        return new_audit_log_item
-        
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(400, "Could not create audit log item. Failed to add audit log item.")
+    return new_audit_log_item
 
 def _validate_required_create_fields(db, user_id, target_entity_type, target_entity_id, action):
     required = {
