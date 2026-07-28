@@ -1,0 +1,16 @@
+backend/app/core/database.py
+  h_cf6208e37032c0 16-18
+backend/requirements-dev.txt
+  h_cf6208e37032c0 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "80f4e491b3b1f5d8e862ce791a63ea4369dac2a8",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
