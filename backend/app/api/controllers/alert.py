@@ -101,11 +101,7 @@ async def list_alerts(
         ))
 
 
-@router.patch(
-    "/{alert_id}/acknowledge",
-    response_model=AcknowledgeAlertRes,
-    summary="Acknowledge an alert",
-)
+@router.patch("/{alert_id}/acknowledge", response_model=AcknowledgeAlertRes, summary="Acknowledge an alert")
 async def acknowledge_alert(
     alert_id: UUID,
     db: DbSession,

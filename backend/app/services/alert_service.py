@@ -114,9 +114,27 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
         if alert.status != "OPEN":
             raise HTTPException(409, "Alert is already acknowledged or resolved")
 
+        old_values = {
+            "status": alert.status,
+        }
+
         alert.status = "ACKNOWLEDGED"
         db.commit()
         db.refresh(alert)
+
+        new_values = {
+            "status": alert.status,
+        }
+
+        create_audit_log_item(
+            db=db,
+            user_id=UUID(claims["id"]),
+            action=AuditAction.UPDATE,
+            target_entity_type="Alert",
+            target_entity_id=alert.id,
+            old_values=old_values,
+            new_values=new_values,
+        )
 
         alert_res = _build_alert_res(alert)
 
