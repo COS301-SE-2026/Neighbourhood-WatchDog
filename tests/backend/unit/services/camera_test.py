@@ -91,7 +91,7 @@ class TestRegisterCamera:
 
             assert self.mock_db.add.call_count == 1
             assert self.mock_db.flush.call_count == 1
-            assert self.mock_db.refresh.call_count == 0
+            assert self.mock_db.refresh.call_count == 1
             assert self.mock_db.commit.call_count == 1
             assert self.mock_db.rollback.call_count == 0
 
