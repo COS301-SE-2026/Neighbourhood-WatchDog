@@ -13,7 +13,15 @@ import {
   Legend,
 } from "chart.js";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+);
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
 
@@ -47,7 +55,6 @@ const DEFAULT_HISTORY: RiskScorePoint[] = [
   { calculated_at: daysAgoISO(0), score: 81, classification: "HIGH" },
 ];
 
-
 function useChartTheme() {
   const [theme, setTheme] = useState({
     blue: "#3B5EDE",
@@ -64,7 +71,8 @@ function useChartTheme() {
 
   useEffect(() => {
     const styles = getComputedStyle(document.documentElement);
-    const read = (name: string, fallback: string) => styles.getPropertyValue(name)?.trim() || fallback;
+    const read = (name: string, fallback: string) =>
+      styles.getPropertyValue(name)?.trim() || fallback;
 
     setTheme({
       blue: read("--color-blue", "#3B5EDE"),
@@ -83,7 +91,12 @@ function useChartTheme() {
   return theme;
 }
 
-function thresholdBandsPlugin(lowMax: number, mediumMax: number, yMax: number, colors: any) {
+function thresholdBandsPlugin(
+  lowMax: number,
+  mediumMax: number,
+  yMax: number,
+  colors: any,
+) {
   return {
     id: "thresholdBands",
     beforeDatasetsDraw(chart: any) {
@@ -101,7 +114,12 @@ function thresholdBandsPlugin(lowMax: number, mediumMax: number, yMax: number, c
         const top = y.getPixelForValue(to);
         const bottom = y.getPixelForValue(from);
         ctx.fillStyle = color;
-        ctx.fillRect(chartArea.left, top, chartArea.right - chartArea.left, bottom - top);
+        ctx.fillRect(
+          chartArea.left,
+          top,
+          chartArea.right - chartArea.left,
+          bottom - top,
+        );
       }
       ctx.restore();
     },
@@ -113,11 +131,20 @@ type Props = {
   thresholds?: RiskThresholds;
 };
 
-export function RiskScoreTrendGraph({ data = DEFAULT_HISTORY, thresholds = DEFAULT_THRESHOLDS }: Props) {
+export function RiskScoreTrendGraph({
+  data = DEFAULT_HISTORY,
+  thresholds = DEFAULT_THRESHOLDS,
+}: Props) {
   const theme = useChartTheme();
 
-  const isOverride = (score: number, level: RiskLevel) => level === "HIGH" && score <= thresholds.medium_max;
-  const colorFor = (level: RiskLevel) => (level === "LOW" ? theme.safe : level === "MEDIUM" ? theme.caution : theme.threat);
+  const isOverride = (score: number, level: RiskLevel) =>
+    level === "HIGH" && score <= thresholds.medium_max;
+  const colorFor = (level: RiskLevel) =>
+    level === "LOW"
+      ? theme.safe
+      : level === "MEDIUM"
+        ? theme.caution
+        : theme.threat;
 
   const maxScore = Math.max(...data.map((h) => h.score));
   const yMax = Math.max(thresholds.medium_max * 1.3, maxScore * 1.15);
@@ -126,11 +153,16 @@ export function RiskScoreTrendGraph({ data = DEFAULT_HISTORY, thresholds = DEFAU
     data.length === 0
       ? ""
       : `${new Date(data[0].calculated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${new Date(
-          data[data.length - 1].calculated_at
+          data[data.length - 1].calculated_at,
         ).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 
   const chartData = {
-    labels: data.map((h) => new Date(h.calculated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })),
+    labels: data.map((h) =>
+      new Date(h.calculated_at).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      }),
+    ),
     datasets: [
       {
         label: "Risk score",
@@ -138,11 +170,17 @@ export function RiskScoreTrendGraph({ data = DEFAULT_HISTORY, thresholds = DEFAU
         borderColor: theme.blue,
         tension: 0.35,
         borderWidth: 2,
-        pointRadius: data.map((h) => (isOverride(h.score, h.classification) ? 7 : 4)),
+        pointRadius: data.map((h) =>
+          isOverride(h.score, h.classification) ? 7 : 4,
+        ),
         pointHoverRadius: 8,
         pointBackgroundColor: data.map((h) => colorFor(h.classification)),
-        pointBorderColor: data.map((h) => (isOverride(h.score, h.classification) ? theme.threat : theme.card)),
-        pointBorderWidth: data.map((h) => (isOverride(h.score, h.classification) ? 3 : 1.5)),
+        pointBorderColor: data.map((h) =>
+          isOverride(h.score, h.classification) ? theme.threat : theme.card,
+        ),
+        pointBorderWidth: data.map((h) =>
+          isOverride(h.score, h.classification) ? 3 : 1.5,
+        ),
       },
     ],
   };
@@ -174,8 +212,12 @@ export function RiskScoreTrendGraph({ data = DEFAULT_HISTORY, thresholds = DEFAU
         callbacks: {
           label: (ctx: any) => {
             const point = data[ctx.dataIndex];
-            const lines = [`Score: ${point.score}`, `Classification: ${point.classification}`];
-            if (isOverride(point.score, point.classification)) lines.push("Critical event override");
+            const lines = [
+              `Score: ${point.score}`,
+              `Classification: ${point.classification}`,
+            ];
+            if (isOverride(point.score, point.classification))
+              lines.push("Critical event override");
             return lines;
           },
         },
@@ -192,28 +234,71 @@ export function RiskScoreTrendGraph({ data = DEFAULT_HISTORY, thresholds = DEFAU
         max: yMax,
         grid: { color: theme.mist },
         border: { display: false },
-        ticks: { color: theme.body, font: { family: theme.font, size: 11 }, precision: 0 },
+        ticks: {
+          color: theme.body,
+          font: { family: theme.font, size: 11 },
+          precision: 0,
+        },
       },
     },
   };
 
-  const plugins = [thresholdBandsPlugin(thresholds.low_max, thresholds.medium_max, yMax, theme)];
+  const plugins = [
+    thresholdBandsPlugin(
+      thresholds.low_max,
+      thresholds.medium_max,
+      yMax,
+      theme,
+    ),
+  ];
 
   return (
-    <div className="rounded-lg p-6 w-3/4 bg-card border" style={{ borderColor: "var(--border)", boxShadow: "var(--shadow-sm)" }}>
+    <div
+      className="rounded-lg p-6 w-full bg-card border"
+      style={{ borderColor: "var(--border)", boxShadow: "var(--shadow-sm)" }}
+    >
       <div className="flex items-baseline justify-between mb-2">
-        <span className="text-xs" style={{ color: theme.body }}>{rangeLabel}</span>
-        <div className="flex items-center gap-3 text-xs" style={{ color: theme.body }}>
+        <span className="text-xs" style={{ color: theme.body }}>
+          {rangeLabel}
+        </span>
+        <div
+          className="flex items-center gap-3 text-xs"
+          style={{ color: theme.body }}
+        >
           <span className="flex items-center gap-1">
-            <span style={{ width: 8, height: 8, borderRadius: 999, background: theme.safe, display: "inline-block" }} />
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 999,
+                background: theme.safe,
+                display: "inline-block",
+              }}
+            />
             Low
           </span>
           <span className="flex items-center gap-1">
-            <span style={{ width: 8, height: 8, borderRadius: 999, background: theme.caution, display: "inline-block" }} />
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 999,
+                background: theme.caution,
+                display: "inline-block",
+              }}
+            />
             Medium
           </span>
           <span className="flex items-center gap-1">
-            <span style={{ width: 8, height: 8, borderRadius: 999, background: theme.threat, display: "inline-block" }} />
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 999,
+                background: theme.threat,
+                display: "inline-block",
+              }}
+            />
             High
           </span>
         </div>
