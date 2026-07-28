@@ -74,7 +74,7 @@ def update_camera_settings_handler(camera_id: UUID, confidence_threshold: float,
     }
 
 
-def create_zone_handler(camera_id: UUID, name: str, polygon: list, db: DbSession) -> CameraDetectionZone:
+def create_zone_handler(camera_id: UUID, name: str, polygon: list, db: DbSession, claims: dict) -> CameraDetectionZone:
     camera = db.execute(
         select(Camera).where(Camera.id == camera_id)
     ).scalar_one_or_none()
@@ -89,6 +89,19 @@ def create_zone_handler(camera_id: UUID, name: str, polygon: list, db: DbSession
     db.add(zone)
     db.commit()
     db.refresh(zone)
+    
+    create_audit_log_item(
+        db=db,
+        user_id=UUID(claims["id"]),
+        action=AuditAction.CREATE,
+        target_entity_type="DetectionZone",
+        target_entity_id=zone.id,
+        new_values={
+            "camera_id": str(zone.camera_id),
+            "name": zone.name,
+            "polygon": zone.polygon,
+        },
+    )
     return zone
 
 

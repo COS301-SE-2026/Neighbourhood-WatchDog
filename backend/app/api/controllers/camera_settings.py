@@ -57,7 +57,7 @@ async def create_zone(
 ):
     """Adding a detection zone polygon to a camera"""
     require_role(claims, ZONE_EDITOR_ROLES)
-    return create_zone_handler(camera_id, payload.name, payload.polygon, db)
+    return create_zone_handler(camera_id, payload.name, payload.polygon, db, claims)
 
 
 @router.delete("/{camera_id}/zones/{zone_id}", status_code=204)
