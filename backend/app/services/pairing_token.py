@@ -12,12 +12,16 @@ from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone
 from uuid import UUID
 
+from app.services.audit_service import create_audit_log_item
+from app.models.audit_log import AuditAction
+
 import secrets
 import hashlib
 
 async def get_pairing_token_handler(
     property_id: UUID,
     db: DbSession,
+    claims: dict
 ) -> LinkPropertyTokenRes:
 
     if not property_id:
@@ -42,6 +46,19 @@ async def get_pairing_token_handler(
             new_token = PairingToken(token=token, property_id=property_id)
             db.add(new_token)
             db.commit()
+
+            create_audit_log_item(
+                db=db,
+                user_id=UUID(claims["id"]),
+                action=AuditAction.CREATE,
+                target_entity_type="PairingToken",
+                target_entity_id=new_token.id,
+                new_values={
+                    "property_id": str(property_id),
+                    "expires_at": new_token.expires_at.isoformat(),
+                },
+            )
+            
             link_prop_token = LinkPropertyToken(
                 token=token,
                 expires_at=new_token.expires_at
