@@ -84,10 +84,11 @@ class TestCreateNeighbourhood:
     @pytest.mark.asyncio
     async def test_no_name_entered(self):
         with pytest.raises(HTTPException) as exception:
+            property_id = uuid4()
             await create_neighbourhood_handler(
                 name = "",
                 location = "second location",
-                property_id = uuid4(),
+                property_id = property_id,
                 db = self.mock_db,
                 claims = self.claims,
             )
@@ -103,10 +104,11 @@ class TestCreateNeighbourhood:
     @pytest.mark.asyncio
     async def test_name_none(self):
         with pytest.raises(HTTPException) as exception:
+            property_id = uuid4()
             await create_neighbourhood_handler(
                 name = None,
                 location = "second location",
-                property_id = uuid4(),
+                property_id = property_id,
                 db = self.mock_db,
                 claims = self.claims,
             )
@@ -122,10 +124,11 @@ class TestCreateNeighbourhood:
     @pytest.mark.asyncio
     async def test_empty_location(self):
         with pytest.raises(HTTPException) as exception:
+            property_id = uuid4()
             await create_neighbourhood_handler(
                 name = "Name",
                 location = "",
-                property_id = uuid4(),
+                property_id = property_id,
                 db = self.mock_db,
                 claims = self.claims,
             )
@@ -142,10 +145,11 @@ class TestCreateNeighbourhood:
     @pytest.mark.asyncio
     async def test_location_none(self):
         with pytest.raises(HTTPException) as exception:
+            property_id = uuid4()
             await create_neighbourhood_handler(
                 name = "Name",
                 location = None,
-                property_id = uuid4(),
+                property_id = property_id,
                 db = self.mock_db,
                 claims = self.claims,
             )
@@ -181,11 +185,12 @@ class TestCreateNeighbourhood:
 
     @pytest.mark.asyncio
     async def test_no_claims(self):
+        property_id = uuid4()
         with pytest.raises(HTTPException) as exception:
             await create_neighbourhood_handler(
                 name = "Name",
                 location = "Second lo",
-                property_id = uuid4(),
+                property_id = property_id,
                 db = self.mock_db,
                 claims = None,
             )
@@ -201,11 +206,12 @@ class TestCreateNeighbourhood:
 
     @pytest.mark.asyncio
     async def test_db_none(self):
+        property_id = uuid4()
         with pytest.raises(HTTPException) as exception:
             await create_neighbourhood_handler(
                 name = "Name",
                 location = "Location",
-                property_id = uuid4(),
+                property_id = property_id,
                 db = None,
                 claims = self.claims,
             )
@@ -228,11 +234,12 @@ class TestCreateNeighbourhood:
             self.mock_property_user
         ]
 
+        property_id = uuid4()
         with pytest.raises(HTTPException) as exception:
             await create_neighbourhood_handler(
                 name = "Name",
                 location = "Location",
-                property_id = uuid4(),
+                property_id = property_id,
                 db = self.mock_db,
                 claims = self.claims,
             )
@@ -255,11 +262,12 @@ class TestCreateNeighbourhood:
             None  # PropertyUser not found
         ]
 
+        property_id = uuid4()
         with pytest.raises(HTTPException) as exception:
             await create_neighbourhood_handler(
                 name = "Name",
                 location = "Location",
-                property_id = uuid4(),
+                property_id = property_id,
                 db = self.mock_db,
                 claims = self.claims,
             )
