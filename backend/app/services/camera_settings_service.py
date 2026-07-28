@@ -89,7 +89,7 @@ def create_zone_handler(camera_id: UUID, name: str, polygon: list, db: DbSession
     db.add(zone)
     db.commit()
     db.refresh(zone)
-    
+
     create_audit_log_item(
         db=db,
         user_id=UUID(claims["id"]),
@@ -105,7 +105,7 @@ def create_zone_handler(camera_id: UUID, name: str, polygon: list, db: DbSession
     return zone
 
 
-def delete_zone_handler(camera_id: UUID, zone_id: UUID, db: DbSession) -> None:
+def delete_zone_handler(camera_id: UUID, zone_id: UUID, db: DbSession, claims: dict) -> None:
     zone = db.execute(
         select(CameraDetectionZone).where(
             CameraDetectionZone.id == zone_id,
@@ -116,5 +116,20 @@ def delete_zone_handler(camera_id: UUID, zone_id: UUID, db: DbSession) -> None:
     if not zone:
         raise HTTPException(404, "Zone not found")
 
+    old_values = {
+        "camera_id": str(zone.camera_id),
+        "name": zone.name,
+        "polygon": zone.polygon,
+    }
+
     db.delete(zone)
     db.commit()
+
+    create_audit_log_item(
+        db=db,
+        user_id=UUID(claims["id"]),
+        action=AuditAction.DELETE,
+        target_entity_type="DetectionZone",
+        target_entity_id=zone.id,
+        old_values=old_values,
+    )

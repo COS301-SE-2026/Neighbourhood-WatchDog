@@ -69,4 +69,4 @@ async def delete_zone(
 ):
     """Removing a detection zone from a camera"""
     require_role(claims, ZONE_EDITOR_ROLES)
-    return delete_zone_handler(camera_id, zone_id, db)
+    return delete_zone_handler(camera_id, zone_id, db, claims)
