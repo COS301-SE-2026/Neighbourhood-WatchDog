@@ -96,7 +96,7 @@ export function CameraSettingsPanel({
 
                 {settings.zones.length === 0 && !drawingZone && (
                 <p className="text-xs text-muted-foreground">
-                    No zones configured — all detections trigger alerts.
+                    No zones configured. All detections trigger alerts.
                 </p>
                 )}
 
