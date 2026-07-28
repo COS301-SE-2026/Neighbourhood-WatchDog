@@ -1,20 +1,35 @@
 from fastapi import HTTPException
 from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code
+from app.models.user import UserRole, User
+from sqlalchemy.orm import Session
 
 
 #Business Logic between our API and AWS
 #take clean input and calls cognito then reshape results into app format
 #Frontend must never rely on AWS naming convention
-def register_user(payload):
+def register_user(payload, db: Session):
     response = sign_up(
         email=payload["email"],
         password=payload["password"],
-        name=payload["name"],
+        name=payload["firstName"] + " " + payload["lastName"], # combine first and last name to meet the "full name"
         address=payload["address"]
     )
 
     user_sub = response.get("UserSub", response.get("user_sub"))
     user_confirmed = response.get("UserConfirmed", response.get("user_confirmed"))
+
+    #Add user to db
+    new_user = User(
+        email=payload["email"],
+        first_name=payload["firstName"],
+        last_name=payload["lastName"],
+        cognito_sub=user_sub,
+        role=UserRole.RESIDENT,
+        neighbourhood_id=None
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
 
     return {
         "success": True,

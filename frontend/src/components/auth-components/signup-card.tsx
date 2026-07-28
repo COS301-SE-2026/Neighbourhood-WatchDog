@@ -18,8 +18,11 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 type SignupCardProps = {
   className?: string;
 
-  name: string;
-  setName: (v: string) => void;
+  firstName: string;
+  setFirstName: (v: string) => void;
+
+  lastName: string;
+  setLastName: (v: string) => void;
 
   address: string;
   setAddress: (v: string) => void;
@@ -41,8 +44,10 @@ type SignupCardProps = {
 
 export function SignupCard({
   className,
-  name,
-  setName,
+  firstName,
+  setFirstName,
+  lastName,
+  setLastName,
   address,
   setAddress,
   email,
@@ -94,21 +99,41 @@ export function SignupCard({
         )}
 
         <div className="flex flex-col gap-6">
-          {/* NAME */}
-          <div className="grid gap-2">
-            <Label htmlFor="name" className="text-sm font-medium">
-              Full Name
-            </Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={onKeyDown}
-              placeholder="Name Surname"
-              disabled={isLoading}
-              className="h-11 text-base"
-              required
-            />
+          {/* first and last name */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="firstName" className="text-sm font-medium">
+                First Name
+              </Label>
+
+              <Input
+                id="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="First Name"
+                disabled={isLoading}
+                className="h-11 text-base"
+                required
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="lastName" className="text-sm font-medium">
+                Last Name
+              </Label>
+
+              <Input
+                id="lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="Last Name"
+                disabled={isLoading}
+                className="h-11 text-base"
+                required
+              />
+            </div>
           </div>
 
           {/* ADDRESS */}
