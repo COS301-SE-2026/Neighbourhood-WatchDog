@@ -1,0 +1,16 @@
+ai/app.py
+  h_cf6208e37032c0 191
+ai/camera_runtime.py
+  h_cf6208e37032c0 251
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "9f368283b9895e5c16f63102ac4352eec215419e",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
