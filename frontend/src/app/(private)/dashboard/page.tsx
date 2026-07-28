@@ -22,13 +22,14 @@ interface CameraProp {
 const initialCameras: CameraProp[] = [
     { id: "1", name: "Camera 1 - Backyard" , visibility: "PRIVATE", enabled: true, location: "Backyard"},
   //{ id: "2", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://Intrepid:password1234@172.20.10.2:554/stream2" },
-    { id: "40000000-0000-0000-0000-000000000001", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://localhost:8554/tapo-camera", visibility: "PRIVATE", enabled: true, location: "Office Room" },
+    { id: "40000000-0000-0000-0000-000000000001", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://localhost:8554/" + "cameras/40000000-0000-0000-0000-000000000001", visibility: "PRIVATE", enabled: true, location: "Office Room" },
     { id: "3", name: "Camera 5 - Living Room", visibility: "PRIVATE", enabled: true, location: "Living Room" },
     { id: "4", name: "Camera 3 - Bedroom 2", visibility: "PRIVATE", enabled: true, location: "Bedroom" },
     { id: "5", name: "Camera 4 - Kitchen", visibility: "PRIVATE",enabled: true, location: "Kitchen" },
 ]
 
-const PROPERTY_ID = "a79d1505-5000-438e-9813-ba0f5aecb5e2"; // TODO: replace once /properties/my-properties works
+// const PROPERTY_ID = "a79d1505-5000-438e-9813-ba0f5aecb5e2"; // TODO: replace once /properties/my-properties works
+const PROPERTY_ID = "30000000-0000-0000-0000-000000000001";
 
 export default function Dashboard() {
 
@@ -55,7 +56,6 @@ export default function Dashboard() {
                         location: c.location,
                         visibility: c.visibility,
                         enabled: c.enabled,
-                        rtspUrl: c.rtsp_url,
                     }))
                 );
             })
@@ -81,7 +81,6 @@ export default function Dashboard() {
         location: newCamera.location,
         visibility: newCamera.visibility,
         enabled: newCamera.enabled,
-        rtspUrl: newCamera.rtsp_url,
             }
         ]);
         setShowCard(false);
@@ -113,7 +112,6 @@ export default function Dashboard() {
                         location={camera.location}
                         visibility={camera.visibility}
                         enabled={camera.enabled}
-                        rtspUrl={camera.rtspUrl}
                         userRole="NEIGHBOURHOOD_ADMIN"
                     />
                 ))}

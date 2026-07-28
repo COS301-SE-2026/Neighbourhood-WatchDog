@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import z from "zod"
-import { Spinner } from "./ui/spinner"
+import { Spinner } from "../ui/spinner"
 import {
   Dialog,
   DialogClose,
@@ -14,10 +14,10 @@ import {
 } from "@/components/ui/dialog"
 
 import { useState } from "react"
-import { Field, FieldGroup } from "./ui/field"
+import { Field, FieldGroup } from "../ui/field"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { CreatePropertyReq, AddressSchema, CreatePropertyReqSchema, PropertyRes } from "@/lib/validators/property"
+import { AddressSchema, CreatePropertyReqSchema, PropertyRes } from "@/lib/validators/property"
 import { addProperty } from "@/lib/api/property"
 
 
