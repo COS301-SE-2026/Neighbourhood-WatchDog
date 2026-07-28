@@ -50,23 +50,26 @@ class TestClassifySeverity:
         assert _classify_severity("LOITERING", 0.0) == "LOW"
 
 class TestShouldNotify:
-    def test_critical_triggers_notification(self):
-        assert should_notify(0.90) is True
-
-    def test_high_triggers_notification(self):
-        assert should_notify(0.70) is True
+    def test_high_confidence_non_critical_triggers(self):
+        assert should_notify("LOITERING", 0.70) is True
 
     def test_medium_does_not_trigger(self):
-        assert should_notify(0.55) is False
+        assert should_notify("LOITERING", 0.55) is False
 
     def test_low_does_not_trigger(self):
-        assert should_notify(0.30) is False
+        assert should_notify("LOITERING", 0.30) is False
 
     def test_exact_high_threshold_triggers(self):
-        assert should_notify(0.65) is True
+        assert should_notify("LOITERING", 0.65) is True
 
     def test_below_high_threshold_does_not_trigger(self):
-        assert should_notify(0.64) is False
+        assert should_notify("LOITERING", 0.64) is False
+
+    def test_critical_type_triggers_even_at_low_confidence(self):
+        assert should_notify("WEAPON_DETECTED", 0.1) is True
+
+    def test_fall_detected_triggers_even_at_low_confidence(self):
+        assert should_notify("FALL_DETECTED", 0.05) is True
 
 class TestFormatWhatsappMessage:
     CAMERA_ID = "22222222-2222-2222-2222-222222222222"
