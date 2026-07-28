@@ -1,10 +1,20 @@
 import pytest
 from fastapi import HTTPException
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from app.services.neighbourhood_service import create_neighbourhood_handler
 from app.models.user import UserRole
 from uuid import uuid4
 from datetime import datetime
+
+AUDIT_PATCH = "app.services.neighbourhood_service.create_audit_log_item"
+
+@pytest.fixture(autouse=True)
+def mock_audit():
+    with patch(
+        "app.services.neighbourhood_service.create_audit_log_item",
+        new=Mock(),
+    ):
+        yield
 
 TEST_NEIGHBOURHOOD_NAME = "Test name"
 class TestCreateNeighbourhood:
@@ -58,7 +68,10 @@ class TestCreateNeighbourhood:
 
         self.mock_db.refresh = Mock(side_effect=mock_refresh)
 
-        self.claims = {"sub": "cognito-sub-123"}
+        self.claims = {
+            "id": str(uuid4()),
+            "sub": "cognito-sub-123",
+        }
 
     @pytest.mark.asyncio
     async def test_happy_path(self):
@@ -282,7 +295,10 @@ class TestCreateNeighbourhood:
             self.mock_property_user  # PropertyUser found but cognito_sub doesn't match
         ]
 
-        self.claims = {"sub": "cognito-sub"}
+        self.claims = {
+            "id": str(uuid4()),
+            "sub": "cognito-sub-123",
+        }
 
         with pytest.raises(HTTPException) as exception:
             await create_neighbourhood_handler(
