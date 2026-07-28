@@ -13,10 +13,13 @@ from app.core.database import DbSession
 from app.models.camera import Camera
 from app.schemas.alert import AlertRes
 
+from app.services.audit_service import create_audit_log_item
+from app.models.audit_log import AuditAction
+
 DEFAULT_PAGE_SIZE = 25
 MAX_PAGE_SIZE = 100
 
-async def create_alert(db: Session, data: AlertCreate):
+async def create_alert(db: Session, data: AlertCreate, claims: dict):
     try:
         detection_event = DetectionEvent(
             camera_id=data.camera_id,
@@ -38,6 +41,20 @@ async def create_alert(db: Session, data: AlertCreate):
         db.commit()
         db.refresh(alert)
 
+        #Audit the entry into DB
+        create_audit_log_item( 
+            db=db,
+            user_id=claims["id"],
+            action=AuditAction.CREATE,
+            target_entity_type="Alert",
+            target_entity_id=alert.id,
+            new_values={
+                "camera_id": str(alert.camera_id),
+                "detection_event_id": str(alert.detection_event_id),
+                "status": alert.status,
+            },
+        )
+
         from app.api.controllers.alert import broadcast
         await broadcast(str(data.neighbourhood_id), {
             "event": "new_alert",
@@ -48,9 +65,15 @@ async def create_alert(db: Session, data: AlertCreate):
         })
 
         return alert
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to create alert: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create alert: {str(e)}"
+        )
 
 
 
