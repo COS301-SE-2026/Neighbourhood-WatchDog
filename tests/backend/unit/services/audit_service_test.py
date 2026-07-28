@@ -188,7 +188,7 @@ class TestCreateAuditLogItem:
             _ = create_audit_log_item(
                 user_id=user_id,
                 action=AuditAction.UPDATE,
-                target_entity_type=target_entity_id,
+                target_entity_type=target_entity_type,
                 target_entity_id=target_entity_id,
                 old_values={
                     "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
