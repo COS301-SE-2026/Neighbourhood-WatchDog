@@ -11,6 +11,9 @@ from sqlalchemy import select
 import secrets
 import string
 
+from app.services.audit_service import create_audit_log_item
+from app.models.audit_log import AuditAction
+
 async def create_neighbourhood_handler(name: str, location: str, property_id: UUID, db: DbSession, claims: dict):
     """Creates the neighbourhood
         Makes the user who called the function the neighbourhood admin
@@ -85,6 +88,21 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
 
         db.flush()
         db.commit()
+        db.refresh(new_neighbourhood)
+        create_audit_log_item(
+            db=db,
+            user_id=UUID(claims["id"]),
+            action=AuditAction.CREATE,
+            target_entity_type="Neighbourhood",
+            target_entity_id=new_neighbourhood.id,
+            new_values={
+                "name": new_neighbourhood.name,
+                "location": new_neighbourhood.location,
+                "join_code": new_neighbourhood.join_code,
+                "property_id": str(property.id),
+                "creator_id": str(creator.id),
+            },
+        )
 
         return NeighbourhoodRes(
             id = new_neighbourhood.id,
