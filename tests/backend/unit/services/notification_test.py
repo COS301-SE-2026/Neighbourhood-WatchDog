@@ -157,6 +157,36 @@ class TestSendWhatsapp:
         assert success is False
         assert error == "network error"
 
+class TestSendAlertEmail:
+    @patch.dict(os.environ, {"SMTP_SENDER_EMAIL": "bot@watchdog.com", "SMTP_APP_PASSWORD": "pw"})
+    @patch("app.services.notification_service.smtplib.SMTP")
+    def test_successful_send_returns_true(self, mock_smtp_cls):
+        mock_server = Mock()
+        mock_smtp_cls.return_value = mock_server
+
+        success, error = send_alert_email(
+            "resident@gmail.com", "WEAPON_DETECTED", "CAM 03", "Front Gate", "CRITICAL"
+        )
+
+        assert success is True
+        assert error is None
+        mock_server.sendmail.assert_called_once()
+        mock_server.quit.assert_called_once()
+
+    @patch.dict(os.environ, {"SMTP_SENDER_EMAIL": "bot@watchdog.com", "SMTP_APP_PASSWORD": "pw"})
+    @patch("app.services.notification_service.smtplib.SMTP")
+    def test_smtp_exception_returns_failure(self, mock_smtp_cls):
+        mock_server = Mock()
+        mock_server.sendmail.side_effect = Exception("smtp connection refused")
+        mock_smtp_cls.return_value = mock_server
+
+        success, error = send_alert_email(
+            "resident@gmail.com", "WEAPON_DETECTED", "CAM 03", "Front Gate", "CRITICAL"
+        )
+
+        assert success is False
+        assert error == "smtp connection refused"
+
 class TestLogNotification:
     def setup_method(self):
         self.mock_db = Mock()
