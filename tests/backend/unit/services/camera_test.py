@@ -10,6 +10,14 @@ from datetime import datetime
 MOCK_RTSP_URL = "rtsp://example.com/stream"
 MOCK_CAMERA_NAME = "Camera 1"
 
+@pytest.fixture(autouse=True)
+def mock_audit():
+    with patch(
+        "app.services.camera_service.create_audit_log_item",
+        new=Mock(),
+    ):
+        yield
+
 class TestRegisterCamera:
     def setup_method(self):
         """Arrange"""
@@ -82,7 +90,7 @@ class TestRegisterCamera:
             assert camera.neighbourhood_id == self.mock_camera.neighbourhood_id
 
             assert self.mock_db.add.call_count == 2
-            assert self.mock_db.flush.call_count == 0
+            assert self.mock_db.flush.call_count == 1
             assert self.mock_db.refresh.call_count == 0
             assert self.mock_db.commit.call_count == 1
             assert self.mock_db.rollback.call_count == 0
@@ -167,7 +175,10 @@ class TestDeregisterCamera:
         self.mock_db.commit = Mock()
         self.mock_db.rollback = Mock()
 
-        self.claims = {"sub": "user-sub-123"}
+        self.claims = {
+            "id": str(uuid4()),
+            "sub": "user-sub-123",
+        }
 
 
     def reset_side_effects(self, camera=None, prop_user=None):
@@ -285,7 +296,10 @@ class TestEditCamera:
             enabled=False
         )
 
-        self.claims = {"sub" : "user-sub-123"}
+        self.claims = {
+            "id": str(uuid4()),
+            "sub": "user-sub-123",
+        }
 
     def reset_side_effects(self, camera=None, prop_user=None):
         """Helper to reset side_effect between tests"""
