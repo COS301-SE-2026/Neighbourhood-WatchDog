@@ -12,34 +12,42 @@ from app.services.notification_service import(
     _send_whatsapp,
     dispatch_notifications,
     should_notify,
+    send_alert_email,
+    _notify_users,
 )
 from app.models.notification import NotificationChannel, NotificationStatus
 
 WHATSAPP_TEST_NUMBER = "whatsapp:+27821234567"
 class TestClassifySeverity:
     def test_critical_at_upper_boundary(self):
-        assert _classify_severity(1.0) == "CRITICAL"
+        assert _classify_severity("WEAPON_DETECTED", 1.0) == "CRITICAL"
 
     def test_critical_at_lower_boundary(self):
-        assert _classify_severity(0.85) == "CRITICAL"
+        assert _classify_severity("WEAPON_DETECTED", 0.85) == "CRITICAL"
 
     def test_high_at_upper_boundary(self):
-        assert _classify_severity(0.84) == "HIGH"
+        assert _classify_severity("FALL_DETECTED", 0.85) == "CRITICAL"
+
+    def test_non_critical_type_capped_at_high_not_critical(self):
+        assert _classify_severity("HUMAN_PRESENCE", 1.0) == "HIGH"
+
+    def test_high_at_upper_confidence(self):
+        assert _classify_severity("LOITERING", 0.99) == "HIGH"
 
     def test_high_at_lower_boundary(self):
-        assert _classify_severity(0.65) == "HIGH"
+        assert _classify_severity("LOITERING", 0.65) == "HIGH"
 
     def test_medium_at_upper_boundary(self):
-        assert _classify_severity(0.64) == "MEDIUM"
+        assert _classify_severity("LOITERING", 0.64) == "MEDIUM"
 
     def test_medium_at_lower_boundary(self):
-        assert _classify_severity(0.45) == "MEDIUM"
+        assert _classify_severity("LOITERING", 0.45) == "MEDIUM"
 
     def test_low_at_upper_boundary(self):
-        assert _classify_severity(0.44) == "LOW"
+        assert _classify_severity("LOITERING", 0.44) == "LOW"
 
     def test_low_at_zero(self):
-        assert _classify_severity(0.0) == "LOW"
+        assert _classify_severity("LOITERING", 0.0) == "LOW"
 
 class TestShouldNotify:
     def test_critical_triggers_notification(self):
