@@ -41,7 +41,8 @@ class TestCreateNeighbourhood:
         self.mock_neighbourhood.created_at = datetime.now()
 
         #mock creator user
-        self.mock_creator = Mock(spec=["cognito_sub", "role", "neighbourhood_id"])
+        self.mock_creator = Mock()
+        self.mock_creator.id = uuid4()
         self.mock_creator.cognito_sub = "cognito-sub-123"
         self.mock_creator.role = UserRole.RESIDENT
         self.mock_creator.neighbourhood_id = None
@@ -310,8 +311,8 @@ class TestCreateNeighbourhood:
             )
 
         assert exception.value.status_code == 403
-        assert exception.value.detail == "This user does not live in the property they are trying to add to the neighbourhood they are creating"
-
+        assert exception.value.detail == "User does not live in the property they are trying to link"
+        
         assert self.mock_db.add.call_count == 1
         assert self.mock_db.flush.call_count == 1
         assert self.mock_db.refresh.call_count == 1

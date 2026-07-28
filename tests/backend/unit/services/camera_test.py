@@ -52,7 +52,10 @@ class TestRegisterCamera:
             property_id=uuid4()
         )
 
-        self.claims = {"sub" : "user-sub-123", "id": str(uuid4())}
+        self.claims = {
+            "id": str(uuid4()),
+            "sub": "cognito-sub-123"
+        }
 
     @pytest.mark.asyncio
     async def test_happy_path(self):
@@ -78,7 +81,7 @@ class TestRegisterCamera:
             assert camera.created_at == self.mock_camera.created_at
             assert camera.neighbourhood_id == self.mock_camera.neighbourhood_id
 
-            assert self.mock_db.add.call_count == 1
+            assert self.mock_db.add.call_count == 2
             assert self.mock_db.flush.call_count == 0
             assert self.mock_db.refresh.call_count == 0
             assert self.mock_db.commit.call_count == 1
