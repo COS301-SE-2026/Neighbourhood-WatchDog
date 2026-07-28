@@ -3,6 +3,8 @@ from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code
 from app.models.user import UserRole, User
 from sqlalchemy.orm import Session
 
+from app.services.audit_service import create_audit_log_item
+from app.models.audit_log import AuditAction
 
 #Business Logic between our API and AWS
 #take clean input and calls cognito then reshape results into app format
@@ -30,6 +32,25 @@ def register_user(payload, db: Session):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    create_audit_log_item(
+        db=db,
+        user_id=new_user.id,
+        action=AuditAction.CREATE,
+        target_entity_type="User",
+        target_entity_id=new_user.id,
+        new_values={
+            "email": new_user.email,
+            "first_name": new_user.first_name,
+            "last_name": new_user.last_name,
+            "role": new_user.role.value,
+            "neighbourhood_id": (
+                str(new_user.neighbourhood_id)
+                if new_user.neighbourhood_id
+                else None
+            ),
+        },
+    )
 
     return {
         "success": True,
