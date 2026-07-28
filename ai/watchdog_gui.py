@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
-from tkinter import Tk, Toplevel, messagebox, scrolledtext, StringVar, DoubleVar
+from tkinter import Tk, messagebox, scrolledtext, StringVar, DoubleVar
 from tkinter import ttk
 import platform
 
@@ -38,7 +38,6 @@ AI_DIR = Path(__file__).resolve().parent
 RUNTIME_DIR = AI_DIR / ".watchdog-agent"
 VENV_DIR = RUNTIME_DIR / "venv"
 STATE_FILE = RUNTIME_DIR / "install-state.json"
-CONNECTION_SETTINGS_FILE = RUNTIME_DIR / "connection-settings.json"
 REQUIREMENTS_FILE = "requirements-linux.txt"
 
 WEIGHTS_DIR = AI_DIR / "pipeline" / "models" / "weights"
@@ -128,44 +127,6 @@ def is_installation_valid() -> bool:
     return (state.get("schema_version") == INSTALL_SCHEMA_VERSION and state.get("python_version", "").startswith("3.12"))
 
 
-def load_connection_settings() -> dict[str, str]:
-
-    defaults = {
-        "backend_url": os.getenv("BACKEND_URL", "https://api-staging.neighbourhoodwatchdog.co.za"),
-        "mediamtx_rtsp_url": os.getenv("MEDIAMTX_RTSP_URL", "rtsp://api-staging.neighbourhoodwatchdog.co.za:8554"),
-        "internal_api_token": os.getenv("INTERNAL_API_TOKEN", "dev-token")
-    }
-
-    if not CONNECTION_SETTINGS_FILE.is_file():
-        return defaults
-
-
-    try:
-        saved = json.loads(CONNECTION_SETTINGS_FILE.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return defaults
-
-
-
-    for key in defaults:
-        value = saved.get(key)
-
-        if isinstance(value, str) and value.strip():
-            defaults[key] = value.strip()
-
-
-    return defaults
-
-
-
-
-def save_connection_settings(settings: dict[str, str]) -> None:
-
-    RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
-
-    temporary_file = CONNECTION_SETTINGS_FILE.with_suffix(".tmp")
-    temporary_file.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
-    temporary_file.replace(CONNECTION_SETTINGS_FILE)
 
 
 class WatchDogAgentApp(ttk.Frame):
@@ -175,7 +136,6 @@ class WatchDogAgentApp(ttk.Frame):
 
         self.controller = controller
         self.root = parent
-        self.connection_settings = load_connection_settings()
         # self.root.title("Neighbourhood WatchDog Agent")
         # self.root.geometry("760x560")
         # self.root.minsize(700, 500)
@@ -382,9 +342,6 @@ class WatchDogAgentApp(ttk.Frame):
         self.stop_agent_button.pack(side="left", padx=(10, 0))
 
 
-        ttk.Button(
-            action_row, text="Connection Settings", command=self.show_connection_settings
-        ).pack(side="left", padx=(10, 0))
 
         self.pair_button = ttk.Button(
             action_row,
@@ -1093,127 +1050,6 @@ class WatchDogAgentApp(ttk.Frame):
             pass
 
 
-    def show_connection_settings(self) -> None:
-        if self.agent_process is not None and self.agent_process.poll() is None:
-            messagebox.showwarning("Stop the Agent First", "Stop the AI service before changing connection settings.")
-            return
-
-
-        dialog = Toplevel(self.root)
-        dialog.title("WatchDog Agent Connection Settings")
-        dialog.resizable(False, False)
-        dialog.transient(self.root)
-        dialog.grab_set()
-
-
-        content = ttk.Frame(dialog, padding=20)
-        content.pack(fill="both", expand=True)
-
-        ttk.Label(
-            content,
-            text="Remote Connection Settings", 
-            font=(SEGOE_FONT, 14, "bold")
-        ).grid(row=0, column=0, columnspan=2, sticky="w")
-
-
-        ttk.Label(
-            content, 
-            text=("These values are saved only on this device and are passed to "
-                  "to the local AI worker when you start the agent."
-                  ),
-            wraplength=520, 
-            justify="left"
-        ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(6, 18))
-
-
-        backend_var = StringVar(value=self.connection_settings["backend_url"])
-        mediamtx_var = StringVar(value=self.connection_settings["mediamtx_rtsp_url"])
-        token_var = StringVar(value=self.connection_settings["internal_api_token"])
-
-
-        ttk.Label(
-            content,
-            text="Backend API URL"
-        ).grid(row=2, column=0, sticky="w", pady=(0, 4))
-
-        ttk.Entry(
-            content, 
-            textvariable=backend_var, width=62
-        ).grid(row=3, column=0, columnspan=2, sticky="ew", pady=(0, 12))
-
-
-        ttk.Label(
-            content,
-            text="MediaMTX RTSP base URL"
-        ).grid(row=4, column=0, sticky="w", pady=(0, 4))
-
-
-        ttk.Entry(
-            content,
-            textvariable=mediamtx_var, 
-            width=62
-        ).grid(row=5, column=0, columnspan=2, sticky="ew", pady=(0, 12))
-
-
-        ttk.Label(
-            content, 
-            text="Internal agent token"
-        ).grid(row=6, column=0, sticky="w", pady=(0, 4))
-
-
-        ttk.Entry(
-            content, 
-            textvariable=token_var, 
-            width=62, 
-            show="o"
-        ).grid(row=7, column=0, columnspan=2, sticky="ew", pady=(0, 16))
-
-
-        def save_settings() -> None:
-            backend_url = backend_var.get().strip().rstrip("/")
-            mediamtx_rtsp_url = mediamtx_var.get().strip().rstrip("/")
-            internal_api_token = token_var.get().strip()
-
-
-            if not backend_url.startswith(("http://", "https://")):
-                messagebox.showerror("Invalid Backend URL", "Backend API URL must start with http:// or https://", parent=dialog)
-
-                return
-
-
-            if not mediamtx_rtsp_url.startswith("rtsp://"):
-                messagebox.showerror("Invalid MediaMTX URL", "MediaMTX RTSP base URL must start with rtsp://", parent=dialog)
-                return
-
-            if not internal_api_token:
-                messagebox.showerror("Missing Internal Token", "An internal agent token is required.", parent=dialog)
-
-                return
-
-            
-            self.connection_settings = {
-                "backend_url": backend_url, 
-                "mediamtx_rtsp_url": mediamtx_rtsp_url, 
-                "internal_api_token": internal_api_token 
-
-            }
-
-            save_connection_settings(self.connection_settings)
-
-
-            dialog.destroy()
-            messagebox.showinfo("Connection Settings Saved", "The new settings will apply the next time you start the agent.")
-
-
-        button_row = ttk.Frame(content)
-        button_row.grid(row=8, column=0, columnspan=2, sticky="ew")
-
-
-        ttk.Button(button_row, text="Save", command=save_settings).pack(side="left")
-
-        ttk.Button(button_row, text="Cancel", command=dialog.destroy).pack(side="right")
-                
-
 
     def start_agent(self) -> None:
         #launches the ai/app.py through uvicorn
@@ -1259,11 +1095,6 @@ class WatchDogAgentApp(ttk.Frame):
         environment = os.environ.copy()
         environment["PYTHONUNBUFFERED"] = "1"
         environment["MKL_THREADING_LAYER"] = "GNU"
-
-        environment["BACKEND_URL"] = self.connection_settings["backend_url"]
-        environment["MEDIAMTX_RTSP_URL"] = self.connection_settings["mediamtx_rtsp_url"]
-        environment["INTERNAL_API_TOKEN"] = self.connection_settings["internal_api_token"]
-
 
 
         popen_options = {
