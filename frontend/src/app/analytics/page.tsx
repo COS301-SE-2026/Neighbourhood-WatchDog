@@ -123,6 +123,26 @@ export default function AnalyticsPage({
               neighbourhoodId={neighbourhoodId}
             />
           </div>
+
+          {/*Response time metrics*/}
+          <Card
+            className="bg-card border rounded-xl p-6 mb-6"
+            style={{
+              borderColor: "var(--border)",
+              boxShadow: "var(--shadow-sm)",
+            }}
+          >
+            <h2
+              className="text-base font-bold mb-4"
+              style={{ color: "var(--color-navy)" }}
+            >
+              Alert Response Metrics
+            </h2>
+            <AlertMetrics
+              key={`metrics-${refreshTick}`}
+              neighbourhoodId={neighbourhoodId}
+            />
+          </Card>
         </div>
       </div>
     </>
