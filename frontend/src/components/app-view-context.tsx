@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react"
 
-export type AppSection = "dashboard" | "alerts" | "join" | "reports" | "settings"
+export type AppSection = "dashboard" | "alerts" | "join" | "analytics" | "settings"
 
 type AppViewState = {
   section: AppSection

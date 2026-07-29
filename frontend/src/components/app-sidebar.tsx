@@ -273,8 +273,8 @@ export function AppSidebar() {
       icon: <Bell className="h-4 w-4 shrink-0" />,
     },
     {
-      id: "reports",
-      label: "Reports",
+      id: "analytics",
+      label: "Analytics",
       icon: <FileText className="h-4 w-4 shrink-0" />,
     },
     {
@@ -295,7 +295,7 @@ export function AppSidebar() {
   const handlePinToggle = () => {
     if (pinned) {
       setPinned(false);
-      setOpen(false); // collapse — hover will re-expand temporarily
+      setOpen(false); // collapse - hover will re-expand temporarily
     } else {
       setPinned(true);
       setOpen(true); // lock open
