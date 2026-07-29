@@ -5,6 +5,14 @@ from app.services.property_service import create_property_handler, get_user_prop
 from app.models.property import PropertyTypeEnum
 from uuid import uuid4
 
+@pytest.fixture(autouse=True)
+def mock_audit():
+    with patch(
+        "app.services.property_service.create_audit_log_item",
+        new=Mock(),
+    ):
+        yield
+
 # create_property_handler tests
 class TestCreateProperty:
     def setup_method(self):
@@ -70,6 +78,28 @@ class TestCreateProperty:
 
             mock_prop = Mock()
             MockProperty.return_value = mock_prop
+
+            # expecting an exception bad req
+            with pytest.raises(HTTPException) as exc_info:
+                await create_property_handler(
+                    "test 123",
+                    None,
+                    self.claims,
+                    self.mock_db
+                )
+            assert exc_info.value.status_code == 400
+            assert self.mock_db.add.call_count == 0
+            assert self.mock_db.flush.call_count == 0
+            assert self.mock_db.commit.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_no_user(self): #May be incorrect
+        with patch('app.services.property_service.Property') as MockProperty, \
+            patch('app.services.property_service.PropertyUser') as _MockPropertyUser:
+
+            mock_prop = Mock()
+            MockProperty.return_value = mock_prop
+            self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
 
             # expecting an exception bad req
             with pytest.raises(HTTPException) as exc_info:

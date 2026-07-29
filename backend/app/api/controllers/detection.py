@@ -7,7 +7,7 @@ from app.schemas.detection import DetectionIngestReq, DetectionIngestRes
 from app.services.detection_service import ingest_detection_handler
 
 router = APIRouter(prefix="/internal", tags=["internal"])
-
+#TODO: This needs to be private but NOT rate limited
 INTERNAL_TOKEN = os.getenv("INTERNAL_API_TOKEN", "dev-token")
 
 

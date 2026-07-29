@@ -1,6 +1,6 @@
 "use client"
 
-import { CreateNeighbourhoodRes, NeighbourhoodResSchema, CreateNeighbourhoodReqSchema, NeighbourhoodRes } from "@/lib/validators/neighbourhood"
+import { CreateNeighbourhoodReqSchema, NeighbourhoodRes } from "@/lib/validators/neighbourhood"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { Spinner } from "./ui/spinner"

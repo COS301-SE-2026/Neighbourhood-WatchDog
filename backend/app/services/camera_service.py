@@ -1,18 +1,29 @@
-from fastapi import HTTPException
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select
-from app.schemas.camera import RegisterCameraReq, CameraRes, CamerasRes
+from app.schemas.camera import RegisterCameraReq, CameraRes, CameraListItemRes, CamerasRes, CameraEditReq
 from app.models.camera import Camera
 from app.models.property import Property
 from app.models.property_user import PropertyUser
+from app.models.user import User
 from app.core.database import DbSession
+from app.services.rtsp_encryption import encrypt_rtsp_url, decrypt_rtsp_url
+
+from app.services.audit_service import create_audit_log_item
+from app.models.audit_log import AuditAction
+
 from uuid import UUID
+from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from typing import Optional
+
+NO_DB_SESSION = "No database session"
+NOT_AUTHENTICATED = "Not authenticated"
 
 async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims: dict) -> CameraRes:
     if not db:
-        raise HTTPException(500, "No database session")
+        raise HTTPException(500, NO_DB_SESSION)
     if not claims:
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED)
 
     try:
         stmt = select(Property).where(Property.id == req.property_id)
@@ -21,23 +32,50 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
         if not property_obj:
             raise HTTPException(404, "Property not found")
 
+        # encrypting the rtsp url
+        plaintext_rtsp_url = req.rtsp_url
+        ciphertext_rtsp_url = encrypt_rtsp_url(plaintext_rtsp_url)
+
         new_camera = Camera(
             property_id=req.property_id,
+            name=req.name,
             neighbourhood_id=property_obj.neighbourhood_id,
-            rtsp_url=req.rtsp_url,
+            rtsp_url=ciphertext_rtsp_url,
             visibility=req.visibility,
             location=req.location,
         )
         db.add(new_camera)
+
+        # Get ID before commit
+        db.flush()
+
+        create_audit_log_item(
+            db=db,
+            user_id=UUID(claims["id"]),
+            action=AuditAction.CREATE,
+            target_entity_type="Camera",
+            target_entity_id=new_camera.id,
+            new_values={
+                "property_id": str(new_camera.property_id),
+                "name": new_camera.name,
+                "neighbourhood_id": str(new_camera.neighbourhood_id),
+                "visibility": new_camera.visibility,
+                "location": new_camera.location,
+            },
+        )
+
         db.commit()
+        db.refresh(new_camera)
 
         return CameraRes(
             id=new_camera.id,
+            name=new_camera.name,
             property_id=new_camera.property_id,
             neighbourhood_id=new_camera.neighbourhood_id,
             rtsp_url=new_camera.rtsp_url,
             visibility=new_camera.visibility,
             location=new_camera.location,
+            enabled=new_camera.enabled,
             created_at=new_camera.created_at,
         )
 
@@ -48,12 +86,147 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
         db.rollback()
         raise he
 
+def deregister_camera_handler(camera_id: UUID, db: Optional[DbSession], claims: Optional[dict]):
+    if not db:
+        raise HTTPException(status_code=500, detail=NO_DB_SESSION)
+    if not claims:
+        raise HTTPException(status_code=500, detail=NOT_AUTHENTICATED)
+    
+    try:
+        stmt = select(Camera).where(Camera.id == camera_id)
+        camera_obj = db.execute(stmt).scalar_one_or_none()
+
+        if not camera_obj:
+            raise HTTPException(status_code=404, detail="Camera not found")
+        
+        prop_user = db.execute(
+            select(PropertyUser).where(PropertyUser.property_id == camera_obj.property_id)
+            ).scalar_one_or_none()
+        
+        if not prop_user or prop_user.user.cognito_sub != claims.get("sub"):
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+        
+        old_values = {
+            "property_id": str(camera_obj.property_id),
+            "name": camera_obj.name,
+            "neighbourhood_id": str(camera_obj.neighbourhood_id),
+            "visibility": camera_obj.visibility,
+            "location": camera_obj.location,
+        }
+
+        db.delete(camera_obj)
+
+        create_audit_log_item(
+            db=db,
+            user_id=UUID(claims["id"]),
+            action=AuditAction.DELETE,
+            target_entity_type="Camera",
+            target_entity_id=camera_obj.id,
+            old_values=old_values,
+        )
+
+        db.commit()
+        
+    except HTTPException as he:
+        db.rollback()
+        raise he
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(500, "Could not deregister camera")
+    except Exception:
+        db.rollback()
+        raise HTTPException(500, "Failed to delete camera")
+    
+def edit_camera_handler(
+    camera_id: UUID, 
+    req: CameraEditReq,
+    db: Session, 
+    claims: dict
+    ) -> CameraRes:
+    
+    try:
+
+        update_data = req.model_dump(exclude_unset=True)
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No fields provided to update")
+    
+        stmt = select(Camera).where(Camera.id == camera_id)
+        camera_obj = db.execute(stmt).scalar_one_or_none()
+
+        if not camera_obj:
+            raise HTTPException(status_code=404, detail="Camera not found")
+        
+        prop_user = db.execute(
+            select(PropertyUser)
+            .join(PropertyUser.user)
+            .where(
+                PropertyUser.property_id == camera_obj.property_id,
+                User.cognito_sub == claims.get("sub")
+                
+                )
+            ).scalar_one_or_none()
+        
+        if not prop_user:
+            raise HTTPException(status_code=403, detail="Forbidden")
+        
+        old_values = {
+            field: getattr(camera_obj, field)
+            for field in update_data.keys()
+        }
+
+
+        for field, value in update_data.items():
+            setattr(camera_obj, field, value)
+
+
+        new_values = {
+            field: getattr(camera_obj, field)
+            for field in update_data.keys()
+        }
+
+
+        create_audit_log_item(
+            db=db,
+            user_id=UUID(claims["id"]),
+            action=AuditAction.UPDATE,
+            target_entity_type="Camera",
+            target_entity_id=camera_obj.id,
+            old_values=old_values,
+            new_values=new_values,
+        )
+
+
+        db.commit()
+        db.refresh(camera_obj)
+
+        return CameraRes(
+            id=camera_obj.id,
+            name=camera_obj.name,
+            property_id=camera_obj.property_id,
+            neighbourhood_id=camera_obj.neighbourhood_id,
+            rtsp_url=camera_obj.rtsp_url,
+            visibility=camera_obj.visibility,
+            location=camera_obj.location,
+            enabled=camera_obj.enabled,
+            created_at=camera_obj.created_at,
+        )
+    
+    except HTTPException as he:
+        db.rollback()
+        raise he
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update camera")
+
+
+
 async def list_cameras_handler(property_id: str, db: DbSession, claims: dict) -> CamerasRes:
     if not db:
-        raise HTTPException(500, "No database session")
+        raise HTTPException(500, NO_DB_SESSION)
 
     if not claims:
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED)
 
     try:
         prop_uuid = UUID(property_id)
@@ -82,13 +255,15 @@ async def list_cameras_handler(property_id: str, db: DbSession, claims: dict) ->
         status=200,
         message="Cameras fetched successfully",
         data=[
-            CameraRes(
+            CameraListItemRes(
                 id=c.id,
+                name=c.name,
                 property_id=c.property_id,
                 neighbourhood_id=c.neighbourhood_id,
-                rtsp_url=c.rtsp_url,
+                rtsp_url=decrypt_rtsp_url(c.rtsp_url),
                 visibility=c.visibility,
                 location=c.location,
+                enabled=c.enabled,
                 created_at=c.created_at,
             )
             for c in cameras

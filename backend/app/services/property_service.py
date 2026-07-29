@@ -10,6 +10,9 @@ from sqlalchemy.exc import IntegrityError
 from typing import List
 from uuid import UUID
 
+from app.services.audit_service import create_audit_log_item
+from app.models.audit_log import AuditAction
+
 async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims: dict, db: DbSession) -> Property:
     
     if not addr or addr == "":
@@ -30,11 +33,14 @@ async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims
     try:
         # get user
         stmt = select(User).where(User.cognito_sub == claims['sub'])
-        user = db.execute(stmt).scalar_one_or_none()
+        user = db.execute(stmt).scalar_one_or_none()    
 
         # add prop
         db.add(new_property)
         db.flush()
+
+        if not user:
+            raise HTTPException(404, "User not found")
 
         #set user to prop admin
         new_property_user = PropertyUser(
@@ -44,13 +50,28 @@ async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims
         )
         db.add(new_property_user)
         db.flush()
-        db.commit()
 
+        create_audit_log_item(
+            db=db,
+            user_id=user.id,
+            action=AuditAction.CREATE,
+            target_entity_type="Property",
+            target_entity_id=new_property.id,
+            new_values={
+                "address": new_property.address,
+                "property_type": new_property.property_type.value,
+            },
+        )
+
+        db.commit()
+        return new_property
+    
     except IntegrityError:
         db.rollback()
         raise HTTPException(500, "Failed to add to property database")
-
-    return new_property
+    except HTTPException as he:
+        db.rollback()
+        raise he
 
 
 async def get_user_properties_handler(claims: dict, db: DbSession) -> List[Property]:

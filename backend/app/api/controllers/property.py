@@ -1,16 +1,22 @@
-from fastapi import APIRouter, Depends
 from app.schemas.property import CreatePropertyReq, CreatePropertyRes, PropertyRes
 from app.services.property_service import create_property_handler, get_user_properties_handler, get_property_details_handler
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
 from app.auth.rbac import require_role
-from typing import List
+
+from typing import List, Annotated
 from uuid import UUID
+from fastapi import APIRouter, Depends
+
 
 router = APIRouter(prefix="/properties", tags=["properties"])
 
 @router.post("/create-property")
-async def create_property(req: CreatePropertyReq, db: DbSession, claims: dict = Depends(get_current_user)):
+async def create_property(
+    req: CreatePropertyReq,
+    db: DbSession,
+    claims: Annotated[dict, Depends(get_current_user)],
+):
     """Create property endpoint returns the property object that was created"""
 
     require_role(claims, ['RESIDENT'])
@@ -32,7 +38,10 @@ async def create_property(req: CreatePropertyReq, db: DbSession, claims: dict = 
 
 
 @router.get("/my-properties")
-async def get_user_properties(db: DbSession, claims: dict = Depends(get_current_user)) -> List[PropertyRes]:
+async def get_user_properties(
+    db: DbSession, 
+    claims: Annotated[dict, Depends(get_current_user)],
+) -> List[PropertyRes]:
     """Fetch all properties for the current user"""
     require_role(claims, ['RESIDENT'])
     properties = await get_user_properties_handler(claims, db)
@@ -49,7 +58,11 @@ async def get_user_properties(db: DbSession, claims: dict = Depends(get_current_
     ]
 
 @router.get("/{property_id}")
-async def get_property_details(property_id: UUID, db: DbSession, claims: dict = Depends(get_current_user)):
+async def get_property_details(
+    property_id: UUID,
+    db: DbSession,
+    claims: Annotated[dict, Depends(get_current_user)],
+):
     """Fetch property details including users, neighbourhood, and cameras"""
     require_role(claims, ['RESIDENT'])
     return await get_property_details_handler(property_id, db)

@@ -1,3 +1,5 @@
+import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,12 +13,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 type SignupCardProps = {
   className?: string;
 
-  name: string;
-  setName: (v: string) => void;
+  firstName: string;
+  setFirstName: (v: string) => void;
+
+  lastName: string;
+  setLastName: (v: string) => void;
 
   address: string;
   setAddress: (v: string) => void;
@@ -31,12 +37,17 @@ type SignupCardProps = {
   setConfirmPassword: (v: string) => void;
 
   onSubmit: () => void;
+  onKeyDown?: (e: React.KeyboardEvent) => void;//Enter key logic
+  isLoading?: boolean;
+  error?: string | null;
 };
 
 export function SignupCard({
   className,
-  name,
-  setName,
+  firstName,
+  setFirstName,
+  lastName,
+  setLastName,
   address,
   setAddress,
   email,
@@ -46,102 +57,201 @@ export function SignupCard({
   confirmPassword,
   setConfirmPassword,
   onSubmit,
+  onKeyDown,
+  isLoading = false,
+  error = null,
 }: SignupCardProps) {
+  // Password visibility toggle
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   return (
     <Card
       className={cn(
-        "w-full max-w-md sm:max-w-xl rounded-xl border border-navy/12 bg-white/95 shadow-lg backdrop-blur",
+        "w-full max-w-lg rounded-2xl border border-border bg-card/95 p-2 shadow-xl backdrop-blur sm:max-w-2xl sm:p-4",
         className
       )}
     >
-      <CardHeader>
-        <CardTitle className="text-[2rem] sm:text-[2rem] font-semibold tracking-tight text-navy">
-          Create your account
+      <CardHeader className="space-y-3">
+        <CardTitle className="text-[2rem] font-bold tracking-tight text-card-foreground sm:text-[2.5rem]">
+          Create Account
         </CardTitle>
 
-        <CardDescription className="text-base text-body">
-          Enter your details below to sign up
+        <CardDescription className="text-base text-muted-foreground">
+          Enter your details below to get started
         </CardDescription>
 
         <CardAction>
-          <Button variant="link">Login</Button>
+          <Link href="/auth/login" passHref>
+            <Button variant="link" className="text-sm font-medium text-primary hover:text-primary/80">
+              Already have an account? Login
+            </Button>
+          </Link>
         </CardAction>
       </CardHeader>
 
-      <CardContent>
-        <div className="flex flex-col gap-6">
+      <CardContent className="space-y-6">
+        {/* Error display */}
+        {error && (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-red-300">
+            {error}
+          </div>
+        )}
 
-          {/* NAME */}
-          <div className="grid gap-2">
-            <Label htmlFor="name">Full Name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="John Doe"
-              required
-            />
+        <div className="flex flex-col gap-6">
+          {/* first and last name */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="firstName" className="text-sm font-medium text-foreground">
+                First Name
+              </Label>
+
+              <Input
+                id="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="First Name"
+                disabled={isLoading}
+                className="h-11 border-border bg-background text-base text-foreground placeholder:text-muted-foreground"
+                required
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="lastName" className="text-sm font-medium text-foreground">
+                Last Name
+              </Label>
+
+              <Input
+                id="lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="Last Name"
+                disabled={isLoading}
+                className="h-11 border-border bg-background text-base text-foreground placeholder:text-muted-foreground"
+                required
+              />
+            </div>
           </div>
 
           {/* ADDRESS */}
           <div className="grid gap-2">
-            <Label htmlFor="address">Address</Label>
+            <Label htmlFor="address" className="text-sm font-medium text-foreground">
+              Address
+            </Label>
             <Input
               id="address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Pretoria, South Africa"
+              onKeyDown={onKeyDown}
+              placeholder=" 44 Home Street, Pretoria"
+              disabled={isLoading}
+              className="h-11 border-border bg-background text-base text-foreground placeholder:text-muted-foreground"
               required
             />
           </div>
 
           {/* EMAIL */}
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-sm font-medium text-foreground">
+              Email Address
+            </Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="m@example.com"
+              onKeyDown={onKeyDown}
+              placeholder="email@example.com"
+              disabled={isLoading}
+              className="h-11 border-border bg-background text-base text-foreground placeholder:text-muted-foreground"
               required
             />
           </div>
 
-          {/* PASSWORD */}
+          {/* PASSWORD with visibility toggle */}
           <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <Label htmlFor="password" className="text-sm font-medium text-foreground">
+              Password
+            </Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={onKeyDown}
+                disabled={isLoading}
+                className="h-11 border-border bg-background pr-10 text-base text-foreground placeholder:text-muted-foreground"
+                required
+                minLength={8}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                disabled={isLoading}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">Must have: 8+ characters | Special Character | Number</p>
           </div>
 
-          {/* CONFIRM PASSWORD */}
+          {/* CONFIRM PASSWORD with visibility toggle */}
           <div className="grid gap-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
+            <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
+              Confirm Password
+            </Label>
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                onKeyDown={onKeyDown}
+                disabled={isLoading}
+                className="h-11 border-border bg-background pr-10 text-base text-foreground placeholder:text-muted-foreground"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                disabled={isLoading}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           </div>
-
         </div>
       </CardContent>
 
-      <CardFooter className="flex-col gap-2">
+      <CardFooter className="flex-col gap-3 pt-2 bg-card">
         <Button
           type="button"
           onClick={onSubmit}
-          className="w-full bg-navy text-white hover:bg-steel"
+          disabled={isLoading}
+          className="h-11 w-full bg-primary text-base font-medium text-primary-foreground hover:bg-primary/90"
         >
-          Sign Up
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating account...
+            </>
+          ) : (
+            "Create Account"
+          )}
         </Button>
       </CardFooter>
     </Card>

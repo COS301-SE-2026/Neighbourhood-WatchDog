@@ -27,10 +27,7 @@ async def get_user_by_id(
 	return {
 		"id": str(user.id),
 		"email": user.email,
-		"first_name": user.first_name,
-		"last_name": user.last_name,
 		"cognito_sub": user.cognito_sub,
 		"role": user.role.value if hasattr(user.role, "value") else str(user.role),
-		"neighbourhood_id": str(user.neighbourhood_id) if user.neighbourhood_id else None,
 		"created_at": user.created_at,
 	}

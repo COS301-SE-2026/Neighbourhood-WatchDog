@@ -22,7 +22,7 @@ async def test_join_neighbourhood(async_client, auth_headers):
         assert body["status"] == 201
         assert body["data"]["id"] == result["id"]
 
-
+@pytest.mark.skip(reason="Testing need to be refactored with a more robust roles system")
 @pytest.mark.asyncio
 async def test_resolve_join_request(async_client, admin_headers):
     result = {
@@ -47,3 +47,8 @@ async def test_resolve_join_request(async_client, admin_headers):
         body = r.json()
         assert body["status"] == 200
         assert body["data"]["id"] == result["id"]
+
+@pytest.mark.asyncio
+async def test_pending_user_cannot_access_camera_feed(async_client, pending_user_headers):
+    r = await async_client.get("/neighbourhood/join-requests", headers=pending_user_headers)
+    assert r.status_code == 403

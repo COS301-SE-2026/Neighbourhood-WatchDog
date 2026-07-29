@@ -33,12 +33,13 @@ export function AddCameraDialogBox({ open, onOpenChange, onCameraAdded, property
     setErrors({})
   
     const formData = new FormData(e.currentTarget)
-    
+    const name = formData.get("name") as string
     const rtsp_url = formData.get("rtsp_url") as string
     const location = formData.get("location") as string
-    const visibility = formData.get("visibility") as "PRIVATE" | "PUBLIC"
+    const visibility = formData.get("visibility") as "PRIVATE" | "PUBLIC" | "NEIGHBOURHOOD"
 
     const rawData: CameraInput = {
+      name,
       rtsp_url,
       location,
       visibility,
@@ -78,6 +79,10 @@ export function AddCameraDialogBox({ open, onOpenChange, onCameraAdded, property
         <form onSubmit={handleSubmit}>
           <FieldGroup>
             <Field>
+              <Label htmlFor="name-1">Name</Label>
+              <Input id="name-1" name="name" defaultValue="" />
+          </Field>
+            <Field>
               <Label htmlFor="location-1">Location</Label>
               <Input id="location-1" name="location" defaultValue="Backyard" />
             </Field>
@@ -95,13 +100,13 @@ export function AddCameraDialogBox({ open, onOpenChange, onCameraAdded, property
               >
                 <option value="PUBLIC">Public</option>
                 <option value="PRIVATE">Private</option>
-                <option value="RESTRICTED">RESTRICTED</option>
+                <option value="NEIGHBOURHOOD">NEIGHBOURHOOD</option>
               </select>
             </Field>
           </FieldGroup>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              {/* <Button variant="outline">Cancel</Button> */}
             </DialogClose>
             <Button type="submit">Add camera</Button>
           </DialogFooter>

@@ -1,20 +1,36 @@
 import asyncio
 import json
 from uuid import UUID
-
+from typing import Annotated
+from datetime import datetime
 from fastapi import APIRouter, Depends, Query, WebSocket
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession, get_db
-from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, ListAlertsRes
-from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler
+from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, ListAlertsRes, Pagination
+from app.services.alert_service import (
+    acknowledge_alert_handler,
+    get_alert_frequency_metrics_handler,
+    get_response_metrics_handler,
+    get_trends_handler,
+    list_alerts_handler,
+    MAX_PAGE_SIZE,
+    DEFAULT_PAGE_SIZE,
+)
 from app.services import alert_service
-
+from app.schemas.alert import (
+    AlertMetricsRes,
+    AlertFrequencyMetricsRes,
+    TimeIntervalsEnum,
+    TimePeriod,
+    TrendResponse,
+    TrendGroupBy,
+)
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 _connections: dict[str, set[WebSocket]] = {}
-
+#TODO: NOTHING HERE SHOULD BE PUBLIC, NEED TO MAKE EVERYTHING PRIVATE 
 
 def _get_bucket(neighbourhood_id: str) -> set[WebSocket]:
     if neighbourhood_id not in _connections:
@@ -45,11 +61,43 @@ async def broadcast(neighbourhood_id: str, message: dict) -> None:
         connections.discard(ws)
 
 
-@router.post("/", response_model=AlertResponse)
-async def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
-    return await alert_service.create_alert(db, alert)
+Claims = Annotated[dict, Depends(get_current_user)]
 
-@router.post("/dev/broadcast")
+@router.get("/metrics", response_model=AlertMetricsRes)
+async def get_alert_metrics(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: Claims,
+    camera_id: UUID | None = None,
+    officer_id: UUID | None = None
+
+):
+    """This will rep the time metrics for the alerts in the neighbourhood; can be filtered by camera and officer"""
+
+    return get_response_metrics_handler(neighbourhood_id, db, claims, camera_id, officer_id)
+
+@router.get("/frequency-metrics", response_model=AlertFrequencyMetricsRes)
+async def get_alert_frequency_metrics(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: Claims,
+    time_interval: TimeIntervalsEnum = TimeIntervalsEnum.DAILY,
+    time_period: TimePeriod = TimePeriod.WEEK
+):
+    """Responds with number of alerts received with the neighbourhood. time_interval refers to the grouping of the numbers while time period refers to how far back the data should go."""
+    return await get_alert_frequency_metrics_handler(
+        neighbourhood_id=neighbourhood_id,
+        db=db,
+        time_interval=time_interval,
+        time_period=time_period,
+        claims=claims,
+    )
+
+@router.post("/", response_model=AlertResponse)
+async def create_alert(alert: AlertCreate, db: Session = Depends(get_db), claims: dict = Depends(get_current_user)):
+    return await alert_service.create_alert(db, alert, claims)
+
+@router.post("/dev/broadcast") #TODO: remove before production
 async def dev_broadcast_alert(data: dict):
     """Dev-only: broadcast alert without DB. Remove before production."""
     neighbourhood_id = data.get("neighbourhood_id", "10000000-0000-0000-0000-000000000001")
@@ -61,6 +109,33 @@ async def dev_broadcast_alert(data: dict):
     })
     return {"status": "broadcasted"}
 
+
+
+@router.get("/trends", response_model=TrendResponse)
+async def get_alert_trends(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: dict,
+    group_by: TrendGroupBy=TrendGroupBy.DAY,
+    time_period: TimePeriod=TimePeriod.MONTH, 
+    incident_type: str | None=None, 
+    camera_id: UUID | None=None
+
+
+):
+    data = await get_trends_handler(
+        neighbourhood_id=neighbourhood_id,
+        db=db,
+        claims=claims,
+        group_by=group_by,
+        time_period=time_period, 
+        incident_type=incident_type, 
+        camera_id=camera_id 
+
+    )
+    return TrendResponse(status=200, data=data)
+
+
 @router.get(
     "/{neighbourhood_id}",
     response_model=ListAlertsRes,
@@ -71,16 +146,36 @@ async def list_alerts(
     db: DbSession,
     claims: dict = Depends(get_current_user),
     status_filter: str | None = Query(default=None, alias="status"),
+    camera_id: Annotated[UUID | None, Query()] = None,
+    detection_type: Annotated[str | None, Query()] = None,
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None,  Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
-    results = await list_alerts_handler(str(neighbourhood_id), db, claims, status_filter)
-    return ListAlertsRes(status=200, data=results)
+    results, total = await list_alerts_handler(
+        str(neighbourhood_id), 
+        db, 
+        claims, 
+        status_filter=status_filter, 
+        camera_id=camera_id, 
+        detection_type=detection_type,
+        start_date=start_date,
+        end_date=end_date,
+        limit=limit,
+        offset=offset,)
+    return ListAlertsRes(
+        status=200, 
+        data=results,
+        pagination=Pagination(
+            total=total,
+            limit=limit,
+            offset=offset,
+            has_more=(offset + limit) < total,
+        ))
 
 
-@router.patch(
-    "/{alert_id}/acknowledge",
-    response_model=AcknowledgeAlertRes,
-    summary="Acknowledge an alert",
-)
+@router.patch("/{alert_id}/acknowledge", response_model=AcknowledgeAlertRes, summary="Acknowledge an alert")
 async def acknowledge_alert(
     alert_id: UUID,
     db: DbSession,

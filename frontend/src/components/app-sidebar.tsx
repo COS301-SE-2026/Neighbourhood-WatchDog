@@ -13,10 +13,13 @@ import {
   Bell,
   FileText,
   Settings,
-  Plus
+  Plus,
+  LogOut
 } from "lucide-react"
 
-import { CreatePropertyDialog } from "./create-property-dialogue"
+import { CreatePropertyDialog } from "./property-components/create-property-dialogue"
+
+import logoImage from "@/assets/images/logo-mark-only.svg"
 
 import {
   Sidebar,
@@ -38,6 +41,8 @@ import {
 import { cn } from "@/lib/utils"
 import { useProperties, type Property } from "@/hooks/use-properties"
 import { useAppView } from "@/components/app-view-context"
+import { useRouter } from "next/navigation";
+import { logout } from "@/lib/auth/cognito";
 
 // Types
 
@@ -56,13 +61,14 @@ type NavItem = {
 
 //data
 
-const USERNAME = "John Doe";
 
 // Logo
 function WatchdogLogo({ size = 28 }: { size?: number }) {
+
+  
   return (
     <Image
-      src="/logo.png"
+      src={logoImage}
       width={size}
       height={size}
       alt=""
@@ -242,6 +248,7 @@ export function AppSidebar() {
   const { state, setOpen } = useSidebar()
   const { properties, addProperty } = useProperties()
   const { section, propertyId, setSection, setPropertyView } = useAppView()
+  const router = useRouter();
 
   // pinned = sidebar is locked open; unpinned = hover-to-expand mode
   const [pinned, setPinned] = React.useState(true)
@@ -311,7 +318,18 @@ export function AppSidebar() {
     setPropertyView(id)
   }
 
+  const handleLogout = async () => {
+    logout();
+    router.push("/auth/login");
+  };
+  
+  const [username] = React.useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("fullname") ?? "";
+  });
+
   return (
+
     <Sidebar
       collapsible="icon"
       onMouseEnter={handleMouseEnter}
@@ -399,19 +417,48 @@ export function AppSidebar() {
                     "text-white/60 hover:text-white hover:bg-white/8 transition-colors duration-150",
                     !isExpanded && "justify-center",
                   )}
+                  type="button"
                 >
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue/40 ring-1 ring-sky/40">
                     <User className="h-3.5 w-3.5 text-sky" />
                   </span>
                   {isExpanded && (
                     <span className="truncate text-sm font-medium text-white/80">
-                      {USERNAME}
+                      {username}
                     </span>
                   )}
                 </button>
               </TooltipTrigger>
               {!isExpanded && (
-                <TooltipContent side="right">{USERNAME}</TooltipContent>
+                <TooltipContent side="right">{username}</TooltipContent>
+              )}
+            </Tooltip>
+          </SidebarMenuItem>
+          <SidebarMenuItem className="mt-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleLogout}
+                  className={cn(
+                    "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2",
+                    "text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors duration-150",
+                    !isExpanded && "justify-center",
+                  )}
+                >
+                  <LogOut className="h-4 w-4 shrink-0" />
+
+                  {isExpanded && (
+                    <span className="text-sm font-medium">
+                      Sign Out
+                    </span>
+                  )}
+                </button>
+              </TooltipTrigger>
+
+              {!isExpanded && (
+                <TooltipContent side="right">
+                  Sign Out
+                </TooltipContent>
               )}
             </Tooltip>
           </SidebarMenuItem>

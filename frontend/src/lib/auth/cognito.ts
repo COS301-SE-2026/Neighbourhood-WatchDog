@@ -1,101 +1,194 @@
-"use client";
+import { getApiBaseUrl } from '@/lib/api/auth';
+import { jwtDecode } from 'jwt-decode';
 
-import {
-  CognitoUserPool,
-  CognitoUser,
-  AuthenticationDetails,
-  CognitoUserAttribute,
-} from "amazon-cognito-identity-js";
+export const AUTH_EVENT = 'watchdog-auth-changed';
 
-let _userPool: CognitoUserPool | null = null;
+// Types for API responses
+interface SignUpResponse {
+  user_sub: string;
+  confirmed: boolean;
+}
 
-export const getUserPool = (): CognitoUserPool => {
-  if (!_userPool) {
-    _userPool = new CognitoUserPool({
-      UserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID!,
-      ClientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!,
-    });
+interface LoginResponse {
+  success: boolean;
+  data: {
+    access_token: string;
+    id_token: string;
+    refresh_token?: string | null;
+    token_type?: string | null;
+    expires_in?: number;
+  };
+}
+
+interface ConfirmResponse {
+  confirmed: boolean;
+}
+
+// API Client with error handling
+const apiClient = async <T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> => {
+  const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    // Handle error backend
+    const errorMessage = data.detail?.message || data.detail || 'Something went wrong';
+    throw new Error(errorMessage);
   }
-  return _userPool;
-};
 
-export const signUp = (
+  return data as T;
+};
+//Signup call to backend
+export const signUp = async (
   email: string,
   password: string,
-  name: string,
+  firstName: string,
+  lastName: string,
   address: string
-) => {
-  const attributes = [
-    new CognitoUserAttribute({
-      Name: "name",
-      Value: name,
-    }),
-    new CognitoUserAttribute({
-      Name: "address",
-      Value: address,
-    }),
-  ];
-
-  return new Promise((resolve, reject) => {
-    getUserPool().signUp(
-      email,
-      password,
-      attributes,
-      [],
-      (err, result) => {
-        if (err) {
-          console.error(err);
-          return reject(err);
-        }
-
-        resolve(result?.user);
-      }
-    );
-  });
-};
-
-export const login = (email: string, password: string) => {
-  const user = new CognitoUser({
-    Username: email,
-    Pool: getUserPool(),
-  });
-
-  const authDetails = new AuthenticationDetails({
-    Username: email,
-    Password: password,
-  });
-
-  return new Promise<{ accessToken: string; idToken: string }>((resolve, reject) => {
-    user.authenticateUser(authDetails, {
-      onSuccess: (result) => {
-        const accessToken = result.getAccessToken().getJwtToken();
-        const idToken = result.getIdToken().getJwtToken();
-
-        resolve({ accessToken, idToken });
-      },
-
-      onFailure: (err) => {
-        console.error(err);
-        reject(err);
-      },
+): Promise<{ userSub: string; confirmed: boolean }> => {//expects to return these back
+  try {
+    const response = await apiClient<SignUpResponse>('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, firstName, lastName, address }),//create JSON for API Post
     });
-  });
+
+    return {//Handle API response
+      userSub: response.user_sub,
+      confirmed: response.confirmed,
+    };
+  } catch (error) {
+    console.error('Signup error:', error);
+    throw error;
+  }
 };
 
-export const setSession = (tokens: { accessToken: string; idToken: string }) => {
-  localStorage.setItem("accessToken", tokens.accessToken);
-  localStorage.setItem("idToken", tokens.idToken);
+// Login function call to backend 
+export const login = async (
+  email: string,
+  password: string
+): Promise<{ accessToken: string; idToken: string; expiresIn: number }> => {//expects to return these
+  try {
+    const response = await apiClient<LoginResponse>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),//Create JSON
+    });
+
+    const tokens = response.data;
+
+    return {
+      accessToken: tokens.access_token,
+      idToken: tokens.id_token,
+      expiresIn: tokens.expires_in ?? 0,
+    };
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
+  }
 };
 
-export const getAccessToken = () => {
-  return localStorage.getItem("accessToken");
+// Confirm Signup function to backend 
+export const confirmSignUp = async (
+  email: string,
+  code: string
+): Promise<boolean> => {
+  try {
+    const response = await apiClient<ConfirmResponse>('/auth/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    });
+
+    return response.confirmed;
+  } catch (error) {
+    console.error('Confirmation error:', error);
+    throw error;
+  }
 };
 
-export const isAuthenticated = () => {
-  if (typeof window === "undefined") return false;
-  return !!localStorage.getItem("accessToken");
+export const resendConfirmationCode = async (email: string): Promise<void> => {
+  try {
+    await apiClient('/auth/resend-code', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  } catch (error) {
+    console.error('Resend code error:', error);
+    throw error;
+  }
 };
 
-export const logout = () => {
-  localStorage.clear();
+// Store tokens 
+export const setSession = (tokens: { 
+  accessToken: string; 
+  idToken: string;
+  expiresIn?: number;
+}) => {
+  if (typeof window === 'undefined') return;
+
+  if (!tokens.accessToken || !tokens.idToken) {
+    throw new Error('Cannot store empty auth tokens');
+  }
+
+  const claims = jwtDecode<{
+    sub: string;
+    name?: string;
+    email?: string;
+    address?: { formatted?: string };
+  }>(tokens.idToken);
+
+  localStorage.setItem('accessToken', tokens.accessToken);
+  localStorage.setItem('idToken', tokens.idToken);
+  localStorage.setItem('userSub', claims.sub);
+  localStorage.setItem('fullname', claims.name ?? '');
+  localStorage.setItem('email', claims.email ?? '');
+  localStorage.setItem('address', claims.address?.formatted ?? '');
+
+  if (typeof tokens.expiresIn === 'number') {
+    localStorage.setItem('tokenExpiry', String(Date.now() + tokens.expiresIn * 1000));
+  }
+
+  window.dispatchEvent(new Event(AUTH_EVENT));
+  
+};
+
+// Get token
+export const getAccessToken = (): string | null => {
+  if (typeof globalThis.window === 'undefined') return null;
+  
+  // Chekc if token is expired, if it is, logout user
+  const expiry = localStorage.getItem('tokenExpiry');
+  if (expiry && Date.now() > Number.parseInt(expiry)) {
+    // Token expired
+    logout();
+    return null;
+  }
+  
+  return localStorage.getItem('accessToken');
+};
+
+//Checks if they are logged in 
+export const isAuthenticated = (): boolean => {
+  if (typeof globalThis.window === 'undefined') return false;
+  
+  const token = getAccessToken();
+  return !!token;
+};
+
+// Logout
+//Do not need to call backend... we are not handling sessions
+export const logout = (): void => {
+  if (typeof window === 'undefined') return;
+  
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('idToken');
+  localStorage.removeItem('tokenExpiry');
+  window.dispatchEvent(new Event(AUTH_EVENT));
 };
