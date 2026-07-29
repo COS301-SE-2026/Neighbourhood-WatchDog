@@ -2,12 +2,10 @@
 """Database seeder script for development"""
 
 import secrets
-import random
 import sys
 import random
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4, UUID
-from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal, engine, Base
 from app.models.risk_threshold_config import RiskThresholdConfig

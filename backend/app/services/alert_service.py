@@ -5,7 +5,6 @@ from app.models.alert import Alert
 from app.models.detection_event import DetectionEvent
 from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes, NumberInPeriod, TrendGroupBy, TrendDirection, TrendBucket, TrendData
 from fastapi import HTTPException
-from datetime import datetime
 
 from app.models.user import User
 from sqlalchemy import select, func

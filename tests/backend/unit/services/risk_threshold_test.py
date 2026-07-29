@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import Mock
 from fastapi import HTTPException
 from app.services.risk_threshold_config_service import get_neighbourhood_risk_threshold_handler, update_neighbourhood_risk_threshold_handler
-from app.schemas.risk_threshold_config import RiskThresholdConfigRes, UpdateRiskThresholdConfigReq, NeighbourhoodRiskThresholdConfigRes
+from app.schemas.risk_threshold_config import UpdateRiskThresholdConfigReq, NeighbourhoodRiskThresholdConfigRes
 
 class TestGetRiskThresholdConfig:
     def setup_method(self):
@@ -210,7 +210,7 @@ class TestUpdateRiskThresholdConfig:
 
     @pytest.mark.asyncio
     async def test_empty_req(self):
-        with pytest.raises(ValueError) as ve:
+        with pytest.raises(ValueError):
             UpdateRiskThresholdConfigReq(
                 low_max=None,
                 medium_max=None
@@ -230,7 +230,7 @@ class TestUpdateRiskThresholdConfig:
             medium_max=70.1
         )
 
-        with pytest.raises(HTTPException) as exception:
+        with pytest.raises(HTTPException):
             update_neighbourhood_risk_threshold_handler(
                 self.neighbourhood_id,
                 req,
