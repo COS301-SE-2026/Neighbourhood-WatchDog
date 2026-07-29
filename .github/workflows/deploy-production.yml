@@ -19,32 +19,30 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Update secret in Secrets Manager
         run: |
           aws secretsmanager put-secret-value \
-            --secret-id watchdog/prod/env
+            --secret-id watchdog/prod/env \
             --secret-string '{
-              SECRET_KEY: ${{ secrets.SECRET_KEY }}
-              DATABASE_URL: ${{ secrets.DATABASE_URL }}
-              AWS_REGION: ${{ secrets.AWS_REGION }}
-              AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-              AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-              COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
-              COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
-              COGNITO_REGION: ${{ secrets.COGNITO_REGION }}
-              TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
-              TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
-              TWILIO_WHATSAPP_FROM: ${{ secrets.TWILIO_WHATSAPP_FROM }}
-              NOTIFICATION_ENABLED: ${{ secrets.NOTIFICATION_ENABLED }}
-              RTSP_ENCRYPTION_KEY: ${{ secrets.RTSP_ENCRYPTION_KEY }}
-              MEDIAMTX_PUBLISH_MASTER_KEY: ${{ secrets.MEDIAMTX_PUBLISH_MASTER_KEY }}
-              TESTING: ${{ secrets.TESTING }}
-              DEBUG: ${{ secrets.DEBUG }}
+              "SECRET_KEY": "${{ secrets.SECRET_KEY }}",
+              "DATABASE_URL": "${{ secrets.DATABASE_URL }}",
+              "AWS_REGION": "${{ secrets.AWS_REGION }}",
+              "S3_BUCKET_NAME": "${{ secrets.S3_BUCKET_NAME }}",
+              "COGNITO_USER_POOL_ID": "${{ secrets.COGNITO_USER_POOL_ID }}",
+              "COGNITO_CLIENT_ID": "${{ secrets.COGNITO_CLIENT_ID }}",
+              "COGNITO_REGION": "${{ secrets.COGNITO_REGION }}",
+              "TWILIO_ACCOUNT_SID": "${{ secrets.TWILIO_ACCOUNT_SID }}",
+              "TWILIO_AUTH_TOKEN": "${{ secrets.TWILIO_AUTH_TOKEN }}",
+              "TWILIO_WHATSAPP_FROM": "${{ secrets.TWILIO_WHATSAPP_FROM }}",
+              "NOTIFICATION_ENABLED": "${{ secrets.NOTIFICATION_ENABLED }}",
+              "RTSP_ENCRYPTION_KEY": "${{ secrets.RTSP_ENCRYPTION_KEY }}",
+              "MEDIAMTX_PUBLISH_MASTER_KEY": "${{ secrets.MEDIAMTX_PUBLISH_MASTER_KEY }}",
+              "TESTING": "${{ secrets.TESTING }}",
+              "DEBUG": "${{ secrets.DEBUG }}"
             }'
       
       - name: Build, tag, and push image to ECR
@@ -71,10 +69,10 @@ jobs:
             --cluster watchdog-prod-cluster \
             --tasks "$TASK_ARN"
 
-          EXIT_CODE=$(aws ecs desribe-tasks \
+          EXIT_CODE=$(aws ecs describe-tasks \
             --cluster watchdog-prod-cluster \
             --tasks "$TASK_ARN" \
-            --query 'tasks[0].container[0].exitCode' \
+            --query 'tasks[0].containers[0].exitCode' \
             --output text)
           
           echo "Migration exit code: $EXIT_CODE"
@@ -86,10 +84,10 @@ jobs:
       - name: Deploy new task definition to service
         run: | 
           aws ecs update-service \
-            --cluster watchdog-prod-cluster
-            --service watchdog-backend-service
+            --cluster watchdog-prod-cluster \
+            --service watchdog-backend-service \
             --force-new-deployment
 
           aws ecs wait services-stable \
             --cluster watchdog-prod-cluster \
-            --services wacthdog-backend-service
+            --services watchdog-backend-service
