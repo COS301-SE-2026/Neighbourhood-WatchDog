@@ -114,6 +114,15 @@ export default function AnalyticsPage({
               Refresh
             </Button>
           </header>
+
+          {/*Trend charts*/}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <RiskScoreTrendGraph key={`risk-${refreshTick}`} />
+            <AlertFrequencyGraph
+              key={`freq-${refreshTick}`}
+              neighbourhoodId={neighbourhoodId}
+            />
+          </div>
         </div>
       </div>
     </>
