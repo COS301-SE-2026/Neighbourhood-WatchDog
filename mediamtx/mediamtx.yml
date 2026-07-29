@@ -3,10 +3,6 @@ rtcpAddress: :8003
 rtspAddress: :8554
 webrtcAddress: :8889
 
-webrtcEncryption: yes #TODO: Fix and make sure that the correct thing gets sent to the staging and the prod servers but "no" is used for dev
-webrtcServerCert: /certs/fullchain.pem
-webrtcServerKey: /certs/privkey.pem
-
 api: yes
 apiAddress: :9997
 
@@ -14,7 +10,6 @@ apiAddress: :9997
 # The backend permits only the credential derived for the requested
 # cameras/<camera-uuid> path.
 authMethod: http
-authHTTPAddress: http://backend:8000/internal/mediamtx/auth
 
 # Preserve the current public dashboard/video-reading behaviour.
 # Publishing is deliberately NOT excluded and must pass HTTP auth.
@@ -32,5 +27,3 @@ paths:
 
 webrtcAdditionalHosts:
   - localhost
-
-webrtcAllowOrigin: "*"
