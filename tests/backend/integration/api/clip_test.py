@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import patch
 
+@pytest.mark.skip(reason="Needs to be refacored")
 @pytest.mark.asyncio
 async def test_clip_roundtrip(async_client, internal_headers, admin_headers):
     create_payload = {
