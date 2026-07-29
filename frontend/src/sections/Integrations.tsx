@@ -21,7 +21,7 @@ export type CamerasType = typeof cameras;
 
 export default function Integrations() {
     return (
-        <section className="py-24 overflow-hidden px-8 lg:px-24">
+        <section id="integrations" className="py-24 overflow-hidden px-8 lg:px-24">
             <div className="container mx-auto">
                 <div className="grid lg:grid-cols-2 items-center lg:gap-16">
                     <div>
