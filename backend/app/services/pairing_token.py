@@ -12,12 +12,16 @@ from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone
 from uuid import UUID
 
+from app.services.audit_service import create_audit_log_item
+from app.models.audit_log import AuditAction
+
 import secrets
 import hashlib
 
 async def get_pairing_token_handler(
     property_id: UUID,
     db: DbSession,
+    claims: dict
 ) -> LinkPropertyTokenRes:
 
     if not property_id:
@@ -41,7 +45,22 @@ async def get_pairing_token_handler(
         try: 
             new_token = PairingToken(token=token, property_id=property_id)
             db.add(new_token)
+            db.flush()
+
+            create_audit_log_item(
+                db=db,
+                user_id=UUID(claims["id"]),
+                action=AuditAction.CREATE,
+                target_entity_type="PairingToken",
+                target_entity_id=new_token.id,
+                new_values={
+                    "property_id": str(property_id),
+                    "expires_at": new_token.expires_at.isoformat(),
+                },
+            )
+
             db.commit()
+            
             link_prop_token = LinkPropertyToken(
                 token=token,
                 expires_at=new_token.expires_at
@@ -107,6 +126,18 @@ async def pair_agent_handler(
 
         db.add(new_edge_agent)
         db.flush()
+
+        create_audit_log_item(
+            db=db,
+            user_id=None, # user not authenticated :(
+            action=AuditAction.CREATE,
+            target_entity_type="EdgeAgentCredential",
+            target_entity_id=new_edge_agent.id,
+            new_values={
+                "property_id": str(new_edge_agent.property_id),
+            },
+        )
+
         db.commit()
 
         #getting the cameras related to the property

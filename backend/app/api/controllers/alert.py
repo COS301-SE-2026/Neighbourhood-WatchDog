@@ -47,8 +47,8 @@ async def broadcast(neighbourhood_id: str, message: dict) -> None:
 
 
 @router.post("/", response_model=AlertResponse) # TODO: need to be private
-async def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
-    return await alert_service.create_alert(db, alert)
+async def create_alert(alert: AlertCreate, db: Session = Depends(get_db), claims: dict = Depends(get_current_user)):
+    return await alert_service.create_alert(db, alert,claims)
 
 @router.post("/dev/broadcast") #TODO: remove before production
 async def dev_broadcast_alert(data: dict):
@@ -101,11 +101,7 @@ async def list_alerts(
         ))
 
 
-@router.patch(
-    "/{alert_id}/acknowledge",
-    response_model=AcknowledgeAlertRes,
-    summary="Acknowledge an alert",
-)
+@router.patch("/{alert_id}/acknowledge", response_model=AcknowledgeAlertRes, summary="Acknowledge an alert")
 async def acknowledge_alert(
     alert_id: UUID,
     db: DbSession,

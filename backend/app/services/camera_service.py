@@ -6,10 +6,13 @@ from app.models.user import User
 from app.core.database import DbSession
 from app.services.rtsp_encryption import encrypt_rtsp_url, decrypt_rtsp_url
 
+from app.services.audit_service import create_audit_log_item
+from app.models.audit_log import AuditAction
+
 from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select, delete
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from typing import Optional
 
@@ -42,7 +45,27 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
             location=req.location,
         )
         db.add(new_camera)
+
+        # Get ID before commit
+        db.flush()
+
+        create_audit_log_item(
+            db=db,
+            user_id=UUID(claims["id"]),
+            action=AuditAction.CREATE,
+            target_entity_type="Camera",
+            target_entity_id=new_camera.id,
+            new_values={
+                "property_id": str(new_camera.property_id),
+                "name": new_camera.name,
+                "neighbourhood_id": str(new_camera.neighbourhood_id),
+                "visibility": new_camera.visibility,
+                "location": new_camera.location,
+            },
+        )
+
         db.commit()
+        db.refresh(new_camera)
 
         return CameraRes(
             id=new_camera.id,
@@ -84,12 +107,36 @@ def deregister_camera_handler(camera_id: UUID, db: Optional[DbSession], claims: 
             raise HTTPException(status_code=403, detail="Forbidden")
 
         
-        db.execute(delete(Camera).where(Camera.id == camera_id))
+        old_values = {
+            "property_id": str(camera_obj.property_id),
+            "name": camera_obj.name,
+            "neighbourhood_id": str(camera_obj.neighbourhood_id),
+            "visibility": camera_obj.visibility,
+            "location": camera_obj.location,
+        }
+
+        db.delete(camera_obj)
+
+        create_audit_log_item(
+            db=db,
+            user_id=UUID(claims["id"]),
+            action=AuditAction.DELETE,
+            target_entity_type="Camera",
+            target_entity_id=camera_obj.id,
+            old_values=old_values,
+        )
+
         db.commit()
         
     except HTTPException as he:
         db.rollback()
         raise he
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(500, "Could not deregister camera")
+    except Exception:
+        db.rollback()
+        raise HTTPException(500, "Failed to delete camera")
     
 def edit_camera_handler(
     camera_id: UUID, 
@@ -123,8 +170,32 @@ def edit_camera_handler(
         if not prop_user:
             raise HTTPException(status_code=403, detail="Forbidden")
         
+        old_values = {
+            field: getattr(camera_obj, field)
+            for field in update_data.keys()
+        }
+
+
         for field, value in update_data.items():
             setattr(camera_obj, field, value)
+
+
+        new_values = {
+            field: getattr(camera_obj, field)
+            for field in update_data.keys()
+        }
+
+
+        create_audit_log_item(
+            db=db,
+            user_id=UUID(claims["id"]),
+            action=AuditAction.UPDATE,
+            target_entity_type="Camera",
+            target_entity_id=camera_obj.id,
+            old_values=old_values,
+            new_values=new_values,
+        )
+
 
         db.commit()
         db.refresh(camera_obj)

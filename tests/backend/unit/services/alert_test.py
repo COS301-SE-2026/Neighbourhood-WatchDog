@@ -18,6 +18,7 @@ class TestAcknowledgeAlert:
         self.mock_db.refresh = Mock()
         self.mock_db.rollback = Mock()
         self.claims = {
+            "id": "11111111-1111-1111-1111-111111111111",
             "sub": "cognito-sub-123",
             "custom:role": "SECURITY_OFFICER",
             "custom:neighbourhood_id": str(uuid.uuid4()),
@@ -103,14 +104,25 @@ class TestAcknowledgeAlert:
         alert = self._make_alert(status="OPEN")
         self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [alert]
 
-        with patch("app.api.controllers.alert.broadcast", new_callable=AsyncMock) as mock_broadcast:
-            result = await acknowledge_alert_handler(alert.id, self.mock_db, self.claims)
+        with patch(
+            "app.services.alert_service.create_audit_log_item"
+        ) as mock_audit, patch(
+            "app.api.controllers.alert.broadcast",
+            new_callable=AsyncMock
+        ) as mock_broadcast:
+
+            result = await acknowledge_alert_handler(
+                alert.id,
+                self.mock_db,
+                self.claims
+            )
 
         assert result.status == "ACKNOWLEDGED"
         assert alert.status == "ACKNOWLEDGED"
         assert self.mock_db.commit.call_count == 1
-        assert self.mock_db.refresh.call_count == 1
+        assert self.mock_db.refresh.call_count == 0
         assert mock_broadcast.call_count == 1
+        assert mock_audit.call_count == 1
 
 
 class TestListAlerts:

@@ -16,14 +16,10 @@ class TestCreateAuditLogItem:
 
         self.mock_db = Mock()
         self.mock_db.add = Mock()
-        self.mock_db.commit = Mock()
-        self.mock_db.refresh = Mock()
         self.mock_db.rollback = Mock()
 
         self.mock_log_item = Mock()
         self.mock_log_item.user_id = uuid4()
-        self.mock_log_item.user_id = uuid4()
-
         self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
 
     @pytest.mark.asyncio
@@ -57,8 +53,6 @@ class TestCreateAuditLogItem:
         )
 
         assert self.mock_db.add.call_count == 1
-        assert self.mock_db.refresh.call_count == 1
-        assert self.mock_db.commit.call_count == 1
         assert self.mock_db.rollback.call_count == 0
 
     @pytest.mark.asyncio
@@ -95,8 +89,6 @@ class TestCreateAuditLogItem:
 
         assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
-        assert self.mock_db.refresh.call_count == 0
-        assert self.mock_db.commit.call_count == 0
 
     @pytest.mark.asyncio
     async def test_empty_user_id(self):
@@ -131,8 +123,6 @@ class TestCreateAuditLogItem:
 
         assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
-        assert self.mock_db.refresh.call_count == 0
-        assert self.mock_db.commit.call_count == 0
 
     @pytest.mark.asyncio
     async def test_empty_action(self):
@@ -167,8 +157,6 @@ class TestCreateAuditLogItem:
 
         assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
-        assert self.mock_db.refresh.call_count == 0
-        assert self.mock_db.commit.call_count == 0
 
     @pytest.mark.asyncio
     async def test_empty_target_entity_type(self):
@@ -203,8 +191,6 @@ class TestCreateAuditLogItem:
 
         assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
-        assert self.mock_db.refresh.call_count == 0
-        assert self.mock_db.commit.call_count == 0
 
     @pytest.mark.asyncio
     async def test_empty_target_entity_id(self):
@@ -239,8 +225,6 @@ class TestCreateAuditLogItem:
 
         assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
-        assert self.mock_db.refresh.call_count == 0
-        assert self.mock_db.commit.call_count == 0
 
     @pytest.mark.asyncio
     async def test_update_empty_old(self):
@@ -266,8 +250,6 @@ class TestCreateAuditLogItem:
 
         assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
-        assert self.mock_db.refresh.call_count == 0
-        assert self.mock_db.commit.call_count == 0
 
     @pytest.mark.asyncio
     async def test_update_empty_new(self):
@@ -293,8 +275,6 @@ class TestCreateAuditLogItem:
 
         assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
-        assert self.mock_db.refresh.call_count == 0
-        assert self.mock_db.commit.call_count == 0
 
     @pytest.mark.asyncio
     async def test_create_empty_new(self):
@@ -320,8 +300,6 @@ class TestCreateAuditLogItem:
 
         assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
-        assert self.mock_db.refresh.call_count == 0
-        assert self.mock_db.commit.call_count == 0
 
     @pytest.mark.asyncio
     async def test_delete_empty_old(self):
@@ -347,8 +325,6 @@ class TestCreateAuditLogItem:
 
         assert exception.value.status_code == 400
         assert self.mock_db.add.call_count == 0
-        assert self.mock_db.refresh.call_count == 0
-        assert self.mock_db.commit.call_count == 0
 
 class TestGetAuditLogsHandler:
     def setup_method(self):

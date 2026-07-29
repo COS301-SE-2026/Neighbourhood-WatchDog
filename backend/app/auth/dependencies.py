@@ -30,6 +30,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 
     if TESTING:
         return {
+            "id": request.headers.get("X-Mock-User-Id","00000000-0000-0000-0000-000000000000"),
             "sub": request.headers.get("X-Mock-Sub", "00000000-0000-0000-0000-000000000000"),
             "given_name": "Test",
             "family_name": "User",
@@ -51,6 +52,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
             )
         else:
             return {
+                "id": request.headers.get("X-Mock-User-Id","00000000-0000-0000-0000-000000000000"),
                 "sub": request.headers.get("X-Mock-Sub", "00000000-0000-0000-0000-000000000000"),
                 "given_name": "Test",
                 "family_name": "User",
@@ -60,6 +62,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 
 
     return {
+        "id": str(user.id),
         "sub": sub,
         "given_name": user.first_name,
         "family_name": user.last_name,

@@ -24,7 +24,7 @@ async def get_pairing_token(
     """Creates a pairing token and returns it to the user for the user to link their always on device."""
     require_role(claims, ['RESIDENT'])
 
-    return await get_pairing_token_handler(property_id, db)
+    return await get_pairing_token_handler(property_id, db, claims)
 
 @router.get("/token/{pairing_token}")
 @limiter.limit("10/minute")  # Limit to 10 requests per minute

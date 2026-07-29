@@ -3,7 +3,6 @@ from app.models.alert import Alert
 from app.models.detection_event import DetectionEvent
 from app.schemas.alert import AlertCreate
 from fastapi import HTTPException
-from uuid import UUID
 from datetime import datetime
 
 from sqlalchemy import select, func
@@ -13,10 +12,14 @@ from app.core.database import DbSession
 from app.models.camera import Camera
 from app.schemas.alert import AlertRes
 
+from app.services.audit_service import create_audit_log_item
+from app.models.audit_log import AuditAction
+from uuid import UUID
+
 DEFAULT_PAGE_SIZE = 25
 MAX_PAGE_SIZE = 100
 
-async def create_alert(db: Session, data: AlertCreate):
+async def create_alert(db: Session, data: AlertCreate, claims: dict):
     try:
         detection_event = DetectionEvent(
             camera_id=data.camera_id,
@@ -34,7 +37,22 @@ async def create_alert(db: Session, data: AlertCreate):
             detection_event_id=detection_event.id,
             status="OPEN",
         )
+
         db.add(alert)
+        db.flush()  # Get alert.id before audit
+
+        create_audit_log_item(
+            db=db,
+            user_id=UUID(claims["id"]),
+            action=AuditAction.CREATE,
+            target_entity_type="Alert",
+            target_entity_id=alert.id,
+            new_values={
+                "camera_id": str(alert.camera_id),
+                "detection_event_id": str(alert.detection_event_id),
+                "status": alert.status,
+            },
+        )
         db.commit()
         db.refresh(alert)
 
@@ -48,9 +66,15 @@ async def create_alert(db: Session, data: AlertCreate):
         })
 
         return alert
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to create alert: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create alert: {str(e)}"
+        )
 
 
 
@@ -90,9 +114,26 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
         if alert.status != "OPEN":
             raise HTTPException(409, "Alert is already acknowledged or resolved")
 
+        old_values = {
+            "status": alert.status,
+        }
+
         alert.status = "ACKNOWLEDGED"
+
+        new_values = {
+            "status": alert.status,
+        }
+
+        create_audit_log_item(
+            db=db,
+            user_id=UUID(claims["id"]),
+            action=AuditAction.UPDATE,
+            target_entity_type="Alert",
+            target_entity_id=alert.id,
+            old_values=old_values,
+            new_values=new_values,
+        )
         db.commit()
-        db.refresh(alert)
 
         alert_res = _build_alert_res(alert)
 
