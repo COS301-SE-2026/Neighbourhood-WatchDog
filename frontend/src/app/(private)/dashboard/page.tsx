@@ -76,7 +76,6 @@ export default function Dashboard() {
             name: data.name,
             location: data.location,
             visibility: "PRIVATE",
-            enabled: true,
             rtsp_url: data.rtspUrl,
             property_id: propertyId
         });

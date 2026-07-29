@@ -31,6 +31,11 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .vercel
+ai/.venv/
+.venv/
+
+celerybeat-schedule
+celerybeat-schedule.*
 
 ai/.watchdog-agent/install-state.json
 ~/.cache/

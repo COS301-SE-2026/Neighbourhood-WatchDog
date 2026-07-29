@@ -3,6 +3,7 @@ from camera_runtime import CameraSpec, CameraSupervisor
 import os
 import cv2
 import threading
+from collections import deque
 from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI, Query
 from fastapi.responses import StreamingResponse
@@ -43,6 +44,21 @@ MEDIAMTX_RTSP_URL = os.getenv("MEDIAMTX_RTSP_URL", "rtsp://stream-staging.neighb
 
 _model_lock = threading.Lock()
 
+#clip recording settings
+WEAPON_CLASSES = {"gun", "knife", "grenade", "explosion"}
+CLIP_COOLDOWN_SECS = 30
+CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
+S3_CLIPS_BUCKET = os.getenv("S3_CLIPS_BUCKET", "")
+AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")
+
+
+#pre capture
+_frame_buffer: deque = deque(maxlen=100)
+_frame_buffer_lock = threading.Lock()
+
+#cooldown tracker per weapon class
+_clips_cooldowns: dict = {}
+_cooldown_lock = threading.Lock()
 
 
 def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp: str) -> None:
@@ -116,7 +132,14 @@ def _extract_detections(frame, confidence_threshold: float, zones: list | None =
 
 
 
-    
+    #person detection
+    person_results = person_model.predict(
+        frame,
+        imgsz=640,
+        conf=0.25,
+        classes=[0],
+        verbose=False
+        )
     
     for box in person_results[0].boxes:
         x1, y1, x2, y2 = box.xyxy[0].tolist()
@@ -281,6 +304,9 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
             tracks = tracker.update_tracks(person_detections, frame=frame)
     
             tracks_payload = _collect_tracks(tracks, alerted_ids, camera)
+
+            print(f"DEBUG: raw_tracks={len(tracks)}, confirmed={sum(1 for t in tracks if t.is_confirmed())}, payload={len(tracks_payload)}, person_dets={len(person_detections)}")
+
 
 
             #adding raw weapon detections (no deepsort, no duplication)

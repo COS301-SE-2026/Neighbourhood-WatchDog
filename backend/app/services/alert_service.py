@@ -1,10 +1,12 @@
+from datetime import datetime, timezone, timedelta, date as date_cls
+from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm import Session
 from app.models.alert import Alert
 from app.models.detection_event import DetectionEvent
-from app.schemas.alert import AlertCreate
+from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes, NumberInPeriod, TrendGroupBy, TrendDirection, TrendBucket, TrendData
 from fastapi import HTTPException
-from datetime import datetime
 
+from app.models.user import User
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 
@@ -18,6 +20,8 @@ from uuid import UUID
 
 DEFAULT_PAGE_SIZE = 25
 MAX_PAGE_SIZE = 100
+NO_DATABASE_SESSION = "No database session"
+NOT_AUTHORISED = "Not authorised for this neighbourhood"
 
 async def create_alert(db: Session, data: AlertCreate, claims: dict):
     try:
@@ -98,7 +102,7 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
     if not alert_id:
         raise HTTPException(400, "Alert id is required")
     if not db:
-        raise HTTPException(500, "No database session")
+        raise HTTPException(500, NO_DATABASE_SESSION)
     if not claims:
         raise HTTPException(401, "Not authenticated")
 
@@ -114,35 +118,64 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
         if alert.status != "OPEN":
             raise HTTPException(409, "Alert is already acknowledged or resolved")
 
+        user_id_str = claims.get("sub") or claims.get("custom:sub")
+
         old_values = {
             "status": alert.status,
+            "resolved_by": str(alert.resolved_by) if alert.resolved_by else None,
+            "resolved_at": (
+                alert.resolved_at.isoformat() if alert.resolved_at else None
+            ),
         }
+
+        resolver_id = None
+
+        if user_id_str:
+            resolver = db.execute(
+                select(User).where(User.cognito_sub == user_id_str)
+            ).scalar_one_or_none()
+
+            if resolver is None:
+                raise HTTPException(
+                    status_code=401,
+                    detail="Authenticated user does not have a local WatchDog profile.",
+                )
+
+            resolver_id = resolver.id
 
         alert.status = "ACKNOWLEDGED"
-
-        new_values = {
-            "status": alert.status,
-        }
+        alert.resolved_at = datetime.now(timezone.utc)
+        alert.resolved_by = resolver_id
 
         create_audit_log_item(
             db=db,
-            user_id=UUID(claims["id"]),
+            user_id=resolver_id,
             action=AuditAction.UPDATE,
             target_entity_type="Alert",
             target_entity_id=alert.id,
             old_values=old_values,
-            new_values=new_values,
+            new_values={
+                "status": alert.status,
+                "resolved_by": (
+                    str(alert.resolved_by) if alert.resolved_by else None
+                ),
+                "resolved_at": alert.resolved_at.isoformat(),
+            },
         )
+
         db.commit()
 
         alert_res = _build_alert_res(alert)
 
-        from app.api.controllers.alert import broadcast
+        try:
+            from app.api.controllers.alert import broadcast
 
-        await broadcast(
-            neighbourhood_id=str(claims.get("custom:neighbourhood_id")),
-            message={"event": "alert.acknowledged", "payload": alert_res.model_dump()},
-        )
+            await broadcast(
+                neighbourhood_id=str(claims.get("custom:neighbourhood_id")),
+                message={"event": "alert.acknowledged", "payload": alert_res.model_dump(mode="json")},
+            )
+        except Exception:
+            pass
 
         return alert_res
     except HTTPException as he:
@@ -167,13 +200,13 @@ async def list_alerts_handler(
     if not neighbourhood_id:
         raise HTTPException(400, "Neighbourhood id is required")
     if not db:
-        raise HTTPException(500, "No database session")
+        raise HTTPException(500, NO_DATABASE_SESSION)
     if not claims:
         raise HTTPException(401, "Not authenticated")
 
     caller_neighbourhood = claims.get("custom:neighbourhood_id")
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
-        raise HTTPException(403, "Not authorised for this neighbourhood")
+        raise HTTPException(403, NOT_AUTHORISED)
 
     if start_date and end_date and start_date > end_date:
         raise HTTPException(400, "start_date must be less than end_date")
@@ -210,3 +243,268 @@ async def list_alerts_handler(
     except IntegrityError:
         db.rollback()
         raise HTTPException(500, "Failed to list alerts")
+    
+
+def get_response_metrics_handler(
+        neighbourhood_id: UUID,
+        db: DbSession,
+        claims: dict,
+        camera_id: UUID | None = None,
+        officer_id: UUID | None = None
+) -> AlertMetricsRes:
+    caller_neighbourhood = claims.get("custom:neighbourhood_id")
+    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
+        raise HTTPException(403, NOT_AUTHORISED)
+    
+
+    stmt = (
+        select(Alert).join(
+            Camera, 
+            Alert.camera_id == Camera.id
+        ).where(
+            Camera.neighbourhood_id == neighbourhood_id
+        )
+    )
+
+    if camera_id:
+        stmt = stmt.where(Alert.camera_id == camera_id)
+
+    if officer_id:
+        stmt = stmt.where(Alert.resolved_by == officer_id)
+
+    alerts = db.execute(stmt).scalars().all()
+
+
+    items: list[AlertMetricItem] = []
+    response_times: list[float] = []
+
+    for alert in alerts:
+        response_seconds = None
+        if alert.resolved_at and alert.created_at:
+            delta = alert.resolved_at - alert.created_at
+
+            response_seconds = max(delta.total_seconds(), 0.0)
+            response_times.append(response_seconds)
+
+        display_status = "PENDING" if alert.status == "OPEN" else alert.status
+
+
+        items.append(AlertMetricItem(
+            alert_id=alert.id,
+            camera_id=alert.camera_id,
+            status=display_status,
+            response_seconds=response_seconds,
+            acknowledged_by=alert.resolved_by,
+            created_at=alert.created_at
+
+        ))
+    
+    avg = sum(response_times) / len(response_times) if response_times else None
+    
+    pending_count = sum(1 for a in alerts if a.status == "OPEN")
+
+    acknowledged_count = sum(1 for a in alerts if a.status in ("ACKNOWLEDGED", "RESOLVED"))
+
+
+    return AlertMetricsRes (
+        total_alerts=len(alerts),
+        acknowledged_count=acknowledged_count,
+        pending_count=pending_count,
+        average_response_seconds=avg,
+        items=items
+        
+    )
+
+INTERVAL_TO_TRUNC = {
+    TimeIntervalsEnum.DAILY: "day",
+    TimeIntervalsEnum.MONTHLY: "month",
+    TimeIntervalsEnum.YEARLY: "year",
+}
+
+async def get_alert_frequency_metrics_handler(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    time_interval: TimeIntervalsEnum,
+    time_period: TimePeriod,
+    claims: dict
+) -> AlertFrequencyMetricsRes:
+    
+    if not db:
+        raise HTTPException(500, "No db")
+
+    if not claims:
+        raise HTTPException(401, "Not authenticated")
+    
+    if not time_interval:
+        raise HTTPException(400, "No time interval provided")
+    
+    caller_neighbourhood = claims.get("custom:neighbourhood_id")
+    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
+        raise HTTPException(403, NOT_AUTHORISED)
+    
+    start_date = None
+    today = date_cls.today()
+
+    if time_period:
+        if time_period == TimePeriod.WEEK:
+            start_date = today - timedelta(days=7)
+        elif time_period == TimePeriod.MONTH:
+            start_date = today - relativedelta(months=1)
+        elif time_period == TimePeriod.THREE_MONTHS:
+            start_date = today - relativedelta(months=3)
+        elif time_period == TimePeriod.SIX_MONTHS:
+            start_date = today - relativedelta(months=6)
+        elif time_period == TimePeriod.YEAR:
+            start_date = today - relativedelta(years=1)
+
+    trunc_unit = INTERVAL_TO_TRUNC[time_interval]
+    bucket = func.date_trunc(trunc_unit, Alert.created_at).label("bucket")
+
+    stmt = (
+        select(bucket, func.count(Alert.id).label("count"))
+        .join(Camera, Alert.camera_id == Camera.id)
+        .where(Camera.neighbourhood_id == UUID(str(neighbourhood_id)))
+    )
+
+    print(start_date)
+
+    if start_date:
+        stmt = stmt.where(Alert.created_at > start_date)
+
+    stmt = stmt.group_by(bucket).order_by(bucket)
+
+    rows = db.execute(stmt).all()
+
+    period_arr = []
+    count_arr = []
+
+    for row in rows:
+        period_arr.append(row.bucket)
+        count_arr.append(row.count)
+
+    data = NumberInPeriod(
+        period=period_arr,
+        count=count_arr
+    )
+
+    return AlertFrequencyMetricsRes(
+        status=200,
+        data=data
+    )
+    
+
+
+
+def _resolve_start_date(time_period: TimePeriod | None) -> date_cls | None:
+
+
+    if not time_period:
+        return None
+    
+
+    today = date_cls.today()
+
+    if time_period == TimePeriod.WEEK:
+        return today - timedelta(days=7)
+    elif time_period == TimePeriod.MONTH:
+        return today - relativedelta(months=1)
+    elif time_period == TimePeriod.THREE_MONTHS:
+        return today - relativedelta(months=3)
+    elif time_period == TimePeriod.SIX_MONTHS:
+        return today - relativedelta(months=6)
+    elif time_period == TimePeriod.YEAR:
+        return today - relativedelta(years=1)
+    
+
+    return None
+
+
+
+def _compute_trend_direction(buckets: list[TrendBucket]) -> TrendDirection:
+
+    if len(buckets) < 2:
+        return TrendDirection.STABLE
+
+
+    middle = len(buckets) // 2
+    first_half = sum(b.count for b in buckets[:middle])
+    second_half = sum(b.count for b in buckets[middle:])
+
+    if (first_half > second_half):
+        return TrendDirection.DOWN
+    
+    if (first_half < second_half):
+        return TrendDirection.UP
+    
+    return TrendDirection.STABLE
+
+
+async def get_trends_handler(neighbourhood_id: UUID, db: DbSession, claims: dict, group_by: TrendGroupBy=TrendGroupBy.DAY,
+                             time_period: TimePeriod=TimePeriod.MONTH, incident_type: str | None=None, camera_id=UUID) -> TrendData:
+    
+    if not db:
+        raise HTTPException(500, NO_DATABASE_SESSION)
+    
+    if not claims:
+        raise HTTPException(401, "Not authenticated")
+    
+
+    caller_neighbourhood = claims.get("custom:neighbourhood_id")
+    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
+        raise HTTPException(403, NOT_AUTHORISED)
+    
+
+    start_date = _resolve_start_date(time_period)
+
+
+    bucket = func.date_trunc(group_by.value, Alert.created_at).label("bucket")
+
+
+    stmt = (
+        select(bucket, func.count(Alert.id).label("count"))
+        .join(Camera, Alert.camera_id == Camera.id)
+        .join(DetectionEvent, Alert.detection_event_id == DetectionEvent.id)
+        .where(Camera.neighbourhood_id == UUID(str(neighbourhood_id)))
+    )
+
+    
+    if start_date:
+        stmt = stmt.where(Alert.created_at > start_date)
+
+
+    if camera_id:
+        stmt = stmt.where(Alert.camera_id == camera_id)
+
+    
+    if incident_type:
+        stmt = stmt.where(DetectionEvent.detection_type == incident_type)
+
+
+    stmt = stmt.group_by(bucket).order_by(bucket)
+
+
+
+    try:
+        rows = db.execute(stmt).all()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(500, "Failed to fetch trend data")
+    
+
+
+    buckets = [TrendBucket(period=row.bucket, count=row.count) for row in rows]
+    total_count = sum(b.count for b in buckets)
+    trend_direction = _compute_trend_direction(buckets)
+
+
+
+
+
+    return TrendData(
+        
+        buckets=buckets,
+        total_count=total_count,
+        trend_direction=trend_direction
+
+
+    )

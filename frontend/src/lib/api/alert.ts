@@ -1,5 +1,7 @@
 import type { Alert, AlertStatus } from "@/components/shared/AlertCard";
 import { getApiBaseUrl, getAuthHeaders } from "@/lib/api/auth";
+import { AlertFrequencyMetricsRes, TimeIntervalsEnum, TimePeriod } from "../validators/alert";
+import { apiCall } from "./client";
 
 export { getAuthToken } from "@/lib/api/auth";
 
@@ -144,6 +146,7 @@ export async function fetchAlerts(
   signal?: AbortSignal,
 ): Promise<PaginatedAlerts> {
   const query = buildAlerts(filters);
+
   const res = await apiFetch<ListAlertsRes>(
     `/alerts/${neighbourhoodId}${query}`,
     { signal },
@@ -162,4 +165,20 @@ export async function fetchAlerts(
 
 export async function acknowledgeAlert(alertId: string): Promise<void> {
   await apiFetch(`/alerts/${alertId}/acknowledge`, { method: "PATCH" });
+}
+
+export async function fetchAlertFrequencyData(
+  neighbourhoodId: string,
+  timeInterval?: TimeIntervalsEnum,
+  timePeriod?: TimePeriod,
+): Promise<AlertFrequencyMetricsRes> {
+  let url = `/alerts/frequency-metrics?neighbourhood_id=${neighbourhoodId}`
+
+  url += timeInterval? `&time_interval=${timeInterval}` : ''
+  url += timePeriod? `&time_period=${timePeriod}` : ''
+
+  return await apiCall<AlertFrequencyMetricsRes>(
+    url,
+    {method: 'GET'},
+  )
 }
