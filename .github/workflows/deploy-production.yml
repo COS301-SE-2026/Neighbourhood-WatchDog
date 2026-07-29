@@ -42,11 +42,11 @@ jobs:
               "RTSP_ENCRYPTION_KEY": "${{ secrets.RTSP_ENCRYPTION_KEY }}",
               "MEDIAMTX_PUBLISH_MASTER_KEY": "${{ secrets.MEDIAMTX_PUBLISH_MASTER_KEY }}",
               "TESTING": "${{ secrets.TESTING }}",
-              "DEBUG": "${{ secrets.DEBUG }}"
-              "POSTGRES_PASSWORD": "${{ secrets.POSTGRES_PASSWORD }}"
-              "POSTGRES_USER": "${{ secrets.POSTGRES_USER }}"
-              "POSTGRES_DB": "${{ secrets.POSTGRES_DB }}"
-              "FRONTEND_URL": "${{ secrets.FRONTEND_URL }}"
+              "DEBUG": "${{ secrets.DEBUG }}",
+              "POSTGRES_PASSWORD": "${{ secrets.POSTGRES_PASSWORD }}",
+              "POSTGRES_USER": "${{ secrets.POSTGRES_USER }}",
+              "POSTGRES_DB": "${{ secrets.POSTGRES_DB }}",
+              "FRONTEND_URL": "${{ secrets.FRONTEND_URL }}",
               "DETECTION_CONFIDENCE_THRESHOLD": "${{ secrets.DETECTION_CONFIDENCE_THRESHOLD }}"
             }'
       
