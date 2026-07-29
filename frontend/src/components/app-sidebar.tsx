@@ -43,6 +43,7 @@ import { useProperties, type Property } from "@/hooks/use-properties"
 import { useAppView } from "@/components/app-view-context"
 import { useRouter } from "next/navigation";
 import { logout } from "@/lib/auth/cognito";
+import { useState } from "react";
 
 // Types
 
@@ -61,10 +62,11 @@ type NavItem = {
 
 //data
 
-const USERNAME = localStorage.getItem("fullname");
 
 // Logo
 function WatchdogLogo({ size = 28 }: { size?: number }) {
+
+  
   return (
     <Image
       src={logoImage}
@@ -321,8 +323,15 @@ export function AppSidebar() {
     logout();
     router.push("/auth/login");
   };
+  const [username, setUsername] = useState("");
+
+  React.useEffect(() => {
+    const name = localStorage.getItem("fullname");
+    setUsername(name ?? "");
+  }, []);
 
   return (
+
     <Sidebar
       collapsible="icon"
       onMouseEnter={handleMouseEnter}
@@ -416,13 +425,13 @@ export function AppSidebar() {
                   </span>
                   {isExpanded && (
                     <span className="truncate text-sm font-medium text-white/80">
-                      {USERNAME}
+                      {username}
                     </span>
                   )}
                 </button>
               </TooltipTrigger>
               {!isExpanded && (
-                <TooltipContent side="right">{USERNAME}</TooltipContent>
+                <TooltipContent side="right">{username}</TooltipContent>
               )}
             </Tooltip>
           </SidebarMenuItem>
