@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { login, setSession, isAuthenticated, verifyMfa } from "@/lib/auth/cognito";
 import { LoginCard } from "@/components/auth-components/login-card";
-
+import { MfaCard } from "@/components/auth-components/mfa-card";
 
 export default function LoginPage() {
   const router = useRouter();
