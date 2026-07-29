@@ -18,15 +18,13 @@ services:
     build:
       context: ./backend
       target: production
-    ports:
-      - "8000:8000"
     environment:
       APP_ENV: production
       DEBUG: "false"
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      TESTING: "false"
+      DATABASE_URL: ${DATABASE_URL}
       # REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
-      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
       AWS_REGION: ${AWS_REGION}
       COGNITO_REGION: ${COGNITO_REGION}
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
@@ -36,6 +34,11 @@ services:
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
       TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM}
       NOTIFICATION_ENABLED: ${NOTIFICATION_ENABLED}
+      SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL}
+      SMTP_APP_PASSWORD: ${SMTP_APP_PASSWORD}
+      RTSP_ENCRYPTION_KEY: ${RTSP_ENCRYPTION_KEY}
+      MEDIAMTX_PUBLISH_MASTER_KEY: ${MEDIAMTX_PUBLISH_MASTER_KEY}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
     restart: always
     # volumes:
     #   - ./backend:/app
@@ -69,6 +72,7 @@ services:
       - "9997:9997" # API
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx/mediamtx.yml
+      - /opt/mediamtx-certs:/certs:ro
     restart: always
 
 volumes:
