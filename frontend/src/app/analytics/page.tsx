@@ -12,10 +12,6 @@ import { Card } from "@/components/ui/card";
 import { fetchCurrentUser } from "@/lib/api/alert";
 import { useRiskScoreHistory } from "@/hooks/use-risk-score";
 
-interface Props {
-  neighbourhoodId?: string;
-}
-
 interface RiskScorePanelProps {
   readonly neighbourhoodId: string;
 }
@@ -58,23 +54,29 @@ function RiskScorePanel({ neighbourhoodId }: RiskScorePanelProps) {
   return <RiskScoreTrendGraph data={riskHistory} />;
 }
 
-export default function AnalyticsPage({
-  neighbourhoodId: initialNeighbourhoodId,
-}: Props) {
+export default function AnalyticsPage() {
   const searchParams = useSearchParams();
+
   const queryNeighbourhoodId =
-    searchParams.get("neighbourhoodId") || searchParams.get("neighbourhood_id");
+    searchParams.get("neighbourhoodId") ||
+    searchParams.get("neighbourhood_id");
+
   const [neighbourhoodId, setNeighbourhoodId] = useState<string | null>(
-    initialNeighbourhoodId ?? queryNeighbourhoodId ?? null,
+    queryNeighbourhoodId,
   );
+
   const [identityLoading, setIdentityLoading] = useState(
-    !initialNeighbourhoodId && !queryNeighbourhoodId,
+    !queryNeighbourhoodId,
   );
+
   const [identityError, setIdentityError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
-    if (initialNeighbourhoodId || queryNeighbourhoodId) {
+    if (queryNeighbourhoodId) {
+      setNeighbourhoodId(queryNeighbourhoodId);
+      setIdentityError(null);
+      setIdentityLoading(false);
       return;
     }
 
@@ -96,19 +98,22 @@ export default function AnalyticsPage({
       })
       .catch((err: unknown) => {
         if (cancelled) return;
+
         setNeighbourhoodId(null);
         setIdentityError(
           err instanceof Error ? err.message : "Failed to load current user.",
         );
       })
       .finally(() => {
-        if (!cancelled) setIdentityLoading(false);
+        if (!cancelled) {
+          setIdentityLoading(false);
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [initialNeighbourhoodId, queryNeighbourhoodId]);
+  }, [queryNeighbourhoodId]);
 
   if (identityLoading) {
     return (
@@ -121,13 +126,14 @@ export default function AnalyticsPage({
     );
   }
 
-  if (!neighbourhoodId){
+  if (!neighbourhoodId) {
     return (
       <div className="w-full min-h-full flex items-center justify-center px-8 py-10 bg-navy text-center">
         <Card className="max-w-md bg-steel/40 border-steel rounded-xl p-6 text-white">
           <p className="text-lg font-semibold">
             Analytics need a neighbourhood
           </p>
+
           <p className="mt-2 text-sm text-mist">
             {identityError ||
               "Open this page with a neighbourhood ID, or sign in to a user that already belongs to one."}
@@ -136,81 +142,84 @@ export default function AnalyticsPage({
       </div>
     );
   }
-  return (
-    <>
-      <div className="w-full flex flex-col items-center px-8 py-10 bg-navy min-h-full font-sans">
-        <div className="w-full max-w-6xl">
-          <header className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-[2rem] font-bold leading-10 text-white">
-                Analytics
-              </h1>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setRefreshTick((t) => t + 1)}
-              className="text-sky hover:text-white hover:bg-steel transition-colors text-xs"
-              aria-label="Refresh analytics"
-            >
-              <RefreshCw className={"h-3.5 w-3.5 mr-1.5"} />
-              Refresh
-            </Button>
-          </header>
 
-          {/*Trend charts*/}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <RiskScorePanel
-              key={`risk-${refreshTick}`}
-              neighbourhoodId={neighbourhoodId}
-            />
-            <AlertFrequencyGraph
-              key={`freq-${refreshTick}`}
-              neighbourhoodId={neighbourhoodId}
-            />
+  return (
+    <div className="w-full flex flex-col items-center px-8 py-10 bg-navy min-h-full font-sans">
+      <div className="w-full max-w-6xl">
+        <header className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-[2rem] font-bold leading-10 text-white">
+              Analytics
+            </h1>
           </div>
 
-          {/*Response time metrics*/}
-          <Card
-            className="bg-card border rounded-xl p-6 mb-6"
-            style={{
-              borderColor: "var(--border)",
-              boxShadow: "var(--shadow-sm)",
-            }}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setRefreshTick((tick) => tick + 1)}
+            className="text-sky hover:text-white hover:bg-steel transition-colors text-xs"
+            aria-label="Refresh analytics"
           >
-            <h2
-              className="text-base font-bold mb-4"
-              style={{ color: "var(--color-navy)" }}
-            >
-              Alert Response Metrics
-            </h2>
-            <AlertMetrics
-              key={`metrics-${refreshTick}`}
-              neighbourhoodId={neighbourhoodId}
-            />
-          </Card>
+            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+            Refresh
+          </Button>
+        </header>
 
-          {/*incident trend analysis*/}
-          {/* <Card
-            className="bg-card border rounded-xl p-6 mb-6"
-            style={{
-              borderColor: "var(--border)",
-              boxShadow: "var(--shadow-sm)",
-            }}
-          >
-            <h2
-              className="text-base font-bold mb-4"
-              style={{ color: "var(--color-navy)" }}
-            >
-              Incident Trends
-            </h2>
-            <IncidentTrends
-              key={`incidents-${refreshTick}`}
-              neighbourhoodId={neighbourhoodId}
-            />
-          </Card> */}
+        {/* Trend charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <RiskScorePanel
+            key={`risk-${refreshTick}`}
+            neighbourhoodId={neighbourhoodId}
+          />
+
+          <AlertFrequencyGraph
+            key={`freq-${refreshTick}`}
+            neighbourhoodId={neighbourhoodId}
+          />
         </div>
+
+        {/* Response time metrics */}
+        <Card
+          className="bg-card border rounded-xl p-6 mb-6"
+          style={{
+            borderColor: "var(--border)",
+            boxShadow: "var(--shadow-sm)",
+          }}
+        >
+          <h2
+            className="text-base font-bold mb-4"
+            style={{ color: "var(--color-navy)" }}
+          >
+            Alert Response Metrics
+          </h2>
+
+          <AlertMetrics
+            key={`metrics-${refreshTick}`}
+            neighbourhoodId={neighbourhoodId}
+          />
+        </Card>
+
+        {/* Incident trend analysis */}
+        {/* <Card
+          className="bg-card border rounded-xl p-6 mb-6"
+          style={{
+            borderColor: "var(--border)",
+            boxShadow: "var(--shadow-sm)",
+          }}
+        >
+          <h2
+            className="text-base font-bold mb-4"
+            style={{ color: "var(--color-navy)" }}
+          >
+            Incident Trends
+          </h2>
+
+          <IncidentTrends
+            key={`incidents-${refreshTick}`}
+            neighbourhoodId={neighbourhoodId}
+          />
+        </Card> */}
       </div>
-    </>
+    </div>
   );
 }
