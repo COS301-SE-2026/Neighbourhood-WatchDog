@@ -38,19 +38,27 @@ function toTimePeriod(startDate: string, endDate: string): "WEEK" | "MONTH" | "T
 }
 
 function mapFrequencyResponse(
-    buckets: NumberInPeriod,
+    data: NumberInPeriod,
     startDate: string,
     endDate: string,
 ): TrendData {
-    const totalAlerts = buckets.reduce((sum, bucket) => sum + bucket.count, 0);
-    const first = buckets[0]?.count ?? 0;
-    const last = buckets[buckets.length - 1]?.count ?? 0;
+
+    const buckets: TrendBucket[] = data.period.map((period, index) => ({
+        period: period.toISOString(),
+        total: data.count[index] ?? 0,
+        by_type: {},
+        by_camera: {},
+    }));
+
+    const totalAlerts = buckets.reduce((sum, bucket) => sum + bucket.total, 0);
+    const first = buckets[0]?.total ?? 0;
+    const last = buckets[buckets.length - 1]?.total ?? 0;
     const trendPercentage = first > 0 ? ((last - first) / first) * 100 : null;
 
     return {
         buckets: buckets.map((bucket) => ({
             period: String(bucket.period),
-            total: bucket.count,
+            total: bucket.total,
             by_type: {},
             by_camera: {},
         })),
@@ -95,7 +103,7 @@ export function useAlertTrends (
 
 
             const result = await apiCall<AlertFrequencyMetricsRes>(`/alerts/alert-frequency-metrics?${params}`);
-            setData(mapFrequencyResponse(result.data ?? [], startDate, endDate));
+            setData(mapFrequencyResponse(result.data ?? {period: [], count: []}, startDate, endDate));
         }
         catch (e){
             setError(`Failed to load trends: ${e}`);
