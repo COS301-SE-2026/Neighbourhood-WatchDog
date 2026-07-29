@@ -268,6 +268,237 @@ class LatestFrameReader:
             if cap is not None:
                 cap.release()
 
+def _schedule_weapon_clip(
+    camera: CameraSpec,
+    rtsp_url: str,
+    pre_frames: list,
+    weapon_label: str,
+    confidence: float,
+    stop_event: threading.Event,
+) -> None:
+    """Start a background clip job unless this camera/weapon is in cooldown."""
+    label = weapon_label.lower()
+    cooldown_key = (camera.id, label)
+    now = time.monotonic()
+
+    with _cooldown_lock:
+        previous = _clips_cooldowns.get(cooldown_key)
+
+        if previous is not None and now - previous < CLIP_COOLDOWN_SECS:
+            logger.info(
+                "Clip cooldown active for camera %s / %s",
+                camera.id,
+                label,
+            )
+            return
+
+        _clips_cooldowns[cooldown_key] = now
+
+    threading.Thread(
+        target=_save_weapon_clip,
+        args=(
+            camera,
+            rtsp_url,
+            pre_frames,
+            label,
+            confidence,
+            stop_event,
+        ),
+        name=f"watchdog-clip-{camera.id}-{label}",
+        daemon=True,
+    ).start()
+
+
+def _save_weapon_clip(
+    camera: CameraSpec,
+    rtsp_url: str,
+    pre_frames: list,
+    weapon_label: str,
+    confidence: float,
+    stop_event: threading.Event,
+) -> None:
+    """
+    Capture a short pre/post-detection clip, convert it to browser-compatible
+    H.264 MP4, upload it to S3, then link it to the DetectionEvent.
+    """
+    if not S3_CLIPS_BUCKET:
+        logger.warning(
+            "S3_CLIPS_BUCKET is not configured; skipping clip for camera %s",
+            camera.id,
+        )
+        return
+
+    # The old implementation created the event first, then wrote its S3 key
+    # after the upload completes.
+    api_key = keyring.get_password("WatchDog", "api_key")
+    headers = {"X-Internal-Token": api_key} if api_key else {}
+
+    try:
+        event_response = httpx.post(
+            f"{BACKEND_URL}/internal/detection-events",
+            headers=headers,
+            json={
+                "camera_id": camera.id,
+                "detection_type": "WEAPON_DETECTED",
+                "confidence_score": confidence,
+                "frame_timestamp": datetime.now(timezone.utc).isoformat(),
+            },
+            timeout=3.0,
+        )
+        event_response.raise_for_status()
+        detection_event_id = event_response.json()["detection_event_id"]
+    except Exception:
+        logger.exception(
+            "Could not create detection event for camera %s",
+            camera.id,
+        )
+        return
+
+    # Capture approximately three seconds after the detection.
+    post_frames = []
+    capture = _open_stream(rtsp_url)
+
+    try:
+        if capture is None:
+            logger.warning(
+                "Could not capture post-event footage for camera %s",
+                camera.id,
+            )
+        else:
+            deadline = time.monotonic() + 3.0
+
+            while time.monotonic() < deadline and not stop_event.is_set():
+                ok, frame = capture.read()
+
+                if not ok:
+                    break
+
+                post_frames.append(frame)
+    finally:
+        if capture is not None:
+            capture.release()
+
+    all_frames = pre_frames + post_frames
+
+    if not all_frames:
+        logger.warning(
+            "No frames available for weapon clip on camera %s",
+            camera.id,
+        )
+        return
+
+    height, width = all_frames[0].shape[:2]
+
+    # A resolution change must not corrupt the MP4 writer.
+    all_frames = [
+        frame
+        for frame in all_frames
+        if frame.shape[:2] == (height, width)
+    ]
+
+    if not all_frames:
+        logger.warning(
+            "No consistently sized frames available for camera %s",
+            camera.id,
+        )
+        return
+
+    timestamp = datetime.now(timezone.utc)
+
+    s3_key = (
+        f"clips/{camera.id}/{timestamp.strftime('%Y/%m/%d')}"
+        f"/{weapon_label}_{timestamp.strftime('%Y%m%dT%H%M%SZ')}.mp4"
+    )
+
+    raw_fd, raw_path = tempfile.mkstemp(suffix=".mp4")
+    h264_fd, h264_path = tempfile.mkstemp(suffix=".mp4")
+
+    os.close(raw_fd)
+    os.close(h264_fd)
+
+    try:
+        # First encode frames into a temporary MP4.
+        writer = cv2.VideoWriter(
+            raw_path,
+            cv2.VideoWriter_fourcc(*"mp4v"),
+            25,
+            (width, height),
+        )
+
+        if not writer.isOpened():
+            raise RuntimeError(
+                "OpenCV could not initialise the temporary clip writer"
+            )
+
+        try:
+            for frame in all_frames:
+                writer.write(frame)
+        finally:
+            writer.release()
+
+        # Convert to browser-compatible H.264 MP4.
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-y",
+                "-i",
+                raw_path,
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p",
+                "-preset",
+                "veryfast",
+                "-crf",
+                "23",
+                "-movflags",
+                "+faststart",
+                "-an",
+                h264_path,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        boto3.client("s3", region_name=AWS_REGION).upload_file(
+            h264_path,
+            S3_CLIPS_BUCKET,
+            s3_key,
+            ExtraArgs={"ContentType": "video/mp4"},
+        )
+
+        expires_at = timestamp + timedelta(days=CLIP_RETENTION_DAYS)
+
+        update_response = httpx.patch(
+            f"{BACKEND_URL}/internal/detection-events/"
+            f"{detection_event_id}/clip",
+            headers=headers,
+            json={
+                "clip_s3_key": s3_key,
+                "clip_expires_at": expires_at.isoformat(),
+            },
+            timeout=3.0,
+        )
+        update_response.raise_for_status()
+
+        logger.info(
+            "Clip uploaded: s3://%s/%s -> event %s",
+            S3_CLIPS_BUCKET,
+            s3_key,
+            detection_event_id,
+        )
+
+    except Exception:
+        logger.exception(
+            "Clip capture/upload failed for camera %s",
+            camera.id,
+        )
+    finally:
+        for clip_path in (raw_path, h264_path):
+            if os.path.exists(clip_path):
+                os.unlink(clip_path)     
+
 def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Event) -> None:
     """
     Background thread: continuously read RTSP, run YOLO+DeepSort, push annotations.
@@ -285,6 +516,7 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
     )
 
     alerted_ids: set = set()
+    pre_event_frames: deque = deque(maxlen=100)
     latest_frame_reader = LatestFrameReader(rtsp_url, stop_event)
     latest_frame_reader.start()
     last_processed_sequence = -1
@@ -296,7 +528,9 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
             if frame is None:
                 stop_event.wait(0.01)
                 continue
-                
+
+
+            pre_event_frames.append(frame.copy())
 
             person_detections, weapon_detections = _extract_detections(frame, camera.confidence_threshold)
             
