@@ -83,7 +83,7 @@ def authenticate_user(payload):
             "id_token": response["id_token"],
             "refresh_token": response.get("refresh_token"),
             "token_type": response.get("token_type"),
-            "expires_in": response.get("expires_in"),
+            "expires_in": response.get("expires_in")
         }
     }
 

@@ -21,7 +21,7 @@ export type CamerasType = typeof cameras;
 
 export default function Integrations() {
     return (
-        <section className="py-24 overflow-hidden">
+        <section id="integrations" className="py-24 overflow-hidden px-8 lg:px-24">
             <div className="container mx-auto">
                 <div className="grid lg:grid-cols-2 items-center lg:gap-16">
                     <div>
@@ -39,7 +39,7 @@ export default function Integrations() {
                     <div>
                         <div className="h-[400px] lg:h-[800px] mt-8 lg:mt-0 overflow-hidden grid md:grid-cols-2 gap-4 [mask-image:linear-gradient(to_bottom, transparent,black_10%,black_90%,transparent)]">
                             <CameraColumn cameras={cameras}/>
-                            <CameraColumn cameras={cameras.slice().reverse()} className="hidden md:flex"/>
+                            <CameraColumn cameras={cameras.slice().reverse()} reverse={true} className="hidden md:flex"/>
                         </div>
                     </div>
                 </div>
