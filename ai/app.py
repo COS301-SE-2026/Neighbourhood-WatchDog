@@ -555,6 +555,18 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
     
                 })
 
+
+                if label.lower() in WEAPON_CLASSES:
+                    _schedule_weapon_clip(
+                        camera=camera,
+                        rtsp_url=rtsp_url,
+                        pre_frames=list(pre_event_frames), 
+                        weapon_label=label, 
+                        confidence=confidence,
+                        stop_event=stop_event
+                        
+                    )
+
             #filtering out zero confidence (0%) ghost tracks
             tracks_payload = [t for t in tracks_payload 
                 if t.get("confidence", 0) > 0.1 or str(t.get("track_id", "")).startswith("threat_")]
