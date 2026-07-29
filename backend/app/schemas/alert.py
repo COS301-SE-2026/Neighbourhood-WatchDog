@@ -52,6 +52,7 @@ class ListAlertsRes(BaseModel):
 	status: int
 	message: str | None = None
 	data: list[AlertRes] | None = None
+	pagination: Pagination | None = None
 
 class AlertMetricItem(BaseModel):
 	alert_id: UUID

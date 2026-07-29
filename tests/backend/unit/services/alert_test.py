@@ -103,7 +103,13 @@ class TestAcknowledgeAlert:
     @pytest.mark.asyncio
     async def test_happy_path_acknowledges_alert(self):
         alert = self._make_alert(status="OPEN")
-        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [alert]
+        resolver = Mock()
+        resolver.id = UUID("11111111-1111-1111-1111-111111111111")
+
+        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+            alert,
+            resolver,
+        ]
 
         with patch(
             "app.services.alert_service.create_audit_log_item"
@@ -120,6 +126,7 @@ class TestAcknowledgeAlert:
 
         assert result.status == "ACKNOWLEDGED"
         assert alert.status == "ACKNOWLEDGED"
+        assert alert.resolved_by == resolver.id
         assert self.mock_db.commit.call_count == 1
         assert self.mock_db.refresh.call_count == 0
         assert mock_broadcast.call_count == 1
@@ -130,11 +137,19 @@ class TestAcknowledgeAlert:
         """Acknowledging an alert sets resolved_at and resolved_by."""
         alert = self._make_alert(status="OPEN")
 
-        self.mock_db.execute.return_value.scalar_one_or_none.return_value = alert
+        resolver_id = UUID("20000000-0000-0000-0000-000000000001")
+
+        resolver = Mock()
+        resolver.id = resolver_id
+
+        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+            alert,
+            resolver,
+        ]
 
         claims = {
             "custom:role": "NEIGHBOURHOOD_ADMIN",
-            "sub": "20000000-0000-0000-0000-000000000001",
+            "sub": "cognito-sub-200",
             "custom:neighbourhood_id": str(uuid.uuid4()),
         }
 

@@ -119,19 +119,49 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
             raise HTTPException(409, "Alert is already acknowledged or resolved")
 
         user_id_str = claims.get("sub") or claims.get("custom:sub")
-        alert.status = "ACKNOWLEDGED"
-        alert.resolved_at = datetime.now(timezone.utc)
-        if user_id_str:
 
+        old_values = {
+            "status": alert.status,
+            "resolved_by": str(alert.resolved_by) if alert.resolved_by else None,
+            "resolved_at": (
+                alert.resolved_at.isoformat() if alert.resolved_at else None
+            ),
+        }
+
+        resolver_id = None
+
+        if user_id_str:
             resolver = db.execute(
                 select(User).where(User.cognito_sub == user_id_str)
             ).scalar_one_or_none()
 
             if resolver is None:
-                raise HTTPException(status_code=401, detail="Authenticated user does not have a local WatchDog profile.")
+                raise HTTPException(
+                    status_code=401,
+                    detail="Authenticated user does not have a local WatchDog profile.",
+                )
 
+            resolver_id = resolver.id
 
-            alert.resolved_by = resolver.id
+        alert.status = "ACKNOWLEDGED"
+        alert.resolved_at = datetime.now(timezone.utc)
+        alert.resolved_by = resolver_id
+
+        create_audit_log_item(
+            db=db,
+            user_id=resolver_id,
+            action=AuditAction.UPDATE,
+            target_entity_type="Alert",
+            target_entity_id=alert.id,
+            old_values=old_values,
+            new_values={
+                "status": alert.status,
+                "resolved_by": (
+                    str(alert.resolved_by) if alert.resolved_by else None
+                ),
+                "resolved_at": alert.resolved_at.isoformat(),
+            },
+        )
 
         db.commit()
 
