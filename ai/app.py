@@ -504,7 +504,7 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
     Background thread: continuously read RTSP, run YOLO+DeepSort, push annotations.
     The frontend uses WebRTC from mediamtx for display; this loop supplies bounding boxes.
     """
-    logger.info("Detection loop starting for %s", camera.id, rtsp_url)
+    logger.info("Detection loop starting for camera %s at %s", camera.id, rtsp_url)
 
     tracker = DeepSort(
         max_age=10,
@@ -564,7 +564,7 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
                         weapon_label=label, 
                         confidence=confidence,
                         stop_event=stop_event
-                        
+
                     )
 
             #filtering out zero confidence (0%) ghost tracks
