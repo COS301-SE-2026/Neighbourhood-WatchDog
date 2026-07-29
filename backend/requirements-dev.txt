@@ -9,3 +9,4 @@ ruff==0.15.12
 pytokens==0.4.1
 pip-audit==2.9.0
 mypy==2.1.0
+locust==2.46.2
