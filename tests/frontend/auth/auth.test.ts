@@ -3,6 +3,9 @@ import {getAuthHeaders, getAuthToken,} from "../../../frontend/src/lib/api/auth"
 
 jest.mock("amazon-cognito-identity-js", () => require("../../../frontend/__mocks__/amazon-cognito-identity-js.js"));
 
+const TEST_ID_TOKEN =
+  "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwibmFtZSI6IlRlc3QgVXNlciIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSJ9.test-signature";
+
 describe("setSession", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -11,11 +14,11 @@ describe("setSession", () => {
   test("stores tokens in localStorage", () => {
     setSession({
       accessToken: "access123",
-      idToken: "id123",
+      idToken: TEST_ID_TOKEN,
     });
 
     expect(localStorage.getItem("accessToken")).toBe("access123");
-    expect(localStorage.getItem("idToken")).toBe("id123");
+    expect(localStorage.getItem("idToken")).toBe(TEST_ID_TOKEN);
   });
 });
 
