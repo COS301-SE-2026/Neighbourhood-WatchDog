@@ -42,7 +42,7 @@ def register_user(payload, db: Session):
         }
     }
 
-def authenticate_user(payload, db: Session):
+def authenticate_user(payload):
     response = login(
         email=payload["email"],
         password=payload["password"]
@@ -57,40 +57,6 @@ def authenticate_user(payload, db: Session):
             },
         )
 
-    cognito_sub = get_sub_from_id_token(response["id_token"])
-
-    user = db.execute(select(User).where(User.cognito_sub == cognito_sub)).scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    properties_stmt = (
-        select(Property)
-        .join(PropertyUser, PropertyUser.property_id == Property.id)
-        .where(PropertyUser.user_id == user.id)
-    )
-    properties = db.execute(properties_stmt).scalars().all()
-
-    property_data = [
-        {
-            "id": str(property.id),
-            "neighbourhood_id": (
-                str(property.neighbourhood_id)
-                if property.neighbourhood_id is not None
-                else None
-            ),
-            "address": property.address,
-        }
-        for property in properties
-    ]
-
-    neighbourhood_ids = list(
-        dict.fromkeys(
-            str(property.neighbourhood_id)
-            for property in properties
-            if property.neighbourhood_id is not None
-        )
-    )
-
     return {
         "success": True,
         "data": {
@@ -98,11 +64,7 @@ def authenticate_user(payload, db: Session):
             "id_token": response["id_token"],
             "refresh_token": response.get("refresh_token"),
             "token_type": response.get("token_type"),
-            "expires_in": response.get("expires_in"),
-            "membership_status": "ACTIVE" if neighbourhood_ids else "NONE",
-            "requires_onboarding": len(neighbourhood_ids) == 0,
-            "properties": property_data,
-            "neighbourhood_ids": neighbourhood_ids
+            "expires_in": response.get("expires_in")
         }
     }
 
