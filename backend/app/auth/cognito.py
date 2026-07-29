@@ -152,3 +152,36 @@ def resend_code(email: str):
                 "message": e.response["Error"]["Message"]
             }
         )
+
+def respond_to_mfa(session: str, code: str):
+    try:
+        client = get_cognito_client()
+
+        response = client.respond_to_auth_challenge(
+            ClientId=CLIENT_ID,
+            ChallengeName="EMAIL_OTP",
+            Session=session,
+            ChallengeResponses={
+                "USERNAME": "",
+                "EMAIL_OTP_CODE": code,
+            },
+        )
+
+        auth_result = response["AuthenticationResult"]
+
+        return {
+            "access_token": auth_result["AccessToken"],
+            "id_token": auth_result["IdToken"],
+            "refresh_token": auth_result.get("RefreshToken"),
+            "expires_in": auth_result["ExpiresIn"],
+            "token_type": auth_result["TokenType"],
+        }
+
+    except ClientError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": e.response["Error"]["Code"],
+                "message": e.response["Error"]["Message"],
+            },
+        )
