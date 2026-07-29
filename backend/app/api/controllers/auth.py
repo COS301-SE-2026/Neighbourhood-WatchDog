@@ -45,8 +45,8 @@ def signup(request: Request, payload: SignUpRequest, db: DbSession):
 
 @router.post("/login")
 @limiter.limit("5/minute")  # Limit to 5 requests per minute
-def login(request: Request, payload: LoginRequest):
-    return authenticate_user(_payload_to_dict(payload))
+def login(request: Request, payload: LoginRequest, db: DbSession):
+    return authenticate_user(_payload_to_dict(payload), db)
 
 @router.post("/confirm")
 @limiter.limit("15/minute")  # Limit to 15 requests per minute
