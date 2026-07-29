@@ -153,7 +153,7 @@ def resend_code(email: str):
             }
         )
 
-def respond_to_mfa(session: str, code: str):
+def respond_to_mfa(email: str, session: str, code: str):
     try:
         client = get_cognito_client()
 
@@ -162,7 +162,7 @@ def respond_to_mfa(session: str, code: str):
             ChallengeName="EMAIL_OTP",
             Session=session,
             ChallengeResponses={
-                "USERNAME": "",
+                "USERNAME": "", #Need to replace with email/username later
                 "EMAIL_OTP_CODE": code,
             },
         )
