@@ -1,6 +1,8 @@
 import { getApiBaseUrl } from '@/lib/api/auth';
 import { jwtDecode } from 'jwt-decode';
 
+export const AUTH_EVENT = 'watchdog-auth-changed';
+
 // Types for API responses
 interface SignUpResponse {
   user_sub: string;
@@ -150,6 +152,9 @@ export const setSession = (tokens: {
   if (typeof tokens.expiresIn === 'number') {
     localStorage.setItem('tokenExpiry', String(Date.now() + tokens.expiresIn * 1000));
   }
+
+  window.dispatchEvent(new Event(AUTH_EVENT));
+  
 };
 
 // Get token
@@ -181,4 +186,5 @@ export const logout = (): void => {
   localStorage.removeItem('accessToken');
   localStorage.removeItem('idToken');
   localStorage.removeItem('tokenExpiry');
+  window.dispatchEvent(new Event(AUTH_EVENT));
 };

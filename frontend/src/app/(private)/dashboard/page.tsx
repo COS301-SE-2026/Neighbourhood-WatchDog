@@ -4,6 +4,7 @@ import type { Camera } from "@/lib/validators/camera"
 import { useAlerts } from "@/hooks/use-alerts"
 import { toast } from "sonner"
 import { useEffect, useState } from "react"
+import { CameraOff, LoaderCircle } from "lucide-react";
 
 import { addCamera as apiAddCamera, fetchCameras as apiFetchCameras } from "@/lib/api/camera"
 import { NewCameraCard } from "@/components/new-camera-card"
@@ -32,6 +33,7 @@ const initialCameras: CameraProp[] = [
 
 
 export default function Dashboard() {
+    const [isLoadingCameras, setIsLoadingCameras] = useState(true);
     const { propertyId } = useAppView()
     const { alerts, connected } = useAlerts("10000000-0000-0000-0000-000000000001");
 
@@ -47,7 +49,12 @@ export default function Dashboard() {
     const [cameras, setCameras] = useState<CameraProp[]>([]);
 
     useEffect(() => {
-        if (!propertyId) return;
+        if (!propertyId) {
+            setIsLoadingCameras(false);
+            return;
+        }
+
+        setIsLoadingCameras(true);
 
         apiFetchCameras(propertyId)
             .then((data) => {
@@ -64,6 +71,9 @@ export default function Dashboard() {
             .catch((err) => {
                 console.error("Failed to fetch cameras", err);
                 toast.error("Failed to load cameras");
+            })
+            .finally(() => {
+            setIsLoadingCameras(false);
             });
     }, [propertyId]);
 
@@ -109,8 +119,36 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {cameras.map((camera) => (
+            {isLoadingCameras ? (
+                <div className="flex min-h-64 items-center justify-center">
+                    <LoaderCircle className="h-6 w-6 animate-spin text-primary" />
+                </div>
+                ) : cameras.length === 0 ? (
+                <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
+                    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                    <CameraOff className="h-7 w-7 text-primary" />
+                    </div>
+
+                    <h2 className="text-lg font-semibold text-foreground">
+                    No cameras added yet
+                    </h2>
+
+                    <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                    Add a camera to this property to start monitoring live feeds and receive
+                    AI-powered security alerts.
+                    </p>
+
+                    <Button
+                    onClick={() => setShowCard(true)}
+                    className="mt-6 bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add your first camera
+                    </Button>
+                </div>
+                ) : (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {cameras.map((camera) => (
                     <CameraCard
                         key={camera.id}
                         id={camera.id}
@@ -120,8 +158,9 @@ export default function Dashboard() {
                         enabled={camera.enabled}
                         userRole="NEIGHBOURHOOD_ADMIN"
                     />
-                ))}
-            </div>
+                    ))}
+                </div>
+                )}
 
             {showCard && (
                 <NewCameraCard
