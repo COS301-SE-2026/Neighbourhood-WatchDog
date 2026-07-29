@@ -96,8 +96,6 @@ export default function Dashboard() {
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold">Property Name</h1>
                 <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-sm">{connected ? 'Connected' : 'Disconnected'}</span>
                     <Button
                         onClick={() => setShowCard(true)}
                         className="bg-blue hover:bg-sky text-white rounded-full"
