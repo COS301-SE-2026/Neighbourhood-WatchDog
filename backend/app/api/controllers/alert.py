@@ -5,15 +5,28 @@ from typing import Annotated
 from datetime import datetime
 from fastapi import APIRouter, Depends, Query, WebSocket
 from sqlalchemy.orm import Session
-from typing import Annotated
 
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession, get_db
 from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, ListAlertsRes, Pagination
-from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler, MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE
+from app.services.alert_service import (
+    acknowledge_alert_handler,
+    get_alert_frequency_metrics_handler,
+    get_response_metrics_handler,
+    get_trends_handler,
+    list_alerts_handler,
+    MAX_PAGE_SIZE,
+    DEFAULT_PAGE_SIZE,
+)
 from app.services import alert_service
-from app.schemas.alert import AlertMetricsRes, AlertFrequencyMetricsRes, TimeIntervalsEnum, TrendResponse, TrendGroupBy
-
+from app.schemas.alert import (
+    AlertMetricsRes,
+    AlertFrequencyMetricsRes,
+    TimeIntervalsEnum,
+    TimePeriod,
+    TrendResponse,
+    TrendGroupBy,
+)
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 _connections: dict[str, set[WebSocket]] = {}

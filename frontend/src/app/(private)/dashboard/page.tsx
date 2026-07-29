@@ -20,12 +20,12 @@ interface CameraProp {
 }
 
 const initialCameras: CameraProp[] = [
-    { id: "1", name: "Camera 1 - Backyard" , visibility: "private", enabled: true, location: "Backyard"},
+    { id: "1", name: "Camera 1 - Backyard" , visibility: "PRIVATE", enabled: true, location: "Backyard"},
   //{ id: "2", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://Intrepid:password1234@172.20.10.2:554/stream2" },
-    { id: "40000000-0000-0000-0000-000000000001", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://localhost:8554/" + "cameras/40000000-0000-0000-0000-000000000001", visibility: "private", enabled: true, location: "Office Room" },
-    { id: "3", name: "Camera 5 - Living Room", visibility: "private", enabled: true, location: "Living Room" },
-    { id: "4", name: "Camera 3 - Bedroom 2", visibility: "private", enabled: true, location: "Bedroom" },
-    { id: "5", name: "Camera 4 - Kitchen", visibility: "private",enabled: true, location: "Kitchen" },
+    { id: "40000000-0000-0000-0000-000000000001", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://localhost:8554/" + "cameras/40000000-0000-0000-0000-000000000001", visibility: "PRIVATE", enabled: true, location: "Office Room" },
+    { id: "3", name: "Camera 5 - Living Room", visibility: "PRIVATE", enabled: true, location: "Living Room" },
+    { id: "4", name: "Camera 3 - Bedroom 2", visibility: "PRIVATE", enabled: true, location: "Bedroom" },
+    { id: "5", name: "Camera 4 - Kitchen", visibility: "PRIVATE",enabled: true, location: "Kitchen" },
 ]
 
 // const PROPERTY_ID = "a79d1505-5000-438e-9813-ba0f5aecb5e2"; // TODO: replace once /properties/my-properties works
@@ -70,10 +70,9 @@ export default function Dashboard() {
             name: data.name,
             location: data.location,
             visibility: "PRIVATE",
-            enabled: true,
             rtsp_url: data.rtspUrl,
-            property_id: PROPERTY_ID
-        });
+            property_id: PROPERTY_ID,
+            });
         setCameras((prev) => [...prev, 
             {
         id: newCamera.id,
