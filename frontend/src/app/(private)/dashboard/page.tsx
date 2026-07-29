@@ -50,7 +50,6 @@ export default function Dashboard() {
 
     useEffect(() => {
         if (!propertyId) {
-            setIsLoadingCameras(false);
             return;
         }
 

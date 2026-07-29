@@ -31,6 +31,7 @@ export function useProperties() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchProperties()
     window.addEventListener(AUTH_EVENT, fetchProperties)
     return () => window.removeEventListener(AUTH_EVENT, fetchProperties)
