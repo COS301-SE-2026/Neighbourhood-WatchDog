@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -12,6 +12,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import type { ScriptableContext } from "chart.js";
 import { TimeIntervalsEnum, TimePeriod } from "@/lib/validators/alert";
 import { useAlertFrequencyMetrics } from "@/hooks/use-alert-metrics";
 
@@ -31,34 +32,41 @@ interface AlertFrequencyMetricsProps {
   timePer?: TimePeriod;
 }
 
+const DEFAULT_CHART_THEME = {
+  blue: "#3B5EDE",
+  sky: "#5B8DEF",
+  navy: "#1D2A5E",
+  mist: "#D0D7E8",
+  body: "#2E3A5C",
+  card: "#FFFFFF",
+  border: "#D0D7E8",
+  font: "Inter, system-ui, sans-serif",
+};
+
+function readChartTheme() {
+  if (typeof window === "undefined") {
+    return DEFAULT_CHART_THEME;
+  }
+
+  const styles = getComputedStyle(document.documentElement);
+
+  const read = (name: string, fallback: string) =>
+    styles.getPropertyValue(name).trim() || fallback;
+
+  return {
+    blue: read("--color-blue", DEFAULT_CHART_THEME.blue),
+    sky: read("--color-sky", DEFAULT_CHART_THEME.sky),
+    navy: read("--color-navy", DEFAULT_CHART_THEME.navy),
+    mist: read("--color-mist", DEFAULT_CHART_THEME.mist),
+    body: read("--color-body", DEFAULT_CHART_THEME.body),
+    card: read("--card", DEFAULT_CHART_THEME.card),
+    border: read("--border", DEFAULT_CHART_THEME.border),
+    font: read("--font-sans", DEFAULT_CHART_THEME.font),
+  };
+}
+
 function useChartTheme() {
-  const [theme, setTheme] = useState({
-    blue: "#3B5EDE",
-    sky: "#5B8DEF",
-    navy: "#1D2A5E",
-    mist: "#D0D7E8",
-    body: "#2E3A5C",
-    card: "#FFFFFF",
-    border: "#D0D7E8",
-    font: "Inter, system-ui, sans-serif",
-  });
-
-  useEffect(() => {
-    const styles = getComputedStyle(document.documentElement);
-    const read = (name: string, fallback: string) =>
-      styles.getPropertyValue(name)?.trim() || fallback;
-
-    setTheme({
-      blue: read("--color-blue", "#3B5EDE"),
-      sky: read("--color-sky", "#5B8DEF"),
-      navy: read("--color-navy", "#1D2A5E"),
-      mist: read("--color-mist", "#D0D7E8"),
-      body: read("--color-body", "#2E3A5C"),
-      card: read("--card", "#FFFFFF"),
-      border: read("--border", "#D0D7E8"),
-      font: read("--font-sans", "Inter, system-ui, sans-serif"),
-    });
-  }, []);
+  const [theme] = useState(readChartTheme);
 
   return theme;
 }
@@ -75,7 +83,7 @@ export function AlertFrequencyGraph({
     timePer ? timePer : "MONTH",
   );
 
-  const { metrics, loading, error, refetch } = useAlertFrequencyMetrics(
+  const { metrics, loading, error } = useAlertFrequencyMetrics(
     neighbourhoodId,
     timeInterval,
     timePeriod,
@@ -101,18 +109,22 @@ export function AlertFrequencyGraph({
           label: "Alerts",
           data: counts,
           borderColor: theme.blue,
-          backgroundColor: (context: any) => {
+          backgroundColor: (context: ScriptableContext<"line">) => {
             const chart = context.chart;
             const { ctx, chartArea } = chart;
+
             if (!chartArea) return theme.sky;
+
             const gradient = ctx.createLinearGradient(
               0,
               chartArea.top,
               0,
               chartArea.bottom,
             );
+
             gradient.addColorStop(0, `${theme.blue}33`);
             gradient.addColorStop(1, `${theme.blue}00`);
+
             return gradient;
           },
           // fill: true,
@@ -160,7 +172,10 @@ export function AlertFrequencyGraph({
         x: {
           grid: { display: false },
           border: { color: theme.border },
-          ticks: { color: theme.body, font: { family: theme.font, size: 11 } },
+          ticks: {
+            color: theme.body,
+            font: { family: theme.font, size: 11 },
+          },
         },
         y: {
           beginAtZero: true,
@@ -199,6 +214,7 @@ export function AlertFrequencyGraph({
           </div>
         )}
       </div>
+
       <div className="flex justify-around p-4">
         {" "}
         {/** Filter buttons */}
@@ -213,6 +229,7 @@ export function AlertFrequencyGraph({
           <option value="MONTHLY">Monthly</option>
           <option value="YEARLY">Yearly</option>
         </select>
+
         <select
           name="selectPeriod"
           value={timePeriod}

@@ -72,20 +72,14 @@ function AnalyticsPageContent() {
     searchParams.get("neighbourhoodId") ||
     searchParams.get("neighbourhood_id");
 
-  const [neighbourhoodId, setNeighbourhoodId] = useState<string | null>(
-    queryNeighbourhoodId,
-  );
-  const [identityLoading, setIdentityLoading] = useState(
-    !queryNeighbourhoodId,
-  );
+  const [neighbourhoodId, setNeighbourhoodId] = useState<string | null>(null);
+  const [identityLoading, setIdentityLoading] = useState(!queryNeighbourhoodId,);
   const [identityError, setIdentityError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     if (queryNeighbourhoodId) {
-      setNeighbourhoodId(queryNeighbourhoodId);
-      setIdentityError(null);
-      setIdentityLoading(false);
+    
       return;
     }
 
@@ -124,11 +118,13 @@ function AnalyticsPageContent() {
     };
   }, [queryNeighbourhoodId]);
 
-  if (identityLoading) {
+  const resolvedNeighbourhoodId = queryNeighbourhoodId ?? neighbourhoodId;
+
+  if (!queryNeighbourhoodId && identityLoading) {
     return <AnalyticsLoadingState />;
   }
 
-  if (!neighbourhoodId) {
+  if (!resolvedNeighbourhoodId) {
     return (
       <div className="w-full min-h-full flex items-center justify-center px-8 py-10 bg-navy text-center">
         <Card className="max-w-md bg-steel/40 border-steel rounded-xl p-6 text-white">
@@ -171,12 +167,12 @@ function AnalyticsPageContent() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <RiskScorePanel
             key={`risk-${refreshTick}`}
-            neighbourhoodId={neighbourhoodId}
+            neighbourhoodId={resolvedNeighbourhoodId}
           />
 
           <AlertFrequencyGraph
             key={`freq-${refreshTick}`}
-            neighbourhoodId={neighbourhoodId}
+            neighbourhoodId={resolvedNeighbourhoodId}
           />
         </div>
 
@@ -197,7 +193,7 @@ function AnalyticsPageContent() {
 
           <AlertMetrics
             key={`metrics-${refreshTick}`}
-            neighbourhoodId={neighbourhoodId}
+            neighbourhoodId={resolvedNeighbourhoodId}
           />
         </Card>
 
