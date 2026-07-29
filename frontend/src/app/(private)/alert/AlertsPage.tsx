@@ -28,10 +28,12 @@ import {
   normaliseAlert,
   getAuthToken,
   WS_BASE,
+  AlertFilters,
 } from "@/lib/api/alert";
 
 const ALL_SEVERITIES: AlertSeverity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "RESOLVED"];
+const CURRENT_CUTOFF = 24 * 60 * 60 * 1000; //24h
 
 const SEVERITY_LABELS: Record<AlertSeverity, string> = {
   CRITICAL: "Critical",
@@ -185,9 +187,24 @@ export default function AlertsPage({
   const [selectedSeverities, setSelectedSeverities] = useState<
     Set<AlertSeverity>
   >(new Set(ALL_SEVERITIES));
-  const [selectedStatuses, setSelectedStatuses] = useState<Set<AlertStatus>>(
-    new Set(["NEW", "ACKNOWLEDGED"]),
+  const [selectedStatus, setSelectedStatus] = useState<AlertStatus | null>(
+    null,
   );
+  const [activeTab, setActiveTab] = useState<"current" | "history">("current");
+  const [historyStartDate, setHisoryStartDate] = useState("");
+  const [historyEndDate, setHisoryEndDate] = useState("");
+
+  const alertFilters = useMemo<AlertFilters>(() => {
+    const base: AlertFilters = {};
+    if (selectedStatus) base.status = selectedStatus;
+
+    if (activeTab === "history") {
+      if (historyStartDate) base.startDate = new Date(historyStartDate);
+      if (historyEndDate) base.endDate = new Date(historyEndDate);
+    }
+
+    return base;
+  }, [activeTab, selectedStatus, historyStartDate, historyEndDate]);
 
   function triggerRefresh() {
     dispatch({ type: "FETCH_START" });
@@ -246,10 +263,18 @@ export default function AlertsPage({
 
     const controller = new AbortController();
 
-    fetchAlerts(neighbourhoodId, controller.signal)
-      .then((data) => {
+    const filters: AlertFilters =
+      activeTab === "current"
+        ? {
+            ...alertFilters,
+            startDate: new Date(Date.now() - CURRENT_CUTOFF),
+          }
+        : alertFilters;
+
+    fetchAlerts(neighbourhoodId, filters, controller.signal)
+      .then(({ alerts: fetched }) => {
         if (!mountedRef.current) return;
-        dispatch({ type: "FETCH_SUCCESS", payload: data });
+        dispatch({ type: "FETCH_SUCCESS", payload: fetched });
       })
       .catch((err: unknown) => {
         if (!mountedRef.current) return;
@@ -261,10 +286,10 @@ export default function AlertsPage({
       });
 
     return () => controller.abort();
-  }, [neighbourhoodId, fetchTick]);
+  }, [neighbourhoodId, fetchTick, alertFilters, activeTab]);
 
   useEffect(() => {
-    if (!neighbourhoodId) return;
+    if (!neighbourhoodId || activeTab !== "current") return;
 
     const token = getAuthToken();
     const url = `${WS_BASE}/alerts/${neighbourhoodId}/ws${token ? `?token=${token}` : ""}`;
@@ -330,7 +355,7 @@ export default function AlertsPage({
         ws.close();
       }
     };
-  }, [neighbourhoodId]);
+  }, [neighbourhoodId, activeTab]);
 
   async function handleAcknowledge(id: string) {
     const original = alerts.find((a) => a.id === id);
@@ -359,19 +384,16 @@ export default function AlertsPage({
     () =>
       alerts.filter((a) => {
         const sev = getSeverity(a.detection_type);
-        return (
-          selectedSeverities.has(sev) &&
-          selectedStatuses.has(a.status as AlertStatus)
-        );
+        return selectedSeverities.has(sev);
       }),
-    [alerts, selectedSeverities, selectedStatuses],
+    [alerts, selectedSeverities],
   );
 
   const hasActiveFilters =
     selectedSeverities.size < ALL_SEVERITIES.length ||
-    !selectedStatuses.has("NEW") ||
-    !selectedStatuses.has("ACKNOWLEDGED") ||
-    selectedStatuses.has("RESOLVED");
+    selectedStatus !== null ||
+    (activeTab === "history" &&
+      (historyStartDate !== "" || historyEndDate !== ""));
 
   const newCount = alerts.filter((a) => a.status === "NEW").length;
   const criticalCount = alerts.filter(
@@ -443,59 +465,82 @@ export default function AlertsPage({
                     "New" informational badge: --color-blue tint bg, --color-blue text.
                     --color-blue on white-ish fog meets ≥ 4.5:1 for small text.
                   */
-                    <span
-                      className="inline-flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1"
-                      style={{
-                        backgroundColor:
-                          "color-mix(in srgb, var(--color-blue) 12%, transparent)",
-                        border:
-                          "1px solid color-mix(in srgb, var(--color-blue) 25%, transparent)",
-                        color: "var(--color-blue)",
-                      }}
-                    >
-                      {newCount} new
-                    </span>
-                  )}
-                  {criticalCount > 0 && (
-                    /*
+                  <span
+                    className="inline-flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1"
+                    style={{
+                      backgroundColor:
+                        "color-mix(in srgb, var(--color-blue) 12%, transparent)",
+                      border:
+                        "1px solid color-mix(in srgb, var(--color-blue) 25%, transparent)",
+                      color: "var(--color-blue)",
+                    }}
+                  >
+                    {newCount} new
+                  </span>
+                )}
+                {criticalCount > 0 && (
+                  /*
                     Critical badge: --color-threat tint bg, --color-threat text.
                     Solid threat red on light bg comfortably exceeds 4.5:1.
                   */
-                    <span
-                      className="inline-flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1"
-                      style={{
-                        backgroundColor:
-                          "color-mix(in srgb, var(--color-threat) 12%, transparent)",
-                        border:
-                          "1px solid color-mix(in srgb, var(--color-threat) 25%, transparent)",
-                        color: "var(--color-threat)",
-                      }}
-                    >
-                      {criticalCount} critical
-                    </span>
-                  )}
-                </div>
-              )}
-            </header>
-
-            {actionError && (
-              <ActionErrorBanner
-                message={actionError}
-                onDismiss={() => setActionError(null)}
-              />
+                  <span
+                    className="inline-flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1"
+                    style={{
+                      backgroundColor:
+                        "color-mix(in srgb, var(--color-threat) 12%, transparent)",
+                      border:
+                        "1px solid color-mix(in srgb, var(--color-threat) 25%, transparent)",
+                      color: "var(--color-threat)",
+                    }}
+                  >
+                    {criticalCount} critical
+                  </span>
+                )}
+              </div>
             )}
+          </header>
 
-            <Card className="bg-steel/40 border-steel rounded-xl">
-              {/* Toolbar */}
-              <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-steel rounded-t-xl">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs font-medium transition-colors"
-                      style={{
-                        /*
+          {actionError && (
+            <ActionErrorBanner
+              message={actionError}
+              onDismiss={() => setActionError(null)}
+            />
+          )}
+
+          <div className="flex gap-2 mb-4 justify-center" role="tablist">
+            <Button
+              role="tab"
+              aria-selected={activeTab === "current"}
+              size="sm"
+              variant={activeTab === "current" ? "default" : "outline"}
+              onClick={() => setActiveTab("current")}
+              className="text-xs font-medium"
+            >
+              Current
+            </Button>
+            <Button
+              role="tab"
+              aria-selected={activeTab === "history"}
+              size="sm"
+              variant={activeTab === "history" ? "default" : "outline"}
+              onClick={() => setActiveTab("history")}
+              className="text-xs font-medium"
+            >
+              History
+            </Button>
+          </div>
+
+          <Card className="bg-steel/40 border-steel rounded-xl">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-steel rounded-t-xl">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs font-medium transition-colors"
+                    style={{
+                      /*
                         Default: --color-mist border, --color-body text (readable on white).
                         Active: --color-blue border + text to signal filter is on.
                       */
@@ -547,56 +592,98 @@ export default function AlertsPage({
                       className="text-xs uppercase tracking-wider"
                       style={{ color: "var(--color-body)" }}
                     >
-                      Severity
-                    </DropdownMenuLabel>
-                    {ALL_SEVERITIES.map((sev) => (
-                      <DropdownMenuCheckboxItem
-                        key={sev}
-                        className="text-sm cursor-pointer"
-                        style={{ color: "var(--color-ink)" }}
-                        checked={selectedSeverities.has(sev)}
-                        onCheckedChange={(checked) => {
-                          setSelectedSeverities((prev) => {
-                            const next = new Set(prev);
-                            if (checked) {
-                              next.add(sev);
-                            } else {
-                              next.delete(sev);
-                            }
-                            return next;
-                          });
-                        }}
-                      >
-                        {SEVERITY_LABELS[sev]}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-
-                    <DropdownMenuSeparator
-                      style={{ backgroundColor: "var(--color-mist)" }}
-                    />
-
-                    <DropdownMenuLabel
-                      className="text-xs uppercase tracking-wider"
-                      style={{ color: "var(--color-body)" }}
+                      {SEVERITY_LABELS[sev]}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                  <DropdownMenuSeparator
+                    style={{ backgroundColor: "var(--color-mist)" }}
+                  />
+                  <DropdownMenuLabel
+                    className="text-xs uppercase tracking-wider"
+                    style={{ color: "var(--color-body)" }}
+                  >
+                    Status
+                  </DropdownMenuLabel>
+                  <DropdownMenuCheckboxItem
+                    className="text-sm cursor-pointer"
+                    style={{ color: "var(--color-ink)" }}
+                    checked={selectedStatus === null}
+                    onCheckedChange={() => setSelectedStatus(null)}
+                  >
+                    All
+                  </DropdownMenuCheckboxItem>
+                  {ALL_STATUSES.map((st) => (
+                    <DropdownMenuCheckboxItem
+                      key={st}
+                      className="text-sm cursor-pointer"
+                      style={{ color: "var(--color-ink)" }}
+                      checked={selectedStatus === st}
+                      onCheckedChange={(checked) =>
+                        setSelectedStatus(checked ? st : null)
+                      }
                     >
-                      Status
-                    </DropdownMenuLabel>
-                    {ALL_STATUSES.map((st) => (
-                      <DropdownMenuCheckboxItem
-                        key={st}
-                        className="text-sm cursor-pointer"
-                        style={{ color: "var(--color-ink)" }}
-                        checked={selectedStatuses.has(st)}
-                        onCheckedChange={(checked) => {
-                          setSelectedStatuses((prev) => {
-                            const next = new Set(prev);
-                            if (checked) {
-                              next.add(st);
-                            } else {
-                              next.delete(st);
-                            }
-                            return next;
-                          });
+                      {STATUS_LABELS[st]}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                  {activeTab === "history" && (
+                    <>
+                      <DropdownMenuSeparator
+                        style={{ color: "var(--color-mist)" }}
+                      />
+                      <DropdownMenuLabel
+                        className="text-xs uppercase tracking-wider"
+                        style={{ color: "var(--color-body)" }}
+                      >
+                        Date range
+                      </DropdownMenuLabel>
+                      <div className="px-2 py-1.5 flex flex-col gap-2">
+                        <label
+                          className="text-xs"
+                          style={{ color: "var(--color-body)" }}
+                        >
+                          From
+                          <input
+                            type="date"
+                            value={historyStartDate}
+                            onChange={(e) => setHisoryStartDate(e.target.value)}
+                            className="mt-1 w-full rounded border px-2 py-1 text-xs"
+                            style={{
+                              borderColor: "var(--color-mist)",
+                              color: "var(--color-ink)",
+                            }}
+                          />
+                        </label>
+                        <label
+                          className="text-xs"
+                          style={{ color: "var(--color-body)" }}
+                        >
+                          To
+                          <input
+                            type="date"
+                            value={historyEndDate}
+                            onChange={(e) => setHisoryEndDate(e.target.value)}
+                            className="mt-1 w-full rounded border px-2 py-1 text-xs"
+                            style={{
+                              borderColor: "var(--color-mist)",
+                              color: "var(--color-ink)",
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </>
+                  )}
+                  {hasActiveFilters && (
+                    <>
+                      <DropdownMenuSeparator
+                        style={{ backgroundColor: "var(--color-mist)" }}
+                      />
+                      {/* Ghost: --color-blue text, no border — readable on white */}
+                      <button
+                        onClick={() => {
+                          setSelectedSeverities(new Set(ALL_SEVERITIES));
+                          setSelectedStatus(null);
+                          setHisoryStartDate("");
+                          setHisoryEndDate("");
                         }}
                       >
                         {STATUS_LABELS[st]}
