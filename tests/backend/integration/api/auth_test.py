@@ -70,7 +70,8 @@ async def test_register_user_integration(async_client):
     response = await async_client.post("/auth/signup", json={
         "email": TEST_EMAIL,
         "password": TEST_PASSWORD,
-        "name": "Zaman",
+        "firstName": "Zaman",
+        "lastName": "Bassa",
         "address": "JHB"
     })
 

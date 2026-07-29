@@ -1,8 +1,6 @@
 import { apiCall } from './client'
 import { CreateNeighbourhoodReq, NeighbourhoodRes, CreateNeighbourhoodRes } from '../validators/neighbourhood'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-
 export async function addNeighbourhood(data: CreateNeighbourhoodReq): Promise<NeighbourhoodRes> {
   const result = await apiCall<CreateNeighbourhoodRes>('/neighbourhood/create-neighbourhood', {
     method: 'POST',

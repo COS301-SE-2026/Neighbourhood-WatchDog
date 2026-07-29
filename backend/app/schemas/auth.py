@@ -3,7 +3,8 @@ from pydantic import BaseModel,EmailStr
 class SignUpRequest(BaseModel):
     email: EmailStr
     password: str
-    name: str
+    firstName: str
+    lastName: str
     address: str
 
 class LoginRequest(BaseModel):

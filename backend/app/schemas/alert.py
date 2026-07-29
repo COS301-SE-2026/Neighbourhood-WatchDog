@@ -43,6 +43,11 @@ class AcknowledgeAlertRes(BaseModel):
 	message: str | None = None
 	data: AlertRes | None = None
 
+class Pagination(BaseModel):
+	total: int
+	limit: int
+	offset: int
+	has_more: bool
 class ListAlertsRes(BaseModel):
 	status: int
 	message: str | None = None

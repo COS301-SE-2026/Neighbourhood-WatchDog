@@ -17,6 +17,7 @@ node_modules
 
 # Python
 venv/
+.venv/
 backend/__pycache__/
 backend/*.py[cod]
 backend/*$py.class
@@ -35,3 +36,13 @@ ai/.venv/
 
 celerybeat-schedule
 celerybeat-schedule.*
+
+ai/.watchdog-agent/install-state.json
+~/.cache/
+
+#WatchDog Agent
+ai/.watchdog-agent/
+ai/pipeline/models/weights/*.part
+ai/.env.example
+
+watchdog-ec2-key.pem

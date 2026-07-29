@@ -4,6 +4,7 @@ import { CreateNeighbourhoodDialog } from "@/components/create-neighbourhood-dia
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { NeighbourhoodRes } from "@/lib/validators/neighbourhood";
+import PairAgent from "@/components/property-components/PairAgent";
 
 import { AlertFrequencyGraph } from "@/components/shared/AlertFrequencyGraph";
 

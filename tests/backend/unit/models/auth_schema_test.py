@@ -10,7 +10,8 @@ from app.schemas.auth import ( #
 
 TEST_EMAIL = "test@example.com"
 TEST_PASSWORD = "Password123!"
-TEST_NAME = "Zaman"
+TEST_FIRSTNAME = "Zaman"
+TEST_LASTNAME = "Bassa"
 TEST_ADDRESS = "JHB"
 TEST_CODE = "123456"
 
@@ -19,7 +20,8 @@ def test_signup_valid(): # Valid signup
     obj = SignUpRequest(
         email=TEST_EMAIL,
         password=TEST_PASSWORD,
-        name=TEST_NAME,
+        firstName=TEST_FIRSTNAME,
+        lastName=TEST_LASTNAME,
         address=TEST_ADDRESS
     )
 

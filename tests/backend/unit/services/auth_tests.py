@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock , patch
 import backend.app.services.auth_service as auth_service
 
 
@@ -38,14 +38,27 @@ def test_register_user_success(mock_cognito):
     payload = {
         "email": TEST_EMAIL,
         "password": TEST_PASSWORD,
-        "name": "Zaman",
+        "firstName": "Zaman",
+        "lastName": "Bassa",
         "address": "JHB"
     }
 
-    result = auth_service.register_user(payload)
+    mock_db = MagicMock()
 
-    assert result["success"] is True # DID IT SUCCESFULLY EXECUTE
+    def refresh(user):
+        user.id = "11111111-1111-1111-1111-111111111111"
+
+    mock_db.refresh.side_effect = refresh
+
+    with patch(
+        "backend.app.services.auth_service.create_audit_log_item"
+    ) as mock_audit:
+
+        result = auth_service.register_user(payload, mock_db)
+
+    assert result["success"] is True
     assert result["data"]["user_sub"] == "abc-123"
+    mock_audit.assert_called_once()
 
 #LOGIN
 def test_login_success(mock_cognito):

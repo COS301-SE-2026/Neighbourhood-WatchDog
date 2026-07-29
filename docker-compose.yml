@@ -7,8 +7,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    # ports: 
-    #   - "5432:5432"
+    ports: 
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +18,20 @@ services:
       retries: 10
       start_period: 10s
 
-  redis: 
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - /var/www/certbot:/var/www/certbot
+    depends_on:
+      - backend
+
+  redis:
     image: redis:7-alpine
     container_name: redis_cache
     restart: always
@@ -82,10 +95,11 @@ services:
       context: ./backend
       target: development
     ports:
-      - "8000:8000"
+      - "8000:8000" # TODO: Remove 
     environment:
       APP_ENV: development
       DEBUG: "true"
+      TESTING: "true"
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
@@ -99,7 +113,16 @@ services:
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
       COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
       FRONTEND_URL: ${FRONTEND_URL}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM}
+      NOTIFICATION_ENABLED: ${NOTIFICATION_ENABLED}
+      SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL}
+      SMTP_APP_PASSWORD: ${SMTP_APP_PASSWORD}
+      RTSP_ENCRYPTION_KEY: ${RTSP_ENCRYPTION_KEY}
       SKIP_DB_INIT: "true"
+      MEDIAMTX_PUBLISH_MASTER_KEY: ${MEDIAMTX_PUBLISH_MASTER_KEY}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
     volumes:
       - ./backend:/app
     depends_on:
@@ -117,6 +140,7 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
       NEXT_PUBLIC_AI_URL: http://localhost:8001
+      NEXT_PUBLIC_MEDIAMTX_WEBRTC_URL: http://localhost:8889
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -147,6 +171,11 @@ services:
     command: uvicorn app:app --host 0.0.0.0 --port 8001 --reload
 
   mediamtx:
+    environment:
+      MTX_WEBRTCADDITIONALHOSTS: stream-staging.neighbourhoodwatchdog.co.za,13.245.213.174
+      MTX_WEBRTCENCRYPTION: "yes"
+      MTX_WEBRTCSERVERCERT: /certs/fullchain.pem
+      MTX_WEBRTCSERVERKEY: /certs/privkey.pem
     build:
       context: ./mediamtx
     platform: linux/amd64
@@ -157,9 +186,11 @@ services:
       - "9997:9997"    # API
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx/mediamtx.yml
+      - /opt/mediamtx-certs:/certs:ro
     restart: always
 
 volumes:
   postgres_data:
+  caddy_data:
   redis_data:
   # frontend_node_modules:

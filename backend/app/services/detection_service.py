@@ -9,6 +9,7 @@ from app.models.camera import Camera
 from app.models.zone import GeospatialZone
 from app.schemas.detection import DetectionEventRes, DetectionIngestReq, DetectionIngestRes
 from app.services.alert_service import _build_alert_res
+from app.services.notification_service import dispatch_notifications
 
 SENSITIVITY_THRESHOLDS: dict[str, float] = {
     "LOW": 0.80,
@@ -98,8 +99,18 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
                 alert_res = _build_alert_res(alert)
                 await broadcast(
                     neighbourhood_id=str(camera.neighbourhood_id),
-                    message={"event": "alert.new", "payload": alert_res.model_dump()},
+                    message={"event": "alert.new", "payload": alert_res.model_dump(mode="json")},
                 )
+
+                await dispatch_notifications(
+                    db=db,
+                    alert_id=alert.id,
+                    camera_id=alert.camera_id,
+                    neighbourhood_id=camera.neighbourhood_id,
+                    detection_type=data.detection_type,
+                    confidence_score=data.confidence_score,
+                    frame_timestamp=data.frame_timestamp,
+                )   
 
         return DetectionIngestRes(
             status=201,
