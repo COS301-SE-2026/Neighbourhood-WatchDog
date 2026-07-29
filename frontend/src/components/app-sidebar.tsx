@@ -323,12 +323,11 @@ export function AppSidebar() {
     logout();
     router.push("/auth/login");
   };
-  const [username, setUsername] = useState("");
-
-  React.useEffect(() => {
-    const name = localStorage.getItem("fullname");
-    setUsername(name ?? "");
-  }, []);
+  
+  const [username] = React.useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("fullname") ?? "";
+  });
 
   return (
 
