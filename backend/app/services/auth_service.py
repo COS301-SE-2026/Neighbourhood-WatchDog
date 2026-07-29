@@ -68,13 +68,13 @@ def authenticate_user(payload):
     )
     if response.get("challenge"): #This tells us that Cognito requires MFA
         challenge = response.get("challenge")
-        if(challenge == "EMAIL_OTP"):# check if the challenge sent back is actually OTP
+        if challenge == "EMAIL_OTP":# check if the challenge sent back is actually OTP
             return {
                 "success": True,
                 "data": {
                     "mfa_required": True,
-                    #"challenge": response["challenge"], # Removed so we do not need to depend on AWS interface
                     "session": response["session"],
+                    "delivery": response.get("delivery"),
                 },
             }
 

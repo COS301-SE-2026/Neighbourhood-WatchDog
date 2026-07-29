@@ -94,12 +94,19 @@ def login(email, password):
 
         # MFA required
         if "ChallengeName" in response:
+            challenge_params = response.get("ChallengeParameters", {})
+
             return {
                 "challenge": response["ChallengeName"],
                 "session": response["Session"],
-                "challenge_parameters": response.get("ChallengeParameters", {}),
+                "delivery": {
+                    "medium": challenge_params.get("CODE_DELIVERY_DELIVERY_MEDIUM"),
+                    "destination": challenge_params.get("CODE_DELIVERY_DESTINATION"),
+                },
             }
+        
         #login complete
+        #This should honestly not happen as we have "Require MFA" enabled, but we shall keep it so the system stays robust
         auth_result = response["AuthenticationResult"]
 
         return {
@@ -170,7 +177,7 @@ def respond_to_mfa(email: str, session: str, code: str):
             ChallengeName="EMAIL_OTP",
             Session=session,
             ChallengeResponses={
-                "USERNAME": email, #Need to replace with email/username later
+                "USERNAME": email,
                 "EMAIL_OTP_CODE": code,
             },
         )
