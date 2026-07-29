@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 from app.models.detection_event import DetectionType
 from app.models.risk_score_history import RiskLevel
-from app.services.risk_score_service import CRITICAL_DETECTION_TYPES, SEVERITY_WEIGHTS, calculate_risk_score_handler
+from app.services.risk_score_service import calculate_risk_score_handler
 
 class TestRiskScore:
     def setup_method(self):

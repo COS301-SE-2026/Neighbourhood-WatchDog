@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { apiCall } from "@/lib/api/client";
-import type { AlertFrequencyMetricsRes, NumberInPeriod } from "@/lib/validators/alerts";
+import type { AlertFrequencyMetricsRes, NumberInPeriod } from "@/lib/validators/alert";
 
 
 export interface TrendBucket {

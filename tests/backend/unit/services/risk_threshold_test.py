@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import Mock
 from fastapi import HTTPException
 from app.services.risk_threshold_config_service import get_neighbourhood_risk_threshold_handler, update_neighbourhood_risk_threshold_handler
-from app.schemas.risk_threshold_config import UpdateRiskThresholdConfigReq, NeighbourhoodRiskThresholdConfigRes
+from app.schemas.risk_threshold_config import UpdateRiskThresholdConfigReq
 
 class TestGetRiskThresholdConfig:
     def setup_method(self):
