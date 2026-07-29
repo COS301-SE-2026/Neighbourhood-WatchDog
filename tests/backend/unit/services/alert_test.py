@@ -122,6 +122,7 @@ class TestAcknowledgeAlert:
         assert self.mock_db.commit.call_count == 1
         assert self.mock_db.refresh.call_count == 0
         assert mock_broadcast.call_count == 1
+        assert mock_audit.call_count == 1
 
 
 class TestListAlerts:

@@ -1,5 +1,4 @@
 from fastapi import HTTPException
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy import String, select, func, or_, cast
 from uuid import uuid4, UUID
 from datetime import datetime

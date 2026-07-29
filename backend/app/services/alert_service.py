@@ -3,7 +3,6 @@ from app.models.alert import Alert
 from app.models.detection_event import DetectionEvent
 from app.schemas.alert import AlertCreate
 from fastapi import HTTPException
-from uuid import UUID
 from datetime import datetime
 
 from sqlalchemy import select, func
