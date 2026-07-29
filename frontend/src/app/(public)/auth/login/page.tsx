@@ -140,6 +140,11 @@ export default function LoginPage() {
           onVerify={handleMfaVerify}
           isLoading={isLoading}
           error={error}
+          onBack={() => {
+            setShowMfa(false);
+            setMfaSession("");
+            setError(null);
+          }}
         />
       )}
     </>
