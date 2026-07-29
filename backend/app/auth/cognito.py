@@ -92,13 +92,14 @@ def login(email, password):
             },
         )
 
-        print("========== COGNITO RESPONSE ==========")
-        print(response)
-        print("======================================")
-
-        if "AuthenticationResult" not in response:
-            return response
-
+        # MFA required
+        if "ChallengeName" in response:
+            return {
+                "challenge": response["ChallengeName"],
+                "session": response["Session"],
+                "challenge_parameters": response.get("ChallengeParameters", {}),
+            }
+        #login complete
         auth_result = response["AuthenticationResult"]
 
         return {
