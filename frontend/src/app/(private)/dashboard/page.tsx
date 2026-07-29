@@ -9,6 +9,7 @@ import { addCamera as apiAddCamera, fetchCameras as apiFetchCameras } from "@/li
 import { NewCameraCard } from "@/components/new-camera-card"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useAppView } from "@/components/app-view-context"
 
 interface CameraProp {
     id: string;
@@ -28,11 +29,10 @@ const initialCameras: CameraProp[] = [
     { id: "5", name: "Camera 4 - Kitchen", visibility: "PRIVATE",enabled: true, location: "Kitchen" },
 ]
 
-// const PROPERTY_ID = "a79d1505-5000-438e-9813-ba0f5aecb5e2"; // TODO: replace once /properties/my-properties works
-const PROPERTY_ID = "30000000-0000-0000-0000-000000000001";
+
 
 export default function Dashboard() {
-
+    const { propertyId } = useAppView()
     const { alerts, connected } = useAlerts("10000000-0000-0000-0000-000000000001");
 
     useEffect(() => {
@@ -47,7 +47,9 @@ export default function Dashboard() {
     const [cameras, setCameras] = useState<CameraProp[]>([]);
 
     useEffect(() => {
-        apiFetchCameras(PROPERTY_ID)
+        if (!propertyId) return;
+
+        apiFetchCameras(propertyId)
             .then((data) => {
                 setCameras(
                     data.map((c) => ({
@@ -63,16 +65,20 @@ export default function Dashboard() {
                 console.error("Failed to fetch cameras", err);
                 toast.error("Failed to load cameras");
             });
-    }, []);
+    }, [propertyId]);
 
-    const handleAcknowledge = async (data: { name: string, location: string; rtspUrl: string }) => {
+    const handleAcknowledge = async (data: { name: string, location: string, rtspUrl: string }) => {
+        if (!propertyId) {
+            toast.error("Select a property before adding a camera");
+            return;
+        }
         const newCamera = await apiAddCamera({
             name: data.name,
             location: data.location,
             visibility: "PRIVATE",
             enabled: true,
             rtsp_url: data.rtspUrl,
-            property_id: PROPERTY_ID
+            property_id: propertyId
         });
         setCameras((prev) => [...prev, 
             {

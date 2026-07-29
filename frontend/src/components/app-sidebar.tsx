@@ -19,6 +19,8 @@ import {
 
 import { CreatePropertyDialog } from "./property-components/create-property-dialogue"
 
+import logoImage from "@/assets/images/logo-mark-only.svg"
+
 import {
   Sidebar,
   SidebarContent,
@@ -65,7 +67,7 @@ const USERNAME = localStorage.getItem("fullname");
 function WatchdogLogo({ size = 28 }: { size?: number }) {
   return (
     <Image
-      src="/logo.png"
+      src={logoImage}
       width={size}
       height={size}
       alt=""
