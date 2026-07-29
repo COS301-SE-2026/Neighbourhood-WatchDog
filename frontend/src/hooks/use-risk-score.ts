@@ -6,7 +6,6 @@ import {
 } from "@/lib/api/riskScore";
 import {
   Granularities,
-  RiskLevel,
   RiskScoreRes,
 } from "@/lib/validators/riskScore";
 
@@ -74,12 +73,20 @@ export function useRiskScoreHistory(
     }
   }, [neighbourhoodId, granularity, start, end]);
 
+  
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
+    const initialFetchId = window.setTimeout(() => {
       void fetchRiskScoreHistory();
     }, 0);
 
-    return () => clearTimeout(timeoutId);
+    const intervalId = window.setInterval(() => {
+      void fetchRiskScoreHistory();
+    }, 5 * 60 * 1000);
+
+    return () => {
+      window.clearTimeout(initialFetchId);
+      window.clearInterval(intervalId);
+    };
   }, [fetchRiskScoreHistory]);
 
   return {

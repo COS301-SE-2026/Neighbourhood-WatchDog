@@ -4,15 +4,58 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { AlertMetrics } from "@/components/shared/AlertMetrics";
-import { IncidentTrends } from "@/components/shared/IncidentTrends";
+// import { IncidentTrends } from "@/components/shared/IncidentTrends";
 import { AlertFrequencyGraph } from "@/components/shared/AlertFrequencyGraph";
 import { RiskScoreTrendGraph } from "@/components/shared/RiskScoreTrendGraph";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { fetchCurrentUser } from "@/lib/api/alert";
+import { useRiskScoreHistory } from "@/hooks/use-risk-score";
 
 interface Props {
   neighbourhoodId?: string;
+}
+
+interface RiskScorePanelProps {
+  readonly neighbourhoodId: string;
+}
+
+function RiskScorePanel({ neighbourhoodId }: RiskScorePanelProps) {
+  const {
+    riskHistory,
+    loading,
+    error,
+  } = useRiskScoreHistory(neighbourhoodId, "minute");
+
+  if (error) {
+    return (
+      <Card className="bg-card border rounded-xl p-6">
+        <p className="text-sm text-destructive">{error}</p>
+      </Card>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Card className="bg-card border rounded-xl p-6">
+        <p className="text-sm text-muted-foreground">
+          Loading risk-score history…
+        </p>
+      </Card>
+    );
+  }
+
+  if (riskHistory.length === 0) {
+    return (
+      <Card className="bg-card border rounded-xl p-6">
+        <p className="text-sm text-muted-foreground">
+          No calculated risk-score history is available yet.
+        </p>
+      </Card>
+    );
+  }
+
+  return <RiskScoreTrendGraph data={riskHistory} />;
 }
 
 export default function AnalyticsPage({
@@ -78,7 +121,7 @@ export default function AnalyticsPage({
     );
   }
 
-  if (!neighbourhoodId) {
+  if (!neighbourhoodId){
     return (
       <div className="w-full min-h-full flex items-center justify-center px-8 py-10 bg-navy text-center">
         <Card className="max-w-md bg-steel/40 border-steel rounded-xl p-6 text-white">
@@ -95,7 +138,7 @@ export default function AnalyticsPage({
   }
   return (
     <>
-      <div className="w-full felx flex-col items-center px-8 py-10 bg-navy min-h-full font-sans">
+      <div className="w-full flex flex-col items-center px-8 py-10 bg-navy min-h-full font-sans">
         <div className="w-full max-w-6xl">
           <header className="mb-6 flex items-center justify-between">
             <div>
@@ -108,7 +151,7 @@ export default function AnalyticsPage({
               size="sm"
               onClick={() => setRefreshTick((t) => t + 1)}
               className="text-sky hover:text-white hover:bg-steel transition-colors text-xs"
-              aria-label="Refresh alerts"
+              aria-label="Refresh analytics"
             >
               <RefreshCw className={"h-3.5 w-3.5 mr-1.5"} />
               Refresh
@@ -117,7 +160,10 @@ export default function AnalyticsPage({
 
           {/*Trend charts*/}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <RiskScoreTrendGraph key={`risk-${refreshTick}`} />
+            <RiskScorePanel
+              key={`risk-${refreshTick}`}
+              neighbourhoodId={neighbourhoodId}
+            />
             <AlertFrequencyGraph
               key={`freq-${refreshTick}`}
               neighbourhoodId={neighbourhoodId}
@@ -145,7 +191,7 @@ export default function AnalyticsPage({
           </Card>
 
           {/*incident trend analysis*/}
-          <Card
+          {/* <Card
             className="bg-card border rounded-xl p-6 mb-6"
             style={{
               borderColor: "var(--border)",
@@ -162,7 +208,7 @@ export default function AnalyticsPage({
               key={`incidents-${refreshTick}`}
               neighbourhoodId={neighbourhoodId}
             />
-          </Card>
+          </Card> */}
         </div>
       </div>
     </>

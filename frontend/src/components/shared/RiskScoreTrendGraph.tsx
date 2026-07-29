@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -11,6 +11,10 @@ import {
   Title,
   Tooltip,
   Legend,
+  type Chart,
+  type ChartOptions,
+  type Plugin,
+  type TooltipItem,
 } from "chart.js";
 
 ChartJS.register(
@@ -36,6 +40,19 @@ export type RiskThresholds = {
   medium_max: number;
 };
 
+type ChartTheme = {
+  blue: string;
+  navy: string;
+  mist: string;
+  body: string;
+  border: string;
+  card: string;
+  font: string;
+  safe: string;
+  caution: string;
+  threat: string;
+};
+
 const DEFAULT_THRESHOLDS: RiskThresholds = { low_max: 30, medium_max: 70 };
 
 function daysAgoISO(daysAgo: number): string {
@@ -55,7 +72,7 @@ const DEFAULT_HISTORY: RiskScorePoint[] = [
   { calculated_at: daysAgoISO(0), score: 81, classification: "HIGH" },
 ];
 
-function useChartTheme() {
+function useChartTheme(): ChartTheme {
   const [theme, setTheme] = useState({
     blue: "#3B5EDE",
     navy: "#1D2A5E",
@@ -74,18 +91,22 @@ function useChartTheme() {
     const read = (name: string, fallback: string) =>
       styles.getPropertyValue(name)?.trim() || fallback;
 
-    setTheme({
-      blue: read("--color-blue", "#3B5EDE"),
-      navy: read("--color-navy", "#1D2A5E"),
-      mist: read("--color-mist", "#D0D7E8"),
-      body: read("--color-body", "#2E3A5C"),
-      border: read("--border", "#D0D7E8"),
-      card: read("--card", "#FFFFFF"),
-      font: read("--font-sans", "Inter, system-ui, sans-serif"),
-      safe: read("--color-safe", "#3DD68C"),
-      caution: read("--color-caution", "#F5A623"),
-      threat: read("--color-threat", "#F04444"),
+    const animationFrameId = window.requestAnimationFrame(() => {
+      setTheme({
+        blue: read("--color-blue", "#3B5EDE"),
+        navy: read("--color-navy", "#1D2A5E"),
+        mist: read("--color-mist", "#D0D7E8"),
+        body: read("--color-body", "#2E3A5C"),
+        border: read("--border", "#D0D7E8"),
+        card: read("--card", "#FFFFFF"),
+        font: read("--font-sans", "Inter, system-ui, sans-serif"),
+        safe: read("--color-safe", "#3DD68C"),
+        caution: read("--color-caution", "#F5A623"),
+        threat: read("--color-threat", "#F04444"),
+      });
     });
+
+    return () => window.cancelAnimationFrame(animationFrameId);
   }, []);
 
   return theme;
@@ -103,6 +124,9 @@ function thresholdBandsPlugin(
       const { ctx, chartArea, scales } = chart;
       if (!chartArea) return;
       const y = scales.y;
+
+      if (!y) return;
+
       const zones: [number, number, string][] = [
         [0, lowMax, colors.safe],
         [lowMax, mediumMax, colors.caution],
@@ -185,16 +209,16 @@ export function RiskScoreTrendGraph({
     ],
   };
 
-  const options: any = {
+  const options: ChartOptions<"line"> = {
     responsive: true,
     maintainAspectRatio: false,
-    interaction: { mode: "index", intersect: false },
+    interaction: { mode: "index" as const, intersect: false },
     plugins: {
       legend: { display: false },
       title: {
         display: true,
         text: "Neighbourhood risk score trend",
-        align: "start",
+        align: "start" as const,
         color: theme.navy,
         font: { family: theme.font, size: 16, weight: "bold" },
         padding: { bottom: 16 },
@@ -210,7 +234,7 @@ export function RiskScoreTrendGraph({
         titleFont: { family: theme.font, weight: 600 },
         bodyFont: { family: theme.font },
         callbacks: {
-          label: (ctx: any) => {
+          label: (ctx: TooltipItem<"line">) => {
             const point = data[ctx.dataIndex];
             const lines = [
               `Score: ${point.score}`,

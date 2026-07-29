@@ -1,0 +1,5 @@
+{
+  "backend_url": "https://api-staging.neighbourhoodwatchdog.co.za",
+  "mediamtx_rtsp_url": "rtsp://stream-staging.neighbourhoodwatchdog.co.za:8554",
+  "internal_api_token": "0506da845de0fa184687b2c6535cc00f861925a33cb48eb87ace0397709eba4c"
+}

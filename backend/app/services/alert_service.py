@@ -7,6 +7,7 @@ from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, Tim
 from fastapi import HTTPException
 from uuid import UUID
 
+from app.models.user import User
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 
@@ -92,10 +93,16 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
         alert.status = "ACKNOWLEDGED"
         alert.resolved_at = datetime.now(timezone.utc)
         if user_id_str:
-            try:
-                alert.resolved_by = UUID(user_id_str)
-            except ValueError:
-                pass
+
+            resolver = db.execute(
+                select(User).where(User.cognito_sub == user_id_str)
+            ).scalar_one_or_none()
+
+            if resolver is None:
+                raise HTTPException(status_code=401, detail="Authenticated user does not have a local WatchDog profile.")
+
+
+            alert.resolved_by = resolver.id
 
         db.commit()
         db.refresh(alert)
