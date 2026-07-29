@@ -45,6 +45,17 @@ interface ConfirmResponse {
   confirmed: boolean;
 }
 
+interface VerifyMfaResponse {
+  success: boolean;
+  data: {
+    access_token: string;
+    id_token: string;
+    refresh_token?: string | null;
+    token_type?: string | null;
+    expires_in?: number;
+  };
+}
+
 // API Client with error handling
 const apiClient = async <T>(
   endpoint: string,
@@ -204,4 +215,29 @@ export const logout = (): void => {
   localStorage.removeItem('accessToken');
   localStorage.removeItem('idToken');
   localStorage.removeItem('tokenExpiry');
+};
+
+export const verifyMfa = async (
+  email: string,
+  session: string,
+  code: string
+): Promise<{
+  accessToken: string;
+  idToken: string;
+  expiresIn: number;
+}> => {
+  const response = await apiClient<VerifyMfaResponse>("/auth/verify-mfa", {
+    method: "POST",
+    body: JSON.stringify({
+      email,
+      session,
+      code,
+    }),
+  });
+
+  return {
+    accessToken: response.data.access_token,
+    idToken: response.data.id_token,
+    expiresIn: response.data.expires_in ?? 0,
+  };
 };
