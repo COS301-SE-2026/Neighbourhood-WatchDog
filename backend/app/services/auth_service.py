@@ -1,10 +1,7 @@
 from fastapi import HTTPException
-from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code, get_sub_from_id_token
-from app.models.property import Property
-from app.models.property_user import PropertyUser
+from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code
 from app.models.user import UserRole, User
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 
 
 #Business Logic between our API and AWS
