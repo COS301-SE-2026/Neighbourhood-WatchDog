@@ -66,26 +66,37 @@ def authenticate_user(payload):
         email=payload["email"],
         password=payload["password"]
     )
+    if response.get("challenge"): #This tells us that Cognito requires MFA
+        challenge = response.get("challenge")
+        if(challenge == "EMAIL_OTP"):# check if the challenge sent back is actually OTP
+            return {
+                "success": True,
+                "data": {
+                    "mfa_required": True,
+                    #"challenge": response["challenge"], # Removed so we do not need to depend on AWS interface
+                    "session": response["session"],
+                },
+            }
 
-    if not response.get("access_token") or not response.get("id_token"):
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "error": "AuthenticationFailed",
-                "message": response,
-            },
-        )
-
-    return {
-        "success": True,
-        "data": {
-            "access_token": response["access_token"],
-            "id_token": response["id_token"],
-            "refresh_token": response.get("refresh_token"),
-            "token_type": response.get("token_type"),
-            "expires_in": response.get("expires_in"),
+    if response.get("access_token"): # Login successfull (MFA not needed)
+        return {
+            "success": True,
+            "data": {
+                "access_token": response["access_token"],
+                "id_token": response["id_token"],
+                "refresh_token": response.get("refresh_token"),
+                "token_type": response.get("token_type"),
+                "expires_in": response.get("expires_in"),
+            }
         }
-    }
+
+    raise HTTPException( #Did not get expected values
+        status_code=400,
+        detail={
+            "error": "AuthenticationFailed",
+            "message": response,
+        },
+    )
 
 def confirm_user(payload):
     confirm_sign_up(
