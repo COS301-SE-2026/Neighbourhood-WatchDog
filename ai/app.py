@@ -2,9 +2,13 @@ from camera_runtime import CameraSpec, CameraSupervisor
 
 import os
 import cv2
+import time
 import threading
+import tempfile
+import subprocess
 from collections import deque
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, FastAPI, Query
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,9 +17,9 @@ from deep_sort_realtime.deepsort_tracker import DeepSort
 from pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
 from pipeline.utils.zone_config import filter_detections_by_zones
 import httpx
-from datetime import datetime, timezone
 import logging
 import keyring
+import boto3
 
 logger = logging.getLogger("watchdog.ai")
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = ("rtsp_transport;tcp|fflags;nobuffer|flags;low_delay")
@@ -52,12 +56,8 @@ S3_CLIPS_BUCKET = os.getenv("S3_CLIPS_BUCKET", "")
 AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")
 
 
-#pre capture
-_frame_buffer: deque = deque(maxlen=100)
-_frame_buffer_lock = threading.Lock()
-
 #cooldown tracker per weapon class
-_clips_cooldowns: dict = {}
+_clips_cooldowns: dict[tuple[str, str], float] = {}
 _cooldown_lock = threading.Lock()
 
 
