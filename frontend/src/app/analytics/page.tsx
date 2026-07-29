@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { AlertMetrics } from "@/components/shared/AlertMetrics";
@@ -14,6 +14,17 @@ import { useRiskScoreHistory } from "@/hooks/use-risk-score";
 
 interface RiskScorePanelProps {
   readonly neighbourhoodId: string;
+}
+
+function AnalyticsLoadingState() {
+  return (
+    <div className="w-full min-h-full flex items-center justify-center px-8 py-10 bg-navy text-mist">
+      <div className="flex items-center gap-2">
+        <RefreshCw className="h-4 w-4 animate-spin text-sky" />
+        Resolving neighbourhood context...
+      </div>
+    </div>
+  );
 }
 
 function RiskScorePanel({ neighbourhoodId }: RiskScorePanelProps) {
@@ -54,7 +65,7 @@ function RiskScorePanel({ neighbourhoodId }: RiskScorePanelProps) {
   return <RiskScoreTrendGraph data={riskHistory} />;
 }
 
-export default function AnalyticsPage() {
+function AnalyticsPageContent() {
   const searchParams = useSearchParams();
 
   const queryNeighbourhoodId =
@@ -64,11 +75,9 @@ export default function AnalyticsPage() {
   const [neighbourhoodId, setNeighbourhoodId] = useState<string | null>(
     queryNeighbourhoodId,
   );
-
   const [identityLoading, setIdentityLoading] = useState(
     !queryNeighbourhoodId,
   );
-
   const [identityError, setIdentityError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
 
@@ -116,14 +125,7 @@ export default function AnalyticsPage() {
   }, [queryNeighbourhoodId]);
 
   if (identityLoading) {
-    return (
-      <div className="w-full min-h-full flex items-center justify-center px-8 py-10 bg-navy text-mist">
-        <div className="flex items-center gap-2">
-          <RefreshCw className="h-4 w-4 animate-spin text-sky" />
-          Resolving neighbourhood context...
-        </div>
-      </div>
-    );
+    return <AnalyticsLoadingState />;
   }
 
   if (!neighbourhoodId) {
@@ -221,5 +223,13 @@ export default function AnalyticsPage() {
         </Card> */}
       </div>
     </div>
+  );
+}
+
+export default function AnalyticsPage() {
+  return (
+    <Suspense fallback={<AnalyticsLoadingState />}>
+      <AnalyticsPageContent />
+    </Suspense>
   );
 }
