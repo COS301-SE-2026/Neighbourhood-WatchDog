@@ -2,7 +2,7 @@ name: Deploy to Production
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main", "fix-main-deployment" ]
 
 concurrency:
   group: production-deploy
@@ -43,6 +43,10 @@ jobs:
               "MEDIAMTX_PUBLISH_MASTER_KEY": "${{ secrets.MEDIAMTX_PUBLISH_MASTER_KEY }}",
               "TESTING": "${{ secrets.TESTING }}",
               "DEBUG": "${{ secrets.DEBUG }}"
+              "POSTGRES_PASSWORD": "${{ secrets.POSTGRES_PASSWORD }}"
+              "POSTGRES_USER": "${{ secrets.POSTGRES_USER }}"
+              "POSTGRES_DB": "${{ secrets.POSTGRES_DB }}"
+              "DETECTION_CONFIDENCE_THRESHOLD": "${{ secrets.DETECTION_CONFIDENCE_THRESHOLD }}"
             }'
       
       - name: Build, tag, and push image to ECR
