@@ -4,11 +4,10 @@ import type { Camera } from "@/lib/validators/camera"
 import { useAlerts } from "@/hooks/use-alerts"
 import { toast } from "sonner"
 import { useEffect, useState } from "react"
-import { CameraOff, LoaderCircle } from "lucide-react";
+import { CameraOff, LoaderCircle,Plus } from "lucide-react";
 
 import { addCamera as apiAddCamera, fetchCameras as apiFetchCameras } from "@/lib/api/camera"
 import { NewCameraCard } from "@/components/new-camera-card"
-import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppView } from "@/components/app-view-context"
 

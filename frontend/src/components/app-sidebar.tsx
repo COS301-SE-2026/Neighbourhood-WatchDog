@@ -43,7 +43,6 @@ import { useProperties, type Property } from "@/hooks/use-properties"
 import { useAppView } from "@/components/app-view-context"
 import { useRouter } from "next/navigation";
 import { logout } from "@/lib/auth/cognito";
-import { useState } from "react";
 
 // Types
 
@@ -418,6 +417,7 @@ export function AppSidebar() {
                     "text-white/60 hover:text-white hover:bg-white/8 transition-colors duration-150",
                     !isExpanded && "justify-center",
                   )}
+                  type="button"
                 >
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue/40 ring-1 ring-sky/40">
                     <User className="h-3.5 w-3.5 text-sky" />

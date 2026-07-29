@@ -18,7 +18,7 @@ interface PairAgentProps {
   propertyId: string;
 }
 
-export default function PairAgent({ propertyId }: PairAgentProps) {
+export default function PairAgent({ propertyId }: Readonly<PairAgentProps>) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState<string | null>(null);

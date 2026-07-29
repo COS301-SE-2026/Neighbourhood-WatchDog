@@ -6,12 +6,12 @@ import { twMerge } from "tailwind-merge";
 import {motion} from 'framer-motion'
 import { Fragment } from "react/jsx-runtime";
 
-export default function CameraColumn(props: {
+export default function CameraColumn(props: Readonly<{
     cameras: CamerasType;
     className?: string;
     reverse?: boolean;
 
-}) {
+}>) {
     const {cameras, className, reverse} = props;
     return(
         <motion.div initial={{y: reverse ? "-50%" : 0}} animate={{y: reverse ? 0 : "-50%"}} transition={{duration: 15, repeat: Infinity, ease: 'linear'}} className={twMerge("flex flex-col gap-4 pb-4", className)}>
