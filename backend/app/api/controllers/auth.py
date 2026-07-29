@@ -20,7 +20,7 @@ from app.services.auth_service import ( #use services
     authenticate_user,
     confirm_user,
     resend_confirmation_code,
-    verify_mfa_code
+    complete_mfa
 )
 
 
@@ -102,4 +102,4 @@ def resend_code(request: Request, payload: ResendCodeRequest):
 @router.post("/verify-mfa")
 @limiter.limit("10/minute")
 def verify_mfa(request: Request, payload: VerifyMFARequest):
-    return verify_mfa_code(_payload_to_dict(payload))
+    return complete_mfa(_payload_to_dict(payload))
