@@ -146,6 +146,7 @@ export async function fetchAlerts(
   signal?: AbortSignal,
 ): Promise<PaginatedAlerts> {
   const query = buildAlerts(filters);
+
   const res = await apiFetch<ListAlertsRes>(
     `/alerts/${neighbourhoodId}${query}`,
     { signal },
