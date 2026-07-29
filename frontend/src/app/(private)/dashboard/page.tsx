@@ -21,15 +21,6 @@ interface CameraProp {
     rtspUrl?: string;
 }
 
-const initialCameras: CameraProp[] = [
-    { id: "1", name: "Camera 1 - Backyard" , visibility: "PRIVATE", enabled: true, location: "Backyard"},
-  //{ id: "2", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://Intrepid:password1234@172.20.10.2:554/stream2" },
-    { id: "40000000-0000-0000-0000-000000000001", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://localhost:8554/" + "cameras/40000000-0000-0000-0000-000000000001", visibility: "PRIVATE", enabled: true, location: "Office Room" },
-    { id: "3", name: "Camera 5 - Living Room", visibility: "PRIVATE", enabled: true, location: "Living Room" },
-    { id: "4", name: "Camera 3 - Bedroom 2", visibility: "PRIVATE", enabled: true, location: "Bedroom" },
-    { id: "5", name: "Camera 4 - Kitchen", visibility: "PRIVATE",enabled: true, location: "Kitchen" },
-]
-
 
 
 export default function Dashboard() {
@@ -53,6 +44,7 @@ export default function Dashboard() {
             return;
         }
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsLoadingCameras(true);
 
         apiFetchCameras(propertyId)
