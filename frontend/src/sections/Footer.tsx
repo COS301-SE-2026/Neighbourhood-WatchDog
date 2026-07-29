@@ -9,7 +9,7 @@ const footLinks = [
 export default function Footer() {
     return (
         <section className='py-16'>
-            <div className="container mx-auto">
+            <div className="container mx-auto lg:px-24">
                 <div className='flex flex-col md:flex-row items-center md:justify-between gap-6'>
                     <div className='flex gap-2 items-center'>
                         <Image src={logoImage} alt={"Neighbourhood Watchdog logo"} className="h-9 w-auto ml-2" />

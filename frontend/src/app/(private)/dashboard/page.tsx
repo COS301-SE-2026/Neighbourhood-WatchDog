@@ -4,11 +4,12 @@ import type { Camera } from "@/lib/validators/camera"
 import { useAlerts } from "@/hooks/use-alerts"
 import { toast } from "sonner"
 import { useEffect, useState } from "react"
+import { CameraOff, LoaderCircle,Plus } from "lucide-react";
 
 import { addCamera as apiAddCamera, fetchCameras as apiFetchCameras } from "@/lib/api/camera"
 import { NewCameraCard } from "@/components/new-camera-card"
-import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useAppView } from "@/components/app-view-context"
 
 interface CameraProp {
     id: string;
@@ -19,20 +20,11 @@ interface CameraProp {
     rtspUrl?: string;
 }
 
-const initialCameras: CameraProp[] = [
-    { id: "1", name: "Camera 1 - Backyard" , visibility: "PRIVATE", enabled: true, location: "Backyard"},
-  //{ id: "2", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://Intrepid:password1234@172.20.10.2:554/stream2" },
-    { id: "40000000-0000-0000-0000-000000000001", name: "Camera 2 - Office Room 1", rtspUrl: "rtsp://localhost:8554/" + "cameras/40000000-0000-0000-0000-000000000001", visibility: "PRIVATE", enabled: true, location: "Office Room" },
-    { id: "3", name: "Camera 5 - Living Room", visibility: "PRIVATE", enabled: true, location: "Living Room" },
-    { id: "4", name: "Camera 3 - Bedroom 2", visibility: "PRIVATE", enabled: true, location: "Bedroom" },
-    { id: "5", name: "Camera 4 - Kitchen", visibility: "PRIVATE",enabled: true, location: "Kitchen" },
-]
 
-// const PROPERTY_ID = "a79d1505-5000-438e-9813-ba0f5aecb5e2"; // TODO: replace once /properties/my-properties works
-const PROPERTY_ID = "30000000-0000-0000-0000-000000000001";
 
 export default function Dashboard() {
-
+    const [isLoadingCameras, setIsLoadingCameras] = useState(true);
+    const { propertyId } = useAppView()
     const { alerts, connected } = useAlerts("10000000-0000-0000-0000-000000000001");
 
     useEffect(() => {
@@ -47,7 +39,14 @@ export default function Dashboard() {
     const [cameras, setCameras] = useState<CameraProp[]>([]);
 
     useEffect(() => {
-        apiFetchCameras(PROPERTY_ID)
+        if (!propertyId) {
+            return;
+        }
+
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsLoadingCameras(true);
+
+        apiFetchCameras(propertyId)
             .then((data) => {
                 setCameras(
                     data.map((c) => ({
@@ -62,17 +61,24 @@ export default function Dashboard() {
             .catch((err) => {
                 console.error("Failed to fetch cameras", err);
                 toast.error("Failed to load cameras");
+            })
+            .finally(() => {
+            setIsLoadingCameras(false);
             });
-    }, []);
+    }, [propertyId]);
 
-    const handleAcknowledge = async (data: { name: string, location: string; rtspUrl: string }) => {
+    const handleAcknowledge = async (data: { name: string, location: string, rtspUrl: string }) => {
+        if (!propertyId) {
+            toast.error("Select a property before adding a camera");
+            return;
+        }
         const newCamera = await apiAddCamera({
             name: data.name,
             location: data.location,
             visibility: "PRIVATE",
             rtsp_url: data.rtspUrl,
-            property_id: PROPERTY_ID,
-            });
+            property_id: propertyId
+        });
         setCameras((prev) => [...prev, 
             {
         id: newCamera.id,
@@ -102,8 +108,36 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {cameras.map((camera) => (
+            {isLoadingCameras ? (
+                <div className="flex min-h-64 items-center justify-center">
+                    <LoaderCircle className="h-6 w-6 animate-spin text-primary" />
+                </div>
+                ) : cameras.length === 0 ? (
+                <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
+                    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                    <CameraOff className="h-7 w-7 text-primary" />
+                    </div>
+
+                    <h2 className="text-lg font-semibold text-foreground">
+                    No cameras added yet
+                    </h2>
+
+                    <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                    Add a camera to this property to start monitoring live feeds and receive
+                    AI-powered security alerts.
+                    </p>
+
+                    <Button
+                    onClick={() => setShowCard(true)}
+                    className="mt-6 bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add your first camera
+                    </Button>
+                </div>
+                ) : (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {cameras.map((camera) => (
                     <CameraCard
                         key={camera.id}
                         id={camera.id}
@@ -113,8 +147,9 @@ export default function Dashboard() {
                         enabled={camera.enabled}
                         userRole="NEIGHBOURHOOD_ADMIN"
                     />
-                ))}
-            </div>
+                    ))}
+                </div>
+                )}
 
             {showCard && (
                 <NewCameraCard
