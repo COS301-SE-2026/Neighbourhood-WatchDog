@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code
+from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code, respond_to_mfa
 from app.models.user import UserRole, User
 from sqlalchemy.orm import Session
 
@@ -119,4 +119,22 @@ def resend_confirmation_code(payload):
         "data": {
             "message": response.get("message", "sent")
         }
+    }
+
+def complete_mfa(payload):
+    response = respond_to_mfa(
+        email=payload["email"],
+        session=payload["session"],
+        code=payload["code"],
+    )
+
+    return {#If an error with cognito occurs the "response" variable will throw an error 
+        "success": True,
+        "data": {
+            "access_token": response["access_token"],
+            "id_token": response["id_token"],
+            "refresh_token": response.get("refresh_token"),
+            "token_type": response.get("token_type"),
+            "expires_in": response.get("expires_in"),
+        },
     }
