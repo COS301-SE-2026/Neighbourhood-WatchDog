@@ -162,7 +162,7 @@ def respond_to_mfa(email: str, session: str, code: str):
             ChallengeName="EMAIL_OTP",
             Session=session,
             ChallengeResponses={
-                "USERNAME": "", #Need to replace with email/username later
+                "USERNAME": email, #Need to replace with email/username later
                 "EMAIL_OTP_CODE": code,
             },
         )
