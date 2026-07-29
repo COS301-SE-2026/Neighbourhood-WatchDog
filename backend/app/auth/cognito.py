@@ -154,5 +154,5 @@ def resend_code(email: str):
         )
 
 def get_sub_from_id_token(id_token: str) -> str:
-    decoded = jwt.decode(id_token, options={"verify_signature": False})
-    return decoded["sub"]
+    payload = verify_token(id_token)
+    return payload["sub"]
