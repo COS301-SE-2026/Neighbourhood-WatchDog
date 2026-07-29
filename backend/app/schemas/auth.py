@@ -17,3 +17,7 @@ class ConfirmSignUpRequest(BaseModel):
 
 class ResendCodeRequest(BaseModel):
     email: EmailStr
+
+class VerifyMFARequest(BaseModel):
+    session: str
+    code: str
