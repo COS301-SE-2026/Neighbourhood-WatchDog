@@ -59,7 +59,7 @@ type NavItem = {
 
 //data
 
-const USERNAME = "John Doe";
+const USERNAME = localStorage.getItem("fullname");
 
 // Logo
 function WatchdogLogo({ size = 28 }: { size?: number }) {

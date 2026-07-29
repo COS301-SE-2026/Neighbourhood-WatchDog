@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '@/lib/api/auth';
+import { jwtDecode } from 'jwt-decode';
 
 // Types for API responses
 interface SignUpResponse {
@@ -132,8 +133,19 @@ export const setSession = (tokens: {
     throw new Error('Cannot store empty auth tokens');
   }
 
+  const claims = jwtDecode<{
+    sub: string;
+    name?: string;
+    email?: string;
+    address?: { formatted?: string };
+  }>(tokens.idToken);
+
   localStorage.setItem('accessToken', tokens.accessToken);
   localStorage.setItem('idToken', tokens.idToken);
+  localStorage.setItem('userSub', claims.sub);
+  localStorage.setItem('fullname', claims.name ?? '');
+  localStorage.setItem('email', claims.email ?? '');
+  localStorage.setItem('address', claims.address?.formatted ?? '');
 
   if (typeof tokens.expiresIn === 'number') {
     localStorage.setItem('tokenExpiry', String(Date.now() + tokens.expiresIn * 1000));
