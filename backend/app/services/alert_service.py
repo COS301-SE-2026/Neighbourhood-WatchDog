@@ -21,6 +21,8 @@ from uuid import UUID
 
 DEFAULT_PAGE_SIZE = 25
 MAX_PAGE_SIZE = 100
+NO_DATABASE_SESSION = "No database session"
+NOT_AUTHORISED = "Not authorised for this neighbourhood"
 
 async def create_alert(db: Session, data: AlertCreate, claims: dict):
     try:
@@ -101,7 +103,7 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
     if not alert_id:
         raise HTTPException(400, "Alert id is required")
     if not db:
-        raise HTTPException(500, "No database session")
+        raise HTTPException(500, NO_DATABASE_SESSION)
     if not claims:
         raise HTTPException(401, "Not authenticated")
 
@@ -169,13 +171,13 @@ async def list_alerts_handler(
     if not neighbourhood_id:
         raise HTTPException(400, "Neighbourhood id is required")
     if not db:
-        raise HTTPException(500, "No database session")
+        raise HTTPException(500, NO_DATABASE_SESSION)
     if not claims:
         raise HTTPException(401, "Not authenticated")
 
     caller_neighbourhood = claims.get("custom:neighbourhood_id")
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
-        raise HTTPException(403, "Not authorised for this neighbourhood")
+        raise HTTPException(403, NOT_AUTHORISED)
 
     if start_date and end_date and start_date > end_date:
         raise HTTPException(400, "start_date must be less than end_date")
@@ -223,7 +225,7 @@ def get_response_metrics_handler(
 ) -> AlertMetricsRes:
     caller_neighbourhood = claims.get("custom:neighbourhood_id")
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
-        raise HTTPException(403, "Not authorised for this neighbourhood")
+        raise HTTPException(403, NOT_AUTHORISED)
     
 
     stmt = (
@@ -309,7 +311,7 @@ async def get_alert_frequency_metrics_handler(
     
     caller_neighbourhood = claims.get("custom:neighbourhood_id")
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
-        raise HTTPException(403, "Not authorised for this neighbourhood")
+        raise HTTPException(403, NOT_AUTHORISED)
     
     start_date = None
     today = date_cls.today()
@@ -412,7 +414,7 @@ async def get_trends_handler(neighbourhood_id: UUID, db: DbSession, claims: dict
                              time_period: TimePeriod=TimePeriod.MONTH, incident_type: str | None=None, camera_id=UUID) -> TrendData:
     
     if not db:
-        raise HTTPException(500, "No database session")
+        raise HTTPException(500, NO_DATABASE_SESSION)
     
     if not claims:
         raise HTTPException(401, "Not authenticated")
@@ -420,7 +422,7 @@ async def get_trends_handler(neighbourhood_id: UUID, db: DbSession, claims: dict
 
     caller_neighbourhood = claims.get("custom:neighbourhood_id")
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
-        raise HTTPException(403, "Not authorised for this neighbourhood")
+        raise HTTPException(403, NOT_AUTHORISED)
     
 
     start_date = _resolve_start_date(time_period)

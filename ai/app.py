@@ -3,11 +3,7 @@ from camera_runtime import CameraSpec, CameraSupervisor
 import os
 import cv2
 import threading
-import tempfile
 from collections import deque
-from datetime import timedelta
-import subprocess
-import boto3
 from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI, Query
 from fastapi.responses import StreamingResponse

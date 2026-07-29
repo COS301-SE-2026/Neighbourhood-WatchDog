@@ -136,9 +136,8 @@ async def get_clip_url(
         id=detection_event_id
     ).first()
 
-    if not event: raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND, 
-        detail="Detection event not found"
+    if not event: 
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Detection event not found"
 
     )
 

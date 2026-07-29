@@ -116,11 +116,11 @@ function thresholdBandsPlugin(
   lowMax: number,
   mediumMax: number,
   yMax: number,
-  colors: any,
+  colors: ChartTheme,
 ) {
   return {
     id: "thresholdBands",
-    beforeDatasetsDraw(chart: any) {
+    beforeDatasetsDraw(chart: Chart<"line">) {
       const { ctx, chartArea, scales } = chart;
       if (!chartArea) return;
       const y = scales.y;

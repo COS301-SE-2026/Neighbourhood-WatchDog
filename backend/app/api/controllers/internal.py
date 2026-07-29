@@ -3,7 +3,7 @@
 
 import traceback
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from uuid import UUID
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -30,7 +30,7 @@ class UpdateClipRequest(BaseModel):
     clip_expires_at: str ##the iso datetime
 
 
-@router.post("/detection-events", status_code=201)
+@router.post("/detection-events", status_code=201, responses={404: {"description": "Camera not found"}})
 
 #creates a detection event and alert record
 #called by the ai service when the weapon is detected
@@ -59,10 +59,7 @@ def create_detection_event(body: CreateDetectionEventRequest, db: DbSession):
 
 
         if not camera:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Camera {body.camera_id} not found"
-            )
+            raise HTTPException(status_code=404,detail=f"Camera {body.camera_id} not found")
         
         ts = (
             datetime.fromisoformat(body.frame_timestamp)
@@ -105,13 +102,13 @@ def create_detection_event(body: CreateDetectionEventRequest, db: DbSession):
                             
         }
 
-    except Exception as e:
+    except Exception:
         print(f"INTERNAL EDNPOINT ERROR: {traceback.format_exc()}", flush=True)
         raise
 
 
 
-@router.patch("/detection-events/{event_id}/clip")
+@router.patch("/detection-events/{event_id}/clip", responses={404: {"description": "Detection event not found"}})
 
 #updating s3 clip key and expiry on a detection event after ai uploads the clip
 def update_clip(event_id: str, body: UpdateClipRequest, db: DbSession):
