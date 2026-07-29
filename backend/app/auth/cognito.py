@@ -92,6 +92,13 @@ def login(email, password):
             },
         )
 
+        print("========== COGNITO RESPONSE ==========")
+        print(response)
+        print("======================================")
+
+        if "AuthenticationResult" not in response:
+            return response
+
         auth_result = response["AuthenticationResult"]
 
         return {
