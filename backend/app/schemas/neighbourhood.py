@@ -1,5 +1,5 @@
 from pydantic import BaseModel, StringConstraints
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 from datetime import datetime
 
@@ -21,3 +21,10 @@ class CreateNeighbourhoodRes(BaseModel):
     status: int
     message: str | None = None
     data: NeighbourhoodRes | None = None
+
+class NeighbourhoodPropertyRes(BaseModel):
+    id: UUID
+    address: NonEmptyString
+    property_type: Literal["PRIVATE", "PUBLIC"]
+    neighbourhood_id: UUID | None = None
+    neighbourhood_name: str | None = None
