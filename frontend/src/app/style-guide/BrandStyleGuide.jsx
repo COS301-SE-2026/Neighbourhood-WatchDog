@@ -550,8 +550,10 @@ function TokensSection() {
       </FadeIn>
     </section>
   );
+}
 
-  function ComponentsSection() {
+
+function ComponentsSection() {
   const [hoveredBtn, setHoveredBtn] = useState(null);
   const [inputVal, setInputVal] = useState("");
   const [inputFocus, setInputFocus] = useState(false);
@@ -701,7 +703,7 @@ function TokensSection() {
     </section>
   );
 }
-}
+
 
 
 export default function StyleGuide() {
