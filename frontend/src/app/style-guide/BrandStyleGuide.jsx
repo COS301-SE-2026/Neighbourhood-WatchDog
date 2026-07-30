@@ -145,3 +145,64 @@ function Token({ children }) {
     </code>
   );
 }
+
+function HeroSection() {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 2000);
+    return () => clearInterval(id);
+  }, []);
+
+  const words = ["Security.", "Clarity.", "Trust.", "Identity."];
+  const current = words[tick % words.length];
+
+  return (
+    <section style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "80px 64px", background: "#0A0A0A", position: "relative", overflow: "hidden" }}>
+      {/* Grid overlay */}
+      <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(16,185,129,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,0.04) 1px, transparent 1px)", backgroundSize: "48px 48px", pointerEvents: "none" }} />
+      {/* Glow */}
+      <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%,-50%)", width: "600px", height: "600px", background: "radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
+
+      <div style={{ position: "relative", zIndex: 1, maxWidth: "800px" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "#1E1E1E", border: "1px solid rgba(16,185,129,0.25)", borderRadius: "9999px", padding: "6px 14px", marginBottom: "32px" }}>
+          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10B981", animation: "pulse 1.2s ease-in-out infinite" }} />
+          {/* <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#10B981", letterSpacing: "0.1em" }}>Demo 2 · Brand Style Guide</span> */}
+        </div>
+
+        <div style={{ marginBottom: "24px" }}>
+          <h1 style={{ fontSize: "clamp(3rem, 7vw, 5.5rem)", fontWeight: 700, color: "#F5F5F5", lineHeight: 1.05, letterSpacing: "-0.04em", margin: 0 }}>
+            Neighbourhood<br />WatchDog
+          </h1>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "12px", marginTop: "8px" }}>
+            <span style={{ fontSize: "clamp(1.5rem, 3vw, 2.5rem)", fontWeight: 300, color: "#8A8A8A", letterSpacing: "-0.02em" }}>Designed for</span>
+            <span key={current} style={{ fontSize: "clamp(1.5rem, 3vw, 2.5rem)", fontWeight: 700, color: "#10B981", letterSpacing: "-0.02em", animation: "fadeWord 0.4s ease" }}>{current}</span>
+          </div>
+        </div>
+
+        <p style={{ fontSize: "1.0625rem", color: "#A3A3A3", lineHeight: 1.7, maxWidth: "520px", marginBottom: "48px" }}>
+          An AI-assisted CCTV security platform built for EPI-USE Africa. This guide documents the complete visual language, design tokens, and component system powering the production interface.
+        </p>
+
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          {["Colours", "Typography", "Tokens", "Components", "Accessibility"].map((s, i) => (
+            <a key={s} href={`#${s.toLowerCase()}`} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", borderRadius: "8px", border: "1px solid rgba(138,138,138,0.2)", color: "#A3A3A3", fontSize: "13px", textDecoration: "none", transition: "all 0.15s", background: "transparent" }}
+              onMouseEnter={e => { e.target.style.borderColor = "rgba(16,185,129,0.4)"; e.target.style.color = "#F5F5F5"; }}
+              onMouseLeave={e => { e.target.style.borderColor = "rgba(138,138,138,0.2)"; e.target.style.color = "#A3A3A3"; }}>
+              {s}
+            </a>
+          ))}
+        </div>
+      </div>
+
+      {/* Version badge */}
+      <div style={{ position: "absolute", bottom: "40px", right: "64px", fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#3D3D3D" }}>
+        Zero Day Proking Solutions · v2.0
+      </div>
+
+      <style>{`
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }
+        @keyframes fadeWord { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+      `}</style>
+    </section>
+  );
+}
