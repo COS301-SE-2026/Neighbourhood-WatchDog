@@ -156,7 +156,7 @@ class TestPaginatedRes:
             PaginatedResponse[AuditLogScheme](total=1, page=1, size=30)
 
     def test_empty_results_list_is_allowed(self):
-        res = PaginatedResponse[AuditLogScheme](total=0, page=1, size=30)
+        res = PaginatedResponse[AuditLogScheme](total=0, page=1, size=30, results=[])
         assert res.results == []
 
     def test_invalid_itemin_results_raises(self):
