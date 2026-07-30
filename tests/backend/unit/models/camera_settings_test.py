@@ -1,7 +1,6 @@
 from pydantic import ValidationError
 import pytest
 from uuid import uuid4
-from datetime import datetime, timezone
 from app.schemas.camera_settings import CameraSettingsResponse, ZoneResponse, UpdateCameraSettingsRequest, ZonePoint, CreateZoneRequest
 
 def _zone_response(**overrides):
