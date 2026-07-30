@@ -431,14 +431,6 @@ function TokensSection() {
   const [activeTab, setActiveTab] = useState("spacing");
   const tabs = ["spacing", "radius", "motion", "shadows", "breakpoints"];
 
-  const tabData = {
-    spacing: TOKENS.spacing,
-    radius: TOKENS.radius,
-    motion: TOKENS.motion,
-    shadows: TOKENS.shadows,
-    breakpoints: TOKENS.breakpoints,
-  };
-
   return (
     <section id="tokens" style={{ padding: "96px 64px", background: "#0A0A0A" }}>
       <FadeIn>
@@ -534,9 +526,6 @@ function TokensSection() {
 
 function ComponentsSection() {
   const [hoveredBtn, setHoveredBtn] = useState(null);
-  const [inputVal, setInputVal] = useState("");
-  const [inputFocus, setInputFocus] = useState(false);
-  const [inputError, setInputError] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastType, setToastType] = useState("success");
 
