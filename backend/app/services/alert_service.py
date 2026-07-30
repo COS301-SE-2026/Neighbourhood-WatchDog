@@ -3,10 +3,11 @@ from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm import Session
 from app.models.alert import Alert
 from app.models.detection_event import DetectionEvent
+from app.models.neighbourhood import Neighbourhood
 from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes, NumberInPeriod, TrendGroupBy, TrendDirection, TrendBucket, TrendData
 from fastapi import HTTPException
 
-from app.models.user import User
+from app.models.user import User, UserRole
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 
@@ -15,8 +16,10 @@ from app.models.camera import Camera
 from app.schemas.alert import AlertRes
 
 from app.services.audit_service import create_audit_log_item
-from app.models.audit_log import AuditAction
+from app.models.audit_log import AuditAction, AuditLog
 from uuid import UUID
+
+from app.services.notification_service import _format_whatsapp_message, _notify_users
 
 DEFAULT_PAGE_SIZE = 25
 MAX_PAGE_SIZE = 100
@@ -495,3 +498,53 @@ async def get_trends_handler(neighbourhood_id: UUID, db: DbSession, claims: dict
 
 
     )
+
+async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: DbSession, claims: dict):
+    from app.api.controllers.alert import broadcast
+
+    alert = db.execute(select(Alert).where(Alert.id == alert_id)).scalar_one_or_none()
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+
+    camera = db.execute(select(Camera).where(Camera.id == alert.camera_id)).scalar_one_or_none()
+    if not camera:
+        raise HTTPException(status_code=404, detail="Camera not found for alert")
+
+    neighbourhood_id = camera.neighbourhood_id
+
+    neighbourhood = db.execute(select(Neighbourhood).where(Neighbourhood.id == neighbourhood_id)).scalar_one_or_none()
+    if not neighbourhood:
+        raise HTTPException(status_code=404, detail="Neighbourhood not found")
+
+    detection_event = db.execute(select(DetectionEvent).where(DetectionEvent.id == alert.detection_event_id)).scalar_one_or_none()
+    if not detection_event:
+        raise HTTPException(status_code=404, detail="Detection not found")
+    
+    detection_type = detection_event.detection_type
+
+    alert_res = _build_alert_res(alert)
+    await broadcast(
+        neighbourhood_id=str(neighbourhood_id),
+        message={"event": "alert.broadcast", "payload": alert_res.model_dump(mode="json")},
+    )
+
+    residents = db.execute(select(User).where(User.neighbourhood_id == neighbourhood_id, User.role == UserRole.RESIDENT)).scalars().all()
+
+    timestamp_str = datetime.now().strftime("%d %b %Y, %H:%M:%S")
+    whatsapp_message = _format_whatsapp_message("CRITICAL", detection_type, camera.name, timestamp_str)
+    _notify_users(db, alert.id, residents, whatsapp_message, detection_type, camera, "CRITICAL") #imma need to store val to know if failed or not
+
+    admin_user_id = db.execute(select(User.id).where(User.cognito_sub == claims.get("sub"))).scalar_one_or_none()
+    if not admin_user_id:
+        raise HTTPException(status_code=404, detail="Admin user not found")
+    
+    audit_record = AuditLog(
+        user_id=admin_user_id,
+        action=AuditAction.UPDATE,
+        target_entity_type="alert",
+        target_entity_id=alert.id,
+        old_values={"broadcast": False},
+        new_values={"broadcast": True, "neighbourhood_id": str(neighbourhood_id)},
+    )
+    db.add(audit_record)
+    db.commit()

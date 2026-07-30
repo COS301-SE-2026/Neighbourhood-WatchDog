@@ -5,16 +5,17 @@ from typing import Annotated
 from datetime import datetime
 from fastapi import APIRouter, Depends, Query, WebSocket
 from sqlalchemy.orm import Session
-
+from app.auth.dependencies import require_role
 from app.auth.dependencies import get_current_user, get_authenticated_edge_agent
 from app.core.database import DbSession, get_db
-from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, ListAlertsRes, Pagination
+from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, BroadcastAlertReq, ListAlertsRes, Pagination
 from app.services.alert_service import (
     acknowledge_alert_handler,
     get_alert_frequency_metrics_handler,
     get_response_metrics_handler,
     get_trends_handler,
     list_alerts_handler,
+    broadcast_neighbourhood_alert_service,
     MAX_PAGE_SIZE,
     DEFAULT_PAGE_SIZE,
 )
@@ -218,3 +219,14 @@ async def alert_websocket(
         pass
     finally:
         remove_connection(str(neighbourhood_id), websocket)
+
+@router.post("/broadcast")
+async def broadcast_neighbourhood_alert(
+    req: BroadcastAlertReq,
+    db: DbSession, 
+    claims: Annotated[dict, Depends(get_current_user)]
+    ):
+
+    require_role("NEIGHBOURHOOD_ADMIN")
+
+    await broadcast_neighbourhood_alert_service(req.alert_id, db, claims)
