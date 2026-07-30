@@ -83,3 +83,65 @@ const TOKENS = {
     { name: "Wide", value: "≥ 1280px", cols: "4", notes: "Extended grid, multi-feed view" },
   ],
 };
+
+//header functions and transition functions
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function useIntersection(ref) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (!ref.current) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.1 });
+    obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+  return visible;
+}
+
+function FadeIn({ children, delay = 0, className = "" }) {
+  const ref = useRef(null);
+  const visible = useIntersection(ref);
+  return (
+    <div ref={ref} className={className} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)", transition: `opacity 0.5s ease ${delay}ms, transform 0.5s ease ${delay}ms` }}>
+      {children}
+    </div>
+  );
+}
+
+function SectionLabel({ children }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "32px" }}>
+      <div style={{ width: "3px", height: "24px", background: "#10B981", borderRadius: "2px", flexShrink: 0 }} />
+      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#10B981", fontWeight: 500 }}>{children}</span>
+    </div>
+  );
+}
+
+function SectionHeading({ children }) {
+  return <h2 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#F5F5F5", marginBottom: "8px", letterSpacing: "-0.02em" }}>{children}</h2>;
+}
+
+function SectionSubtitle({ children }) {
+  return <p style={{ fontSize: "0.9375rem", color: "#8A8A8A", lineHeight: "1.6", marginBottom: "40px", maxWidth: "560px" }}>{children}</p>;
+}
+
+function Card({ children, style = {} }) {
+  return (
+    <div style={{ background: "#141414", border: "1px solid rgba(138,138,138,0.12)", borderRadius: "12px", padding: "24px", ...style }}>
+      {children}
+    </div>
+  );
+}
+
+function Token({ children }) {
+  return (
+    <code style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", background: "#1E1E1E", color: "#10B981", padding: "2px 6px", borderRadius: "4px", whiteSpace: "nowrap" }}>
+      {children}
+    </code>
+  );
+}
