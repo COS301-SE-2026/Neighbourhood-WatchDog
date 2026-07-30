@@ -94,7 +94,7 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
         raise HTTPException(401, "Not authenticated")
 
     role = claims.get("custom:role")
-    if role not in ["SECURITY_OFFICER", "NEIGHBOURHOOD_ADMIN"]:
+    if role not in ["SECURITY_OFFICER", "NEIGHBOURHOOD_ADMIN", "RESIDENT"]:
         raise HTTPException(403, "Insufficient permissions")
 
     try:
