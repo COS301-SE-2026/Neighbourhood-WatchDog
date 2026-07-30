@@ -23,7 +23,7 @@ MAX_PAGE_SIZE = 100
 NO_DATABASE_SESSION = "No database session"
 NOT_AUTHORISED = "Not authorised for this neighbourhood"
 
-async def create_alert(db: Session, data: AlertCreate, claims: dict):
+async def create_alert(db: Session, data: AlertCreate):
     try:
         detection_event = DetectionEvent(
             camera_id=data.camera_id,
@@ -43,20 +43,7 @@ async def create_alert(db: Session, data: AlertCreate, claims: dict):
         )
 
         db.add(alert)
-        db.flush()  # Get alert.id before audit
-
-        create_audit_log_item(
-            db=db,
-            user_id=UUID(claims["id"]),
-            action=AuditAction.CREATE,
-            target_entity_type="Alert",
-            target_entity_id=alert.id,
-            new_values={
-                "camera_id": str(alert.camera_id),
-                "detection_event_id": str(alert.detection_event_id),
-                "status": alert.status,
-            },
-        )
+        db.flush() 
         db.commit()
         db.refresh(alert)
 
@@ -107,7 +94,7 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
         raise HTTPException(401, "Not authenticated")
 
     role = claims.get("custom:role")
-    if role not in ["SECURITY_OFFICER", "NEIGHBOURHOOD_ADMIN"]:
+    if role not in ["SECURITY_OFFICER", "NEIGHBOURHOOD_ADMIN", "RESIDENT"]:
         raise HTTPException(403, "Insufficient permissions")
 
     try:

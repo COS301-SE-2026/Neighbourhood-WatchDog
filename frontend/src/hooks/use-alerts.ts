@@ -15,9 +15,12 @@ export function useAlerts(neighbourhoodId: string) {
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket(
-      `ws://localhost:8000/alerts/${neighbourhoodId}/ws`
-    );
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "https://api-staging.neighbourhoodwatchdog.co.za";
+
+    const wsBase = apiUrl.replace(/^http/, "ws");
+
+    const ws = new WebSocket(`${wsBase}/alerts/${neighbourhoodId}/ws`);
 
     ws.onopen = () => setConnected(true);
     ws.onclose = () => setConnected(false);

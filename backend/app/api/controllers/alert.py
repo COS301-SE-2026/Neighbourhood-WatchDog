@@ -6,7 +6,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query, WebSocket
 from sqlalchemy.orm import Session
 
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_user, get_authenticated_edge_agent
 from app.core.database import DbSession, get_db
 from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, ListAlertsRes, Pagination
 from app.services.alert_service import (
@@ -27,6 +27,8 @@ from app.schemas.alert import (
     TrendResponse,
     TrendGroupBy,
 )
+from app.models.edge_agent_credentials import EdgeAgentCredential
+
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 _connections: dict[str, set[WebSocket]] = {}
@@ -94,8 +96,12 @@ async def get_alert_frequency_metrics(
     )
 
 @router.post("/", response_model=AlertResponse)
-async def create_alert(alert: AlertCreate, db: Session = Depends(get_db), claims: dict = Depends(get_current_user)):
-    return await alert_service.create_alert(db, alert, claims)
+async def create_alert(
+    alert: AlertCreate, 
+    credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    return await alert_service.create_alert(db, alert)
 
 @router.post("/dev/broadcast") #TODO: remove before production
 async def dev_broadcast_alert(data: dict):
