@@ -159,6 +159,7 @@ The system concentrates on the integrated development from camera registration a
     R5.3: Live Stream Preview
         R5.3.1: The dashboard shall display a live stream preview for each camera.
         R5.3.2: The dashboard shall allow a user to select and enlarge a specific camera feed for closer inspection.
+        R5.2.3 The dashboard shall display the online or offline status of each paired WatchDog Agent.
     R5.4: Incident History
         R5.4.1: The dashboard shall provide a view of all past alerts, filterable by camera, detection type, date, and status.
         R5.4.2: The dashboard shall allow a user to view the footage clip associated with a historical event.
