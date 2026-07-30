@@ -54,7 +54,7 @@ app.add_middleware(SlowAPIMiddleware) #Rate limiting
 
 app.add_middleware( #CORS (allow requests from frontend)
     CORSMiddleware,
-    allow_origins=[config.frontend_url.rstrip("/"), "http://localhost:3000", "https://neighbourhood-watch-dog-intrepidcapstone-4790-teamintrepid.vercel.app", "https://api.neighbourhoodwatchdog.co.za/auth/signup"],
+    allow_origins=[config.frontend_url.rstrip("/"), "http://localhost:3000", "https://neighbourhood-watch-dog-intrepidcapstone-4790-teamintrepid.vercel.app", "https://api.neighbourhoodwatchdog.co.za"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
