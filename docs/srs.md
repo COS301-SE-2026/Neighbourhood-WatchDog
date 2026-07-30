@@ -589,24 +589,29 @@ High-Level:
 TUCBW: The Neighbourhood Administrator can select a Security Officer to invite to the neighbourhood from a list of existing officers.
 TUCEW: The Security Officer can accept or reject the invitation to join the neighbourhood.
 
-R8 WatchDog Agent anf Camera Management
+R8 WatchDog Agent and Camera Management
 
-UC8.1 Pair a WatchDog Agent with an Account (Abstract)
+UC8.1 – Install the WatchDog Agent (Abstract)
+High-Level:
+TUCBW: A Resident or Neighbourhood Administrator downloads the WatchDog Agent installation package and executes the installation script (.bat file).
+TUCEW: The WatchDog Agent is successfully installed on the user's computer and is ready to be paired with their Neighbourhood WatchDog account.
+
+UC8.2 Pair a WatchDog Agent with an Account (Abstract)
 High-Level:
 TUCBW: A Resident or Neighbourhood Administrator opens the WatchDog desktop agent and enters the pairing token generated from their Neighbourhood WatchDog account.
 TUCEW: The WatchDog Agent is securely linked to the user’s account and is authorised to retrieve and manage the cameras assigned to that user.
 
-UC8.2 - Automatically Monitor Enabled Camera Streams (Abstract)
+UC8.3 - Automatically Monitor Enabled Camera Streams (Abstract)
 High-Level:
 TUCBW: A Resident or Neighbourhood Administrator enables one or more registered cameras in the Neighbourhood WatchDog platform.
 TUCEW: The paired WatchDog Agent automatically detects the enabled cameras, starts the required video publishing and detection processes, and makes the available camera streams accessible through the platform.
 
-UC8.3 - Stop Monitoring a Disabled Camera (Abstract)
+UC8.4 - Stop Monitoring a Disabled Camera (Abstract)
 High-Level:
 TUCBW: A Resident or Neighbourhood Administrator disables a registered camera through the camera settings page.
 TUCEW: The WatchDog Agent automatically stops the video publishing and detection processes for the disabled camera, and the camera is no longer available for live viewing or monitoring.
 
-UC8.4 - Isolate a Camera Runtime Failure (Abstract)
+UC8.5 - Isolate a Camera Runtime Failure (Abstract)
 High-Level:
 TUCBW: A camera stream, video publisher, or detection process fails while other cameras are being monitored by the WatchDog Agent.
 TUCEW: The affected camera is marked as unavailable or offline, while the WatchDog Agent continues monitoring all other operational cameras without interruption.
