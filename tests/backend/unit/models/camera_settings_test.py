@@ -110,6 +110,31 @@ class TestZoneRes:
     def test_from_attributes_config_present(self):
         """model_config should allow construction from ORM objects"""
         assert ZoneResponse.model_config.get("from_attributes") is True
+
+class TestUpdateCameraSettingsReq:
+    def test_valid_threshold(self):
+        req = UpdateCameraSettingsRequest(confidence_threshold=0.75)
+        assert req.confidence_threshold == 0.75
+
+    def test_confidence_threshold_defaults_to_none(self):
+        req = UpdateCameraSettingsRequest()
+        assert req.confidence_threshold is None
+
+    def test_threshold_at_lower(self):
+        req = UpdateCameraSettingsRequest(confidence_threshold=0.0)
+        assert req.confidence_threshold == 0.0
+
+    def test_threshold_at_upper(self):
+        req = UpdateCameraSettingsRequest(confidence_threshold=1.0)
+        assert req.confidence_threshold == 1.0
+
+    def test_threshold_below_boundary_raises(self):
+        with pytest.raises(ValidationError):
+            UpdateCameraSettingsRequest(confidence_threshold=-0.1)
+
+    def test_threshold_above_boundary_raises(self):
+        with pytest.raises(ValidationError):
+            UpdateCameraSettingsRequest(confidence_threshold=1.1)
         
 
     
