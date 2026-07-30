@@ -26,6 +26,8 @@ async def create_neighbourhood(req: CreateNeighbourhoodReq, db: DbSession, claim
 async def get_neighbourhood_properties(db: DbSession, claims: Annotated[dict, Depends(get_current_user)] ):
     """Get properties of all users with neighbour details"""
 
+    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
+    
     properties = await get_neighbourhood_properties_service(db = db, claims = claims)
 
     return properties
