@@ -289,3 +289,277 @@ function ColoursSection() {
     </section>
   );
 }
+
+function TypographySection() {
+  return (
+    <section id="typography" style={{ padding: "96px 64px", background: "#0A0A0A" }}>
+      <FadeIn>
+        {/* <SectionLabel>02 - Typography</SectionLabel> */}
+        <SectionHeading>Type system</SectionHeading>
+        <SectionSubtitle>Inter for interface text - geometric, neutral, legible at all sizes. JetBrains Mono for code, IDs, tokens, and technical strings. Both sourced from Google Fonts under the SIL Open Font Licence.</SectionSubtitle>
+      </FadeIn>
+
+      <FadeIn delay={100}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "48px" }}>
+          {[
+            { name: "Inter", role: "UI / Interface", weights: "300, 400, 500, 600, 700", fallback: "system-ui, sans-serif", source: "Google Fonts · SIL OFL", token: "--font-sans", sample: "ABCDEFGHIJKLM\nnopqrstuvwxyz\n0123456789!@#" },
+            { name: "JetBrains Mono", role: "Code / Technical", weights: "400, 500, 700", fallback: "Consolas, monospace", source: "Google Fonts · SIL OFL", token: "--font-mono", sample: "const cam = new\nStream({ zone: 'B' })\nreturn cam.init()" },
+          ].map(f => (
+            <Card key={f.name}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                <div>
+                  <p style={{ fontSize: "11px", color: "#8A8A8A", margin: "0 0 4px", fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.05em" }}>{f.role}</p>
+                  <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#F5F5F5", margin: "0 0 4px", fontFamily: f.name.includes("Mono") ? "'JetBrains Mono', monospace" : "Inter, sans-serif" }}>{f.name}</h3>
+                </div>
+                <Token>{f.token}</Token>
+              </div>
+              <pre style={{ fontFamily: f.name.includes("Mono") ? "'JetBrains Mono', monospace" : "Inter, sans-serif", fontSize: "28px", fontWeight: 400, color: "#F5F5F5", background: "#1E1E1E", borderRadius: "8px", padding: "16px", margin: "0 0 16px", lineHeight: 1.3, overflow: "hidden" }}>{f.sample}</pre>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "12px", color: "#8A8A8A" }}>
+                <span>Weights: {f.weights}</span>
+                <span>Source: {f.source}</span>
+                <span style={{ gridColumn: "span 2" }}>Fallback: <code style={{ color: "#A3A3A3" }}>{f.fallback}</code></span>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </FadeIn>
+
+      <FadeIn delay={150}>
+        <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#F5F5F5", marginBottom: "20px" }}>Type scale</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          {TOKENS.type.map((t, i) => (
+            <div key={t.name} style={{ display: "grid", gridTemplateColumns: "120px 1fr 200px", alignItems: "center", gap: "16px", padding: "16px", borderRadius: "8px", border: "1px solid rgba(138,138,138,0.08)", background: "#141414", transition: "background 0.1s" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#1A1A1A"}
+              onMouseLeave={e => e.currentTarget.style.background = "#141414"}>
+              <div>
+                <p style={{ fontSize: "11px", color: "#8A8A8A", margin: "0 0 2px" }}>{t.name}</p>
+                <Token>{t.token}</Token>
+              </div>
+              <div style={{ fontFamily: t.mono ? "'JetBrains Mono', monospace" : "Inter, sans-serif", fontSize: t.size, fontWeight: t.weight, color: "#F5F5F5", lineHeight: t.lineHeight, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.sample}</div>
+              <div style={{ textAlign: "right" }}>
+                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#10B981", margin: "0 0 2px" }}>{t.size} / {t.lineHeight}</p>
+                <p style={{ fontSize: "11px", color: "#6B6B6B", margin: 0 }}>w{t.weight} · {t.usage}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </FadeIn>
+    </section>
+  );
+}
+
+function LogoSection() {
+  const logoVariants = [
+    { label: "Full", bg: "#0D0D0D", border: "1px solid rgba(138,138,138,0.12)" },
+    { label: "Inverse", bg: "#F5F5F5", border: "none" },
+    { label: "Monochrome", bg: "#1E1E1E", border: "1px solid rgba(138,138,138,0.12)", mono: true },
+  ];
+
+  function LogoMark({ color = "#10B981", textColor = "#F5F5F5", size = 1 }) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: `${12 * size}px` }}>
+        <svg width={`${40 * size}`} height={`${40 * size}`} viewBox="0 0 40 40" fill="none">
+          <rect width="40" height="40" rx="10" fill={color} />
+          <path d="M20 8 L32 14 L32 22 C32 28 26 34 20 36 C14 34 8 28 8 22 L8 14 Z" fill="none" stroke={color === "#F5F5F5" ? "#0A0A0A" : "#0A0A0A"} strokeWidth="2.5" />
+          <circle cx="20" cy="22" r="4" fill={color === "#F5F5F5" ? "#0A0A0A" : "#0A0A0A"} />
+          <path d="M20 18 L20 10" stroke={color === "#F5F5F5" ? "#0A0A0A" : "#0A0A0A"} strokeWidth="2" strokeLinecap="round" />
+        </svg>
+        <div>
+          <p style={{ fontSize: `${14 * size}px`, fontWeight: 700, color: textColor, margin: 0, letterSpacing: "-0.02em", lineHeight: 1.1 }}>WatchDog</p>
+          <p style={{ fontSize: `${10 * size}px`, color: color === "#F5F5F5" ? "#555" : "#A3A3A3", margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace" }}>Neighbourhood Security</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <section id="logo" style={{ padding: "96px 64px", background: "#0D0D0D" }}>
+      <FadeIn>
+        {/* <SectionLabel>03 - Logo & Iconography</SectionLabel> */}
+        <SectionHeading>Logo system</SectionHeading>
+        <SectionSubtitle>The WatchDog mark is a shield with an embedded camera - surveillance, protection, and AI-driven intelligence in a single glyph. Do not alter proportions, colours, or orientation.</SectionSubtitle>
+      </FadeIn>
+
+      <FadeIn delay={100}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "40px" }}>
+          <Card style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "140px", background: "#0D0D0D" }}>
+            <div style={{ marginBottom: "16px" }}><svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#10B981" /><path d="M20 8 L32 14 L32 22 C32 28 26 34 20 36 C14 34 8 28 8 22 L8 14 Z" fill="none" stroke="#0A0A0A" strokeWidth="2.5" /><circle cx="20" cy="22" r="4" fill="#0A0A0A" /><path d="M20 18 L20 10" stroke="#0A0A0A" strokeWidth="2" strokeLinecap="round" /></svg></div>
+            <div style={{ textAlign: "center" }}><p style={{ fontSize: "14px", fontWeight: 700, color: "#F5F5F5", margin: "0 0 2px" }}>WatchDog</p><p style={{ fontSize: "10px", color: "#A3A3A3", margin: 0, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "monospace" }}>Neighbourhood Security</p></div>
+            <p style={{ fontSize: "11px", color: "#6B6B6B", marginTop: "12px" }}>Full - dark bg</p>
+          </Card>
+          <Card style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "140px", background: "#F5F5F5" }}>
+            <div style={{ marginBottom: "16px" }}><svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#0A0A0A" /><path d="M20 8 L32 14 L32 22 C32 28 26 34 20 36 C14 34 8 28 8 22 L8 14 Z" fill="none" stroke="#F5F5F5" strokeWidth="2.5" /><circle cx="20" cy="22" r="4" fill="#F5F5F5" /><path d="M20 18 L20 10" stroke="#F5F5F5" strokeWidth="2" strokeLinecap="round" /></svg></div>
+            <div style={{ textAlign: "center" }}><p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A", margin: "0 0 2px" }}>WatchDog</p><p style={{ fontSize: "10px", color: "#555", margin: 0, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "monospace" }}>Neighbourhood Security</p></div>
+            <p style={{ fontSize: "11px", color: "#888", marginTop: "12px" }}>Inverse - light bg</p>
+          </Card>
+          <Card style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "140px", background: "#1E1E1E" }}>
+            <div style={{ marginBottom: "16px" }}><svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#8A8A8A" /><path d="M20 8 L32 14 L32 22 C32 28 26 34 20 36 C14 34 8 28 8 22 L8 14 Z" fill="none" stroke="#1E1E1E" strokeWidth="2.5" /><circle cx="20" cy="22" r="4" fill="#1E1E1E" /><path d="M20 18 L20 10" stroke="#1E1E1E" strokeWidth="2" strokeLinecap="round" /></svg></div>
+            <div style={{ textAlign: "center" }}><p style={{ fontSize: "14px", fontWeight: 700, color: "#8A8A8A", margin: "0 0 2px" }}>WatchDog</p><p style={{ fontSize: "10px", color: "#6B6B6B", margin: 0, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "monospace" }}>Neighbourhood Security</p></div>
+            <p style={{ fontSize: "11px", color: "#6B6B6B", marginTop: "12px" }}>Monochrome</p>
+          </Card>
+        </div>
+      </FadeIn>
+
+      <FadeIn delay={150}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "40px" }}>
+          <Card>
+            <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "16px" }}>Clear-space & minimum size</h3>
+            <div style={{ background: "#1E1E1E", borderRadius: "8px", padding: "24px", display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", marginBottom: "12px" }}>
+              <div style={{ position: "relative", border: "1px dashed rgba(16,185,129,0.3)", padding: "12px" }}>
+                <svg width="32" height="32" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#10B981" /><path d="M20 8 L32 14 L32 22 C32 28 26 34 20 36 C14 34 8 28 8 22 L8 14 Z" fill="none" stroke="#0A0A0A" strokeWidth="2.5" /><circle cx="20" cy="22" r="4" fill="#0A0A0A" /></svg>
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, border: "1px dashed rgba(16,185,129,0.4)", borderRadius: "2px", pointerEvents: "none" }} />
+              </div>
+              <div style={{ fontSize: "12px", color: "#8A8A8A", lineHeight: 1.6 }}>
+                <p style={{ margin: "0 0 4px" }}>Clear space = ½ shield height</p>
+                <p style={{ margin: 0 }}>Min render: 24×24px (icon), 120px (full)</p>
+              </div>
+            </div>
+          </Card>
+          <Card>
+            <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#EF4444", marginBottom: "16px" }}>Forbidden treatments</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {["Do not stretch or skew the mark", "Do not recolour the shield (emerald or monochrome only)", "Do not add drop shadows or glow effects", "Do not place on a busy photographic background", "Do not rotate or flip the mark", "Do not use outline-only version of filled icon"].map(r => (
+                <div key={r} style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                  <span style={{ color: "#EF4444", fontSize: "12px", flexShrink: 0, marginTop: "1px" }}>✕</span>
+                  <span style={{ fontSize: "12px", color: "#8A8A8A", lineHeight: 1.5 }}>{r}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </FadeIn>
+
+      <FadeIn delay={200}>
+        <Card>
+          <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "4px" }}>Icon library - Lucide React</h3>
+          <p style={{ fontSize: "12px", color: "#8A8A8A", marginBottom: "16px" }}>All UI icons are sourced from Lucide React. Stroke weight: 1.5px at 16–20px, 2px at 24px+. Never fill icons unless explicitly a filled-state indicator.</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+            {[
+              { name: "Shield", unicode: "🛡" },
+              { name: "Camera", unicode: "📷" },
+              { name: "AlertTriangle", unicode: "⚠" },
+              { name: "Eye", unicode: "👁" },
+              { name: "Bell", unicode: "🔔" },
+              { name: "Lock", unicode: "🔒" },
+              { name: "User", unicode: "👤" },
+              { name: "Map", unicode: "🗺" },
+              { name: "Wifi", unicode: "📶" },
+              { name: "Activity", unicode: "📈" },
+              { name: "ZoomIn", unicode: "🔍" },
+              { name: "Settings", unicode: "⚙" },
+            ].map(icon => (
+              <div key={icon.name} style={{ display: "flex", alignItems: "center", gap: "6px", background: "#1E1E1E", borderRadius: "6px", padding: "6px 10px" }}>
+                <span style={{ fontSize: "14px" }}>{icon.unicode}</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#A3A3A3" }}>{icon.name}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </FadeIn>
+    </section>
+  );
+}
+
+function TokensSection() {
+  const [activeTab, setActiveTab] = useState("spacing");
+  const tabs = ["spacing", "radius", "motion", "shadows", "breakpoints"];
+
+  const tabData = {
+    spacing: TOKENS.spacing,
+    radius: TOKENS.radius,
+    motion: TOKENS.motion,
+    shadows: TOKENS.shadows,
+    breakpoints: TOKENS.breakpoints,
+  };
+
+  return (
+    <section id="tokens" style={{ padding: "96px 64px", background: "#0A0A0A" }}>
+      <FadeIn>
+        {/* <SectionLabel>04 - Design Tokens</SectionLabel> */}
+        <SectionHeading>Token system</SectionHeading>
+        <SectionSubtitle>All values are defined as CSS custom properties in globals.css. Any drift between this guide and the codebase is treated as a bug.</SectionSubtitle>
+      </FadeIn>
+
+      <FadeIn delay={100}>
+        <div style={{ display: "flex", gap: "4px", marginBottom: "24px", background: "#141414", padding: "4px", borderRadius: "10px", display: "inline-flex", flexWrap: "wrap" }}>
+          {tabs.map(t => (
+            <button key={t} onClick={() => setActiveTab(t)}
+              style={{ padding: "7px 16px", borderRadius: "7px", border: "none", cursor: "pointer", fontSize: "13px", fontWeight: 500, transition: "all 0.15s", background: activeTab === t ? "#10B981" : "transparent", color: activeTab === t ? "#0A0A0A" : "#8A8A8A", textTransform: "capitalize" }}>
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "spacing" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            {TOKENS.spacing.map(s => (
+              <div key={s.token} style={{ display: "grid", gridTemplateColumns: "200px 80px 1fr 200px", alignItems: "center", gap: "16px", padding: "12px 16px", background: "#141414", borderRadius: "8px", border: "1px solid rgba(138,138,138,0.08)" }}>
+                <Token>{s.token}</Token>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "12px", color: "#F5F5F5" }}>{s.value}</span>
+                <div style={{ background: "#10B981", height: "8px", borderRadius: "4px", opacity: 0.8, width: s.value }} />
+                <span style={{ fontSize: "12px", color: "#8A8A8A" }}>{s.usage}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "radius" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            {TOKENS.radius.map(r => (
+              <div key={r.token} style={{ display: "grid", gridTemplateColumns: "200px 80px 80px 1fr", alignItems: "center", gap: "16px", padding: "12px 16px", background: "#141414", borderRadius: "8px", border: "1px solid rgba(138,138,138,0.08)" }}>
+                <Token>{r.token}</Token>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "12px", color: "#F5F5F5" }}>{r.value}</span>
+                <div style={{ width: "40px", height: "40px", border: "2px solid #10B981", borderRadius: r.value, background: "rgba(16,185,129,0.1)" }} />
+                <span style={{ fontSize: "12px", color: "#8A8A8A" }}>{r.usage}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "motion" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            {TOKENS.motion.map(m => (
+              <div key={m.token} style={{ display: "grid", gridTemplateColumns: "240px 1fr 220px", alignItems: "center", gap: "16px", padding: "12px 16px", background: "#141414", borderRadius: "8px", border: "1px solid rgba(138,138,138,0.08)" }}>
+                <Token>{m.token}</Token>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "12px", color: "#F5F5F5" }}>{m.value}</span>
+                <span style={{ fontSize: "12px", color: "#8A8A8A" }}>{m.usage}</span>
+              </div>
+            ))}
+            <Card style={{ marginTop: "16px" }}>
+              <p style={{ fontSize: "12px", color: "#8A8A8A", marginBottom: "12px" }}>All transitions respect <Token>prefers-reduced-motion</Token> - durations collapse to 0ms when the user has requested reduced motion in their OS settings.</p>
+              <code style={{ display: "block", fontFamily: "'JetBrains Mono', monospace", fontSize: "12px", color: "#10B981", background: "#1E1E1E", padding: "12px", borderRadius: "6px", lineHeight: 1.7 }}>
+                {"@media (prefers-reduced-motion: reduce) {\n  *, *::before, *::after {\n    animation-duration: 0.01ms !important;\n    transition-duration: 0.01ms !important;\n  }\n}"}
+              </code>
+            </Card>
+          </div>
+        )}
+
+        {activeTab === "shadows" && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
+            {TOKENS.shadows.map(s => (
+              <div key={s.token} style={{ background: "#141414", borderRadius: "10px", padding: "20px", border: "1px solid rgba(138,138,138,0.08)" }}>
+                <div style={{ width: "100%", height: "60px", background: "#1E1E1E", borderRadius: "8px", boxShadow: s.value, marginBottom: "16px" }} />
+                <Token>{s.token}</Token>
+                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#8A8A8A", marginTop: "6px", marginBottom: "4px", wordBreak: "break-all" }}>{s.value}</p>
+                <p style={{ fontSize: "12px", color: "#6B6B6B" }}>{s.usage}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "breakpoints" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            {TOKENS.breakpoints.map(b => (
+              <div key={b.name} style={{ display: "grid", gridTemplateColumns: "100px 200px 60px 1fr", alignItems: "center", gap: "16px", padding: "12px 16px", background: "#141414", borderRadius: "8px", border: "1px solid rgba(138,138,138,0.08)" }}>
+                <span style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5" }}>{b.name}</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "12px", color: "#10B981" }}>{b.value}</span>
+                <span style={{ fontSize: "12px", color: "#F5F5F5", fontWeight: 600 }}>{b.cols} col{b.cols > 1 ? "s" : ""}</span>
+                <span style={{ fontSize: "12px", color: "#8A8A8A" }}>{b.notes}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </FadeIn>
+    </section>
+  );
+}
