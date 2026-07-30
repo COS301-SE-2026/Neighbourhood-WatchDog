@@ -61,3 +61,36 @@ class TestLinkPropertyToken:
 
         with pytest.raises(ValidationError):
             LinkPropertyToken(**data)
+
+class TestLinkProprtyTokenRes:
+    def _make_nested_res(self) -> LinkPropertyToken:
+        return LinkPropertyToken(**_link_property_token())
+
+    def test_valid_response_with_data(self):
+        res = LinkPropertyTokenRes(
+            status=200,
+            message="Pairing token created",
+            data=self._make_nested_res(),
+        )
+
+        assert res.status == 200
+        assert res.data is not None
+
+    def test_only_status_required(self):
+        res = LinkPropertyTokenRes(status=200)
+
+        assert res.status == 200
+        assert res.message is None
+        assert res.data is None
+
+    def test_missing_status_raises(self):
+        with pytest.raises(ValidationError):
+            LinkPropertyTokenRes(message="oops")
+
+    def test_invalid_nested_data_raises(self):
+        with pytest.raises(ValidationError):
+            LinkPropertyTokenRes(
+                status=200,
+                message="ok",
+                data={**_link_property_token(), "expires_at": "not-a-datetime"},
+            )
