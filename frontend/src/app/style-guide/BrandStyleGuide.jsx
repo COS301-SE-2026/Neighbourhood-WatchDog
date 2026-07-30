@@ -563,3 +563,18 @@ function TokensSection() {
     </section>
   );
 }
+
+
+export default function StyleGuide() {
+  return (
+    <div style={{ fontFamily: "Inter, system-ui, sans-serif", background: "#0A0A0A", minHeight: "100vh", color: "#F5F5F5" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+      <Nav />
+      <HeroSection />
+      <ColoursSection />
+      <TypographySection />
+      <LogoSection />
+      <TokensSection />
+    </div>
+  );
+}
