@@ -2,7 +2,7 @@ name: Deploy mediamtx to Production
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main", "fix/main-deployment" ]
     paths:
       - 'mediamtx/**'
       - 'docker-compose.yml'
@@ -25,19 +25,6 @@ jobs:
           key: ${{ secrets.MEDIAMTX_SSH_KEY }}
           source: "mediamtx,docker-compose.yml,docker-compose.prod.yml"
           target: "/home/ubuntu/app"
-
-      - name: Write mediamtx .env
-        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 #1.0.3
-        with:
-          host: ${{ secrets.MEDIAMTX_HOST }}
-          username: ${{ secrets.MEDIAMTX_USER }}
-          key: ${{ secrets.MEDIAMTX_SSH_KEY }}
-          script: |
-            cat > /home/ubuntu/app/.env << EOF
-            MTX_WEBRTCADDITIONALHOSTS=${MTX_WEBRTCADDITIONALHOSTS}
-            MTX_WEBRTCALLOWORIGIN=${MTX_WEBRTCALLOWORIGIN}
-            MTX_AUTHHTTPADDRESS=${MTX_AUTHHTTPADDRESS}
-            EOF
 
       - name: Redeploy mediamtx
         uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 #1.0.3

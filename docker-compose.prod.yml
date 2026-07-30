@@ -73,7 +73,6 @@ services:
       MTX_AUTHHTTPADDRESS: ${MTX_AUTHHTTPADDRESS}
     build:
       context: ./mediamtx
-    platform: linux/amd64
     ports:
       - "8554:8554" # RTSP
       - "8889:8889" # WebRTC
