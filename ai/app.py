@@ -6,6 +6,8 @@ import time
 import threading
 import tempfile
 import subprocess
+from pathlib import Path
+from dotenv import load_dotenv
 from collections import deque
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
@@ -37,7 +39,8 @@ person_model = YOLO("pipeline/models/weights/yolov8n.pt")
 # _settings_lock = threading.Lock()
 
 
-
+load_dotenv(Path(__file__).resolve().parent / ".env")
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 
 
