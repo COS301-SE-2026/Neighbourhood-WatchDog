@@ -116,3 +116,42 @@ class TestNeighbourhoodRiskScoreRes:
         with pytest.raises(ValidationError):
             NeighbourhoodRiskScoreRes(status=200, message="Risk Score retrieved successfully", data={**_risk_score_res(), "score": "not-a-float"})
 
+class TestNeighbourhoodRiskScoreHistoryRes:
+    def _make_nested_res(self) -> RiskScoreRes:
+        return RiskScoreRes(**_risk_score_res())
+
+    def test_valid_response_with_data(self):
+             """Happy path, all fields present"""
+             nested = [self._make_nested_res(), self._make_nested_res()]
+             res = NeighbourhoodRiskScoreRes(
+                  status=200,
+                  message="Risk Score retrieved successfully",
+                  data=nested,
+             )
+     
+             assert res.status == 200
+             assert res.message == "Risk Score retrieved successfully"
+             assert len(res.data) == 2
+
+    def test_missing_status_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            NeighbourhoodRiskScoreRes(
+            message="Risk Score retrieved successfully", data=[self._make_nested_res()],)
+
+    def test_missing_message_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            NeighbourhoodRiskScoreRes(status=200, data=[self._make_nested_res()],) 
+
+    def test_missing_data_does_not_raise(self):
+        res = NeighbourhoodRiskScoreRes(
+            status=200,
+            message="Risk Score retrieved successfully",
+        )
+
+        assert res.status == 200
+        assert res.message == "Risk Score retrieved successfully"
+        assert res.data == []
+
+    def test_invalid_nested_data_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            NeighbourhoodRiskScoreRes(status=200, message="Risk Score retrieved successfully", data=[{**_risk_score_res(), "score": "not-a-float"}])
