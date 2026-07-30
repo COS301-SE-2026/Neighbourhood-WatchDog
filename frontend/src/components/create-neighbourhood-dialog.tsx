@@ -18,17 +18,18 @@ import {
 } from "@/components/ui/dialog"
 import { addNeighbourhood } from "@/lib/api/neighbourhood"
 
-const PROPERTY_ID = "30000000-0000-0000-0000-000000000001"
 
 interface CreatePropertyDialogAttributes {
   open: boolean
   onOpenChange: (open: boolean) => void
   onNeighbourhoodAdded: (property: NeighbourhoodRes) => void
+  propertyId: string
+  propertyAddress: string
 }
 
 
 export function CreateNeighbourhoodDialog(
-  { open, onOpenChange, onNeighbourhoodAdded }: CreatePropertyDialogAttributes) {
+  { open, onOpenChange, onNeighbourhoodAdded, propertyId, propertyAddress }: CreatePropertyDialogAttributes) {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   
@@ -45,7 +46,7 @@ export function CreateNeighbourhoodDialog(
     const validatedStuff = CreateNeighbourhoodReqSchema.safeParse({
       name: name,
       location: location,
-      property_id: PROPERTY_ID
+      property_id: propertyId
     })
 
     if (!validatedStuff.success) {
@@ -81,7 +82,8 @@ export function CreateNeighbourhoodDialog(
             {loading ? "Creating..." : "Create Neighbourhood"}
           </DialogTitle>
           <DialogDescription >
-            Enter the details of your new neighbourhood
+            Enter the details of your new neighbourhood for{" "}
+            <span className="font-medium text-foreground">{propertyAddress}</span>
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>

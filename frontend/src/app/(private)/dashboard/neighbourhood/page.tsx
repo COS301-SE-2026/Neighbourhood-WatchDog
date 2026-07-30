@@ -15,6 +15,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import PairAgent from "@/components/property-components/PairAgent";
+import { CreateNeighbourhoodDialog } from "@/components/create-neighbourhood-dialog";
+
 
 type PropertyDetail = {
   id: string;
@@ -36,6 +38,7 @@ export default function NeighbourhoodPage() {
 
     const [properties, setProperties] = useState<PropertyDetail[]>([]);
     const [isOpen, setIsOpen] = useState(false)
+    const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [selectedProperty, setSelectedProperty] = useState<PropertyDetail | null>(null)
     
     useEffect(() => {
@@ -133,35 +136,42 @@ export default function NeighbourhoodPage() {
                         </div>
                     </div>
 
-                    {isAvailable ? (
-                        
-                        <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="w-full md:w-auto"
-                              onClick={() => {setIsOpen(true); setSelectedProperty(property);}}
-                              >
-                                Connect to Agent
-                            </Button>
+                    <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full md:w-auto"
+                            onClick={() => {
+                            setIsOpen(true);
+                            setSelectedProperty(property);
+                            }}
+                        >
+                            Connect to Agent
+                        </Button>
+
+                        {isAvailable ? (
                             <Button
                             type="button"
                             className="w-full bg-primary text-primary-foreground hover:bg-primary/90 md:w-auto"
+                            onClick={() => {
+                                setIsCreateOpen(true);
+                                setSelectedProperty(property);
+                            }}
                             >
                             Use this property
                             </Button>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground md:justify-end">
-                        <LockKeyhole className="h-4 w-4 shrink-0" />
-                        <span>
-                            Linked to{" "}
-                            <span className="font-medium text-foreground">
-                            {property.neighbourhood_name}
+                        ) : (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground md:justify-end">
+                            <LockKeyhole className="h-4 w-4 shrink-0" />
+                            <span>
+                                Linked to{" "}
+                                <span className="font-medium text-foreground">
+                                {property.neighbourhood_name}
+                                </span>
                             </span>
-                        </span>
+                            </div>
+                        )}
                         </div>
-                    )}
                     </div>
                 );
                 })}
@@ -184,6 +194,23 @@ export default function NeighbourhoodPage() {
                     />
                     )}
             </Dialog>
+
+            {selectedProperty && (
+            <CreateNeighbourhoodDialog
+                open={isCreateOpen}
+                onOpenChange={(open) => {
+                setIsCreateOpen(open);
+                if (!open) setSelectedProperty(null);
+                }}
+                propertyId={selectedProperty.id}
+                propertyAddress={selectedProperty.address}
+                onNeighbourhoodAdded={(neighbourhood) => {
+                toast.success(`${neighbourhood.name} created`);
+                setIsCreateOpen(false);
+                setSelectedProperty(null);
+                }}
+            />
+            )}
         </div>
         </div>
     );
