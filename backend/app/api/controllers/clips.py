@@ -48,7 +48,11 @@ ADMIN_ROLES = {"SYSTEM_ADMIN", "NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "RESIDEN
 
 #create an aws s3 client for the applications aws region
 def _s3_client():
-    return boto3.client("s3", region_name=config.aws_region)
+    return boto3.client(
+        "s3",
+        region_name=config.aws_region,
+        endpoint_url=f"https://s3.{config.aws_region}.amazonaws.com"
+    )
 
 
 #claim: info about the authenticated user
