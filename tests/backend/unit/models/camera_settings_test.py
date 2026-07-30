@@ -58,7 +58,7 @@ class TestCreateZoneReq:
         assert req.polygon == [[0.0, 0.0], [1.0, 1.0]]
 
     def test_name_defaults_to_zone(self):
-        req = CreateZoneRequest(name="Backyard", polygon=[[0.0, 0.0], [1.0, 1.0]])
+        req = CreateZoneRequest(polygon=[[0.0, 0.0], [1.0, 1.0]])
         assert req.name == "Zone"
 
     def test_empty_polygon_list_is_allowed(self):
