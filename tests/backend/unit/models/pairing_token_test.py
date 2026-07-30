@@ -94,3 +94,57 @@ class TestLinkProprtyTokenRes:
                 message="ok",
                 data={**_link_property_token(), "expires_at": "not-a-datetime"},
             )
+
+class TestEdgeAgentsCredentialsSchema:
+    def _make_camera(self) -> CameraRes:
+        return CameraRes(**_camera_res())
+
+    def test_valid_fields(self):
+        data = _edge_agents_credentials(cameras=[self._make_camera()])
+        schema = EdgeAgentsCredentialsSchema(**data)
+
+        assert schema.property_id == data["property_id"]
+        assert schema.address == data["address"]
+        assert schema.api_key == data["api_key"]
+        assert len(schema.cameras) == 1
+        assert schema.created_at == data["created_at"]
+
+    def test_missing_property_id_raises(self):
+        data = _edge_agents_credentials()
+        del data["address"]
+
+        with pytest.raises(ValidationError):
+            EdgeAgentsCredentialsSchema(**data)
+
+    def test_missing_api_key_raises(self):
+        data = _edge_agents_credentials()
+        del data["api_key"]
+
+        with pytest.raises(ValidationError):
+            EdgeAgentsCredentialsSchema(**data)
+
+    def test_missing_cameras_raises(self):
+        data = _edge_agents_credentials()
+        del data["cameras"]
+
+        with pytest.raises(ValidationError):
+            EdgeAgentsCredentialsSchema(**data)
+
+    def test_missing_created_at_raises(self):
+        data = _edge_agents_credentials()
+        del data["created_at"]
+
+        with pytest.raises(ValidationError):
+            EdgeAgentsCredentialsSchema(**data)
+
+    def test_empty_cameras_list_is_allowed(self):
+        data = _edge_agents_credentials(cameras=[])
+        schema = EdgeAgentsCredentialsSchema(**data)
+
+        assert schema.cameras == []
+
+    def test_invalid_camera_in_list_raises(self):
+        data = _edge_agents_credentials(cameras=[{**_camera_res(), "id": "not-a-uuid"}])
+
+        with pytest.raises(ValidationError):
+            EdgeAgentsCredentialsSchema(**data)
