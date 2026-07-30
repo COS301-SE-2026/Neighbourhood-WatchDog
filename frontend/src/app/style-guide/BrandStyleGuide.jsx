@@ -714,6 +714,7 @@ export default function StyleGuide() {
       <TypographySection />
       <LogoSection />
       <TokensSection />
+      <ComponentsSection />
     </div>
   );
 }
