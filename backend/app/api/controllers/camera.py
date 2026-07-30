@@ -7,7 +7,7 @@ from app.schemas.camera import RegisterCameraReq, RegisterCameraRes, CamerasRes,
 from app.services.camera_service import register_camera_handler, list_cameras_handler, deregister_camera_handler, edit_camera_handler
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
-from app.auth.rbac import require_role
+from app.auth.dependencies import require_role
 
 router = APIRouter(prefix="/camera", tags=["cameras"])
 
@@ -19,7 +19,7 @@ async def register_camera(req: RegisterCameraReq,
 ) -> RegisterCameraRes:
     """Creates a new camera and links it to the property of the user."""
     
-    require_role(claims = claims, allowed_roles= ['RESIDENT'])
+    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
     new_camera = await register_camera_handler(req, db, claims)
 
     return RegisterCameraRes(
@@ -44,7 +44,7 @@ async def get_property_cameras(
     db: DbSession,
     claims: Annotated[dict, Depends(get_current_user)],
 ) -> CamerasRes:
-    require_role(claims, ["RESIDENT"])
+    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
     return await list_cameras_handler(property_id, db, claims)
 
 @router.patch("/{camera_id}", status_code=status.HTTP_200_OK)
@@ -55,7 +55,7 @@ async def edit_camera(
     claims: Annotated[dict, Depends(get_current_user)]
 ) -> EditCameraRes:
     """Edit a camera"""
-    require_role(claims = claims, allowed_roles= ['RESIDENT'])
+    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
 
     updated = edit_camera_handler(camera_id, req, db, claims)
 

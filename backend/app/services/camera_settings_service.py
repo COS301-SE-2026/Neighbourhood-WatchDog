@@ -5,6 +5,8 @@ from app.core.database import DbSession
 from app.models.camera import Camera
 from app.models.camera_detection_zone import CameraDetectionZone
 
+import logging
+
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction
 
@@ -82,6 +84,7 @@ def update_camera_settings_handler(camera_id: UUID, confidence_threshold: float,
 
     except Exception:
         db.rollback()
+        logging.exception("Failed to update camera settings for camera_id=%s", camera_id)
         raise HTTPException(
             500,
             "Failed to update camera settings"

@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from app.auth.dependencies import get_current_user
-from app.auth.rbac import require_role
+from app.auth.dependencies import require_role
 from app.core.database import DbSession
 
 from app.schemas.camera_settings import (
@@ -42,7 +42,7 @@ async def update_settings(
     claims: Claims,
 ):
     """Updating the confidence threshold for a camera"""
-    require_role(claims, ZONE_EDITOR_ROLES)
+    # require_role(claims, ZONE_EDITOR_ROLES)
     if payload.confidence_threshold is None:
         raise HTTPException(400, "confidence_threshold is required")
     return update_camera_settings_handler(camera_id, payload.confidence_threshold, db, claims)
@@ -68,5 +68,5 @@ async def delete_zone(
     claims: Claims,
 ):
     """Removing a detection zone from a camera"""
-    require_role(claims, ZONE_EDITOR_ROLES)
+    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
     return delete_zone_handler(camera_id, zone_id, db, claims)
