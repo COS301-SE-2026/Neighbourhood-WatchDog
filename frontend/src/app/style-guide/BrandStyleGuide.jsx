@@ -206,3 +206,86 @@ function HeroSection() {
     </section>
   );
 }
+
+function ColoursSection() {
+  const [copied, setCopied] = useState(null);
+  const copy = (hex, id) => { navigator.clipboard?.writeText(hex); setCopied(id); setTimeout(() => setCopied(null), 1500); };
+
+  return (
+    <section id="colours" style={{ padding: "96px 64px", background: "#0D0D0D" }}>
+      <FadeIn>
+        {/* <SectionLabel>01 - Colour</SectionLabel> */}
+        <SectionHeading>Colour palette</SectionHeading>
+        <SectionSubtitle>A dark-first monochromatic system anchored by emerald green. Every colour serves a defined role - decorative use is not permitted.</SectionSubtitle>
+      </FadeIn>
+
+      {[
+        { title: "Brand neutrals", desc: "The greyscale foundation. Builds depth and hierarchy across surfaces.", data: TOKENS.colors.brand },
+        { title: "Accent colours", desc: "Emerald is the primary brand colour. Pulse and Ice are for informational contexts only.", data: TOKENS.colors.accent },
+        { title: "Semantic colours", desc: "Reserved for system states. Never use these for decorative purposes.", data: TOKENS.colors.semantic },
+      ].map(({ title, desc, data }) => (
+        <FadeIn key={title} delay={100}>
+          <div style={{ marginBottom: "56px" }}>
+            <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#F5F5F5", marginBottom: "4px" }}>{title}</h3>
+            <p style={{ fontSize: "13px", color: "#8A8A8A", marginBottom: "20px" }}>{desc}</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "12px" }}>
+              {data.map((c, i) => (
+                <div key={c.name} onClick={() => copy(c.hex, `${title}-${i}`)}
+                  style={{ borderRadius: "10px", overflow: "hidden", border: "1px solid rgba(138,138,138,0.1)", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.4)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
+                  <div style={{ height: "72px", background: c.hex, display: "flex", alignItems: "flex-end", padding: "8px 10px" }}>
+                    {copied === `${title}-${i}` && <span style={{ fontSize: "10px", color: c.textColor, fontFamily: "'JetBrains Mono', monospace", opacity: 0.8 }}>Copied!</span>}
+                  </div>
+                  <div style={{ background: "#1E1E1E", padding: "10px 12px" }}>
+                    <p style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", margin: "0 0 2px" }}>{c.name}</p>
+                    <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#10B981", margin: "0 0 6px" }}>{c.hex}</p>
+                    <p style={{ fontSize: "11px", color: "#8A8A8A", margin: "0 0 2px" }}>rgb({c.rgb})</p>
+                    <p style={{ fontSize: "11px", color: "#8A8A8A", margin: "0 0 8px" }}>{c.hsl}</p>
+                    <p style={{ fontSize: "11px", color: "#6B6B6B", margin: 0, lineHeight: 1.4 }}>{c.usage}</p>
+                    <div style={{ marginTop: "8px" }}><Token>{c.token}</Token></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </FadeIn>
+      ))}
+
+      <FadeIn delay={150}>
+        <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#F5F5F5", marginBottom: "4px" }}>WCAG 2.2 contrast ratios</h3>
+        <p style={{ fontSize: "13px", color: "#8A8A8A", marginBottom: "20px" }}>All foreground/background pairs used in the live UI. AA (4.5:1) is the minimum; AAA (7:1) is achieved for all body text pairings.</p>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid rgba(138,138,138,0.15)" }}>
+                {["Pair", "Preview", "Ratio", "Level", "Usage"].map(h => (
+                  <th key={h} style={{ textAlign: "left", padding: "10px 14px", color: "#8A8A8A", fontWeight: 500, fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", whiteSpace: "nowrap" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {TOKENS.contrast.map((row, i) => (
+                <tr key={i} style={{ borderBottom: "1px solid rgba(138,138,138,0.08)", transition: "background 0.1s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#1A1A1A"}
+                  onMouseLeave={e => e.currentTarget.style.background = ""}>
+                  <td style={{ padding: "12px 14px", color: "#F5F5F5", fontWeight: 500 }}>{row.pair}</td>
+                  <td style={{ padding: "12px 14px" }}>
+                    <div style={{ background: row.bg, borderRadius: "6px", padding: "4px 10px", display: "inline-block" }}>
+                      <span style={{ color: row.fg, fontSize: "12px", fontWeight: 600 }}>Aa</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: "12px 14px", fontFamily: "'JetBrains Mono', monospace", color: "#10B981" }}>{row.ratio}</td>
+                  <td style={{ padding: "12px 14px" }}>
+                    <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", background: row.level === "AAA" ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)", color: row.level === "AAA" ? "#10B981" : "#F59E0B" }}>{row.level}</span>
+                  </td>
+                  <td style={{ padding: "12px 14px", color: "#8A8A8A" }}>{row.usage}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </FadeIn>
+    </section>
+  );
+}
