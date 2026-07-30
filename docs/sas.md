@@ -21,15 +21,16 @@ The purpose of this document is to communicate the architectural structure of th
 ### 2.2 Design Patterns
 | Design Pattern | Implementation |
 |---|---|
-| Strategy | The AI detection worker can delegate frame analysis to a selected detection strategy. The current implementation uses YOLO-based person detection with DeepSORT tracking. Future strategies can support vehicle, weapon, fall, loitering, or perimeter-intrusion detection without changing the camera runtime’s overall workflow. |
+| Strategy | The AI detection worker can delegate frame analysis to a selected detection strategy. The current implementation uses YOLO-based person and weapon detection with DeepSORT tracking. Future strategies can support vehicle, fall, loitering, or perimeter-intrusion detection without changing the camera runtime’s overall workflow. |
 | Observer | When an AI worker posts a detection or annotation to the FastAPI backend, the backend broadcasts alert and annotation updates through WebSockets. Dashboard clients subscribed through WebSocket connections receive updates immediately and refresh alerts or bounding-box overlays without polling. |
-| State | The camera playback UI moves between distinct states: connecting, live, and unavailable/offline. When a user selects a camera, the frontend initiates WHEP/WebRTC playback and displays the appropriate state based on connection success, stream availability, or failure. Closing the camera view ends the playback session and returns the component to its initial state. |
+| State | The camera playback UI moves between distinct states: `connecting`, `live`, and `unavailable/offline`. When a user selects a camera, the frontend initiates WHEP/WebRTC playback and displays the appropriate state based on connection success, stream availability, or failure. Closing the camera view ends the playback session and returns the component to its initial state. Moreover, the Edge Agent also moves between distinct states: `setup`, `running` and `off`.|
 | Factory | A factory can centralise creation of camera-specific runtime components. Given a camera configuration, it would construct the corresponding FFmpeg publisher, AI detection worker, credentials, stream path, and process configuration. |
 | Chain of Responsibility | Requests pass through sequential validation and authorisation stages: authentication, role/property access checks, request validation, internal-agent token validation, and finally route/service execution. FastAPI middleware and dependency functions naturally support this pattern. |
 | Command | Camera actions such as enable, disable, start publisher, stop publisher, start detection, and stop detection, can be represented as commands. This would make operations easier to queue, retry, log, audit, and potentially execute remotely through the WatchDog Agent. |
 
 ### 2.3 Architectural Constraints
 - Existing CCTV and IP cameras must provide RTSP streams.
+- Processing multiple video streams simultaneously can be computationally expensive and doing this in the cloud can incur a great monetary cost, further, doing it locally may be slow due to hardware limitations of the user's machine.
 - Real-time video processing must minimize latency while supporting multiple concurrent streams.
 - Sensitive information must remain encrypted during transmission.
 - Secrets and credentials may not be committed to source control.
