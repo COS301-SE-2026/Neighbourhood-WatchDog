@@ -550,6 +550,157 @@ function TokensSection() {
       </FadeIn>
     </section>
   );
+
+  function ComponentsSection() {
+  const [hoveredBtn, setHoveredBtn] = useState(null);
+  const [inputVal, setInputVal] = useState("");
+  const [inputFocus, setInputFocus] = useState(false);
+  const [inputError, setInputError] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastType, setToastType] = useState("success");
+
+  const showToast = (type) => { setToastType(type); setToastVisible(true); setTimeout(() => setToastVisible(false), 3000); };
+
+  const toastConfig = {
+    success: { color: "#10B981", label: "Detection saved", sub: "Camera B - Zone 3", icon: "✓" },
+    error: { color: "#EF4444", label: "Connection failed", sub: "Check network settings", icon: "✕" },
+    warning: { color: "#F59E0B", label: "Motion threshold low", sub: "Update sensitivity settings", icon: "⚠" },
+    info: { color: "#2D7EFF", label: "System update available", sub: "Version 2.1.0 ready to install", icon: "ℹ" },
+  };
+
+  return (
+    <section id="components" style={{ padding: "96px 64px", background: "#0D0D0D" }}>
+      <FadeIn>
+        {/* <SectionLabel>05 - Component Library</SectionLabel> */}
+        <SectionHeading>UI components</SectionHeading>
+        <SectionSubtitle>All components are built on shadcn/ui with Tailwind, tokens from globals.css. States are interactive - hover, click, and type to see live behaviour.</SectionSubtitle>
+      </FadeIn>
+
+      {/* Buttons */}
+      <FadeIn delay={80}>
+        <Card style={{ marginBottom: "16px" }}>
+          <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "4px" }}>Buttons</h3>
+          <p style={{ fontSize: "12px", color: "#8A8A8A", marginBottom: "20px" }}>Hover to see transitions (100ms ease-out). All buttons have a visible focus ring for keyboard navigation.</p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {[
+              { label: "Primary variants", btns: [
+                { text: "Confirm detection", variant: "primary", bg: "#10B981", color: "#0A0A0A", hoverBg: "#0DA271" },
+                { text: "Secondary", variant: "secondary", bg: "#1E1E1E", color: "#F5F5F5", hoverBg: "#2A2A2A" },
+                { text: "Outline", variant: "outline", bg: "transparent", color: "#F5F5F5", border: "1px solid rgba(138,138,138,0.3)", hoverBg: "#1E1E1E" },
+                { text: "Ghost", variant: "ghost", bg: "transparent", color: "#F5F5F5", hoverBg: "#1E1E1E" },
+              ]},
+              { label: "Semantic variants", btns: [
+                { text: "Dismiss alert", variant: "destructive", bg: "#EF4444", color: "#FFFFFF", hoverBg: "#DC2626" },
+                { text: "Export", variant: "info", bg: "#2D7EFF", color: "#FFFFFF", hoverBg: "#2466E0" },
+                { text: "Disabled", variant: "disabled", bg: "#1E1E1E", color: "#6B6B6B", disabled: true, border: "1px solid rgba(138,138,138,0.08)" },
+              ]},
+              { label: "Sizes", btns: [
+                { text: "Small", variant: "sm", bg: "#10B981", color: "#0A0A0A", padding: "4px 12px", fontSize: "12px" },
+                { text: "Default", variant: "md", bg: "#10B981", color: "#0A0A0A" },
+                { text: "Large", variant: "lg", bg: "#10B981", color: "#0A0A0A", padding: "12px 24px", fontSize: "15px" },
+              ]},
+            ].map(({ label, btns }) => (
+              <div key={label}>
+                <p style={{ fontSize: "11px", color: "#6B6B6B", marginBottom: "10px", fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.05em" }}>{label}</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {btns.map((b, i) => (
+                    <button key={i} disabled={b.disabled}
+                      onMouseEnter={() => !b.disabled && setHoveredBtn(`${label}-${i}`)}
+                      onMouseLeave={() => setHoveredBtn(null)}
+                      style={{ padding: b.padding || "8px 18px", borderRadius: "8px", border: b.border || "none", cursor: b.disabled ? "not-allowed" : "pointer", fontSize: b.fontSize || "13px", fontWeight: 500, transition: "all 0.1s ease-out", background: hoveredBtn === `${label}-${i}` ? (b.hoverBg || b.bg) : b.bg, color: b.color, opacity: b.disabled ? 0.45 : 1, transform: hoveredBtn === `${label}-${i}` ? "translateY(-1px)" : "" }}>
+                      {b.text}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </FadeIn>
+
+      {/* Inputs */}
+      <FadeIn delay={100}>
+        <Card style={{ marginBottom: "16px" }}>
+          <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "20px" }}>Inputs</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            {[
+              { label: "Default", placeholder: "Camera name…", state: "default" },
+              { label: "With value", placeholder: "", value: "North entrance, Zone A", state: "filled" },
+              { label: "Error state", placeholder: "IP address…", state: "error", hint: "Invalid format - use 192.168.x.x" },
+              { label: "Disabled", placeholder: "Read-only feed ID", state: "disabled" },
+            ].map((inp, i) => (
+              <div key={inp.label}>
+                <label style={{ display: "block", fontSize: "12px", color: "#A3A3A3", marginBottom: "6px", fontWeight: 500 }}>{inp.label}</label>
+                <input
+                  placeholder={inp.placeholder}
+                  defaultValue={inp.value}
+                  disabled={inp.state === "disabled"}
+                  style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", background: inp.state === "disabled" ? "#0D0D0D" : "#1E1E1E", border: inp.state === "error" ? "1px solid #EF4444" : "1px solid rgba(138,138,138,0.2)", color: inp.state === "disabled" ? "#6B6B6B" : "#F5F5F5", fontSize: "13px", outline: "none", boxSizing: "border-box", cursor: inp.state === "disabled" ? "not-allowed" : "text", transition: "border-color 0.15s" }}
+                  onFocus={e => { if (inp.state !== "error") e.target.style.borderColor = "#10B981"; }}
+                  onBlur={e => { if (inp.state !== "error") e.target.style.borderColor = "rgba(138,138,138,0.2)"; }}
+                />
+                {inp.hint && <p style={{ fontSize: "11px", color: "#EF4444", marginTop: "4px" }}>{inp.hint}</p>}
+              </div>
+            ))}
+          </div>
+        </Card>
+      </FadeIn>
+
+      {/* Badges */}
+      <FadeIn delay={120}>
+        <Card style={{ marginBottom: "16px" }}>
+          <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "20px" }}>Badges & status indicators</h3>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "16px" }}>
+            {[
+              { label: "Active", bg: "rgba(16,185,129,0.15)", color: "#10B981", dot: "#10B981" },
+              { label: "Threat detected", bg: "rgba(239,68,68,0.15)", color: "#EF4444", dot: "#EF4444" },
+              { label: "Warning", bg: "rgba(245,158,11,0.15)", color: "#F59E0B", dot: "#F59E0B" },
+              { label: "Informational", bg: "rgba(45,126,255,0.15)", color: "#2D7EFF", dot: "#2D7EFF" },
+              { label: "Offline", bg: "rgba(138,138,138,0.15)", color: "#8A8A8A", dot: "#8A8A8A" },
+              { label: "Processing", bg: "rgba(16,185,129,0.1)", color: "#10B981", dot: null, pulse: true },
+            ].map(b => (
+              <div key={b.label} style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: b.bg, color: b.color, borderRadius: "9999px", padding: "4px 10px", fontSize: "12px", fontWeight: 500 }}>
+                {b.dot && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: b.dot, animation: b.pulse ? "pulse 1.2s ease-in-out infinite" : "none", flexShrink: 0 }} />}
+                {b.label}
+              </div>
+            ))}
+          </div>
+        </Card>
+      </FadeIn>
+
+      {/* Toast */}
+      <FadeIn delay={140}>
+        <Card>
+          <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "4px" }}>Toast notifications</h3>
+          <p style={{ fontSize: "12px", color: "#8A8A8A", marginBottom: "16px" }}>Triggered programmatically. Appear top-right, 3 second auto-dismiss, accessible via aria-live region.</p>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            {["success", "error", "warning", "info"].map(t => (
+              <button key={t} onClick={() => showToast(t)}
+                style={{ padding: "7px 14px", borderRadius: "8px", border: `1px solid ${toastConfig[t].color}30`, background: `${toastConfig[t].color}15`, color: toastConfig[t].color, fontSize: "12px", fontWeight: 500, cursor: "pointer", textTransform: "capitalize" }}>
+                Show {t}
+              </button>
+            ))}
+          </div>
+        </Card>
+      </FadeIn>
+
+      {/* Toast popup */}
+      {toastVisible && (
+        <div style={{ position: "fixed", top: "24px", right: "24px", zIndex: 9999, background: "#141414", border: `1px solid ${toastConfig[toastType].color}40`, borderRadius: "10px", padding: "14px 16px", minWidth: "260px", boxShadow: "0 8px 24px rgba(0,0,0,0.5)", animation: "slideIn 0.2s ease-out", display: "flex", alignItems: "flex-start", gap: "12px" }}>
+          <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: `${toastConfig[toastType].color}20`, display: "flex", alignItems: "center", justifyContent: "center", color: toastConfig[toastType].color, fontWeight: 700, fontSize: "13px", flexShrink: 0 }}>{toastConfig[toastType].icon}</div>
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: "0 0 2px", fontSize: "13px", fontWeight: 600, color: "#F5F5F5" }}>{toastConfig[toastType].label}</p>
+            <p style={{ margin: 0, fontSize: "12px", color: "#8A8A8A" }}>{toastConfig[toastType].sub}</p>
+          </div>
+          <button onClick={() => setToastVisible(false)} style={{ background: "none", border: "none", color: "#6B6B6B", cursor: "pointer", fontSize: "16px", padding: "0", lineHeight: 1 }}>×</button>
+        </div>
+      )}
+
+      <style>{`@keyframes slideIn { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }`}</style>
+    </section>
+  );
+}
 }
 
 
