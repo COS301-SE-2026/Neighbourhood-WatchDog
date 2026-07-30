@@ -51,11 +51,24 @@ def mock_cognito_client(monkeypatch):
         "CodeDeliveryDetails": {"Destination": "email"}
     }
 
+    # VERIFY MFA
+    mock_client.respond_to_auth_challenge.return_value = {
+        "AuthenticationResult": {
+            "AccessToken": "token-123",
+            "IdToken": "id-123",
+            "RefreshToken": "refresh-123",
+            "ExpiresIn": 3600,
+            "TokenType": "Bearer",
+        }
+    }
+
     monkeypatch.setattr(
         cognito,
         "get_cognito_client",
         lambda: mock_client
     )
+
+    return mock_client
 
 
 #DATA
@@ -99,6 +112,33 @@ async def test_login_integration(async_client):
     assert data["expires_in"] == 3600
     assert data["token_type"] == "Bearer"
 
+@pytest.mark.asyncio
+async def test_login_requires_mfa(async_client, mock_cognito_client):    
+    mock_cognito_client.initiate_auth.return_value = {
+        "ChallengeName": "EMAIL_OTP",
+        "Session": "abc-session",
+        "ChallengeParameters": {
+            "CODE_DELIVERY_DELIVERY_MEDIUM": "EMAIL",
+            "CODE_DELIVERY_DESTINATION": "z***@g***",
+        },
+    }
+
+    response = await async_client.post(
+        "/auth/login",
+        json={
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD,
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()["data"]
+
+    assert data["mfa_required"] is True
+    assert data["session"] == "abc-session"
+    assert data["delivery"]["medium"] == "EMAIL"
+
 #CONFIRM
 @pytest.mark.asyncio
 async def test_confirm_sign_up_integration(async_client):
@@ -127,3 +167,23 @@ async def test_resend_code_integration(async_client):
 
     assert "message" in data
     assert data["message"] == "New confirmation code sent successfully"
+
+@pytest.mark.asyncio
+async def test_verify_mfa_integration(async_client):
+    response = await async_client.post(
+        "/auth/verify-mfa",
+        json={
+            "email": TEST_EMAIL,
+            "session": "abc-session",
+            "code": "123456",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()["data"]
+
+    assert data["access_token"] == "token-123"
+    assert data["id_token"] == "id-123"
+    assert data["expires_in"] == 3600
+    assert data["token_type"] == "Bearer"

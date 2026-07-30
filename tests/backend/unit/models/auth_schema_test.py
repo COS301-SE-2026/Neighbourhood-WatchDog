@@ -6,6 +6,7 @@ from app.schemas.auth import ( #
     LoginRequest,
     ConfirmSignUpRequest,
     ResendCodeRequest,
+    VerifyMFARequest,
 )
 
 TEST_EMAIL = "test@example.com"
@@ -14,6 +15,7 @@ TEST_FIRSTNAME = "Zaman"
 TEST_LASTNAME = "Bassa"
 TEST_ADDRESS = "JHB"
 TEST_CODE = "123456"
+TEST_SESSION = "abc-session"
 
 #Singup
 def test_signup_valid(): # Valid signup 
@@ -77,3 +79,31 @@ def test_resend_valid():
 def test_resend_missing_email():
     with pytest.raises(ValidationError):
         ResendCodeRequest()#send nothin
+
+# VERIFY MFA
+def test_verify_mfa_valid():
+    obj = VerifyMFARequest(
+        email=TEST_EMAIL,
+        session=TEST_SESSION,
+        code=TEST_CODE,
+    )
+
+    assert obj.email == TEST_EMAIL
+    assert obj.session == TEST_SESSION
+    assert obj.code == TEST_CODE
+
+
+def test_verify_mfa_missing_session():
+    with pytest.raises(ValidationError):
+        VerifyMFARequest(
+            email=TEST_EMAIL,
+            code=TEST_CODE,
+        )
+
+
+def test_verify_mfa_missing_code():
+    with pytest.raises(ValidationError):
+        VerifyMFARequest(
+            email=TEST_EMAIL,
+            session=TEST_SESSION,
+        )

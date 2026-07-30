@@ -92,6 +92,21 @@ def login(email, password):
             },
         )
 
+        # MFA required
+        if "ChallengeName" in response:
+            challenge_params = response.get("ChallengeParameters", {})
+
+            return {
+                "challenge": response["ChallengeName"],
+                "session": response["Session"],
+                "delivery": {
+                    "medium": challenge_params.get("CODE_DELIVERY_DELIVERY_MEDIUM"),
+                    "destination": challenge_params.get("CODE_DELIVERY_DESTINATION"),
+                },
+            }
+        
+        #login complete
+        #This should honestly not happen as we have "Require MFA" enabled, but we shall keep it so the system stays robust
         auth_result = response["AuthenticationResult"]
 
         return {
@@ -153,6 +168,38 @@ def resend_code(email: str):
             }
         )
 
+def respond_to_mfa(email: str, session: str, code: str):
+    try:
+        client = get_cognito_client()
+
+        response = client.respond_to_auth_challenge(
+            ClientId=CLIENT_ID,
+            ChallengeName="EMAIL_OTP",
+            Session=session,
+            ChallengeResponses={
+                "USERNAME": email,
+                "EMAIL_OTP_CODE": code,
+            },
+        )
+
+        auth_result = response["AuthenticationResult"]
+
+        return {
+            "access_token": auth_result["AccessToken"],
+            "id_token": auth_result["IdToken"],
+            "refresh_token": auth_result.get("RefreshToken"),
+            "expires_in": auth_result["ExpiresIn"],
+            "token_type": auth_result["TokenType"],
+        }
+
+    except ClientError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": e.response["Error"]["Code"],
+                "message": e.response["Error"]["Message"],
+            },
+        )
 def get_sub_from_id_token(id_token: str) -> str:
     payload = verify_token(id_token)
     return payload["sub"]
