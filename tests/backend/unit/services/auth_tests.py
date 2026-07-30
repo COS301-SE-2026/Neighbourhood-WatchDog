@@ -18,7 +18,7 @@ def mock_cognito(monkeypatch):
         "id_token": "id",
         "refresh_token": "refresh",
         "expires_in": 3600,
-        "token_type": "Bearer"
+        "token_type": "Bearer",
     }))
 
     monkeypatch.setattr(auth_service, "confirm_sign_up", MagicMock(return_value={
@@ -28,6 +28,18 @@ def mock_cognito(monkeypatch):
     monkeypatch.setattr(auth_service, "resend_code", MagicMock(return_value={
         "message": "sent"
     }))
+
+    monkeypatch.setattr(
+        auth_service,
+        "respond_to_mfa",
+        MagicMock(return_value={
+            "access_token": "token",
+            "id_token": "id",
+            "refresh_token": "refresh",
+            "expires_in": 3600,
+            "token_type": "Bearer",
+        }),
+    )
 
 TEST_EMAIL = "test@example.com"
 TEST_PASSWORD = "Password123!"
@@ -89,4 +101,39 @@ def test_resend_code_success(mock_cognito):
 
     assert result["success"] is True
 
+def test_login_requires_mfa(monkeypatch):
+    monkeypatch.setattr(
+        auth_service,
+        "login",
+        MagicMock(return_value={
+            "challenge": "EMAIL_OTP",
+            "session": "abc-session",
+            "delivery": {
+                "medium": "EMAIL",
+                "destination": "z***@g***",
+            },
+        }),
+    )
+
+    result = auth_service.authenticate_user({
+        "email": TEST_EMAIL,
+        "password": TEST_PASSWORD,
+    })
+
+    assert result["success"] is True
+    assert result["data"]["mfa_required"] is True
+    assert result["data"]["session"] == "abc-session"
+    assert result["data"]["delivery"]["medium"] == "EMAIL"
+
+def test_complete_mfa_success(mock_cognito):
+    result = auth_service.complete_mfa({
+        "email": TEST_EMAIL,
+        "session": "abc-session",
+        "code": "123456",
+    })
+
+    assert result["success"] is True
+    assert result["data"]["access_token"] == "token"
+    assert result["data"]["id_token"] == "id"
+    assert result["data"]["expires_in"] == 3600
 #TODO: end to end testing 
