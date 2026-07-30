@@ -116,15 +116,6 @@ function FadeIn({ children, delay = 0, className = "" }) {
   );
 }
 
-function SectionLabel({ children }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "32px" }}>
-      <div style={{ width: "3px", height: "24px", background: "#10B981", borderRadius: "2px", flexShrink: 0 }} />
-      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#10B981", fontWeight: 500 }}>{children}</span>
-    </div>
-  );
-}
-
 function SectionHeading({ children }) {
   return <h2 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#F5F5F5", marginBottom: "8px", letterSpacing: "-0.02em" }}>{children}</h2>;
 }
@@ -168,7 +159,7 @@ function HeroSection() {
 
       <div style={{ position: "relative", zIndex: 1, maxWidth: "800px" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "#1E1E1E", border: "1px solid rgba(16,185,129,0.25)", borderRadius: "9999px", padding: "6px 14px", marginBottom: "32px" }}>
-          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10B981", animation: "pulse 1.2s ease-in-out infinite" }} />
+          {/* <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10B981", animation: "pulse 1.2s ease-in-out infinite" }} /> */}
           {/* <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#10B981", letterSpacing: "0.1em" }}>Demo 2 · Brand Style Guide</span> */}
         </div>
 
@@ -195,11 +186,6 @@ function HeroSection() {
             </a>
           ))}
         </div>
-      </div>
-
-      {/* Version badge */}
-      <div style={{ position: "absolute", bottom: "40px", right: "64px", fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#3D3D3D" }}>
-        Zero Day Proking Solutions · v2.0
       </div>
 
       <style>{`
