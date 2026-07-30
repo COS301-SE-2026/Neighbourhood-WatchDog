@@ -664,6 +664,10 @@ The quality requirements are derived directly from the non-functional requiremen
 - Role-Based Access Control shall restrict access to video streams and recordings based on user role.
 - User sessions shall expire after 15 minutes of inactivity.
 - All user actions shall be logged to an append-only audit trail.
+- User authentication shall be managed using AWS Cognito with Multi-Factor Authentication (MFA) enabled.
+- User data shall be stored in AWS RDS using encryption at rest.
+- Data transmitted between the application, AWS Cognito, AWS RDS, and users shall be encrypted using TLS 1.2 or higher.
+
 #### Accuracy
  
 - Human detection accuracy shall be at least 60%.
