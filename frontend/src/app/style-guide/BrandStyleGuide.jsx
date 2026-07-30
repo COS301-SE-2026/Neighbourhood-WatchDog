@@ -804,6 +804,7 @@ export default function StyleGuide() {
       <LogoSection />
       <TokensSection />
       <ComponentsSection />
+      <AccessibilitySection />
     </div>
   );
 }
