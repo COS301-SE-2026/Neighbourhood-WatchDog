@@ -1,5 +1,7 @@
 "use client";
+import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
+import logoImage from "@/assets/images/logo-mark-only.svg";
 
 //globals.css choice explainations
 const TOKENS = {
@@ -43,7 +45,7 @@ const TOKENS = {
     { name: "Body LG", size: "1.125rem", lineHeight: "1.75rem", weight: "400", token: "--text-body-lg", sample: "Monitored zones detected 3 events.", usage: "Lead paragraph text" },
     { name: "Body", size: "1rem", lineHeight: "1.5rem", weight: "400", token: "--text-body", sample: "Camera is active and streaming.", usage: "Standard interface text" },
     { name: "Small", size: "0.875rem", lineHeight: "1.25rem", weight: "400", token: "--text-sm", sample: "Last updated 2 min ago", usage: "Labels, helper text" },
-    { name: "Caption", size: "0.75rem", lineHeight: "1rem", weight: "400", token: "--text-caption", sample: "Zone B — Perimeter", usage: "Timestamps, metadata" },
+    { name: "Caption", size: "0.75rem", lineHeight: "1rem", weight: "400", token: "--text-caption", sample: "Zone B - Perimeter", usage: "Timestamps, metadata" },
     { name: "Code", size: "0.875rem", lineHeight: "1.25rem", weight: "400", token: "--text-code", sample: "camera.stream.start()", usage: "Code snippets, IDs", mono: true },
   ],
   spacing: [
@@ -217,13 +219,13 @@ function ColoursSection() {
       <FadeIn>
         {/* <SectionLabel>01 - Colour</SectionLabel> */}
         <SectionHeading>Colour palette</SectionHeading>
-        <SectionSubtitle>A dark-first monochromatic system anchored by emerald green. Every colour serves a defined role - decorative use is not permitted.</SectionSubtitle>
+        <SectionSubtitle>A dark monochromatic system with a main accent of emerald green. Every colour has a purpose and a use case.</SectionSubtitle>
       </FadeIn>
 
       {[
-        { title: "Brand neutrals", desc: "The greyscale foundation. Builds depth and hierarchy across surfaces.", data: TOKENS.colors.brand },
-        { title: "Accent colours", desc: "Emerald is the primary brand colour. Pulse and Ice are for informational contexts only.", data: TOKENS.colors.accent },
-        { title: "Semantic colours", desc: "Reserved for system states. Never use these for decorative purposes.", data: TOKENS.colors.semantic },
+        { title: "Brand neutrals", desc: "The greyscale foundation that allows for depth perception", data: TOKENS.colors.brand },
+        { title: "Accent colours", desc: "Emerald is the primary brand colour.", data: TOKENS.colors.accent },
+        { title: "Semantic colours", desc: "Colours that are used to represent system states.", data: TOKENS.colors.semantic },
       ].map(({ title, desc, data }) => (
         <FadeIn key={title} delay={100}>
           <div style={{ marginBottom: "56px" }}>
@@ -254,7 +256,7 @@ function ColoursSection() {
       ))}
 
       <FadeIn delay={150}>
-        <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#F5F5F5", marginBottom: "4px" }}>WCAG 2.2 contrast ratios</h3>
+        <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#F5F5F5", marginBottom: "4px" }}>Contrast ratios</h3>
         <p style={{ fontSize: "13px", color: "#8A8A8A", marginBottom: "20px" }}>All foreground/background pairs used in the live UI. AA (4.5:1) is the minimum; AAA (7:1) is achieved for all body text pairings.</p>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
@@ -297,7 +299,7 @@ function TypographySection() {
       <FadeIn>
         {/* <SectionLabel>02 - Typography</SectionLabel> */}
         <SectionHeading>Type system</SectionHeading>
-        <SectionSubtitle>Inter for interface text - geometric, neutral, legible at all sizes. JetBrains Mono for code, IDs, tokens, and technical strings. Both sourced from Google Fonts under the SIL Open Font Licence.</SectionSubtitle>
+        <SectionSubtitle>Inter used for standard interface text - legible at all sizes. JetBrains Mono for code, IDs, tokens, and technical text. Both sourced from Google Fonts.</SectionSubtitle>
       </FadeIn>
 
       <FadeIn delay={100}>
@@ -350,97 +352,95 @@ function TypographySection() {
 }
 
 function LogoSection() {
-  const logoVariants = [
-    { label: "Full", bg: "#0D0D0D", border: "1px solid rgba(138,138,138,0.12)" },
-    { label: "Inverse", bg: "#F5F5F5", border: "none" },
-    { label: "Monochrome", bg: "#1E1E1E", border: "1px solid rgba(138,138,138,0.12)", mono: true },
-  ];
-
-  function LogoMark({ color = "#10B981", textColor = "#F5F5F5", size = 1 }) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: `${12 * size}px` }}>
-        <svg width={`${40 * size}`} height={`${40 * size}`} viewBox="0 0 40 40" fill="none">
-          <rect width="40" height="40" rx="10" fill={color} />
-          <path d="M20 8 L32 14 L32 22 C32 28 26 34 20 36 C14 34 8 28 8 22 L8 14 Z" fill="none" stroke={color === "#F5F5F5" ? "#0A0A0A" : "#0A0A0A"} strokeWidth="2.5" />
-          <circle cx="20" cy="22" r="4" fill={color === "#F5F5F5" ? "#0A0A0A" : "#0A0A0A"} />
-          <path d="M20 18 L20 10" stroke={color === "#F5F5F5" ? "#0A0A0A" : "#0A0A0A"} strokeWidth="2" strokeLinecap="round" />
-        </svg>
-        <div>
-          <p style={{ fontSize: `${14 * size}px`, fontWeight: 700, color: textColor, margin: 0, letterSpacing: "-0.02em", lineHeight: 1.1 }}>WatchDog</p>
-          <p style={{ fontSize: `${10 * size}px`, color: color === "#F5F5F5" ? "#555" : "#A3A3A3", margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace" }}>Neighbourhood Security</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <section id="logo" style={{ padding: "96px 64px", background: "#0D0D0D" }}>
       <FadeIn>
-        {/* <SectionLabel>03 - Logo & Iconography</SectionLabel> */}
-        <SectionHeading>Logo system</SectionHeading>
-        <SectionSubtitle>The WatchDog mark is a shield with an embedded camera - surveillance, protection, and AI-driven intelligence in a single glyph. Do not alter proportions, colours, or orientation.</SectionSubtitle>
+        <SectionHeading>Logo</SectionHeading>
+        <SectionSubtitle>
+          The WatchDog logo represents the core values of the platform:
+          protection, vigilance, and trust. It combines a shield with the
+          silhouette of a dog to creates a sense of physical security and intelligent monitoring
+        </SectionSubtitle>
       </FadeIn>
 
       <FadeIn delay={100}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "40px" }}>
-          <Card style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "140px", background: "#0D0D0D" }}>
-            <div style={{ marginBottom: "16px" }}><svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#10B981" /><path d="M20 8 L32 14 L32 22 C32 28 26 34 20 36 C14 34 8 28 8 22 L8 14 Z" fill="none" stroke="#0A0A0A" strokeWidth="2.5" /><circle cx="20" cy="22" r="4" fill="#0A0A0A" /><path d="M20 18 L20 10" stroke="#0A0A0A" strokeWidth="2" strokeLinecap="round" /></svg></div>
-            <div style={{ textAlign: "center" }}><p style={{ fontSize: "14px", fontWeight: 700, color: "#F5F5F5", margin: "0 0 2px" }}>WatchDog</p><p style={{ fontSize: "10px", color: "#A3A3A3", margin: 0, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "monospace" }}>Neighbourhood Security</p></div>
-            <p style={{ fontSize: "11px", color: "#6B6B6B", marginTop: "12px" }}>Full - dark bg</p>
-          </Card>
-          <Card style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "140px", background: "#F5F5F5" }}>
-            <div style={{ marginBottom: "16px" }}><svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#0A0A0A" /><path d="M20 8 L32 14 L32 22 C32 28 26 34 20 36 C14 34 8 28 8 22 L8 14 Z" fill="none" stroke="#F5F5F5" strokeWidth="2.5" /><circle cx="20" cy="22" r="4" fill="#F5F5F5" /><path d="M20 18 L20 10" stroke="#F5F5F5" strokeWidth="2" strokeLinecap="round" /></svg></div>
-            <div style={{ textAlign: "center" }}><p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A", margin: "0 0 2px" }}>WatchDog</p><p style={{ fontSize: "10px", color: "#555", margin: 0, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "monospace" }}>Neighbourhood Security</p></div>
-            <p style={{ fontSize: "11px", color: "#888", marginTop: "12px" }}>Inverse - light bg</p>
-          </Card>
-          <Card style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "140px", background: "#1E1E1E" }}>
-            <div style={{ marginBottom: "16px" }}><svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#8A8A8A" /><path d="M20 8 L32 14 L32 22 C32 28 26 34 20 36 C14 34 8 28 8 22 L8 14 Z" fill="none" stroke="#1E1E1E" strokeWidth="2.5" /><circle cx="20" cy="22" r="4" fill="#1E1E1E" /><path d="M20 18 L20 10" stroke="#1E1E1E" strokeWidth="2" strokeLinecap="round" /></svg></div>
-            <div style={{ textAlign: "center" }}><p style={{ fontSize: "14px", fontWeight: 700, color: "#8A8A8A", margin: "0 0 2px" }}>WatchDog</p><p style={{ fontSize: "10px", color: "#6B6B6B", margin: 0, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "monospace" }}>Neighbourhood Security</p></div>
-            <p style={{ fontSize: "11px", color: "#6B6B6B", marginTop: "12px" }}>Monochrome</p>
-          </Card>
-        </div>
-      </FadeIn>
+        <Card
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            padding: "48px",
+            marginBottom: "32px",
+          }}
+        >
+          <Image
+            src={logoImage}
+            alt="WatchDog Logo"
+            style={{
+              width: "220px",
+              maxWidth: "100%",
+              marginBottom: "32px",
+            }}
+          />
 
-      <FadeIn delay={150}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "40px" }}>
-          <Card>
-            <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "16px" }}>Clear-space & minimum size</h3>
-            <div style={{ background: "#1E1E1E", borderRadius: "8px", padding: "24px", display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", marginBottom: "12px" }}>
-              <div style={{ position: "relative", border: "1px dashed rgba(16,185,129,0.3)", padding: "12px" }}>
-                <svg width="32" height="32" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#10B981" /><path d="M20 8 L32 14 L32 22 C32 28 26 34 20 36 C14 34 8 28 8 22 L8 14 Z" fill="none" stroke="#0A0A0A" strokeWidth="2.5" /><circle cx="20" cy="22" r="4" fill="#0A0A0A" /></svg>
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, border: "1px dashed rgba(16,185,129,0.4)", borderRadius: "2px", pointerEvents: "none" }} />
-              </div>
-              <div style={{ fontSize: "12px", color: "#8A8A8A", lineHeight: 1.6 }}>
-                <p style={{ margin: "0 0 4px" }}>Clear space = ½ shield height</p>
-                <p style={{ margin: 0 }}>Min render: 24×24px (icon), 120px (full)</p>
-              </div>
-            </div>
-          </Card>
-          <Card>
-            <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#EF4444", marginBottom: "16px" }}>Forbidden treatments</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {["Do not stretch or skew the mark", "Do not recolour the shield (emerald or monochrome only)", "Do not add drop shadows or glow effects", "Do not place on a busy photographic background", "Do not rotate or flip the mark", "Do not use outline-only version of filled icon"].map(r => (
-                <div key={r} style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                  <span style={{ color: "#EF4444", fontSize: "12px", flexShrink: 0, marginTop: "1px" }}>✕</span>
-                  <span style={{ fontSize: "12px", color: "#8A8A8A", lineHeight: 1.5 }}>{r}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-      </FadeIn>
+          <div
+            style={{
+              maxWidth: "750px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+            }}
+          >
+            <div>
+              <h3
+                style={{
+                  fontSize: "18px",
+                  color: "#F5F5F5",
+                  marginBottom: "8px",
+                }}
+              >
+                Symbolism
+              </h3>
 
-      <FadeIn delay={200}>
-        <Card>
-          <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "4px" }}>Icon library - Lucide React</h3>
-          <p style={{ fontSize: "12px", color: "#8A8A8A", marginBottom: "16px" }}>All UI icons are sourced from Lucide React. Stroke weight: 1.5px at 16–20px, 2px at 24px+. Never fill icons unless explicitly a filled-state indicator.</p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            {[].map(icon => (
-              <div key={icon.name} style={{ display: "flex", alignItems: "center", gap: "6px", background: "#1E1E1E", borderRadius: "6px", padding: "6px 10px" }}>
-                <span style={{ fontSize: "14px" }}>{icon.unicode}</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#A3A3A3" }}>{icon.name}</span>
-              </div>
-            ))}
+              <p
+                style={{
+                  fontSize: "14px",
+                  lineHeight: 1.8,
+                  color: "#A3A3A3",
+                }}
+              >
+                The shield represents security, and reliability
+                reflecting the system's purpose of safeguarding neighbourhoods.
+                The dog symbolizes vigilance and constant
+                awareness-qualities associated with a watchdog that remains
+                alert to potential threats.
+              </p>
+            </div>
+
+            <div>
+              <h3
+                style={{
+                  fontSize: "18px",
+                  color: "#F5F5F5",
+                  marginBottom: "8px",
+                }}
+              >
+                Brand Identity
+              </h3>
+
+              <p
+                style={{
+                  fontSize: "14px",
+                  lineHeight: 1.8,
+                  color: "#A3A3A3",
+                }}
+              >
+                The logo is designed to communicate confidence and simplicity.
+                Its clean geometric form ensures it remains recognizable across the application,
+                documentation, presentations, and
+                mobile platforms while maintaining a professional appearance.
+              </p>
+            </div>
           </div>
         </Card>
       </FadeIn>
@@ -465,7 +465,7 @@ function TokensSection() {
       <FadeIn>
         {/* <SectionLabel>04 - Design Tokens</SectionLabel> */}
         <SectionHeading>Token system</SectionHeading>
-        <SectionSubtitle>All values are defined as CSS custom properties in globals.css. Any drift between this guide and the codebase is treated as a bug.</SectionSubtitle>
+        <SectionSubtitle>All values are defined as CSS custom properties in globals.css</SectionSubtitle>
       </FadeIn>
 
       <FadeIn delay={100}>
@@ -649,22 +649,63 @@ function ComponentsSection() {
         </Card>
       </FadeIn>
 
-      {/* Badges */}
+      {/* Status Badges */}
       <FadeIn delay={120}>
         <Card style={{ marginBottom: "16px" }}>
-          <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "20px" }}>Badges & status indicators</h3>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "16px" }}>
+          <h3
+            style={{
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#F5F5F5",
+              marginBottom: "8px",
+            }}
+          >
+            Status Badges
+          </h3>
+
+          <p
+            style={{
+              fontSize: "12px",
+              color: "#8A8A8A",
+              lineHeight: 1.6,
+              marginBottom: "20px",
+            }}
+          >
+            Status badges provides the user with visual feedback about the state of
+            alerts, devices, and system events.
+          </p>
+
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "10px",
+            }}
+          >
             {[
-              { label: "Active", bg: "rgba(16,185,129,0.15)", color: "#10B981", dot: "#10B981" },
-              { label: "Threat detected", bg: "rgba(239,68,68,0.15)", color: "#EF4444", dot: "#EF4444" },
-              { label: "Warning", bg: "rgba(245,158,11,0.15)", color: "#F59E0B", dot: "#F59E0B" },
-              { label: "Informational", bg: "rgba(45,126,255,0.15)", color: "#2D7EFF", dot: "#2D7EFF" },
-              { label: "Offline", bg: "rgba(138,138,138,0.15)", color: "#8A8A8A", dot: "#8A8A8A" },
-              { label: "Processing", bg: "rgba(16,185,129,0.1)", color: "#10B981", dot: null, pulse: true },
-            ].map(b => (
-              <div key={b.label} style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: b.bg, color: b.color, borderRadius: "9999px", padding: "4px 10px", fontSize: "12px", fontWeight: 500 }}>
-                {b.dot && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: b.dot, animation: b.pulse ? "pulse 1.2s ease-in-out infinite" : "none", flexShrink: 0 }} />}
-                {b.label}
+              { label: "Active", bg: "rgba(16,185,129,0.15)", color: "#10B981" },
+              { label: "Threat Detected", bg: "rgba(239,68,68,0.15)", color: "#EF4444" },
+              { label: "Warning", bg: "rgba(245,158,11,0.15)", color: "#F59E0B" },
+              { label: "Information", bg: "rgba(45,126,255,0.15)", color: "#2D7EFF" },
+              { label: "Offline", bg: "rgba(138,138,138,0.15)", color: "#8A8A8A" },
+              { label: "Processing", bg: "rgba(16,185,129,0.10)", color: "#10B981" },
+            ].map((badge) => (
+              <div
+                key={badge.label}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: badge.bg,
+                  color: badge.color,
+                  borderRadius: "9999px",
+                  padding: "6px 12px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {badge.label}
               </div>
             ))}
           </div>
@@ -675,7 +716,7 @@ function ComponentsSection() {
       <FadeIn delay={140}>
         <Card>
           <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "4px" }}>Toast notifications</h3>
-          <p style={{ fontSize: "12px", color: "#8A8A8A", marginBottom: "16px" }}>Triggered programmatically. Appear top-right, 3 second auto-dismiss, accessible via aria-live region.</p>
+          <p style={{ fontSize: "12px", color: "#8A8A8A", marginBottom: "16px" }}>Triggered programmatically. Appearing in the top-right, auto-dismiss</p>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             {["success", "error", "warning", "info"].map(t => (
               <button key={t} onClick={() => showToast(t)}
@@ -706,81 +747,199 @@ function ComponentsSection() {
 
 function AccessibilitySection() {
   return (
-    <section id="accessibility" style={{ padding: "96px 64px", background: "#0A0A0A" }}>
+    <section
+      id="accessibility"
+      style={{ padding: "96px 64px", background: "#0A0A0A" }}
+    >
       <FadeIn>
-        {/* <SectionLabel>06 - Accessibility</SectionLabel> */}
-        <SectionHeading>Accessibility standards</SectionHeading>
-        <SectionSubtitle>Conformance target: WCAG 2.2 Level AA across all interfaces, with AAA achieved for all body text. Security software must be usable by everyone - accessibility is non-negotiable.</SectionSubtitle>
+        <SectionHeading>Accessibility</SectionHeading>
+        <SectionSubtitle>
+          The WatchDog interface is designed to remain clear, readable, and
+          usable. Accessibility considerations
+          focus on visual clarity, consistent navigation, and reducing user
+          effort when interacting with the platform.
+        </SectionSubtitle>
       </FadeIn>
 
       <FadeIn delay={80}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "32px" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "16px",
+            marginBottom: "32px",
+          }}
+        >
           {[
-            { score: "AA+", label: "Contrast standard", sub: "All text pairings meet AA; body text achieves AAA (7:1+)", color: "#10B981" },
-            { score: "⌨", label: "Keyboard navigation", sub: "Full keyboard traversal with Tab, Enter, Escape, Arrow keys", color: "#2D7EFF" },
-            { score: "SR", label: "Screen reader support", sub: "Semantic HTML, ARIA roles, live regions for alerts", color: "#F59E0B" },
-          ].map(s => (
-            <Card key={s.label} style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "2rem", fontWeight: 700, color: s.color, marginBottom: "8px", fontFamily: s.score.length > 2 ? "Inter" : "'JetBrains Mono', monospace" }}>{s.score}</div>
-              <p style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "6px" }}>{s.label}</p>
-              <p style={{ fontSize: "12px", color: "#8A8A8A", lineHeight: 1.5 }}>{s.sub}</p>
+            {
+              score: "AA",
+              label: "Colour Contrast",
+              sub: "High contrast between text and backgrounds improves readability.",
+              color: "#10B981",
+            },
+            {
+              score: "⌨",
+              label: "Keyboard Navigation",
+              sub: "Interactive components are designed to remain usable using keyboard navigation.",
+              color: "#2D7EFF",
+            },
+            {
+              score: "UI",
+              label: "Consistent Layout",
+              sub: "Navigation, spacing, and interface elements remain consistent throughout the application.",
+              color: "#F59E0B",
+            },
+          ].map((item) => (
+            <Card key={item.label} style={{ textAlign: "center" }}>
+              <div
+                style={{
+                  fontSize: "2rem",
+                  fontWeight: 700,
+                  color: item.color,
+                  marginBottom: "8px",
+                }}
+              >
+                {item.score}
+              </div>
+
+              <p
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: "#F5F5F5",
+                  marginBottom: "6px",
+                }}
+              >
+                {item.label}
+              </p>
+
+              <p
+                style={{
+                  fontSize: "12px",
+                  color: "#8A8A8A",
+                  lineHeight: 1.5,
+                }}
+              >
+                {item.sub}
+              </p>
             </Card>
           ))}
         </div>
       </FadeIn>
 
-      <FadeIn delay={100}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+      <FadeIn delay={120}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "16px",
+          }}
+        >
           <Card>
-            <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "16px" }}>Focus indicator</h3>
-            <p style={{ fontSize: "12px", color: "#8A8A8A", marginBottom: "12px" }}>All interactive elements expose a visible focus ring using the emerald ring token.</p>
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              <button style={{ padding: "8px 16px", borderRadius: "8px", background: "#10B981", color: "#0A0A0A", border: "none", fontSize: "13px", fontWeight: 500, outline: "3px solid rgba(16,185,129,0.5)", outlineOffset: "2px" }}>Focused button</button>
-              <input style={{ padding: "8px 12px", borderRadius: "8px", background: "#1E1E1E", border: "1px solid #10B981", color: "#F5F5F5", fontSize: "13px", outline: "3px solid rgba(16,185,129,0.3)", outlineOffset: "2px", width: "140px" }} defaultValue="Focused input" />
+            <h3
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#F5F5F5",
+                marginBottom: "16px",
+              }}
+            >
+              Focus States
+            </h3>
+
+            <p
+              style={{
+                fontSize: "12px",
+                color: "#8A8A8A",
+                marginBottom: "16px",
+              }}
+            >
+              Interactive elements provide a visible focus state so users can
+              easily identify the currently selected control while navigating
+              the interface.
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                alignItems: "center",
+              }}
+            >
+              <button
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  background: "#10B981",
+                  color: "#0A0A0A",
+                  border: "none",
+                  outline: "3px solid rgba(16,185,129,0.5)",
+                  outlineOffset: "2px",
+                }}
+              >
+                Button
+              </button>
+
+              <input
+                defaultValue="Input Field"
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  background: "#1E1E1E",
+                  color: "#F5F5F5",
+                  border: "1px solid #10B981",
+                  outline: "3px solid rgba(16,185,129,0.3)",
+                  outlineOffset: "2px",
+                }}
+              />
             </div>
-            <p style={{ fontSize: "11px", color: "#6B6B6B", marginTop: "10px", fontFamily: "'JetBrains Mono', monospace" }}>--ring: #10B981 · outline-offset: 2px</p>
           </Card>
+
           <Card>
-            <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "16px" }}>Motion reduction</h3>
-            <p style={{ fontSize: "12px", color: "#8A8A8A", marginBottom: "12px" }}>All animations and transitions respect <code style={{ color: "#10B981", fontSize: "11px" }}>prefers-reduced-motion</code>. The alert-pulse animation is also disabled, replaced with a static indicator.</p>
-            <div style={{ background: "#1E1E1E", borderRadius: "8px", padding: "12px" }}>
-              <code style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#10B981", lineHeight: 1.8, whiteSpace: "pre" }}>{"@media (prefers-reduced-motion: reduce) {\n  * { transition: none !important;\n      animation: none !important; }\n}"}</code>
-            </div>
-          </Card>
-          <Card>
-            <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "16px" }}>ARIA & semantic HTML</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <h3
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#F5F5F5",
+                marginBottom: "16px",
+              }}
+            >
+              Design Principles
+            </h3>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+              }}
+            >
               {[
-                "role=\"alert\" on toast notifications for screen reader announcement",
-                "aria-live=\"polite\" on threat counters and camera status",
-                "aria-label on icon-only buttons (close, expand, refresh)",
-                "aria-expanded on accordion and dropdown triggers",
-                "<main>, <nav>, <aside>, <header> landmark regions",
-                "Skip-to-main-content link as first focusable element",
-              ].map(r => (
-                <div key={r} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
-                  <span style={{ color: "#10B981", fontSize: "11px", flexShrink: 0, marginTop: "2px" }}>✓</span>
-                  <span style={{ fontSize: "12px", color: "#A3A3A3", lineHeight: 1.5, fontFamily: r.includes('"') || r.includes('<') ? "'JetBrains Mono', monospace" : "inherit" }}>{r}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-          <Card>
-            <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "16px" }}>Automated audit targets</h3>
-            <p style={{ fontSize: "12px", color: "#8A8A8A", marginBottom: "12px" }}>Tools: Lighthouse CI, axe DevTools, WAVE. Run on every deployment.</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {[
-                { tool: "Lighthouse", metric: "Accessibility score", target: "≥ 95", color: "#10B981" },
-                { tool: "axe DevTools", metric: "Critical violations", target: "0", color: "#10B981" },
-                { tool: "WAVE", metric: "Errors", target: "0", color: "#10B981" },
-                { tool: "Contrast checker", metric: "All text pairings", target: "AA minimum", color: "#F59E0B" },
-              ].map(a => (
-                <div key={a.tool} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "#1E1E1E", borderRadius: "6px" }}>
-                  <div>
-                    <span style={{ fontSize: "12px", fontWeight: 600, color: "#F5F5F5" }}>{a.tool}</span>
-                    <span style={{ fontSize: "11px", color: "#8A8A8A", marginLeft: "8px" }}>{a.metric}</span>
-                  </div>
-                  <span style={{ fontSize: "12px", fontWeight: 600, color: a.color, fontFamily: "'JetBrains Mono', monospace" }}>{a.target}</span>
+                "Maintain consistent spacing throughout the interface.",
+                "Use clear typography with readable font sizes.",
+                "Avoid relying solely on colour to communicate information.",
+                "Ensure buttons and controls remain visually distinct.",
+                "Provide meaningful feedback for user actions.",
+              ].map((item) => (
+                <div
+                  key={item}
+                  style={{
+                    display: "flex",
+                    gap: "8px",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <span style={{ color: "#10B981" }}>✓</span>
+
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      color: "#A3A3A3",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {item}
+                  </span>
                 </div>
               ))}
             </div>
