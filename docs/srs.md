@@ -44,39 +44,41 @@ The system concentrates on the integrated development from camera registration a
 ### E5: AI Detection & Behaviour Classification
 
 - **US-17**: As a resident, I want the system to automatically detect when a person appears in a restricted zone on my camera so that I am alerted without having to watch the feed myself.
-- **US-18**: As a security officer, I want the system to classify what a detected person is doing so that I can understand the severity of a situation at a glance without reviewing the footage first.
-- **US-19**: As a security officer, I want the system to keep track of the same person across multiple frames using a consistent ID so that I can follow their movement without piecing together separate alerts manually.
+- **US-18** As a resident and security officer, I want to receive alerts from the system when a possible weapon is detected to respond to potential threats as quickly as possible.
+- **US-19**: As a security officer, I want the system to classify what a detected person is doing so that I can understand the severity of a situation at a glance without reviewing the footage first.
+- **US-20**: As a security officer, I want the system to keep track of the same person across multiple frames using a consistent ID so that I can follow their movement without piecing together separate alerts manually.
 
 ### E6: Alert Management
 
-- **US-20**: As a security officer, I want to see new alerts appear on my dashboard instantly without refreshing so that I can respond to incidents as they happen.
-- **US-21**: As a security officer, I want to acknowledge an alert so that my team can see that someone is already handling it and avoid duplicated responses.
-- **US-22**: As a security officer, I want to watch the video clip that triggered an alert so that I can judge whether the situation requires a physical response.
-- **US-23**: As a security officer, I want to browse and filter past alerts so that I can review incidents that happened while I was off duty.
-- **US-24**: As a resident, I want to receive a WhatsApp message and email when a high-severity alert is triggered on my camera so that I am notified even when I am not watching the dashboard.
-- **US-25**: As a neighbourhood admin, I want to broadcast a critical alert to all neighbourhood members so that everyone can take precautions during a serious security incident.
+- **US-21**: As a security officer, I want to see new alerts appear on my dashboard instantly without refreshing so that I can respond to incidents as they happen.
+- **US-22**: As a security officer, I want to acknowledge an alert so that my team can see that someone is already handling it and avoid duplicated responses.
+- **US-23**: As a security officer, I want to watch the video clip that triggered an alert so that I can judge whether the situation requires a physical response.
+- **US-24**: As a security officer, I want to browse and filter past alerts so that I can review incidents that happened while I was off duty.
+- **US-25**: As a resident, I want to receive a WhatsApp message and email when a high-severity alert is triggered on my camera so that I am notified even when I am not watching the dashboard.
+- **US-26**: As a neighbourhood admin, I want to broadcast a critical alert to all neighbourhood members so that everyone can take precautions during a serious security incident.
 
 ### E7: Analytics & Risk Intelligence
 
-- **US-26**: As a neighbourhood admin, I want to see charts showing how frequently alerts are occurring across the neighbourhood so that I can identify problem areas and times.
-- **US-27**: As a neighbourhood admin, I want to see an overall risk score for my neighbourhood so that I can understand at a glance whether security has been getting better or worse over time.
-- **US-28**: As a neighbourhood admin, I want to see how quickly alerts are being acknowledged so that I can identify response time problems and address them.
-- **US-29**: As a neighbourhood admin, I want to see incident trends over time so that I can spot recurring patterns and take preventative action before problems escalate.
+- **US-27**: As a neighbourhood admin, I want to see charts showing how frequently alerts are occurring across the neighbourhood so that I can identify problem areas and times.
+- **US-28**: As a neighbourhood admin, I want to see an overall risk score for my neighbourhood so that I can understand at a glance whether security has been getting better or worse over time.
+- **US-29**: As a neighbourhood admin, I want to see how quickly alerts are being acknowledged so that I can identify response time problems and address them.
+- **US-30**: As a neighbourhood admin, I want to see incident trends over time so that I can spot recurring patterns and take preventative action before problems escalate.
 
 ### E8: Autonomous Patrol Assistance
 
-- **US-30**: As a security officer, I want the system to automatically follow a suspicious individual across cameras and show me their movement path so that I can respond without losing track of them.
-- **US-31**: As a security officer, I want to receive a situational brief summarising everything the system knows about a tracked individual so that I can brief my team quickly without reviewing hours of footage.
+- **US-31**: As a security officer, I want the system to automatically follow a suspicious individual across cameras and show me their movement path so that I can respond without losing track of them.
+- **US-32**: As a security officer, I want to receive a situational brief summarising everything the system knows about a tracked individual so that I can brief my team quickly without reviewing hours of footage.
 
 ### E9: Predictive Risk Scoring
 
-- **US-32**: As a neighbourhood admin, I want to see predictions of which time windows and camera zones are at highest risk so that I can schedule patrols proactively rather than just reacting to incidents.
-- **US-33**: As a security officer, I want to be notified when a zone's predicted risk level rises significantly so that I can increase my attention to that area before an incident actually occurs.
+- **US-33**: As a neighbourhood admin, I want to see predictions of which time windows and camera zones are at highest risk so that I can schedule patrols proactively rather than just reacting to incidents.
+- **US-34**: As a security officer, I want to be notified when a zone's predicted risk level rises significantly so that I can increase my attention to that area before an incident actually occurs.
 
 ### E10: Agent Workflow
-- **US-34**: As a resident or property owner, I want my enabled camera automatically connected to the paired WatchDog Agent for streaming and detection so that monitoring does not require manual runtime configuration.
-- **US-35:** As an authorised user, I want playback to connect only when I select a camera so that video connections and resources are used deliberately.
-- **US-36:** As a security officer, I want a fault or shutdown in one camera runtime not to interrupt other enabled cameras so that a local failure does not blind the property.
+- **US-35**: As a resident or property owner, I want my enabled camera automatically connected to the paired WatchDog Agent for streaming and detection so that monitoring does not require manual runtime configuration.
+- **US-36:** As a resident or a property owner, I want to manually disable the agent to temporarily stop monitoring my property when it is not needed.
+- **US-37:** As an authorised user, I want playback to connect only when I select a camera so that video connections and resources are used deliberately.
+- **US-38:** As a security officer, I want a fault or shutdown in one camera runtime not to interrupt other enabled cameras so that a local failure does not blind the property.
 
 ---
 
@@ -830,3 +832,4 @@ The system is developed by a team of five third-year Computer Science students. 
 ![Mockup 1](images/Mockups%201.png)
 ![Mockup 2](images/Mockups%202.png)
 ![Mockup 3](images/Mockups%203.png)
+35
