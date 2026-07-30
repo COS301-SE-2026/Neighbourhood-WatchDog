@@ -30,6 +30,7 @@ jobs:
             --secret-string '{
               "SECRET_KEY": "${{ secrets.SECRET_KEY }}",
               "DATABASE_URL": "${{ secrets.DATABASE_URL }}",
+              "REDIS_URL": "${{ secrets.REDIS_URL }}",
               "AWS_REGION": "${{ secrets.AWS_REGION }}",
               "S3_BUCKET_NAME": "${{ secrets.S3_BUCKET_NAME }}",
               "COGNITO_USER_POOL_ID": "${{ secrets.COGNITO_USER_POOL_ID }}",
