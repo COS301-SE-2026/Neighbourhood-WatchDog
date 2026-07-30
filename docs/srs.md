@@ -652,21 +652,23 @@ The quality requirements are derived directly from the non-functional requiremen
 - AI detection processing shall complete within 1 second per frame.
 - Alerts shall appear on the dashboard within 2 seconds of detection.
 - Notifications shall be delivered within 5 seconds of alert generation.
+- The system shall respond to at least 95% of API requests within 2 seconds under normal operating conditions.
+- The system shall support at least 500 concurrent users.
 #### Scalability
  
 - The system shall scale to support 1000+ cameras per neighbourhood.
 - AI workers and streaming services shall support horizontal scaling independently of one another.
 - The frame queue shall support a burst load of at least 10,000 frames per minute.
+- The system architecture shall support an increase in workload of up to 200% without requiring major architectural changes, while maintaining no more than a 10% decrease in performance.
 #### Security
- 
-- All video streams and API communication shall use TLS 1.2+ encryption.
+
+- All video streams, API communication, and inter-service communication shall use TLS 1.3 encryption.
 - Multi-Factor Authentication shall be enforced for all users.
+- User authentication shall be managed using AWS Cognito with Multi-Factor Authentication (MFA) enabled.
+- User data stored in AWS RDS shall be encrypted at rest using AES-256 encryption.
 - Role-Based Access Control shall restrict access to video streams and recordings based on user role.
 - User sessions shall expire after 15 minutes of inactivity.
 - All user actions shall be logged to an append-only audit trail.
-- User authentication shall be managed using AWS Cognito with Multi-Factor Authentication (MFA) enabled.
-- User data shall be stored in AWS RDS using encryption at rest.
-- Data transmitted between the application, AWS Cognito, AWS RDS, and users shall be encrypted using TLS 1.2 or higher.
 
 #### Accuracy
  
@@ -674,9 +676,9 @@ The quality requirements are derived directly from the non-functional requiremen
 - Behaviour classification accuracy shall be at least 80%.
 #### Reliability
  
-- The system shall maintain 99% uptime.
+- The system shall maintain at least 99.5% uptime.
 - Video ingestion failures on one stream shall not affect other active streams.
-- The system shall recover from service failure within 2 minutes.
+- The system shall recover from critical failures within 5 minutes.
 - The detection pipeline shall guarantee no loss of critical alert events.
 #### Usability
  
@@ -688,6 +690,8 @@ The quality requirements are derived directly from the non-functional requiremen
 - The system shall use a modular architecture with clearly separated subsystems.
 - AI models shall be updatable without system downtime.
 - Code shall maintain greater than 70% test coverage.
+- New features and bug fixes shall be deployable within 2 hours.
+- Automated test coverage shall be measured and tracked over time.
 #### Compatibility
  
 - The system shall support IP cameras from different manufacturers with different video formats.
