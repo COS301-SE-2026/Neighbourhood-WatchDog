@@ -619,6 +619,7 @@ UC9.3 - Prevent Unauthorised Camera Playback (Abstract)
 High-Level:
 TUCBW: A user attempts to request playback for a camera stream that they are not permitted to view.
 TUCEW: The platform denies access to the camera stream and does not establish a live playback connection.
+
 ---
 
 ## Domain Model
