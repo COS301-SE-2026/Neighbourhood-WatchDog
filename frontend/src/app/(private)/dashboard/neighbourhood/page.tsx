@@ -6,10 +6,15 @@ import {
   Home,
   LockKeyhole,
 } from "lucide-react";
+
+import {Dialog} from "@/components/ui/dialog"
+
 import { getNeighbourhoodPropertyDetails as apiFetchProperties } from "@/lib/api/neighbourhood"
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
+import PairAgent from "@/components/property-components/PairAgent";
 
 type PropertyDetail = {
   id: string;
@@ -19,22 +24,7 @@ type PropertyDetail = {
   neighbourhood_name?: string;
 };
 
-const properties = [
-  {
-    id: "30000000-0000-0000-0000-000000000001",
-    address: "12 Test Street, Hatfield, Pretoria",
-    property_type: "PRIVATE",
-    neighbourhood_id: null,
-    neighbourhood_name: "",
-  },
-  {
-    id: "30000000-0000-0000-0000-000000000002",
-    address: "45 Main Road, Brooklyn, Pretoria",
-    property_type: "PUBLIC",
-    neighbourhood_id: "40000000-0000-0000-0000-000000000001",
-    neighbourhood_name: "Greenstone Estate",
-  },
-];
+
 
 function formatPropertyType(propertyType: string) {
   return propertyType === "PRIVATE"
@@ -45,7 +35,9 @@ function formatPropertyType(propertyType: string) {
 export default function NeighbourhoodPage() {
 
     const [properties, setProperties] = useState<PropertyDetail[]>([]);
-
+    const [isOpen, setIsOpen] = useState(false)
+    const [selectedProperty, setSelectedProperty] = useState<PropertyDetail | null>(null)
+    
     useEffect(() => {
         const fetchProperties = async () => {
             try {
@@ -142,12 +134,23 @@ export default function NeighbourhoodPage() {
                     </div>
 
                     {isAvailable ? (
-                        <Button
-                        type="button"
-                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 md:w-auto"
-                        >
-                        Use this property
-                        </Button>
+                        
+                        <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-full md:w-auto"
+                              onClick={() => {setIsOpen(true); setSelectedProperty(property);}}
+                              >
+                                Connect to Agent
+                            </Button>
+                            <Button
+                            type="button"
+                            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 md:w-auto"
+                            >
+                            Use this property
+                            </Button>
+                        </div>
                     ) : (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground md:justify-end">
                         <LockKeyhole className="h-4 w-4 shrink-0" />
@@ -164,6 +167,23 @@ export default function NeighbourhoodPage() {
                 })}
             </div>
             </section>
+            <Dialog
+                open={isOpen}
+                onOpenChange={(open) => {
+                    setIsOpen(open);
+
+                    if (!open) {
+                    setSelectedProperty(null);
+                    }
+                }}
+                >
+                    {selectedProperty && (
+                    <PairAgent
+                        propertyId={selectedProperty.id}
+                        propertyAddress={selectedProperty.address}
+                    />
+                    )}
+            </Dialog>
         </div>
         </div>
     );

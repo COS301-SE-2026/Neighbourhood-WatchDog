@@ -64,7 +64,7 @@ type NavItem = {
 
 // data
 
-const TOP_LEVEL_IDS = ["dashboard", "alerts", "neighbourhood", "agent", "analytics", "settings"];
+const TOP_LEVEL_IDS = ["dashboard", "alerts", "neighbourhood", "analytics", "settings"];
 
 function isNavItemActive(item: NavItem, pathname: string): boolean {
   if (pathname === item.href) return true;
@@ -303,12 +303,6 @@ export function AppSidebar() {
       label: "Neighbourhood",
       icon: <Home className="h-4 w-4 shrink-0" />,
       href: "/dashboard/neighbourhood",
-    },
-    {
-      id: "agent",
-      label: "Agent",
-      icon: <Bot className="h-4 w-4 shrink-0" />,
-      href: "/dashboard/agent",
     },
     {
       id: "analytics",
