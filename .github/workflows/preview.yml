@@ -7,7 +7,7 @@ env:
 
 on:
   push:
-    branches: [ "dev", "fix/s3-clip" ]
+    branches: [ "dev" ]
   pull_request:
     branches: [ "dev"]
 

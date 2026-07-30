@@ -10,7 +10,7 @@ It does contain RBAC:
 
 import os
 from datetime import datetime, timezone
-
+from botocore.config import Config as BotoConfig
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -51,7 +51,11 @@ def _s3_client():
     return boto3.client(
         "s3",
         region_name=config.aws_region,
-        endpoint_url=f"https://s3.{config.aws_region}.amazonaws.com"
+        endpoint_url=f"https://s3.{config.aws_region}.amazonaws.com",
+        config=BotoConfig(
+            signature_version="s3v4",
+            s3={"addressing_style": "virtual"},
+        ),
     )
 
 
