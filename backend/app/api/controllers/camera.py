@@ -34,8 +34,8 @@ async def deregister_camera(camera_id: UUID,
     claims: Annotated[dict, Depends(get_current_user)]
 ):
     """Permanently remove a camera from a users property and the system."""
-    require_role(claims = claims, allowed_roles= ['RESIDENT'])
-
+    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
+    
     deregister_camera_handler(camera_id, db, claims)
 
 @router.get("/property/{property_id}")
