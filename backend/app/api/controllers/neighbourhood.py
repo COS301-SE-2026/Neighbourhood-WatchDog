@@ -12,7 +12,7 @@ router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
 @router.post("/create-neighbourhood")
 async def create_neighbourhood(req: CreateNeighbourhoodReq, db: DbSession, claims: dict = Depends(get_current_user)):
     """Create neighbourhood and return the neighbourhood that was created"""
-    require_role(claims, ['RESIDENT'])
+    require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN')
 
     newNeighbourhood = await create_neighbourhood_handler(name=req.name, location=req.location, property_id=req.property_id, db = db, claims = claims)
 
