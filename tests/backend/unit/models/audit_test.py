@@ -85,3 +85,39 @@ class TestAuditlogScheme:
     def test_from_attributes_config_present(self):
         """model_config should allow construction from ORM objects"""
         assert AuditLogScheme.model_config.get("from_attributes") is True
+
+class TestGetAuditLogres:
+    def _make_nested_data(self) -> PaginatedResponse[AuditLogScheme]:
+        return PaginatedResponse[AuditLogScheme](
+            total=1, page=1, size=30, results=[AuditLogScheme(**_audit_log_res())]
+        )
+
+    def test_valid_response_with_data(self):
+        res = GetAuditLogsRes(
+            status=200,
+            message="Audit logs retrieved successfully",
+            data=self._make_nested_data(),
+        )
+
+        assert res.status == 200
+        assert res.data.total == 1
+
+    def test_message_defaults_to_none(self):
+        res = GetAuditLogsRes(status=200, data=self._make_nested_data())
+        assert res.message is None
+
+    def test_missing_status_raises(self):
+        with pytest.raises(ValidationError):
+            GetAuditLogsRes(message="oops", data=self._make_nested_data())
+
+    def test_missing_data_raises(self):
+        with pytest.raises(ValidationError):
+            GetAuditLogsRes(status=200, message="ok")
+
+    def test_invlaid_nested_data_raises(self):
+        with pytest.raises(ValidationError):
+            GetAuditLogsRes(
+                status=200,
+                message="ok",
+                data={"total": "not-an-int", "page": 1, "size": 30, "results": []},
+            )
