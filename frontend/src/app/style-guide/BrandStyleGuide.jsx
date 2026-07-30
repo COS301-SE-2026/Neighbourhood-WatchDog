@@ -580,9 +580,9 @@ function ComponentsSection() {
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                   {btns.map((b) => (
                     <button key={b.variant} type="button" disabled={b.disabled}
-                      onMouseEnter={() => !b.disabled && setHoveredBtn(`${label}-${i}`)}
+                      onMouseEnter={() => !b.disabled && setHoveredBtn(`${label}-${b.variant}`)}
                       onMouseLeave={() => setHoveredBtn(null)}
-                      style={{ padding: b.padding || "8px 18px", borderRadius: "8px", border: b.border || "none", cursor: b.disabled ? "not-allowed" : "pointer", fontSize: b.fontSize || "13px", fontWeight: 500, transition: "all 0.1s ease-out", background: hoveredBtn === `${label}-${i}` ? (b.hoverBg || b.bg) : b.bg, color: b.color, opacity: b.disabled ? 0.45 : 1, transform: hoveredBtn === `${label}-${i}` ? "translateY(-1px)" : "" }}>
+                      style={{ padding: b.padding || "8px 18px", borderRadius: "8px", border: b.border || "none", cursor: b.disabled ? "not-allowed" : "pointer", fontSize: b.fontSize || "13px", fontWeight: 500, transition: "all 0.1s ease-out", background: hoveredBtn === `${label}-${b.variant}` ? (b.hoverBg || b.bg) : b.bg, color: b.color, opacity: b.disabled ? 0.45 : 1, transform: hoveredBtn === `${label}-${b.variant}` ? "translateY(-1px)" : "" }}>
                       {b.text}
                     </button>
                   ))}
