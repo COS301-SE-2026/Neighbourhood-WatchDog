@@ -151,7 +151,6 @@ services:
     build:
       context: ./ai
       target: development
-    platform: linux/amd64
     ports:
       - "8001:8001"
     environment:
@@ -177,7 +176,6 @@ services:
       MTX_WEBRTCSERVERKEY: /certs/privkey.pem
     build:
       context: ./mediamtx
-    platform: linux/amd64
     ports:
       - "8554:8554"    # RTSP
       - "8889:8889"    # WebRTC
