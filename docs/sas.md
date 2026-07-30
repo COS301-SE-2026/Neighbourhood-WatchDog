@@ -40,10 +40,17 @@ The purpose of this document is to communicate the architectural structure of th
 - Services must support horizontal scalability where appropriate.
 
 ### 2.4 Architectural Diagram
-
+![Architecture Diagramv2](/docs/images/Architecture%20Diagramv2.drawio.svg)
 
 ### 2.5 Mapping Quality Requirements to Architectural Decisions
-
+|Quality Requirement|Architectural Decision|
+|---|---|
+|Availability: >= 99.5% uptime|Made use of a load balancer as well as multi-AZ database deployment|
+|Performance: Support for 500+ concurrent users|Deployed with ECS, AWS' contanerised management service deployed with automatic scaling policies|
+|Data encryption for sensitve information|Use of AWS RDS and AWS Secrets Manager both of which encrypt data at rest using AES-256 and TLS 1.3 for secure communication between services. Moreover, MFA is used through AWS Cognito|
+|Reliability: Recovery within 5 minutes after failure|Automated backups, failover replication, and monitoring with automated recovery scripts.|
+|Scalability: support for up to 200% workload increase without major architectural changes|ECS with an Application Load Balancer allows horizontal scaling by increasing the service's desired task count with no architecture changes. The underlying EC2 ASG (auto scalaing group) scales out to provide for additional tasks|
+|Maintainability: new features/fixes deployable within 2 hours|CI/CD via GitHub Actions automates images build, ECR push and ECS service update on every push to the `main` branch of the repository. Deployments complete within a matter of minutes|
 
 # 3. Technology Requirements
 
@@ -254,3 +261,32 @@ MediaMTX returns an SDP answer and may include a `Location` header for the WHEP 
 | Publish authorisation | FastAPI backend and MediaMTX | `internal_cameras.py` and MediaMTX configuration | Implemented for publishing; read/playback policy is in progress |
 
 The generated OpenAPI document is the field-level REST schema source when debug documentation is enabled. Before a production release, the team should publish a controlled OpenAPI artifact in CI or commit a versioned static OpenAPI file rather than enabling debug endpoints publicly.
+
+# 8. Deployment
+
+### 8.1 Deployment Requirements
+#### Live, Accessible System
+Available at: https://neighbourhoodwatchdog.co.za
+
+
+#### Environment Parity
+There are 3 distinct environments:
+- Development: Local docker-compose, run manually locally.
+- Staging: A single EC2 instance running the full stack via Docker compose deployed automatically by a GitHub Actions workflow triggered on pushes to the `dev` branch
+- Production: a separate architecture on AWS:ECS on EC2 for the backend, a standalone EC2 instance for mediamtx (relay for sending the streaming to the client from the edge agent), and RDS for the database. Deployed automatically by a GitHub Actions workflow triggered on every push to the `main` branch.
+
+#### Infrastructure as Code / Containerisation
+All the services are containerised via Docker and deployment is driven by declarative task definitions (with AWS ECS) and Docker Compose files rather than manual console operations.
+
+#### Secrets Management
+No credentials are committed to the GitHub repository. Staging generates it .env file at deploy time from the Github Actions secrets. Production uses AWS Secrets Manager which holds all sensitive configuration which is then injected into the different ECS containers via the task definitions `secrets` field.
+
+#### Rollback strategry
+
+### Deployment Diagram
+
+![Deployment Diagram](/docs/images/Deployment%20Diagramv1.drawio.svg)
+
+### CI/CD Pipeline Diagram
+
+![CI/CD Pipeline Diagram](/docs/images/CI_CD%20Pipeline%20Diagramv1.drawio.svg)
