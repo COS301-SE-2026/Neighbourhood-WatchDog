@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect, useRef } from "react";
 
 //globals.css choice explainations
@@ -434,20 +435,7 @@ function LogoSection() {
           <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "4px" }}>Icon library - Lucide React</h3>
           <p style={{ fontSize: "12px", color: "#8A8A8A", marginBottom: "16px" }}>All UI icons are sourced from Lucide React. Stroke weight: 1.5px at 16–20px, 2px at 24px+. Never fill icons unless explicitly a filled-state indicator.</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            {[
-              { name: "Shield", unicode: "🛡" },
-              { name: "Camera", unicode: "📷" },
-              { name: "AlertTriangle", unicode: "⚠" },
-              { name: "Eye", unicode: "👁" },
-              { name: "Bell", unicode: "🔔" },
-              { name: "Lock", unicode: "🔒" },
-              { name: "User", unicode: "👤" },
-              { name: "Map", unicode: "🗺" },
-              { name: "Wifi", unicode: "📶" },
-              { name: "Activity", unicode: "📈" },
-              { name: "ZoomIn", unicode: "🔍" },
-              { name: "Settings", unicode: "⚙" },
-            ].map(icon => (
+            {[].map(icon => (
               <div key={icon.name} style={{ display: "flex", alignItems: "center", gap: "6px", background: "#1E1E1E", borderRadius: "6px", padding: "6px 10px" }}>
                 <span style={{ fontSize: "14px" }}>{icon.unicode}</span>
                 <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#A3A3A3" }}>{icon.name}</span>
@@ -569,7 +557,7 @@ export default function StyleGuide() {
   return (
     <div style={{ fontFamily: "Inter, system-ui, sans-serif", background: "#0A0A0A", minHeight: "100vh", color: "#F5F5F5" }}>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-      <Nav />
+      {/* <Nav /> */}
       <HeroSection />
       <ColoursSection />
       <TypographySection />
