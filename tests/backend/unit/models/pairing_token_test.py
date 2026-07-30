@@ -148,3 +148,36 @@ class TestEdgeAgentsCredentialsSchema:
 
         with pytest.raises(ValidationError):
             EdgeAgentsCredentialsSchema(**data)
+
+class TestEdgeAgentsCredentialsRes:
+    def _make_nested_res(self) -> EdgeAgentsCredentialsSchema:
+        return EdgeAgentsCredentialsSchema(**_edge_agents_credentials())
+
+    def test_valid_response_with_data(self):
+        res = EdgeAgentsCredentialsRes(
+            status=200,
+            message="Agent paired",
+            data=self._make_nested_res(),
+        )
+
+        assert res.status == 200
+        assert res.data is not None
+
+    def test_only_status_required(self):
+        res = EdgeAgentsCredentialsRes(status=200)
+
+        assert res.status == 200
+        assert res.message is None
+        assert res.data is None
+
+    def test_missing_status_raises(self):
+        with pytest.raises(ValidationError):
+            EdgeAgentsCredentialsRes(message="oops")
+
+    def test_invalid_nested_data_raises(self):
+        with pytest.raises(ValidationError):
+            EdgeAgentsCredentialsRes(
+                status=200,
+                message="ok",
+                data={**_edge_agents_credentials(), "property_id": "not-a-uuid"},
+            )
