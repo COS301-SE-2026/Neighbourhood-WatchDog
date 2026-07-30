@@ -10,6 +10,7 @@ TRUNCATE TABLE audit_log CASCADE;
 TRUNCATE TABLE users CASCADE;
 TRUNCATE TABLE property CASCADE;
 TRUNCATE TABLE neighbourhood CASCADE;
+TRUNCATE TABLE risk_threshold_config CASCADE;
 
 -- Neighbourhoods
 INSERT INTO neighbourhood (id, name, location, join_code, created_at) VALUES
@@ -33,11 +34,11 @@ INSERT INTO property (id, neighbourhood_id, address, property_type, created_at) 
 ('c2222222-2222-2222-2222-222222222222', 'a1111111-1111-1111-1111-111111111111', '456 Oak Avenue', 'PRIVATE', now()),
 ('c3333333-3333-3333-3333-333333333333', 'a2222222-2222-2222-2222-222222222222', '789 Beach Road', 'PRIVATE', now());
 
--- Cameras
-INSERT INTO camera (id, property_id, neighbourhood_id, visibility, location, rtsp_url, created_at) VALUES
-('d1111111-1111-1111-1111-111111111111', 'c1111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', 'PUBLIC', 'Front Gate', 'rtsp://camera1.example.com/stream', now()),
-('d2222222-2222-2222-2222-222222222222', 'c1111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', 'PUBLIC', 'Back Entrance', 'rtsp://camera2.example.com/stream', now()),
-('d3333333-3333-3333-3333-333333333333', 'c2222222-2222-2222-2222-222222222222', 'a1111111-1111-1111-1111-111111111111', 'RESTRICTED', 'Side Garage', 'rtsp://camera3.example.com/stream', now());
+-- Cameras (fixed: added required `name` column - NOT NULL with no default in the model)
+INSERT INTO camera (id, property_id, neighbourhood_id, name, visibility, location, rtsp_url, created_at) VALUES
+('d1111111-1111-1111-1111-111111111111', 'c1111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', 'Front Gate Camera', 'PUBLIC', 'Front Gate', 'rtsp://camera1.example.com/stream', now()),
+('d2222222-2222-2222-2222-222222222222', 'c1111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', 'Back Entrance Camera', 'PUBLIC', 'Back Entrance', 'rtsp://camera2.example.com/stream', now()),
+('d3333333-3333-3333-3333-333333333333', 'c2222222-2222-2222-2222-222222222222', 'a1111111-1111-1111-1111-111111111111', 'Side Garage Camera', 'RESTRICTED', 'Side Garage', 'rtsp://camera3.example.com/stream', now());
 
 -- Geospatial Zones (fixed: removed created_at, added required polygon_boundary)
 INSERT INTO geospatial_zone (id, neighbourhood_id, name, sensitivity_level, polygon_boundary) VALUES
@@ -53,7 +54,12 @@ INSERT INTO detection_event (id, camera_id, frame_timestamp, detection_type, con
 ('f3333333-3333-3333-3333-333333333333', 'd1111111-1111-1111-1111-111111111111', now() - interval '30 minutes', 'LOITERING',        0.75, 'https://images.unsplash.com/photo-1551958219-acbc608c6377?w=800&h=450&fit=crop', true),
 ('f4444444-4444-4444-4444-444444444444', 'd3333333-3333-3333-3333-333333333333', now() - interval '1 hour',     'PERIMETER_SCAN',   0.82, 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=800&h=450&fit=crop', true),
 ('f5555555-5555-5555-5555-555555555555', 'd2222222-2222-2222-2222-222222222222', now() - interval '2 hours',    'HUMAN_PRESENCE',   0.70, 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=450&fit=crop', true),
-('f6666666-6666-6666-6666-666666666666', 'd1111111-1111-1111-1111-111111111111', now() - interval '3 hours',    'HUMAN_PRESENCE',   0.68, 'https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?w=800&h=450&fit=crop', true);
+('f6666666-6666-6666-6666-666666666666', 'd1111111-1111-1111-1111-111111111111', now() - interval '3 hours',    'HUMAN_PRESENCE',   0.68, 'https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?w=800&h=450&fit=crop', true),
+-- Older detection events (>24h) to back the older alerts below
+('f7777777-7777-7777-7777-777777777777', 'd2222222-2222-2222-2222-222222222222', now() - interval '2 days',     'LOITERING',        0.79, 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=800&h=450&fit=crop', true),
+('f8888888-8888-8888-8888-888888888888', 'd3333333-3333-3333-3333-333333333333', now() - interval '5 days',     'PERIMETER_SCAN',   0.85, 'https://images.unsplash.com/photo-1516339901601-2e1b62dc0c45?w=800&h=450&fit=crop', true),
+('f9999999-9999-9999-9999-999999999999', 'd1111111-1111-1111-1111-111111111111', now() - interval '10 days',    'WEAPON_DETECTED',  0.95, 'https://images.unsplash.com/photo-1551958219-acbc608c6377?w=800&h=450&fit=crop', true),
+('fa000000-0000-0000-0000-000000000001', 'd2222222-2222-2222-2222-222222222222', now() - interval '30 days',    'HUMAN_PRESENCE',   0.71, 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=450&fit=crop', true);
 
 -- Alerts (fixed: UUIDs use only hex chars 0-9 a-f)
 INSERT INTO alert (id, camera_id, detection_event_id, status, resolved_by, resolved_at, created_at) VALUES
@@ -62,7 +68,12 @@ INSERT INTO alert (id, camera_id, detection_event_id, status, resolved_by, resol
 ('a0333333-3333-3333-3333-333333333333', 'd1111111-1111-1111-1111-111111111111', 'f3333333-3333-3333-3333-333333333333', 'OPEN',         NULL,                                   NULL,                                   now() - interval '30 minutes'),
 ('a0444444-4444-4444-4444-444444444444', 'd3333333-3333-3333-3333-333333333333', 'f4444444-4444-4444-4444-444444444444', 'ACKNOWLEDGED', NULL,                                   NULL,                                   now() - interval '1 hour'),
 ('a0555555-5555-5555-5555-555555555555', 'd2222222-2222-2222-2222-222222222222', 'f5555555-5555-5555-5555-555555555555', 'ACKNOWLEDGED', NULL,                                   NULL,                                   now() - interval '2 hours'),
-('a0666666-6666-6666-6666-666666666666', 'd1111111-1111-1111-1111-111111111111', 'f6666666-6666-6666-6666-666666666666', 'RESOLVED',     'b3333333-3333-3333-3333-333333333333', now() - interval '2 hours 30 minutes', now() - interval '3 hours');
+('a0666666-6666-6666-6666-666666666666', 'd1111111-1111-1111-1111-111111111111', 'f6666666-6666-6666-6666-666666666666', 'RESOLVED',     'b3333333-3333-3333-3333-333333333333', now() - interval '2 hours 30 minutes', now() - interval '3 hours'),
+-- Alerts older than 24h (for testing stale/aging behaviour)
+('a0777777-7777-7777-7777-777777777777', 'd2222222-2222-2222-2222-222222222222', 'f7777777-7777-7777-7777-777777777777', 'OPEN',         NULL,                                   NULL,                                   now() - interval '2 days'),
+('a0888888-8888-8888-8888-888888888888', 'd3333333-3333-3333-3333-333333333333', 'f8888888-8888-8888-8888-888888888888', 'ACKNOWLEDGED', NULL,                                   NULL,                                   now() - interval '5 days'),
+('a0999999-9999-9999-9999-999999999999', 'd1111111-1111-1111-1111-111111111111', 'f9999999-9999-9999-9999-999999999999', 'OPEN',         NULL,                                   NULL,                                   now() - interval '10 days'),
+('aa000000-0000-0000-0000-000000000001', 'd2222222-2222-2222-2222-222222222222', 'fa000000-0000-0000-0000-000000000001', 'RESOLVED',     'b3333333-3333-3333-3333-333333333333', now() - interval '29 days', now() - interval '30 days');
 
 -- Join Requests (fixed: UUIDs use only hex chars)
 INSERT INTO neighbourhood_join_request (id, neighbourhood_id, user_id, status, created_at, resolved_at) VALUES
@@ -71,3 +82,7 @@ INSERT INTO neighbourhood_join_request (id, neighbourhood_id, user_id, status, c
 ('b0333333-3333-3333-3333-333333333333', 'a1111111-1111-1111-1111-111111111111', 'b8888888-8888-8888-8888-888888888888', 'PENDING',  now() - interval '30 minutes', NULL),
 ('b0444444-4444-4444-4444-444444444444', 'a1111111-1111-1111-1111-111111111111', 'b4444444-4444-4444-4444-444444444444', 'APPROVED', now() - interval '30 days',  now() - interval '29 days'),
 ('b0555555-5555-5555-5555-555555555555', 'a1111111-1111-1111-1111-111111111111', 'b7777777-7777-7777-7777-777777777777', 'DENIED',   now() - interval '5 days',   now() - interval '4 days');
+
+-- Risk Threshold Config (global default fallback, neighbourhood_id = NULL)
+INSERT INTO risk_threshold_config (id, neighbourhood_id, low_max, medium_max, updated_at) VALUES
+('c0111111-1111-1111-1111-111111111111', NULL, 30.0, 70.0, now());

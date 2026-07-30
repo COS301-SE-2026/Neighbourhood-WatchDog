@@ -200,3 +200,6 @@ def respond_to_mfa(email: str, session: str, code: str):
                 "message": e.response["Error"]["Message"],
             },
         )
+def get_sub_from_id_token(id_token: str) -> str:
+    payload = verify_token(id_token)
+    return payload["sub"]

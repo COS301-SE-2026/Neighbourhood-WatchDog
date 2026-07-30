@@ -33,7 +33,7 @@ async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims
     try:
         # get user
         stmt = select(User).where(User.cognito_sub == claims['sub'])
-        user = db.execute(stmt).scalar_one_or_none()
+        user = db.execute(stmt).scalar_one_or_none()    
 
         # add prop
         db.add(new_property)

@@ -16,6 +16,8 @@ class Neighbourhood(Base):
     users = relationship("User", back_populates="neighbourhood")
     cameras = relationship("Camera", back_populates="neighbourhood")
     zones   = relationship("GeospatialZone", back_populates="neighbourhood")
+    risk_scores = relationship("RiskScoreHistory", back_populates="neighbourhood")
+    risk_thresholds = relationship("RiskThresholdConfig", back_populates="neighbourhood")
     join_requests = relationship(
         "NeighbourhoodJoinRequest",
         back_populates="neighbourhood",

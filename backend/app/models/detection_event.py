@@ -1,6 +1,6 @@
 from enum import Enum
 
-from sqlalchemy import Boolean, CheckConstraint, Column, Enum as SAEnum, Float, ForeignKey, String, text, TIMESTAMP
+from sqlalchemy import Boolean, CheckConstraint, Column, Enum as SAEnum, Float, ForeignKey, String, text, TIMESTAMP, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -24,6 +24,10 @@ class DetectionEvent(Base):
 	confidence_score = Column(Float, nullable=False)
 	thumbnail_url = Column(String, nullable=True)
 	processed = Column(Boolean, nullable=False, server_default="false")
+
+	clip_s3_key = Column(String, nullable=True)
+	clip_expires_at = Column(DateTime(timezone=True), nullable=True)
+	
 
 	camera = relationship("Camera", back_populates="detection_events")
 	alerts = relationship("Alert", back_populates="detection_event")

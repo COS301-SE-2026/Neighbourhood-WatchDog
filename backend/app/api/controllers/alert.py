@@ -1,17 +1,32 @@
 import asyncio
 import json
 from uuid import UUID
+from typing import Annotated
 from datetime import datetime
 from fastapi import APIRouter, Depends, Query, WebSocket
 from sqlalchemy.orm import Session
-from typing import Annotated
 
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession, get_db
 from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, ListAlertsRes, Pagination
-from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler, MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE
+from app.services.alert_service import (
+    acknowledge_alert_handler,
+    get_alert_frequency_metrics_handler,
+    get_response_metrics_handler,
+    get_trends_handler,
+    list_alerts_handler,
+    MAX_PAGE_SIZE,
+    DEFAULT_PAGE_SIZE,
+)
 from app.services import alert_service
-
+from app.schemas.alert import (
+    AlertMetricsRes,
+    AlertFrequencyMetricsRes,
+    TimeIntervalsEnum,
+    TimePeriod,
+    TrendResponse,
+    TrendGroupBy,
+)
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 _connections: dict[str, set[WebSocket]] = {}
@@ -46,9 +61,41 @@ async def broadcast(neighbourhood_id: str, message: dict) -> None:
         connections.discard(ws)
 
 
-@router.post("/", response_model=AlertResponse) # TODO: need to be private
+Claims = Annotated[dict, Depends(get_current_user)]
+
+@router.get("/metrics", response_model=AlertMetricsRes)
+async def get_alert_metrics(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: Claims,
+    camera_id: UUID | None = None,
+    officer_id: UUID | None = None
+
+):
+    """This will rep the time metrics for the alerts in the neighbourhood; can be filtered by camera and officer"""
+
+    return get_response_metrics_handler(neighbourhood_id, db, claims, camera_id, officer_id)
+
+@router.get("/frequency-metrics", response_model=AlertFrequencyMetricsRes)
+async def get_alert_frequency_metrics(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: Claims,
+    time_interval: TimeIntervalsEnum = TimeIntervalsEnum.DAILY,
+    time_period: TimePeriod = TimePeriod.WEEK
+):
+    """Responds with number of alerts received with the neighbourhood. time_interval refers to the grouping of the numbers while time period refers to how far back the data should go."""
+    return await get_alert_frequency_metrics_handler(
+        neighbourhood_id=neighbourhood_id,
+        db=db,
+        time_interval=time_interval,
+        time_period=time_period,
+        claims=claims,
+    )
+
+@router.post("/", response_model=AlertResponse)
 async def create_alert(alert: AlertCreate, db: Session = Depends(get_db), claims: dict = Depends(get_current_user)):
-    return await alert_service.create_alert(db, alert,claims)
+    return await alert_service.create_alert(db, alert, claims)
 
 @router.post("/dev/broadcast") #TODO: remove before production
 async def dev_broadcast_alert(data: dict):
@@ -61,6 +108,33 @@ async def dev_broadcast_alert(data: dict):
         "confidence": data.get("confidence", 0.0),
     })
     return {"status": "broadcasted"}
+
+
+
+@router.get("/trends", response_model=TrendResponse)
+async def get_alert_trends(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: dict,
+    group_by: TrendGroupBy=TrendGroupBy.DAY,
+    time_period: TimePeriod=TimePeriod.MONTH, 
+    incident_type: str | None=None, 
+    camera_id: UUID | None=None
+
+
+):
+    data = await get_trends_handler(
+        neighbourhood_id=neighbourhood_id,
+        db=db,
+        claims=claims,
+        group_by=group_by,
+        time_period=time_period, 
+        incident_type=incident_type, 
+        camera_id=camera_id 
+
+    )
+    return TrendResponse(status=200, data=data)
+
 
 @router.get(
     "/{neighbourhood_id}",

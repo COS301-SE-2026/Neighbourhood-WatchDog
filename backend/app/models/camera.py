@@ -25,6 +25,9 @@ class Camera(Base):
     enabled = Column(Boolean, nullable=False, default=True, server_default="true")
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
+    name = Column(String, nullable=False, server_default="Camera")
+    enabled = Column(Boolean, nullable=False, server_default="true")
+    
     alerts = relationship("Alert", back_populates="camera")
     detection_events = relationship("DetectionEvent", back_populates="camera")
     neighbourhood = relationship("Neighbourhood", back_populates="cameras")

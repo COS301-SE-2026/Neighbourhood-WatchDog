@@ -6,6 +6,10 @@ import { useState } from "react";
 import { NeighbourhoodRes } from "@/lib/validators/neighbourhood";
 import PairAgent from "@/components/property-components/PairAgent";
 
+import { AlertFrequencyGraph } from "@/components/shared/AlertFrequencyGraph";
+
+const NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001"
+
 export default function Test() {
   // const [open, setOpen] = useState(false);
   // const [createdNeighbourhood, setCreatedNeighbourhood] = useState<NeighbourhoodRes | null>(null);
@@ -17,10 +21,6 @@ export default function Test() {
   //   setCreatedNeighbourhood(neighbourhood);
   // };
 
-  return (
-    <PairAgent propertyId="30000000-0000-0000-0000-000000000001"></PairAgent>
-  )
-  
   // return (
   //   <div className="p-8">
   //     <h1 className="text-2xl font-bold mb-4">Create Neighbourhood Dialog Test</h1>
@@ -46,4 +46,8 @@ export default function Test() {
   //     )}
   //   </div>
   // );
+
+  return (
+    <AlertFrequencyGraph neighbourhoodId={NEIGHBOURHOOD_ID}/>
+  )
 }

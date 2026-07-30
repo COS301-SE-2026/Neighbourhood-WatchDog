@@ -1,4 +1,5 @@
 import uuid
+from uuid import UUID
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -7,8 +8,8 @@ from fastapi import HTTPException
 
 from app.models.alert import Alert
 from app.models.camera import Camera
-from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler
-
+from app.schemas.alert import TimeIntervalsEnum, TimePeriod
+from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler, get_response_metrics_handler, get_alert_frequency_metrics_handler
 
 class TestAcknowledgeAlert:
     def setup_method(self):
@@ -102,7 +103,13 @@ class TestAcknowledgeAlert:
     @pytest.mark.asyncio
     async def test_happy_path_acknowledges_alert(self):
         alert = self._make_alert(status="OPEN")
-        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [alert]
+        resolver = Mock()
+        resolver.id = UUID("11111111-1111-1111-1111-111111111111")
+
+        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+            alert,
+            resolver,
+        ]
 
         with patch(
             "app.services.alert_service.create_audit_log_item"
@@ -119,10 +126,49 @@ class TestAcknowledgeAlert:
 
         assert result.status == "ACKNOWLEDGED"
         assert alert.status == "ACKNOWLEDGED"
+        assert alert.resolved_by == resolver.id
         assert self.mock_db.commit.call_count == 1
         assert self.mock_db.refresh.call_count == 0
         assert mock_broadcast.call_count == 1
         assert mock_audit.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_acknowledge_records_timestamps(self):
+        """Acknowledging an alert sets resolved_at and resolved_by."""
+        alert = self._make_alert(status="OPEN")
+
+        resolver_id = UUID("20000000-0000-0000-0000-000000000001")
+
+        resolver = Mock()
+        resolver.id = resolver_id
+
+        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+            alert,
+            resolver,
+        ]
+
+        claims = {
+            "custom:role": "NEIGHBOURHOOD_ADMIN",
+            "sub": "cognito-sub-200",
+            "custom:neighbourhood_id": str(uuid.uuid4()),
+        }
+
+        with patch(
+            "app.api.controllers.alert.broadcast",
+            new_callable=AsyncMock,
+        ):
+            await acknowledge_alert_handler(
+                alert.id,
+                self.mock_db,
+                claims,
+            )
+
+        assert alert.status == "ACKNOWLEDGED"
+        assert alert.resolved_at is not None
+        assert alert.resolved_by == UUID(
+            "20000000-0000-0000-0000-000000000001"
+        )
+
 
 
 class TestListAlerts:
@@ -308,3 +354,136 @@ class TestListAlerts:
 
         assert results == []
         assert total == 0
+
+class TestResponseMetrics:
+    def setup_method(self):
+        self.mock_db = Mock()
+        self.mock_db.execute = Mock()
+        self.claims = {
+            "custom:neighbourhood_id": "10000000-0000-0000-0000-000000000001",
+        }
+
+    def test_metrics_returns_pending_for_open_alerts(self):
+        """OPEN alerts show as PENDING in metrics."""
+        alert = Mock()
+        alert.id = UUID("aaaaaaaa-0000-0000-0000-000000000001")
+        alert.camera_id = UUID("40000000-0000-0000-0000-000000000001")
+        alert.status = "OPEN"
+        alert.resolved_at = None
+        alert.resolved_by = None
+        alert.created_at = datetime(
+            2026,
+            7,
+            5,
+            10,
+            0,
+            0,
+            tzinfo=timezone.utc,
+        )
+
+        self.mock_db.execute.return_value.scalars.return_value.all.return_value = [
+            alert
+        ]
+
+        result = get_response_metrics_handler(
+            UUID("10000000-0000-0000-0000-000000000001"),
+            self.mock_db,
+            self.claims,
+        )
+
+        assert result.pending_count == 1
+        assert result.acknowledged_count == 0
+        assert result.average_response_seconds is None
+        assert result.items[0].status == "PENDING"
+        assert result.items[0].response_seconds is None
+
+class TestFrequencyMetrics:
+    def setup_method(self):
+        self.mock_db = Mock()
+        self.mock_db.execute = Mock()
+        self.claims = {
+            "custom:neighbourhood_id": "10000000-0000-0000-0000-000000000001",
+        }
+
+        self.mock_data = Mock()
+        self.mock_data.bucket = "2025-07-13T00:00:00Z"
+        self.mock_data.count = 200
+
+        self.mock_db.execute.return_value.all.return_value = [self.mock_data]
+
+    @pytest.mark.asyncio
+    async def test_happy_case(self):
+        result = await get_alert_frequency_metrics_handler(
+            neighbourhood_id=UUID("10000000-0000-0000-0000-000000000001"),
+            db=self.mock_db,
+            time_interval=TimeIntervalsEnum.DAILY,
+            time_period=TimePeriod.MONTH,
+            claims=self.claims
+        )
+
+        assert result.status == 200
+
+
+    @pytest.mark.asyncio
+    async def test_incorrect_claims(self):
+        self.claims = {
+            "custom:neighbourhood_id": "10000000-0000-0000-0000-000000000002",
+        }
+
+        with pytest.raises(HTTPException) as exception:
+            _ = await get_alert_frequency_metrics_handler(
+                neighbourhood_id=UUID("10000000-0000-0000-0000-000000000001"),
+                db=self.mock_db,
+                time_interval=TimeIntervalsEnum.DAILY,
+                time_period=TimePeriod.MONTH,
+                claims=self.claims
+            )
+        
+        assert exception.value.status_code == 403
+        assert self.mock_db.select.call_count == 0
+        assert self.mock_db.join.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_no_db(self):
+        with pytest.raises(HTTPException) as exception:
+            _ = await get_alert_frequency_metrics_handler(
+                neighbourhood_id=UUID("10000000-0000-0000-0000-000000000001"),
+                db=None,
+                time_interval=TimeIntervalsEnum.DAILY,
+                time_period=TimePeriod.MONTH,
+                claims=self.claims
+            )
+        
+        assert exception.value.status_code == 500
+        assert self.mock_db.select.call_count == 0
+        assert self.mock_db.join.call_count == 0
+    
+    @pytest.mark.asyncio
+    async def test_no_time_interval(self):
+        with pytest.raises(HTTPException) as exception:
+            _ = await get_alert_frequency_metrics_handler(
+                neighbourhood_id=UUID("10000000-0000-0000-0000-000000000001"),
+                db=self.mock_db,
+                time_interval=None,
+                time_period=TimePeriod.MONTH,
+                claims=self.claims
+            )
+        
+        assert exception.value.status_code == 400
+        assert self.mock_db.select.call_count == 0
+        assert self.mock_db.join.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_no_claims(self):
+        with pytest.raises(HTTPException) as exception:
+            _ = await get_alert_frequency_metrics_handler(
+                neighbourhood_id=UUID("10000000-0000-0000-0000-000000000001"),
+                db=self.mock_db,
+                time_interval=TimeIntervalsEnum.DAILY,
+                time_period=TimePeriod.MONTH,
+                claims=None
+            )
+        
+        assert exception.value.status_code == 401
+        assert self.mock_db.select.call_count == 0
+        assert self.mock_db.join.call_count == 0

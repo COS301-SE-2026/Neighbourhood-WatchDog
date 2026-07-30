@@ -63,7 +63,8 @@ def filter_detections_by_zones(detections: List, zones: List[List[float]], frame
     filtered = []
 
     for det in detections:
-        bbox_xywh = det
+        # detections are (bbox_xywh, conf, label) tuples
+        bbox_xywh = det[0] if isinstance(det, (tuple, list)) and not isinstance(det[0], (int, float)) else det
 
         x, y, w, h = bbox_xywh
         bbox_xyxy = [x, y, x + w, y + h]
