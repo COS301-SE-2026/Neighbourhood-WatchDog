@@ -311,6 +311,8 @@ def _schedule_weapon_clip(
         daemon=True,
     ).start()
 
+    logger.info("Scheduling weapon clip for camera %s: label=%s, confidence=%.2f, pre_frames=%s", 
+                camera.id, label, confidence, len(pre_frames))
 
 def _save_weapon_clip(
     camera: CameraSpec,
