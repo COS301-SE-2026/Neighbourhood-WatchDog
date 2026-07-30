@@ -121,3 +121,51 @@ class TestGetAuditLogres:
                 message="ok",
                 data={"total": "not-an-int", "page": 1, "size": 30, "results": []},
             )
+
+class TestPaginatedRes:
+    def _make_log(self) -> AuditLogScheme:
+        return AuditLogScheme(**_audit_log_res())
+
+    def test_valid_fields(self):
+        res = PaginatedResponse[AuditLogScheme](
+            total=1,
+            page=1,
+            size=30,
+            results=[self._make_log()],
+        )
+
+        assert res.total == 1
+        assert res.page == 1
+        assert res.size == 30
+        assert len(res.results) == 1
+
+    def test_missing_total_raises(self):
+        with pytest.raises(ValidationError):
+            PaginatedResponse[AuditLogScheme](page=1, size=30, results=[])
+
+    def test_missing_page_raises(self):
+        with pytest.raises(ValidationError):
+            PaginatedResponse[AuditLogScheme](total=1, size=30, results=[])
+
+    def test_missing_size_raises(self):
+        with pytest.raises(ValidationError):
+            PaginatedResponse[AuditLogScheme](total=1, page=1, results=[])
+
+    def test_missing_results_raises(self):
+        with pytest.raises(ValidationError):
+            PaginatedResponse[AuditLogScheme](total=1, page=1, size=30)
+
+    def test_empty_results_list_is_allowed(self):
+        res = PaginatedResponse[AuditLogScheme](total=0, page=1, size=30)
+        assert res.results == []
+
+    def test_invalid_itemin_results_raises(self):
+        with pytest.raises(ValidationError):
+            PaginatedResponse[AuditLogScheme](
+                total=1,
+                page=1,
+                size=30,
+                results=[{**_audit_log_res(), "id": "not-a-uuid"}],
+            )
+
+    
