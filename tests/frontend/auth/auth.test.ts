@@ -55,6 +55,7 @@ test("login returns access and id tokens", async () => {
     accessToken: "mock-access-token",
     idToken: "mock-id-token",
     expiresIn: 3600,
+    mfaRequired: false,
   });
 });
 
@@ -69,6 +70,37 @@ test("login throws backend error message", async () => { // remove if you want l
   await expect(
     login("test@example.com", "wrongpassword")
   ).rejects.toThrow("Invalid credentials");
+});
+
+test("login returns MFA challenge", async () => {
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      success: true,
+      data: {
+        mfa_required: true,
+        session: "abc-session",
+        delivery: {
+          medium: "EMAIL",
+          destination: "z***@g***",
+        },
+      },
+    }),
+  });
+
+  const result = await login(
+    "test@example.com",
+    "Password123!"
+  );
+
+  expect(result).toEqual({
+    mfaRequired: true,
+    session: "abc-session",
+    delivery: {
+      medium: "EMAIL",
+      destination: "z***@g***",
+    },
+  });
 });
 //END LOGIN//////////////////////////////////////////////////////
 
@@ -200,3 +232,62 @@ test("getAuthHeaders returns authorization and content type", () => {
   // });
 });
 // GET AUTH HEADERS/////////////////
+
+test("verify MFA returns access and id tokens", async () => {
+  (global.fetch as jest.Mock).mockResolvedValueOnce({
+    ok: true,
+    json: async () => ({
+      success: true,
+      data: {
+        access_token: "mock-access-token",
+        id_token: "mock-id-token",
+        refresh_token: "mock-refresh-token",
+        expires_in: 3600,
+        token_type: "Bearer",
+      },
+    }),
+  });
+
+  const result = await verifyMfa(
+    "test@example.com",
+    "abc-session",
+    "123456"
+  );
+
+  expect(result).toEqual({
+    accessToken: "mock-access-token",
+    idToken: "mock-id-token",
+    expiresIn: 3600,
+  });
+
+  expect(fetch).toHaveBeenCalledWith(
+    expect.stringContaining("/auth/verify-mfa"),
+    expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({
+        email: "test@example.com",
+        session: "abc-session",
+        code: "123456",
+      }),
+    })
+  );
+});
+
+test("verify MFA throws backend error message", async () => {
+  (global.fetch as jest.Mock).mockResolvedValueOnce({
+    ok: false,
+    json: async () => ({
+      detail: {
+        message: "Invalid verification code",
+      },
+    }),
+  });
+
+  await expect(
+    verifyMfa(
+      "test@example.com",
+      "abc-session",
+      "123456"
+    )
+  ).rejects.toThrow("Invalid verification code");
+});
