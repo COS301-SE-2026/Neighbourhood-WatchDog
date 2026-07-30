@@ -791,13 +791,42 @@ function AccessibilitySection() {
   );
 }
 
+// ─── Nav ──────────────────────────────────────────────────────────────────
+function Nav() {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const h = () => setScrolled(window.scrollY > 80);
+    window.addEventListener("scroll", h);
+    return () => window.removeEventListener("scroll", h);
+  }, []);
+
+  return (
+    <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, transition: "all 0.2s", background: scrolled ? "rgba(10,10,10,0.92)" : "transparent", backdropFilter: scrolled ? "blur(12px)" : "none", borderBottom: scrolled ? "1px solid rgba(138,138,138,0.1)" : "none", padding: "12px 64px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <svg width="22" height="22" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#10B981" /><path d="M20 8 L32 14 L32 22 C32 28 26 34 20 36 C14 34 8 28 8 22 L8 14 Z" fill="none" stroke="#0A0A0A" strokeWidth="2.5" /><circle cx="20" cy="22" r="4" fill="#0A0A0A" /></svg>
+        <span style={{ fontSize: "13px", fontWeight: 700, color: "#F5F5F5" }}>WatchDog</span>
+        <span style={{ fontSize: "10px", color: "#8A8A8A", fontFamily: "'JetBrains Mono', monospace", marginLeft: "4px" }}>Style Guide</span>
+      </div>
+      <div style={{ display: "flex", gap: "4px" }}>
+        {[["colours", "01"], ["typography", "02"], ["tokens", "04"], ["components", "05"], ["accessibility", "06"]].map(([id, num]) => (
+          <a key={id} href={`#${id}`} style={{ fontSize: "12px", color: "#8A8A8A", textDecoration: "none", padding: "5px 10px", borderRadius: "6px", transition: "all 0.1s", textTransform: "capitalize" }}
+            onMouseEnter={e => { e.target.style.color = "#F5F5F5"; e.target.style.background = "#1E1E1E"; }}
+            onMouseLeave={e => { e.target.style.color = "#8A8A8A"; e.target.style.background = "transparent"; }}>
+            {id}
+          </a>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
 
 
 export default function StyleGuide() {
   return (
     <div style={{ fontFamily: "Inter, system-ui, sans-serif", background: "#0A0A0A", minHeight: "100vh", color: "#F5F5F5" }}>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-      {/* <Nav /> */}
+      <Nav />
       <HeroSection />
       <ColoursSection />
       <TypographySection />
