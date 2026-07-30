@@ -3,7 +3,6 @@
 import DashboardPage from "@/app/(private)/dashboard/page"
 import AlertsPage from "@/app/(private)/dashboard/alerts/AlertsPage"
 import JoinNeighbourhoodPage from "@/app/(private)/joinNeighbourhood/page"
-import PropertyPage from "@/app/(private)/property/page"
 import { Card } from "@/components/ui/card"
 import { useAppView } from "@/components/app-view-context"
 import AnalyticsPage from "@/app/(private)/dashboard/analytics/page"
@@ -44,9 +43,7 @@ export function AppShell() {
     )
   }
 
-  if (propertyId) {
-    return <PropertyPage />
-  }
+
 
   return <DashboardPage />
 }
