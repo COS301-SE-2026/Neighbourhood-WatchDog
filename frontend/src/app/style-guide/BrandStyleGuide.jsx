@@ -305,8 +305,7 @@ function TypographySection() {
       <FadeIn delay={100}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "48px" }}>
           {[
-            { name: "Inter", role: "UI / Interface", weights: "300, 400, 500, 600, 700", fallback: "system-ui, sans-serif", source: "Google Fonts · SIL OFL", token: "--font-sans", sample: "ABCDEFGHIJKLM\nnopqrstuvwxyz\n0123456789!@#" },
-            { name: "JetBrains Mono", role: "Code / Technical", weights: "400, 500, 700", fallback: "Consolas, monospace", source: "Google Fonts · SIL OFL", token: "--font-mono", sample: "const cam = new\nStream({ zone: 'B' })\nreturn cam.init()" },
+            { name: "Inter", role: "UI / Interface", weights: "300, 400, 500, 600, 700", fallback: "system-ui, sans-serif", source: "Google Fonts · SIL OFL", token: "--font-sans", sample: "ABCDEFGHIJKLM\nnopqrstuvwxyz\n0123456789!@#" }
           ].map(f => (
             <Card key={f.name}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
@@ -776,12 +775,6 @@ function AccessibilitySection() {
               label: "Colour Contrast",
               sub: "High contrast between text and backgrounds improves readability.",
               color: "#10B981",
-            },
-            {
-              score: "⌨",
-              label: "Keyboard Navigation",
-              sub: "Interactive components are designed to remain usable using keyboard navigation.",
-              color: "#2D7EFF",
             },
             {
               score: "UI",
