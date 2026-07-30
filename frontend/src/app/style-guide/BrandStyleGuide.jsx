@@ -88,12 +88,6 @@ const TOKENS = {
 };
 
 //header functions and transition functions
-function hexToRgb(hex) {
-  const r = parseInt(hex.slice(1,3),16);
-  const g = parseInt(hex.slice(3,5),16);
-  const b = parseInt(hex.slice(5,7),16);
-  return `rgb(${r}, ${g}, ${b})`;
-}
 
 function useIntersection(ref) {
   const [visible, setVisible] = useState(false);
@@ -395,7 +389,7 @@ function LogoSection() {
                 }}
               >
                 The shield represents security, and reliability
-                reflecting the system's purpose of safeguarding neighbourhoods.
+                reflecting the system&apos;s purpose of safeguarding neighbourhoods.
                 The dog symbolizes vigilance and constant
                 awareness-qualities associated with a watchdog that remains
                 alert to potential threats.
