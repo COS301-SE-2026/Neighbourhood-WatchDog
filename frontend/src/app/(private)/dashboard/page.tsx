@@ -25,7 +25,7 @@ interface CameraProp {
 export default function Dashboard() {
     const [isLoadingCameras, setIsLoadingCameras] = useState(true);
     const { propertyId } = useAppView()
-    const { alerts, connected } = useAlerts();
+    const { alerts, connected } = useAlerts("10000000-0000-0000-0000-000000000001");
 
     useEffect(() => {
         if (alerts.length === 0) return;

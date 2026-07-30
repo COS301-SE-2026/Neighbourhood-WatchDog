@@ -9,20 +9,14 @@ export interface AlertEvent {
   confidence?: number;
 }
 
-export function useAlerts() {
+export function useAlerts(neighbourhoodId: string) {
   const [alerts, setAlerts] = useState<AlertEvent[]>([]);
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    // const ws = new WebSocket(
-    //   `ws://localhost:8000/alerts/ws`
-    // );
-
-    const token = localStorage.getItem("idToken");
-
     const ws = new WebSocket(
-      `ws://localhost:8000/alerts/ws?token=${encodeURIComponent(token ?? "")}`
+      `ws://localhost:8000/alerts/${neighbourhoodId}/ws`
     );
 
     ws.onopen = () => setConnected(true);
