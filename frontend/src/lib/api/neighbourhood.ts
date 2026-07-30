@@ -1,5 +1,5 @@
 import { apiCall } from './client'
-import { CreateNeighbourhoodReq, NeighbourhoodRes, CreateNeighbourhoodRes } from '../validators/neighbourhood'
+import { CreateNeighbourhoodReq, NeighbourhoodRes, CreateNeighbourhoodRes, NeighbourPropertiesRes } from '../validators/neighbourhood'
 
 export async function addNeighbourhood(data: CreateNeighbourhoodReq): Promise<NeighbourhoodRes> {
   const result = await apiCall<CreateNeighbourhoodRes>('/neighbourhood/create-neighbourhood', {
@@ -27,4 +27,11 @@ export async function joinNeighbourhood(joinCode: string): Promise<Neighbourhood
     method: 'POST',
     body: { join_code: joinCode },
   })
+}
+
+export async function getNeighbourhoodPropertyDetails(): Promise<NeighbourPropertiesRes> {
+  return apiCall<NeighbourPropertiesRes>(
+    `/neighbourhood/properties`, 
+    {method: 'GET'},
+  )
 }
