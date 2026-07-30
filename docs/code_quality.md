@@ -310,14 +310,21 @@ cd backend && pytest
 
 E2E tests live in `tests/e2e/` and cover critical user flows. The frontend must be running before tests execute. Configure `playwright.config.ts` with a `webServer` block so CI starts the server automatically.
 
-Key flows that must have E2E coverage:
+### Required E2E Coverage — Planned
 
-| Flow | Test file |
-|:---|:---|
-| Submit join request | `joinNeighbourhood.spec.ts` |
-| Acknowledge alert | `alert.spec.ts` |
-| Approve/deny join requests | `request-page.spec.ts` |
-| View footage (clip player) | `alert-footage.spec.ts` |
+Playwright infrastructure is present and invoked in CI. However, as of the
+verification date, the repository contains only the default Playwright example
+test. The following product flows are required before claiming end-to-end
+coverage:
+
+| Flow | Proposed test file | Status |
+|---|---|:---:|
+| Submit join request | `joinNeighbourhood.spec.ts` | Planned |
+| Acknowledge alert | `alert.spec.ts` | Planned |
+| Approve/deny join requests | `request-page.spec.ts` | Planned |
+| View alert footage | `alert-footage.spec.ts` | Planned |
+| Register, enable, and disable a camera | `camera-lifecycle.spec.ts` | Planned |
+| Pair WatchDog Agent to property | `agent-pairing.spec.ts` | Planned |
 
 **Run locally:**
 ```bash
@@ -360,6 +367,18 @@ The CI pipeline (`ci.yml`) runs three parallel jobs on every push and pull reque
   - Cognitive complexity > 15 on any function
   - Nesting depth > 4 on any function/block
   - Any new blocker or critical issue
+
+### `build`
+Builds the Next.js frontend with `pnpm build`. This catches production-build
+failures that linting alone cannot detect.
+
+### `type-check`
+Runs Mypy against the backend with `--ignore-missing-imports`. Type-hint
+coverage and strictness remain improvement areas.
+
+### `security`
+Runs Bandit against `backend/` and executes `pip-audit`. Dependency auditing
+must be revised to target the project requirement files explicitly.
 
 A PR will not be merged if any of these gates are in a failed state.
 
@@ -435,7 +454,7 @@ All camera footage and live-stream access is subject to role-based access contro
 |:---|:---|:---|
 | `SYSTEM_ADMIN` | All cameras | All cameras |
 | `NEIGHBOURHOOD_ADMIN` | All cameras in neighbourhood | All cameras in neighbourhood |
-| `PROP_ADMIN` (Security) | All cameras in neighbourhood | All cameras in neighbourhood |
+| `PROPERTY_ADMIN` | All cameras in neighbourhood | All cameras in neighbourhood |
 | `RESIDENT` | Public cameras in their neighbourhood | Public cameras in their neighbourhood |
 
 The RBAC check must be applied server-side - the frontend must never gate access based solely on client-side role checks.
@@ -444,21 +463,29 @@ The RBAC check must be applied server-side - the frontend must never gate access
 
 ## 10. Current Compliance Status
 
-As of June 2026, the following standards are actively enforced:
 
-| Standard | Status | Notes |
+The table below distinguishes controls verified in the repository from standards
+that remain targets or planned improvements.
+
+| Standard / Control | Status | Evidence / Limitation |
 |:---|:---|:---|
-| Ruff Python linting | Active | Runs in CI on every PR |
-| ESLint TypeScript linting | Active | Runs in CI on every PR |
-| SonarCloud quality gate | Active | PRs blocked on failure |
-| pip-audit security scan | Active | Runs in CI on every PR |
-| Branch protection (main) | Active | Enforced via `branch-protection.yml` |
-| Playwright E2E tests | Active | Requires frontend server running |
-| Pytest backend tests | Active | Runs against live PostgreSQL in CI |
-| `readonly` props on all components | Enforced | SonarCloud + manual review |
-| Conventional commit messages | Manual | Not yet enforced by commitlint |
-| 80% test coverage threshold | Target | Not yet enforced as a hard gate |
-| `boto3` present in `ai/requirements.txt` | Confirmed | `boto3==1.28.57` |
+| Ruff Python linting | Implemented | `python-lint` runs `ruff check` in CI. The exact enabled rule families must be documented from an explicit Ruff configuration before claiming `W` or `I` enforcement. |
+| ESLint TypeScript linting | Implemented | `frontend-lint` runs `cd frontend && pnpm lint` using Next.js Core Web Vitals and TypeScript configurations. |
+| Frontend production build | Implemented | `build` runs `pnpm build` in the frontend directory. |
+| Backend type checking | Implemented | `type-check` runs `mypy . --ignore-missing-imports` from `backend/`. |
+| Backend Pytest suite | Implemented | `tests` provisions PostGIS, runs migrations and seed data, then runs Pytest from `tests/backend/` with coverage collection. |
+| Frontend Jest suite | Implemented | `tests` runs `npx jest --coverage` from `frontend/`. |
+| Product E2E coverage | In Progress | Playwright is installed and executed in CI, but the current suite contains only the default `example.spec.ts`; product acceptance flows still need implementation. |
+| Bandit security scan | Implemented | `security` runs `bandit -r backend/ -ll`. |
+| Python dependency vulnerability audit | Partial | `pip-audit` runs in CI, but the workflow should explicitly audit `backend/requirements.txt` and `ai/requirements.txt`. |
+| Codecov upload | Implemented / verify repository settings | CI uploads coverage reports to Codecov; whether it blocks merges must be verified in Codecov/GitHub settings. |
+| SonarCloud quality gate | Planned | No SonarCloud analysis step or repository configuration was found in the current CI workflow. |
+| Branch-source validation | Implemented | `branch-protection.yml` rejects PRs to `main` unless they originate from `dev`. |
+| GitHub branch protection | Unverified | GitHub repository rulesets are configured outside the codebase and must be checked in repository settings before claiming enforcement. |
+| Conventional Commit validation | Manual | No commitlint or equivalent enforcement is configured. |
+| 80% backend coverage threshold | Target | Coverage is collected, but no CI fail-under threshold is configured. |
+| Server-side stream and WebSocket authorisation | In Progress | Browser playback and real-time WebSocket authorisation require further hardening before production claims can be made. |
+| Private EC2 key handling | Non-compliant - urgent | A `watchdog-ec2-key.pem` file is present in the repository workspace. Confirm whether it is tracked, remove it from Git history if necessary, and rotate the corresponding EC2 key pair. |
 
 ### Recommended Future Improvements
 
