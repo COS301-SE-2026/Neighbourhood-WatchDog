@@ -135,7 +135,33 @@ class TestUpdateCameraSettingsReq:
     def test_threshold_above_boundary_raises(self):
         with pytest.raises(ValidationError):
             UpdateCameraSettingsRequest(confidence_threshold=1.1)
-        
 
-    
-        
+class TestCameraSettingsRes:
+    def _make_zone(self) -> ZoneResponse:
+        return ZoneResponse(**_zone_response())
+
+    def test_valid_fields(self):
+        res = CameraSettingsResponse(
+            camera_id=uuid4(),
+            confidence_threshold=0.65,
+            zones=[self._make_zone()],
+        )
+
+        assert res.confidence_threshold == 0.65
+        assert len(res.zones) == 1
+
+    def test_missing_camera_id_raises(self):
+        with pytest.raises(ValidationError):
+            CameraSettingsResponse(confidence_threshold=0.65, zones=[])
+
+    def test_missing_confidence_threshold_raises(self):
+        with pytest.raises(ValidationError):
+            CameraSettingsResponse(camera_id=uuid4(), zones=[])
+
+    def test_missing_zones_raises(self):
+        with pytest.raises(ValidationError):
+            CameraSettingsResponse(camera_id=uuid4(), confidence_threshold=0.65)
+
+    def test_empty_zones_list_is_allowed(self):
+        with pytest.raises(ValidationError):
+            CameraSettingsResponse(camera_id=uuid4(), confidence_threshold=0.65, zones=[{**_zone_response(), "id": "not-a-uuid"}],)       
