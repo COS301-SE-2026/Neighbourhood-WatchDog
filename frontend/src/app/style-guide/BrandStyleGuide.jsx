@@ -213,7 +213,11 @@ function ColoursSection() {
             <p style={{ fontSize: "13px", color: "#8A8A8A", marginBottom: "20px" }}>{desc}</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "12px" }}>
               {data.map((c, i) => (
-                <div key={c.name} onClick={() => copy(c.hex, `${title}-${i}`)}
+                <div key={c.name}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => copy(c.hex, `${title}-${i}`)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") copy(c.hex, `${title}-${i}`); }}
                   style={{ borderRadius: "10px", overflow: "hidden", border: "1px solid rgba(138,138,138,0.1)", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s" }}
                   onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.4)"; }}
                   onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
@@ -248,8 +252,8 @@ function ColoursSection() {
               </tr>
             </thead>
             <tbody>
-              {TOKENS.contrast.map((row, i) => (
-                <tr key={i} style={{ borderBottom: "1px solid rgba(138,138,138,0.08)", transition: "background 0.1s" }}
+              {TOKENS.contrast.map((row) => (
+                <tr key={row.pair} style={{ borderBottom: "1px solid rgba(138,138,138,0.08)", transition: "background 0.1s" }}
                   onMouseEnter={e => e.currentTarget.style.background = "#1A1A1A"}
                   onMouseLeave={e => e.currentTarget.style.background = ""}>
                   <td style={{ padding: "12px 14px", color: "#F5F5F5", fontWeight: 500 }}>{row.pair}</td>
@@ -440,9 +444,9 @@ function TokensSection() {
       </FadeIn>
 
       <FadeIn delay={100}>
-        <div style={{ display: "flex", gap: "4px", marginBottom: "24px", background: "#141414", padding: "4px", borderRadius: "10px", display: "inline-flex", flexWrap: "wrap" }}>
+        <div style={{ gap: "4px", marginBottom: "24px", background: "#141414", padding: "4px", borderRadius: "10px", display: "inline-flex", flexWrap: "wrap" }}>
           {tabs.map(t => (
-            <button key={t} onClick={() => setActiveTab(t)}
+            <button key={t} type="button" onClick={() => setActiveTab(t)}
               style={{ padding: "7px 16px", borderRadius: "7px", border: "none", cursor: "pointer", fontSize: "13px", fontWeight: 500, transition: "all 0.15s", background: activeTab === t ? "#10B981" : "transparent", color: activeTab === t ? "#0A0A0A" : "#8A8A8A", textTransform: "capitalize" }}>
               {t}
             </button>
@@ -574,8 +578,8 @@ function ComponentsSection() {
               <div key={label}>
                 <p style={{ fontSize: "11px", color: "#6B6B6B", marginBottom: "10px", fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.05em" }}>{label}</p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                  {btns.map((b, i) => (
-                    <button key={i} disabled={b.disabled}
+                  {btns.map((b) => (
+                    <button key={b.variant} type="button" disabled={b.disabled}
                       onMouseEnter={() => !b.disabled && setHoveredBtn(`${label}-${i}`)}
                       onMouseLeave={() => setHoveredBtn(null)}
                       style={{ padding: b.padding || "8px 18px", borderRadius: "8px", border: b.border || "none", cursor: b.disabled ? "not-allowed" : "pointer", fontSize: b.fontSize || "13px", fontWeight: 500, transition: "all 0.1s ease-out", background: hoveredBtn === `${label}-${i}` ? (b.hoverBg || b.bg) : b.bg, color: b.color, opacity: b.disabled ? 0.45 : 1, transform: hoveredBtn === `${label}-${i}` ? "translateY(-1px)" : "" }}>
@@ -687,7 +691,7 @@ function ComponentsSection() {
           <p style={{ fontSize: "12px", color: "#8A8A8A", marginBottom: "16px" }}>Triggered programmatically. Appearing in the top-right, auto-dismiss</p>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             {["success", "error", "warning", "info"].map(t => (
-              <button key={t} onClick={() => showToast(t)}
+              <button key={t} type="button" onClick={() => showToast(t)}
                 style={{ padding: "7px 14px", borderRadius: "8px", border: `1px solid ${toastConfig[t].color}30`, background: `${toastConfig[t].color}15`, color: toastConfig[t].color, fontSize: "12px", fontWeight: 500, cursor: "pointer", textTransform: "capitalize" }}>
                 Show {t}
               </button>
@@ -704,7 +708,7 @@ function ComponentsSection() {
             <p style={{ margin: "0 0 2px", fontSize: "13px", fontWeight: 600, color: "#F5F5F5" }}>{toastConfig[toastType].label}</p>
             <p style={{ margin: 0, fontSize: "12px", color: "#8A8A8A" }}>{toastConfig[toastType].sub}</p>
           </div>
-          <button onClick={() => setToastVisible(false)} style={{ background: "none", border: "none", color: "#6B6B6B", cursor: "pointer", fontSize: "16px", padding: "0", lineHeight: 1 }}>×</button>
+          <button type="button" onClick={() => setToastVisible(false)} style={{ background: "none", border: "none", color: "#6B6B6B", cursor: "pointer", fontSize: "16px", padding: "0", lineHeight: 1 }}>×</button>
         </div>
       )}
 
@@ -829,6 +833,7 @@ function AccessibilitySection() {
               }}
             >
               <button
+                type="button"
                 style={{
                   padding: "8px 16px",
                   borderRadius: "8px",
