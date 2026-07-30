@@ -48,6 +48,7 @@ export default function Test() {
   // );
 
   return (
-    <AlertFrequencyGraph neighbourhoodId={NEIGHBOURHOOD_ID}/>
+    // <AlertFrequencyGraph neighbourhoodId={NEIGHBOURHOOD_ID}/>
+    <PairAgent propertyId={""}/>
   )
 }

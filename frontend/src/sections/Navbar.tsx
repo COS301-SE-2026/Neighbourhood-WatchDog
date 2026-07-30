@@ -58,8 +58,8 @@ export default function Navbar() {
                                         <line x1="3" y1="12" x2="21" y2="12" className={twMerge("transition", isOpen && "opacity-0")}></line>
                                         <line x1="3" y1="18" x2="21" y2="18" className={twMerge("origin-left transition",isOpen && "-rotate-45 translate-y-1")}></line>
                                     </svg>
-                                    <Button asChild variant="ghost" className="hidden md:inline-flex border border-white h-10 rounded-full px-6 font-medium items-center"><Link href="auth/login">Log In</Link></Button>
-                                    <Button asChild variant="default" className="hidden md:inline-flex h-10 rounded-full px-6 font-medium items-center"><Link href="auth/signup">Sign Up</Link></Button>
+                                    <Button asChild variant="ghost" className="hidden md:inline-flex border border-white h-10 rounded-full px-6 font-medium items-center"><Link href="/auth/login">Log In</Link></Button>
+                                    <Button asChild variant="default" className="hidden md:inline-flex h-10 rounded-full px-6 font-medium items-center"><Link href="/auth/signup">Sign Up</Link></Button>
                                 </div>
                             </div>
                             <AnimatePresence>

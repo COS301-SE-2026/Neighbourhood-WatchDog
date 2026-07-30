@@ -1,5 +1,6 @@
 "use client";
-
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import * as React from "react"
 import Image from "next/image"
 import {
@@ -12,6 +13,7 @@ import {
   PinOff,
   Bell,
   FileText,
+  Bot,
   Settings,
   Plus,
   LogOut
@@ -40,7 +42,6 @@ import {
 
 import { cn } from "@/lib/utils"
 import { useProperties, type Property } from "@/hooks/use-properties"
-import { useAppView } from "@/components/app-view-context"
 import { useRouter } from "next/navigation";
 import { logout } from "@/lib/auth/cognito";
 
@@ -50,22 +51,43 @@ type NavChild = {
   id: string;
   label: string;
   icon: React.ReactNode;
+  href: string;
 };
 
 type NavItem = {
   id: string;
   label: string;
   icon: React.ReactNode;
+  href: string;
   children?: NavChild[];
 };
 
-//data
+// data
 
+const TOP_LEVEL_IDS = ["dashboard", "alerts", "neighbourhood", "agent", "analytics", "settings"];
+
+function isNavItemActive(item: NavItem, pathname: string): boolean {
+  if (pathname === item.href) return true;
+
+  if (item.children) {
+    const segments = pathname.split("/").filter(Boolean); // e.g. ["dashboard", "abc123"]
+    const second = segments[1];
+    if (
+      item.id === "dashboard" &&
+      segments[0] === "dashboard" &&
+      second &&
+      !TOP_LEVEL_IDS.includes(second)
+    ) {
+      // it's a property id, not another nav route
+      return true;
+    }
+  }
+
+  return false;
+}
 
 // Logo
 function WatchdogLogo({ size = 28 }: { size?: number }) {
-
-  
   return (
     <Image
       src={logoImage}
@@ -75,7 +97,6 @@ function WatchdogLogo({ size = 28 }: { size?: number }) {
       aria-hidden="true"
       className="block object-contain"
     />
-     
   )
 }
 
@@ -120,37 +141,21 @@ function PinToggle({
 
 function NavTile({
   item,
-  activeSection,
-  activeChild,
-  onSelect,
-  onChildSelect,
+  pathname,
   isExpanded,
   onAddProperty, // TODO: if we decide to let the user add proeprties from elsewhere then we gotta remove this
 }: {
   item: NavItem
-  activeSection: string
-  activeChild: string | null
-  onSelect: (id: string) => void
-  onChildSelect: (id: string) => void
+  pathname: string
   isExpanded: boolean
   onAddProperty?: () => void
 }) {
 
-  const isActive = activeSection === item.id
+  const isActive = isNavItemActive(item, pathname)
   const isOpen   = isActive && !!item.children
 
-  const button = (
-    <button
-      onClick={() => onSelect(item.id)}
-      className={cn(
-        "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium",
-        "transition-all duration-150",
-        isActive
-          ? "bg-navy text-white ring-inset ring-1 ring-sky/35"
-          : "text-white/70 hover:bg-white/8 hover:text-white",
-        !isExpanded && "justify-center px-2",
-      )}
-    >
+  const linkContent = (
+    <>
       <span
         className={cn(
           "shrink-0",
@@ -172,52 +177,69 @@ function NavTile({
           )}
         </>
       )}
-    </button>
+    </>
+  );
+
+  const link = (
+    <Link
+      href={item.href}
+      className={cn(
+        "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium",
+        "transition-all duration-150",
+        isActive
+          ? "bg-navy text-white ring-inset ring-1 ring-sky/35"
+          : "text-white/70 hover:bg-white/8 hover:text-white",
+        !isExpanded && "justify-center px-2",
+      )}
+    >
+      {linkContent}
+    </Link>
   );
 
   return (
     <SidebarMenuItem>
       {!isExpanded ? (
         <Tooltip>
-          <TooltipTrigger asChild>{button}</TooltipTrigger>
+          <TooltipTrigger asChild>{link}</TooltipTrigger>
           <TooltipContent side="right">{item.label}</TooltipContent>
         </Tooltip>
       ) : (
-        button
+        link
       )}
 
       {/* Children dropdown — only when expanded */}
       {isExpanded && item.children && isOpen && (
         <ul className="mt-1 ml-4 overflow-hidden border-l border-white/10 pl-3 animate-in slide-in-from-top-1 fade-in duration-150">
-          {item.children.map((child) => (
-            <li key={child.id}>
-              <button
-                onClick={() => onChildSelect(child.id)}
-                className={cn(
-                  "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-xs font-medium",
-                  "transition-colors duration-100",
-                  activeChild === child.id
-                    ? "bg-navy text-white ring-inset ring-1 ring-sky/25"
-                    : "text-white/55 hover:bg-white/8 hover:text-white/90",
-                )}
-              >
-                <span
+          {item.children.map((child) => {
+            const childActive = pathname === child.href;
+            return (
+              <li key={child.id}>
+                <Link
+                  href={child.href}
                   className={cn(
-                    "shrink-0",
-                    activeChild === child.id
-                      ? "text-sky"
-                      : "text-white/40",
+                    "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-xs font-medium",
+                    "transition-colors duration-100",
+                    childActive
+                      ? "bg-navy text-white ring-inset ring-1 ring-sky/25"
+                      : "text-white/55 hover:bg-white/8 hover:text-white/90",
                   )}
                 >
-                  {child.icon}
-                </span>
-                <span className="truncate">{child.label}</span>
-                {activeChild === child.id && (
-                  <ChevronRight className="ml-auto h-3 w-3 text-sky" />
-                )}
-              </button>
-            </li>
-          ))}
+                  <span
+                    className={cn(
+                      "shrink-0",
+                      childActive ? "text-sky" : "text-white/40",
+                    )}
+                  >
+                    {child.icon}
+                  </span>
+                  <span className="truncate">{child.label}</span>
+                  {childActive && (
+                    <ChevronRight className="ml-auto h-3 w-3 text-sky" />
+                  )}
+                </Link>
+              </li>
+            );
+          })}
           {item.id === "dashboard" && onAddProperty && (
             <li>
               <button
@@ -247,8 +269,9 @@ function NavTile({
 export function AppSidebar() {
   const { state, setOpen } = useSidebar()
   const { properties, addProperty } = useProperties()
-  const { section, propertyId, setSection, setPropertyView } = useAppView()
+  const pathname = usePathname()
   const router = useRouter();
+  const [username, setUsername] = React.useState("");
 
   // pinned = sidebar is locked open; unpinned = hover-to-expand mode
   const [pinned, setPinned] = React.useState(true)
@@ -261,26 +284,43 @@ export function AppSidebar() {
       id: "dashboard",
       label: "Dashboard",
       icon: <LayoutDashboard className="h-4 w-4 shrink-0" />,
+      href: "/dashboard",
       children: properties.map((p) => ({
         id: p.property_id,
         label: p.address,
         icon: <Home className="h-3.5 w-3.5 shrink-0" />,
+        href: `/dashboard/${p.property_id}`,
       })),
     },
     {
       id: "alerts",
       label: "Alerts",
       icon: <Bell className="h-4 w-4 shrink-0" />,
+      href: "/dashboard/alerts",
+    },
+    {
+      id: "neighbourhood",
+      label: "Neighbourhood",
+      icon: <Home className="h-4 w-4 shrink-0" />,
+      href: "/dashboard/neighbourhood",
+    },
+    {
+      id: "agent",
+      label: "Agent",
+      icon: <Bot className="h-4 w-4 shrink-0" />,
+      href: "/dashboard/agent",
     },
     {
       id: "analytics",
       label: "Analytics",
       icon: <FileText className="h-4 w-4 shrink-0" />,
+      href: "/dashboard/analytics",
     },
     {
       id: "settings",
       label: "Settings",
       icon: <Settings className="h-4 w-4 shrink-0" />,
+      href: "/dashboard/settings",
     },
   ]
 
@@ -310,23 +350,14 @@ export function AppSidebar() {
     if (!pinned) setOpen(false);
   };
 
-  const handleSelect = (id: string) => {
-    setSection(id as typeof section)
-  }
-
-  const handleChildSelect = (id: string) => {
-    setPropertyView(id)
-  }
-
   const handleLogout = async () => {
     logout();
     router.push("/auth/login");
   };
-  
-  const [username] = React.useState(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem("fullname") ?? "";
-  });
+
+  React.useEffect(() => {
+      setUsername(localStorage.getItem("fullname") ?? "");
+  }, []);
 
   return (
 
@@ -350,7 +381,7 @@ export function AppSidebar() {
                 <WatchdogLogo size={28} />
               </div>
 
-              {/* Wordmark + pin will be visible when bar i s expanded */}
+              {/* Wordmark + pin will be visible when bar is expanded */}
               {isExpanded && (
                 <>
                   <div className="flex-1 min-w-0">
@@ -387,10 +418,7 @@ export function AppSidebar() {
               <NavTile
                 key={item.id}
                 item={item}
-                activeSection={section}
-                activeChild={propertyId}
-                onSelect={handleSelect}
-                onChildSelect={handleChildSelect}
+                pathname={pathname}
                 isExpanded={isExpanded}
                 onAddProperty={item.id === "dashboard" ? () => setDialogOpen(true) : undefined}
               />
