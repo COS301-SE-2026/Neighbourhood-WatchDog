@@ -58,33 +58,33 @@ jobs:
           docker tag watchdog-backend:latest 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:latest
           docker push 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:latest
 
-      - name: Run database migrations
-        run: |
-          TASK_ARN=$(aws ecs run-task \
-          --cluster watchdog-prod-cluster \
-          --task-definition watchdog-backend-task \
-          --launch-type EC2 \
-          --overrides '{"containerOverrides":[{"name":"backend","command":["alembic","upgrade","head"]}]}' \
-          --query 'tasks[0].taskArn' \
-          --output text)
+      # - name: Run database migrations
+      #   run: |
+      #     TASK_ARN=$(aws ecs run-task \
+      #     --cluster watchdog-prod-cluster \
+      #     --task-definition watchdog-backend-task \
+      #     --launch-type EC2 \
+      #     --overrides '{"containerOverrides":[{"name":"backend","command":["alembic","upgrade","head"]}]}' \
+      #     --query 'tasks[0].taskArn' \
+      #     --output text)
 
-          echo "Migration task: $TASK_ARN"
+      #     echo "Migration task: $TASK_ARN"
 
-          aws ecs wait tasks-stopped \
-            --cluster watchdog-prod-cluster \
-            --tasks "$TASK_ARN"
+      #     aws ecs wait tasks-stopped \
+      #       --cluster watchdog-prod-cluster \
+      #       --tasks "$TASK_ARN"
 
-          EXIT_CODE=$(aws ecs describe-tasks \
-            --cluster watchdog-prod-cluster \
-            --tasks "$TASK_ARN" \
-            --query 'tasks[0].containers[0].exitCode' \
-            --output text)
+      #     EXIT_CODE=$(aws ecs describe-tasks \
+      #       --cluster watchdog-prod-cluster \
+      #       --tasks "$TASK_ARN" \
+      #       --query 'tasks[0].containers[0].exitCode' \
+      #       --output text)
           
-          echo "Migration exit code: $EXIT_CODE"
-          if [ "$EXIT_CODE" != "0" ]; then 
-            echo "Migration failed"
-            exit 1
-          fi
+      #     echo "Migration exit code: $EXIT_CODE"
+      #     if [ "$EXIT_CODE" != "0" ]; then 
+      #       echo "Migration failed"
+      #       exit 1
+      #     fi
 
       - name: Deploy new task definition to service
         run: | 
