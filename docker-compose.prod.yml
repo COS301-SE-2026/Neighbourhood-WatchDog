@@ -18,18 +18,14 @@ services:
     build:
       context: ./backend
       target: production
-    ports:
-      - "8000:8000"
     environment:
       APP_ENV: production
       DEBUG: "false"
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      TESTING: "false"
+      DATABASE_URL: ${DATABASE_URL}
       # REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
-      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
       S3_CLIPS_BUCKET: ${S3_CLIPS_BUCKET}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: ${AWS_REGION}
       COGNITO_REGION: ${COGNITO_REGION}
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
@@ -39,6 +35,11 @@ services:
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
       TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM}
       NOTIFICATION_ENABLED: ${NOTIFICATION_ENABLED}
+      SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL}
+      SMTP_APP_PASSWORD: ${SMTP_APP_PASSWORD}
+      RTSP_ENCRYPTION_KEY: ${RTSP_ENCRYPTION_KEY}
+      MEDIAMTX_PUBLISH_MASTER_KEY: ${MEDIAMTX_PUBLISH_MASTER_KEY}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
     restart: always
     # volumes:
     #   - ./backend:/app
@@ -63,15 +64,24 @@ services:
   #   command: uvicorn app:app --host 0.0.0.0 --port 8001 --reload
 
   mediamtx:
+    environment:
+      MTX_WEBRTCENCRYPTION: "yes"
+      MTX_WEBRTCSERVERCERT: /certs/fullchain.pem
+      MTX_WEBRTCSERVERKEY: /certs/privkey.pem
+      MTX_WEBRTCADDITIONALHOSTS: ${MTX_WEBRTCADDITIONALHOSTS}
+      MTX_WEBRTCALLOWORIGIN: ${MTX_WEBRTCALLOWORIGIN}
+      MTX_AUTHHTTPADDRESS: ${MTX_AUTHHTTPADDRESS}
     build:
       context: ./mediamtx
     platform: linux/amd64
     ports:
       - "8554:8554" # RTSP
       - "8889:8889" # WebRTC
+      - "8189:8189/udp"
       - "9997:9997" # API
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx/mediamtx.yml
+      - /opt/mediamtx-certs:/certs:ro
     restart: always
 
 volumes:

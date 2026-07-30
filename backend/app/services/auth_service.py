@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code
+from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code, respond_to_mfa
 from app.models.user import UserRole, User
 from sqlalchemy.orm import Session
 
@@ -66,26 +66,37 @@ def authenticate_user(payload):
         email=payload["email"],
         password=payload["password"]
     )
+    if response.get("challenge"): #This tells us that Cognito requires MFA
+        challenge = response.get("challenge")
+        if challenge == "EMAIL_OTP":# check if the challenge sent back is actually OTP
+            return {
+                "success": True,
+                "data": {
+                    "mfa_required": True,
+                    "session": response["session"],
+                    "delivery": response.get("delivery"),
+                },
+            }
 
-    if not response.get("access_token") or not response.get("id_token"):
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "error": "AuthenticationFailed",
-                "message": response,
-            },
-        )
-
-    return {
-        "success": True,
-        "data": {
-            "access_token": response["access_token"],
-            "id_token": response["id_token"],
-            "refresh_token": response.get("refresh_token"),
-            "token_type": response.get("token_type"),
-            "expires_in": response.get("expires_in")
+    if response.get("access_token"): # Login successfull (MFA not needed)
+        return {
+            "success": True,
+            "data": {
+                "access_token": response["access_token"],
+                "id_token": response["id_token"],
+                "refresh_token": response.get("refresh_token"),
+                "token_type": response.get("token_type"),
+                "expires_in": response.get("expires_in"),
+            }
         }
-    }
+
+    raise HTTPException( #Did not get expected values
+        status_code=400,
+        detail={
+            "error": "AuthenticationFailed",
+            "message": response,
+        },
+    )
 
 def confirm_user(payload):
     confirm_sign_up(
@@ -108,4 +119,22 @@ def resend_confirmation_code(payload):
         "data": {
             "message": response.get("message", "sent")
         }
+    }
+
+def complete_mfa(payload):
+    response = respond_to_mfa(
+        email=payload["email"],
+        session=payload["session"],
+        code=payload["code"],
+    )
+
+    return {#If an error with cognito occurs the "response" variable will throw an error 
+        "success": True,
+        "data": {
+            "access_token": response["access_token"],
+            "id_token": response["id_token"],
+            "refresh_token": response.get("refresh_token"),
+            "token_type": response.get("token_type"),
+            "expires_in": response.get("expires_in"),
+        },
     }

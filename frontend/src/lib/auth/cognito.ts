@@ -12,16 +12,51 @@ interface SignUpResponse {
 interface LoginResponse {
   success: boolean;
   data: {
-    access_token: string;
-    id_token: string;
+    mfa_required?: boolean;
+
+    session?: string;
+
+    delivery?: {
+      medium: string;
+      destination: string;
+    };
+
+    access_token?: string;
+    id_token?: string;
     refresh_token?: string | null;
     token_type?: string | null;
     expires_in?: number;
   };
 }
 
+interface LoginResult {
+  mfaRequired: boolean;
+
+  session?: string;
+
+  delivery?: {
+    medium: string;
+    destination: string;
+  };
+
+  accessToken?: string;
+  idToken?: string;
+  expiresIn?: number;
+}
+
 interface ConfirmResponse {
   confirmed: boolean;
+}
+
+interface VerifyMfaResponse {
+  success: boolean;
+  data: {
+    access_token: string;
+    id_token: string;
+    refresh_token?: string | null;
+    token_type?: string | null;
+    expires_in?: number;
+  };
 }
 
 // API Client with error handling
@@ -75,22 +110,33 @@ export const signUp = async (
 export const login = async (
   email: string,
   password: string
-): Promise<{ accessToken: string; idToken: string; expiresIn: number }> => {//expects to return these
+): Promise<LoginResult> => {
   try {
-    const response = await apiClient<LoginResponse>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),//Create JSON
+    const response = await apiClient<LoginResponse>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
     });
 
-    const tokens = response.data;
+    const data = response.data;
 
+    // MFA required
+    if (data.mfa_required) {
+      return {
+        mfaRequired: true,
+        session: data.session,
+        delivery: data.delivery,
+      };
+    }
+
+    // Login complete
     return {
-      accessToken: tokens.access_token,
-      idToken: tokens.id_token,
-      expiresIn: tokens.expires_in ?? 0,
+      mfaRequired: false,
+      accessToken: data.access_token,
+      idToken: data.id_token,
+      expiresIn: data.expires_in ?? 0,
     };
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     throw error;
   }
 };
@@ -190,5 +236,29 @@ export const logout = (): void => {
   localStorage.removeItem('accessToken');
   localStorage.removeItem('idToken');
   localStorage.removeItem('tokenExpiry');
-  window.dispatchEvent(new Event(AUTH_EVENT));
+};
+
+export const verifyMfa = async (
+  email: string,
+  session: string,
+  code: string
+): Promise<{
+  accessToken: string;
+  idToken: string;
+  expiresIn: number;
+}> => {
+  const response = await apiClient<VerifyMfaResponse>("/auth/verify-mfa", {
+    method: "POST",
+    body: JSON.stringify({
+      email,
+      session,
+      code,
+    }),
+  });
+
+  return {
+    accessToken: response.data.access_token,
+    idToken: response.data.id_token,
+    expiresIn: response.data.expires_in ?? 0,
+  };
 };
