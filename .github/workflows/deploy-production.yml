@@ -1,8 +1,8 @@
-name: Deploy to Production
+name: Deploy to Production AWS
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "fix/prod" ]
 
 concurrency:
   group: production-deploy
