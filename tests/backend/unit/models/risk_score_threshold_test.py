@@ -98,5 +98,5 @@ class TestNeighbourhoodRiskThresholdConfigRes:
 
     def test_invalid_nested_data_raises_validation_error(self):
          with pytest.raises(ValidationError):
-            NeighbourhoodRiskThresholdConfigRes(status=200, data={"low_max": "not-a-float"})
+            NeighbourhoodRiskThresholdConfigRes(status=200, message="Neighbourhood risk threshold retrieved successfully", data={**_risk_threshold_res(), "low_max": "not-a-float"})
          
