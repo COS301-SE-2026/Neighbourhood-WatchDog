@@ -17,7 +17,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
-from app.core.config import config
 from app.core.database import DbSession
 from app.models.camera import Camera
 from app.models.detection_event import DetectionEvent
@@ -51,7 +50,7 @@ def _s3_client():
     return boto3.client(
         "s3",
         region_name="eu-north-1",
-        endpoint_url=f"https://s3.eu-north-1.amazonaws.com",
+        endpoint_url="https://s3.eu-north-1.amazonaws.com",
         config=BotoConfig(
             signature_version="s3v4",
             s3={"addressing_style": "virtual"},
