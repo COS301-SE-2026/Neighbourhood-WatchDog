@@ -51,5 +51,24 @@ class TestZonePoint:
         with pytest.raises(ValidationError):
             ZonePoint(x=0.5)
 
+class TestCreateZoneReq:
+    def test_valid_req(self):
+        req = CreateZoneRequest(name="Backyard", polygon=[[0.0, 0.0], [1.0, 1.0]])
+        assert req.name == "Backyard"
+        assert req.polygon == [[0.0, 0.0], [1.0, 1.0]]
+
+    def test_name_defaults_to_zone(self):
+        req = CreateZoneRequest(name="Backyard", polygon=[[0.0, 0.0], [1.0, 1.0]])
+        assert req.name == "Zone"
+
+    def test_empty_polygon_list_is_allowed(self):
+        req = CreateZoneRequest(polygon=[])
+        assert req.polygon == []
+
+    def test_missing_polygon_raises(self):
+        with pytest.raises(ValidationError):
+            CreateZoneRequest(name="Backyard")
+        
+
     
         
