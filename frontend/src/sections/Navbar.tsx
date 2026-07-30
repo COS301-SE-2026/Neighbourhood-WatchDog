@@ -1,4 +1,4 @@
-"use-client";
+"use client";
 
 import Image from "next/image"
 import logoImage from "@/assets/images/logo-mark-only.svg"
@@ -24,10 +24,18 @@ export default function Navbar() {
                     <div className="container max-w-5xl px-4 lg:px-0">
                         <div className="border border-white/15 rounded-[27px] md:rounded-full bg-neutral-950/70 backdrop-blur">
                             <div className="grid grid-cols-2 lg:grid-cols-3   p-2 px-4 md:pr-2 items-center ">
-                                <div className="flex items-center gap-2">
-                                    <Image src={logoImage} alt={"Neighbourhood Watchdog logo"} className="h-9 w-auto ml-2"/>
-                                    <span className="font-bold text-lg">Watchdog</span>
-                                </div>
+                                <Link
+                                href="/"
+                                aria-label="WatchDog home"
+                                className="flex items-center gap-2 rounded-full"
+                                >
+                                <Image
+                                    src={logoImage}
+                                    alt="Neighbourhood WatchDog logo"
+                                    className="h-9 w-auto ml-2"
+                                />
+                                <span className="font-bold text-lg">Watchdog</span>
+                                </Link>
                                 <div className="lg:flex justify-center items-center gap-8 hidden">
                                     {navLinks.map(link => (
                                         <a href={link.href} key={link.label}>
@@ -40,9 +48,9 @@ export default function Navbar() {
                                         xmlns="http://www.w3.org/2000/svg"
                                         width="24" height="24" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor"
-                                        stroke-width="2"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
                                         className="feather feather-menu md:hidden"
                                         onClick={() => setIsOpen(!isOpen)}
                                     >
@@ -67,8 +75,8 @@ export default function Navbar() {
                                                     {link.label}
                                                 </a>
                                             ))}
-                                            <Button asChild variant="ghost" className=" md:inline-flex border border-white h-10 rounded-full px-6 font-medium items-center"><Link href="auth/login">Log In</Link></Button>
-                                            <Button asChild variant="default" className=" md:inline-flex h-10 rounded-full px-6 font-medium items-center"><Link href="auth/signup">Sign Up</Link></Button>
+                                            <Button asChild variant="ghost" className=" md:inline-flex border border-white h-10 rounded-full px-6 font-medium items-center"><Link href="/auth/login">Log In</Link></Button>
+                                            <Button asChild variant="default" className=" md:inline-flex h-10 rounded-full px-6 font-medium items-center"><Link href="/auth/signup">Sign Up</Link></Button>
                                         </div>
                                     </motion.div>
                                 )}

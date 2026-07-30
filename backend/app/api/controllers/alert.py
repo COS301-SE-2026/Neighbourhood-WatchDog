@@ -1,13 +1,17 @@
 import asyncio
 import json
+from logging import config
+from sqlalchemy import select
 from uuid import UUID
 from typing import Annotated
 from datetime import datetime
-from fastapi import APIRouter, Depends, Query, WebSocket
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket
 from sqlalchemy.orm import Session
 
+from app.auth.cognito import verify_token
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession, get_db
+from app.models.user import User
 from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, ListAlertsRes, Pagination
 from app.services.alert_service import (
     acknowledge_alert_handler,
@@ -29,36 +33,53 @@ from app.schemas.alert import (
 )
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
-_connections: dict[str, set[WebSocket]] = {}
+_connections: dict[UUID, set[WebSocket]] = {}
 #TODO: NOTHING HERE SHOULD BE PUBLIC, NEED TO MAKE EVERYTHING PRIVATE 
 
-def _get_bucket(neighbourhood_id: str) -> set[WebSocket]:
-    if neighbourhood_id not in _connections:
-        _connections[neighbourhood_id] = set()
-    return _connections[neighbourhood_id]
+def _get_user_connections(user_id: UUID) -> set[WebSocket]:
+    if user_id not in _connections:
+        _connections[user_id] = set()
+
+    return _connections[user_id]
 
 
-def register_connection(neighbourhood_id: str, websocket: WebSocket) -> None:
-    _get_bucket(neighbourhood_id).add(websocket)
+def register_connection(user_id: UUID, websocket: WebSocket) -> None:
+    _get_user_connections(user_id).add(websocket)
 
 
-def remove_connection(neighbourhood_id: str, websocket: WebSocket) -> None:
-    _get_bucket(neighbourhood_id).discard(websocket)
+def remove_connection(user_id: UUID, websocket: WebSocket) -> None:
+    connections = _connections.get(user_id)
+
+    if connections is None:
+        return
+
+    connections.discard(websocket)
+
+    if not connections:
+        _connections.pop(user_id, None)
 
 
-async def broadcast(neighbourhood_id: str, message: dict) -> None:
-    connections = _get_bucket(neighbourhood_id)
-    dead: set[WebSocket] = set()
-
+async def send_to_users(
+    user_ids: set[UUID],
+    message: dict,
+) -> None:
     payload = json.dumps(message)
-    for ws in connections:
-        try:
-            await ws.send_text(payload)
-        except Exception:
-            dead.add(ws)
 
-    for ws in dead:
-        connections.discard(ws)
+    for user_id in user_ids:
+        connections = _connections.get(user_id, set())
+        dead: set[WebSocket] = set()
+
+        for ws in connections:
+            try:
+                await ws.send_text(payload)
+            except Exception:
+                dead.add(ws)
+
+        for ws in dead:
+            connections.discard(ws)
+
+        if not connections:
+            _connections.pop(user_id, None)
 
 
 Claims = Annotated[dict, Depends(get_current_user)]
@@ -185,30 +206,54 @@ async def acknowledge_alert(
     return AcknowledgeAlertRes(status=200, data=result)
 
 
-@router.websocket("/{neighbourhood_id}/ws")
+@router.websocket("/ws")
 async def alert_websocket(
-    neighbourhood_id: UUID,
     websocket: WebSocket,
     token: str | None = Query(default=None),
+    db: Session = Depends(get_db),
 ):
-    _ = token  # TODO: verify real Cognito token when auth is live
+    if not token:
+        await websocket.close(code=1008, reason="Missing authentication token")
+        return
 
-    # claims = {
-    #     "sub": "mock-websocket-user",
-    #     "custom:role": "RESIDENT",
-    #     "custom:neighbourhood_id": str(neighbourhood_id),
-    # }
+    try:
+        claims = verify_token(token)
+
+
+        cognito_sub = claims.get("sub")
+
+        if not cognito_sub:
+            await websocket.close(code=1008, reason="Token missing subject")
+            return
+
+        user = db.execute(
+            select(User).where(User.cognito_sub == cognito_sub)
+        ).scalar_one_or_none()
+
+        if user is None:
+            await websocket.close(
+                code=1008,
+                reason="No local WatchDog user profile found",
+            )
+            return
+
+    except HTTPException:
+        await websocket.close(code=1008, reason="Invalid authentication token")
+        return
 
     await websocket.accept()
-    register_connection(str(neighbourhood_id), websocket)
+    register_connection(user.id, websocket)
 
     try:
         while True:
             try:
-                await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                await asyncio.wait_for(
+                    websocket.receive_text(),
+                    timeout=30.0,
+                )
             except asyncio.TimeoutError:
                 await websocket.send_text(json.dumps({"event": "ping"}))
     except Exception:
         pass
     finally:
-        remove_connection(str(neighbourhood_id), websocket)
+        remove_connection(user.id, websocket)

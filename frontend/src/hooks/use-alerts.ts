@@ -9,14 +9,20 @@ export interface AlertEvent {
   confidence?: number;
 }
 
-export function useAlerts(neighbourhoodId: string) {
+export function useAlerts() {
   const [alerts, setAlerts] = useState<AlertEvent[]>([]);
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
+    // const ws = new WebSocket(
+    //   `ws://localhost:8000/alerts/ws`
+    // );
+
+    const token = localStorage.getItem("idToken");
+
     const ws = new WebSocket(
-      `ws://localhost:8000/alerts/${neighbourhoodId}/ws`
+      `ws://localhost:8000/alerts/ws?token=${encodeURIComponent(token ?? "")}`
     );
 
     ws.onopen = () => setConnected(true);
@@ -30,7 +36,7 @@ export function useAlerts(neighbourhoodId: string) {
 
     wsRef.current = ws;
     return () => ws.close();
-  }, [neighbourhoodId]);
+  }, []);
 
   return { alerts, connected };
 }
