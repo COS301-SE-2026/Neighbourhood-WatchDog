@@ -68,6 +68,48 @@ class TestCreateZoneReq:
     def test_missing_polygon_raises(self):
         with pytest.raises(ValidationError):
             CreateZoneRequest(name="Backyard")
+
+class TestZoneRes:
+    def test_valid_fields(self):
+        data = _zone_response()
+        res = ZoneResponse(**data)
+
+        assert res.id == data["id"]
+        assert res.camera_id == data["camera_id"]
+        assert res.name == data["name"]
+        assert res.polygon == data["polygon"]
+
+    def test_missing_id_raises(self):
+        data = _zone_response()
+        del data["id"]
+
+        with pytest.raises(ValidationError):
+            ZoneResponse(**data)
+
+    def test_missing_camera_id_raises(self):
+        data = _zone_response()
+        del data["camera_id"]
+
+        with pytest.raises(ValidationError):
+            ZoneResponse(**data)
+
+    def test_missing_name_raises(self):
+        data = _zone_response()
+        del data["name"]
+
+        with pytest.raises(ValidationError):
+            ZoneResponse(**data)
+
+    def test_missing_polygon_raises(self):
+        data = _zone_response()
+        del data["polygon"]
+
+        with pytest.raises(ValidationError):
+            ZoneResponse(**data)
+
+    def test_from_attributes_config_present(self):
+        """model_config should allow construction from ORM objects"""
+        assert ZoneResponse.model_config.get("from_attributes") is True
         
 
     
