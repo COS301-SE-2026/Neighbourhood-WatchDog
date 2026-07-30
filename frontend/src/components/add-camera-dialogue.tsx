@@ -43,7 +43,6 @@ export function AddCameraDialogBox({ open, onOpenChange, onCameraAdded, property
       rtsp_url,
       location,
       visibility,
-      enabled: true,
       property_id: propertyId
     }
 
@@ -107,7 +106,7 @@ export function AddCameraDialogBox({ open, onOpenChange, onCameraAdded, property
           </FieldGroup>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              {/* <Button variant="outline">Cancel</Button> */}
             </DialogClose>
             <Button type="submit">Add camera</Button>
           </DialogFooter>

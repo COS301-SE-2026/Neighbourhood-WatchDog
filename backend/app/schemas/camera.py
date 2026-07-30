@@ -11,11 +11,24 @@ class RegisterCameraReq(BaseModel):
     visibility: CameraVisibilityEnum
     property_id: UUID
 
+class CameraListItemRes(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    property_id: UUID
+    neighbourhood_id: UUID | None = None
+    name: NonEmptyString
+    visibility: CameraVisibilityEnum
+    location: NonEmptyString
+    enabled: bool
+    created_at: datetime
+
+
 class CameraRes(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     property_id: UUID
-    neighbourhood_id: UUID
+    neighbourhood_id: UUID | None = None
     name: NonEmptyString
     visibility: CameraVisibilityEnum
     location: NonEmptyString
@@ -30,7 +43,7 @@ class RegisterCameraRes(BaseModel):
 
 class CamerasRes(BaseModel):
     status: int
-    data: list[CameraRes] = []
+    data: list[CameraListItemRes] = []
 
 
 class CameraEditReq(BaseModel):

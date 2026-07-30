@@ -1,7 +1,9 @@
+from camera_runtime import CameraSpec, CameraSupervisor
+
 import os
 import cv2
-import time
 import threading
+from collections import deque
 from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI, Query
 from fastapi.responses import StreamingResponse
@@ -13,22 +15,22 @@ from pipeline.utils.zone_config import filter_detections_by_zones
 import httpx
 from datetime import datetime, timezone
 import logging
-
+import keyring
 
 logger = logging.getLogger("watchdog.ai")
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = ("rtsp_transport;tcp|fflags;nobuffer|flags;low_delay")
 
 threat_model = YOLO("pipeline/models/weights/best.pt")
 person_model = YOLO("pipeline/models/weights/yolov8n.pt")
 
 
 
-#cache for the camera settings, refresh every 30 seconds ---- still need to test
-_camera_settings: dict =  {
-    "confidence_threshold": 0.5,
-    "zones": []
-}
-_settings_lock = threading.Lock()
+# #cache for the camera settings, refresh every 30 seconds ---- still need to test
+# _camera_settings: dict =  {
+#     "confidence_threshold": 0.5,
+#     "zones": []
+# }
+# _settings_lock = threading.Lock()
 
 
 
@@ -36,76 +38,61 @@ _settings_lock = threading.Lock()
 
 
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
-CAMERA_ID = "2"
-NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001"
-RTSP_URL = os.getenv("RTSP_URL", "rtsp://Intrepid:password1234@192.168.3.68:554/stream2")
+BACKEND_URL = os.getenv("BACKEND_URL", "https://api-staging.neighbourhoodwatchdog.co.za")
+INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "dev-token")
+MEDIAMTX_RTSP_URL = os.getenv("MEDIAMTX_RTSP_URL", "rtsp://stream-staging.neighbourhoodwatchdog.co.za:8554")
+
+_model_lock = threading.Lock()
+
+#clip recording settings
+WEAPON_CLASSES = {"gun", "knife", "grenade", "explosion"}
+CLIP_COOLDOWN_SECS = 30
+CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
+S3_CLIPS_BUCKET = os.getenv("S3_CLIPS_BUCKET", "")
+AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")
 
 
+#pre capture
+_frame_buffer: deque = deque(maxlen=100)
+_frame_buffer_lock = threading.Lock()
 
-def _fetch_camera_settings(backend_url: str, camera_id: str) -> None:
-
-    #fetching the zone and threshold settings from the backend, and then updating the cache
-
-    try:
-        resp = httpx.get(
-            f"{backend_url}/cameras/{camera_id}/settings",
-
-            headers={
-                "Authorization": "Bearer mock-token",
-                "X-Mock-Role": "NEIGHBOURHOOD_ADMIN",
-                "X-Mock-Sub": "20000000-0000-0000-0000-000000000001"
-                    
-                },
-
-            timeout=2.0
-
-        )
-
-
-        if resp.status_code == 200:
-            data = resp.json()
-            with _settings_lock:
-                _camera_settings["confidence_threshold"] = data.get("confidence_threshold", 0.5)
-                _camera_settings["zones"] = [
-                    z["polygon"]
-                    for z in data.get("zones", [])
-
-                ]
-
-    except Exception:
-        pass #we can keep using the cached settings on failure
-
-
-
-def _settings_refresh_loop(backend_url: str, camera_id: str) -> None:
-
-    #refresh camera settings every 30 seconds
-    while True:
-        _fetch_camera_settings(backend_url, camera_id)
-        time.sleep(30)
+#cooldown tracker per weapon class
+_clips_cooldowns: dict = {}
+_cooldown_lock = threading.Lock()
 
 
 def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp: str) -> None:
-    """Fire-and-forget: POST track data to backend so it can broadcast via WebSocket."""
+    """POST detection track data to backend so it can broadcast via WebSocket."""
+    api_key = keyring.get_password("WatchDog", "api_key")
+    if not api_key:
+        logger.warning("Cannot push annotations for camera %s: no paired API key found. Run agent pairing first.", camera_id)
+        return
+
+
     try:
-        httpx.post(
+        response = httpx.post(
             f"{backend_url}/api/stream/cameras/{camera_id}/annotations",
+            headers={"X-Internal-Token": api_key}, 
             json={"tracks": tracks, "timestamp": timestamp},
             timeout=0.5,
         )
-    except Exception:
-        pass
+        response.raise_for_status()
+    except httpx.RequestError as error:
+        logger.warning("Could not push annotations for camera %s: %s", camera_id, error)
 
 
-def _extract_detections(frame) -> tuple:
+def _extract_detections(frame, confidence_threshold: float, zones: list | None = None) -> tuple[list, list]:
     """Convert YOLO results to DeepSort detection format."""
 
+    zones = zones or []
 
-    #running yolo on frame, applying the confidendce threshold and zone filters
-    with _settings_lock:
-        threshold = _camera_settings["confidence_threshold"]
-        zones = list(_camera_settings["zones"])
+
+
+    # #running yolo on frame, applying the confidendce threshold and zone filters
+    # with _settings_lock:
+    #     threshold = _camera_settings["confidence_threshold"]
+    #     zones = list(_camera_settings["zones"])
+
 
 
     frame_h, frame_w = frame.shape[:2]
@@ -114,21 +101,34 @@ def _extract_detections(frame) -> tuple:
     person_detections = []
     weapon_detections = []
 
-    #threat detection
-    threat_results = threat_model.predict(
-        frame,
-        imgsz=640,
-        conf=threshold,
-        verbose=False
-    )
+
+    with _model_lock:
+
+        #threat detection
+        threat_results = threat_model.predict(
+            frame,
+            imgsz=512,
+            conf=confidence_threshold,
+            verbose=False
+        )
+
+
+        #person detection
+        person_results = person_model.predict(
+            frame,
+            imgsz=512,
+            conf=confidence_threshold,
+            classes=[0],
+            verbose=False
+            )
 
     for box in threat_results[0].boxes:
         x1, y1, x2, y2 = box.xyxy[0].tolist()
-        conf = float(box.conf[0])
+        confidence = float(box.conf[0])
 
         label = threat_model.names[int(box.cls[0])] # represents gun, knife, grenade
 
-        weapon_detections.append(([x1, y1, x2 - x1, y2 - y1], conf, label))
+        weapon_detections.append(([x1, y1, x2 - x1, y2 - y1], confidence, label))
 
 
 
@@ -136,15 +136,15 @@ def _extract_detections(frame) -> tuple:
     person_results = person_model.predict(
         frame,
         imgsz=640,
-        conf=threshold,
+        conf=0.25,
         classes=[0],
         verbose=False
         )
     
     for box in person_results[0].boxes:
         x1, y1, x2, y2 = box.xyxy[0].tolist()
-        conf = float(box.conf[0])
-        person_detections.append(([x1, y1, x2 - x1, y2 - y1], conf, "person"))
+        confidence = float(box.conf[0])
+        person_detections.append(([x1, y1, x2 - x1, y2 - y1], confidence, "person"))
 
 
 
@@ -155,7 +155,7 @@ def _extract_detections(frame) -> tuple:
 
 
 
-    print(f"Threat boxes: {len(weapon_detections)}, Person boxes: {len(person_detections)}")
+    logger.debug("Threat boxes: %s, Person boxes: %s", len(weapon_detections), len(person_detections))
         
     
     return person_detections, weapon_detections
@@ -176,42 +176,107 @@ def _build_track_payload(track) -> dict:
     }
 
 
-def _send_new_person_alert(track_id: int, conf: float, detection_type: str = "UNKNOWN") -> None:
+def _send_new_person_alert(camera: CameraSpec, track_id: int, confidence: float, detection_type: str = "UNKNOWN") -> None:
     """Send a one-time human-presence alert to the backend."""
     try:
         httpx.post(
             f"{BACKEND_URL}/alerts/dev/broadcast",
             json={
-                "camera_id": CAMERA_ID,
-                "neighbourhood_id": NEIGHBOURHOOD_ID,
+                "camera_id": camera.id,
+                "neighbourhood_id": camera.neighbourhood_id,
                 "detection_type": detection_type.upper(), #GUN, KNIFE, GRENADE
-                "confidence": conf,
+                "confidence": confidence,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "thumbnail_url": None,
             },
             timeout=1.0,
         )
     except Exception:
-        logger.exception("Alert POST failed for Track ID %s", track_id)
+        logger.exception("Alert POST failed for camera %s", camera.id, track_id)
 
 
 def _open_stream(rtsp_url: str):
     """Open an RTSP stream, returning None if unavailable."""
     cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
     if not cap.isOpened():
-        cap = None
+        return None
+    
+    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
     return cap
 
+class LatestFrameReader:
+    """Retain newest frame. Prevents detector from working through a backlog of old frames"""
 
-def _detection_loop(rtsp_url: str) -> None:
+    def __init__(self, rtsp_url: str, stop_event: threading.Event):
+        self.rtsp_url = rtsp_url
+        self.stop_event = stop_event
+        self._lock = threading.Lock()
+        self._frame = None
+        self._sequence = 0
+
+        self._closed = threading.Event()
+        self._thread = threading.Thread(target=self._run, name="watchdog-latest-frame-reader", daemon=True)
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def get_latest_after(self, previous_sequence: int):
+        """returns newer frame"""
+
+        with self._lock:
+            if self._frame is None or self._sequence == previous_sequence:
+                return None, previous_sequence
+
+
+            return self._frame, self._sequence
+
+
+    def close(self) -> None:
+        self._closed.set()
+        self._thread.join(timeout=2)
+
+
+    def _run(self) -> None:
+        cap = None
+
+        try:
+            while not self.stop_event.is_set() and not self._closed.is_set():
+                if cap is None or not cap.isOpened():
+                    cap = _open_stream(self.rtsp_url)
+
+
+                    if cap is None:
+                        self.stop_event.wait(1)
+                        continue
+
+
+                ok, frame = cap.read()
+
+                if not ok:
+                    cap.release()
+                    cap = None
+                    self.stop_event.wait(0.1)
+
+                    continue
+
+                with self._lock:
+                    self._frame = frame
+                    self._sequence += 1
+
+        finally:
+            if cap is not None:
+                cap.release()
+
+def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Event) -> None:
     """
     Background thread: continuously read RTSP, run YOLO+DeepSort, push annotations.
     The frontend uses WebRTC from mediamtx for display; this loop supplies bounding boxes.
     """
-    logger.info("Detection loop starting for %s", rtsp_url)
+    logger.info("Detection loop starting for %s", camera.id, rtsp_url)
 
     tracker = DeepSort(
-        max_age=150,
+        max_age=10,
         n_init=3,
         max_iou_distance=0.5,  #for stricter matching and less duplicate boxes
         embedder="mobilenet",
@@ -219,81 +284,83 @@ def _detection_loop(rtsp_url: str) -> None:
         nms_max_overlap=0.5 #to suppress overlapping boxes
     )
 
-    cap = None
-    frame_count = 0
     alerted_ids: set = set()
+    latest_frame_reader = LatestFrameReader(rtsp_url, stop_event)
+    latest_frame_reader.start()
+    last_processed_sequence = -1
 
-    while True:
-        cap = _reconnect_if_needed(cap, rtsp_url)
-        if cap is None:
-            continue
+    try:
+        while not stop_event.is_set():
+            frame, last_processed_sequence = latest_frame_reader.get_latest_after(last_processed_sequence)
 
-        ret, frame = cap.read()
-        if not ret:
-            logger.warning("Empty frame — reconnecting in 2s")
-            cap.release()
-            cap = None
-            time.sleep(2)
-            continue
+            if frame is None:
+                stop_event.wait(0.01)
+                continue
+                
 
-        frame_count += 1
-        if frame_count % 4 != 0:
-            continue
+            person_detections, weapon_detections = _extract_detections(frame, camera.confidence_threshold)
+            
+            #only tracking humans through deepsort
+            tracks = tracker.update_tracks(person_detections, frame=frame)
+    
+            tracks_payload = _collect_tracks(tracks, alerted_ids, camera)
 
-        person_detections, weapon_detections = _extract_detections(frame)
-
-        #only tracking humans through deepsort
-        tracks = tracker.update_tracks(person_detections, frame=frame)
-
-        tracks_payload = _collect_tracks(tracks, alerted_ids)
-
-
-        #adding raw weapon detections (no deepsort, no duplication)
-        for i, (bbox, conf, label) in enumerate(weapon_detections):
-            x, y, w, h = bbox
- 
-            tracks_payload.append({
-                "track_id": f"threat_{i}",
-                "confidence": conf,
-                "bbox": [x, y, x + w, y + h],
-                "detection_type": label
-
-            })
+            print(f"DEBUG: raw_tracks={len(tracks)}, confirmed={sum(1 for t in tracks if t.is_confirmed())}, payload={len(tracks_payload)}, person_dets={len(person_detections)}")
 
 
 
-        #filtering out zero confidence (0%) ghost tracks
-        tracks_payload = [t for t in tracks_payload 
-                          if t.get("confidence", 0) > 0.1 or str(t.get("track_id", "")).startswith("threat_")]
+            #adding raw weapon detections (no deepsort, no duplication)
+            for i, (bbox, confidence, label) in enumerate(weapon_detections):
+                x, y, w, h = bbox
+        
+                tracks_payload.append({
+                    "track_id": f"threat_{i}",
+                    "confidence": confidence,
+                    "bbox": [x, y, x + w, y + h],
+                    "detection_type": label
+    
+                })
+
+            #filtering out zero confidence (0%) ghost tracks
+            tracks_payload = [t for t in tracks_payload 
+                if t.get("confidence", 0) > 0.1 or str(t.get("track_id", "")).startswith("threat_")]
             
 
-        _push_annotations(BACKEND_URL, CAMERA_ID, tracks_payload, datetime.now(timezone.utc).isoformat())
+            _push_annotations(BACKEND_URL, camera.id, tracks_payload, datetime.now(timezone.utc).isoformat())
+
+    except Exception:
+        logger.exception("Detection worker crashed for camera %s", camera.id)
+    finally:
+        latest_frame_reader.close()
+        logger.info("Detection worker stopped for camera %s", camera.id)
+
+        logger.info("Detection worker stopped for camera %s", camera.id)
 
 
-def _reconnect_if_needed(cap, rtsp_url: str):
+def _reconnect_if_needed(cap, rtsp_url: str, stop_event: threading.Event):
     """Return an open capture, reconnecting if necessary."""
     if cap is not None and cap.isOpened():
         return cap
-    logger.info("Connecting to RTSP stream…")
+    logger.info("Connecting detection worker to %s", rtsp_url)
     new_cap = _open_stream(rtsp_url)
     if new_cap is None:
-        logger.warning("Could not open stream — retrying in 5s")
-        time.sleep(5)
+        logger.warning("Published stream unavailable - retrying in 5s")
+        stop_event.wait(5)
         return None
-    logger.info("RTSP stream connected")
+    logger.info("Published MediaMTX stream connected")
     return new_cap
 
 
-def _collect_tracks(tracks, alerted_ids: set) -> list:
+def _collect_tracks(tracks, alerted_ids: set, camera: CameraSpec) -> list:
     """Build the annotation payload from confirmed tracks, firing alerts for new persons."""
     payload = []
     for track in tracks:
-        if not track.is_confirmed():
+        if not track.is_confirmed() or track.time_since_update > 0:
             continue
+
+
         track_id = track.track_id
-
         track_data = _build_track_payload(track)
-
         payload.append(track_data)
 
         if track_id not in alerted_ids and track.det_conf is not None:
@@ -301,8 +368,8 @@ def _collect_tracks(tracks, alerted_ids: set) -> list:
 
             detection_type = track.get_det_class() or "UNKNOWN"
 
-            logger.info("New detection — Track ID: %s, conf: %.2f", detection_type, track_id, track.det_conf)
-            _send_new_person_alert(track_id, float(track.det_conf), detection_type)
+            logger.info("New detection - Track ID: %s, conf: %.2f", detection_type, camera.id, track_id, track.det_conf)
+            _send_new_person_alert(camera, track_id, float(track.det_conf), detection_type)
     return payload
 
 
@@ -310,28 +377,36 @@ def _collect_tracks(tracks, alerted_ids: set) -> list:
 async def lifespan(app_: FastAPI):
     """Start the detection background thread when the AI service starts."""
 
-    #starting the detection loop
-    t = threading.Thread(target=_detection_loop, args=(RTSP_URL,), daemon=True)
-    t.start()
-
-
-    #starting tne settings refresh loop
-    s = threading.Thread(
-        target=_settings_refresh_loop,
-        args=(BACKEND_URL, CAMERA_ID),
-        daemon=True
+    supervisor = CameraSupervisor(
+        backend_url=BACKEND_URL, 
+        internal_token=INTERNAL_API_TOKEN, 
+        mediamtx_rtsp_url=MEDIAMTX_RTSP_URL, 
+        detection_target=_detection_loop, 
+        reconcile_interval_seconds=5.0
     )
 
-    s.start()
+    app_.state.camera_supervisor = supervisor
+    supervisor.start()
+
+    logger.info("Camera supervisor started")
+
+    try:
+        yield
+    finally:
+        supervisor.stop()
+        logger.info("Camera supervisor stopped")
 
 
-    logger.info("Detection background thread started")
-    yield
 
+app = FastAPI(
+title="WatchDog AI Service",
+lifespan=lifespan,
+)
 
-app = FastAPI(title="WatchDog AI Service", lifespan=lifespan)
-
-stream_router = APIRouter(prefix="/stream", tags=["stream"])
+stream_router = APIRouter(
+    prefix="/stream",
+    tags=["stream"],
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -339,6 +414,7 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
+
 
 
 def annotated_mjpeg(rtsp_url: str):

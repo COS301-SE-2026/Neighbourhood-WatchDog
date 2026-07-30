@@ -258,6 +258,8 @@ Neighbourhood-WatchDog/
 <div align="center">
 
 [![SRS](https://img.shields.io/badge/Software_Requirements_Spec-View-00B4D8?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/srs.md)
+<br>
+[![SRS](https://img.shields.io/badge/Deployment_Document-View-00B4D8?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/deployment_doc.md)
 
 </div>
 

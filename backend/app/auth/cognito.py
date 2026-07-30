@@ -66,7 +66,7 @@ def sign_up(email: str, password : str, name : str, address: str):
             ],
         )
 
-        return { # TODO: Send this response to the database to add the user
+        return {
             "success": True,
             "user_sub": response["UserSub"],
             "user_confirmed": response["UserConfirmed"],
@@ -152,3 +152,7 @@ def resend_code(email: str):
                 "message": e.response["Error"]["Message"]
             }
         )
+
+def get_sub_from_id_token(id_token: str) -> str:
+    payload = verify_token(id_token)
+    return payload["sub"]

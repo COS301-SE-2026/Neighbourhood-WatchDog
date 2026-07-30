@@ -1,10 +1,14 @@
-import os
-from fastapi import HTTPException, Request, Depends, status
+from fastapi import HTTPException, Request, Depends, status, Header
 from sqlalchemy.orm import Session
+from sqlalchemy import Select
+from typing import Annotated
+import os
+import hashlib
 
 from app.models.user import User
-from app.core.database import get_db
+from app.core.database import get_db, DbSession
 from app.auth.jwt import get_authenticated_claims
+from app.models.edge_agent_credentials import EdgeAgentCredential
 
 # default mock identity
 # TODO: remove mock when Cognito is live
@@ -26,6 +30,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 
     if TESTING:
         return {
+            "id": request.headers.get("X-Mock-User-Id","00000000-0000-0000-0000-000000000000"),
             "sub": request.headers.get("X-Mock-Sub", "00000000-0000-0000-0000-000000000000"),
             "given_name": "Test",
             "family_name": "User",
@@ -47,6 +52,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
             )
         else:
             return {
+                "id": request.headers.get("X-Mock-User-Id","00000000-0000-0000-0000-000000000000"),
                 "sub": request.headers.get("X-Mock-Sub", "00000000-0000-0000-0000-000000000000"),
                 "given_name": "Test",
                 "family_name": "User",
@@ -56,6 +62,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 
 
     return {
+        "id": str(user.id),
         "sub": sub,
         "given_name": user.first_name,
         "family_name": user.last_name,
@@ -82,3 +89,22 @@ def require_role(*allowed_roles: str):#input any number of roles that are allowe
         return current_user
 
     return role_checker
+
+# edge agents auth stuff
+
+def get_authenticated_edge_agent(
+    db: DbSession,
+    x_internal_token: Annotated[str, Header()],
+) -> EdgeAgentCredential:
+    provided_hash = hashlib.sha256(x_internal_token.encode()).hexdigest()
+
+    stmt = Select(EdgeAgentCredential).where(
+        EdgeAgentCredential.key_hash == provided_hash,
+        EdgeAgentCredential.revoked_at.is_(None),
+    )
+    credential = db.execute(stmt).scalar_one_or_none()
+
+    if credential is None:
+        raise HTTPException(401, "Invalid or revoked edge agent credential.")
+
+    return credential

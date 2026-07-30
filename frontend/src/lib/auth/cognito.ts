@@ -1,4 +1,7 @@
 import { getApiBaseUrl } from '@/lib/api/auth';
+import { jwtDecode } from 'jwt-decode';
+
+export const AUTH_EVENT = 'watchdog-auth-changed';
 
 // Types for API responses
 interface SignUpResponse {
@@ -48,13 +51,14 @@ const apiClient = async <T>(
 export const signUp = async (
   email: string,
   password: string,
-  name: string,
+  firstName: string,
+  lastName: string,
   address: string
 ): Promise<{ userSub: string; confirmed: boolean }> => {//expects to return these back
   try {
     const response = await apiClient<SignUpResponse>('/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ email, password, name, address }),//create JSON for API Post
+      body: JSON.stringify({ email, password, firstName, lastName, address }),//create JSON for API Post
     });
 
     return {//Handle API response
@@ -127,16 +131,32 @@ export const setSession = (tokens: {
   idToken: string;
   expiresIn?: number;
 }) => {
+  if (typeof window === 'undefined') return;
+
   if (!tokens.accessToken || !tokens.idToken) {
     throw new Error('Cannot store empty auth tokens');
   }
 
+  const claims = jwtDecode<{
+    sub: string;
+    name?: string;
+    email?: string;
+    address?: { formatted?: string };
+  }>(tokens.idToken);
+
   localStorage.setItem('accessToken', tokens.accessToken);
   localStorage.setItem('idToken', tokens.idToken);
+  localStorage.setItem('userSub', claims.sub);
+  localStorage.setItem('fullname', claims.name ?? '');
+  localStorage.setItem('email', claims.email ?? '');
+  localStorage.setItem('address', claims.address?.formatted ?? '');
 
   if (typeof tokens.expiresIn === 'number') {
     localStorage.setItem('tokenExpiry', String(Date.now() + tokens.expiresIn * 1000));
   }
+
+  window.dispatchEvent(new Event(AUTH_EVENT));
+  
 };
 
 // Get token
@@ -165,7 +185,10 @@ export const isAuthenticated = (): boolean => {
 // Logout
 //Do not need to call backend... we are not handling sessions
 export const logout = (): void => {
+  if (typeof window === 'undefined') return;
+  
   localStorage.removeItem('accessToken');
   localStorage.removeItem('idToken');
   localStorage.removeItem('tokenExpiry');
+  window.dispatchEvent(new Event(AUTH_EVENT));
 };

@@ -17,7 +17,9 @@ import {
   LogOut
 } from "lucide-react"
 
-import { CreatePropertyDialog } from "./create-property-dialogue"
+import { CreatePropertyDialog } from "./property-components/create-property-dialogue"
+
+import logoImage from "@/assets/images/logo-mark-only.svg"
 
 import {
   Sidebar,
@@ -59,13 +61,14 @@ type NavItem = {
 
 //data
 
-const USERNAME = "John Doe";
 
 // Logo
 function WatchdogLogo({ size = 28 }: { size?: number }) {
+
+  
   return (
     <Image
-      src="/logo.png"
+      src={logoImage}
       width={size}
       height={size}
       alt=""
@@ -319,8 +322,14 @@ export function AppSidebar() {
     logout();
     router.push("/auth/login");
   };
+  
+  const [username] = React.useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("fullname") ?? "";
+  });
 
   return (
+
     <Sidebar
       collapsible="icon"
       onMouseEnter={handleMouseEnter}
@@ -408,19 +417,20 @@ export function AppSidebar() {
                     "text-white/60 hover:text-white hover:bg-white/8 transition-colors duration-150",
                     !isExpanded && "justify-center",
                   )}
+                  type="button"
                 >
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue/40 ring-1 ring-sky/40">
                     <User className="h-3.5 w-3.5 text-sky" />
                   </span>
                   {isExpanded && (
                     <span className="truncate text-sm font-medium text-white/80">
-                      {USERNAME}
+                      {username}
                     </span>
                   )}
                 </button>
               </TooltipTrigger>
               {!isExpanded && (
-                <TooltipContent side="right">{USERNAME}</TooltipContent>
+                <TooltipContent side="right">{username}</TooltipContent>
               )}
             </Tooltip>
           </SidebarMenuItem>

@@ -1,29 +1,38 @@
 import asyncio
 import json
-from fastapi import APIRouter, WebSocket
+from typing import Annotated
+from fastapi import APIRouter, Depends,WebSocket
+
+from app.models.edge_agent_credentials import EdgeAgentCredential
+from app.api.controllers.internal_cameras import get_authenticated_edge_agent
 
 router = APIRouter(prefix="/api/stream", tags=["stream"])
 
 # Camera annotation connections: {camera_id: set[WebSocket]}
 _annotation_connections: dict[str, set[WebSocket]] = {}
 
+
 def _get_camera_bucket(camera_id: str) -> set[WebSocket]:
     if camera_id not in _annotation_connections:
         _annotation_connections[camera_id] = set()
     return _annotation_connections[camera_id]
 
+
 def register_camera_connection(camera_id: str, websocket: WebSocket) -> None:
     _get_camera_bucket(camera_id).add(websocket)
 
-def remove_camera_connection(camera_id: str, websocket: WebSocket) -> None:
-    _get_camera_bucket(camera_id).discard(websocket)
 
-async def broadcast_annotation(camera_id: str, annotation_data: dict) -> None:
+def remove_camera_connection(camera_id: str, websocket: WebSocket) -> None:
+    _get_camera_bucket(camera_id, ).discard(websocket)
+
+
+async def broadcast_annotation(camera_id: str, annotation_data: dict) -> None: #TODO: make private, only accessible by internal services
     """Broadcast annotation data (bounding boxes, confidence, etc) to all connected clients"""
     connections = _get_camera_bucket(camera_id)
     dead: set[WebSocket] = set()
 
     payload = json.dumps(annotation_data)
+
     for ws in connections:
         try:
             await ws.send_text(payload)
@@ -33,15 +42,26 @@ async def broadcast_annotation(camera_id: str, annotation_data: dict) -> None:
     for ws in dead:
         connections.discard(ws)
 
-@router.post("/cameras/{camera_id}/annotations")
-async def receive_annotation(camera_id: str, data: dict):
-    """Receive annotation data from detector and broadcast to connected clients"""
-    await broadcast_annotation(camera_id, {
-        "camera_id": camera_id,
-        "event": "annotation",
-        **data  # Contains: tracks (list of {track_id, confidence, bbox}), timestamp
-    })
+
+@router.post("/cameras/{camera_id}/annotations") #TODO: make private, only accessible by internal services
+async def receive_annotation(
+    camera_id: str,
+    data: dict,
+    x_internal_token: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)],
+) -> dict:
+    
+
+    await broadcast_annotation(
+        camera_id,
+        {
+            "camera_id": camera_id,
+            "event": "annotation",
+            **data,
+        },
+    )
+
     return {"status": "broadcasted"}
+
 
 @router.websocket("/cameras/{camera_id}/annotations/ws")
 async def camera_annotation_websocket(camera_id: str, websocket: WebSocket):

@@ -18,8 +18,11 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 type SignupCardProps = {
   className?: string;
 
-  name: string;
-  setName: (v: string) => void;
+  firstName: string;
+  setFirstName: (v: string) => void;
+
+  lastName: string;
+  setLastName: (v: string) => void;
 
   address: string;
   setAddress: (v: string) => void;
@@ -41,8 +44,10 @@ type SignupCardProps = {
 
 export function SignupCard({
   className,
-  name,
-  setName,
+  firstName,
+  setFirstName,
+  lastName,
+  setLastName,
   address,
   setAddress,
   email,
@@ -63,22 +68,22 @@ export function SignupCard({
   return (
     <Card
       className={cn(
-        "w-full max-w-lg sm:max-w-2xl p-2 sm:p-4 rounded-2xl border border-navy/12 bg-white/95 shadow-xl backdrop-blur",
+        "w-full max-w-lg rounded-2xl border border-border bg-card/95 p-2 shadow-xl backdrop-blur sm:max-w-2xl sm:p-4",
         className
       )}
     >
       <CardHeader className="space-y-3">
-        <CardTitle className="text-[2rem] sm:text-[2.5rem] font-bold tracking-tight text-navy">
+        <CardTitle className="text-[2rem] font-bold tracking-tight text-card-foreground sm:text-[2.5rem]">
           Create Account
         </CardTitle>
 
-        <CardDescription className="text-base text-body">
+        <CardDescription className="text-base text-muted-foreground">
           Enter your details below to get started
         </CardDescription>
 
         <CardAction>
           <Link href="/auth/login" passHref>
-            <Button variant="link" className="text-sm font-medium">
+            <Button variant="link" className="text-sm font-medium text-primary hover:text-primary/80">
               Already have an account? Login
             </Button>
           </Link>
@@ -88,32 +93,52 @@ export function SignupCard({
       <CardContent className="space-y-6">
         {/* Error display */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-red-300">
             {error}
           </div>
         )}
 
         <div className="flex flex-col gap-6">
-          {/* NAME */}
-          <div className="grid gap-2">
-            <Label htmlFor="name" className="text-sm font-medium">
-              Full Name
-            </Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={onKeyDown}
-              placeholder="Name Surname"
-              disabled={isLoading}
-              className="h-11 text-base"
-              required
-            />
+          {/* first and last name */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="firstName" className="text-sm font-medium text-foreground">
+                First Name
+              </Label>
+
+              <Input
+                id="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="First Name"
+                disabled={isLoading}
+                className="h-11 border-border bg-background text-base text-foreground placeholder:text-muted-foreground"
+                required
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="lastName" className="text-sm font-medium text-foreground">
+                Last Name
+              </Label>
+
+              <Input
+                id="lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="Last Name"
+                disabled={isLoading}
+                className="h-11 border-border bg-background text-base text-foreground placeholder:text-muted-foreground"
+                required
+              />
+            </div>
           </div>
 
           {/* ADDRESS */}
           <div className="grid gap-2">
-            <Label htmlFor="address" className="text-sm font-medium">
+            <Label htmlFor="address" className="text-sm font-medium text-foreground">
               Address
             </Label>
             <Input
@@ -123,14 +148,14 @@ export function SignupCard({
               onKeyDown={onKeyDown}
               placeholder=" 44 Home Street, Pretoria"
               disabled={isLoading}
-              className="h-11 text-base"
+              className="h-11 border-border bg-background text-base text-foreground placeholder:text-muted-foreground"
               required
             />
           </div>
 
           {/* EMAIL */}
           <div className="grid gap-2">
-            <Label htmlFor="email" className="text-sm font-medium">
+            <Label htmlFor="email" className="text-sm font-medium text-foreground">
               Email Address
             </Label>
             <Input
@@ -141,14 +166,14 @@ export function SignupCard({
               onKeyDown={onKeyDown}
               placeholder="email@example.com"
               disabled={isLoading}
-              className="h-11 text-base"
+              className="h-11 border-border bg-background text-base text-foreground placeholder:text-muted-foreground"
               required
             />
           </div>
 
           {/* PASSWORD with visibility toggle */}
           <div className="grid gap-2">
-            <Label htmlFor="password" className="text-sm font-medium">
+            <Label htmlFor="password" className="text-sm font-medium text-foreground">
               Password
             </Label>
             <div className="relative">
@@ -159,14 +184,14 @@ export function SignupCard({
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={onKeyDown}
                 disabled={isLoading}
-                className="h-11 text-base pr-10"
+                className="h-11 border-border bg-background pr-10 text-base text-foreground placeholder:text-muted-foreground"
                 required
                 minLength={8}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                 disabled={isLoading}
               >
                 {showPassword ? (
@@ -176,12 +201,12 @@ export function SignupCard({
                 )}
               </button>
             </div>
-            <p className="text-xs text-gray-500">Must have: 8+ characters | Special Character | Number</p>
+            <p className="text-xs text-muted-foreground">Must have: 8+ characters | Special Character | Number</p>
           </div>
 
           {/* CONFIRM PASSWORD with visibility toggle */}
           <div className="grid gap-2">
-            <Label htmlFor="confirmPassword" className="text-sm font-medium">
+            <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
               Confirm Password
             </Label>
             <div className="relative">
@@ -192,13 +217,13 @@ export function SignupCard({
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 onKeyDown={onKeyDown}
                 disabled={isLoading}
-                className="h-11 text-base pr-10"
+                className="h-11 border-border bg-background pr-10 text-base text-foreground placeholder:text-muted-foreground"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                 disabled={isLoading}
               >
                 {showConfirmPassword ? (
@@ -212,12 +237,12 @@ export function SignupCard({
         </div>
       </CardContent>
 
-      <CardFooter className="flex-col gap-3 pt-2">
+      <CardFooter className="flex-col gap-3 pt-2 bg-card">
         <Button
           type="button"
           onClick={onSubmit}
           disabled={isLoading}
-          className="w-full h-11 text-base font-medium bg-navy text-white hover:bg-steel transition-colors"
+          className="h-11 w-full bg-primary text-base font-medium text-primary-foreground hover:bg-primary/90"
         >
           {isLoading ? (
             <>

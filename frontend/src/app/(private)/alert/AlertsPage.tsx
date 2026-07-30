@@ -28,10 +28,12 @@ import {
   normaliseAlert,
   getAuthToken,
   WS_BASE,
+  AlertFilters,
 } from "@/lib/api/alert";
 
 const ALL_SEVERITIES: AlertSeverity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "RESOLVED"];
+const CURRENT_CUTOFF = 24 * 60 * 60 * 1000; // 24h
 
 const SEVERITY_LABELS: Record<AlertSeverity, string> = {
   CRITICAL: "Critical",
@@ -75,11 +77,11 @@ function ErrorState({
   onRetry: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
+    <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
       <p className="text-base font-semibold text-threat">
         Failed to load alerts
       </p>
-      <p className="text-xs text-mist max-w-xs">{message}</p>
+      <p className="max-w-xs text-xs text-mist">{message}</p>
       <Button
         size="sm"
         variant="outline"
@@ -109,7 +111,7 @@ function ActionErrorBanner({
         type="button"
         onClick={onDismiss}
         aria-label="Dismiss error"
-        className="ml-2 text-threat/60 hover:text-threat transition-colors"
+        className="ml-2 text-threat/60 transition-colors hover:text-threat"
       >
         ✕
       </button>
@@ -140,22 +142,33 @@ function fetchReducer(state: FetchState, action: FetchAction): FetchState {
   switch (action.type) {
     case "FETCH_START":
       return { ...state, loading: true, error: null };
+
     case "FETCH_SUCCESS":
       return { alerts: action.payload, loading: false, error: null };
+
     case "FETCH_ERROR":
       return { ...state, loading: false, error: action.payload };
+
     case "PREPEND_ALERT":
-      if (state.alerts.some((a) => a.id === action.payload.id)) return state;
+      if (state.alerts.some((alert) => alert.id === action.payload.id)) {
+        return state;
+      }
+
       return { ...state, alerts: [action.payload, ...state.alerts] };
+
     case "UPDATE_ALERT":
       return {
         ...state,
-        alerts: state.alerts.map((a) =>
-          a.id === action.payload.id ? action.payload : a,
+        alerts: state.alerts.map((alert) =>
+          alert.id === action.payload.id ? action.payload : alert,
         ),
       };
+
+    default:
+      return state;
   }
 }
+
 interface Props {
   neighbourhoodId?: string;
 }
@@ -167,31 +180,61 @@ export default function AlertsPage({
     fetchReducer,
     initialFetchState,
   );
+
   const searchParams = useSearchParams();
+
   const queryNeighbourhoodId =
-    searchParams.get("neighbourhoodId") || searchParams.get("neighbourhood_id");
+    searchParams.get("neighbourhoodId") ||
+    searchParams.get("neighbourhood_id");
+
   const [neighbourhoodId, setNeighbourhoodId] = useState<string | null>(
     initialNeighbourhoodId ?? queryNeighbourhoodId ?? null,
   );
+
   const [identityLoading, setIdentityLoading] = useState(
     !initialNeighbourhoodId && !queryNeighbourhoodId,
   );
+
   const [identityError, setIdentityError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
-
   const [fetchTick, setFetchTick] = useState(0);
 
   const [selectedSeverities, setSelectedSeverities] = useState<
     Set<AlertSeverity>
   >(new Set(ALL_SEVERITIES));
-  const [selectedStatuses, setSelectedStatuses] = useState<Set<AlertStatus>>(
-    new Set(["NEW", "ACKNOWLEDGED"]),
+
+  const [selectedStatus, setSelectedStatus] = useState<AlertStatus | null>(
+    null,
   );
+
+  const [activeTab, setActiveTab] = useState<"current" | "history">("current");
+  const [historyStartDate, setHisoryStartDate] = useState("");
+  const [historyEndDate, setHisoryEndDate] = useState("");
+
+  const alertFilters = useMemo<AlertFilters>(() => {
+    const base: AlertFilters = {};
+
+    if (selectedStatus) {
+      base.status = selectedStatus;
+    }
+
+    if (activeTab === "history") {
+      if (historyStartDate) {
+        base.startDate = new Date(historyStartDate);
+      }
+
+      if (historyEndDate) {
+        base.endDate = new Date(historyEndDate);
+      }
+    }
+
+    return base;
+  }, [activeTab, selectedStatus, historyStartDate, historyEndDate]);
 
   function triggerRefresh() {
     dispatch({ type: "FETCH_START" });
-    setFetchTick((t) => t + 1);
+    setFetchTick((tick) => tick + 1);
   }
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -199,6 +242,7 @@ export default function AlertsPage({
 
   useEffect(() => {
     mountedRef.current = true;
+
     return () => {
       mountedRef.current = false;
     };
@@ -227,13 +271,16 @@ export default function AlertsPage({
       })
       .catch((err: unknown) => {
         if (cancelled) return;
+
         setNeighbourhoodId(null);
         setIdentityError(
           err instanceof Error ? err.message : "Failed to load current user.",
         );
       })
       .finally(() => {
-        if (!cancelled) setIdentityLoading(false);
+        if (!cancelled) {
+          setIdentityLoading(false);
+        }
       });
 
     return () => {
@@ -246,28 +293,50 @@ export default function AlertsPage({
 
     const controller = new AbortController();
 
-    fetchAlerts(neighbourhoodId, controller.signal)
-      .then((data) => {
+    const filters: AlertFilters =
+      activeTab === "current"
+        ? {
+            ...alertFilters,
+            startDate: new Date(Date.now() - CURRENT_CUTOFF),
+          }
+        : alertFilters;
+
+    fetchAlerts(neighbourhoodId, filters, controller.signal)
+      .then(({ alerts: fetched }) => {
         if (!mountedRef.current) return;
-        dispatch({ type: "FETCH_SUCCESS", payload: data });
+
+        dispatch({
+          type: "FETCH_SUCCESS",
+          payload: fetched,
+        });
       })
       .catch((err: unknown) => {
         if (!mountedRef.current) return;
-        if (err instanceof DOMException && err.name === "AbortError") return;
+
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return;
+        }
+
         dispatch({
           type: "FETCH_ERROR",
           payload: err instanceof Error ? err.message : "Unknown error",
         });
       });
 
-    return () => controller.abort();
-  }, [neighbourhoodId, fetchTick]);
+    return () => {
+      controller.abort();
+    };
+  }, [neighbourhoodId, fetchTick, alertFilters, activeTab]);
 
   useEffect(() => {
-    if (!neighbourhoodId) return;
+    if (!neighbourhoodId || activeTab !== "current") return;
 
     const token = getAuthToken();
-    const url = `${WS_BASE}/alerts/${neighbourhoodId}/ws${token ? `?token=${token}` : ""}`;
+
+    const url = `${WS_BASE}/alerts/${neighbourhoodId}/ws${
+      token ? `?token=${token}` : ""
+    }`;
+
     let unmounted = false;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -278,43 +347,51 @@ export default function AlertsPage({
       wsRef.current = ws;
 
       ws.onopen = () => {
-        if (mountedRef.current) setWsConnected(true);
+        if (mountedRef.current) {
+          setWsConnected(true);
+        }
       };
 
       ws.onclose = () => {
-        if (mountedRef.current) setWsConnected(false);
+        if (mountedRef.current) {
+          setWsConnected(false);
+        }
+
         if (!unmounted) {
           reconnectTimer = setTimeout(connect, 3_000);
         }
       };
 
-      ws.onerror = () => ws.close();
+      ws.onerror = () => {
+        ws.close();
+      };
 
-      ws.onmessage = (e) => {
+      ws.onmessage = (event) => {
         if (!mountedRef.current) return;
+
         try {
-          const msg = JSON.parse(e.data as string) as {
+          const message = JSON.parse(event.data as string) as {
             event: string;
             payload?: Record<string, unknown>;
           };
 
-          if (msg.event === "ping") return;
+          if (message.event === "ping") return;
 
-          if (msg.event === "alert.new" && msg.payload) {
+          if (message.event === "alert.new" && message.payload) {
             dispatch({
               type: "PREPEND_ALERT",
-              payload: normaliseAlert(msg.payload),
+              payload: normaliseAlert(message.payload),
             });
           }
 
-          if (msg.event === "alert.acknowledged" && msg.payload) {
+          if (message.event === "alert.acknowledged" && message.payload) {
             dispatch({
               type: "UPDATE_ALERT",
-              payload: normaliseAlert(msg.payload),
+              payload: normaliseAlert(message.payload),
             });
           }
         } catch {
-          // Ignore
+          // Ignore malformed WebSocket payloads.
         }
       };
     }
@@ -323,59 +400,74 @@ export default function AlertsPage({
 
     return () => {
       unmounted = true;
-      if (reconnectTimer !== null) clearTimeout(reconnectTimer);
+
+      if (reconnectTimer !== null) {
+        clearTimeout(reconnectTimer);
+      }
+
       const ws = wsRef.current;
+
       if (ws) {
         ws.onclose = null;
         ws.close();
       }
     };
-  }, [neighbourhoodId]);
+  }, [neighbourhoodId, activeTab]);
 
   async function handleAcknowledge(id: string) {
-    const original = alerts.find((a) => a.id === id);
+    const original = alerts.find((alert) => alert.id === id);
+
     if (!original || original.status !== "NEW") return;
 
     setActionError(null);
+
     dispatch({
       type: "UPDATE_ALERT",
-      payload: { ...original, status: "ACKNOWLEDGED" },
+      payload: {
+        ...original,
+        status: "ACKNOWLEDGED",
+      },
     });
 
     try {
       await acknowledgeAlert(id);
     } catch (err) {
       if (mountedRef.current) {
-        dispatch({ type: "UPDATE_ALERT", payload: original });
+        dispatch({
+          type: "UPDATE_ALERT",
+          payload: original,
+        });
+
         setActionError(
           err instanceof Error ? err.message : "Failed to acknowledge alert.",
         );
       }
+
       console.error("Acknowledge failed:", err);
     }
   }
 
   const filtered = useMemo(
     () =>
-      alerts.filter((a) => {
-        const sev = getSeverity(a.detection_type);
-        return (
-          selectedSeverities.has(sev) &&
-          selectedStatuses.has(a.status as AlertStatus)
-        );
+      alerts.filter((alert) => {
+        const severity = getSeverity(alert.detection_type);
+        return selectedSeverities.has(severity);
       }),
-    [alerts, selectedSeverities, selectedStatuses],
+    [alerts, selectedSeverities],
   );
 
   const hasActiveFilters =
     selectedSeverities.size < ALL_SEVERITIES.length ||
-    !selectedStatuses.has("NEW") ||
-    !selectedStatuses.has("ACKNOWLEDGED") ||
-    selectedStatuses.has("RESOLVED");
+    selectedStatus !== null ||
+    (activeTab === "history" &&
+      (historyStartDate !== "" || historyEndDate !== ""));
 
-  const newCount = alerts.filter((a) => a.status === "NEW").length;
+  const newCount = alerts.filter((alert) => alert.status === "NEW").length;
+
   const criticalCount = alerts.filter(
-    (a) => getSeverity(a.detection_type) === "CRITICAL" && a.status === "NEW",
+    (alert) =>
+      getSeverity(alert.detection_type) === "CRITICAL" &&
+      alert.status === "NEW",
   ).length;
 
   if (identityLoading) {
@@ -416,6 +508,7 @@ export default function AlertsPage({
               <h1 className="text-[2rem] font-bold leading-[2.5rem] text-white">
                 Alerts
               </h1>
+
               <span
                 title={
                   wsConnected
@@ -434,7 +527,7 @@ export default function AlertsPage({
 
             {(newCount > 0 || criticalCount > 0) && (
               <div
-                className="flex gap-2 mt-3 flex-wrap justify-center"
+                className="mt-3 flex flex-wrap justify-center gap-2"
                 aria-live="polite"
               >
                 {newCount > 0 && (
@@ -443,26 +536,31 @@ export default function AlertsPage({
                     --color-blue on white-ish fog meets ≥ 4.5:1 for small text.
                   */
                   <span
-                    className="inline-flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1"
+                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
                     style={{
-                      backgroundColor: "color-mix(in srgb, var(--color-blue) 12%, transparent)",
-                      border: "1px solid color-mix(in srgb, var(--color-blue) 25%, transparent)",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--color-blue) 12%, transparent)",
+                      border:
+                        "1px solid color-mix(in srgb, var(--color-blue) 25%, transparent)",
                       color: "var(--color-blue)",
                     }}
                   >
                     {newCount} new
                   </span>
                 )}
+
                 {criticalCount > 0 && (
                   /*
                     Critical badge: --color-threat tint bg, --color-threat text.
                     Solid threat red on light bg comfortably exceeds 4.5:1.
                   */
                   <span
-                    className="inline-flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1"
+                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
                     style={{
-                      backgroundColor: "color-mix(in srgb, var(--color-threat) 12%, transparent)",
-                      border: "1px solid color-mix(in srgb, var(--color-threat) 25%, transparent)",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--color-threat) 12%, transparent)",
+                      border:
+                        "1px solid color-mix(in srgb, var(--color-threat) 25%, transparent)",
                       color: "var(--color-threat)",
                     }}
                   >
@@ -480,9 +578,33 @@ export default function AlertsPage({
             />
           )}
 
+          <div className="mb-4 flex justify-center gap-2" role="tablist">
+            <Button
+              role="tab"
+              aria-selected={activeTab === "current"}
+              size="sm"
+              variant={activeTab === "current" ? "default" : "outline"}
+              onClick={() => setActiveTab("current")}
+              className="text-xs font-medium"
+            >
+              Current
+            </Button>
+
+            <Button
+              role="tab"
+              aria-selected={activeTab === "history"}
+              size="sm"
+              variant={activeTab === "history" ? "default" : "outline"}
+              onClick={() => setActiveTab("history")}
+              className="text-xs font-medium"
+            >
+              History
+            </Button>
+          </div>
+
           <Card className="bg-steel/40 border-steel rounded-xl">
             {/* Toolbar */}
-            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-steel rounded-t-xl">
+            <div className="flex items-center justify-between gap-3 rounded-t-xl border-b border-steel px-5 py-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -504,8 +626,9 @@ export default function AlertsPage({
                     }}
                     aria-label="Open filter options"
                   >
-                    <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
+                    <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
                     Filter
+
                     {hasActiveFilters && (
                       /*
                         Active-filter pip: --color-blue fill, white label.
@@ -544,25 +667,28 @@ export default function AlertsPage({
                   >
                     Severity
                   </DropdownMenuLabel>
-                  {ALL_SEVERITIES.map((sev) => (
+
+                  {ALL_SEVERITIES.map((severity) => (
                     <DropdownMenuCheckboxItem
-                      key={sev}
-                      className="text-sm cursor-pointer"
+                      key={severity}
+                      className="cursor-pointer text-sm"
                       style={{ color: "var(--color-ink)" }}
-                      checked={selectedSeverities.has(sev)}
+                      checked={selectedSeverities.has(severity)}
                       onCheckedChange={(checked) => {
-                        setSelectedSeverities((prev) => {
-                          const next = new Set(prev);
+                        setSelectedSeverities((previous) => {
+                          const next = new Set(previous);
+
                           if (checked) {
-                            next.add(sev);
+                            next.add(severity);
                           } else {
-                            next.delete(sev);
+                            next.delete(severity);
                           }
+
                           return next;
                         });
                       }}
                     >
-                      {SEVERITY_LABELS[sev]}
+                      {SEVERITY_LABELS[severity]}
                     </DropdownMenuCheckboxItem>
                   ))}
 
@@ -576,47 +702,110 @@ export default function AlertsPage({
                   >
                     Status
                   </DropdownMenuLabel>
-                  {ALL_STATUSES.map((st) => (
+
+                  <DropdownMenuCheckboxItem
+                    className="cursor-pointer text-sm"
+                    style={{ color: "var(--color-ink)" }}
+                    checked={selectedStatus === null}
+                    onCheckedChange={() => setSelectedStatus(null)}
+                  >
+                    All
+                  </DropdownMenuCheckboxItem>
+
+                  {ALL_STATUSES.map((status) => (
                     <DropdownMenuCheckboxItem
-                      key={st}
-                      className="text-sm cursor-pointer"
+                      key={status}
+                      className="cursor-pointer text-sm"
                       style={{ color: "var(--color-ink)" }}
-                      checked={selectedStatuses.has(st)}
-                      onCheckedChange={(checked) => {
-                        setSelectedStatuses((prev) => {
-                          const next = new Set(prev);
-                          if (checked) {
-                            next.add(st);
-                          } else {
-                            next.delete(st);
-                          }
-                          return next;
-                        });
-                      }}
+                      checked={selectedStatus === status}
+                      onCheckedChange={(checked) =>
+                        setSelectedStatus(checked ? status : null)
+                      }
                     >
-                      {STATUS_LABELS[st]}
+                      {STATUS_LABELS[status]}
                     </DropdownMenuCheckboxItem>
                   ))}
+
+                  {activeTab === "history" && (
+                    <>
+                      <DropdownMenuSeparator
+                        style={{ backgroundColor: "var(--color-mist)" }}
+                      />
+
+                      <DropdownMenuLabel
+                        className="text-xs uppercase tracking-wider"
+                        style={{ color: "var(--color-body)" }}
+                      >
+                        Date range
+                      </DropdownMenuLabel>
+
+                      <div className="flex flex-col gap-2 px-2 py-1.5">
+                        <label
+                          className="text-xs"
+                          style={{ color: "var(--color-body)" }}
+                        >
+                          From
+                          <input
+                            type="date"
+                            value={historyStartDate}
+                            onChange={(event) =>
+                              setHisoryStartDate(event.target.value)
+                            }
+                            className="mt-1 w-full rounded border px-2 py-1 text-xs"
+                            style={{
+                              borderColor: "var(--color-mist)",
+                              color: "var(--color-ink)",
+                            }}
+                          />
+                        </label>
+
+                        <label
+                          className="text-xs"
+                          style={{ color: "var(--color-body)" }}
+                        >
+                          To
+                          <input
+                            type="date"
+                            value={historyEndDate}
+                            onChange={(event) =>
+                              setHisoryEndDate(event.target.value)
+                            }
+                            className="mt-1 w-full rounded border px-2 py-1 text-xs"
+                            style={{
+                              borderColor: "var(--color-mist)",
+                              color: "var(--color-ink)",
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </>
+                  )}
 
                   {hasActiveFilters && (
                     <>
                       <DropdownMenuSeparator
                         style={{ backgroundColor: "var(--color-mist)" }}
                       />
+
                       {/* Ghost: --color-blue text, no border — readable on white */}
                       <button
+                        type="button"
                         onClick={() => {
                           setSelectedSeverities(new Set(ALL_SEVERITIES));
-                          setSelectedStatuses(new Set(["NEW", "ACKNOWLEDGED"]));
+                          setSelectedStatus(null);
+                          setHisoryStartDate("");
+                          setHisoryEndDate("");
                         }}
-                        className="w-full text-left px-2 py-1.5 text-xs transition-colors"
+                        className="w-full px-2 py-1.5 text-left text-xs transition-colors"
                         style={{ color: "var(--color-blue)" }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.color = "var(--color-navy)")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.color = "var(--color-blue)")
-                        }
+                        onMouseEnter={(event) => {
+                          event.currentTarget.style.color =
+                            "var(--color-navy)";
+                        }}
+                        onMouseLeave={(event) => {
+                          event.currentTarget.style.color =
+                            "var(--color-blue)";
+                        }}
                       >
                         Clear all filters
                       </button>
@@ -638,7 +827,9 @@ export default function AlertsPage({
                 aria-label="Refresh alerts"
               >
                 <RefreshCw
-                  className={`h-3.5 w-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`}
+                  className={`mr-1.5 h-3.5 w-3.5 ${
+                    loading ? "animate-spin" : ""
+                  }`}
                 />
                 Refresh
               </Button>
@@ -648,7 +839,7 @@ export default function AlertsPage({
             <section
               aria-label="Alert list"
               aria-live="polite"
-              className="p-4 rounded-b-xl"
+              className="rounded-b-xl p-4"
             >
               {loading && alerts.length === 0 ? (
                 <div className="flex items-center justify-center py-20">
@@ -657,7 +848,7 @@ export default function AlertsPage({
               ) : error ? (
                 <ErrorState
                   message={error}
-                  onRetry={() => setFetchTick((t) => t + 1)}
+                  onRetry={() => setFetchTick((tick) => tick + 1)}
                 />
               ) : filtered.length === 0 ? (
                 <EmptyState />

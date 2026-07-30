@@ -16,7 +16,7 @@ class Camera(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False, server_default=text("gen_random_uuid()"))
     property_id = Column(UUID(as_uuid=True), ForeignKey("property.id"), nullable=False)
-    neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id"), nullable=False)
+    neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id"), nullable=True)
     name = Column(String, nullable=False)
     visibility = Column(SAEnum(CameraVisibilityEnum, name="camera_visibility"), nullable=False, server_default="PRIVATE")
     location = Column(String, nullable=False)
@@ -25,6 +25,9 @@ class Camera(Base):
     enabled = Column(Boolean, nullable=False, default=True, server_default="true")
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
+    name = Column(String, nullable=False, server_default="Camera")
+    enabled = Column(Boolean, nullable=False, server_default="true")
+    
     alerts = relationship("Alert", back_populates="camera")
     detection_events = relationship("DetectionEvent", back_populates="camera")
     neighbourhood = relationship("Neighbourhood", back_populates="cameras")

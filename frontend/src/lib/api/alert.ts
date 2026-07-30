@@ -1,5 +1,7 @@
 import type { Alert, AlertStatus } from "@/components/shared/AlertCard";
 import { getApiBaseUrl, getAuthHeaders } from "@/lib/api/auth";
+import { AlertFrequencyMetricsRes, TimeIntervalsEnum, TimePeriod } from "../validators/alert";
+import { apiCall } from "./client";
 
 export { getAuthToken } from "@/lib/api/auth";
 
@@ -71,17 +73,112 @@ export function normaliseAlert(raw: Record<string, unknown>): Alert {
   };
 }
 
+function denormaliseStatus(status: AlertStatus): string {
+  return status === "NEW" ? "OPEN" : status;
+}
+
+export interface Pagination {
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
+}
+
+export interface AlertFilters {
+  status?: AlertStatus;
+  cameraId?: string;
+  detectionType?: string;
+  startDate?: Date;
+  endDate?: Date;
+  limit?: number;
+  offset?: number;
+}
+
+export interface PaginatedAlerts {
+  alerts: Alert[];
+  pagination: Pagination;
+}
+
+interface ListAlertsRes {
+  status: number;
+  message: string | null;
+  data: Record<string, unknown>[] | null;
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+  } | null;
+}
+
+function buildAlerts(filters?: AlertFilters): string {
+  const parms = new URLSearchParams();
+
+  if (filters?.status) {
+    parms.set("status", denormaliseStatus(filters.status));
+  }
+  if (filters?.cameraId) {
+    parms.set("camera_id", filters.cameraId);
+  }
+  if (filters?.detectionType) {
+    parms.set("detection_type", filters.detectionType);
+  }
+  if (filters?.startDate) {
+    parms.set("start_date", filters.startDate.toISOString());
+  }
+  if (filters?.endDate) {
+    parms.set("end_date", filters.endDate.toISOString());
+  }
+  if (filters?.limit) {
+    parms.set("limit", String(filters.limit));
+  }
+  if (filters?.offset) {
+    parms.set("offset", String(filters.offset));
+  }
+
+  const query = parms.toString();
+  return query ? `?${query}` : "";
+}
+
 export async function fetchAlerts(
   neighbourhoodId: string,
+  filters?: AlertFilters,
   signal?: AbortSignal,
-): Promise<Alert[]> {
-  const res = await apiFetch<{
-    status: number;
-    data: Record<string, unknown>[];
-  }>(`/alerts/${neighbourhoodId}`, { signal });
-  return (res.data ?? []).map(normaliseAlert);
+): Promise<PaginatedAlerts> {
+  const query = buildAlerts(filters);
+
+  const res = await apiFetch<ListAlertsRes>(
+    `/alerts/${neighbourhoodId}${query}`,
+    { signal },
+  );
+
+  return {
+    alerts: (res.data ?? []).map(normaliseAlert),
+    pagination: {
+      total: res.pagination?.total ?? 0,
+      limit: res.pagination?.limit ?? 25,
+      offset: res.pagination?.offset ?? 0,
+      has_more: res.pagination?.has_more ?? false,
+    },
+  };
 }
 
 export async function acknowledgeAlert(alertId: string): Promise<void> {
   await apiFetch(`/alerts/${alertId}/acknowledge`, { method: "PATCH" });
+}
+
+export async function fetchAlertFrequencyData(
+  neighbourhoodId: string,
+  timeInterval?: TimeIntervalsEnum,
+  timePeriod?: TimePeriod,
+): Promise<AlertFrequencyMetricsRes> {
+  let url = `/alerts/frequency-metrics?neighbourhood_id=${neighbourhoodId}`
+
+  url += timeInterval? `&time_interval=${timeInterval}` : ''
+  url += timePeriod? `&time_period=${timePeriod}` : ''
+
+  return await apiCall<AlertFrequencyMetricsRes>(
+    url,
+    {method: 'GET'},
+  )
 }

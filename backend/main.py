@@ -15,11 +15,18 @@ from app.api.controllers.stream import router as stream_router
 from app.api.controllers.notification import router as notification_router
 from app.api.controllers.audit import router as audit_router
 from app.api.controllers.camera_settings import router as camera_settings_router
+from app.api.controllers.clips import router as clips_router
+from app.api.controllers.internal import router as internal_router
+from app.api.controllers.risk_score_history import router as risk_score_history_router
+from app.api.controllers.internal_cameras import router as internal_cameras_router
+from app.api.controllers.pairing_token import router as pairing_token_router
 from slowapi.middleware import SlowAPIMiddleware
 from app.auth.rate_limiter import limiter
 from app.core.database import engine, Base
 from app import models  # noqa: F401  (imported for side effects: model registration)
 import os
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
 
 configure_logging()
 
@@ -33,23 +40,33 @@ app = FastAPI(
     redoc_url="/redoc" if config.debug else None,
 )
 
+if config.testing: #Disable the limiter during testing, preventing exception 429
+    limiter.enabled = False
+
+app.state.limiter = limiter
+app.add_exception_handler(
+    RateLimitExceeded,
+    _rate_limit_exceeded_handler,
+)
+
 app.add_middleware(AuthMiddleware) #Which routes are public and private
 app.add_middleware(SlowAPIMiddleware) #Rate limiting 
 
 app.add_middleware( #CORS (allow requests from frontend)
     CORSMiddleware,
-    allow_origins=[config.frontend_url.rstrip("/")],
+    allow_origins=[config.frontend_url.rstrip("/"), "http://localhost:3000", "https://neighbourhood-watch-dog-intrepidcapstone-4790-teamintrepid.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.state.limiter = limiter
+
 
 app.include_router(auth_router)
 app.include_router(neighbourhood_join_router)
 app.include_router(alert_router)
 app.include_router(detection_router)
+app.include_router(internal_cameras_router)
 app.include_router(property_router)
 app.include_router(neighbourhood_router)
 app.include_router(camera_router)
@@ -58,6 +75,10 @@ app.include_router(stream_router)
 app.include_router(notification_router)
 app.include_router(audit_router)
 app.include_router(camera_settings_router)
+app.include_router(clips_router)
+app.include_router(internal_router)
+app.include_router(risk_score_history_router)
+app.include_router(pairing_token_router)
 
 @app.get("/health")
 def health_check():

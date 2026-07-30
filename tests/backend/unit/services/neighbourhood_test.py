@@ -1,10 +1,21 @@
 import pytest
 from fastapi import HTTPException
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from app.services.neighbourhood_service import create_neighbourhood_handler
 from app.models.user import UserRole
 from uuid import uuid4
 from datetime import datetime
+from app.models.neighbourhood import Neighbourhood
+
+AUDIT_PATCH = "app.services.neighbourhood_service.create_audit_log_item"
+
+@pytest.fixture(autouse=True)
+def mock_audit():
+    with patch(
+        "app.services.neighbourhood_service.create_audit_log_item",
+        new=Mock(),
+    ):
+        yield
 
 TEST_NEIGHBOURHOOD_NAME = "Test name"
 class TestCreateNeighbourhood:
@@ -32,6 +43,7 @@ class TestCreateNeighbourhood:
 
         #mock creator user
         self.mock_creator = Mock()
+        self.mock_creator.id = uuid4()
         self.mock_creator.cognito_sub = "cognito-sub-123"
         self.mock_creator.role = UserRole.RESIDENT
         self.mock_creator.neighbourhood_id = None
@@ -44,7 +56,12 @@ class TestCreateNeighbourhood:
             self.mock_creator,
         ]
 
-        self.mock_db.add = Mock()
+        def mock_add(obj):
+            if isinstance(obj, Neighbourhood):
+                obj.id = uuid4()
+                obj.created_at = datetime.now()
+
+        self.mock_db.add = Mock(side_effect=mock_add)
         self.mock_db.commit = Mock()
         self.mock_db.flush = Mock()
         self.mock_db.rollback = Mock()
@@ -58,7 +75,10 @@ class TestCreateNeighbourhood:
 
         self.mock_db.refresh = Mock(side_effect=mock_refresh)
 
-        self.claims = {"sub": "cognito-sub-123"}
+        self.claims = {
+            "id": str(uuid4()),
+            "sub": "cognito-sub-123",
+        }
 
     @pytest.mark.asyncio
     async def test_happy_path(self):
@@ -76,7 +96,7 @@ class TestCreateNeighbourhood:
         assert neighbourhood.join_code is not None
 
         assert self.mock_db.add.call_count == 1
-        assert self.mock_db.flush.call_count == 2
+        assert self.mock_db.flush.call_count == 1
         assert self.mock_db.commit.call_count == 1
         assert self.mock_db.refresh.call_count == 1
         assert self.mock_db.rollback.call_count == 0
@@ -225,7 +245,6 @@ class TestCreateNeighbourhood:
         self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
             None,  # join_code uniqueness check
             None,  # Property not found
-            self.mock_property_user
         ]
 
         with pytest.raises(HTTPException) as exception:
@@ -242,7 +261,7 @@ class TestCreateNeighbourhood:
 
         assert self.mock_db.add.call_count == 1
         assert self.mock_db.flush.call_count == 1
-        assert self.mock_db.refresh.call_count == 1
+        assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.rollback.call_count == 1
 
@@ -269,7 +288,7 @@ class TestCreateNeighbourhood:
 
         assert self.mock_db.add.call_count == 1
         assert self.mock_db.flush.call_count == 1
-        assert self.mock_db.refresh.call_count == 1
+        assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.rollback.call_count == 1
 
@@ -281,8 +300,12 @@ class TestCreateNeighbourhood:
             self.mock_property,
             self.mock_property_user  # PropertyUser found but cognito_sub doesn't match
         ]
+        self.mock_property_user.user.cognito_sub = "different-user"
 
-        self.claims = {"sub": "cognito-sub"}
+        self.claims = {
+            "id": str(uuid4()),
+            "sub": "cognito-sub-123",
+        }
 
         with pytest.raises(HTTPException) as exception:
             await create_neighbourhood_handler(
@@ -294,11 +317,11 @@ class TestCreateNeighbourhood:
             )
 
         assert exception.value.status_code == 403
-        assert exception.value.detail == "This user does not live in the property they are trying to add to the neighbourhood they are creating"
+        assert exception.value.detail == "User does not live in the property they are trying to link"
 
         assert self.mock_db.add.call_count == 1
         assert self.mock_db.flush.call_count == 1
-        assert self.mock_db.refresh.call_count == 1
+        assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.rollback.call_count == 1
     

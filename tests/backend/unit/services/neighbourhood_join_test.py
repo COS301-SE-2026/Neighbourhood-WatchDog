@@ -14,6 +14,8 @@ from app.models.neighbourhood import Neighbourhood
 from app.models.neighbourhood_join_request import NeighbourhoodJoinRequest
 from app.models.user import User
 
+AUDIT_PATCH = "app.services.neighbourhood_join_service.create_audit_log_item"
+
 NEIGHBOURHOOD_PATCH = "app.services.neighbourhood_join_service.NeighbourhoodJoinRequest"
 class TestRequestToJoin:
     def setup_method(self):
@@ -24,7 +26,13 @@ class TestRequestToJoin:
         self.mock_db.commit = Mock()
         self.mock_db.refresh = Mock()
         self.mock_db.rollback = Mock()
-        self.claims = {"sub": "cognito-sub-123", "custom:role": "RESIDENT"}
+        self.claims = {"id": str(uuid.uuid4()),"sub": "cognito-sub-123", "custom:role": "RESIDENT"}
+        self.audit_patcher = patch(
+            AUDIT_PATCH,
+            new=Mock()
+        )
+
+        self.audit_patcher.start()
 
         self._added = []
 
@@ -69,6 +77,7 @@ class TestRequestToJoin:
         self.neighbourhood_patcher.stop()
         self.join_request_patcher.stop()
         self.user_patcher.stop()
+        self.audit_patcher.stop()
 
     @pytest.mark.asyncio
     async def test_missing_join_code_raises_400(self):
@@ -165,9 +174,16 @@ class TestResolveJoinRequest:
         self.mock_db.commit = Mock()
         self.mock_db.rollback = Mock()
         self.admin_claims = {
+            "id": str(uuid.uuid4()),
             "sub": "cognito-sub-123",
             "custom:role": "NEIGHBOURHOOD_ADMIN",
         }
+        self.audit_patcher = patch(
+            AUDIT_PATCH,
+            new=Mock()
+        )
+
+        self.audit_patcher.start()
 
         self.join_request_patcher = patch(
             NEIGHBOURHOOD_PATCH,
@@ -184,6 +200,7 @@ class TestResolveJoinRequest:
     def teardown_method(self):
         self.join_request_patcher.stop()
         self.user_patcher.stop()
+        self.audit_patcher.stop()
 
     @pytest.mark.asyncio
     async def test_missing_request_id_raises_400(self):
@@ -225,7 +242,11 @@ class TestResolveJoinRequest:
             join_request,
         ]
 
-        claims = {"sub": "cognito-sub-123", "custom:role": "RESIDENT"}
+        claims = {
+            "id": str(uuid.uuid4()),
+            "sub": "cognito-sub-123",
+            "custom:role": "RESIDENT",
+        }
         with pytest.raises(HTTPException) as exc:
             await resolve_join_request_handler(uuid.uuid4(), "APPROVE", self.mock_db, claims)
 
@@ -317,6 +338,7 @@ class TestListJoinRequests:
  
         self.neighbourhood_id = uuid.uuid4()
         self.admin_claims = {
+            "id": str(uuid.uuid4()),
             "sub": "cognito-sub-admin",
             "custom:role": "NEIGHBOURHOOD_ADMIN",
             "custom:neighbourhood_id": str(self.neighbourhood_id),
