@@ -78,7 +78,8 @@ class TestIngestDetection:
         camera.neighbourhood_id = uuid.uuid4()
         self.mock_db.execute.return_value.scalar_one_or_none.return_value = camera
 
-        with patch("app.api.controllers.alert.broadcast", new_callable=AsyncMock) as mock_broadcast:
+        with patch("app.api.controllers.alert.broadcast", new_callable=AsyncMock) as mock_broadcast, \
+            patch("app.services.detection_service.dispatch_notifications", new_callable=AsyncMock) as mock_dispatch:
             result = await ingest_detection_handler(data, self.mock_db, self.claims)
 
         assert result.alert_created is True
@@ -87,6 +88,7 @@ class TestIngestDetection:
         assert self.mock_db.add.call_count == 2
         assert self.mock_db.commit.call_count == 1
         assert mock_broadcast.call_count == 1
+        assert mock_dispatch.call_count == 1
 
     @pytest.mark.asyncio
     async def test_below_threshold_does_not_create_alert(self):
