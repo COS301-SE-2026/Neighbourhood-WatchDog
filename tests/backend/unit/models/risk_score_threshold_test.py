@@ -1,7 +1,7 @@
 from pydantic import ValidationError
 import pytest
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, timezone
 from app.schemas.risk_threshold_config import NeighbourhoodRiskThresholdConfigRes, RiskThresholdConfigRes
 
 
@@ -11,7 +11,7 @@ def _risk_threshold_res(**overrides):
         "neighbourhood_id": uuid4(),
         "low_max": float(),
         "medium_max": float(),
-        "updated_at": datetime(),
+        "updated_at": datetime.now(timezone.utc),
     }
     base.update(overrides)
     return base
@@ -57,11 +57,46 @@ class TestRiskThresholdConfigRes:
                 RiskThresholdConfigRes(**data)
 
     def test_missing_neighbourhood_id_does_not_raise(self):
-            data = _risk_threshold_res()
-            data["neighbourhood_id"] == None
+            data = _risk_threshold_res(neighbourhood_id=None)
+            res = RiskThresholdConfigRes(**data)
 
-            assert data["neighbourhood_id"] is None
+            assert res.neighbourhood_id is None
     
     def test_from_attributes_config_present(self):
         """model_config should allow construction from ORM objects"""
         assert RiskThresholdConfigRes.model_config.get("from_attributes") is True
+
+class TestNeighbourhoodRiskThresholdConfigRes:
+    def _make_nested_res(self) -> RiskThresholdConfigRes:
+         return RiskThresholdConfigRes(**_risk_threshold_res())
+
+    def test_valid_response_with_data(self):
+        """Happy path, all fields present"""
+        nested = self._make_nested_res()
+        res = NeighbourhoodRiskThresholdConfigRes(
+             status=200,
+             message="Neighbourhood risk threshold retrieved successfully",
+             data=nested,
+        )
+
+        assert res.status == 200
+        assert res.message == "Neighbourhood risk threshold retrieved successfully"
+        assert res.data is not None
+
+    def test_missing_status_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            NeighbourhoodRiskThresholdConfigRes(
+                message="Neighbourhood risk threshold retrieved successfully", data=self._make_nested_res(),)
+
+    def test_missing_data_raises_validation_error(self):
+            with pytest.raises(ValidationError):
+                NeighbourhoodRiskThresholdConfigRes(status=200, message="Neighbourhood risk threshold retrieved successfully")
+
+    def test_missing_message_raises_validation_error(self):
+            with pytest.raises(ValidationError):
+                NeighbourhoodRiskThresholdConfigRes(status=200, data=self._make_nested_res(),) 
+
+    def test_invalid_nested_data_raises_validation_error(self):
+         with pytest.raises(ValidationError):
+            NeighbourhoodRiskThresholdConfigRes(status=200, data={"low_max": "not-a-float"})
+         
