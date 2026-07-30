@@ -21,7 +21,7 @@ services:
     environment:
       APP_ENV: production
       DEBUG: "false"
-      TESTING: "false"
+      TESTING: "false" 
       DATABASE_URL: ${DATABASE_URL}
       # REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
