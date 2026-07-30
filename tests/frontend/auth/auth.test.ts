@@ -1,4 +1,4 @@
-import {setSession, getAccessToken, logout, login, signUp, confirmSignUp, resendConfirmationCode} from "../../../frontend/src/lib/auth/cognito";
+import {setSession, getAccessToken, logout, login, signUp, confirmSignUp, resendConfirmationCode, verifyMfa} from "../../../frontend/src/lib/auth/cognito";
 import {getAuthHeaders, getAuthToken,} from "../../../frontend/src/lib/api/auth";
 
 jest.mock("amazon-cognito-identity-js", () => require("../../../frontend/__mocks__/amazon-cognito-identity-js.js"));
