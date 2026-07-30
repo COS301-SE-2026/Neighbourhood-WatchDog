@@ -704,6 +704,93 @@ function ComponentsSection() {
   );
 }
 
+function AccessibilitySection() {
+  return (
+    <section id="accessibility" style={{ padding: "96px 64px", background: "#0A0A0A" }}>
+      <FadeIn>
+        {/* <SectionLabel>06 - Accessibility</SectionLabel> */}
+        <SectionHeading>Accessibility standards</SectionHeading>
+        <SectionSubtitle>Conformance target: WCAG 2.2 Level AA across all interfaces, with AAA achieved for all body text. Security software must be usable by everyone - accessibility is non-negotiable.</SectionSubtitle>
+      </FadeIn>
+
+      <FadeIn delay={80}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "32px" }}>
+          {[
+            { score: "AA+", label: "Contrast standard", sub: "All text pairings meet AA; body text achieves AAA (7:1+)", color: "#10B981" },
+            { score: "⌨", label: "Keyboard navigation", sub: "Full keyboard traversal with Tab, Enter, Escape, Arrow keys", color: "#2D7EFF" },
+            { score: "SR", label: "Screen reader support", sub: "Semantic HTML, ARIA roles, live regions for alerts", color: "#F59E0B" },
+          ].map(s => (
+            <Card key={s.label} style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "2rem", fontWeight: 700, color: s.color, marginBottom: "8px", fontFamily: s.score.length > 2 ? "Inter" : "'JetBrains Mono', monospace" }}>{s.score}</div>
+              <p style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "6px" }}>{s.label}</p>
+              <p style={{ fontSize: "12px", color: "#8A8A8A", lineHeight: 1.5 }}>{s.sub}</p>
+            </Card>
+          ))}
+        </div>
+      </FadeIn>
+
+      <FadeIn delay={100}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+          <Card>
+            <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "16px" }}>Focus indicator</h3>
+            <p style={{ fontSize: "12px", color: "#8A8A8A", marginBottom: "12px" }}>All interactive elements expose a visible focus ring using the emerald ring token.</p>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <button style={{ padding: "8px 16px", borderRadius: "8px", background: "#10B981", color: "#0A0A0A", border: "none", fontSize: "13px", fontWeight: 500, outline: "3px solid rgba(16,185,129,0.5)", outlineOffset: "2px" }}>Focused button</button>
+              <input style={{ padding: "8px 12px", borderRadius: "8px", background: "#1E1E1E", border: "1px solid #10B981", color: "#F5F5F5", fontSize: "13px", outline: "3px solid rgba(16,185,129,0.3)", outlineOffset: "2px", width: "140px" }} defaultValue="Focused input" />
+            </div>
+            <p style={{ fontSize: "11px", color: "#6B6B6B", marginTop: "10px", fontFamily: "'JetBrains Mono', monospace" }}>--ring: #10B981 · outline-offset: 2px</p>
+          </Card>
+          <Card>
+            <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "16px" }}>Motion reduction</h3>
+            <p style={{ fontSize: "12px", color: "#8A8A8A", marginBottom: "12px" }}>All animations and transitions respect <code style={{ color: "#10B981", fontSize: "11px" }}>prefers-reduced-motion</code>. The alert-pulse animation is also disabled, replaced with a static indicator.</p>
+            <div style={{ background: "#1E1E1E", borderRadius: "8px", padding: "12px" }}>
+              <code style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#10B981", lineHeight: 1.8, whiteSpace: "pre" }}>{"@media (prefers-reduced-motion: reduce) {\n  * { transition: none !important;\n      animation: none !important; }\n}"}</code>
+            </div>
+          </Card>
+          <Card>
+            <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "16px" }}>ARIA & semantic HTML</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {[
+                "role=\"alert\" on toast notifications for screen reader announcement",
+                "aria-live=\"polite\" on threat counters and camera status",
+                "aria-label on icon-only buttons (close, expand, refresh)",
+                "aria-expanded on accordion and dropdown triggers",
+                "<main>, <nav>, <aside>, <header> landmark regions",
+                "Skip-to-main-content link as first focusable element",
+              ].map(r => (
+                <div key={r} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                  <span style={{ color: "#10B981", fontSize: "11px", flexShrink: 0, marginTop: "2px" }}>✓</span>
+                  <span style={{ fontSize: "12px", color: "#A3A3A3", lineHeight: 1.5, fontFamily: r.includes('"') || r.includes('<') ? "'JetBrains Mono', monospace" : "inherit" }}>{r}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+          <Card>
+            <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#F5F5F5", marginBottom: "16px" }}>Automated audit targets</h3>
+            <p style={{ fontSize: "12px", color: "#8A8A8A", marginBottom: "12px" }}>Tools: Lighthouse CI, axe DevTools, WAVE. Run on every deployment.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {[
+                { tool: "Lighthouse", metric: "Accessibility score", target: "≥ 95", color: "#10B981" },
+                { tool: "axe DevTools", metric: "Critical violations", target: "0", color: "#10B981" },
+                { tool: "WAVE", metric: "Errors", target: "0", color: "#10B981" },
+                { tool: "Contrast checker", metric: "All text pairings", target: "AA minimum", color: "#F59E0B" },
+              ].map(a => (
+                <div key={a.tool} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "#1E1E1E", borderRadius: "6px" }}>
+                  <div>
+                    <span style={{ fontSize: "12px", fontWeight: 600, color: "#F5F5F5" }}>{a.tool}</span>
+                    <span style={{ fontSize: "11px", color: "#8A8A8A", marginLeft: "8px" }}>{a.metric}</span>
+                  </div>
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: a.color, fontFamily: "'JetBrains Mono', monospace" }}>{a.target}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </FadeIn>
+    </section>
+  );
+}
+
 
 
 export default function StyleGuide() {
