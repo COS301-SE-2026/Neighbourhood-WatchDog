@@ -217,6 +217,11 @@ The system concentrates on the integrated development from camera registration a
     R7.5 User Authentication
         R7.5.1 User signing in with extra verification of OTP activating a new session
         R7.5.2 Allow user to sign out terminating active session
+    R7.6 Watchdog Agent Management
+        R7.6.1 Allow a resident to pair a WatchDog Agent with their account.
+        R7.6.2 Allow a resident to manage the cameras assigned to a paired WatchDog Agent.
+        R7.6.3 Allow a resident to enable or disable monitoring performed by a paired WatchDog Agent.
+        R7.6.4 Allow a resident to add and remove cameras from the agent.
 
 #### R8 Property Management
     R8.1 Property Creation
