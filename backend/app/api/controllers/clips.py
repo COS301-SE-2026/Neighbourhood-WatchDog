@@ -50,8 +50,8 @@ ADMIN_ROLES = {"SYSTEM_ADMIN", "NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "RESIDEN
 def _s3_client():
     return boto3.client(
         "s3",
-        region_name=config.aws_region,
-        endpoint_url=f"https://s3.{config.aws_region}.amazonaws.com",
+        region_name="eu-north-1",
+        endpoint_url=f"https://s3.eu-north-1.amazonaws.com",
         config=BotoConfig(
             signature_version="s3v4",
             s3={"addressing_style": "virtual"},
