@@ -147,7 +147,7 @@ def _extract_detections(frame, confidence_threshold: float, zones: list | None =
     for box in person_results[0].boxes:
         x1, y1, x2, y2 = box.xyxy[0].tolist()
         confidence = float(box.conf[0])
-        person_detections.append(([x1, y1, x2 - x1, y2 - y1], confidence, "person"))
+        person_detections.append(([x1, y1, x2 - x1, y2 - y1], confidence, "HUMAN_PRESENCE"))
 
 
 
@@ -168,7 +168,7 @@ def _build_track_payload(track) -> dict:
     """Convert a confirmed DeepSort track to the annotation payload format."""
     left, top, right, bottom = track.to_ltrb()
 
-    detection_type = track.get_det_class() or "person"
+    detection_type = track.get_det_class() or "HUMAN_PRESENCE"
 
 
     return {
@@ -182,8 +182,10 @@ def _build_track_payload(track) -> dict:
 def _send_new_person_alert(camera: CameraSpec, track_id: int, confidence: float, detection_type: str = "UNKNOWN") -> None:
     """Send a one-time human-presence alert to the backend."""
     try:
+        api_key = keyring.get_password("WatchDog", "api_key")
+
         httpx.post(
-            f"{BACKEND_URL}/alerts/dev/broadcast",
+            f"{BACKEND_URL}/alerts/",
             json={
                 "camera_id": camera.id,
                 "neighbourhood_id": camera.neighbourhood_id,
@@ -192,6 +194,7 @@ def _send_new_person_alert(camera: CameraSpec, track_id: int, confidence: float,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "thumbnail_url": None,
             },
+            headers={"X-Internal-Token": api_key},
             timeout=1.0,
         )
     except Exception:
@@ -705,7 +708,7 @@ def annotated_mjpeg(rtsp_url: str):
                     "track_id": 100 + i,
                     "confidence": float(box.conf[0]),
                     "bbox": box.xyxy[0].tolist(),
-                    "detection_type": "person",
+                    "detection_type": "HUMAN_PRESENCE",
 
                 }
 
