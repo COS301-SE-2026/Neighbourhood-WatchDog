@@ -2,7 +2,7 @@ name: Deploy to Production
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
 
 concurrency:
   group: production-deploy
@@ -30,6 +30,7 @@ jobs:
             --secret-string '{
               "SECRET_KEY": "${{ secrets.SECRET_KEY }}",
               "DATABASE_URL": "${{ secrets.DATABASE_URL }}",
+              "REDIS_URL": "${{ secrets.REDIS_URL }}",
               "AWS_REGION": "${{ secrets.AWS_REGION }}",
               "S3_BUCKET_NAME": "${{ secrets.S3_BUCKET_NAME }}",
               "COGNITO_USER_POOL_ID": "${{ secrets.COGNITO_USER_POOL_ID }}",
@@ -42,7 +43,12 @@ jobs:
               "RTSP_ENCRYPTION_KEY": "${{ secrets.RTSP_ENCRYPTION_KEY }}",
               "MEDIAMTX_PUBLISH_MASTER_KEY": "${{ secrets.MEDIAMTX_PUBLISH_MASTER_KEY }}",
               "TESTING": "${{ secrets.TESTING }}",
-              "DEBUG": "${{ secrets.DEBUG }}"
+              "DEBUG": "${{ secrets.DEBUG }}",
+              "POSTGRES_PASSWORD": "${{ secrets.POSTGRES_PASSWORD }}",
+              "POSTGRES_USER": "${{ secrets.POSTGRES_USER }}",
+              "POSTGRES_DB": "${{ secrets.POSTGRES_DB }}",
+              "FRONTEND_URL": "${{ secrets.FRONTEND_URL }}",
+              "DETECTION_CONFIDENCE_THRESHOLD": "${{ secrets.DETECTION_CONFIDENCE_THRESHOLD }}"
             }'
       
       - name: Build, tag, and push image to ECR
@@ -53,33 +59,33 @@ jobs:
           docker tag watchdog-backend:latest 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:latest
           docker push 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:latest
 
-      - name: Run database migrations
-        run: |
-          TASK_ARN=$(aws ecs run-task \
-          --cluster watchdog-prod-cluster \
-          --task-definition watchdog-backend-task \
-          --launch-type EC2 \
-          --overrides '{"containerOverrides":[{"name":"backend","command":["alembic","upgrade","head"]}]}' \
-          --query 'tasks[0].taskArn' \
-          --output text)
+      # - name: Run database migrations
+      #   run: |
+      #     TASK_ARN=$(aws ecs run-task \
+      #     --cluster watchdog-prod-cluster \
+      #     --task-definition watchdog-backend-task \
+      #     --launch-type EC2 \
+      #     --overrides '{"containerOverrides":[{"name":"backend","command":["alembic","upgrade","head"]}]}' \
+      #     --query 'tasks[0].taskArn' \
+      #     --output text)
 
-          echo "Migration task: $TASK_ARN"
+      #     echo "Migration task: $TASK_ARN"
 
-          aws ecs wait tasks-stopped \
-            --cluster watchdog-prod-cluster \
-            --tasks "$TASK_ARN"
+      #     aws ecs wait tasks-stopped \
+      #       --cluster watchdog-prod-cluster \
+      #       --tasks "$TASK_ARN"
 
-          EXIT_CODE=$(aws ecs describe-tasks \
-            --cluster watchdog-prod-cluster \
-            --tasks "$TASK_ARN" \
-            --query 'tasks[0].containers[0].exitCode' \
-            --output text)
+      #     EXIT_CODE=$(aws ecs describe-tasks \
+      #       --cluster watchdog-prod-cluster \
+      #       --tasks "$TASK_ARN" \
+      #       --query 'tasks[0].containers[0].exitCode' \
+      #       --output text)
           
-          echo "Migration exit code: $EXIT_CODE"
-          if [ "$EXIT_CODE" != "0" ]; then 
-            echo "Migration failed"
-            exit 1
-          fi
+      #     echo "Migration exit code: $EXIT_CODE"
+      #     if [ "$EXIT_CODE" != "0" ]; then 
+      #       echo "Migration failed"
+      #       exit 1
+      #     fi
 
       - name: Deploy new task definition to service
         run: | 

@@ -25,6 +25,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       # REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
+      S3_CLIPS_BUCKET: ${S3_CLIPS_BUCKET}
       AWS_REGION: ${AWS_REGION}
       COGNITO_REGION: ${COGNITO_REGION}
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
@@ -72,7 +73,6 @@ services:
       MTX_AUTHHTTPADDRESS: ${MTX_AUTHHTTPADDRESS}
     build:
       context: ./mediamtx
-    platform: linux/amd64
     ports:
       - "8554:8554" # RTSP
       - "8889:8889" # WebRTC

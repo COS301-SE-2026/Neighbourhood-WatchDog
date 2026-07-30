@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from app.auth.dependencies import get_current_user
-from app.auth.rbac import require_role
+from app.auth.dependencies import require_role
 from app.core.database import DbSession
 
 from app.schemas.camera_settings import (
@@ -22,7 +22,6 @@ from app.services.camera_settings_service import (
 
 router = APIRouter(prefix="/cameras", tags=["camera-settings"])
 
-ZONE_EDITOR_ROLES = ["NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN"]
 
 Claims = Annotated[dict, Depends(get_current_user)]
 
@@ -30,7 +29,7 @@ Claims = Annotated[dict, Depends(get_current_user)]
 @router.get("/{camera_id}/settings", response_model=CameraSettingsResponse)
 async def get_settings(camera_id: UUID, db: DbSession, claims: Claims):
     """Getting the confidence threshold and detection zones for a camera"""
-    require_role(claims, ZONE_EDITOR_ROLES)
+    require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN")
     return get_camera_settings_handler(camera_id, db)
 
 
@@ -42,7 +41,8 @@ async def update_settings(
     claims: Claims,
 ):
     """Updating the confidence threshold for a camera"""
-    require_role(claims, ZONE_EDITOR_ROLES)
+    require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN")
+
     if payload.confidence_threshold is None:
         raise HTTPException(400, "confidence_threshold is required")
     return update_camera_settings_handler(camera_id, payload.confidence_threshold, db, claims)
@@ -56,7 +56,7 @@ async def create_zone(
     claims: Claims,
 ):
     """Adding a detection zone polygon to a camera"""
-    require_role(claims, ZONE_EDITOR_ROLES)
+    require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN")
     return create_zone_handler(camera_id, payload.name, payload.polygon, db, claims)
 
 
@@ -68,5 +68,5 @@ async def delete_zone(
     claims: Claims,
 ):
     """Removing a detection zone from a camera"""
-    require_role(claims, ZONE_EDITOR_ROLES)
+    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
     return delete_zone_handler(camera_id, zone_id, db, claims)

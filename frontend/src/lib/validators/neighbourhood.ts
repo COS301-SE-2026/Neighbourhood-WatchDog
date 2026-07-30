@@ -20,6 +20,17 @@ export const CreateNeighbourhoodResSchema = z.object({
   data: NeighbourhoodResSchema.nullable().optional(),
 });
 
+export const NeighbourPropertychema = z.object({
+  id: z.string(),
+  address: z.string(),
+  property_type: z.enum(["PUBLIC", "PRIVATE"]),
+  neighbourhood_id: z.string().nullable(),
+  neighbourhood_name: z.string().optional(),
+})
+
+export const NeighbourPropertiesResSchema = z.array(NeighbourPropertychema)
+
 export type CreateNeighbourhoodReq = z.infer<typeof CreateNeighbourhoodReqSchema>;
 export type NeighbourhoodRes = z.infer<typeof NeighbourhoodResSchema>;
 export type CreateNeighbourhoodRes = z.infer<typeof CreateNeighbourhoodResSchema>;
+export type NeighbourPropertiesRes = z.infer<typeof NeighbourPropertiesResSchema>;

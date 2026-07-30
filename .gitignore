@@ -46,3 +46,5 @@ ai/pipeline/models/weights/*.part
 ai/.env.example
 
 watchdog-ec2-key.pem
+
+mediamtx/mediamtx

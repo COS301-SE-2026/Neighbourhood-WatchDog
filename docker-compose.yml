@@ -98,7 +98,7 @@ services:
     environment:
       APP_ENV: development
       DEBUG: "true"
-      TESTING: "true"
+      TESTING: "false"
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
@@ -151,7 +151,6 @@ services:
     build:
       context: ./ai
       target: development
-    platform: linux/amd64
     ports:
       - "8001:8001"
     environment:
@@ -177,7 +176,6 @@ services:
       MTX_WEBRTCSERVERKEY: /certs/privkey.pem
     build:
       context: ./mediamtx
-    platform: linux/amd64
     ports:
       - "8554:8554"    # RTSP
       - "8889:8889"    # WebRTC

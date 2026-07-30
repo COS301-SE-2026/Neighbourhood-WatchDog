@@ -2,7 +2,13 @@
 
 ## Introduction
 
-Rising crime rates in South African communities have highlighted the need for smarter, more proactive security solutions. Neighbourhood WatchDog is a centralised, AI-assisted security platform designed to enhance safety within residential neighbourhoods. The system integrates with existing CCTV infrastructure and applies real-time computer vision techniques, including object detection and behavioural classification, to identify suspicious activity such as loitering, perimeter scanning, and unauthorised presence. By delivering actionable alerts to residents and security personnel in real time, Neighbourhood WatchDog aims to reduce response times and strengthen community-driven crime prevention efforts.
+### 1.1 Purpose
+Neighbourhood WatchDog is an AI-assisted neighbourhood-security platform. It allows authorised residents, property administrators and security personnel to register cameras, connect a paired local WatchDog Agent, relay camera video securely, detect people in configured zones, and surface alerts to an operational dashboard.
+
+### 1.2 Business need and scope
+Neighbourhood CCTV is often fragmented: a camera may be visible only on a local network, with no common access model, automated detection, or coordinated alert workflow. WatchDog provides a control plane for registered cameras and paired site agents, a relay path for authorised playback, and a dashboard for detection and alert response.
+
+The system concentrates on the integrated development from camera registration and Agent pairing through enabled-camera reconciliation, secure streaming, person detection, protected-zone configuration, and alert presentation. Advanced behaviour classification and risk prediction remain active requirements.
 
 ## User Stories
 
@@ -12,6 +18,7 @@ Rising crime rates in South African communities have highlighted the need for sm
 - **US-02**: As a registered user, I want to log in with a one-time verification code in addition to my password so that my account stays secure even if my password is compromised.
 - **US-03**: As a logged-in user, I want to sign out of the platform so that my account is not accessible to anyone else using my device.
 - **US-04**: As a system admin, I want to view a complete, read-only audit log of all user activity so that I can investigate any suspicious behaviour or access disputes.
+
 
 ### E2: Neighbourhood & Property Management
 
@@ -37,34 +44,41 @@ Rising crime rates in South African communities have highlighted the need for sm
 ### E5: AI Detection & Behaviour Classification
 
 - **US-17**: As a resident, I want the system to automatically detect when a person appears in a restricted zone on my camera so that I am alerted without having to watch the feed myself.
-- **US-18**: As a security officer, I want the system to classify what a detected person is doing so that I can understand the severity of a situation at a glance without reviewing the footage first.
-- **US-19**: As a security officer, I want the system to keep track of the same person across multiple frames using a consistent ID so that I can follow their movement without piecing together separate alerts manually.
+- **US-18** As a resident and security officer, I want to receive alerts from the system when a possible weapon is detected to respond to potential threats as quickly as possible.
+- **US-19**: As a security officer, I want the system to classify what a detected person is doing so that I can understand the severity of a situation at a glance without reviewing the footage first.
+- **US-20**: As a security officer, I want the system to keep track of the same person across multiple frames using a consistent ID so that I can follow their movement without piecing together separate alerts manually.
 
 ### E6: Alert Management
 
-- **US-20**: As a security officer, I want to see new alerts appear on my dashboard instantly without refreshing so that I can respond to incidents as they happen.
-- **US-21**: As a security officer, I want to acknowledge an alert so that my team can see that someone is already handling it and avoid duplicated responses.
-- **US-22**: As a security officer, I want to watch the video clip that triggered an alert so that I can judge whether the situation requires a physical response.
-- **US-23**: As a security officer, I want to browse and filter past alerts so that I can review incidents that happened while I was off duty.
-- **US-24**: As a resident, I want to receive a WhatsApp message and email when a high-severity alert is triggered on my camera so that I am notified even when I am not watching the dashboard.
-- **US-25**: As a neighbourhood admin, I want to broadcast a critical alert to all neighbourhood members so that everyone can take precautions during a serious security incident.
+- **US-21**: As a security officer, I want to see new alerts appear on my dashboard instantly without refreshing so that I can respond to incidents as they happen.
+- **US-22**: As a security officer, I want to acknowledge an alert so that my team can see that someone is already handling it and avoid duplicated responses.
+- **US-23**: As a security officer, I want to watch the video clip that triggered an alert so that I can judge whether the situation requires a physical response.
+- **US-24**: As a security officer, I want to browse and filter past alerts so that I can review incidents that happened while I was off duty.
+- **US-25**: As a resident, I want to receive a WhatsApp message and email when a high-severity alert is triggered on my camera so that I am notified even when I am not watching the dashboard.
+- **US-26**: As a neighbourhood admin, I want to broadcast a critical alert to all neighbourhood members so that everyone can take precautions during a serious security incident.
 
 ### E7: Analytics & Risk Intelligence
 
-- **US-26**: As a neighbourhood admin, I want to see charts showing how frequently alerts are occurring across the neighbourhood so that I can identify problem areas and times.
-- **US-27**: As a neighbourhood admin, I want to see an overall risk score for my neighbourhood so that I can understand at a glance whether security has been getting better or worse over time.
-- **US-28**: As a neighbourhood admin, I want to see how quickly alerts are being acknowledged so that I can identify response time problems and address them.
-- **US-29**: As a neighbourhood admin, I want to see incident trends over time so that I can spot recurring patterns and take preventative action before problems escalate.
+- **US-27**: As a neighbourhood admin, I want to see charts showing how frequently alerts are occurring across the neighbourhood so that I can identify problem areas and times.
+- **US-28**: As a neighbourhood admin, I want to see an overall risk score for my neighbourhood so that I can understand at a glance whether security has been getting better or worse over time.
+- **US-29**: As a neighbourhood admin, I want to see how quickly alerts are being acknowledged so that I can identify response time problems and address them.
+- **US-30**: As a neighbourhood admin, I want to see incident trends over time so that I can spot recurring patterns and take preventative action before problems escalate.
 
 ### E8: Autonomous Patrol Assistance
 
-- **US-30**: As a security officer, I want the system to automatically follow a suspicious individual across cameras and show me their movement path so that I can respond without losing track of them.
-- **US-31**: As a security officer, I want to receive a situational brief summarising everything the system knows about a tracked individual so that I can brief my team quickly without reviewing hours of footage.
+- **US-31**: As a security officer, I want the system to automatically follow a suspicious individual across cameras and show me their movement path so that I can respond without losing track of them.
+- **US-32**: As a security officer, I want to receive a situational brief summarising everything the system knows about a tracked individual so that I can brief my team quickly without reviewing hours of footage.
 
 ### E9: Predictive Risk Scoring
 
-- **US-32**: As a neighbourhood admin, I want to see predictions of which time windows and camera zones are at highest risk so that I can schedule patrols proactively rather than just reacting to incidents.
-- **US-33**: As a security officer, I want to be notified when a zone's predicted risk level rises significantly so that I can increase my attention to that area before an incident actually occurs.
+- **US-33**: As a neighbourhood admin, I want to see predictions of which time windows and camera zones are at highest risk so that I can schedule patrols proactively rather than just reacting to incidents.
+- **US-34**: As a security officer, I want to be notified when a zone's predicted risk level rises significantly so that I can increase my attention to that area before an incident actually occurs.
+
+### E10: Agent Workflow
+- **US-35**: As a resident or property owner, I want my enabled camera automatically connected to the paired WatchDog Agent for streaming and detection so that monitoring does not require manual runtime configuration.
+- **US-36:** As a resident or a property owner, I want to manually disable the agent to temporarily stop monitoring my property when it is not needed.
+- **US-37:** As an authorised user, I want playback to connect only when I select a camera so that video connections and resources are used deliberately.
+- **US-38:** As a security officer, I want a fault or shutdown in one camera runtime not to interrupt other enabled cameras so that a local failure does not blind the property.
 
 ---
 
@@ -75,10 +89,12 @@ Rising crime rates in South African communities have highlighted the need for sm
         R1.1.1: The system shall accept live video streams from IP cameras.
         R1.1.2: The system shall accept simulated video feeds (such as pre-recorded video files). 
         R1.1.3: The system shall support multiple simultaneous incoming streams.
+        R1.1.4: The Agent shall retrieve its assigned enabled-camera configuration and reconcile local runtime state with camera enablement.
     R1.2: Stream Relay
         R1.2.1: The system shall relay incoming camera streams, decoupling the cameras from downstream services.
         R1.2.2: The system shall allow multiple services to consume the same camera stream simultaneously without connecting directly to the camera.
-        R1.2.3 The system shall output each relayed stream in an HTTP Live Streaming (HLS) format for a browser-based preview.
+        R1.2.3: The system shall output each relayed stream in an HTTP Live Streaming (HLS) format for a browser-based preview.
+        R1.2.4: The system shall provide on-demand WebRTC/WHEP playback only after a user explicitly selects a camera.
     R1.3: Frame Extraction       
         R1.3.1: The system shall extract frames from incoming video streams.
         R1.3.2: Extracted frames shall be pushed to a queue for distribution to AI processing workers.
@@ -91,6 +107,7 @@ Rising crime rates in South African communities have highlighted the need for sm
         R2.1.2: Video frames shall be preprocessed before analysis to improve detection accuracy.
         R2.1.3: A detection event shall be generated for each confirmed human presence, containing a confidence score, timestamp, and camera identifier. 
         R2.1.4: Detection frames shall be processed asynchronously to ensure continuous camera monitoring without interruption.
+        R2.1.5:	The Agent shall submit events/annotations with a paired internal credential; invalid or revoked credentials shall be rejected.
     R2.2: Scored (Emergency-Rating) Detection Events
         R2.2.1: Severity rating (LOW, MEDIUM, HIGH, or CRITICAL) will be assigned to each detection event based on its confidence score and detected behaviour type.
         R2.2.2: Alert record to be triggered only when a detection event's confidence score exceeds a configurable threshold.
@@ -110,23 +127,25 @@ Rising crime rates in South African communities have highlighted the need for sm
     R3.2: Alert logging (record) and history
         R3.2.1: The footage that triggered the alert should be saved and timestamped so that the user can review it later.
         R3.2.2: Shall allow user to view footage of alerts.
-        R3.2.3 Access to the recordings will be scoped by the same role-based permissions as the access to the video stream.
+        R3.2.3: Access to the recordings will be scoped by the same role-based permissions as the access to the video stream.
     R3.3: Notifications
         R3.3.1: Notify the user via WhatsApp and Email when an alert is triggered providing important information about the event (e.g. time).
-        R3.3.2 Other users in the neighbourhood should be alerted when there is a severe alert.
+        R3.3.2: Other users in the neighbourhood should be alerted when there is a severe alert.
 #### R4: User/Access Control
-    R4.1 Scoped permissions
-        R4.1.1 The system should categorise video feeds by 3 different visibilities: public, restricted and private. Restricted video feeds are those which residents have selected to make viewable by security officers.
-        R4.1.2 Security officers and neighbourhood admins may view all public, and restricted video streams
-        R4.1.3 Residents may view their own private and restricted video streams of cameras on their own property and all public streams. 
-        R4.1.4 System admin may see all public video streams.
-    R4.2 Select visibility of video feeds
-        R4.2.1 Shall allow residents to choose which cameras’ streams will be public, restricted or private.
-        R4.2.2 Shall allow neighbourhood admins to add camera streams that will be public
-    R4.3 Multi-Factor Authentication
-        R4.3.1 Will require all users to log in using Multi-Factor Authentication methods.
-    R4.4 Audit Trail
-        R4.4.1 Log all user activity for  audit purposes.
+    R4.1: Scoped permissions
+        R4.1.1: The system should categorise video feeds by 3 different visibilities: public, restricted and private. Restricted video feeds are those which residents have selected to make viewable by security officers.
+        R4.1.2: Security officers and neighbourhood admins may view all public, and restricted video streams
+        R4.1.3: Residents may view their own private and restricted video streams of cameras on their own property and all public streams. 
+        R4.1.4: System admin may see all public video streams.
+        R4.1.5:	Stream-viewing and alert access shall be checked against the same relevant camera-visibility and role policy before playback is offered.
+        R4.1.6:	RTSP URLs, Agent credentials, MediaMTX publisher credentials and backend internal tokens shall not be returned to ordinary browser clients.
+    R4.2: Select visibility of video feeds
+        R4.2.1: Shall allow residents to choose which cameras’ streams will be public, restricted or private.
+        R4.2.2: Shall allow neighbourhood admins to add camera streams that will be public
+    R4.3: Multi-Factor Authentication
+        R4.3.1: Will require all users to log in using Multi-Factor Authentication methods.
+    R4.4: Audit Trail
+        R4.4.1: Log all user activity for  audit purposes.
 
 #### R5: Dashboard
     R5.1: Live Alert Feed
@@ -140,6 +159,7 @@ Rising crime rates in South African communities have highlighted the need for sm
     R5.3: Live Stream Preview
         R5.3.1: The dashboard shall display a live stream preview for each camera.
         R5.3.2: The dashboard shall allow a user to select and enlarge a specific camera feed for closer inspection.
+        R5.2.3 The dashboard shall display the online or offline status of each paired WatchDog Agent.
     R5.4: Incident History
         R5.4.1: The dashboard shall provide a view of all past alerts, filterable by camera, detection type, date, and status.
         R5.4.2: The dashboard shall allow a user to view the footage clip associated with a historical event.
@@ -189,6 +209,7 @@ Rising crime rates in South African communities have highlighted the need for sm
         R7.4.1 Allow user to register a new camera
             R7.4.1.1 User must select a privacy type for the camera
             R7.4.1.2 User may select a name and location for camera
+            R7.4.1.3 An authorised user shall assign a camera to the appropriate paired WatchDog Agent/site runtime where applicable.
         R7.4.2 Allow user edit properties of camera
             R7.4.2.1 User able to change name and location
             R7.4.2.2 Disable camera permanently or temporarily
@@ -197,6 +218,11 @@ Rising crime rates in South African communities have highlighted the need for sm
     R7.5 User Authentication
         R7.5.1 User signing in with extra verification of OTP activating a new session
         R7.5.2 Allow user to sign out terminating active session
+    R7.6 Watchdog Agent Management
+        R7.6.1 Allow a resident to pair a WatchDog Agent with their account.
+        R7.6.2 Allow a resident to manage the cameras assigned to a paired WatchDog Agent.
+        R7.6.3 Allow a resident to enable or disable monitoring performed by a paired WatchDog Agent.
+        R7.6.4 Allow a resident to add and remove cameras from the agent.
 
 #### R8 Property Management
     R8.1 Property Creation
@@ -234,7 +260,6 @@ Rising crime rates in South African communities have highlighted the need for sm
         R9.3.6 View all invites to neighbourhoods
 	    R9.3.6.1 Company can choose to view the neighbourhood and its details
 	    R9.3.6.2 Company is able to accept or decline requests to join the neighbourhoods
-
     R9.4 Security Response Management
         R9.4.1 View all alerts that have been dispatched
         R9.4.2 Change the status of the alerts list the alsert statuss here
@@ -564,6 +589,49 @@ High-Level:
 TUCBW: The Neighbourhood Administrator can select a Security Officer to invite to the neighbourhood from a list of existing officers.
 TUCEW: The Security Officer can accept or reject the invitation to join the neighbourhood.
 
+R8 WatchDog Agent and Camera Management
+
+UC8.1 – Install the WatchDog Agent (Abstract)
+High-Level:
+TUCBW: A Resident or Neighbourhood Administrator downloads the WatchDog Agent installation package and executes the installation script (.bat file).
+TUCEW: The WatchDog Agent is successfully installed on the user's computer and is ready to be paired with their Neighbourhood WatchDog account.
+
+UC8.2 Pair a WatchDog Agent with an Account (Abstract)
+High-Level:
+TUCBW: A Resident or Neighbourhood Administrator opens the WatchDog desktop agent and enters the pairing token generated from their Neighbourhood WatchDog account.
+TUCEW: The WatchDog Agent is securely linked to the user’s account and is authorised to retrieve and manage the cameras assigned to that user.
+
+UC8.3 - Automatically Monitor Enabled Camera Streams (Abstract)
+High-Level:
+TUCBW: A Resident or Neighbourhood Administrator enables one or more registered cameras in the Neighbourhood WatchDog platform.
+TUCEW: The paired WatchDog Agent automatically detects the enabled cameras, starts the required video publishing and detection processes, and makes the available camera streams accessible through the platform.
+
+UC8.4 - Stop Monitoring a Disabled Camera (Abstract)
+High-Level:
+TUCBW: A Resident or Neighbourhood Administrator disables a registered camera through the camera settings page.
+TUCEW: The WatchDog Agent automatically stops the video publishing and detection processes for the disabled camera, and the camera is no longer available for live viewing or monitoring.
+
+UC8.5 - Isolate a Camera Runtime Failure (Abstract)
+High-Level:
+TUCBW: A camera stream, video publisher, or detection process fails while other cameras are being monitored by the WatchDog Agent.
+TUCEW: The affected camera is marked as unavailable or offline, while the WatchDog Agent continues monitoring all other operational cameras without interruption.
+
+
+R9: Secure On-Demand Camera Playback
+UC9.1 - Request Secure Live Camera Playback (Abstract)
+High-Level:
+TUCBW: An authorised user selects an available camera from the dashboard and opens the live camera view.
+TUCEW: The user receives an authorised, secure live video stream for the selected camera in their browser.
+
+UC9.2 - Start Playback Only When Requested (Abstract)
+High-Level:
+TUCBW: An authorised user selects a camera and chooses to view its live stream.
+TUCEW: The platform establishes the live video connection only for the selected camera, reducing unnecessary network and processing usage for cameras that are not actively being viewed.
+
+UC9.3 - Prevent Unauthorised Camera Playback (Abstract)
+High-Level:
+TUCBW: A user attempts to request playback for a camera stream that they are not permitted to view.
+TUCEW: The platform denies access to the camera stream and does not establish a live playback connection.
 
 ---
 
@@ -584,27 +652,33 @@ The quality requirements are derived directly from the non-functional requiremen
 - AI detection processing shall complete within 1 second per frame.
 - Alerts shall appear on the dashboard within 2 seconds of detection.
 - Notifications shall be delivered within 5 seconds of alert generation.
+- The system shall respond to at least 95% of API requests within 2 seconds under normal operating conditions.
+- The system shall support at least 500 concurrent users.
 #### Scalability
  
 - The system shall scale to support 1000+ cameras per neighbourhood.
 - AI workers and streaming services shall support horizontal scaling independently of one another.
 - The frame queue shall support a burst load of at least 10,000 frames per minute.
+- The system architecture shall support an increase in workload of up to 200% without requiring major architectural changes, while maintaining no more than a 10% decrease in performance.
 #### Security
- 
-- All video streams and API communication shall use TLS 1.2+ encryption.
+
+- All video streams, API communication, and inter-service communication shall use TLS 1.3 encryption.
 - Multi-Factor Authentication shall be enforced for all users.
+- User authentication shall be managed using AWS Cognito with Multi-Factor Authentication (MFA) enabled.
+- User data stored in AWS RDS shall be encrypted at rest using AES-256 encryption.
 - Role-Based Access Control shall restrict access to video streams and recordings based on user role.
 - User sessions shall expire after 15 minutes of inactivity.
 - All user actions shall be logged to an append-only audit trail.
+
 #### Accuracy
  
 - Human detection accuracy shall be at least 60%.
 - Behaviour classification accuracy shall be at least 80%.
 #### Reliability
  
-- The system shall maintain 99% uptime.
+- The system shall maintain at least 99.5% uptime.
 - Video ingestion failures on one stream shall not affect other active streams.
-- The system shall recover from service failure within 2 minutes.
+- The system shall recover from critical failures within 5 minutes.
 - The detection pipeline shall guarantee no loss of critical alert events.
 #### Usability
  
@@ -616,6 +690,8 @@ The quality requirements are derived directly from the non-functional requiremen
 - The system shall use a modular architecture with clearly separated subsystems.
 - AI models shall be updatable without system downtime.
 - Code shall maintain greater than 70% test coverage.
+- New features and bug fixes shall be deployable within 2 hours.
+- Automated test coverage shall be measured and tracked over time.
 #### Compatibility
  
 - The system shall support IP cameras from different manufacturers with different video formats.
@@ -775,3 +851,4 @@ The system is developed by a team of five third-year Computer Science students. 
 ![Mockup 1](images/Mockups%201.png)
 ![Mockup 2](images/Mockups%202.png)
 ![Mockup 3](images/Mockups%203.png)
+35

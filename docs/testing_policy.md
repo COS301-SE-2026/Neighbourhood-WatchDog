@@ -2,8 +2,8 @@
 
 ## Neighbourhood WatchDog
 
-**Version:** 1.0  
-**Last Updated:** 25 June 2026
+**Version:** 1.1  
+**Last Updated:** 31 July 2026
 
 ---
 
@@ -48,16 +48,6 @@ These test the business logic inside our service layer. A service function is th
 - Permission checks (e.g. a resident trying to do an admin action)
 - Duplicate or conflicting states (e.g. trying to acknowledge an already acknowledged alert)
 
-**Example files:**
-
-- `alert_test.py` (acknowledge and list alerts)
-- `camera_test.py` (register cameras)
-- `detection_test.py` (ingest detection events)
-- `neighbourhood_join_test.py` (join requests and approvals)
-- `neighbourhood_test.py` (create neighbourhoods)
-- `properties_test.py` (create and list properties)
-- `users_test.py` (create users)
-
 **How we write them:**
 
 - Each test class uses `setup_method()` to create a mock database and fake user claims
@@ -78,15 +68,6 @@ These test our Pydantic schemas and response models. Schemas define what data lo
 - Optional fields default to `None` when not provided
 - Nested objects validate correctly inside response wrappers
 
-**Example files:**
-
-- `alert_test.py` (AlertRes, AcknowledgeAlertRes, ListAlertsRes)
-- `camera_schema_test.py` (RegisterCameraReq, CameraRes, RegisterCameraRes)
-- `detection_test.py` (DetectionIngestReq, DetectionEventRes, DetectionIngestRes)
-- `neighbourhood_join_test.py` (JoinNeighbourhoodReq, JoinRequestRes, etc.)
-- `neighbourhood_test.py` (CreateNeighbourhoodReq, NeighbourhoodRes, etc.)
-- `property_test.py` (CreatePropertyReq, PropertyRes, CreatePropertyRes)
-
 **How we write them:**
 
 - Use helper functions like `_make_alert_res()` to build valid base data, then override specific fields
@@ -103,19 +84,6 @@ Integration tests check that our API endpoints work from the outside. They make 
 - Request payloads are accepted and responses contain expected data
 - Authentication headers are required where needed
 - Multiple related endpoints work together (e.g. list alerts then acknowledge one)
-
-**Example files:**
-
-- `alert_test.py` (POST /alerts/, POST /alerts/dev/broadcast, GET and PATCH /alerts/)
-- `auth_test.py` (GET /auth/me, POST /auth/logout)
-- `camera_test.py` (POST /camera/register-camera, GET /camera/property/...)
-- `detection_test.py` (POST /internal/detections)
-- `health_test.py` (GET /health)
-- `neighbourhood_test.py` (POST /neighbourhood/create-neighbourhood)
-- `neighbourhood_join_test.py` (POST /neighbourhood/join, PATCH /neighbourhood/join-requests/...)
-- `properties_test.py` (POST /properties/create-property, GET /properties/my-properties)
-- `property_test.py` (GET /properties/...)
-- `stream_test.py` (GET /stream/health, currently skipped in CI)
 
 **How we write them:**
 
@@ -136,12 +104,6 @@ These test React components in isolation using React Testing Library and Jest. W
 - Error states show error messages
 - WebSocket messages update the UI in real time
 
-**Example files:**
-
-- `alert.page.test.tsx` (alerts list, acknowledge button, WebSocket updates)
-- `joinNeighbourhood.page.test.tsx` (join code form, submit, pending state)
-- `request-page.page.test.tsx` (join requests list, approve/deny buttons)
-
 **How we write them:**
 
 - Mock API modules with `jest.mock()`
@@ -154,10 +116,21 @@ These test React components in isolation using React Testing Library and Jest. W
 
 Fixtures are reusable bits of fake data. Instead of writing the same mock alert object in ten different tests, we define it once and import it everywhere.
 
-**Example files:**
+**Example:**
 
-- `alert.ts` (mockAlert object matching the Alert type)
-- `joinRequest.ts` (mockJoinRequest object matching the JoinRequest type)
+```ts
+import type { Alert } from "@/components/shared/AlertCard";
+export const mockAlert: Alert = {
+  id: "alert-1",
+  camera_id: "cam-1234",
+  detection_event_id: "evt-1",
+  status: "NEW",
+  created_at: new Date().toISOString(),
+  detection_type: "HUMAN_PRESENCE",
+  confidence_score: 0.85,
+  thumbnail_url: null,
+};
+```
 
 **Rule:** If you find yourself copy-pasting the same mock data into multiple tests, move it to a fixture.
 
@@ -167,15 +140,10 @@ E2E tests run in a real browser using Playwright. They simulate actual user jour
 
 **What we test:**
 
-- A user can open the alerts page and acknowledge an alert
-- A user can enter a join code and see a pending confirmation
-- An admin can approve or deny a join request
-
-**Example files:**
-
-- `alert.spec.ts`
-- `joinNeighbourhood.spec.ts`
-- `request-page.spec.ts`
+- A user can complete a full task from start to finish
+- Pages navigate correctly and load expected content
+- Forms accept input and submit correctly
+- Actions taken by one role produce the right outcome for the user
 
 **How we write them:**
 
@@ -212,7 +180,7 @@ For every service function, write tests for:
 4. **Missing or invalid auth** - should raise 401
 5. **Wrong permissions** - should raise 403
 6. **Resource not found** - should raise 404
-7. **Conflicting state** - should raise 409 (e.g. already acknowledged)
+7. **Conflicting state** - should raise 409
 8. **Database call counts** - verify add, commit, flush, refresh, rollback were called the expected number of times
 
 ### 5.2 Backend Schema Tests
@@ -325,68 +293,7 @@ Example: `stream_test.py` skips the stream health test because OpenCV video capt
 
 ---
 
-## 11. Current Test Inventory
-
-### Backend Unit - Services
-
-- `alert_test.py` - acknowledge and list alert handlers
-- `camera_test.py` - register camera handler
-- `detection_test.py` - ingest detection handler
-- `neighbourhood_join_test.py` - request to join and resolve join request handlers
-- `neighbourhood_test.py` - create neighbourhood handler
-- `properties_test.py` - create property and get user properties handlers
-- `users_test.py` - create user handler
-
-### Backend Unit - Models / Schemas
-
-- `alert_test.py` - AlertRes, AcknowledgeAlertRes, ListAlertsRes schemas
-- `camera_schema_test.py` - RegisterCameraReq, CameraRes, RegisterCameraRes schemas
-- `detection_test.py` - DetectionIngestReq, DetectionEventRes, DetectionIngestRes schemas
-- `neighbourhood_join_test.py` - JoinNeighbourhoodReq, JoinRequestRes, JoinNeighbourhoodRes, ResolveJoinRequestReq, ResolveJoinRequestRes schemas
-- `neighbourhood_test.py` - CreateNeighbourhoodReq, NeighbourhoodRes, CreateNeighbourhoodRes schemas
-- `property_test.py` - CreatePropertyReq, PropertyRes, CreatePropertyRes schemas
-
-### Backend Integration
-
-- `alert_test.py` - POST /alerts/, POST /alerts/dev/broadcast, GET/PATCH /alerts/
-- `auth_test.py` - GET /auth/me, POST /auth/logout
-- `camera_test.py` - POST /camera/register-camera, GET /camera/property/...
-- `detection_test.py` - POST /internal/detections
-- `health_test.py` - GET /health
-- `neighbourhood_test.py` - POST /neighbourhood/create-neighbourhood
-- `neighbourhood_join_test.py` - POST /neighbourhood/join, PATCH /neighbourhood/join-requests/...
-- `properties_test.py` - POST /properties/create-property, GET /properties/my-properties
-- `property_test.py` - GET /properties/...
-- `stream_test.py` - GET /stream/health (skipped)
-
-### Frontend Unit
-
-- `alert.page.test.tsx` - alerts page rendering, acknowledge, WebSocket
-- `joinNeighbourhood.page.test.tsx` - join code form, submit, pending state
-- `request-page.page.test.tsx` - join requests list, approve action
-
-### Frontend Fixtures
-
-- `alert.ts` - mockAlert data
-- `joinRequest.ts` - mockJoinRequest data
-
-### E2E
-
-- `alert.spec.ts` - acknowledge alert flow in browser
-- `joinNeighbourhood.spec.ts` - submit join request flow in browser
-- `request-page.spec.ts` - approve and deny join request flows in browser
-
----
-
-## 12. Known Gaps and Future Work
-
-1. **Stream testing** - The stream health endpoint is skipped in CI because OpenCV does not work well in containers. We need to find a way to test this, possibly with a mock video source.
-2. **Frontend coverage** - We only have three frontend unit test files. As we add more pages, we should add more tests.
-3. **E2E coverage** - We only test three flows. More critical paths (like camera registration or property creation) should get E2E tests too.
-
----
-
-## 13. Quick Reference for Writing a New Test
+## 11. Quick Reference for Writing a New Test
 
 ### Python Service Test Template
 
@@ -484,7 +391,7 @@ test("your user flow", async ({ page }) => {
 
 ---
 
-## 14. Final Notes
+## 12. Final Notes
 
 - If a test is hard to write, that usually means the code is too complicated. Simplify the code first.
 - Do not write tests just to hit a coverage number. Write tests that would have caught a real bug.

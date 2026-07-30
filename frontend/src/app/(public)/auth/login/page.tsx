@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { login, setSession, isAuthenticated } from "@/lib/auth/cognito";
+import { login, setSession, isAuthenticated, verifyMfa } from "@/lib/auth/cognito";
 import { LoginCard } from "@/components/auth-components/login-card";
+import { MfaCard } from "@/components/auth-components/mfa-card";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,6 +13,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false); 
   const [error, setError] = useState<string | null>(null);
+
+  // mfa states
+  const [showMfa, setShowMfa] = useState(false);
+  const [mfaSession, setMfaSession] = useState("");
+  const [mfaDestination, setMfaDestination] = useState("");
 
   //Redirect if already authenticated
   useEffect(() => {
@@ -33,10 +39,32 @@ export default function LoginPage() {
     setIsLoading(true);//Now we make the call // Let the user know with the spinner
 
     try {
-      const tokens = await login(email.trim(), password);// API call returns the tokens
-      
-      // Store session
-      setSession(tokens);
+      const result = await login(email.trim(), password);
+
+      if (result.mfaRequired) {
+
+        setMfaSession(result.session ?? "");
+
+        setMfaDestination(
+          result.delivery?.destination ?? ""
+        );
+
+        setShowMfa(true);
+
+        return;
+      }
+
+
+      // Normal login
+      setSession({
+        accessToken: result.accessToken!,
+        idToken: result.idToken!,
+        expiresIn: result.expiresIn,
+      });
+
+      setPassword("");
+
+      router.push("/dashboard");
       
       // Clear sensitive data (password)
       setPassword("");
@@ -56,6 +84,36 @@ export default function LoginPage() {
     }
   };
 
+  const handleMfaVerify = async (code: string) => {
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const tokens = await verifyMfa(
+        email.trim(),
+        mfaSession,
+        code
+      );
+
+      setSession(tokens);
+
+      setPassword("");
+
+      router.push("/dashboard");
+
+    } catch (err) {
+
+      const errorMessage = err instanceof Error
+        ? err.message
+        : "Invalid verification code.";
+
+      setError(errorMessage);
+
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   //Enter key press
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !isLoading) {
@@ -64,16 +122,31 @@ export default function LoginPage() {
   };
 
   return (
-
-      <LoginCard
-        email={email}
-        setEmail={setEmail}
-        password={password}
-        setPassword={setPassword}
-        onSubmit={handleLogin}
-        onKeyDown={handleKeyDown}
-        isLoading={isLoading}
-        error={error}
-      />
+    <>
+      {!showMfa ? (
+        <LoginCard
+          email={email}
+          setEmail={setEmail}
+          password={password}
+          setPassword={setPassword}
+          onSubmit={handleLogin}
+          onKeyDown={handleKeyDown}
+          isLoading={isLoading}
+          error={error}
+        />
+      ) : (
+        <MfaCard
+          destination={mfaDestination}
+          onVerify={handleMfaVerify}
+          isLoading={isLoading}
+          error={error}
+          onBack={() => {
+            setShowMfa(false);
+            setMfaSession("");
+            setError(null);
+          }}
+        />
+      )}
+    </>
   );
 }

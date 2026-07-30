@@ -1,11 +1,11 @@
 "use client"
 
 import DashboardPage from "@/app/(private)/dashboard/page"
-import AlertsPage from "@/app/(private)/alert/AlertsPage"
+import AlertsPage from "@/app/(private)/dashboard/alerts/AlertsPage"
 import JoinNeighbourhoodPage from "@/app/(private)/joinNeighbourhood/page"
-import PropertyPage from "@/app/(private)/property/page"
 import { Card } from "@/components/ui/card"
 import { useAppView } from "@/components/app-view-context"
+import AnalyticsPage from "@/app/(private)/dashboard/analytics/page"
 
 function Placeholder({ title, description }: { title: string; description: string }) {
   return (
@@ -29,13 +29,9 @@ export function AppShell() {
     return <JoinNeighbourhoodPage />
   }
 
-  if (section === "reports") {
-    return (
-      <Placeholder
-        title="Reports"
-        description="This section is ready for report summaries and exports."
-      />
-    )
+  if (section === "analytics") {
+    return <AnalyticsPage />
+
   }
 
   if (section === "settings") {
@@ -47,9 +43,7 @@ export function AppShell() {
     )
   }
 
-  if (propertyId) {
-    return <PropertyPage />
-  }
+
 
   return <DashboardPage />
 }

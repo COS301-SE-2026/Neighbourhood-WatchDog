@@ -97,57 +97,65 @@
   --color-sky: #34D399;
   --color-steel: #047857;
 
-  /* Colour - Neutral */
-  --color-white: #FFFFFF;
-  --color-fog: #F4F6FA;
-  --color-mist: #D0D7E8;
-  --color-ink: #1A1A2E;
-  --color-body: #2E3A5C;
+  /* Sidebar */
+  --sidebar:                      #0D0D0D;   /* Abyss */
+  --sidebar-foreground:           #F5F5F5;   /* Frost */
+  --sidebar-primary:              #10B981;   /* Emerald */
+  --sidebar-primary-foreground:   #0A0A0A;
+  --sidebar-accent:               #1E1E1E;   /* Slate — hover */
+  --sidebar-accent-foreground:    #F5F5F5;
+  --sidebar-border:               rgba(138, 138, 138, 0.12);
+  --sidebar-ring:                 #10B981;
 
-  /* Colour - Semantic */
-  --color-threat: #DC2626;
-  --color-caution: #D97706;
-  --color-safe: #16A34A;
-  --color-info: #0284C7;
+  /* ── WatchDog raw tokens (use these directly in components) ── */
+  --color-void:       #0A0A0A;
+  --color-abyss:      #0D0D0D;
+  --color-depth:      #141414;
+  --color-slate:      #1E1E1E;
+  --color-pulse:      #2D7EFF;
+  --color-green:      #10B981;
+  --color-ice:        #6AB0FF;
+  --color-gunmetal:   #8A8A8A;
+  --color-frost:      #F5F5F5;
+  --color-ash:        #A3A3A3;
+  --color-steel-text: #6B6B6B;
+  --color-threat:     #EF4444;
+  --color-caution:    #F59E0B;
+  --color-safe:       #10B981;
+  --color-info:       #2D7EFF;
 
   /* Typography */
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', Consolas, monospace;
-  --text-display: 3rem/3.5rem var(--font-sans);
-  --text-h1: 2rem/2.5rem var(--font-sans);
-  --text-h2: 1.5rem/2rem var(--font-sans);
-  --text-h3: 1.25rem/1.75rem var(--font-sans);
-  --text-body-lg: 1.125rem/1.75rem var(--font-sans);
-  --text-body: 1rem/1.5rem var(--font-sans);
-  --text-sm: 0.875rem/1.25rem var(--font-sans);
-  --text-label: 0.875rem/1.25rem var(--font-sans);
-  --text-caption: 0.75rem/1rem var(--font-sans);
-  --text-code: 0.875rem/1.25rem var(--font-mono);
+  --text-display:  3rem/3.5rem var(--font-sans);
+  --text-h1:       2rem/2.5rem var(--font-sans);
+  --text-h2:       1.5rem/2rem var(--font-sans);
+  --text-h3:       1.25rem/1.75rem var(--font-sans);
+  --text-body-lg:  1.125rem/1.75rem var(--font-sans);
+  --text-body:     1rem/1.5rem var(--font-sans);
+  --text-sm:       0.875rem/1.25rem var(--font-sans);
+  --text-label:    0.875rem/1.25rem var(--font-sans);
+  --text-caption:  0.75rem/1rem var(--font-sans);
+  --text-code:     0.875rem/1.25rem var(--font-mono);
 
   /* Spacing */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-8: 48px;
-  --space-10: 64px;
-  --space-12: 96px;
+  --space-1: 4px;   --space-2: 8px;   --space-3: 12px;
+  --space-4: 16px;  --space-5: 24px;  --space-6: 32px;
+  --space-8: 48px;  --space-10: 64px; --space-12: 96px;
 
   /* Border Radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
   --radius-full: 9999px;
 
   /* Motion */
-  --motion-instant: 0ms;
-  --motion-fast: 100ms ease-out;
-  --motion-normal: 200ms ease-in-out;
-  --motion-slow: 350ms ease-in-out;
-  --motion-alert-pulse: 1200ms ease-in-out infinite;
+  --motion-instant:      0ms;
+  --motion-fast:         100ms ease-out;
+  --motion-normal:       200ms ease-in-out;
+  --motion-slow:         350ms ease-in-out;
+  --motion-alert-pulse:  1200ms ease-in-out infinite;
 
   /* Shadows */
   --shadow-sm: 0 1px 3px rgba(6, 78, 59, 0.08);
@@ -155,21 +163,19 @@
   --shadow-lg: 0 8px 24px rgba(6, 78, 59, 0.16);
   --shadow-alert: 0 0 0 3px rgba(220, 38, 38, 0.30);
 
-  --toast-bg: #FFFFFF;           /* White */
-  --toast-text: #1A1A2E;         /* Ink */
-  --toast-border: #D0D7E8;       /* Mist */
+  /* Toast */
+  --toast-bg:     #141414;   /* Depth */
+  --toast-text:   #F5F5F5;   /* Frost */
+  --toast-border: rgba(138, 138, 138, 0.15);
 
-  --toast-success: #16A34A;      /* Safe Green */
-  --toast-success-text: #FFFFFF;
-
-  --toast-warning: #D97706;      /* Caution Amber */
-  --toast-warning-text: #FFFFFF;
-
-  --toast-error: #DC2626;        /* Threat Red */
-  --toast-error-text: #FFFFFF;
-
-  --toast-info: #0284C7;         /* Info Blue */
-  --toast-info-text: #FFFFFF;
+  --toast-success:      #10B981;
+  --toast-success-text: #0A0A0A;   /* Dark text on emerald */
+  --toast-warning:      #F59E0B;
+  --toast-warning-text: #0A0A0A;
+  --toast-error:        #EF4444;
+  --toast-error-text:   #FFFFFF;
+  --toast-info:         #2D7EFF;
+  --toast-info-text:    #FFFFFF;
 }
 
 .dark {

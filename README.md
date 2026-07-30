@@ -255,11 +255,19 @@ Neighbourhood-WatchDog/
 
 ## Documentation
 
-<div align="center">
+<div align="center"> 
 
 [![SRS](https://img.shields.io/badge/Software_Requirements_Spec-View-00B4D8?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/srs.md)
 <br>
 [![SRS](https://img.shields.io/badge/Deployment_Document-View-00B4D8?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/deployment_doc.md)
+
+[![SRS](https://img.shields.io/badge/Software_Architecture_Spec-View-00B4D8?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/sas.md)
+
+[![SRS](https://img.shields.io/badge/Brand_Style_Guide-View-00B4D8?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/design_spec.md) 
+
+[![SRS](https://img.shields.io/badge/User_Manual-View-00B4D8?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/user_manual.md)
+
+[![SRS](https://img.shields.io/badge/Testing_Policy-View-00B4D8?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/testing_policy.md)
 
 </div>
 

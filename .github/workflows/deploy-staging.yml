@@ -20,10 +20,11 @@ jobs:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          S3_CLIPS_BUCKET: ${{ secrets.S3_BUCKET_NAME }}
           COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
           COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
           COGNITO_REGION: ${{ secrets.COGNITO_REGION }}
@@ -46,10 +47,11 @@ jobs:
           SECRET_KEY=${SECRET_KEY}
           FRONTEND_URL=${FRONTEND_URL}
           DATABASE_URL=${DATABASE_URL}
+          REDIS_URL=${REDIS_URL}
           AWS_REGION=${AWS_REGION}
           AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
           AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-          S3_BUCKET_NAME=${S3_BUCKET_NAME}
+          S3_CLIPS_BUCKET=${S3_CLIPS_BUCKET}
           COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
           COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
           COGNITO_REGION=${COGNITO_REGION}

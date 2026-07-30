@@ -10,14 +10,13 @@ It does contain RBAC:
 
 import os
 from datetime import datetime, timezone
-
+from botocore.config import Config as BotoConfig
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
-from app.core.config import config
 from app.core.database import DbSession
 from app.models.camera import Camera
 from app.models.detection_event import DetectionEvent
@@ -44,11 +43,19 @@ S3_BUCKET = os.getenv("S3_CLIPS_BUCKET", "")
 # Return URL
 
 
-ADMIN_ROLES = {"SYSTEM_ADMIN", "NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN"}
+ADMIN_ROLES = {"SYSTEM_ADMIN", "NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "RESIDENT"}
 
 #create an aws s3 client for the applications aws region
 def _s3_client():
-    return boto3.client("s3", region_name=config.aws_region)
+    return boto3.client(
+        "s3",
+        region_name="eu-north-1",
+        endpoint_url="https://s3.eu-north-1.amazonaws.com",
+        config=BotoConfig(
+            signature_version="s3v4",
+            s3={"addressing_style": "virtual"},
+        ),
+    )
 
 
 #claim: info about the authenticated user
