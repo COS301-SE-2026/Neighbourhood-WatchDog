@@ -29,7 +29,7 @@ export default function PropertyPage() {
     const { propertyId } = useParams<{ propertyId: string }>()
     const { properties } = useProperties()
     const property = properties.find((p) => p.property_id === propertyId)
-    const { alerts, connected } = useAlerts();
+    const { alerts, connected } = useAlerts("10000000-0000-0000-0000-000000000001");
 
     useEffect(() => {
         if (alerts.length === 0) return;

@@ -350,6 +350,7 @@ export function AppSidebar() {
   };
 
   React.useEffect(() => {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUsername(localStorage.getItem("fullname") ?? "");
   }, []);
 
