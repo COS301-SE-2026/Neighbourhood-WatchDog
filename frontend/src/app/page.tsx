@@ -1,7 +1,9 @@
-import { AppShell } from "@/components/app-shell"
+import HomePage from "./(public)/home/page";
 
-export default function Home() {
+export default function RootPage() {
   return (
-    <AppShell />
+    <div className="dark min-h-screen bg-background text-foreground">
+      <HomePage />
+    </div>
   );
 }

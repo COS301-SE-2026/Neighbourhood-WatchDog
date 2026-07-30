@@ -28,17 +28,22 @@ export async function apiCall<T>(
 		body: body ? JSON.stringify(body) : undefined,
 	})
 
-	if (response.ok != true){
-		let errorMsg = `API call failed: ${response.statusText}`
+	if (!response.ok) {
+		let errorMsg = `API call failed: ${response.statusText}`;
+
 		try {
-			const errorBody = await response.json()
-			console.error("API error response:", errorBody)
-			errorMsg = errorBody.detail || errorBody.message || errorMsg
+			const errorBody = await response.json();
+			console.error("API error response:", errorBody);
+			errorMsg = errorBody.detail || errorBody.message || errorMsg;
 		} catch {
-			// Could not parse error response as JSON
 		}
-		throw new Error(errorMsg)
+
+		throw new Error(errorMsg);
 	}
 
-	return response.json();
+	if (response.status === 204) {
+		return undefined as T;
+	}
+
+	return response.json() as Promise<T>;
 }

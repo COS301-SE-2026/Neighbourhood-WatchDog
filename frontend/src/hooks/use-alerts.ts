@@ -33,7 +33,7 @@ export function useAlerts(neighbourhoodId: string) {
 
     wsRef.current = ws;
     return () => ws.close();
-  }, [neighbourhoodId]);
+  }, []);
 
   return { alerts, connected };
 }

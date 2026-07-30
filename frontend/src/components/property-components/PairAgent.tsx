@@ -1,24 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, KeyRound, Loader2, RefreshCw } from "lucide-react";
+import { Check, Copy, KeyRound, Loader2, RefreshCw} from "lucide-react";
+
+import {
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 import { getPairingToken } from "@/lib/api/pairAgent";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
   CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 
 interface PairAgentProps {
   propertyId: string;
+  propertyAddress: string;
 }
 
-export default function PairAgent({ propertyId }: Readonly<PairAgentProps>) {
+export default function PairAgent({ propertyId, propertyAddress}: Readonly<PairAgentProps>) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState<string | null>(null);
@@ -64,23 +68,24 @@ export default function PairAgent({ propertyId }: Readonly<PairAgentProps>) {
   };
 
   return (
-    <Card className="mx-auto my-8 w-full max-w-md border-border bg-card">
-      <CardHeader>
+    <DialogContent className="mx-auto my-8 w-full max-w-md border-border bg-card">
+      <DialogHeader>
         <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
           <KeyRound className="h-5 w-5 text-primary" />
         </div>
+        <DialogTitle className="text-card-foreground mt-4">Pair security agent</DialogTitle>
 
-        <CardTitle className="text-card-foreground">
-          Pair security agent
-        </CardTitle>
+        <DialogDescription className="mt-4">
+          Property:
+          <span className="mt-1 block font-medium text-foreground">{propertyAddress}</span>
+        </DialogDescription>
 
-        <CardDescription className="leading-relaxed text-muted-foreground">
-          Generate a one-time token to securely connect a WatchDog edge agent
-          to the selected property.
+        <CardDescription className="leading-relaxed text-muted-foreground mt-4">
+          Generate a one-time token to securely connect a WatchDog edge agent to the selected property.
         </CardDescription>
-      </CardHeader>
+      </DialogHeader>
 
-      <CardContent>
+      <div className="space-y-4">
         {error && (
           <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-red-300">
             {error}
@@ -89,20 +94,14 @@ export default function PairAgent({ propertyId }: Readonly<PairAgentProps>) {
 
         {!token && !error && (
           <div className="rounded-lg border border-border bg-background px-4 py-3 text-sm text-muted-foreground">
-            A token is required before an edge agent can send camera detections
-            for this property.
+            A token is required before an edge agent can send camera detections for this property.
           </div>
         )}
 
         {token && (
           <div className="rounded-xl border border-primary/30 bg-primary/10 p-4">
-            <p className="text-xs font-medium uppercase tracking-wider text-primary">
-              Pairing token
-            </p>
-
-            <p className="mt-2 break-all font-mono text-sm text-foreground">
-              {token}
-            </p>
+            <p className="text-xs font-medium uppercase tracking-wider text-primary">Pairing token</p>
+            <p className="mt-2 break-all font-mono text-sm text-foreground">{token}</p>
 
             <Button
               type="button"
@@ -124,9 +123,9 @@ export default function PairAgent({ propertyId }: Readonly<PairAgentProps>) {
             </Button>
           </div>
         )}
-      </CardContent>
+      </div>
 
-      <CardFooter>
+      <DialogFooter>
         <Button
           type="button"
           onClick={getToken}
@@ -150,7 +149,7 @@ export default function PairAgent({ propertyId }: Readonly<PairAgentProps>) {
             </>
           )}
         </Button>
-      </CardFooter>
-    </Card>
+      </DialogFooter>
+    </DialogContent>
   );
 }

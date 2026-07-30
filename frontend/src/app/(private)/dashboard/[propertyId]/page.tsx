@@ -10,6 +10,8 @@ import { addCamera as apiAddCamera, fetchCameras as apiFetchCameras } from "@/li
 import { NewCameraCard } from "@/components/new-camera-card"
 import { Button } from "@/components/ui/button"
 import { useAppView } from "@/components/app-view-context"
+import { useParams } from "next/navigation"
+import { useProperties } from "@/hooks/use-properties"
 
 interface CameraProp {
     id: string;
@@ -22,9 +24,11 @@ interface CameraProp {
 
 
 
-export default function Dashboard() {
+export default function PropertyPage() {
     const [isLoadingCameras, setIsLoadingCameras] = useState(true);
-    const { propertyId } = useAppView()
+    const { propertyId } = useParams<{ propertyId: string }>()
+    const { properties } = useProperties()
+    const property = properties.find((p) => p.property_id === propertyId)
     const { alerts, connected } = useAlerts("10000000-0000-0000-0000-000000000001");
 
     useEffect(() => {

@@ -1,7 +1,9 @@
+from typing import List
+
 from fastapi import HTTPException
 from app.core.database import DbSession
 from uuid import UUID
-from app.schemas.neighbourhood import NeighbourhoodRes
+from app.schemas.neighbourhood import NeighbourhoodPropertyRes, NeighbourhoodRes
 from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property
 from app.models.property_user import PropertyUser
@@ -149,3 +151,32 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
     except HTTPException as he:
         db.rollback()
         raise he
+
+
+async def get_neighbourhood_properties_service(db: DbSession, claims: dict) -> List[NeighbourhoodPropertyRes]:
+
+    user = db.execute(select(User).where(User.id == UUID(claims["id"]))).scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    result = db.execute(select(Property, Neighbourhood)
+                            .outerjoin(Neighbourhood, Neighbourhood.id == Property.neighbourhood_id)
+                            .join(PropertyUser, PropertyUser.property_id == Property.id)
+                            .where(PropertyUser.user_id == user.id)).all()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="No properties found for this user")
+
+    return [
+        NeighbourhoodPropertyRes(
+            id=property.id,
+            address=property.address,
+            property_type=property.property_type,
+            neighbourhood_id=property.neighbourhood_id,
+            neighbourhood_name=neighbourhood.name if neighbourhood else None,
+        )
+        for property, neighbourhood in result
+    ]
+
+    
