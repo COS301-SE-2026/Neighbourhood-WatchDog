@@ -1,0 +1,26 @@
+ai/app.py
+  h_cf6208e37032c0 48,50
+backend/app/api/controllers/audit.py
+  h_cf6208e37032c0 7,30
+backend/app/api/controllers/risk_score_history.py
+  h_cf6208e37032c0 20,34
+docs/srs.md
+  h_cf6208e37032c0 265
+backend/app/api/controllers/pairing_token.py
+  h_cf6208e37032c0 25
+backend/app/api/controllers/neighbourhood_join.py
+  h_cf6208e37032c0 60
+backend/app/api/controllers/risk_threshold_config.py
+  h_cf6208e37032c0 17,30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.18",
+  "base_commit_sha": "3e5e114e24850b3c33566e6531a57b0b589735aa",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
