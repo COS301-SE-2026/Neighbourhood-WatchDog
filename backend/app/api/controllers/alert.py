@@ -227,6 +227,6 @@ async def broadcast_neighbourhood_alert(
     claims: Annotated[dict, Depends(get_current_user)]
     ):
 
-    require_role("NEIGHBOURHOOD_ADMIN")
+    require_role("NEIGHBOURHOOD_ADMIN", "RESIDENT")
 
     await broadcast_neighbourhood_alert_service(req.alert_id, db, claims)
