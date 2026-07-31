@@ -45,9 +45,9 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 
 
-BACKEND_URL = os.getenv("BACKEND_URL", "https://api-staging.neighbourhoodwatchdog.co.za")
+BACKEND_URL = os.getenv("BACKEND_URL", "https://api.neighbourhoodwatchdog.co.za")
 INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "dev-token")
-MEDIAMTX_RTSP_URL = os.getenv("MEDIAMTX_RTSP_URL", "rtsp://stream-staging.neighbourhoodwatchdog.co.za:8554")
+MEDIAMTX_RTSP_URL = os.getenv("MEDIAMTX_RTSP_URL", "rtsp://stream.neighbourhoodwatchdog.co.za:8554")
 
 _model_lock = threading.Lock()
 
@@ -55,7 +55,7 @@ _model_lock = threading.Lock()
 WEAPON_CLASSES = {"gun", "knife", "grenade", "explosion"}
 CLIP_COOLDOWN_SECS = 30
 CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
-S3_CLIPS_BUCKET = os.getenv("S3_CLIPS_BUCKET", "")
+S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "")
 AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")
 
 
@@ -329,9 +329,9 @@ def _save_weapon_clip(
     Capture a short pre/post-detection clip, convert it to browser-compatible
     H.264 MP4, upload it to S3, then link it to the DetectionEvent.
     """
-    if not S3_CLIPS_BUCKET:
+    if not S3_BUCKET_NAME:
         logger.warning(
-            "S3_CLIPS_BUCKET is not configured; skipping clip for camera %s",
+            "S3_BUCKET_NAME is not configured; skipping clip for camera %s",
             camera.id,
         )
         return
@@ -471,7 +471,7 @@ def _save_weapon_clip(
 
         boto3.client("s3", region_name=AWS_REGION).upload_file(
             h264_path,
-            S3_CLIPS_BUCKET,
+            S3_BUCKET_NAME,
             s3_key,
             ExtraArgs={"ContentType": "video/mp4"},
         )
@@ -492,7 +492,7 @@ def _save_weapon_clip(
 
         logger.info(
             "Clip uploaded: s3://%s/%s -> event %s",
-            S3_CLIPS_BUCKET,
+            S3_BUCKET_NAME,
             s3_key,
             detection_event_id,
         )
