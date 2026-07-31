@@ -1,0 +1,24 @@
+backend/main.py
+  h_cf6208e37032c0 57
+backend/app/api/controllers/neighbourhood_join.py
+  h_cf6208e37032c0 5
+docs/srs.md
+  h_cf6208e37032c0 594-595
+backend/app/api/controllers/pairing_token.py
+  h_cf6208e37032c0 2
+backend/app/api/controllers/risk_score_history.py
+  h_cf6208e37032c0 6
+backend/app/api/controllers/risk_threshold_config.py
+  h_cf6208e37032c0 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.18",
+  "base_commit_sha": "1f7e191e8da882a19e0bfb84abc651664ce1cf30",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
