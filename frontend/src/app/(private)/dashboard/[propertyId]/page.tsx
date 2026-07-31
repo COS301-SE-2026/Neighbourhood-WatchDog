@@ -98,7 +98,7 @@ export default function PropertyPage() {
     return (
         <div className="w-full p-6">
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">Property Name</h1>
+                <h1 className="text-2xl font-bold">{property?.address} - {property?.property_type} Property</h1>
                 <div className="flex items-center gap-2">
                     <Button
                         onClick={() => setShowCard(true)}

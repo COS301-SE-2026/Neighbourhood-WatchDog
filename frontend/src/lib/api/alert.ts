@@ -167,6 +167,18 @@ export async function acknowledgeAlert(alertId: string): Promise<void> {
   await apiFetch(`/alerts/${alertId}/acknowledge`, { method: "PATCH" });
 }
 
+export async function broadcastAlert(alertId: string): Promise<void> {
+  await apiFetch("/alerts/broadcast", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      alert_id: alertId,
+    }),
+  });
+}
+
 export async function fetchAlertFrequencyData(
   neighbourhoodId: string,
   timeInterval?: TimeIntervalsEnum,

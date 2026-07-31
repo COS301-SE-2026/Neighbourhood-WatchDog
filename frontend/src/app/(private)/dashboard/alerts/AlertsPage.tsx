@@ -29,6 +29,7 @@ import {
   getAuthToken,
   WS_BASE,
   AlertFilters,
+  broadcastAlert
 } from "@/lib/api/alert";
 
 const ALL_SEVERITIES: AlertSeverity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
@@ -211,6 +212,10 @@ export default function AlertsPage({
   const [activeTab, setActiveTab] = useState<"current" | "history">("current");
   const [historyStartDate, setHisoryStartDate] = useState("");
   const [historyEndDate, setHisoryEndDate] = useState("");
+
+  const [broadcastingAlertId, setBroadcastingAlertId] = useState<string | null>(
+  null,
+);
 
   const alertFilters = useMemo<AlertFilters>(() => {
     const base: AlertFilters = {};
@@ -444,6 +449,33 @@ export default function AlertsPage({
       }
 
       console.error("Acknowledge failed:", err);
+    }
+  }
+
+  async function handleBroadcast(id: string) {
+    const alert = alerts.find((item) => item.id === id);
+
+    if (!alert || alert.status === "RESOLVED") {
+      return;
+    }
+
+    setActionError(null);
+    setBroadcastingAlertId(id);
+
+    try {
+      await broadcastAlert(id);
+    } catch (err) {
+      setActionError(
+        err instanceof Error
+          ? err.message
+          : "Failed to broadcast the alert.",
+      );
+
+      console.error("Broadcast alert failed:", err);
+    } finally {
+      if (mountedRef.current) {
+        setBroadcastingAlertId(null);
+      }
     }
   }
 
@@ -859,6 +891,8 @@ export default function AlertsPage({
                       key={alert.id}
                       alert={alert}
                       onAcknowledge={handleAcknowledge}
+                      onBroadcast={handleBroadcast}
+                      broadcasting={broadcastingAlertId === alert.id}
                     />
                   ))}
                 </div>
