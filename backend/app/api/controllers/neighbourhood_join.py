@@ -2,8 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 
-from app.auth.dependencies import get_current_user
-from app.auth.rbac import require_role
+from app.auth.dependencies import get_current_user, require_role
 from app.core.database import DbSession
 from app.schemas.neighbourhood_join import (
     JoinNeighbourhoodReq,

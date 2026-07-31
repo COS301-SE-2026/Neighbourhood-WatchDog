@@ -2,9 +2,8 @@ from uuid import UUID
 from typing import Annotated
 from fastapi import APIRouter, Depends, status
 
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_user, require_role
 from app.core.database import DbSession
-from app.auth.rbac import require_role
 from app.schemas.risk_threshold_config import NeighbourhoodRiskThresholdConfigRes, UpdateRiskThresholdConfigReq
 from app.services.risk_threshold_config_service import get_neighbourhood_risk_threshold_handler, update_neighbourhood_risk_threshold_handler
 

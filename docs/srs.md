@@ -591,6 +591,8 @@ TUCEW: The Security Officer can accept or reject the invitation to join the neig
 
 R8 WatchDog Agent and Camera Management
 
+![Use Case P3 - UCD8-9](images/Use%20Case%20P3%20-%20UCD8.png)
+
 UC8.1 – Install the WatchDog Agent (Abstract)
 High-Level:
 TUCBW: A Resident or Neighbourhood Administrator downloads the WatchDog Agent installation package and executes the installation script (.bat file).
