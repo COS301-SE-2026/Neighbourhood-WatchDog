@@ -28,6 +28,7 @@ import {
   CheckCheck,
   ChevronRight,
   Loader2,
+  Megaphone,
 } from "lucide-react";
 
 import { AlertFootagePlayer } from "@/components/shared/AlertFootagePlayer";
@@ -325,9 +326,11 @@ function MetaRow({
 export interface AlertCardProps {
   readonly alert: Alert;
   readonly onAcknowledge: (id: string) => Promise<void>;
+  readonly onBroadcast: (id: string) => Promise<void>;
+  readonly broadcasting: boolean;
 }
 
-export function AlertCard({ alert, onAcknowledge }: AlertCardProps) {
+export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: AlertCardProps) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
 
@@ -343,6 +346,10 @@ export function AlertCard({ alert, onAcknowledge }: AlertCardProps) {
       setAcknowledging(false);
       setDetailOpen(false);
     }
+  }
+
+  async function handleBroadcast() {
+    await onBroadcast(alert.id);
   }
 
   return (
@@ -396,12 +403,12 @@ export function AlertCard({ alert, onAcknowledge }: AlertCardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-sky hover:text-white hover:bg-blue/20 text-xs font-medium transition-colors duration-100"
+                className="text-sky hover:bg-blue/20 hover:text-white text-xs font-medium transition-colors duration-100"
                 onClick={() => setDetailOpen(true)}
                 aria-label="View alert details"
               >
                 Details
-                <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                <ChevronRight className="ml-1 h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">View full alert details</TooltipContent>
@@ -411,17 +418,47 @@ export function AlertCard({ alert, onAcknowledge }: AlertCardProps) {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-threat/50 text-threat hover:bg-threat hover:text-white text-xs font-semibold transition-colors duration-100"
+                  onClick={handleBroadcast}
+                  disabled={broadcasting}
+                  aria-label="Broadcast alert to the neighbourhood"
+                >
+                  {broadcasting ? (
+                    <>
+                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                      Sending
+                    </>
+                  ) : (
+                    <>
+                      <Megaphone className="mr-1 h-3.5 w-3.5" />
+                      Broadcast
+                    </>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                Notify the neighbourhood about this alert
+              </TooltipContent>
+            </Tooltip>
+          )}
+
+          {isNew && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
                   size="sm"
                   className="bg-blue hover:bg-sky text-white text-xs font-semibold transition-colors duration-100 focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:ring-offset-steel"
                   onClick={() => handleAcknowledge(alert.id)}
-                  disabled={acknowledging}
+                  disabled={acknowledging || broadcasting}
                   aria-label="Acknowledge alert"
                 >
                   {acknowledging ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
                     <>
-                      <CheckCheck className="h-3.5 w-3.5 mr-1" />
+                      <CheckCheck className="mr-1 h-3.5 w-3.5" />
                       Acknowledge
                     </>
                   )}
