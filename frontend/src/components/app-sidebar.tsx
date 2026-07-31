@@ -13,7 +13,7 @@ import {
   PinOff,
   Bell,
   FileText,
-  Bot,
+  Book,
   Settings,
   Plus,
   LogOut
@@ -64,7 +64,7 @@ type NavItem = {
 
 // data
 
-const TOP_LEVEL_IDS = ["dashboard", "alerts", "neighbourhood", "analytics", "settings"];
+const TOP_LEVEL_IDS = ["dashboard", "alerts", "neighbourhood", "analytics", "audit", "settings",];
 
 function isNavItemActive(item: NavItem, pathname: string): boolean {
   if (pathname === item.href) return true;
@@ -327,6 +327,12 @@ export function AppSidebar() {
       label: "Analytics",
       icon: <FileText className="h-4 w-4 shrink-0" />,
       href: "/dashboard/analytics",
+    },
+    {
+      id: "audit",
+      label: "Audit Log",
+      icon: <Book className="h-4 w-4 shrink-0" />,
+      href: "/dashboard/audit",
     },
     {
       id: "settings",
