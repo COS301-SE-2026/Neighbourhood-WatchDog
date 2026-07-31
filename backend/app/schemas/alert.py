@@ -121,3 +121,6 @@ class TrendResponse(BaseModel):
 	status: int
 	message: str
 	data: TrendData | None = None
+
+class BroadcastAlertReq(BaseModel):
+    alert_id: UUID

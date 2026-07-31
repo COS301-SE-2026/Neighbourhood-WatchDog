@@ -164,7 +164,8 @@ export function AuditLogTable() {
           )}
         </DialogContent>
       </Dialog>
-      <AuditFilters filters={filters} onChange={(filters: AuditLogsFilters) => {setLoading(true); setFilters(filters)}}/>
+      {/* <AuditFilters filters={filters} onChange={(filters: AuditLogsFilters) => {setLoading(true); setFilters(filters)}}/> */}
+      <h1 className="mb-6 text-4xl font-bold tracking-tight">Neighbourhood Audit Logs</h1>
       <DataTable columns={columns} data={data} renderMobileCard={renderAuditLogCard}/>
       <PaginationControls 
         previousDisabled={page==1}

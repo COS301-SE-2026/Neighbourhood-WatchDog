@@ -13,7 +13,7 @@ import {
   PinOff,
   Bell,
   FileText,
-  Bot,
+  Book,
   Settings,
   Plus,
   LogOut
@@ -64,12 +64,14 @@ type NavItem = {
 
 // data
 
-const TOP_LEVEL_IDS = ["dashboard", "alerts", "neighbourhood", "analytics", "settings"];
+const TOP_LEVEL_IDS = ["dashboard", "alerts", "neighbourhood", "analytics", "audit", "settings",];
 
 function isNavItemActive(item: NavItem, pathname: string): boolean {
   if (pathname === item.href) return true;
 
   if (item.children) {
+    if (item.children.some((child) => pathname === child.href)) return true;
+
     const segments = pathname.split("/").filter(Boolean); // e.g. ["dashboard", "abc123"]
     const second = segments[1];
     if (
@@ -266,6 +268,8 @@ function NavTile({
 
 // AppSidebar
 
+
+
 export function AppSidebar() {
   const { state, setOpen } = useSidebar()
   const { properties, addProperty } = useProperties()
@@ -303,12 +307,32 @@ export function AppSidebar() {
       label: "Neighbourhood",
       icon: <Home className="h-4 w-4 shrink-0" />,
       href: "/dashboard/neighbourhood",
+      children: [
+        {
+          id: "neighbourhood-join",
+          label: "Join Neighbourhood",
+          icon: <Home className="h-3.5 w-3.5 shrink-0" />,
+          href: "/dashboard/neighbourhood/join",
+        },
+        {
+          id: "neighbourhood-requests",
+          label: "View Requests",
+          icon: <Home className="h-3.5 w-3.5 shrink-0" />,
+          href: "/dashboard/neighbourhood/requests",
+        },
+      ],
     },
     {
       id: "analytics",
       label: "Analytics",
       icon: <FileText className="h-4 w-4 shrink-0" />,
       href: "/dashboard/analytics",
+    },
+    {
+      id: "audit",
+      label: "Audit Log",
+      icon: <Book className="h-4 w-4 shrink-0" />,
+      href: "/dashboard/audit",
     },
     {
       id: "settings",
