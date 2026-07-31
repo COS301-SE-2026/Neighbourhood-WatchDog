@@ -8,7 +8,7 @@ from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, Tim
 from fastapi import HTTPException
 
 from app.models.user import User, UserRole
-from sqlalchemy import select, func
+from sqlalchemy import or_, select, func
 from sqlalchemy.exc import IntegrityError
 
 from app.core.database import DbSession
@@ -528,7 +528,10 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: DbSession, c
         message={"event": "alert.broadcast", "payload": alert_res.model_dump(mode="json")},
     )
 
-    residents = db.execute(select(User).where(User.neighbourhood_id == neighbourhood_id, User.role == UserRole.RESIDENT)).scalars().all()
+    residents = db.execute(select(User).where(User.neighbourhood_id == neighbourhood_id, or_(
+                User.role == UserRole.RESIDENT,
+                User.role == UserRole.NEIGHBOURHOOD_ADMIN,
+            ),)).scalars().all()
 
     timestamp_str = datetime.now().strftime("%d %b %Y, %H:%M:%S")
     whatsapp_message = _format_whatsapp_message("CRITICAL", detection_type, camera.name, timestamp_str)
