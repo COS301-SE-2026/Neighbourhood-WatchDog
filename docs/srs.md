@@ -643,7 +643,7 @@ TUCEW: The platform denies access to the camera stream and does not establish a 
 
 ## Architectural Requirements
  
-### Quality Requirements
+### Quality/Non-Functional Requirements
  
 The quality requirements are derived directly from the non-functional requirements and drive the architectural decisions made in this system.
  
