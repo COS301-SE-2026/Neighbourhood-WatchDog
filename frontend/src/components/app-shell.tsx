@@ -2,7 +2,7 @@
 
 import DashboardPage from "@/app/(private)/dashboard/page"
 import AlertsPage from "@/app/(private)/dashboard/alerts/AlertsPage"
-import JoinNeighbourhoodPage from "@/app/(private)/joinNeighbourhood/page"
+import JoinNeighbourhoodPage from "@/app/(private)/dashboard/neighbourhood/join/page"
 import { Card } from "@/components/ui/card"
 import { useAppView } from "@/components/app-view-context"
 import AnalyticsPage from "@/app/(private)/dashboard/analytics/page"
