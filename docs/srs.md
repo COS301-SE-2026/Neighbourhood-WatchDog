@@ -262,7 +262,7 @@ The system concentrates on the integrated development from camera registration a
 	    R9.3.6.2 Company is able to accept or decline requests to join the neighbourhoods
     R9.4 Security Response Management
         R9.4.1 View all alerts that have been dispatched
-        R9.4.2 Change the status of the alerts list the alsert statuss here
+        R9.4.2 Change the status of the alerts list the alert status here
         R9.4.3 View respondees of the alert
         R9.4.4 View the timeline of the alert and the state changes
 
@@ -591,6 +591,8 @@ TUCEW: The Security Officer can accept or reject the invitation to join the neig
 
 R8 WatchDog Agent and Camera Management
 
+![Use Case P3 - UCD8-9](images/Use%20Case%20P3%20-%20UCD8.png)
+
 UC8.1 – Install the WatchDog Agent (Abstract)
 High-Level:
 TUCBW: A Resident or Neighbourhood Administrator downloads the WatchDog Agent installation package and executes the installation script (.bat file).
@@ -637,11 +639,11 @@ TUCEW: The platform denies access to the camera stream and does not establish a 
 
 ## Domain Model
 
-![Architectural Diagram](images/NWD.drawio.svg)
+![Domain Model](images/NWD.drawio.svg)
 
 ## Architectural Requirements
  
-### Quality Requirements
+### Quality/Non-Functional Requirements
  
 The quality requirements are derived directly from the non-functional requirements and drive the architectural decisions made in this system.
  
@@ -716,8 +718,6 @@ The quality requirements are derived directly from the non-functional requiremen
 ---
  
 ### Architectural Patterns
- 
-![Architectural Diagram](images/Architecture%20Diagram.drawio.svg)
 
 #### Microservices Architecture
  

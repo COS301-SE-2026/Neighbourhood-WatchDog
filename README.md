@@ -263,7 +263,7 @@ Neighbourhood-WatchDog/
 
 [![SRS](https://img.shields.io/badge/Software_Architecture_Spec-View-00B4D8?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/sas.md)
 
-[![SRS](https://img.shields.io/badge/Brand_Style_Guide-View-00B4D8?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/design_spec.md) 
+[![SRS](https://img.shields.io/badge/Brand_Style_Guide-View-00B4D8?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/Brand%20Style%20Guide.pdf) 
 
 [![SRS](https://img.shields.io/badge/User_Manual-View-00B4D8?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/user_manual.md)
 

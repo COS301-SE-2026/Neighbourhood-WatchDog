@@ -42,6 +42,8 @@ RUN pip install -r requirements.txt
 COPY --from=builder /app/main.py .
 COPY --from=builder /app/app ./app
 COPY --from=builder /app/alembic ./alembic
+COPY --from=builder /app/seed.py .
+
 
 RUN chown -R appuser:usergroup /app
 USER appuser

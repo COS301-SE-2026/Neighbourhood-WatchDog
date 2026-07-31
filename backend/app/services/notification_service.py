@@ -93,7 +93,7 @@ def _send_whatsapp(to_phone: str, message: str) -> tuple[bool, str | None]:
     
 
 def build_alert_email(alert_type: str, camera_name: str, location: str,
-                      risk_level: str = "HIGH", dashboard_url: str | None = None) -> str:
+                      risk_level: str = "HIGH", dashboard_url: str | None = "https://neighbourhood-watch-dog.vercel.app/auth/login") -> str:
     timestamp = datetime.datetime.now().strftime("%d %b %Y · %H:%M")
     
     cta_row = ""
@@ -238,7 +238,7 @@ def build_alert_email(alert_type: str, camera_name: str, location: str,
 """
 
 def send_alert_email(recipient_email: str, alert_type: str, camera_name: str, location: str,
-                      risk_level: str = "HIGH", dashboard_url: str | None = None)-> tuple[bool, str | None]:
+                      risk_level: str = "HIGH", dashboard_url: str | None = "https://neighbourhood-watch-dog.vercel.app/auth/login/")-> tuple[bool, str | None]:
 
     if not SENDER_EMAIL or not SENDER_PASSWORD:
         logger.error("SMTP_SENDER_EMAIL or SMTP_APP_PASSWORD not configured")

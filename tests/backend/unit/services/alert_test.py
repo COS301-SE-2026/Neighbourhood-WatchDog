@@ -1,15 +1,17 @@
 import uuid
 from uuid import UUID
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import ANY, AsyncMock, Mock, patch
 
 import pytest
 from fastapi import HTTPException
 
 from app.models.alert import Alert
+from app.models.audit_log import AuditAction
 from app.models.camera import Camera
+from app.models.user import User, UserRole
 from app.schemas.alert import TimeIntervalsEnum, TimePeriod
-from app.services.alert_service import acknowledge_alert_handler, list_alerts_handler, get_response_metrics_handler, get_alert_frequency_metrics_handler
+from app.services.alert_service import acknowledge_alert_handler, broadcast_neighbourhood_alert_service, list_alerts_handler, get_response_metrics_handler, get_alert_frequency_metrics_handler
 
 class TestAcknowledgeAlert:
     def setup_method(self):
@@ -488,3 +490,231 @@ class TestFrequencyMetrics:
         assert exception.value.status_code == 401
         assert self.mock_db.select.call_count == 0
         assert self.mock_db.join.call_count == 0
+
+class TestBroadcastNeighbourhoodAlert:
+    def setup_method(self):
+        self.mock_db = Mock()
+        self.mock_db.execute = Mock()
+        self.mock_db.commit = Mock()
+        self.mock_db.add = Mock()
+        self.claims = {
+            "sub": "cognito-sub-123",
+            "custom:role": "NEIGHBOURHOOD_ADMIN",
+            "custom:neighbourhood_id": str(uuid.uuid4()),
+        }
+ 
+        self.alert_patcher = patch("app.services.alert_service.Alert", new=Alert)
+        self.camera_patcher = patch("app.services.alert_service.Camera", new=Camera)
+        self.alert_patcher.start()
+        self.camera_patcher.start()
+ 
+    def teardown_method(self):
+        self.alert_patcher.stop()
+        self.camera_patcher.stop()
+ 
+    def _make_alert(self, status: str = "OPEN"):
+        event = Mock()
+        event.detection_type = "HUMAN_PRESENCE"
+        event.confidence_score = 0.8
+        event.thumbnail_url = None
+ 
+        alert = Mock()
+        alert.id = uuid.uuid4()
+        alert.camera_id = uuid.uuid4()
+        alert.detection_event_id = uuid.uuid4()
+        alert.status = status
+        alert.resolved_by = None
+        alert.resolved_at = None
+        alert.created_at = datetime.now(timezone.utc)
+        alert.detection_event = event
+        return alert, event
+ 
+    def _make_camera(self, neighbourhood_id=None):
+        camera = Mock()
+        camera.id = uuid.uuid4()
+        camera.name = "Front Door Camera"
+        camera.location = "123 Main St"
+        camera.neighbourhood_id = neighbourhood_id or uuid.uuid4()
+        return camera
+ 
+    def _make_neighbourhood(self):
+        neighbourhood = Mock()
+        neighbourhood.id = uuid.uuid4()
+        return neighbourhood
+ 
+    def _make_resident(self):
+        resident = Mock(spec=User)
+        resident.id = uuid.uuid4()
+        resident.role = UserRole.RESIDENT
+        resident.phone_number = "+15550001111"
+        resident.email = "resident@example.com"
+        return resident
+ 
+    def _exec_result(self, scalar_one_or_none=None, scalars_all=None):
+        result = Mock()
+        result.scalar_one_or_none.return_value = scalar_one_or_none
+        if scalars_all is not None:
+            result.scalars.return_value.all.return_value = scalars_all
+        return result
+
+    @pytest.mark.asyncio
+    async def test_alert_not_found_raises_404(self):
+        self.mock_db.execute.return_value = self._exec_result(scalar_one_or_none=None)
+ 
+        with pytest.raises(HTTPException) as exc:
+            await broadcast_neighbourhood_alert_service(uuid.uuid4(), self.mock_db, self.claims)
+ 
+        assert exc.value.status_code == 404
+        assert "Alert not found" in exc.value.detail
+ 
+    @pytest.mark.asyncio
+    async def test_camera_not_found_raises_404(self):
+        alert, _ = self._make_alert()
+ 
+        self.mock_db.execute.side_effect = [
+            self._exec_result(scalar_one_or_none=alert),
+            self._exec_result(scalar_one_or_none=None),
+        ]
+ 
+        with pytest.raises(HTTPException) as exc:
+            await broadcast_neighbourhood_alert_service(alert.id, self.mock_db, self.claims)
+ 
+        assert exc.value.status_code == 404
+        assert "Camera not found" in exc.value.detail
+ 
+    @pytest.mark.asyncio
+    async def test_neighbourhood_not_found_raises_404(self):
+        alert, _ = self._make_alert()
+        camera = self._make_camera()
+ 
+        self.mock_db.execute.side_effect = [
+            self._exec_result(scalar_one_or_none=alert),
+            self._exec_result(scalar_one_or_none=camera),
+            self._exec_result(scalar_one_or_none=None),
+        ]
+ 
+        with pytest.raises(HTTPException) as exc:
+            await broadcast_neighbourhood_alert_service(alert.id, self.mock_db, self.claims)
+ 
+        assert exc.value.status_code == 404
+        assert "Neighbourhood not found" in exc.value.detail
+ 
+    @pytest.mark.asyncio
+    async def test_detection_event_not_found_raises_404(self):
+        alert, _ = self._make_alert()
+        camera = self._make_camera()
+        neighbourhood = self._make_neighbourhood()
+ 
+        self.mock_db.execute.side_effect = [
+            self._exec_result(scalar_one_or_none=alert),
+            self._exec_result(scalar_one_or_none=camera),
+            self._exec_result(scalar_one_or_none=neighbourhood),
+            self._exec_result(scalar_one_or_none=None),
+        ]
+ 
+        with pytest.raises(HTTPException) as exc:
+            await broadcast_neighbourhood_alert_service(alert.id, self.mock_db, self.claims)
+ 
+        assert exc.value.status_code == 404
+        assert "Detection not found" in exc.value.detail
+
+    @pytest.mark.asyncio
+    async def test_admin_user_not_found_raises_404(self):
+        alert, event = self._make_alert()
+        neighbourhood_id = uuid.uuid4()
+        camera = self._make_camera(neighbourhood_id=neighbourhood_id)
+        neighbourhood = self._make_neighbourhood()
+ 
+        self.mock_db.execute.side_effect = [
+            self._exec_result(scalar_one_or_none=alert),
+            self._exec_result(scalar_one_or_none=camera),
+            self._exec_result(scalar_one_or_none=neighbourhood),
+            self._exec_result(scalar_one_or_none=event),
+            self._exec_result(scalars_all=[]),
+            self._exec_result(scalar_one_or_none=None)
+        ]
+ 
+        with patch("app.api.controllers.alert.broadcast", new_callable=AsyncMock), \
+             patch("app.services.alert_service._format_whatsapp_message", return_value="msg"), \
+             patch("app.services.alert_service._notify_users"):
+ 
+            with pytest.raises(HTTPException) as exc:
+                await broadcast_neighbourhood_alert_service(alert.id, self.mock_db, self.claims)
+ 
+        assert exc.value.status_code == 404
+        assert "Admin user not found" in exc.value.detail
+
+    @pytest.mark.asyncio
+    async def test_happy_path_broadcasts_and_notifies_residents(self):
+        alert, event = self._make_alert()
+        neighbourhood_id = uuid.uuid4()
+        camera = self._make_camera(neighbourhood_id=neighbourhood_id)
+        neighbourhood = self._make_neighbourhood()
+        resident = self._make_resident()
+        admin_id = uuid.uuid4()
+ 
+        self.mock_db.execute.side_effect = [
+            self._exec_result(scalar_one_or_none=alert),          
+            self._exec_result(scalar_one_or_none=camera),         
+            self._exec_result(scalar_one_or_none=neighbourhood),  
+            self._exec_result(scalar_one_or_none=event),         
+            self._exec_result(scalars_all=[resident]),          
+            self._exec_result(scalar_one_or_none=admin_id),    
+        ]
+ 
+        with patch("app.api.controllers.alert.broadcast", new_callable=AsyncMock) as mock_broadcast, \
+             patch("app.services.alert_service._format_whatsapp_message", return_value="msg") as mock_format, \
+             patch("app.services.alert_service._notify_users") as mock_notify:
+ 
+            await broadcast_neighbourhood_alert_service(alert.id, self.mock_db, self.claims)
+ 
+        assert mock_broadcast.call_count == 1
+        kwargs = mock_broadcast.call_args.kwargs
+        assert kwargs["neighbourhood_id"] == str(neighbourhood_id)
+        assert kwargs["message"]["event"] == "alert.broadcast"
+ 
+        mock_format.assert_called_once_with("CRITICAL", event.detection_type, camera.name, ANY)
+        mock_notify.assert_called_once_with(
+            self.mock_db, alert.id, [resident], "msg", event.detection_type, camera, "CRITICAL"
+        )
+ 
+        assert self.mock_db.add.call_count == 1
+        audit_record = self.mock_db.add.call_args.args[0]
+        assert audit_record.user_id == admin_id
+        assert audit_record.action == AuditAction.UPDATE
+        assert audit_record.target_entity_type == "alert"
+        assert audit_record.target_entity_id == alert.id
+        assert audit_record.old_values == {"broadcast": False}
+        assert audit_record.new_values == {
+            "broadcast": True,
+            "neighbourhood_id": str(neighbourhood_id),
+        }
+        assert self.mock_db.commit.call_count == 1
+ 
+    @pytest.mark.asyncio
+    async def test_no_residents_still_broadcasts_but_skips_notifications(self):
+        alert, event = self._make_alert()
+        neighbourhood_id = uuid.uuid4()
+        camera = self._make_camera(neighbourhood_id=neighbourhood_id)
+        neighbourhood = self._make_neighbourhood()
+        admin_id = uuid.uuid4()
+ 
+        self.mock_db.execute.side_effect = [
+            self._exec_result(scalar_one_or_none=alert),
+            self._exec_result(scalar_one_or_none=camera),
+            self._exec_result(scalar_one_or_none=neighbourhood),
+            self._exec_result(scalar_one_or_none=event),
+            self._exec_result(scalars_all=[]),
+            self._exec_result(scalar_one_or_none=admin_id),
+        ]
+ 
+        with patch("app.api.controllers.alert.broadcast", new_callable=AsyncMock) as mock_broadcast, \
+             patch("app.services.alert_service._format_whatsapp_message", return_value="msg"), \
+             patch("app.services.alert_service._notify_users") as mock_notify:
+ 
+            await broadcast_neighbourhood_alert_service(alert.id, self.mock_db, self.claims)
+ 
+        assert mock_broadcast.call_count == 1
+        mock_notify.assert_called_once()
+        assert mock_notify.call_args.args[2] == []  
+        assert self.mock_db.commit.call_count == 1

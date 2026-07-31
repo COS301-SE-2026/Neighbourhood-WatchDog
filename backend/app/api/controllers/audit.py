@@ -4,7 +4,7 @@ from typing import Annotated, Optional
 
 from app.core.database import DbSession
 from app.auth.dependencies import get_current_user
-from app.auth.rbac import require_role
+from app.auth.dependencies import require_role
 from app.schemas.audit_log import AuditAction
 from app.services.audit_service import get_audit_logs_handler
 
@@ -27,7 +27,7 @@ async def get_audit_logs(
     sort_order: Annotated[Optional[str], Query(description="ASC or DESC")] = None, 
 ):
     """Retrieves the all audit logs and returns them in a list."""
-    require_role(claims, ["SYSTEM_ADMIN"])
+    require_role('SYSTEM_ADMIN', 'RESIDENT', 'NEIGHBOURHOOD_WATCHDOG')
     
     return get_audit_logs_handler(
         search_term=search_term,

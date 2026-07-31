@@ -126,18 +126,6 @@ async def pair_agent_handler(
 
         db.add(new_edge_agent)
         db.flush()
-
-        create_audit_log_item(
-            db=db,
-            user_id=None, # user not authenticated :(
-            action=AuditAction.CREATE,
-            target_entity_type="EdgeAgentCredential",
-            target_entity_id=new_edge_agent.id,
-            new_values={
-                "property_id": str(new_edge_agent.property_id),
-            },
-        )
-
         db.commit()
 
         #getting the cameras related to the property

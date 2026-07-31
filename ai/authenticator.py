@@ -5,7 +5,7 @@ from tkinter import ttk
 import requests
 import keyring
 
-API_BASE_URL = "https://api-staging.neighbourhoodwatchdog.co.za"
+API_BASE_URL = "https://api.neighbourhoodwatchdog.co.za"
 SEGOE_FONT = "Segoe UI"
 KEY_RELEASE = "<KeyRelease>"
 
