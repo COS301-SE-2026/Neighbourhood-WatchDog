@@ -639,7 +639,7 @@ TUCEW: The platform denies access to the camera stream and does not establish a 
 
 ## Domain Model
 
-![Architectural Diagram](images/NWD.drawio.svg)
+![Domain Model](images/NWD.drawio.svg)
 
 ## Architectural Requirements
  
@@ -718,8 +718,6 @@ The quality requirements are derived directly from the non-functional requiremen
 ---
  
 ### Architectural Patterns
- 
-![Architectural Diagram](images/Architecture%20Diagram.drawio.svg)
 
 #### Microservices Architecture
  
