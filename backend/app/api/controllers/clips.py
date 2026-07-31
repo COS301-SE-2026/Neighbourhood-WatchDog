@@ -30,7 +30,7 @@ PRESIGN_TTL = 300
 #retention deafault: 7 days (can be overriden per camera via retention_policy later)
 FAULT_RETENTION_DAYS = 7
 
-S3_BUCKET = os.getenv("S3_CLIPS_BUCKET", "")
+S3_BUCKET = os.getenv("S3_BUCKET_NAME", "")
 
 
 
