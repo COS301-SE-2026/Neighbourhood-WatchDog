@@ -2,7 +2,7 @@ from app.schemas.property import CreatePropertyReq, CreatePropertyRes, PropertyR
 from app.services.property_service import create_property_handler, get_user_properties_handler, get_property_details_handler
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
-from app.auth.rbac import require_role
+from app.auth.dependencies import require_role
 
 from typing import List, Annotated
 from uuid import UUID
@@ -19,7 +19,7 @@ async def create_property(
 ):
     """Create property endpoint returns the property object that was created"""
 
-    require_role(claims, ['RESIDENT'])
+    require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN')
     new_property = await create_property_handler(req.address, req.property_type, claims, db)
 
     property_res = PropertyRes(
@@ -43,7 +43,7 @@ async def get_user_properties(
     claims: Annotated[dict, Depends(get_current_user)],
 ) -> List[PropertyRes]:
     """Fetch all properties for the current user"""
-    require_role(claims, ['RESIDENT'])
+    require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN')
     properties = await get_user_properties_handler(claims, db)
 
     return [
@@ -64,5 +64,5 @@ async def get_property_details(
     claims: Annotated[dict, Depends(get_current_user)],
 ):
     """Fetch property details including users, neighbourhood, and cameras"""
-    require_role(claims, ['RESIDENT'])
+    require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN')
     return await get_property_details_handler(property_id, db)
