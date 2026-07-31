@@ -262,7 +262,7 @@ The system concentrates on the integrated development from camera registration a
 	    R9.3.6.2 Company is able to accept or decline requests to join the neighbourhoods
     R9.4 Security Response Management
         R9.4.1 View all alerts that have been dispatched
-        R9.4.2 Change the status of the alerts list the alsert statuss here
+        R9.4.2 Change the status of the alerts list the alert status here
         R9.4.3 View respondees of the alert
         R9.4.4 View the timeline of the alert and the state changes
 

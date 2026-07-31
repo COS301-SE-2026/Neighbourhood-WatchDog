@@ -17,7 +17,7 @@ router = APIRouter(prefix="/risk-score", tags=["risk-score"])
 def get_neighbourhood_score(neighbourhood_id: UUID, db: DbSession, claims: Annotated[dict, Depends(get_current_user)]):
     """Get Risk Score for a Neighbourhood"""
 
-    require_role(claims=claims, allowed_roles=['NEIGHBOURHOOD_ADMIN'])
+    require_role('NEIGHBOURHOOD_ADMIN', 'RESIDENT')
 
     neighbourhood_risk = get_neighbourhood_score_handler(neighbourhood_id, db, claims)
 
@@ -31,7 +31,7 @@ def get_neighbourhood_score(neighbourhood_id: UUID, db: DbSession, claims: Annot
 def get_neighbourhood_score_history(neighbourhood_id: UUID, granularity: str,db: DbSession, claims: Annotated[dict, Depends(get_current_user)], start: datetime | None = None, end: datetime | None = None,):
     """Get Risk Score History of a Neighbourhood"""
 
-    require_role(claims=claims, allowed_roles=['NEIGHBOURHOOD_ADMIN'])
+    require_role('RESIDENT','NEIGHBOURHOOD_ADMIN')
 
 
     neighbourhood_risk_history = get_neighbourhood_score_history_handler(neighbourhood_id, granularity, db, claims, start, end)
