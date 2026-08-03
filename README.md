@@ -282,7 +282,7 @@ Neighbourhood-WatchDog/
 | Demo | Slides | Video |
 |:---:|:---:|:---:|
 | Demo 1 | [![Slides](https://img.shields.io/badge/Slides_1-View-00B4D8?style=flat-square&logo=googleslides&logoColor=white&labelColor=0D1B2A)](#) | [![Video](https://img.shields.io/badge/Video_1-Watch-00B4D8?style=flat-square&logo=youtube&logoColor=white&labelColor=0D1B2A)](docs/Demo1%20Video.mov) |
-| Demo 2 | [![Slides](https://img.shields.io/badge/Slides_2-View-0096C7?style=flat-square&logo=googleslides&logoColor=white&labelColor=0D1B2A)](#) | [![Video](https://img.shields.io/badge/Video_2-Watch-0096C7?style=flat-square&logo=youtube&logoColor=white&labelColor=0D1B2A)](#) |
+| Demo 2 | [![Slides](docs/Watchdog%20Demo%202.pptx)](#) | [![Video](docs/Capstone%20Demo%202%20Video.mp4.zip)](#) |
 | Demo 3 | [![Slides](https://img.shields.io/badge/Slides_3-View-023E8A?style=flat-square&logo=googleslides&logoColor=white&labelColor=0D1B2A)](#) | [![Video](https://img.shields.io/badge/Video_3-Watch-023E8A?style=flat-square&logo=youtube&logoColor=white&labelColor=0D1B2A)](#) |
 | Demo 4 | [![Slides](https://img.shields.io/badge/Slides_4-View-03045E?style=flat-square&logo=googleslides&logoColor=white&labelColor=0D1B2A)](#) | [![Video](https://img.shields.io/badge/Video_4-Watch-03045E?style=flat-square&logo=youtube&logoColor=white&labelColor=0D1B2A)](#) |
 
