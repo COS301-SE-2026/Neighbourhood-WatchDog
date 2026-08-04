@@ -11,7 +11,6 @@ class RetentionPolicy(Base):
     __tablename__ = "retention_policy"
 
     id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id"), nullable=True)
     camera_id        = Column(UUID(as_uuid=True), ForeignKey("camera.id"), nullable=True)
     hot_seconds      = Column(Integer, nullable=False)
     warm_seconds     = Column(Integer, nullable=False)
@@ -19,7 +18,6 @@ class RetentionPolicy(Base):
     created_at       = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
     updated_at       = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"), onupdate=text("now()"))
 
-    neighbourhood = relationship("Neighbourhood", back_populates="retention_policies")
     camera        = relationship("Camera", back_populates="retention_policy")
 
     __table_args__ = (
