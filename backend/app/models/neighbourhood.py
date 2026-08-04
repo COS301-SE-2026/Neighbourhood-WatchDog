@@ -16,15 +16,18 @@ class Neighbourhood(Base):
     users = relationship("User", back_populates="neighbourhood")
     cameras = relationship("Camera", back_populates="neighbourhood")
     zones   = relationship("GeospatialZone", back_populates="neighbourhood")
-    risk_scores = relationship("RiskScoreHistory", back_populates="neighbourhood")
-    risk_thresholds = relationship("RiskThresholdConfig", back_populates="neighbourhood")
-    join_requests = relationship(
-        "NeighbourhoodJoinRequest",
+    risk_scores = relationship(
+        "RiskScoreHistory", 
         back_populates="neighbourhood",
         cascade="all, delete-orphan",
-    )
-    retention_policies = relationship(
-        "RetentionPolicy",
+        passive_deletes=True,)
+    risk_thresholds = relationship(
+        "RiskThresholdConfig", 
+        back_populates="neighbourhood",
+        cascade="all, delete-orphan",
+        passive_deletes=True,)
+    join_requests = relationship(
+        "NeighbourhoodJoinRequest",
         back_populates="neighbourhood",
         cascade="all, delete-orphan",
     )
