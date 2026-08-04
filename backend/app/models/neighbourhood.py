@@ -23,10 +23,5 @@ class Neighbourhood(Base):
         back_populates="neighbourhood",
         cascade="all, delete-orphan",
     )
-    retention_policies = relationship(
-        "RetentionPolicy",
-        back_populates="neighbourhood",
-        cascade="all, delete-orphan",
-    )
     
     
