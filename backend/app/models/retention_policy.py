@@ -11,7 +11,7 @@ class RetentionPolicy(Base):
     __tablename__ = "retention_policy"
 
     id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    camera_id        = Column(UUID(as_uuid=True), ForeignKey("camera.id"), nullable=False)
+    camera_id        = Column(UUID(as_uuid=True), ForeignKey("camera.id"), nullable=False, index=True)
     hot_seconds      = Column(Integer, nullable=False)
     warm_seconds     = Column(Integer, nullable=False)
     cold_seconds     = Column(Integer, nullable=False)
