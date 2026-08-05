@@ -11,12 +11,12 @@ class RiskThresholdConfig(Base):
     __tablename__ = "risk_threshold_config"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id"), nullable=True)
+    neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id", ondelete="CASCADE"), nullable=True, index=True)
     low_max = Column(Float, nullable=False)
     medium_max = Column(Float, nullable=False)
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"), onupdate=text("now()"))
 
-    neighbourhood = relationship("Neighbourhood", back_populates="risk_thresholds")
+    neighbourhood = relationship("Neighbourhood", back_populates="risk_thresholds", passive_deletes=True)
 
     __table_args__ = (
         CheckConstraint('low_max >= 0', name="check_low_max_non_negative"),

@@ -5,8 +5,8 @@ from app.core.database import Base
 
 class PropertyUser(Base):
     __tablename__ = "property_user"
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
-    property_id = Column(UUID(as_uuid=True), ForeignKey("property.id"), primary_key=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    property_id = Column(UUID(as_uuid=True), ForeignKey("property.id", ondelete="CASCADE"), primary_key=True, index=True)
     is_admin = Column(Boolean, nullable=False, default=False)
 
     user = relationship("User", foreign_keys=[user_id])
