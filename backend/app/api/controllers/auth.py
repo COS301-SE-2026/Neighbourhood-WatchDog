@@ -42,8 +42,8 @@ def auth_ping():
 
 @router.post("/signup")
 @limiter.limit("3/minute")  # Limit to 3 requests per minute
-def signup(request: Request, payload: SignUpRequest, db: DbSession):
-    return register_user(_payload_to_dict(payload), db)
+async def signup(request: Request, payload: SignUpRequest, db: DbSession):
+    return await register_user(_payload_to_dict(payload), db)
 
 @router.post("/login")
 @limiter.limit("5/minute")  # Limit to 5 requests per minute
@@ -72,7 +72,8 @@ async def get_current_user_info(
         raise HTTPException(status_code=401, detail="Invalid token claims")
 
     stmt = select(User).where(User.cognito_sub == cognito_sub)
-    user =  db.execute(stmt).scalar_one_or_none()
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
 
     if not user:
         raise HTTPException(status_code=401, detail="User not found")

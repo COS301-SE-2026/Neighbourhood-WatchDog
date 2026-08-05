@@ -1,15 +1,14 @@
 from fastapi import HTTPException
 from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code, respond_to_mfa
 from app.models.user import UserRole, User
-from sqlalchemy.orm import Session
-
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction
 
 #Business Logic between our API and AWS
 #take clean input and calls cognito then reshape results into app format
 #Frontend must never rely on AWS naming convention
-def register_user(payload, db: Session):
+async def register_user(payload, db: Session):
     response = sign_up(
         email=payload["email"],
         password=payload["password"],
@@ -31,7 +30,7 @@ def register_user(payload, db: Session):
     db.add(new_user)
 
     # Generate ID before audit entry
-    db.flush()
+    await db.flush()
 
     create_audit_log_item(
         db=db,
@@ -51,7 +50,7 @@ def register_user(payload, db: Session):
             ),
         },
     )
-    db.commit()
+    await db.commit()
 
     return {
         "success": True,
