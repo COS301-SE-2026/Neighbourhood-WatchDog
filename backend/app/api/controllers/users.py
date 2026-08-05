@@ -20,7 +20,7 @@ async def get_user_by_id(
 	if not db:
 		raise HTTPException(status_code=500, detail="No database session")
 
-	user = db.get(User, user_id)
+	user = await db.get(User, user_id)
 	if not user:
 		raise HTTPException(status_code=404, detail="User not found")
 

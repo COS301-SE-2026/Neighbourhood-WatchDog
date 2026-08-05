@@ -38,7 +38,8 @@ async def create_user(
     try:
         # Make sure that the user does not user already exists
         stmt = select(User).where(User.email == email)
-        existing_user = db.execute(stmt).scalar_one_or_none()
+        result = await db.execute(stmt)
+        existing_user = result.scalar_one_or_none()
 
         if existing_user:
             return existing_user
@@ -54,11 +55,11 @@ async def create_user(
         )
 
         db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
+        await db.commit()
+        await db.refresh(new_user)
 
         return new_user
 
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to create user")
