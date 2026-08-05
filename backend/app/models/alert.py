@@ -36,7 +36,6 @@ class Alert(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
     camera = relationship("Camera", back_populates="alerts")
-    resolver = relationship("User", back_populates="resolved_alerts")
 
     __table_args__ = (
         CheckConstraint(
