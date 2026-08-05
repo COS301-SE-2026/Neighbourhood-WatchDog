@@ -4,6 +4,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 from typing import List
 from uuid import UUID
+import logging
 
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction
@@ -14,6 +15,8 @@ from app.models.camera import Camera
 from app.models.neighbourhood import Neighbourhood
 from app.core.database import DbSession
 
+logger = logging.getLogger(__name__)
+
 async def create_property_handler(
     addr: str, 
     prop_type: PropertyTypeEnum, 
@@ -22,12 +25,15 @@ async def create_property_handler(
 ) -> Property:
     """Creates a new property. Takes in the address, property type (PUBLIC or PRIVATE), claims and the DbSession, creates the property and returns the created property"""
     if not addr or addr == "":
+        logger.warning("create_property called with empty address, claims=%s", claims)
         raise HTTPException(400, "No address or empty address field.")
 
     if not prop_type:
+        logger.warning("create_property called with no property type, claims=%s", claims)
         raise HTTPException(400, "No property type given")
     
     if not claims:
+        logger.warning("create_property called with no claims")
         raise HTTPException(401, "Not authenticated")
 
     new_property = Property(
@@ -43,6 +49,7 @@ async def create_property_handler(
         user = result.scalar_one_or_none()
 
         if not user:
+            logger.warning("create_property: no user found for cognito_sub=%s", claims['sub'])
             raise HTTPException(404, "User not found")
 
         # add prop
@@ -71,10 +78,12 @@ async def create_property_handler(
         )
 
         await db.commit()
+        logger.info("Property created: id=%s address=%s user_id=%s", new_property.id, addr, user.id)
         return new_property
     
     except IntegrityError:
         await db.rollback()
+        logger.error("Property created: id=%s address=%s user_id=%s", new_property.id, addr, user.id)
         raise HTTPException(500, "Failed to add to property database")
     except HTTPException as he:
         await db.rollback()
@@ -97,6 +106,7 @@ async def get_user_properties_handler(
         user = result.scalar_one_or_none()
 
         if not user:
+            logger.warning("get_properties: no user found for cognito_sub=%s", claims['sub'])
             raise HTTPException(404, "User not found")
 
         #get all properties for this user
@@ -104,6 +114,7 @@ async def get_user_properties_handler(
         result = await db.execute(stmt)
         properties = result.scalars().all()
 
+        logger.info("get_properties: properties retrieved successfully for user_id=%s", user.id)
         return properties
 
     except HTTPException:
@@ -118,6 +129,7 @@ async def get_property_details_handler(
     """Gets all the details for the property page"""
 
     if not property_id:
+        logger.warning("get_property_details: no property id provided")
         raise HTTPException(400, "No property ID provided.")
 
     try:
@@ -127,6 +139,7 @@ async def get_property_details_handler(
         property_obj = result.scalar_one_or_none()
 
         if not property_obj:
+            logger.warning("get_property_details: could not find the property with the property_id=%s", property_id)
             raise HTTPException(404, "Property not found.")
         
         stmt = (
@@ -176,6 +189,7 @@ async def get_property_details_handler(
             for cam in cameras
         ]
 
+        logger.info("get_property_details: details retrieved successfully for proeprty_id=%s.", property.id)
         return {
             "property_id": property.id,
             "address": property.address,
@@ -189,4 +203,5 @@ async def get_property_details_handler(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error("get_property_details: exception raised.")
         raise HTTPException(500, f"Failed to fetch property details: {str(e)}")
