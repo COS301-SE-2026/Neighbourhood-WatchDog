@@ -18,7 +18,7 @@ class GeospatialZone(Base):
     __tablename__ = "geospatial_zone"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id", ondelete="CASCADE"), nullable=False)
+    neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(Text, nullable=False)
     polygon_boundary = Column(Geometry(geometry_type="POLYGON", srid=4326), nullable=False)
     sensitivity_level = Column(

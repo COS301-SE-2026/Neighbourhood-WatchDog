@@ -21,7 +21,7 @@ class RiskScoreHistory(Base):
     alert_count = Column(Integer, default=0, nullable=False)
     calculated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"), onupdate=text("now()"))
 
-    neighbourhood = relationship("Neighbourhood", back_populates="risk_scores", passive_deletes=True)
+    neighbourhood = relationship("Neighbourhood", back_populates="risk_scores")
 
     __table_args__ = (
         CheckConstraint('alert_count >= 0', name="check_alert_count_non_negative"),
