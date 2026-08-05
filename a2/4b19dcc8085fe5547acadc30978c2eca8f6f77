@@ -1,0 +1,19 @@
+backend/app/api/controllers/users.py
+  h_cf6208e37032c0 4,7,9,18-25
+backend/app/schemas/user.py
+  h_cf6208e37032c0 1-12
+backend/app/services/user_service.py
+  h_cf6208e37032c0 1-2,6-7,9-13,73-98
+  h_cf6208e37032c0 72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "a24b19dcc8085fe5547acadc30978c2eca8f6f77",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
