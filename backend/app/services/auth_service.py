@@ -1,15 +1,17 @@
 from fastapi import HTTPException
 from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code, respond_to_mfa
 from app.models.user import UserRole, User
+import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.audit_service import create_audit_log_item
-from app.models.audit_log import AuditAction
+from app.models.audit_log import AuditAction, TargetEntity
 
 #Business Logic between our API and AWS
 #take clean input and calls cognito then reshape results into app format
 #Frontend must never rely on AWS naming convention
-async def register_user(payload, db: Session):
-    response = sign_up(
+async def register_user(payload, db: AsyncSession):
+    response = await asyncio.to_thread(
+        sign_up,
         email=payload["email"],
         password=payload["password"],
         name=payload["firstName"] + " " + payload["lastName"],
@@ -36,7 +38,7 @@ async def register_user(payload, db: Session):
         db=db,
         user_id=new_user.id,
         action=AuditAction.CREATE,
-        target_entity_type="User",
+        target_entity_type=TargetEntity.USER,
         target_entity_id=new_user.id,
         new_values={
             "email": new_user.email,
@@ -60,8 +62,9 @@ async def register_user(payload, db: Session):
         }
     }
 
-def authenticate_user(payload):
-    response = login(
+async def authenticate_user(payload):
+    response = await asyncio.to_thread(
+        login,
         email=payload["email"],
         password=payload["password"]
     )
@@ -97,8 +100,9 @@ def authenticate_user(payload):
         },
     )
 
-def confirm_user(payload):
-    confirm_sign_up(
+async def confirm_user(payload):
+    await asyncio.to_thread(
+        confirm_sign_up,
         email=payload["email"],
         code=payload["code"]
     )
@@ -110,8 +114,11 @@ def confirm_user(payload):
         }
     }
 
-def resend_confirmation_code(payload):
-    response = resend_code(payload["email"])
+async def resend_confirmation_code(payload):
+    response = await asyncio.to_thread(
+        resend_code,
+        payload["email"]
+    )
 
     return {
         "success": True,
@@ -120,8 +127,9 @@ def resend_confirmation_code(payload):
         }
     }
 
-def complete_mfa(payload):
-    response = respond_to_mfa(
+async def complete_mfa(payload):
+    response = await asyncio.to_thread(
+        respond_to_mfa,
         email=payload["email"],
         session=payload["session"],
         code=payload["code"],

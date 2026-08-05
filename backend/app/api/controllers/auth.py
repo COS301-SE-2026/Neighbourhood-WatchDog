@@ -47,13 +47,13 @@ async def signup(request: Request, payload: SignUpRequest, db: DbSession):
 
 @router.post("/login")
 @limiter.limit("5/minute")  # Limit to 5 requests per minute
-def login(request: Request, payload: LoginRequest):
-    return authenticate_user(_payload_to_dict(payload))
+async def login(request: Request, payload: LoginRequest):
+    return await authenticate_user(_payload_to_dict(payload))
 
 @router.post("/confirm")
 @limiter.limit("15/minute")  # Limit to 15 requests per minute
-def confirm(request: Request, payload: ConfirmSignUpRequest):
-    return confirm_user(_payload_to_dict(payload))
+async def confirm(request: Request, payload: ConfirmSignUpRequest):
+    return await confirm_user(_payload_to_dict(payload))
 
 
 @router.get("/me", responses={401: {"description" : "Invalid token claims or user not found"}})
@@ -102,5 +102,5 @@ def resend_code(request: Request, payload: ResendCodeRequest):
 
 @router.post("/verify-mfa")
 @limiter.limit("10/minute")
-def verify_mfa(request: Request, payload: VerifyMFARequest):
-    return complete_mfa(_payload_to_dict(payload))
+async def verify_mfa(request: Request, payload: VerifyMFARequest):
+    return await complete_mfa(_payload_to_dict(payload))
