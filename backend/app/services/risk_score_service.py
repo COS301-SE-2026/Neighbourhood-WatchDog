@@ -8,6 +8,7 @@ from app.models.alert import Alert, DetectionType
 from app.models.camera import Camera
 from app.models.risk_score_history import RiskLevel, RiskScoreHistory
 from app.models.risk_threshold_config import RiskThresholdConfig
+from app.models.property import Property
 
 SEVERITY_WEIGHTS = {
     DetectionType.WEAPON_DETECTED: 10,
@@ -28,7 +29,8 @@ async def calculate_risk_score_handler(neighbourhood_id: UUID, db: DbSession):
     stmt = (
         select(Alert.detection_type, func.count().label("count"))
         .join(Camera, Alert.camera_id == Camera.id)
-        .where(Camera.neighbourhood_id == neighbourhood_id)
+        .join(Property, Camera.property_id == Property.id)
+        .where(Property.neighbourhood_id == neighbourhood_id)
         .where(Alert.created_at >= window_start)
         .group_by(Alert.detection_type)
     )
