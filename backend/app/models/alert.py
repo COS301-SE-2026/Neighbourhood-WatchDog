@@ -31,7 +31,7 @@ class Alert(Base):
     clip_s3_key = Column(String, nullable=True)
     clip_expires_at = Column(DateTime(timezone=True), nullable=True)
     status = Column(String, nullable=False, server_default="OPEN")
-    resolved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    resolved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
     resolved_at = Column(TIMESTAMP(timezone=True), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
