@@ -81,14 +81,15 @@ async def get_user_by_id_handler(
     #TODO: does it make sense for any user to be able to get the info of any other 
     # simply because they have a valid JWT and thus valid claims?
     if not db:
-        logging.warning("get_user_by_id: failed to fetch user with user_id=%s due to no database session", user_id)
+        logger.warning("get_user_by_id: failed to fetch user with user_id=%s due to no database session", user_id)
         raise HTTPException(status_code=500, detail="No database session")
 
     user = await db.get(User, user_id)
     if not user:
-        logging.warning("get_user_by_id: could not fine user with user_id=%s", user_id)
+        logger.warning("get_user_by_id: could not fine user with user_id=%s", user_id)
         raise HTTPException(status_code=404, detail="User not found")
 
+    logger.info("get_user_by_id: successfully fetched the user with user_id=%s", user_id)
     return GetUserResSchema(
         id=str(user.id),
         email=user.email,
