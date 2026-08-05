@@ -9,6 +9,10 @@ from app.models.audit_log import AuditAction, TargetEntity
 #Business Logic between our API and AWS
 #take clean input and calls cognito then reshape results into app format
 #Frontend must never rely on AWS naming convention
+import logging
+
+logger = logging.getLogger(__name__)
+
 async def register_user(payload, db: AsyncSession):
     response = await asyncio.to_thread(
         sign_up,

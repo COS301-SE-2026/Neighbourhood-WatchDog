@@ -13,13 +13,17 @@ from app.models.camera import Camera
 from app.schemas.alert import AlertRes
 
 from app.services.audit_service import create_audit_log_item
-from app.models.audit_log import AuditAction, AuditLog, TargetEntity
+from app.models.audit_log import AuditAction, TargetEntity
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.alert import Alert, DetectionType
 from app.api.controllers.alert import broadcast
 
 from app.services.notification_service import _format_whatsapp_message, _notify_users
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_PAGE_SIZE = 25
 MAX_PAGE_SIZE = 100
@@ -573,13 +577,19 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
     if not admin_user_id:
         raise HTTPException(status_code=404, detail="Admin user not found")
     
-    audit_record = AuditLog(
+    create_audit_log_item(
+        db=db,
         user_id=admin_user_id,
         action=AuditAction.UPDATE,
         target_entity_type=TargetEntity.ALERT,
         target_entity_id=alert.id,
-        old_values={"broadcast": False},
-        new_values={"broadcast": True, "neighbourhood_id": str(neighbourhood_id)},
+        old_values={
+            "broadcast": False,
+        },
+        new_values={
+            "broadcast": True,
+            "neighbourhood_id": str(neighbourhood_id),
+        },
     )
-    db.add(audit_record)
+
     await db.commit()

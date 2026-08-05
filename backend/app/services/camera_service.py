@@ -16,6 +16,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from app.models.audit_log import AuditAction, TargetEntity
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 NO_DB_SESSION = "No database session"
 NOT_AUTHENTICATED = "Not authenticated"
 
