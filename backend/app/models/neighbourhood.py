@@ -14,7 +14,6 @@ class Neighbourhood(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
     properties = relationship("Property", back_populates="neighbourhood")
-    users = relationship("User", back_populates="neighbourhood")
     zones   = relationship("GeospatialZone", back_populates="neighbourhood")
     risk_scores = relationship(
         "RiskScoreHistory", 
