@@ -214,15 +214,15 @@ async def list_alerts_handler(
         if camera_id:
             base_stmt = base_stmt.where(Alert.camera_id == camera_id)
         if detection_type:
-            base_stmt = base_stmt.where(Alert.detection_type == detection_type)
+            base_stmt = base_stmt.where(Alert.detection_type == DetectionType(detection_type))
         if start_date:
-            base_stmt = base_stmt.where(Alert.created_at >= start_date)
+            base_stmt = base_stmt.where(Alert.frame_timestamp >= start_date)
         if end_date:
-            base_stmt = base_stmt.where(Alert.created_at <= end_date)
+            base_stmt = base_stmt.where(Alert.frame_timestamp <= end_date)
 
         total = db.execute(select(func.count()).select_from(base_stmt.subquery())).scalar_one()
 
-        stmt = (base_stmt.order_by(Alert.created_at.desc())
+        stmt = (base_stmt.order_by(Alert.frame_timestamp.desc())
                 .limit(limit)
                 .offset(offset))
 
@@ -348,7 +348,7 @@ async def get_alert_frequency_metrics_handler(
             start_date = today - relativedelta(years=1)
 
     trunc_unit = INTERVAL_TO_TRUNC[time_interval]
-    bucket = func.date_trunc(trunc_unit, Alert.created_at).label("bucket")
+    bucket = func.date_trunc(trunc_unit, Alert.frame_timestamp).label("bucket")
 
     stmt = (
         select(bucket, func.count(Alert.id).label("count"))
@@ -356,10 +356,9 @@ async def get_alert_frequency_metrics_handler(
         .where(Camera.neighbourhood_id == UUID(str(neighbourhood_id)))
     )
 
-    print(start_date)
 
     if start_date:
-        stmt = stmt.where(Alert.created_at > start_date)
+        stmt = stmt.where(Alert.frame_timestamp > start_date)
 
     stmt = stmt.group_by(bucket).order_by(bucket)
 
@@ -447,19 +446,18 @@ async def get_trends_handler(neighbourhood_id: UUID, db: DbSession, claims: dict
     start_date = _resolve_start_date(time_period)
 
 
-    bucket = func.date_trunc(group_by.value, Alert.created_at).label("bucket")
+    bucket = func.date_trunc(group_by.value, Alert.frame_timestamp).label("bucket")
 
 
     stmt = (
         select(bucket, func.count(Alert.id).label("count"))
         .join(Camera, Alert.camera_id == Camera.id)
-        .join(Alert, Alert.detection_event_id == Alert.id)
-        .where(Camera.neighbourhood_id == UUID(str(neighbourhood_id)))
+        .where(Camera.neighbourhood_id == neighbourhood_id)
     )
 
     
     if start_date:
-        stmt = stmt.where(Alert.created_at > start_date)
+        stmt = stmt.where(Alert.frame_timestamp > start_date)
 
 
     if camera_id:
@@ -467,7 +465,7 @@ async def get_trends_handler(neighbourhood_id: UUID, db: DbSession, claims: dict
 
     
     if incident_type:
-        stmt = stmt.where(Alert.detection_type == incident_type)
+        stmt = stmt.where(Alert.detection_type == DetectionType(incident_type))
 
 
     stmt = stmt.group_by(bucket).order_by(bucket)
@@ -516,11 +514,9 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: DbSession, c
     if not neighbourhood:
         raise HTTPException(status_code=404, detail="Neighbourhood not found")
 
-    detection_type = db.execute(select(Alert).where(Alert.id == alert.detection_event_id)).scalar_one_or_none()
-    if not detection_type:
-        raise HTTPException(status_code=404, detail="Detection not found")
-    
-    detection_type = Alert.detection_type
+    detection_type = alert.detection_type.value \
+    if hasattr(alert.detection_type, "value") \
+    else str(alert.detection_type)
 
     alert_res = _build_alert_res(alert)
     await broadcast(
@@ -533,7 +529,7 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: DbSession, c
                 User.role == UserRole.NEIGHBOURHOOD_ADMIN,
             ),)).scalars().all()
 
-    timestamp_str = datetime.now().strftime("%d %b %Y, %H:%M:%S")
+    timestamp_str = alert.frame_timestamp.strftime("%d %b %Y, %H:%M:%S")
     whatsapp_message = _format_whatsapp_message("CRITICAL", detection_type, camera.name, timestamp_str)
     _notify_users(db, alert.id, residents, whatsapp_message, detection_type, camera, "CRITICAL") #imma need to store val to know if failed or not
 
