@@ -1,0 +1,18 @@
+backend/app/services/property_service.py
+  h_cf6208e37032c0 26-28,146-147,155
+backend/app/services/pairing_token.py
+  h_cf6208e37032c0 30-32
+backend/app/services/camera_service.py
+  h_cf6208e37032c0 83,86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "474da085976516405ad006df442292107ba57b0f",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
