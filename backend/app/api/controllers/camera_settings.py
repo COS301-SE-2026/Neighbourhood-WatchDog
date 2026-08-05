@@ -30,7 +30,7 @@ Claims = Annotated[dict, Depends(get_current_user)]
 async def get_settings(camera_id: UUID, db: DbSession, claims: Claims):
     """Getting the confidence threshold and detection zones for a camera"""
     require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN")
-    return get_camera_settings_handler(camera_id, db)
+    return await get_camera_settings_handler(camera_id, db)
 
 
 @router.patch("/{camera_id}/settings",responses={400: {"description": "confidence_threshold is required"}})
@@ -45,7 +45,7 @@ async def update_settings(
 
     if payload.confidence_threshold is None:
         raise HTTPException(400, "confidence_threshold is required")
-    return update_camera_settings_handler(camera_id, payload.confidence_threshold, db, claims)
+    return await update_camera_settings_handler(camera_id, payload.confidence_threshold, db, claims)
 
 
 @router.post("/{camera_id}/zones", response_model=ZoneResponse, status_code=201)
@@ -57,7 +57,7 @@ async def create_zone(
 ):
     """Adding a detection zone polygon to a camera"""
     require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN")
-    return create_zone_handler(camera_id, payload.name, payload.polygon, db, claims)
+    return await create_zone_handler(camera_id, payload.name, payload.polygon, db, claims)
 
 
 @router.delete("/{camera_id}/zones/{zone_id}", status_code=204)
@@ -69,4 +69,4 @@ async def delete_zone(
 ):
     """Removing a detection zone from a camera"""
     require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
-    return delete_zone_handler(camera_id, zone_id, db, claims)
+    return await delete_zone_handler(camera_id, zone_id, db, claims)

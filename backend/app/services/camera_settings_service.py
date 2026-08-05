@@ -1,30 +1,32 @@
 from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy import select
-from app.core.database import DbSession
 from app.models.camera import Camera
 from app.models.camera_detection_zone import CameraDetectionZone
 
 import logging
 
 from app.services.audit_service import create_audit_log_item
-from app.models.audit_log import AuditAction
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.audit_log import AuditAction, TargetEntity
 
 CAMERA_NOT_FOUND = "Camera not found"
 
 
-def get_camera_settings_handler(camera_id: UUID, db: DbSession) -> dict:
-    camera = db.execute(
+async def get_camera_settings_handler(camera_id: UUID, db: AsyncSession) -> dict:
+    camera_result = await db.execute(
         select(Camera).where(Camera.id == camera_id)
-    ).scalar_one_or_none()
+    )
+    camera = camera_result.scalar_one_or_none()
 
     if not camera:
         raise HTTPException(404, CAMERA_NOT_FOUND)
 
-    zones = db.execute(
+    zones_result = await db.execute(
         select(CameraDetectionZone)
         .where(CameraDetectionZone.camera_id == camera_id)
-    ).scalars().all()
+    )
+    zones = zones_result.scalar_one_or_none().all()
 
     return {
         "camera_id": camera_id,
@@ -41,11 +43,12 @@ def get_camera_settings_handler(camera_id: UUID, db: DbSession) -> dict:
     }
 
 
-def update_camera_settings_handler(camera_id: UUID, confidence_threshold: float, db: DbSession, claims: dict) -> dict:
+async def update_camera_settings_handler(camera_id: UUID, confidence_threshold: float, db: AsyncSession, claims: dict) -> dict:
     try:
-        camera = db.execute(
+        camera_result = await db.execute(
             select(Camera).where(Camera.id == camera_id)
-        ).scalar_one_or_none()
+        )
+        camera = camera_result.scalar_one_or_none()
 
         if not camera:
             raise HTTPException(404, CAMERA_NOT_FOUND)
@@ -70,8 +73,8 @@ def update_camera_settings_handler(camera_id: UUID, confidence_threshold: float,
             new_values=new_values,
         )
 
-        db.commit()
-        db.refresh(camera)
+        await db.commit()
+        await db.refresh(camera)
 
         return {
             "camera_id": camera.id,
@@ -79,11 +82,11 @@ def update_camera_settings_handler(camera_id: UUID, confidence_threshold: float,
         }
 
     except HTTPException as he:
-        db.rollback()
+        await db.rollback()
         raise he
 
     except Exception:
-        db.rollback()
+        await db.rollback()
         logging.exception("Failed to update camera settings for camera_id=%s", camera_id)
         raise HTTPException(
             500,
@@ -91,11 +94,12 @@ def update_camera_settings_handler(camera_id: UUID, confidence_threshold: float,
         )
 
 
-def create_zone_handler(camera_id: UUID, name: str, polygon: list, db: DbSession, claims: dict) -> CameraDetectionZone:
+async def create_zone_handler(camera_id: UUID, name: str, polygon: list, db: AsyncSession, claims: dict) -> CameraDetectionZone:
     try:
-        camera = db.execute(
+        camera_result = await db.execute(
             select(Camera).where(Camera.id == camera_id)
-        ).scalar_one_or_none()
+        )
+        camera = camera_result.scalar_one_or_none()
 
         if not camera:
             raise HTTPException(404, CAMERA_NOT_FOUND)
@@ -112,10 +116,10 @@ def create_zone_handler(camera_id: UUID, name: str, polygon: list, db: DbSession
             polygon=polygon,
         )
 
-        db.add(zone)
+        await db.add(zone)
 
         # Generates zone.id without committing
-        db.flush()
+        await db.flush()
 
         create_audit_log_item(
             db=db,
@@ -130,31 +134,32 @@ def create_zone_handler(camera_id: UUID, name: str, polygon: list, db: DbSession
             },
         )
 
-        db.commit()
-        db.refresh(zone)
+        await db.commit()
+        await db.refresh(zone)
 
         return zone
 
     except HTTPException as he:
-        db.rollback()
+        await db.rollback()
         raise he
 
     except Exception:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(
             500,
             "Failed to create detection zone"
         )
 
 
-def delete_zone_handler(camera_id: UUID,zone_id: UUID,db: DbSession,claims: dict) -> None:
+async def delete_zone_handler(camera_id: UUID,zone_id: UUID,db: AsyncSession,claims: dict) -> None:
     try:
-        zone = db.execute(
+        zone_result = await db.execute(
             select(CameraDetectionZone).where(
                 CameraDetectionZone.id == zone_id,
                 CameraDetectionZone.camera_id == camera_id,
             )
-        ).scalar_one_or_none()
+        )
+        zone = zone_result.scalar_one_or_none()
 
         if not zone:
             raise HTTPException(
@@ -170,7 +175,7 @@ def delete_zone_handler(camera_id: UUID,zone_id: UUID,db: DbSession,claims: dict
 
         zone_id = zone.id
 
-        db.delete(zone)
+        await db.delete(zone)
 
         create_audit_log_item(
             db=db,
@@ -181,14 +186,14 @@ def delete_zone_handler(camera_id: UUID,zone_id: UUID,db: DbSession,claims: dict
             old_values=old_values,
         )
 
-        db.commit()
+        await db.commit()
 
     except HTTPException as he:
-        db.rollback()
+        await db.rollback()
         raise he
 
     except Exception:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(
             500,
             "Failed to delete detection zone"
