@@ -26,7 +26,6 @@ class Camera(Base):
 
     
     alerts = relationship("Alert", back_populates="camera")
-    detection_events = relationship("DetectionEvent", back_populates="camera")
     retention_policy = relationship("RetentionPolicy", back_populates="camera", uselist=False)
     detection_zones = relationship("CameraDetectionZone", back_populates="camera", cascade="all, delete-orphan")
     property = relationship("Property", back_populates="camera")
