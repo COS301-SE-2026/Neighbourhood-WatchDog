@@ -99,11 +99,17 @@ async def deregister_camera_handler(camera_id: UUID, db: Optional[AsyncSession],
         if not camera_obj:
             raise HTTPException(status_code=404, detail="Camera not found")
         
-        prop_user = await db.execute(
+        result = await db.execute(
             select(PropertyUser).where(PropertyUser.property_id == camera_obj.property_id)
-            ).scalar_one_or_none()
+        )
+        prop_user = result.scalar_one_or_none()
+
+        result = await db.execute(
+            select(User).where(User.id == prop_user.user_id)
+        )
+        user = result.scalar_one_or_none()
         
-        if not prop_user or prop_user.user.cognito_sub != claims.get("sub"):
+        if not prop_user or not user or user.cognito_sub != claims.get("sub"):
             raise HTTPException(status_code=403, detail="Forbidden")
 
         
@@ -234,23 +240,31 @@ async def list_cameras_handler(property_id: str, db: AsyncSession, claims: dict)
     except ValueError:
         raise HTTPException(400, "Invalid property ID")
 
-    result = await db.execute(select(Property).where(Property.id == prop_uuid))
+    stmt = select(Property).where(Property.id == prop_uuid)
+    result = await db.execute(stmt)
     property_obj = result.scalar_one_or_none()
 
     if not property_obj:
         raise HTTPException(403, "Property does not exist")
 
-    prop_user_result = await db.execute(select(PropertyUser).where(PropertyUser.property_id == prop_uuid))
-    prop_user = prop_user_result.scalar_one_or_none()
+    stmt = select(PropertyUser).where(PropertyUser.property_id == prop_uuid)
+    result = await db.execute(stmt)
+    prop_user = result.scalar_one_or_none()
 
     if not prop_user:
         raise HTTPException(403, "User does not have access to this property")
 
-    if prop_user.user.cognito_sub != claims["sub"]:
+    result = await db.execute(
+        select(User).where(User.id == prop_user.user_id)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user or user.cognito_sub != claims["sub"]:
         raise HTTPException(403, "This user does not have access to this property")
 
-    camera_result = db.execute(select(Camera).where(Camera.property_id == prop_uuid).order_by(Camera.created_at.desc()))
-    cameras = camera_result.scalars().all()
+    stmt = select(Camera).where(Camera.property_id == prop_uuid).order_by(Camera.created_at.desc())
+    result = await db.execute(stmt)
+    cameras = result.scalars().all()
 
     return CamerasRes(
         status=200,
