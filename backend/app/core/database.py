@@ -18,13 +18,21 @@ engine = create_async_engine(
     max_overflow=10
 )
 
-SessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    autocommit=False,
+    autoflush=False,
+    expire_on_commit=False
+)
 
 Base = declarative_base()
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with SessionLocal as db:
-
-        yield db
+        try:
+            yield db
+        finally:
+            await db.close()
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
