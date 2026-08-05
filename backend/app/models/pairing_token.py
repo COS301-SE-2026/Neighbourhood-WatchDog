@@ -8,7 +8,7 @@ class PairingToken(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False, server_default=text("gen_random_uuid()"))
     token = Column(String, nullable=False, unique=True, index=True)
-    property_id = Column(UUID(as_uuid=True), ForeignKey("property.id"), ondelete="CASCADE", nullable=False)
+    property_id = Column(UUID(as_uuid=True), ForeignKey("property.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
     expires_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now() + interval '10 minutes'")) # expires in 10 minutes
     used_at = Column(TIMESTAMP(timezone=True), nullable=True)
