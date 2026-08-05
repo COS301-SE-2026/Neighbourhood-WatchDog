@@ -102,6 +102,7 @@ async def update_camera_settings_handler(camera_id: UUID, confidence_threshold: 
 
 
 async def create_zone_handler(camera_id: UUID, name: str, polygon: list, db: AsyncSession, claims: dict) -> CameraDetectionZone:
+    """Creates a zone on the frame so that only detections found within that zone are picked up. Receives the camera_id, name, polygon, db and claims and returns the created zone."""
     try:
         camera_result = await db.execute(
             select(Camera).where(Camera.id == camera_id)
