@@ -4,10 +4,11 @@ from app.models.camera import Camera
 from app.schemas.camera import CameraRes
 from app.models.pairing_token import PairingToken
 from app.models.edge_agent_credentials import EdgeAgentCredential
+from app.models.user import User
 from app.schemas.pairing_token import LinkPropertyToken, LinkPropertyTokenRes, EdgeAgentsCredentialsSchema, EdgeAgentsCredentialsRes
 
 from fastapi import HTTPException
-from sqlalchemy import Select
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone
 from uuid import UUID
@@ -17,25 +18,33 @@ from app.models.audit_log import AuditAction
 
 import secrets
 import hashlib
+import logging
+
+logger = logging.getLogger(__name__)
 
 async def get_pairing_token_handler(
     property_id: UUID,
     db: DbSession,
     claims: dict
 ) -> LinkPropertyTokenRes:
+    """Gets a pairing token. Requires the user's property_id, the dbSession, and the claims. Creates the pairing token and returns it to the user for the user to pair their edge agent to the property."""
 
     if not property_id:
+        logger.warning("get_pairing_token: no property_id provided in request with claims=%s", claims)
         raise HTTPException(400, "No property provided")
 
     if not db:
+        logger.warning("get_pairing_token: no db provided in request with claims=%s", claims)
         raise HTTPException(500, "No database provided")
 
     # Check property exists
-    stmt = Select(Property).where(Property.id == property_id)
-    user_property = db.execute(stmt).scalar_one_or_none()
+    stmt = select(Property).where(Property.id == property_id)
+    result = await db.execute(stmt)
+    user_property = result.scalar_one_or_none()
 
 
     if not user_property:
+        logger.warning("get_pairing_token: no property found with property_id=%s", property_id)
         raise HTTPException(404, "Property does not exist")
     
     # Create the pairing token and adding it to the db
@@ -45,11 +54,18 @@ async def get_pairing_token_handler(
         try: 
             new_token = PairingToken(token=token, property_id=property_id)
             db.add(new_token)
-            db.flush()
+            await db.flush()
 
-            create_audit_log_item(
+            stmt = select(User).where(User.cognito_sub == claims['sub'])
+            result = await db.execute(stmt)
+            user = result.scalar_one_or_none()
+
+            if user is None:
+                logger.warning("get_pairing_token: user not found with cognito sub=%s", claims['sub'])
+
+            await create_audit_log_item(
                 db=db,
-                user_id=UUID(claims["id"]),
+                user_id=UUID(user.id),
                 action=AuditAction.CREATE,
                 target_entity_type="PairingToken",
                 target_entity_id=new_token.id,
@@ -59,7 +75,7 @@ async def get_pairing_token_handler(
                 },
             )
 
-            db.commit()
+            await db.commit()
             
             link_prop_token = LinkPropertyToken(
                 token=token,
@@ -71,7 +87,8 @@ async def get_pairing_token_handler(
                 data=link_prop_token
             )
         except IntegrityError:
-            db.rollback()
+            logger.error("get_pairing_token: token collision, retrying, property_id=%s", property_id)
+            await db.rollback()
             continue #try again if there is a collision
 
     raise RuntimeError("Failed to generate unique pairing token after 10 attempts")
@@ -91,20 +108,23 @@ async def pair_agent_handler(
     db: DbSession,
 ) -> EdgeAgentsCredentialsRes:
     if not db:
+        logger.warning("pair_agent: no db passed in for request with pairing_token=%s", pairing_token)
         raise HTTPException(500, "No database provided")
 
     try:
-        stmt = Select(PairingToken).where(PairingToken.token == pairing_token).with_for_update()
-        token_record = db.execute(stmt).scalar_one_or_none()
+        stmt = select(PairingToken).where(PairingToken.token == pairing_token).with_for_update()
+        result = await db.execute(stmt)
+        token_record = result.scalar_one_or_none()
 
         invalid_token = (not token_record) or (token_record.expires_at < datetime.now(timezone.utc)) or (token_record.used_at)
 
         if invalid_token:
+            logger.warning("pair_agent: pairing_token %s is invalid", pairing_token)
             raise HTTPException(400, "Token is expired or invalid. Please request a new token and try again.")
 
         # find the property to get the address
-        stmt = Select(Property).where(Property.id == token_record.property_id)
-        property_record = db.execute(stmt).scalar_one_or_none()
+        stmt = select(Property).where(Property.id == token_record.property_id)
+        property_record = await db.execute(stmt).scalar_one_or_none()
 
         # if the property does not exist raise HTTPException
         if not property_record:
@@ -112,7 +132,7 @@ async def pair_agent_handler(
 
         #also make the token record in the db say used at datetime.now
         token_record.used_at = datetime.now(timezone.utc)
-        db.flush()
+        await db.flush()
 
         #add a agent credentials table  
 
@@ -125,12 +145,13 @@ async def pair_agent_handler(
         )
 
         db.add(new_edge_agent)
-        db.flush()
-        db.commit()
+        await db.flush()
+        await db.commit()
 
         #getting the cameras related to the property
-        stmt = Select(Camera).where(Camera.property_id == property_record.id)
-        cameras = db.execute(stmt).scalars().all()
+        stmt = select(Camera).where(Camera.property_id == property_record.id)
+        result = await db.execute(stmt)
+        cameras = result.scalars().all()
 
         cameras_data = [
             CameraRes(
@@ -161,10 +182,10 @@ async def pair_agent_handler(
         )
 
     except HTTPException:
-        db.rollback()
+        await db.rollback()
         raise
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(500, "Failed to add to property database")
 
 def gen_api_key() -> str:

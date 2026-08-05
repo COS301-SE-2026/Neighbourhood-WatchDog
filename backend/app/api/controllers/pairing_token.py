@@ -18,10 +18,9 @@ async def get_pairing_token(
     request: Request,
     property_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Annotated[dict, Depends(require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN'))],
 ) -> LinkPropertyTokenRes:
     """Creates a pairing token and returns it to the user for the user to link their always on device."""
-    require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN')
 
     return await get_pairing_token_handler(property_id, db, claims)
 

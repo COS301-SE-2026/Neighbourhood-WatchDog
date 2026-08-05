@@ -83,7 +83,7 @@ async def create_property_handler(
     
     except IntegrityError:
         await db.rollback()
-        logger.error("Property created: id=%s address=%s user_id=%s", new_property.id, addr, user.id)
+        logger.error("IntegrityError creating property for user claims=%s", claims)
         raise HTTPException(500, "Failed to add to property database")
     except HTTPException as he:
         await db.rollback()
