@@ -3,11 +3,10 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.core.database import DbSession
-from app.models.alert import Alert
-from app.models.detection_event import DetectionEvent
+from app.models.alert import Alert, DetectionType
 from app.models.camera import Camera
 from app.models.zone import GeospatialZone
-from app.schemas.detection import DetectionEventRes, DetectionIngestReq, DetectionIngestRes
+from app.schemas.detection import DetectionIngestReq, DetectionIngestRes
 from app.services.alert_service import _build_alert_res
 from app.services.notification_service import dispatch_notifications
 
@@ -58,16 +57,6 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
 
         threshold = _get_threshold(zone)
 
-        event = DetectionEvent(
-            camera_id=data.camera_id,
-            frame_timestamp=data.frame_timestamp,
-            detection_type=data.detection_type,
-            confidence_score=data.confidence_score,
-            thumbnail_url=data.thumbnail_url,
-            processed=False,
-        )
-        db.add(event)
-        db.flush()
 
         alert_created = False
         alert_id = None
@@ -76,19 +65,21 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
         if data.confidence_score >= threshold:
             alert = Alert(
                 camera_id=data.camera_id,
-                detection_event_id=event.id,
-                status="OPEN",
+                frame_timestamp=data.frame_timestamp,
+                detection_type=data.detection_type,
+                confidence_score=data.confidence_score,
+                thumbnail_url=data.thumbnail_url,
+                processed=True,
+                status="OPEN"
             )
             db.add(alert)
             db.flush()
             alert_created = True
             alert_id = alert.id
 
-        event.processed = True
         db.commit()
-        db.refresh(event)
 
-        if alert_created and alert:
+        if alert:
             db.refresh(alert)
             camera = db.execute(
                 select(Camera).where(Camera.id == alert.camera_id)
@@ -110,11 +101,11 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
                     detection_type=data.detection_type,
                     confidence_score=data.confidence_score,
                     frame_timestamp=data.frame_timestamp,
-                )   
+                )
 
         return DetectionIngestRes(
             status=201,
-            data=DetectionEventRes.model_validate(event),
+            message=("Alert created" if alert_created else "Detection did not meet the configured confidence threshold"),
             alert_created=alert_created,
             alert_id=alert_id,
         )

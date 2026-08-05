@@ -2,7 +2,7 @@ from datetime import datetime, timezone, timedelta, date as date_cls
 from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm import Session
 from app.models.alert import Alert
-from app.models.detection_event import DetectionEvent
+from app.models.alert import Alert, DetectionType
 from app.models.neighbourhood import Neighbourhood
 from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes, NumberInPeriod, TrendGroupBy, TrendDirection, TrendBucket, TrendData
 from fastapi import HTTPException
@@ -28,7 +28,7 @@ NOT_AUTHORISED = "Not authorised for this neighbourhood"
 
 async def create_alert(db: Session, data: AlertCreate):
     try:
-        detection_event = DetectionEvent(
+        detection_event = Alert(
             camera_id=data.camera_id,
             frame_timestamp=data.timestamp,
             detection_type=data.detection_type,
@@ -205,7 +205,7 @@ async def list_alerts_handler(
         base_stmt = (
             select(Alert)
             .join(Camera, Alert.camera_id == Camera.id)
-            .join(DetectionEvent, Alert.detection_event_id == DetectionEvent.id)
+            .join(Alert.detection_type, Alert.detection_event_id == Alert.id)
             .where(Camera.neighbourhood_id == UUID(str(neighbourhood_id)))
         )
 
@@ -214,7 +214,7 @@ async def list_alerts_handler(
         if camera_id:
             base_stmt = base_stmt.where(Alert.camera_id == camera_id)
         if detection_type:
-            base_stmt = base_stmt.where(DetectionEvent.detection_type == detection_type)
+            base_stmt = base_stmt.where(Alert.detection_type == detection_type)
         if start_date:
             base_stmt = base_stmt.where(Alert.created_at >= start_date)
         if end_date:
@@ -453,7 +453,7 @@ async def get_trends_handler(neighbourhood_id: UUID, db: DbSession, claims: dict
     stmt = (
         select(bucket, func.count(Alert.id).label("count"))
         .join(Camera, Alert.camera_id == Camera.id)
-        .join(DetectionEvent, Alert.detection_event_id == DetectionEvent.id)
+        .join(Alert, Alert.detection_event_id == Alert.id)
         .where(Camera.neighbourhood_id == UUID(str(neighbourhood_id)))
     )
 
@@ -467,7 +467,7 @@ async def get_trends_handler(neighbourhood_id: UUID, db: DbSession, claims: dict
 
     
     if incident_type:
-        stmt = stmt.where(DetectionEvent.detection_type == incident_type)
+        stmt = stmt.where(Alert.detection_type == incident_type)
 
 
     stmt = stmt.group_by(bucket).order_by(bucket)
@@ -516,11 +516,11 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: DbSession, c
     if not neighbourhood:
         raise HTTPException(status_code=404, detail="Neighbourhood not found")
 
-    detection_event = db.execute(select(DetectionEvent).where(DetectionEvent.id == alert.detection_event_id)).scalar_one_or_none()
-    if not detection_event:
+    detection_type = db.execute(select(Alert).where(Alert.id == alert.detection_event_id)).scalar_one_or_none()
+    if not detection_type:
         raise HTTPException(status_code=404, detail="Detection not found")
     
-    detection_type = detection_event.detection_type
+    detection_type = Alert.detection_type
 
     alert_res = _build_alert_res(alert)
     await broadcast(
