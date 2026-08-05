@@ -20,7 +20,12 @@ async def create_property(
     """Create property endpoint returns the property object that was created"""
 
     require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN')
-    new_property = await create_property_handler(req.address, req.property_type, claims, db)
+    new_property = await create_property_handler(
+        req.address, 
+        req.property_type, 
+        claims, 
+        db
+    )
 
     property_res = PropertyRes(
         property_id=new_property.id,

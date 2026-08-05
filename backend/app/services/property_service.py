@@ -1,20 +1,26 @@
 from fastapi import HTTPException
-from app.core.database import DbSession
 from sqlalchemy import select
-from app.models.user import User
-from app.models.property import Property, PropertyTypeEnum
-from app.models.property_user import PropertyUser
-from app.models.camera import Camera
-from app.models.neighbourhood import Neighbourhood
+from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 from typing import List
 from uuid import UUID
 
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction
+from app.models.user import User
+from app.models.property import Property, PropertyTypeEnum
+from app.models.property_user import PropertyUser
+from app.models.camera import Camera
+from app.models.neighbourhood import Neighbourhood
+from app.core.database import DbSession
 
-async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims: dict, db: DbSession) -> Property:
-    
+async def create_property_handler(
+    addr: str, 
+    prop_type: PropertyTypeEnum, 
+    claims: dict, 
+    db: DbSession
+) -> Property:
+    """Creates a new property. Takes in the address, property type (PUBLIC or PRIVATE), claims and the DbSession, creates the property and returns the created property"""
     if not addr or addr == "":
         raise HTTPException(400, "No address or empty address field.")
 
@@ -33,14 +39,15 @@ async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims
     try:
         # get user
         stmt = select(User).where(User.cognito_sub == claims['sub'])
-        user = db.execute(stmt).scalar_one_or_none()    
-
-        # add prop
-        db.add(new_property)
-        db.flush()
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
 
         if not user:
             raise HTTPException(404, "User not found")
+
+        # add prop
+        db.add(new_property)
+        await db.flush()
 
         #set user to prop admin
         new_property_user = PropertyUser(
@@ -49,7 +56,7 @@ async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims
             is_admin = True
         )
         db.add(new_property_user)
-        db.flush()
+        await db.flush()
 
         create_audit_log_item(
             db=db,
@@ -63,18 +70,21 @@ async def create_property_handler(addr: str, prop_type: PropertyTypeEnum, claims
             },
         )
 
-        db.commit()
+        await db.commit()
         return new_property
     
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(500, "Failed to add to property database")
     except HTTPException as he:
-        db.rollback()
+        await db.rollback()
         raise he
 
 
-async def get_user_properties_handler(claims: dict, db: DbSession) -> List[Property]:
+async def get_user_properties_handler(
+    claims: dict,
+    db: DbSession
+) -> List[Property]:
     """Fetch all properties owned by the current user"""
 
     if not claims:
@@ -83,14 +93,16 @@ async def get_user_properties_handler(claims: dict, db: DbSession) -> List[Prope
     try:
         #get user by cognito_sub
         stmt = select(User).where(User.cognito_sub == claims['sub'])
-        user = db.execute(stmt).scalar_one_or_none()
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
 
         if not user:
             raise HTTPException(404, "User not found")
 
         #get all properties for this user
         stmt = select(Property).join(PropertyUser).where(PropertyUser.user_id == user.id)
-        properties = db.execute(stmt).scalars().all()
+        result = await db.execute(stmt)
+        properties = result.scalars().all()
 
         return properties
 
@@ -99,22 +111,31 @@ async def get_user_properties_handler(claims: dict, db: DbSession) -> List[Prope
     except Exception as e:
         raise HTTPException(500, f"Failed to fetch properties: {str(e)}")
     
-async def get_property_details_handler(property_id: UUID, db: DbSession):
-    """gets all the details for the property page"""
+async def get_property_details_handler(
+    property_id: UUID,
+    db: DbSession
+) -> dict:
+    """Gets all the details for the property page"""
 
     if not property_id:
-        raise HTTPException(400, "No property ID provided")
+        raise HTTPException(400, "No property ID provided.")
 
     try:
         #get property
         stmt = select(Property).where(Property.id == property_id)
-        property = db.execute(stmt).scalar_one_or_none()
+        result = await db.execute(stmt)
+        property_obj = result.scalar_one_or_none()
 
-        if not property:
-            raise HTTPException(404, "Property not found")
+        if not property_obj:
+            raise HTTPException(404, "Property not found.")
         
-        stmt = select(PropertyUser).where(PropertyUser.property_id == property_id)
-        propuse = db.execute(stmt).scalars().all()
+        stmt = (
+            select(PropertyUser)
+            .where(PropertyUser.property_id == property_id)
+            .options(selectinload(PropertyUser.user))
+        )
+        result = await db.execute(stmt)
+        property_users = result.scalars().all()
 
         users = [
             {
@@ -123,14 +144,15 @@ async def get_property_details_handler(property_id: UUID, db: DbSession):
                 "first_name": pu.user.first_name,
                 "last_name": pu.user.last_name,
             }
-            for pu in propuse
+            for pu in property_users
         ]
 
         # get neighbourhood if property is linked to one
         neighbourhood = None
-        if property.neighbourhood_id:
-            stmt = select(Neighbourhood).where(Neighbourhood.id == property.neighbourhood_id)
-            neighbourhood_obj = db.execute(stmt).scalar_one_or_none()
+        if property_obj.neighbourhood_id:
+            stmt = select(Neighbourhood).where(Neighbourhood.id == property_obj.neighbourhood_id)
+            result = await db.execute(stmt)
+            neighbourhood_obj = result.scalar_one_or_none()
             if neighbourhood_obj:
                 neighbourhood = {
                     "id": neighbourhood_obj.id,
@@ -142,7 +164,8 @@ async def get_property_details_handler(property_id: UUID, db: DbSession):
 
         # get cameras linked to this property
         stmt = select(Camera).where(Camera.property_id == property_id)
-        cameras = db.execute(stmt).scalars().all()
+        result = await db.execute(stmt)
+        cameras = result.scalars().all()
         camera_list = [
             {
                 "id": cam.id,
