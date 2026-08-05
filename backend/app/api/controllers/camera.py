@@ -59,7 +59,7 @@ async def edit_camera(
 
     updated = edit_camera_handler(camera_id, req, db, claims)
 
-    return EditCameraRes(
+    return await EditCameraRes(
         status=200,
         message="Camera updated successfully",
         data=updated

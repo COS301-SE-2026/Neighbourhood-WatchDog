@@ -307,9 +307,9 @@ class TestEditCamera:
             camera, prop_user
         ]
 
-    def test_happy_path(self):
+    async def test_happy_path(self):
         """"Edit camera """
-        camera = edit_camera_handler(
+        camera = await edit_camera_handler(
             camera_id=self.mock_camera.id,
             req=self.mock_req,
             db=self.mock_db,
@@ -330,12 +330,12 @@ class TestEditCamera:
         self.mock_db.rollback.assert_not_called()
         self.mock_db.add.assert_not_called()
 
-    def test_empty_payload_raises_400(self):
+    async def test_empty_payload_raises_400(self):
         """Empty payload on camera"""
         
         empty_req = CameraEditReq()
         with pytest.raises(HTTPException) as exe:
-            edit_camera_handler(
+            await edit_camera_handler(
                 camera_id=self.mock_camera.id,
                 req=empty_req,
                 db=self.mock_db,
@@ -345,14 +345,14 @@ class TestEditCamera:
         assert exe.value.status_code == 400
         self.mock_db.rollback.assert_called_once()
 
-    def test_partial_edit(self):
+    async def test_partial_edit(self):
         """Partial edit for a camera"""
         partial_req = CameraEditReq(
             enabled=False
         )
         
         
-        camera = edit_camera_handler(
+        camera = await edit_camera_handler(
             camera_id=self.mock_camera.id,
             req=partial_req,
             db=self.mock_db,
@@ -371,12 +371,12 @@ class TestEditCamera:
         self.mock_db.rollback.assert_not_called()
         self.mock_db.add.assert_not_called()
 
-    def test_camera_not_found_raises_404(self):
+    async def test_camera_not_found_raises_404(self):
         """Camera non existent for edit camera"""
         self.reset_side_effects(camera=None, prop_user=self.mock_property_user)
 
         with pytest.raises(HTTPException) as exception:
-            edit_camera_handler(
+            await edit_camera_handler(
                 camera_id="fake_camera_id",
                 req=self.mock_req,
                 db=self.mock_db,
@@ -388,11 +388,11 @@ class TestEditCamera:
         self.mock_db.rollback.assert_called_once()
 
     
-    def test_wrong_owner_raises_403(self):
+    async def test_wrong_owner_raises_403(self):
         """Unauthorised user makes request to edit camera"""
         self.reset_side_effects(camera=self.mock_camera, prop_user=None)
         with pytest.raises(HTTPException) as exception:
-            edit_camera_handler(
+            await edit_camera_handler(
                 camera_id=self.mock_camera.id,
                 req=self.mock_req,
                 db=self.mock_db,
@@ -403,13 +403,13 @@ class TestEditCamera:
         self.mock_db.commit.assert_not_called()
         self.mock_db.rollback.assert_called_once()
 
-    def test_unexpected_error_raises_500(self):
+    async def test_unexpected_error_raises_500(self):
         """unexpected error, could be db"""
 
         self.mock_db.commit.side_effect = Exception("DB connection lost")
 
         with pytest.raises(HTTPException) as exception:
-            edit_camera_handler(
+            await edit_camera_handler(
                 camera_id=self.mock_camera.id,
                 req=self.mock_req,
                 db=self.mock_db,
@@ -419,7 +419,7 @@ class TestEditCamera:
         assert exception.value.status_code == 500
         self.mock_db.rollback.assert_called_once()
 
-    def test_re_enable_camera(self):
+    async def test_re_enable_camera(self):
         """re enabling a camera that has been disabled"""
 
         self.mock_camera.enabled = False
@@ -427,7 +427,7 @@ class TestEditCamera:
             enabled=True
         )
 
-        camera = edit_camera_handler(
+        camera = await edit_camera_handler(
             camera_id=self.mock_camera.id,
             req=enable_req,
             db=self.mock_db,
@@ -443,8 +443,8 @@ class TestEditCamera:
         self.mock_db.rollback.assert_not_called()
         self.mock_db.add.assert_not_called()
 
-    def test_refresh_called_after_update(self):
-        edit_camera_handler(
+    async def test_refresh_called_after_update(self):
+        await edit_camera_handler(
             camera_id=self.mock_camera.id,
             req=self.mock_req,
             db=self.mock_db,
