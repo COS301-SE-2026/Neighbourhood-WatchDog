@@ -98,17 +98,20 @@ def require_role(*allowed_roles: str):#input any number of roles that are allowe
 
 # edge agents auth stuff
 
-def get_authenticated_edge_agent(
+async def get_authenticated_edge_agent(
     db: DbSession,
     x_internal_token: Annotated[str, Header()],
 ) -> EdgeAgentCredential:
+    """Authenticates API key (x_internal_token) and returns the credentials of the edge 
+        agent associated with that API key"""
     provided_hash = hashlib.sha256(x_internal_token.encode()).hexdigest()
 
     stmt = select(EdgeAgentCredential).where(
         EdgeAgentCredential.key_hash == provided_hash,
         EdgeAgentCredential.revoked_at.is_(None),
     )
-    credential = db.execute(stmt).scalar_one_or_none()
+    result = await db.execute(stmt)
+    credential = result.scalar_one_or_none()
 
     if credential is None:
         raise HTTPException(401, "Invalid or revoked edge agent credential.")

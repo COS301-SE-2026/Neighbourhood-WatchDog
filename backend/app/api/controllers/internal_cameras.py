@@ -44,12 +44,9 @@ def _publish_master_key() -> bytes:
 
 
 def _camera_publish_credentials(camera_id: str) -> tuple[str, str]:
-
+    """Helper function which recevies a camera_id creates a username and password for the camera and returns them as a tuple"""
     username = f"camera-{camera_id}"
-
     digest = hmac.new(_publish_master_key(), camera_id.encode("utf-8"), hashlib.sha256).digest()
-
-
     password = base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
 
     return username, password
