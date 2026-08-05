@@ -11,13 +11,13 @@ from pydantic import BaseModel
 from app.core.database import DbSession
 from app.models.alert import Alert
 from app.models.camera import Camera
-from app.models.detection_event import DetectionEvent, DetectionType
+from app.models.alert import DetectionType
 
 
 router = APIRouter(prefix="/internal", tags=["internal"])
 
 
-class CreateDetectionEventRequest(BaseModel):
+class CreateAlertRequest(BaseModel):
     camera_id: str
     detection_type: str
     confidence_score: float
@@ -30,12 +30,12 @@ class UpdateClipRequest(BaseModel):
     clip_expires_at: str ##the iso datetime
 
 
-@router.post("/detection-events", status_code=201, responses={404: {"description": "Camera not found"}})
+@router.post("/alerts", status_code=201, responses={404: {"description": "Camera not found"}})
 
 #creates a detection event and alert record
 #called by the ai service when the weapon is detected
 #returns a new detection event id and alert id
-def create_detection_event(body: CreateDetectionEventRequest, db: DbSession):
+def create_alert(body: CreateAlertRequest, db: DbSession):
 
     try:
         label_map = {
@@ -60,46 +60,32 @@ def create_detection_event(body: CreateDetectionEventRequest, db: DbSession):
 
         if not camera:
             raise HTTPException(status_code=404,detail=f"Camera {body.camera_id} not found")
-        
-        ts = (
-            datetime.fromisoformat(body.frame_timestamp)
-
-            if body.frame_timestamp
-            else datetime.now(timezone.utc)
-        )
-            
 
 
-        event = DetectionEvent(
-            
-            camera_id=UUID(body.camera_id),
-            frame_timestamp=ts,
-            detection_type=det_type,
-            confidence_score=body.confidence_score,
-            thumbnail_url=body.thumbnail_url
-
-        )
-
-        db.add(event)
-        db.flush() #populating event id before creating the alert
 
 
         alert = Alert(
-            camera_id=UUID(body.camera_id),
-            detection_event_id=event.id,
-            status="OPEN"
 
+            camera_id=UUID(body.camera_id),
+            frame_timestamp=body.frame_timestamp or datetime.now(timezone.utc),
+            detection_type=det_type,
+            confidence_score=body.confidence_score,
+            thumbnail_url=body.thumbnail_url,
+            processed=True,
+            status="OPEN"
         )
+
         db.add(alert)
         db.commit()
-        db.refresh(event)
         db.refresh(alert)
+        db.flush() #populating event id before creating the alert
+
 
 
         return {
-            "detection_event_id": str(event.id),
+            "detection_event_id": str(alert.id),
             "alert_id": str(alert.id)
-                            
+
         }
 
     except Exception:
@@ -108,30 +94,30 @@ def create_detection_event(body: CreateDetectionEventRequest, db: DbSession):
 
 
 
-@router.patch("/detection-events/{event_id}/clip", responses={404: {"description": "Detection event not found"}})
+@router.patch("/alerts/{alert_id}/clip", responses={404: {"description": "Alert not found"}})
 
 #updating s3 clip key and expiry on a detection event after ai uploads the clip
-def update_clip(event_id: str, body: UpdateClipRequest, db: DbSession):
+def update_clip(alert_id: str, body: UpdateClipRequest, db: DbSession):
 
-    event: DetectionEvent | None = db.query(DetectionEvent).filter_by(
-        id=event_id
-    ).first()
+    alert = db.query(Alert).filter_by(id=alert.id).one_or_none()
 
 
-    if not event: 
+    if not alert:
         raise HTTPException(
             status_code=404,
-            detail="Detection event not found"
+            detail="Alert not found"
 
         )
 
-    event.clip_s3_key = body.clip_s3_key
-    event.clip_expires_at = datetime.fromisoformat(body.clip_expires_at)
+    alert.clip_s3_key = body.clip_s3_key
+    alert.clip_expires_at = datetime.fromisoformat(body.clip_expires_at)
 
     db.commit()
-
+    db.refresh(alert)
 
 
     return{
-        "ok": True
+        "alert_id": str(alert.id),
+        "clip_s3_key": alert.clip_s3_key,
+        "clip_expires_at": alert.clip_expires_at
     }

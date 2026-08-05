@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
 from app.models.camera import Camera
-from app.models.detection_event import DetectionEvent
+from app.models.alert import Alert
 from app.models.neighbourhood_join_request import NeighbourhoodJoinRequest
 
 
@@ -111,9 +111,9 @@ def _check_rbac(claims: dict, camera: Camera, db: Session) -> None:
     )
 
 
-@router.get("/{detection_event_id}")
+@router.get("/{alert_id}")
 async def get_clip_url(
-    detection_event_id: str,
+    alert_id: str,
     db: DbSession,
     claims: dict = Depends(get_current_user),
 
@@ -139,16 +139,13 @@ async def get_clip_url(
     #load the detection event
     #fetching the detection event and its respective camera
 
-    event: DetectionEvent | None = db.query(DetectionEvent).filter_by(
-        id=detection_event_id
-    ).first()
+    alert: Alert | None = db.query(Alert).filter_by(id=alert_id).one_or_none()
 
-    if not event: 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Detection event not found"
+    if not alert:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")
 
-    )
 
-    if not event.clip_s3_key:
+    if not alert.clip_s3_key:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No clip is available for this event"
@@ -157,7 +154,7 @@ async def get_clip_url(
 
 
     #checking the events retention expiry
-    if event.clip_expires_at and event.clip_expires_at < datetime.now(tz=timezone.utc):
+    if alert.clip_expires_at and alert.clip_expires_at < datetime.now(tz=timezone.utc):
         raise HTTPException(
             status_code=status.HTTP_410_GONE,
             detail="This clip has expired and is no longer available",
@@ -166,7 +163,7 @@ async def get_clip_url(
 
     #rbac: laoding the camera, and applying permission rules
     camera : Camera | None = db.query(Camera).filter_by(
-        id=event.camera_id
+        id=alert.camera_id
     ).first()
 
     if not camera:
@@ -184,7 +181,7 @@ async def get_clip_url(
         s3 = _s3_client()
         url = s3.generate_presigned_url(
             "get_object",
-            Params={"Bucket": S3_BUCKET, "Key": event.clip_s3_key},
+            Params={"Bucket": S3_BUCKET, "Key": alert.clip_s3_key},
             ExpiresIn=PRESIGN_TTL,
 
         )

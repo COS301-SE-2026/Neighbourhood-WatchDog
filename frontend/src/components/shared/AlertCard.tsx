@@ -39,14 +39,16 @@ export type AlertStatus = "NEW" | "ACKNOWLEDGED" | "RESOLVED";
 export interface Alert {
   id: string;
   camera_id: string;
-  detection_event_id: string;
+  frame_timestamp: string;
+  detection_type: string;
+  confidence_score: number;
+  thumbnail_url?: string | null;
+  clip_s3_key?: string | null;
   status: AlertStatus;
   resolved_by?: string | null;
   resolved_at?: string | null;
   created_at: string;
-  detection_type?: string | null;
-  confidence_score?: number | null;
-  thumbnail_url?: string | null;
+
 }
 
 export function getSeverity(detection_type?: string | null): AlertSeverity {
@@ -232,10 +234,10 @@ function AlertDetailSheet({
 
           {alert.detection_type === "WEAPON_DETECTED" && (
             <AlertFootagePlayer
-              detectionEventId={alert.detection_event_id}
+              alertId={alert.id}
               timestamp={alert.created_at}
             />
-            
+
           )}
 
           <Separator className="bg-steel" />
@@ -245,7 +247,7 @@ function AlertDetailSheet({
             <MetaRow label="Camera ID" value={alert.camera_id} mono />
             <MetaRow
               label="Detection event"
-              value={alert.detection_event_id}
+              value={alert.id}
               mono
             />
             <MetaRow
