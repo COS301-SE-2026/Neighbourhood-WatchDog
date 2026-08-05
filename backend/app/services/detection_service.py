@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from app.core.database import DbSession
 from app.models.alert import Alert, DetectionType
 from app.models.camera import Camera
+from app.models.property_user import PropertyUser
 from app.models.zone import GeospatialZone
 from app.schemas.detection import DetectionIngestReq, DetectionIngestRes
 from app.services.alert_service import _build_alert_res
@@ -51,9 +52,10 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
     try:
         zone = None
         if data.zone_id:
-            zone = db.execute(
+            zone_result = await db.execute(
                 select(GeospatialZone).where(GeospatialZone.id == data.zone_id)
-            ).scalar_one_or_none()
+            )
+            zone = zone_result.scalar_one_or_none()
 
         threshold = _get_threshold(zone)
 
@@ -73,23 +75,34 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
                 status="OPEN"
             )
             db.add(alert)
-            db.flush()
+            await db.flush()
             alert_created = True
             alert_id = alert.id
 
-        db.commit()
+        await db.commit()
 
         if alert:
-            db.refresh(alert)
-            camera = db.execute(
+            await db.refresh(alert)
+            camera_result = await db.execute(
                 select(Camera).where(Camera.id == alert.camera_id)
-            ).scalar_one_or_none()
+            )
+            camera = camera_result.scalar_one_or_none()
             if camera:
                 from app.api.controllers.alert import broadcast
 
+                recipient_result = await db.execute(
+                    select(PropertyUser.user_id).where(
+                        PropertyUser.property_id == camera.property_id
+                    )
+                )
+
+                recipient_user_ids = list(
+                    set(recipient_result.scalars().all())
+                )
+
                 alert_res = _build_alert_res(alert)
                 await broadcast(
-                    neighbourhood_id=str(camera.neighbourhood_id),
+                    user_ids=[str(user_id) for user_id in recipient_user_ids],
                     message={"event": "alert.new", "payload": alert_res.model_dump(mode="json")},
                 )
 
@@ -97,7 +110,7 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
                     db=db,
                     alert_id=alert.id,
                     camera_id=alert.camera_id,
-                    neighbourhood_id=camera.neighbourhood_id,
+                    user_ids=recipient_user_ids,
                     detection_type=data.detection_type,
                     confidence_score=data.confidence_score,
                     frame_timestamp=data.frame_timestamp,
@@ -112,5 +125,5 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
     except HTTPException as he:
         raise he
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(500, "Failed to ingest detection")

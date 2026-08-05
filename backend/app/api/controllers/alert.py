@@ -35,33 +35,43 @@ router = APIRouter(prefix="/alerts", tags=["alerts"])
 _connections: dict[str, set[WebSocket]] = {}
 #TODO: NOTHING HERE SHOULD BE PUBLIC, NEED TO MAKE EVERYTHING PRIVATE 
 
-def _get_bucket(neighbourhood_id: str) -> set[WebSocket]:
-    if neighbourhood_id not in _connections:
-        _connections[neighbourhood_id] = set()
-    return _connections[neighbourhood_id]
+def _get_bucket(user_id: str) -> set[WebSocket]:
+    if user_id not in _connections:
+        _connections[user_id] = set()
+    return _connections[user_id]
 
 
-def register_connection(neighbourhood_id: str, websocket: WebSocket) -> None:
-    _get_bucket(neighbourhood_id).add(websocket)
+def register_connection(user_id: str, websocket: WebSocket) -> None:
+    _get_bucket(user_id).add(websocket)
 
 
-def remove_connection(neighbourhood_id: str, websocket: WebSocket) -> None:
-    _get_bucket(neighbourhood_id).discard(websocket)
+def remove_connection(user_id: str, websocket: WebSocket) -> None:
+    connections = _connections.get(user_id)
+
+    if not connections:
+        return
+
+    connections.discard(websocket)
+
+    if not connections:
+        _connections.pop(user_id, None)
 
 
-async def broadcast(neighbourhood_id: str, message: dict) -> None:
-    connections = _get_bucket(neighbourhood_id)
-    dead: set[WebSocket] = set()
-
+async def broadcast(user_ids: list[str], message: dict) -> None:
     payload = json.dumps(message)
-    for ws in connections:
-        try:
-            await ws.send_text(payload)
-        except Exception:
-            dead.add(ws)
 
-    for ws in dead:
-        connections.discard(ws)
+    for user_id in user_ids:
+        connections = _connections.get(user_id, set())
+        dead: set[WebSocket] = set()
+
+        for ws in connections:
+            try:
+                await ws.send_text(payload)
+            except Exception:
+                dead.add(ws)
+
+        for ws in dead:
+            connections.discard(ws)
 
 
 Claims = Annotated[dict, Depends(get_current_user)]
@@ -192,22 +202,17 @@ async def acknowledge_alert(
     return AcknowledgeAlertRes(status=200, data=result)
 
 
-@router.websocket("/{neighbourhood_id}/ws")
+@router.websocket("/ws")
 async def alert_websocket(
     neighbourhood_id: UUID,
     websocket: WebSocket,
-    token: str | None = Query(default=None),
+    claims: Annotated[dict, Depends(get_current_user)]
 ):
-    _ = token  # TODO: verify real Cognito token when auth is live
-
-    # claims = {
-    #     "sub": "mock-websocket-user",
-    #     "custom:role": "RESIDENT",
-    #     "custom:neighbourhood_id": str(neighbourhood_id),
-    # }
+   
+    user_id = claims["id"]
 
     await websocket.accept()
-    register_connection(str(neighbourhood_id), websocket)
+    register_connection(user_id, websocket)
 
     try:
         while True:

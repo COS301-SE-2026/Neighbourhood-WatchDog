@@ -3,18 +3,20 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import datetime
 
+import asyncio
 import os
 import dotenv
 
 import logging
 from uuid import UUID
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from app.core.database import DbSession
 
 from app.models.notification import Notification, NotificationChannel, NotificationStatus
+from app.models.property import Property
+from app.models.property_user import PropertyUser
 from app.models.user import User, UserRole
 from app.models.camera import Camera
-from app.models.property_user import PropertyUser
 
 dotenv.load_dotenv()
 logger = logging.getLogger(__name__)
@@ -274,32 +276,32 @@ def send_alert_email(recipient_email: str, alert_type: str, camera_name: str, lo
         return False, str(e)
 
 def _log_notification(
-        db: Session,
+        db: DbSession,
         alert_id: UUID,
         user_id: UUID,
         channel: NotificationChannel,
         success: bool,
         error_message: str | None,
 ) -> None:
-    try:
-        record = Notification(
-            alert_id=alert_id,
-            user_id=user_id,
-            channel=channel.value,
-            status=NotificationStatus.SENT.value if success else NotificationStatus.FAILED.value,
-            error_message=error_message,
-        )
-        db.add(record)
-        db.commit()
-    except Exception:
-        logger.exception("Failed to log notification record")
-        db.rollback()
+    db.add(
+      Notification(
+          alert_id=alert_id,
+          user_id=user_id,
+          channel=channel,
+          status=(
+              NotificationStatus.SENT
+              if success
+              else NotificationStatus.FAILED
+          ),
+          error_message=error_message,
+      )
+    )
 
 async def dispatch_notifications(
-        db: Session,
+        db: DbSession,
         alert_id: UUID,
         camera_id: UUID,
-        neighbourhood_id: UUID,
+        user_ids: list[UUID],
         detection_type: str,
         confidence_score: float,
         frame_timestamp,
@@ -312,44 +314,106 @@ async def dispatch_notifications(
         logger.info(f"Alert {alert_id}: NOTIFICATION_ENABLED is not 'true', skipping")
         return
 
-    camera = db.execute(select(Camera).where(Camera.id == camera_id)).scalar_one_or_none()
 
-    if not camera:
-        logger.error(f"Camera with id {camera_id} does not exist")
+    try:
+      camera_result = await db.execute(select(Camera).where(Camera.id == camera_id))
+      camera = camera_result.scalar_one_or_none()
+
+      if not camera:
+          logger.error(f"Camera with id {camera_id} does not exist")
+          return
+
+      
+
+      severity = _classify_severity(detection_type, confidence_score)
+      recipient_user_ids: set[UUID] = set(user_ids)
+
+      neighbourhood_result = await db.execute(select(Property.neighbourhood_id).where(Property.id == camera.property_id))
+      neighbourhood_id = neighbourhood_result.scalar_one_or_none()
+
+
+      if severity == "CRITICAL" and neighbourhood_id:
+          neighbourhood_users_result = await db.execute(
+            select(User.id)
+            .join(
+                PropertyUser,
+                PropertyUser.user_id == User.id,
+            )
+            .join(
+                Property,
+                Property.id == PropertyUser.property_id,
+            )
+            .where(
+                Property.neighbourhood_id == neighbourhood_id,
+                User.role == UserRole.RESIDENT,
+            )
+          )
+
+          recipient_user_ids.update(
+              neighbourhood_users_result.scalars().all()
+          )
+
+      if not recipient_user_ids:
+        logger.info(
+            "Alert %s: no eligible notification recipients found",
+            alert_id,
+        )
         return
 
-    severity = _classify_severity(detection_type, confidence_score)
-    timestamp_str = frame_timestamp.strftime("%d %b %Y, %H:%M:%S") if frame_timestamp else "Unknown"
-    whatsapp_message = _format_whatsapp_message(severity, detection_type, camera.name, timestamp_str)
+      users_result = await db.execute(
+            select(User).where(User.id.in_(recipient_user_ids))
+        )
+      users = list(users_result.scalars().all())
 
-
-    if severity == "CRITICAL":
-        try:
-            residents = db.execute(
-                select(User).where(User.neighbourhood_id == neighbourhood_id, User.role == UserRole.RESIDENT)
-            ).scalars().all()
-        except Exception:
-            logger.exception(f"Failed to fetch residents for neighbourhood {neighbourhood_id}")
+      if not users:
+            logger.info(
+                "Alert %s: recipient IDs did not resolve to users",
+                alert_id,
+            )
             return
 
-        if not residents:
-            logger.info(f"Alert {alert_id}: no residents found in neighbourhood {neighbourhood_id}.")
+      timestamp_str = (
+        frame_timestamp.strftime("%d %b %Y, %H:%M:%S")
+        if frame_timestamp
+        else "Unknown"
+      )
 
-        logger.info(f"Alert {alert_id} [{severity}]: notifying {len(residents)} resident(s) via WhatsApp & Email")
-        _notify_users(db, alert_id, residents, whatsapp_message, detection_type, camera, severity)
+      whatsapp_message = _format_whatsapp_message(
+        severity,
+        detection_type,
+        camera.name,
+        timestamp_str,
+      )
 
-    else:
-        users = db.execute(
-            select(User).join(PropertyUser, PropertyUser.user_id == User.id)
-            .where(PropertyUser.property_id == camera.property_id)
-        ).scalars().all()
+      logger.info(
+            "Alert %s [%s]: notifying %s eligible user(s)",
+            alert_id,
+            severity,
+            len(users),
+        )
 
-        logger.info(f"Alert {alert_id} [{severity}]: notifying {len(users)} property resident(s) via WhatsApp & Email")
-        _notify_users(db, alert_id, users, whatsapp_message, detection_type, camera, severity)
+      await _notify_users(
+          db=db,
+          alert_id=alert_id,
+          users=users,
+          whatsapp_message=whatsapp_message,
+          detection_type=detection_type,
+          camera=camera,
+          severity=severity,
+      )
+
+      await db.commit()
+
+    except Exception:
+        await db.rollback()
+        logger.exception(
+            "Failed while dispatching notifications for alert %s",
+            alert_id,
+        )
 
 
-def _notify_users(
-        db: Session,
+async def _notify_users(
+        db: DbSession,
         alert_id: UUID,
         users: list[User],
         whatsapp_message: str,
@@ -359,19 +423,21 @@ def _notify_users(
 ) -> None:
     for user in users:
         if user.phone_number:
-            success, error = _send_whatsapp(user.phone_number, whatsapp_message)
+            success, error = await asyncio.to_thread(_send_whatsapp, user.phone_number, whatsapp_message)
             _log_notification(db, alert_id, user.id, NotificationChannel.WHATSAPP, success, error)
-            if not success:
-                logger.warning(f"WhatsApp failed for user {user.id}: {error}")
-            else:
+            if success:
                 logger.info(f"Whatsapp sent successfully to user {user.id}")
+            else:
+                logger.warning(f"WhatsApp failed for user {user.id}: {error}")
         else:
             logger.info(f"User {user.id} has no phone_number, skipping")
 
         if user.email:
-            success, error = send_alert_email(user.email, detection_type, camera.name, camera.location, severity)
+            success, error = await asyncio.to_thread(send_alert_email, user.email, detection_type, camera.name, camera.location, severity)
             _log_notification(db, alert_id, user.id, NotificationChannel.EMAIL, success, error)
-            if not success:
+            if success:
+                logger.info(f"Email sent successfully to user {user.id}")
+            else:
                 logger.warning(f"Email failed for user {user.id}: {error}")
         else:
             logger.info(f"User {user.id} has no email, skipping")
