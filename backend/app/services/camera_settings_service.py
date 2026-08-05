@@ -12,14 +12,17 @@ from app.models.audit_log import AuditAction, TargetEntity
 
 CAMERA_NOT_FOUND = "Camera not found"
 
+logger = logging.getLogger(__name__)
 
 async def get_camera_settings_handler(camera_id: UUID, db: AsyncSession) -> dict:
+    """Gets and returns the settings of the camera with the camera_id passed into the function. Returns the camera_id, confidence_threshold, and a list of camera zones in a dictionary"""
     camera_result = await db.execute(
         select(Camera).where(Camera.id == camera_id)
     )
     camera = camera_result.scalar_one_or_none()
 
     if not camera:
+        logger.warning("get_camera_settings: camera with id=%s not found", camera_id)
         raise HTTPException(404, CAMERA_NOT_FOUND)
 
     zones_result = await db.execute(
@@ -28,6 +31,7 @@ async def get_camera_settings_handler(camera_id: UUID, db: AsyncSession) -> dict
     )
     zones = zones_result.scalar_one_or_none().all()
 
+    logger.info("get_camera_settings: successfully retrieved the settings of the camera with id=%s", camera_id)
     return {
         "camera_id": camera_id,
         "confidence_threshold": camera.confidence_threshold,
@@ -44,6 +48,7 @@ async def get_camera_settings_handler(camera_id: UUID, db: AsyncSession) -> dict
 
 
 async def update_camera_settings_handler(camera_id: UUID, confidence_threshold: float, db: AsyncSession, claims: dict) -> dict:
+    """Updates the camera settings of the camera with the id passed in. Receives the camera_id, confidence_threshold, db, and claims. It returns a dictionary with the camera id and the new confidence threshold. """
     try:
         camera_result = await db.execute(
             select(Camera).where(Camera.id == camera_id)
@@ -51,6 +56,7 @@ async def update_camera_settings_handler(camera_id: UUID, confidence_threshold: 
         camera = camera_result.scalar_one_or_none()
 
         if not camera:
+            logger.warning("update_camera_settings: camera with id=%s not found", camera_id)
             raise HTTPException(404, CAMERA_NOT_FOUND)
 
         old_values = {
@@ -76,6 +82,7 @@ async def update_camera_settings_handler(camera_id: UUID, confidence_threshold: 
         await db.commit()
         await db.refresh(camera)
 
+        logger.info("update_camera_settings: successfully updated settings of camera with id=%s", camera_id)
         return {
             "camera_id": camera.id,
             "confidence_threshold": camera.confidence_threshold,
@@ -102,9 +109,11 @@ async def create_zone_handler(camera_id: UUID, name: str, polygon: list, db: Asy
         camera = camera_result.scalar_one_or_none()
 
         if not camera:
+            logger.warning("create_zone: camera with id=%s not found", camera_id)
             raise HTTPException(404, CAMERA_NOT_FOUND)
 
         if len(polygon) < 3:
+            logger.warning("create_zone: could not create zone for camera with id=%s because polygon had less than 3 sides", camera_id)
             raise HTTPException(
                 400,
                 "A zone polygon must have at least 3 points"
