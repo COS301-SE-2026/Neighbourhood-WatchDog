@@ -62,10 +62,11 @@ async def get_pairing_token_handler(
 
             if user is None:
                 logger.warning("get_pairing_token: user not found with cognito sub=%s", claims['sub'])
+                raise HTTPException(404, "User not found.")
 
             await create_audit_log_item(
                 db=db,
-                user_id=UUID(user.id),
+                user_id=user.id,
                 action=AuditAction.CREATE,
                 target_entity_type="PairingToken",
                 target_entity_id=new_token.id,
@@ -124,7 +125,8 @@ async def pair_agent_handler(
 
         # find the property to get the address
         stmt = select(Property).where(Property.id == token_record.property_id)
-        property_record = await db.execute(stmt).scalar_one_or_none()
+        result = await db.execute(stmt)
+        property_record = result.scalar_one_or_none()
 
         # if the property does not exist raise HTTPException
         if not property_record:
