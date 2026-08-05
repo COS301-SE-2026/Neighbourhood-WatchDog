@@ -1,6 +1,6 @@
 from enum import Enum
 
-from sqlalchemy import Boolean, CheckConstraint, Column, Enum as SAEnum, Float, ForeignKey, String, text, TIMESTAMP, DateTime
+from sqlalchemy import Boolean, CheckConstraint, Column, Enum as SAEnum, Float, ForeignKey, String, text, TIMESTAMP, DateTime, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -18,7 +18,7 @@ class DetectionEvent(Base):
 	__tablename__ = "detection_event"
 
 	id = Column(UUID(as_uuid=True), primary_key=True, nullable=False, server_default=text("gen_random_uuid()"))
-	camera_id = Column(UUID(as_uuid=True), ForeignKey("camera.id"), nullable=False)
+	camera_id = Column(UUID(as_uuid=True), ForeignKey("camera.id", ondelete="CASCADE"), nullable=False)
 	frame_timestamp = Column(TIMESTAMP(timezone=True), nullable=False)
 	detection_type = Column(SAEnum(DetectionType, name="detection_type"), nullable=False)
 	confidence_score = Column(Float, nullable=False)
@@ -30,10 +30,11 @@ class DetectionEvent(Base):
 	
 
 	camera = relationship("Camera", back_populates="detection_events")
-	alerts = relationship("Alert", back_populates="detection_event")
+	alerts = relationship("Alert", back_populates="detection_event", passive_deletes=True)
 
 	__table_args__ = (
 		CheckConstraint("confidence_score BETWEEN 0 AND 1", name="ck_confidence_score_range"),
+		Index("ix_detection_event_camera_timestamp", "camera_id", "frame_timestamp"),
 	)
 
 

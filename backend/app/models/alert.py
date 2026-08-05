@@ -15,7 +15,7 @@ class Alert(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     camera_id = Column(UUID(as_uuid=True), ForeignKey("camera.id"), nullable=False)
-    detection_event_id = Column(UUID(as_uuid=True), ForeignKey("detection_event.id"), nullable=False)
+    detection_event_id = Column(UUID(as_uuid=True), ForeignKey("detection_event.id", ondelete="CASCADE"), nullable=False)
     status = Column(String, nullable=False, server_default="OPEN")
     resolved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     resolved_at = Column(TIMESTAMP(timezone=True), nullable=True)

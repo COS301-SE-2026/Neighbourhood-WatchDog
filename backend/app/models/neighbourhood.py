@@ -13,8 +13,8 @@ class Neighbourhood(Base):
     join_code = Column(Text, unique=True, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
+    properties = relationship("Property", back_populates="neighbourhood")
     users = relationship("User", back_populates="neighbourhood")
-    cameras = relationship("Camera", back_populates="neighbourhood")
     zones   = relationship("GeospatialZone", back_populates="neighbourhood")
     risk_scores = relationship("RiskScoreHistory", back_populates="neighbourhood")
     risk_thresholds = relationship("RiskThresholdConfig", back_populates="neighbourhood")
