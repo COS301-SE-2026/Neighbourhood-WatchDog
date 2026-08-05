@@ -8,17 +8,19 @@ from app.models.risk_threshold_config import RiskThresholdConfig
 from app.schemas.risk_threshold_config import RiskThresholdConfigRes, UpdateRiskThresholdConfigReq
 
 
-def get_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, db: DbSession, claims: dict) -> RiskThresholdConfigRes:
+async def get_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, db: DbSession, claims: dict) -> RiskThresholdConfigRes:
     caller_neighbourhood = claims.get("custom:neighbourhood_id")
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
         raise HTTPException(403, "Not authorised for this neighbourhood")
     
     stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id == neighbourhood_id)
-    neighbourhood_risk_config = db.execute(stmt).scalar_one_or_none()
+    result = await db.execute(stmt)
+    neighbourhood_risk_config = result.scalar_one_or_none()
 
     if not neighbourhood_risk_config:
         stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id.is_(None))
-        neighbourhood_risk_config = db.execute(stmt).scalar_one() #need to put a default in seed script
+        result = await db.execute(stmt)
+        neighbourhood_risk_config = result.scalar_one() #need to put a default in seed script
 
     return RiskThresholdConfigRes(
         id=neighbourhood_risk_config.id,
@@ -29,7 +31,7 @@ def get_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, db: DbSessi
     )
 
 
-def update_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, req: UpdateRiskThresholdConfigReq,db: DbSession, claims: dict) -> RiskThresholdConfigRes:
+async def update_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, req: UpdateRiskThresholdConfigReq,db: DbSession, claims: dict) -> RiskThresholdConfigRes:
     caller_neighbourhood = claims.get("custom:neighbourhood_id")
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
         raise HTTPException(403, "Not authorised for this neighbourhood")
@@ -38,12 +40,14 @@ def update_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, req: Upd
     update_data = req.model_dump(exclude_unset=True)
     
     stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id == neighbourhood_id)
-    neighbourhood_risk_config = db.execute(stmt).scalar_one_or_none()
+    result = await db.execute(stmt)
+    neighbourhood_risk_config = result.scalar_one_or_none()
 
     if not neighbourhood_risk_config:
 
         stmt_default = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id.is_(None))
-        default_neighbourhood_risk_config = db.execute(stmt_default).scalar_one()
+        default_result = await db.execute(stmt_default)
+        default_neighbourhood_risk_config = default_result.scalar_one()
 
         new_neighbourhood_risk_config = RiskThresholdConfig(
             neighbourhood_id=neighbourhood_id,
@@ -62,8 +66,8 @@ def update_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, req: Upd
     if neighbourhood_risk_config.low_max >= neighbourhood_risk_config.medium_max:
         raise HTTPException(status_code=422, detail="low_max must be medium_max")
     
-    db.commit()
-    db.refresh(neighbourhood_risk_config)
+    await db.commit()
+    await db.refresh(neighbourhood_risk_config)
 
     return RiskThresholdConfigRes.model_validate(neighbourhood_risk_config)
     

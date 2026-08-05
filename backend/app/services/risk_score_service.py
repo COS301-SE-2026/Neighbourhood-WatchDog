@@ -8,6 +8,7 @@ from app.models.alert import Alert, DetectionType
 from app.models.camera import Camera
 from app.models.risk_score_history import RiskLevel, RiskScoreHistory
 from app.models.risk_threshold_config import RiskThresholdConfig
+from app.models.property import Property
 
 SEVERITY_WEIGHTS = {
     DetectionType.WEAPON_DETECTED: 10,
@@ -22,18 +23,20 @@ CRITICAL_DETECTION_TYPES = {
     DetectionType.FALL_DETECTED
 }
 
-def calculate_risk_score_handler(neighbourhood_id: UUID, db: DbSession):
+async def calculate_risk_score_handler(neighbourhood_id: UUID, db: DbSession):
     window_start = datetime.now(timezone.utc) - timedelta(hours=24)
 
     stmt = (
         select(Alert.detection_type, func.count().label("count"))
         .join(Camera, Alert.camera_id == Camera.id)
-        .where(Camera.neighbourhood_id == neighbourhood_id)
+        .join(Property, Camera.property_id == Property.id)
+        .where(Property.neighbourhood_id == neighbourhood_id)
         .where(Alert.created_at >= window_start)
         .group_by(Alert.detection_type)
     )
 
-    rows = db.execute(stmt).all()
+    result = await db.execute(stmt)
+    rows = result.all()
 
     score = 0.0
     alert_count = 0
@@ -47,11 +50,13 @@ def calculate_risk_score_handler(neighbourhood_id: UUID, db: DbSession):
             critical_event_detected = True
 
     threshold_stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id == neighbourhood_id)
-    threshold = db.execute(threshold_stmt).scalar_one_or_none()
+    threshold_result = await db.execute(threshold_stmt)
+    threshold = threshold_result.scalar_one_or_none()
 
     if not threshold:
         default_stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id.is_(None))
-        threshold = db.execute(default_stmt).scalar_one()
+        default_result = await db.execute(default_stmt)
+        threshold = default_result.scalar_one()
 
     if score <= threshold.low_max:
         classification = RiskLevel.LOW
@@ -72,7 +77,7 @@ def calculate_risk_score_handler(neighbourhood_id: UUID, db: DbSession):
     )
 
     db.add(new_score)
-    db.commit()
-    db.refresh(new_score)
+    await db.commit()
+    await db.refresh(new_score)
 
     return new_score
