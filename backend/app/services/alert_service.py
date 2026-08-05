@@ -121,9 +121,10 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
         resolver_id = None
 
         if user_id_str:
-            resolver = db.execute(
+            result = await db.execute(
                 select(User).where(User.cognito_sub == user_id_str)
-            ).scalar_one_or_none()
+            )
+            resolver = result.scalar_one_or_none()
 
             if resolver is None:
                 raise HTTPException(
@@ -524,16 +525,25 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: DbSession, c
         message={"event": "alert.broadcast", "payload": alert_res.model_dump(mode="json")},
     )
 
-    residents = db.execute(select(User).where(User.neighbourhood_id == neighbourhood_id, or_(
+    result = await db.execute(
+        select(User).where(
+            User.neighbourhood_id == neighbourhood_id,
+            or_(
                 User.role == UserRole.RESIDENT,
                 User.role == UserRole.NEIGHBOURHOOD_ADMIN,
-            ),)).scalars().all()
+            ),
+        )
+    )
+    residents = result.scalars().all()
 
     timestamp_str = alert.frame_timestamp.strftime("%d %b %Y, %H:%M:%S")
     whatsapp_message = _format_whatsapp_message("CRITICAL", detection_type, camera.name, timestamp_str)
     _notify_users(db, alert.id, residents, whatsapp_message, detection_type, camera, "CRITICAL") #imma need to store val to know if failed or not
 
-    admin_user_id = db.execute(select(User.id).where(User.cognito_sub == claims.get("sub"))).scalar_one_or_none()
+    result = await db.execute(
+        select(User.id).where(User.cognito_sub == claims.get("sub"))
+    )
+    admin_user_id = result.scalar_one_or_none()
     if not admin_user_id:
         raise HTTPException(status_code=404, detail="Admin user not found")
     
