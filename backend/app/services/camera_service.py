@@ -80,10 +80,10 @@ async def register_camera_handler(req: RegisterCameraReq, db: AsyncSession, clai
         )
 
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(500, "Could not register camera")
     except HTTPException as he:
-        db.rollback()
+        await db.rollback()
         raise he
 
 async def deregister_camera_handler(camera_id: UUID, db: Optional[AsyncSession], claims: Optional[dict]):

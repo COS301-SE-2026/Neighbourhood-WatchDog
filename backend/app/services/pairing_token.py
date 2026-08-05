@@ -27,7 +27,9 @@ async def get_pairing_token_handler(
     db: DbSession,
     claims: dict
 ) -> LinkPropertyTokenRes:
-    """Gets a pairing token. Requires the user's property_id, the dbSession, and the claims. Creates the pairing token and returns it to the user for the user to pair their edge agent to the property."""
+    """Gets a pairing token. Requires the user's property_id, the dbSession, 
+        and the claims. Creates the pairing token and returns it to the user 
+        for the user to pair their edge agent to the property."""
 
     if not property_id:
         logger.warning("get_pairing_token: no property_id provided in request with claims=%s", claims)

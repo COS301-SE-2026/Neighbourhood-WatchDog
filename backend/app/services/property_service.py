@@ -23,7 +23,9 @@ async def create_property_handler(
     claims: dict, 
     db: DbSession
 ) -> Property:
-    """Creates a new property. Takes in the address, property type (PUBLIC or PRIVATE), claims and the DbSession, creates the property and returns the created property"""
+    """Creates a new property. Takes in the address, property type (PUBLIC or PRIVATE), 
+    claims and the DbSession, creates the property and returns the created property"""
+
     if not addr or addr == "":
         logger.warning("create_property called with empty address, claims=%s", claims)
         raise HTTPException(400, "No address or empty address field.")
@@ -141,7 +143,8 @@ async def get_property_details_handler(
         if not property_obj:
             logger.warning("get_property_details: could not find the property with the property_id=%s", property_id)
             raise HTTPException(404, "Property not found.")
-        
+
+        # Getting the users through the property_user table
         stmt = (
             select(PropertyUser)
             .where(PropertyUser.property_id == property_id)
@@ -149,7 +152,7 @@ async def get_property_details_handler(
         )
         result = await db.execute(stmt)
         property_users = result.scalars().all()
-
+        
         users = [
             {
                 "id": pu.user.id,
