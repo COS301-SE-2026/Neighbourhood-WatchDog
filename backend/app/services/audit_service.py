@@ -3,8 +3,7 @@ from sqlalchemy import String, select, func, or_, cast
 from uuid import uuid4, UUID
 from datetime import datetime
 
-from app.models.audit_log import AuditAction
-from app.models.audit_log import AuditLog
+from app.models.audit_log import AuditAction, AuditLog, TargetEntity
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.audit_log import GetAuditLogsRes, PaginatedResponse, AuditLogScheme
 
@@ -15,7 +14,7 @@ def create_audit_log_item(
     db: AsyncSession,
     user_id: UUID | None = None, 
     action: AuditAction | None = None, 
-    target_entity_type: str | None = None,
+    target_entity_type: TargetEntity | None = None,
     target_entity_id: UUID | None = None,
     old_values: dict | None = None,
     new_values: dict | None = None,

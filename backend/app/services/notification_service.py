@@ -10,6 +10,8 @@ import logging
 from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+
 
 from app.models.notification import Notification, NotificationChannel, NotificationStatus
 from app.models.user import User, UserRole
@@ -273,8 +275,8 @@ def send_alert_email(recipient_email: str, alert_type: str, camera_name: str, lo
         logger.exception(f"Error sending alert email to {recipient_email}")
         return False, str(e)
 
-def _log_notification(
-        db: Session,
+async def _log_notification(
+        db: AsyncSession,
         alert_id: UUID,
         user_id: UUID,
         channel: NotificationChannel,
@@ -290,10 +292,10 @@ def _log_notification(
             error_message=error_message,
         )
         db.add(record)
-        db.commit()
+        await db.commit()
     except Exception:
         logger.exception("Failed to log notification record")
-        db.rollback()
+        await db.rollback()
 
 async def dispatch_notifications(
         db: Session,
@@ -348,8 +350,8 @@ async def dispatch_notifications(
         _notify_users(db, alert_id, users, whatsapp_message, detection_type, camera, severity)
 
 
-def _notify_users(
-        db: Session,
+async def _notify_users(
+        db: AsyncSession,
         alert_id: UUID,
         users: list[User],
         whatsapp_message: str,

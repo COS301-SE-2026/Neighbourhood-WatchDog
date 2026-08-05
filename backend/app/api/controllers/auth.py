@@ -97,8 +97,8 @@ async def logout(request: Request, current_user: dict = Depends(get_current_user
 
 @router.post("/resend-code")
 @limiter.limit("10/minute")  # Limit to 10 requests per minute
-def resend_code(request: Request, payload: ResendCodeRequest):
-    return resend_confirmation_code(_payload_to_dict(payload))
+async def resend_code(request: Request, payload: ResendCodeRequest):
+    return await resend_confirmation_code(_payload_to_dict(payload))
 
 @router.post("/verify-mfa")
 @limiter.limit("10/minute")

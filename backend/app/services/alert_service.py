@@ -1,8 +1,6 @@
 from datetime import datetime, timezone, timedelta, date as date_cls
 from dateutil.relativedelta import relativedelta
-from sqlalchemy.orm import Session
-from app.models.alert import Alert
-from app.models.alert import Alert, DetectionType
+
 from app.models.neighbourhood import Neighbourhood
 from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes, NumberInPeriod, TrendGroupBy, TrendDirection, TrendBucket, TrendData
 from fastapi import HTTPException
@@ -11,13 +9,15 @@ from app.models.user import User, UserRole
 from sqlalchemy import or_, select, func
 from sqlalchemy.exc import IntegrityError
 
-from app.core.database import DbSession
 from app.models.camera import Camera
 from app.schemas.alert import AlertRes
 
 from app.services.audit_service import create_audit_log_item
-from app.models.audit_log import AuditAction, AuditLog
+from app.models.audit_log import AuditAction, AuditLog, TargetEntity
 from uuid import UUID
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.alert import Alert, DetectionType
+from app.api.controllers.alert import broadcast
 
 from app.services.notification_service import _format_whatsapp_message, _notify_users
 
@@ -26,9 +26,9 @@ MAX_PAGE_SIZE = 100
 NO_DATABASE_SESSION = "No database session"
 NOT_AUTHORISED = "Not authorised for this neighbourhood"
 
-async def create_alert(db: Session, data: AlertCreate):
+async def create_alert(db: AsyncSession, data: AlertCreate):
     try:
-        detection_event = Alert(
+        alert = Alert(
             camera_id=data.camera_id,
             frame_timestamp=data.timestamp,
             detection_type=data.detection_type,
@@ -36,19 +36,11 @@ async def create_alert(db: Session, data: AlertCreate):
             thumbnail_url=data.thumbnail_url,
             processed=False,
         )
-        db.add(detection_event)
-        db.flush()
-
-        alert = Alert(
-            camera_id=data.camera_id,
-            detection_event_id=detection_event.id,
-            status="OPEN",
-        )
-
         db.add(alert)
-        db.flush() 
-        db.commit()
-        db.refresh(alert)
+
+        await db.commit()
+        await db.refresh(alert)
+
 
         from app.api.controllers.alert import broadcast
         await broadcast(str(data.neighbourhood_id), {
@@ -61,10 +53,10 @@ async def create_alert(db: Session, data: AlertCreate):
 
         return alert
     except HTTPException:
-        db.rollback()
+        await db.rollback()
         raise
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(
             status_code=500,
             detail=f"Failed to create alert: {str(e)}"
@@ -73,22 +65,27 @@ async def create_alert(db: Session, data: AlertCreate):
 
 
 def _build_alert_res(alert: Alert) -> AlertRes:
-    event = alert.detection_event
     return AlertRes(
         id=alert.id,
         camera_id=alert.camera_id,
-        detection_event_id=alert.detection_event_id,
+        frame_timestamp=alert.frame_timestamp,
+        detection_type=(
+            alert.detection_type.value
+            if hasattr(alert.detection_type, "value")
+            else str(alert.detection_type)
+        ),
+        confidence_score=alert.confidence_score,
+        thumbnail_url=alert.thumbnail_url,
+        clip_s3_key=alert.clip_s3_key,
+        clip_expires_at=alert.clip_expires_at,
+        processed=alert.processed,
         status=alert.status,
         resolved_by=alert.resolved_by,
         resolved_at=alert.resolved_at,
         created_at=alert.created_at,
-        detection_type=event.detection_type if event else None,
-        confidence_score=event.confidence_score if event else None,
-        thumbnail_url=event.thumbnail_url if event else None,
     )
 
-
-async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> AlertRes:
+async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) -> AlertRes:
     if not alert_id:
         raise HTTPException(400, "Alert id is required")
     if not db:
@@ -101,7 +98,11 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
         raise HTTPException(403, "Insufficient permissions")
 
     try:
-        alert = db.execute(select(Alert).where(Alert.id == alert_id)).scalar_one_or_none()
+        result = await db.execute(
+            select(Alert).where(Alert.id == alert_id)
+        )
+        alert = result.scalar_one_or_none()
+
         if not alert:
             raise HTTPException(404, "Alert not found")
 
@@ -142,7 +143,7 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
             db=db,
             user_id=resolver_id,
             action=AuditAction.UPDATE,
-            target_entity_type="Alert",
+            target_entity_type=TargetEntity.ALERT,
             target_entity_id=alert.id,
             old_values=old_values,
             new_values={
@@ -154,7 +155,7 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
             },
         )
 
-        db.commit()
+        await db.commit()
 
         alert_res = _build_alert_res(alert)
 
@@ -172,13 +173,13 @@ async def acknowledge_alert_handler(alert_id, db: DbSession, claims: dict) -> Al
     except HTTPException as he:
         raise he
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(500, "Failed to acknowledge alert")
 
 
 async def list_alerts_handler(
     neighbourhood_id,
-    db: DbSession,
+    db: AsyncSession,
     claims: dict,
     status_filter: str | None = None,
     camera_id: UUID | None = None,
@@ -206,7 +207,6 @@ async def list_alerts_handler(
         base_stmt = (
             select(Alert)
             .join(Camera, Alert.camera_id == Camera.id)
-            .join(Alert.detection_type, Alert.detection_event_id == Alert.id)
             .where(Camera.neighbourhood_id == UUID(str(neighbourhood_id)))
         )
 
@@ -221,24 +221,29 @@ async def list_alerts_handler(
         if end_date:
             base_stmt = base_stmt.where(Alert.frame_timestamp <= end_date)
 
-        total = db.execute(select(func.count()).select_from(base_stmt.subquery())).scalar_one()
+        count_result = await db.execute(
+            select(func.count()).select_from(base_stmt.subquery())
+        )
+        total = count_result.scalar_one()
 
         stmt = (base_stmt.order_by(Alert.frame_timestamp.desc())
                 .limit(limit)
                 .offset(offset))
 
-        alerts = db.execute(stmt).scalars().all()
+        result = await db.execute(stmt)
+        alerts = result.scalars().all()
+
         return [_build_alert_res(a) for a in alerts], total
     except HTTPException as he:
         raise he
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(500, "Failed to list alerts")
     
 
-def get_response_metrics_handler(
+async def get_response_metrics_handler(
         neighbourhood_id: UUID,
-        db: DbSession,
+        db: AsyncSession,
         claims: dict,
         camera_id: UUID | None = None,
         officer_id: UUID | None = None
@@ -263,7 +268,8 @@ def get_response_metrics_handler(
     if officer_id:
         stmt = stmt.where(Alert.resolved_by == officer_id)
 
-    alerts = db.execute(stmt).scalars().all()
+    result = await db.execute(stmt)
+    alerts = result.scalars().all()
 
 
     items: list[AlertMetricItem] = []
@@ -314,7 +320,7 @@ INTERVAL_TO_TRUNC = {
 
 async def get_alert_frequency_metrics_handler(
     neighbourhood_id: UUID,
-    db: DbSession,
+    db: AsyncSession,
     time_interval: TimeIntervalsEnum,
     time_period: TimePeriod,
     claims: dict
@@ -363,7 +369,8 @@ async def get_alert_frequency_metrics_handler(
 
     stmt = stmt.group_by(bucket).order_by(bucket)
 
-    rows = db.execute(stmt).all()
+    result = await db.execute(stmt)
+    rows = result.all()
 
     period_arr = []
     count_arr = []
@@ -429,8 +436,15 @@ def _compute_trend_direction(buckets: list[TrendBucket]) -> TrendDirection:
     return TrendDirection.STABLE
 
 
-async def get_trends_handler(neighbourhood_id: UUID, db: DbSession, claims: dict, group_by: TrendGroupBy=TrendGroupBy.DAY,
-                             time_period: TimePeriod=TimePeriod.MONTH, incident_type: str | None=None, camera_id=UUID) -> TrendData:
+async def get_trends_handler(
+    neighbourhood_id: UUID,
+    db: AsyncSession,
+    claims: dict,
+    group_by: TrendGroupBy = TrendGroupBy.DAY,
+    time_period: TimePeriod = TimePeriod.MONTH,
+    incident_type: str | None = None,
+    camera_id: UUID | None = None,
+) -> TrendData:
     
     if not db:
         raise HTTPException(500, NO_DATABASE_SESSION)
@@ -474,9 +488,10 @@ async def get_trends_handler(neighbourhood_id: UUID, db: DbSession, claims: dict
 
 
     try:
-        rows = db.execute(stmt).all()
+        result = await db.execute(stmt)
+        rows = result.all()
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(500, "Failed to fetch trend data")
     
 
@@ -498,20 +513,31 @@ async def get_trends_handler(neighbourhood_id: UUID, db: DbSession, claims: dict
 
     )
 
-async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: DbSession, claims: dict):
+async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession, claims: dict):
     from app.api.controllers.alert import broadcast
 
-    alert = db.execute(select(Alert).where(Alert.id == alert_id)).scalar_one_or_none()
+    result = await db.execute(
+        select(Alert).where(Alert.id == alert_id)
+    )
+    alert = result.scalar_one_or_none()
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
 
-    camera = db.execute(select(Camera).where(Camera.id == alert.camera_id)).scalar_one_or_none()
+    result = await db.execute(
+        select(Camera).where(Camera.id == alert.camera_id)
+    )
+    camera = result.scalar_one_or_none()
     if not camera:
         raise HTTPException(status_code=404, detail="Camera not found for alert")
 
     neighbourhood_id = camera.neighbourhood_id
 
-    neighbourhood = db.execute(select(Neighbourhood).where(Neighbourhood.id == neighbourhood_id)).scalar_one_or_none()
+    result = await db.execute(
+        select(Neighbourhood).where(
+            Neighbourhood.id == camera.neighbourhood_id
+        )
+    )
+    neighbourhood = result.scalar_one_or_none()
     if not neighbourhood:
         raise HTTPException(status_code=404, detail="Neighbourhood not found")
 
@@ -538,7 +564,7 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: DbSession, c
 
     timestamp_str = alert.frame_timestamp.strftime("%d %b %Y, %H:%M:%S")
     whatsapp_message = _format_whatsapp_message("CRITICAL", detection_type, camera.name, timestamp_str)
-    _notify_users(db, alert.id, residents, whatsapp_message, detection_type, camera, "CRITICAL") #imma need to store val to know if failed or not
+    await _notify_users(db, alert.id, residents, whatsapp_message, detection_type, camera, "CRITICAL") #imma need to store val to know if failed or not
 
     result = await db.execute(
         select(User.id).where(User.cognito_sub == claims.get("sub"))
@@ -550,10 +576,10 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: DbSession, c
     audit_record = AuditLog(
         user_id=admin_user_id,
         action=AuditAction.UPDATE,
-        target_entity_type="alert",
+        target_entity_type=TargetEntity.ALERT,
         target_entity_id=alert.id,
         old_values={"broadcast": False},
         new_values={"broadcast": True, "neighbourhood_id": str(neighbourhood_id)},
     )
     db.add(audit_record)
-    db.commit()
+    await db.commit()

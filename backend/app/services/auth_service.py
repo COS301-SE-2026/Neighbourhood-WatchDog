@@ -21,38 +21,42 @@ async def register_user(payload, db: AsyncSession):
     user_sub = response.get("UserSub", response.get("user_sub"))
     user_confirmed = response.get("UserConfirmed", response.get("user_confirmed"))
 
-    new_user = User(
-        email=payload["email"],
-        first_name=payload["firstName"],
-        last_name=payload["lastName"],
-        cognito_sub=user_sub,
-        role=UserRole.RESIDENT,
-        neighbourhood_id=None
-    )
-    db.add(new_user)
-
-    # Generate ID before audit entry
-    await db.flush()
-
-    create_audit_log_item(
-        db=db,
-        user_id=new_user.id,
-        action=AuditAction.CREATE,
-        target_entity_type=TargetEntity.USER,
-        target_entity_id=new_user.id,
-        new_values={
-            "email": new_user.email,
-            "first_name": new_user.first_name,
-            "last_name": new_user.last_name,
-            "role": new_user.role.value,
-            "neighbourhood_id": (
-                str(new_user.neighbourhood_id)
-                if new_user.neighbourhood_id
-                else None
-            ),
-        },
-    )
-    await db.commit()
+    try:
+        new_user = User(
+            email=payload["email"],
+            first_name=payload["firstName"],
+            last_name=payload["lastName"],
+            cognito_sub=user_sub,
+            role=UserRole.RESIDENT,
+            neighbourhood_id=None
+        )
+        db.add(new_user)
+    
+        # Generate ID before audit entry
+        await db.flush()
+    
+        create_audit_log_item(
+            db=db,
+            user_id=new_user.id,
+            action=AuditAction.CREATE,
+            target_entity_type=TargetEntity.USER,
+            target_entity_id=new_user.id,
+            new_values={
+                "email": new_user.email,
+                "first_name": new_user.first_name,
+                "last_name": new_user.last_name,
+                "role": new_user.role.value,
+                "neighbourhood_id": (
+                    str(new_user.neighbourhood_id)
+                    if new_user.neighbourhood_id
+                    else None
+                ),
+            },
+        )
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
 
     return {
         "success": True,

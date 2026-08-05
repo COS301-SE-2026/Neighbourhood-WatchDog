@@ -73,7 +73,7 @@ async def update_camera_settings_handler(camera_id: UUID, confidence_threshold: 
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.UPDATE,
-            target_entity_type="Camera",
+            target_entity_type=TargetEntity.CAMERA,
             target_entity_id=camera.id,
             old_values=old_values,
             new_values=new_values,
@@ -126,7 +126,7 @@ async def create_zone_handler(camera_id: UUID, name: str, polygon: list, db: Asy
             polygon=polygon,
         )
 
-        await db.add(zone)
+        db.add(zone)
 
         # Generates zone.id without committing
         await db.flush()
@@ -135,7 +135,7 @@ async def create_zone_handler(camera_id: UUID, name: str, polygon: list, db: Asy
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.CREATE,
-            target_entity_type="CameraDetectionZone",
+            target_entity_type=TargetEntity.CAMERADETECTIONZONE,
             target_entity_id=zone.id,
             new_values={
                 "camera_id": str(zone.camera_id),
@@ -191,7 +191,7 @@ async def delete_zone_handler(camera_id: UUID,zone_id: UUID,db: AsyncSession,cla
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.DELETE,
-            target_entity_type="CameraDetectionZone",
+            target_entity_type=TargetEntity.CAMERADETECTIONZONE,
             target_entity_id=zone_id,
             old_values=old_values,
         )

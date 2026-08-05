@@ -53,7 +53,7 @@ async def register_camera_handler(req: RegisterCameraReq, db: AsyncSession, clai
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.CREATE,
-            target_entity_type="Camera",
+            target_entity_type=TargetEntity.CAMERA,
             target_entity_id=new_camera.id,
             new_values={
                 "property_id": str(new_camera.property_id),
@@ -99,17 +99,14 @@ async def deregister_camera_handler(camera_id: UUID, db: Optional[AsyncSession],
         if not camera_obj:
             raise HTTPException(status_code=404, detail="Camera not found")
         
-        result = await db.execute(
-            select(PropertyUser).where(PropertyUser.property_id == camera_obj.property_id)
+        prop_user_result = await db.execute(
+            select(PropertyUser)
+            .options(joinedload(PropertyUser.user))
+            .where(PropertyUser.property_id == camera_obj.property_id)
         )
-        prop_user = result.scalar_one_or_none()
+        prop_user = prop_user_result.scalar_one_or_none()
 
-        result = await db.execute(
-            select(User).where(User.id == prop_user.user_id)
-        )
-        user = result.scalar_one_or_none()
-        
-        if not prop_user or not user or user.cognito_sub != claims.get("sub"):
+        if not prop_user or prop_user.user.cognito_sub != claims.get("sub"):
             raise HTTPException(status_code=403, detail="Forbidden")
 
         
@@ -127,7 +124,7 @@ async def deregister_camera_handler(camera_id: UUID, db: Optional[AsyncSession],
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.DELETE,
-            target_entity_type="Camera",
+            target_entity_type=TargetEntity.CAMERA,
             target_entity_id=camera_obj.id,
             old_values=old_values,
         )
@@ -197,7 +194,7 @@ async def edit_camera_handler(
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.UPDATE,
-            target_entity_type="Camera",
+            target_entity_type=TargetEntity.CAMERA,
             target_entity_id=camera_obj.id,
             old_values=old_values,
             new_values=new_values,
@@ -247,20 +244,18 @@ async def list_cameras_handler(property_id: str, db: AsyncSession, claims: dict)
     if not property_obj:
         raise HTTPException(403, "Property does not exist")
 
-    stmt = select(PropertyUser).where(PropertyUser.property_id == prop_uuid)
-    result = await db.execute(stmt)
-    prop_user = result.scalar_one_or_none()
-
-    if not prop_user:
-        raise HTTPException(403, "User does not have access to this property")
-
-    result = await db.execute(
-        select(User).where(User.id == prop_user.user_id)
+    prop_user_result = await db.execute(
+        select(PropertyUser)
+        .options(joinedload(PropertyUser.user))
+        .where(PropertyUser.property_id == prop_uuid)
     )
-    user = result.scalar_one_or_none()
+    prop_user = prop_user_result.scalar_one_or_none()
 
-    if not user or user.cognito_sub != claims["sub"]:
-        raise HTTPException(403, "This user does not have access to this property")
+    if not prop_user or prop_user.user.cognito_sub != claims.get("sub"):
+        raise HTTPException(
+            status_code=403,
+            detail="This user does not have access to this property",
+        )
 
     stmt = select(Camera).where(Camera.property_id == prop_uuid).order_by(Camera.created_at.desc())
     result = await db.execute(stmt)
