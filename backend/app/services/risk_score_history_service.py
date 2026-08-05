@@ -9,7 +9,7 @@ from app.schemas.risk_score_history import RiskScoreRes
 
 VALID_GRANULARITIES = {"minute", "hour", "day", "week"}
 
-def get_neighbourhood_score_handler(neighbourhood_id: UUID, db: DbSession, claims: dict) -> RiskScoreRes:
+async def get_neighbourhood_score_handler(neighbourhood_id: UUID, db: DbSession, claims: dict) -> RiskScoreRes:
 
 
     caller_neighbourhood = claims.get("custom:neighbourhood_id")
@@ -22,8 +22,9 @@ def get_neighbourhood_score_handler(neighbourhood_id: UUID, db: DbSession, claim
         .order_by(RiskScoreHistory.calculated_at.desc())
         .limit(1)
         )
-    
-    latest_score = db.execute(stmt).scalar_one_or_none()
+
+    result = await db.execute(stmt)
+    latest_score = result.scalar_one_or_none()
 
     if not latest_score:
         raise HTTPException(status_code=404, detail="No risk score calculated yet for this neighbourhood")
@@ -38,7 +39,7 @@ def get_neighbourhood_score_handler(neighbourhood_id: UUID, db: DbSession, claim
 
 
 
-def get_neighbourhood_score_history_handler(
+async def get_neighbourhood_score_history_handler(
     neighbourhood_id: UUID,
     granularity: str,
     db: DbSession,
@@ -83,8 +84,9 @@ def get_neighbourhood_score_history_handler(
         .where(ranked_subq.c.rn == 1)
         .order_by(ranked_subq.c.bucket.asc())
     )
-        
-    neighbourhood_history = db.execute(stmt).all()
+
+    result = await db.execute(stmt)
+    neighbourhood_history = result.all()
 
     if not neighbourhood_history:
         raise HTTPException(status_code=404, detail="Neighbourhood does not have history")

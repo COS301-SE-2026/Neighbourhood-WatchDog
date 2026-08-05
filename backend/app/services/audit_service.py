@@ -3,30 +3,29 @@ from sqlalchemy import String, select, func, or_, cast
 from uuid import uuid4, UUID
 from datetime import datetime
 
-from app.models.audit_log import AuditAction
-from app.models.audit_log import AuditLog
-from app.core.database import DbSession
+from app.models.audit_log import AuditAction, AuditLog, TargetEntity
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.audit_log import GetAuditLogsRes, PaginatedResponse, AuditLogScheme
 
 PAGE = 1
 SIZE = 30
 
 def create_audit_log_item(
-    db: DbSession,
+    db: AsyncSession,
     user_id: UUID | None = None, 
     action: AuditAction | None = None, 
-    target_entity_type: str | None = None,
+    target_entity_type: TargetEntity | None = None,
     target_entity_id: UUID | None = None,
     old_values: dict | None = None,
     new_values: dict | None = None,
 ) -> AuditLog:
     """Creates an audit log entry and adds it to the current transaction."""
     _validate_required_create_fields(
-        db,
-        user_id,
-        target_entity_type,
-        target_entity_id,
-        action
+        db=db,
+        user_id=user_id,
+        target_entity_type=target_entity_type,
+        target_entity_id=target_entity_id,
+        action=action
     )
 
     old_values, new_values = _validate_action_values(
@@ -85,10 +84,10 @@ def _validate_action_values(action, old_values, new_values):
     return old_values, new_values
 
 
-def get_audit_logs_handler(
+async def get_audit_logs_handler(
     page: int,
     size: int,
-    db: DbSession,
+    db: AsyncSession,
     search_term: str | None = None,
     action: AuditAction | None = None,
     start_date: datetime | None = None,
@@ -105,31 +104,30 @@ def get_audit_logs_handler(
     stmt = _apply_filters(stmt, search_term, action, start_date, end_date)
     
     count_stmt = select(func.count()).select_from(stmt.subquery())
-    total_count = db.scalar(count_stmt)
+    count_result = await db.execute(count_stmt)
+    total_count = count_result.scalar_one()
 
     offset = (page - 1) * size
     if total_count and offset >= total_count:
         raise HTTPException(422, "Request is beyond the total number of audit logs.")
 
     stmt = _apply_sort(stmt, sort_order).offset(offset).limit(size)
+    result = await db.execute(stmt)
     
-    audit_logs = db.scalars(stmt).all()
+    audit_logs = result.scalars().all()
 
     results = [AuditLogScheme.model_validate(a) for a in audit_logs]
     
-    paginated = PaginatedResponse[AuditLogScheme](
-        total = total_count,
-        page = page,
-        size = size,
-        results = results
-    )
-    output = GetAuditLogsRes(
+    return GetAuditLogsRes(
         status=200,
         message="OK",
-        data=paginated
+        data=PaginatedResponse[AuditLogScheme](
+            total=total_count,
+            page=page,
+            size=size,
+            results=results,
+        ),
     )
-
-    return output
 
 def _validate_pagination(page: int, size: int):
     if page < 1:
@@ -163,5 +161,9 @@ def _apply_sort(
         "DESC": AuditLog.timestamp.desc(),
     }
 
-    order_clause = stmt.order_by(sort_map.get(sort_order, AuditLog.id.desc())) if sort_order else AuditLog.id.desc()
-    return stmt.order_by(order_clause)
+    selected_order = sort_map.get(
+        (sort_order or "DESC").upper(),
+        AuditLog.timestamp.desc(),
+    )
+
+    return stmt.order_by(selected_order)

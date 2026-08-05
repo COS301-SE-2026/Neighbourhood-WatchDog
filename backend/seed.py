@@ -16,7 +16,6 @@ from app.models.property_user import PropertyUser
 from app.models.camera import Camera, CameraVisibilityEnum
 from app.models.zone import GeospatialZone, SensitivityLevel
 from app.models.retention_policy import RetentionPolicy
-from app.models.detection_event import DetectionEvent, DetectionType
 from app.models.alert import Alert, AlertStatus
 from app.models.audit_log import AuditLog, AuditAction
 from app.services.rtsp_encryption import encrypt_rtsp_url

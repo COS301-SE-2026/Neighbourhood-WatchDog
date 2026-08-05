@@ -87,7 +87,7 @@ async def get_alert_metrics(
 ):
     """This will rep the time metrics for the alerts in the neighbourhood; can be filtered by camera and officer"""
 
-    return get_response_metrics_handler(neighbourhood_id, db, claims, camera_id, officer_id)
+    return await get_response_metrics_handler(neighbourhood_id, db, claims, camera_id, officer_id)
 
 @router.get("/frequency-metrics", response_model=AlertFrequencyMetricsRes)
 async def get_alert_frequency_metrics(

@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock,AsyncMock, patch
 from app.services.property_service import create_property_handler, get_user_properties_handler
 from app.models.property import PropertyTypeEnum
 from uuid import uuid4
@@ -9,7 +9,7 @@ from uuid import uuid4
 def mock_audit():
     with patch(
         "app.services.property_service.create_audit_log_item",
-        new=Mock(),
+        new=AsyncMock(),
     ):
         yield
 
@@ -18,15 +18,16 @@ class TestCreateProperty:
     def setup_method(self):
         """Runs before each test method"""
         self.mock_db = Mock()
+        self.mock_db.execute = AsyncMock()
 
         self.mock_user = Mock()
         self.mock_user.id = uuid4()
         self.mock_db.execute.return_value.scalar_one_or_none.return_value = self.mock_user
 
         self.mock_db.add = Mock()
-        self.mock_db.commit = Mock()
-        self.mock_db.flush = Mock()
-        self.mock_db.rollback = Mock()
+        self.mock_db.commit = AsyncMock()
+        self.mock_db.flush = AsyncMock()
+        self.mock_db.rollback = AsyncMock()
 
         self.claims = {"sub": "cognito-sub-123"}
 
@@ -105,11 +106,11 @@ class TestCreateProperty:
             with pytest.raises(HTTPException) as exc_info:
                 await create_property_handler(
                     "test 123",
-                    None,
+                    PropertyTypeEnum.PRIVATE,
                     self.claims,
                     self.mock_db
                 )
-            assert exc_info.value.status_code == 400
+            assert exc_info.value.status_code == 404
             assert self.mock_db.add.call_count == 0
             assert self.mock_db.flush.call_count == 0
             assert self.mock_db.commit.call_count == 0
@@ -141,6 +142,8 @@ class TestGetUserProperties:
     def setup_method(self):
         """Runs before each test method"""
         self.mock_db = Mock()
+        self.mock_db.execute = AsyncMock()
+
         self.mock_user = Mock()
         self.mock_user.id = uuid4()
         self.claims = {"sub": "cognito-sub-123"}

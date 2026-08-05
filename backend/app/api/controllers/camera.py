@@ -36,7 +36,7 @@ async def deregister_camera(camera_id: UUID,
     """Permanently remove a camera from a users property and the system."""
     require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
     
-    deregister_camera_handler(camera_id, db, claims)
+    await deregister_camera_handler(camera_id, db, claims)
 
 @router.get("/property/{property_id}")
 async def get_property_cameras(
@@ -57,9 +57,9 @@ async def edit_camera(
     """Edit a camera"""
     require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
 
-    updated = edit_camera_handler(camera_id, req, db, claims)
+    updated = await edit_camera_handler(camera_id, req, db, claims)
 
-    return EditCameraRes(
+    return await EditCameraRes(
         status=200,
         message="Camera updated successfully",
         data=updated

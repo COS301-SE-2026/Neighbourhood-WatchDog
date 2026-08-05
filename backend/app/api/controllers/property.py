@@ -15,12 +15,16 @@ router = APIRouter(prefix="/properties", tags=["properties"])
 async def create_property(
     req: CreatePropertyReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Annotated[dict, Depends(require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN'))],
 ):
     """Create property endpoint returns the property object that was created"""
-
-    require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN')
-    new_property = await create_property_handler(req.address, req.property_type, claims, db)
+    
+    new_property = await create_property_handler(
+        req.address, 
+        req.property_type, 
+        claims, 
+        db
+    )
 
     property_res = PropertyRes(
         property_id=new_property.id,
@@ -40,10 +44,10 @@ async def create_property(
 @router.get("/my-properties")
 async def get_user_properties(
     db: DbSession, 
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Annotated[dict, Depends(require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN'))],
 ) -> List[PropertyRes]:
     """Fetch all properties for the current user"""
-    require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN')
+    
     properties = await get_user_properties_handler(claims, db)
 
     return [
@@ -61,8 +65,7 @@ async def get_user_properties(
 async def get_property_details(
     property_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Annotated[dict, Depends(require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN'))],
 ):
     """Fetch property details including users, neighbourhood, and cameras"""
-    require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN')
     return await get_property_details_handler(property_id, db)

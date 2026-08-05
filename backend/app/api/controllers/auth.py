@@ -42,18 +42,18 @@ def auth_ping():
 
 @router.post("/signup")
 @limiter.limit("3/minute")  # Limit to 3 requests per minute
-def signup(request: Request, payload: SignUpRequest, db: DbSession):
-    return register_user(_payload_to_dict(payload), db)
+async def signup(request: Request, payload: SignUpRequest, db: DbSession):
+    return await register_user(_payload_to_dict(payload), db)
 
 @router.post("/login")
 @limiter.limit("5/minute")  # Limit to 5 requests per minute
-def login(request: Request, payload: LoginRequest):
-    return authenticate_user(_payload_to_dict(payload))
+async def login(request: Request, payload: LoginRequest):
+    return await authenticate_user(_payload_to_dict(payload))
 
 @router.post("/confirm")
 @limiter.limit("15/minute")  # Limit to 15 requests per minute
-def confirm(request: Request, payload: ConfirmSignUpRequest):
-    return confirm_user(_payload_to_dict(payload))
+async def confirm(request: Request, payload: ConfirmSignUpRequest):
+    return await confirm_user(_payload_to_dict(payload))
 
 
 @router.get("/me", responses={401: {"description" : "Invalid token claims or user not found"}})
@@ -72,7 +72,8 @@ async def get_current_user_info(
         raise HTTPException(status_code=401, detail="Invalid token claims")
 
     stmt = select(User).where(User.cognito_sub == cognito_sub)
-    user =  db.execute(stmt).scalar_one_or_none()
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
 
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
@@ -96,10 +97,10 @@ async def logout(request: Request, current_user: dict = Depends(get_current_user
 
 @router.post("/resend-code")
 @limiter.limit("10/minute")  # Limit to 10 requests per minute
-def resend_code(request: Request, payload: ResendCodeRequest):
-    return resend_confirmation_code(_payload_to_dict(payload))
+async def resend_code(request: Request, payload: ResendCodeRequest):
+    return await resend_confirmation_code(_payload_to_dict(payload))
 
 @router.post("/verify-mfa")
 @limiter.limit("10/minute")
-def verify_mfa(request: Request, payload: VerifyMFARequest):
-    return complete_mfa(_payload_to_dict(payload))
+async def verify_mfa(request: Request, payload: VerifyMFARequest):
+    return await complete_mfa(_payload_to_dict(payload))

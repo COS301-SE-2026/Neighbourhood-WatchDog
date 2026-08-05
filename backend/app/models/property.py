@@ -19,4 +19,6 @@ class Property(Base):
     property_type = Column(SAEnum(PropertyTypeEnum, name="property_type"), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
-    neighbourhood = relationship("Neighbourhood", foreign_keys=[neighbourhood_id])
+    neighbourhood = relationship("Neighbourhood", foreign_keys=[neighbourhood_id], back_populates="properties")
+    cameras = relationship("Camera", back_populates="property", cascade="all, delete-orphan")
+    edge_agent_credentials = relationship("EdgeAgentCredential", back_populates="property", cascade="all, delete-orphan")

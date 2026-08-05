@@ -33,7 +33,7 @@ class Camera(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,)
     detection_zones = relationship("CameraDetectionZone", back_populates="camera", cascade="all, delete-orphan")
-    property = relationship("Property", back_populates="camera")
+    property = relationship("Property", back_populates="cameras")
 
     __table_args__ = (
         Index("ix_camera_property_visibility", "property_id", "visibility"),
