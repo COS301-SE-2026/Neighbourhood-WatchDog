@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from app.models.property import Property
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction
 
@@ -25,9 +26,11 @@ async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -
     clean_code = join_code.strip()
 
     try:
-        neighbourhood = db.execute(
+        neighbourhood_result = await db.execute(
             select(Neighbourhood).where(Neighbourhood.join_code == clean_code)
-        ).scalar_one_or_none()
+        )
+        neighbourhood = neighbourhood_result.scalar_one_or_none()
+
         if not neighbourhood:
             raise HTTPException(404, "Invalid join code")
 
@@ -36,19 +39,23 @@ async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -
 
         user = None
         if user_email:
-            user = db.execute(select(User).where(User.email == user_email)).scalar_one_or_none()
+            user_result = await db.execute(select(User).where(User.email == user_email))
+            user = user_result.scalar_one_or_none()
         if not user and user_sub:
-            user = db.execute(select(User).where(User.cognito_sub == user_sub)).scalar_one_or_none()
+            user_result = await db.execute(select(User).where(User.cognito_sub == user_sub))
+            user = user_result.scalar_one_or_none()
         if not user:
             raise HTTPException(401, "Not authenticated")
 
-        pending = db.execute(
+        pending_result = await db.execute(
             select(NeighbourhoodJoinRequest).where(
                 NeighbourhoodJoinRequest.neighbourhood_id == neighbourhood.id,
                 NeighbourhoodJoinRequest.user_id == user.id,
                 NeighbourhoodJoinRequest.status == "PENDING",
             )
-        ).scalar_one_or_none()
+        )
+        pending = pending_result.scalar_one_or_none()
+
         if pending:
             raise HTTPException(409, "Already have a pending request")
 
@@ -59,7 +66,7 @@ async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -
         )
         db.add(join_request)
         # Generate join_request.id
-        db.flush()
+        await db.flush()
 
         create_audit_log_item(
             db=db,
@@ -73,18 +80,18 @@ async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -
                 "status": join_request.status,
             },
         )
-        db.commit()
+        await db.commit()
 
         return JoinRequestRes.model_validate(join_request)
     except HTTPException as he:
-        db.rollback()
+        await db.rollback()
         raise he
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(500, "Failed to create join request")
 
 
-async def list_join_requests_handler(db: DbSession, claims: dict) -> list[JoinRequestRes]:
+async def list_join_requests_handler(neighbourhood_id: UUID, db: DbSession, claims: dict) -> list[JoinRequestRes]:
     if not db:
         raise HTTPException(500, "No database session")
     if not claims:
@@ -93,17 +100,14 @@ async def list_join_requests_handler(db: DbSession, claims: dict) -> list[JoinRe
     if claims.get("custom:role") != "NEIGHBOURHOOD_ADMIN":
         raise HTTPException(403, "Insufficient permissions")
 
-    neighbourhood_id = claims.get("custom:neighbourhood_id")
-    if not neighbourhood_id:
-        raise HTTPException(403, "Neighbourhood context missing")
-
     try:
         neighbourhood_uuid = UUID(str(neighbourhood_id))
-        requests = db.execute(
+        requests_result = await db.execute(
             select(NeighbourhoodJoinRequest)
             .where(NeighbourhoodJoinRequest.neighbourhood_id == neighbourhood_uuid)
             .order_by(NeighbourhoodJoinRequest.created_at.desc())
-        ).scalars().all()
+        )
+        requests=requests_result.scalars().all()
         return [JoinRequestRes.model_validate(request) for request in requests]
     except HTTPException as he:
         db.rollback()
@@ -112,7 +116,7 @@ async def list_join_requests_handler(db: DbSession, claims: dict) -> list[JoinRe
         db.rollback()
         raise HTTPException(500, "Failed to list join requests")
 
-async def resolve_join_request_handler(request_id, action: str, db: DbSession, claims: dict) -> JoinRequestRes:
+async def resolve_join_request_handler(request_id: UUID, property_id: UUID, action: str, db: DbSession, claims: dict) -> JoinRequestRes:
     if not request_id:
         raise HTTPException(400, "Join request id is required")
     if not db:
@@ -124,9 +128,10 @@ async def resolve_join_request_handler(request_id, action: str, db: DbSession, c
         raise HTTPException(400, "Action must be APPROVE or DENY")
 
     try:
-        join_request = db.execute(
+        join_request_result = await db.execute(
             select(NeighbourhoodJoinRequest).where(NeighbourhoodJoinRequest.id == request_id)
-        ).scalar_one_or_none()
+        )
+        join_request = join_request_result.scalar_one_or_none()
         if not join_request:
             raise HTTPException(404, "Join request not found")
 
@@ -136,9 +141,10 @@ async def resolve_join_request_handler(request_id, action: str, db: DbSession, c
         if join_request.status != "PENDING":
             raise HTTPException(409, "Request has already been resolved")
 
-        user = db.execute(
+        user_result = await db.execute(
             select(User).where(User.id == join_request.user_id)
-        ).scalar_one_or_none()
+        )
+        user = user_result.scalar_one_or_none()
         if not user:
             raise HTTPException(404, "User not found")
 
@@ -147,10 +153,13 @@ async def resolve_join_request_handler(request_id, action: str, db: DbSession, c
         }
         if action == "APPROVE":
             user.role = "RESIDENT"
-            user.neighbourhood_id = join_request.neighbourhood_id
+            property_result = await db.execute(select(Property).where(Property.id == property_id))
+            property_obj = property_result.scalar_one_or_none()
+
+            property_obj.neighbourhood_id = join_request.neighbourhood_id
             join_request.status = "APPROVED"
         else:
-            join_request.status = "DENIED"
+            join_request.status = "REJECTED"
 
         join_request.resolved_at = datetime.now(timezone.utc)
 
@@ -167,11 +176,11 @@ async def resolve_join_request_handler(request_id, action: str, db: DbSession, c
                 "resolved_at": join_request.resolved_at.isoformat(),
             },
         )
-        db.commit()
+        await db.commit()
         return JoinRequestRes.model_validate(join_request)
     except HTTPException as he:
-        db.rollback()
+        await db.rollback()
         raise he
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(500, "Failed to resolve join request")

@@ -45,11 +45,13 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
                 for _ in range(8)
             )
 
-            stmt = select(Neighbourhood).where(
+            stmt_result = await db.execute(select(Neighbourhood).where(
                 Neighbourhood.join_code == join_code
-            )
+            ))
 
-            if not db.execute(stmt).scalar_one_or_none():
+            stmt = stmt_result.scalar_one_or_none()
+
+            if not stmt:
                 break
 
         # Add the neighbourhood
@@ -61,12 +63,13 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
 
         db.add(new_neighbourhood)
         # Generate  neighbourhood ID
-        db.flush()
+        await db.flush()
 
         # Get property
-        property_obj = db.execute(
+        property_obj_result = await db.execute(
             select(Property).where(Property.id == property_id)
-        ).scalar_one_or_none()
+        )
+        property_obj = property_obj_result.scalar_one_or_none()
 
         if not property_obj:
             raise HTTPException(404, "Property not found")
@@ -78,11 +81,13 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
             )
 
         # Verify user owns property
-        prop_user = db.execute(
+        prop_user_result = await db.execute(
             select(PropertyUser).where(
                 PropertyUser.property_id == property_id
             )
-        ).scalar_one_or_none()
+        )
+
+        prop_user = prop_user_result.scalar_one_or_none()
 
         if not prop_user:
             raise HTTPException(
@@ -100,11 +105,13 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
         property_obj.neighbourhood_id = new_neighbourhood.id
 
         # Promote creator
-        creator = db.execute(
+        creator_result = await db.execute(
             select(User).where(
                 User.cognito_sub == claims["sub"]
             )
-        ).scalar_one_or_none()
+        )
+
+        creator = creator_result.scalar_one_or_none()
 
         if not creator:
             raise HTTPException(
@@ -113,7 +120,6 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
             )
 
         creator.role = UserRole.NEIGHBOURHOOD_ADMIN
-        creator.neighbourhood_id = new_neighbourhood.id
 
         # Create single audit entry
         create_audit_log_item(
@@ -130,8 +136,8 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
             },
         )
 
-        db.commit()
-        db.refresh(new_neighbourhood)
+        await db.commit()
+        await db.refresh(new_neighbourhood)
 
         return NeighbourhoodRes(
             id=new_neighbourhood.id,
@@ -142,28 +148,30 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
         )
 
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(
             500,
             "Failed to add neighbourhood"
         )
 
     except HTTPException as he:
-        db.rollback()
+        await db.rollback()
         raise he
 
 
 async def get_neighbourhood_properties_service(db: DbSession, claims: dict) -> List[NeighbourhoodPropertyRes]:
 
-    user = db.execute(select(User).where(User.id == UUID(claims["id"]))).scalar_one_or_none()
+    user_result = await db.execute(select(User).where(User.id == UUID(claims["id"])))
+    user = user_result.scalar_one_or_none()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    result = db.execute(select(Property, Neighbourhood)
+    result = await db.execute(select(Property, Neighbourhood)
                             .outerjoin(Neighbourhood, Neighbourhood.id == Property.neighbourhood_id)
                             .join(PropertyUser, PropertyUser.property_id == Property.id)
-                            .where(PropertyUser.user_id == user.id)).all()
+                            .where(PropertyUser.user_id == user.id))
+    results_all = result.all()
 
     if not result:
         raise HTTPException(status_code=404, detail="No properties found for this user")
@@ -176,7 +184,7 @@ async def get_neighbourhood_properties_service(db: DbSession, claims: dict) -> L
             neighbourhood_id=property.neighbourhood_id,
             neighbourhood_name=neighbourhood.name if neighbourhood else None,
         )
-        for property, neighbourhood in result
+        for property, neighbourhood in results_all
     ]
 
     
