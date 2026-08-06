@@ -8,6 +8,7 @@ from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.user import User, UserRole
+from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 import secrets
@@ -38,6 +39,39 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
         raise HTTPException(401, "Not authenticated")
 
     try:
+        creator_id = UUID(claims["id"])
+
+        # Get property
+        property_obj_result = await db.execute(
+            select(Property).where(Property.id == property_id)
+        )
+        property_obj = property_obj_result.scalar_one_or_none()
+
+        if not property_obj:
+            raise HTTPException(404, "Property not found")
+
+        if property_obj.neighbourhood_id is not None:
+            raise HTTPException(400, "Property is already part of another neighbourhood")
+
+        ownership_result = await db.execute(
+            select(PropertyUser).where(
+                PropertyUser.property_id == property_id,
+                PropertyUser.user_id == creator_id,
+            )
+        )
+        ownership = ownership_result.scalar_one_or_none()
+
+        if not ownership:
+            raise HTTPException(403,"You do not own this property")
+
+        creator_result = await db.execute(
+            select(User).where(User.id == creator_id)
+        )
+        creator = creator_result.scalar_one_or_none()
+
+        if not creator:
+            raise HTTPException(401, "Authenticated user not found in database")
+ 
         # Generate a unique join code
         while True:
             join_code = "".join(
@@ -65,66 +99,21 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
         # Generate  neighbourhood ID
         await db.flush()
 
-        # Get property
-        property_obj_result = await db.execute(
-            select(Property).where(Property.id == property_id)
-        )
-        property_obj = property_obj_result.scalar_one_or_none()
-
-        if not property_obj:
-            raise HTTPException(404, "Property not found")
-
-        if property_obj.neighbourhood_id is not None:
-            raise HTTPException(
-                400,
-                "Property is already part of another neighbourhood"
-            )
-
-        # Verify user owns property
-        prop_user_result = await db.execute(
-            select(PropertyUser).where(
-                PropertyUser.property_id == property_id
-            )
-        )
-
-        prop_user = prop_user_result.scalar_one_or_none()
-
-        if not prop_user:
-            raise HTTPException(
-                403,
-                "User does not have access to this property"
-            )
-
-        if prop_user.user.cognito_sub != claims["sub"]:
-            raise HTTPException(
-                403,
-                "User does not live in the property they are trying to link"
-            )
-
         # Link property
         property_obj.neighbourhood_id = new_neighbourhood.id
 
-        # Promote creator
-        creator_result = await db.execute(
-            select(User).where(
-                User.cognito_sub == claims["sub"]
+        db.add(
+            NeighbourhoodUser(
+                user_id=creator.id,
+                neighbourhood_id=new_neighbourhood.id,
+                role=NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
             )
         )
-
-        creator = creator_result.scalar_one_or_none()
-
-        if not creator:
-            raise HTTPException(
-                401,
-                "Authenticated user not found in database"
-            )
-
-        creator.role = UserRole.NEIGHBOURHOOD_ADMIN
 
         # Create single audit entry
         create_audit_log_item(
             db=db,
-            user_id=UUID(claims["id"]),
+            user_id=creator_id,
             action=AuditAction.CREATE,
             target_entity_type="Neighbourhood",
             target_entity_id=new_neighbourhood.id,
@@ -158,10 +147,19 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
         await db.rollback()
         raise he
 
+    except Exception:
+        await db.rollback()
+        raise HTTPException(500, "Failed to create neighbourhood")
+
 
 async def get_neighbourhood_properties_service(db: DbSession, claims: dict) -> List[NeighbourhoodPropertyRes]:
 
-    user_result = await db.execute(select(User).where(User.id == UUID(claims["id"])))
+    if not claims:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    user_id = UUID(claims["id"])
+
+    user_result = await db.execute(select(User).where(User.id == user_id))
     user = user_result.scalar_one_or_none()
 
     if not user:
@@ -171,20 +169,18 @@ async def get_neighbourhood_properties_service(db: DbSession, claims: dict) -> L
                             .outerjoin(Neighbourhood, Neighbourhood.id == Property.neighbourhood_id)
                             .join(PropertyUser, PropertyUser.property_id == Property.id)
                             .where(PropertyUser.user_id == user.id))
-    results_all = result.all()
-
-    if not result:
-        raise HTTPException(status_code=404, detail="No properties found for this user")
+    properties = result.all()
 
     return [
         NeighbourhoodPropertyRes(
-            id=property.id,
-            address=property.address,
-            property_type=property.property_type,
-            neighbourhood_id=property.neighbourhood_id,
-            neighbourhood_name=neighbourhood.name if neighbourhood else None,
+            id=property_obj.id,
+            address=property_obj.address,
+            property_type=property_obj.property_type,
+            neighbourhood_id=property_obj.neighbourhood_id,
+            neighbourhood_name=(
+                neighbourhood.name if neighbourhood else None
+            ),
         )
-        for property, neighbourhood in results_all
+        for property_obj, neighbourhood in properties
     ]
-
     
