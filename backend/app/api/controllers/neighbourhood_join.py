@@ -35,27 +35,29 @@ async def join_neighbourhood(
 
 
 @router.get(
-    "/join-requests",
+    "/join-requests/{neighbourhood_id}",
     response_model=list[JoinRequestRes],
     summary="List pending join requests for the admin's neighbourhood",
 )
 async def list_join_requests(
+    neighbourhood_id: UUID,
     db: DbSession,
     claims: dict = Depends(get_current_user),
 ):
-    return await list_join_requests_handler(db, claims)
+    return await list_join_requests_handler(neighbourhood_id, db, claims)
 
 @router.patch(
-    "/join-requests/{request_id}",
+    "/join-requests/{request_id}/{property_id}",
     response_model=ResolveJoinRequestRes,
     summary="Approve or deny a join request",
 )
 async def resolve_join_request(
     request_id: UUID,
+    property_id: UUID,
     body: ResolveJoinRequestReq,
     db: DbSession,
     claims: dict = Depends(get_current_user),
 ):
     require_role("NEIGHBOURHOOD_ADMIN", "RESIDENT")
-    result = await resolve_join_request_handler(request_id, body.action, db, claims)
+    result = await resolve_join_request_handler(request_id, property_id, body.action, db, claims)
     return ResolveJoinRequestRes(status=200, message="Join request updated", data=result)
