@@ -1,0 +1,20 @@
+backend/app/api/controllers/property.py
+  h_cf6208e37032c0 14-20,52-58
+  h_cf6208e37032c0 13,21,51,59
+backend/main.py
+  h_cf6208e37032c0 2,87-128
+  h_cf6208e37032c0 86
+backend/app/auth/middleware.py
+  h_cf6208e37032c0 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "ea59e30663aa8f7d8831bcdadc96176e71082d26",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
