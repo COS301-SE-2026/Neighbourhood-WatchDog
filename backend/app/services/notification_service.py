@@ -344,8 +344,7 @@ async def dispatch_notifications(
                 Property.id == PropertyUser.property_id,
             )
             .where(
-                Property.neighbourhood_id == neighbourhood_id,
-                User.role == UserRole.RESIDENT,
+                Property.neighbourhood_id == neighbourhood_id,            
             )
           )
 
