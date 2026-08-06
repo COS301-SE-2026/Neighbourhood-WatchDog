@@ -53,7 +53,7 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
         db.add(alert)
 
         logger.info(
-            "Alert created: alert_id=%s, camera_id=%s, detection_type=%s",
+            "create_alert: Alert created: alert_id=%s, camera_id=%s, detection_type=%s",
             alert.id,
             alert.camera_id,
             alert.detection_type
@@ -73,7 +73,7 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
         })
 
         logger.info(
-            "Alert broadcast completed: alert_id=%s",
+            "create_alert: Alert broadcast completed: alert_id=%s",
             alert.id
         )
 
@@ -85,7 +85,7 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
         await db.rollback()
 
         logger.exception(
-            "Failed to create alert: camera_id=%s",
+            "create_alert: Failed to create alert: camera_id=%s",
             data.camera_id
         )
         raise HTTPException(
@@ -126,6 +126,7 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
 
     role = claims.get("custom:role")
     if role not in ["SECURITY_OFFICER", "NEIGHBOURHOOD_ADMIN", "RESIDENT"]:
+        logger.warning("acknowledge_alert: insufficient permissions to handle alert")
         raise HTTPException(403, "Insufficient permissions")
 
     try:
@@ -135,9 +136,11 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
         alert = result.scalar_one_or_none()
 
         if not alert:
+            logger.warning("acknowledge_alert: alert not found with alert_id=%s", alert_id)
             raise HTTPException(404, ALERT_NOT_FOUND)
 
         if alert.status != "OPEN":
+            logger.warning("acknowledge_alert: alert not open with alert_id=%s", alert_id)
             raise HTTPException(409, "Alert is already acknowledged or resolved")
 
         user_id_str = claims.get("sub") or claims.get("custom:sub")
@@ -159,6 +162,7 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
             resolver = result.scalar_one_or_none()
 
             if resolver is None:
+                logger.warning("acknowledge_alert: user not found with cognito_sub=%s", user_id_str)
                 raise HTTPException(
                     status_code=401,
                     detail="Authenticated user does not have a local WatchDog profile.",
@@ -204,6 +208,7 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
     except HTTPException as he:
         raise he
     except IntegrityError:
+        logger.error("acknowledge_alert: failed to acknowledge with alert_id=%s due to integrity error", alert_id)
         await db.rollback()
         raise HTTPException(500, "Failed to acknowledge alert")
 
