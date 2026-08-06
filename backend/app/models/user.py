@@ -5,6 +5,7 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 from sqlalchemy.dialects.postgresql import UUID
 from uuid import uuid4
+from app.models.neighbourhood_user import NeighbourhoodUser
 
 
 class UserRole(str, Enum):
@@ -23,8 +24,11 @@ class User(Base):
     last_name = Column(String, nullable=True)
     phone_number = Column(String, nullable=True)
     cognito_sub = Column(String, unique=True)
-    role = Column(SQLEnum(UserRole), nullable=False, default=UserRole.RESIDENT)
+    system_role = Column(SQLEnum(UserRole), nullable=False, default=UserRole.RESIDENT)
     created_at = Column(DateTime, default=func.now())
     
     join_requests = relationship("NeighbourhoodJoinRequest", back_populates="user")
     audit_logs = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")
+    neighbourhood_memberships = relationship("NeighbourhoodUser", back_populates="user",cascade="delete")
+    # add relationship to property User table as well
+    properties = relationship("PropertyUser", back_populates="user")
