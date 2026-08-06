@@ -39,10 +39,8 @@ async def get_pairing_token(
     response_model=EdgeAgentsCredentialsRes,
     status_code=201,
     responses={
-        400: {"description": "No property ID provided."},
-        401: {"description": "Invalid or missing authentication token"},
-        403: {"description": "Insufficient permissions to generate a pairing token"},
-        404: {"description": "User not found"},
+        400: {"description": "Token is expired or invalid"},
+        404: {"description": "Property does not exist"},
         500: {"description": "No database"},
     },
 )
