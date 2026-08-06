@@ -33,7 +33,7 @@ async def get_pairing_token_handler(
 
     if not property_id:
         logger.warning("get_pairing_token: no property_id provided in request with claims=%s", claims)
-        raise HTTPException(400, "No property provided")
+        raise HTTPException(400, "No property ID provided")
 
     if not db:
         logger.warning("get_pairing_token: no db provided in request with claims=%s", claims)
@@ -110,6 +110,8 @@ async def pair_agent_handler(
     pairing_token: str,
     db: DbSession,
 ) -> EdgeAgentsCredentialsRes:
+    """Receives the pairing token from the edge agent and links the property to the agent 
+        by creating a record in the edge agent credentials table and return those credentials"""
     if not db:
         logger.warning("pair_agent: no db passed in for request with pairing_token=%s", pairing_token)
         raise HTTPException(500, "No database provided")
@@ -181,7 +183,7 @@ async def pair_agent_handler(
         )
 
         return EdgeAgentsCredentialsRes(
-            status=200,
+            status=201,
             data=agent_creds
         )
 

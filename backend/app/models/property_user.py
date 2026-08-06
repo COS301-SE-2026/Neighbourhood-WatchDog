@@ -9,5 +9,5 @@ class PropertyUser(Base):
     property_id = Column(UUID(as_uuid=True), ForeignKey("property.id", ondelete="CASCADE"), primary_key=True, index=True)
     is_admin = Column(Boolean, nullable=False, default=False)
 
-    user = relationship("User", foreign_keys=[user_id])
+    user = relationship("User", foreign_keys=[user_id], back_populates="properties")
     proper = relationship("Property", foreign_keys=[property_id])

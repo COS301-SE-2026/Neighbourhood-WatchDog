@@ -10,7 +10,15 @@ from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/properties", tags=["properties"])
 
-@router.post("/create-property")
+@router.post(
+    "/create-property",
+    response_model=CreatePropertyRes,
+    status_code=201,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions to create a property"},
+    },
+)
 async def create_property(
     req: CreatePropertyReq,
     db: DbSession,
@@ -40,7 +48,15 @@ async def create_property(
     )
 
 
-@router.get("/my-properties")
+@router.get(
+    "/my-properties",
+    response_model=PropertyRes,
+    status_code=200,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions to access property"},
+    },
+)
 async def get_user_properties(
     db: DbSession, 
     claims: Annotated[dict, Depends(require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN'))],
