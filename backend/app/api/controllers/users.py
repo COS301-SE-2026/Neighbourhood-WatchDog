@@ -6,6 +6,7 @@ from typing import Annotated
 from app.core.database import DbSession
 from app.auth.dependencies import get_current_user
 from app.services.user_service import get_user_by_id_handler
+from app.schemas.user import GetUserResSchema
 
 router = APIRouter(prefix="/users", tags=["users"])
 
