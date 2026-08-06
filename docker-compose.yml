@@ -51,7 +51,7 @@ services:
       target: development
     environment:
       APP_ENV: development
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
       AWS_REGION: ${AWS_REGION}
@@ -73,7 +73,7 @@ services:
       target: development
     environment:
       APP_ENV: development
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
       AWS_REGION: ${AWS_REGION}
@@ -99,7 +99,7 @@ services:
       APP_ENV: development
       DEBUG: "true"
       TESTING: "false"
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
 

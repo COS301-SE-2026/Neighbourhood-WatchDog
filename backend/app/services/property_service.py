@@ -99,6 +99,7 @@ async def get_user_properties_handler(
     """Fetch all properties owned by the current user"""
 
     if not claims:
+        logger.warning("get_user_properties: no claims found for request for user properties with cognito_sub=%s", claims['sub'])
         raise HTTPException(401, "Not authenticated")
 
     try:
@@ -108,7 +109,7 @@ async def get_user_properties_handler(
         user = result.scalar_one_or_none()
 
         if not user:
-            logger.warning("get_properties: no user found for cognito_sub=%s", claims['sub'])
+            logger.warning("get_user_properties: no user found for cognito_sub=%s", claims['sub'])
             raise HTTPException(404, "User not found")
 
         #get all properties for this user
@@ -116,7 +117,7 @@ async def get_user_properties_handler(
         result = await db.execute(stmt)
         properties = result.scalars().all()
 
-        logger.info("get_properties: properties retrieved successfully for user_id=%s", user.id)
+        logger.info("get_user_properties: properties retrieved successfully for user_id=%s", user.id)
         return properties
 
     except HTTPException:

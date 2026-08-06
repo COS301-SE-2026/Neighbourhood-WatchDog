@@ -1,6 +1,6 @@
 import pytest
 from fastapi import HTTPException
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 from app.services.user_service import create_user
 
 class TestCreateUser:
@@ -8,11 +8,16 @@ class TestCreateUser:
         """Runs before each test method - same as allt he other tests"""
 
         self.mock_db = Mock()
-        
+
         self.mock_db.add = Mock()
-        self.mock_db.commit = Mock()
-        self.mock_db.refresh = Mock()
-        self.mock_db.rollback = Mock()
+        self.mock_db.execute = AsyncMock()
+        self.mock_db.commit = AsyncMock()
+        self.mock_db.refresh = AsyncMock()
+        self.mock_db.rollback = AsyncMock()
+
+        result = Mock()
+        result.scalar_one_or_none.return_value = None
+        self.mock_db.execute.return_value = result
 
         self.mock_user = Mock()
         self.mock_user.email = "test@email.com"
@@ -20,7 +25,6 @@ class TestCreateUser:
         self.mock_user.last_name = "Doe"
         self.mock_user.cognito_sub = "test-sub-123"
 
-        self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
 
     @pytest.mark.asyncio
     async def test_happy_path(self):
@@ -62,7 +66,7 @@ class TestCreateUser:
             assert self.mock_db.commit.call_count == 0
 
     @pytest.mark.asyncio
-    async def test_empty_first_namel(self):
+    async def test_empty_first_name(self):
         with patch('app.services.user_service') as _MockUser:
 
             with pytest.raises(HTTPException) as exception:

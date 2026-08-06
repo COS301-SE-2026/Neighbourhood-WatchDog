@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DATABASE_URL: postgresql://postgres:test_password@localhost:5432/watchdog
+      DATABASE_URL: postgresql+asyncpg://postgres:test_password@localhost:5432/watchdog
       REDIS_URL: ${{ secrets.REDIS_URL }}
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
       AWS_REGION: ${{ secrets.AWS_REGION }}

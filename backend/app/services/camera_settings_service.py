@@ -162,6 +162,8 @@ async def create_zone_handler(camera_id: UUID, name: str, polygon: list, db: Asy
 
 
 async def delete_zone_handler(camera_id: UUID,zone_id: UUID,db: AsyncSession,claims: dict) -> None:
+    """Delete a camera detection zone and audit its removal."""
+    
     try:
         zone_result = await db.execute(
             select(CameraDetectionZone).where(

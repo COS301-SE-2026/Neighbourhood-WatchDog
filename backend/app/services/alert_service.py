@@ -30,6 +30,7 @@ NO_DATABASE_SESSION = "No database session"
 NOT_AUTHORISED = "Not authorised for this neighbourhood"
 
 async def create_alert(db: AsyncSession, data: AlertCreate):
+    """Create and persist an alert from an authenticated edge-agent detection."""
     try:
         alert = Alert(
             camera_id=data.camera_id,
@@ -40,6 +41,13 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
             processed=False,
         )
         db.add(alert)
+
+        logger.info(
+            "Alert created: alert_id=%s, camera_id=%s, detection_type=%s",
+            alert.id,
+            alert.camera_id,
+            alert.detection_type
+        )
 
         await db.commit()
         await db.refresh(alert)
@@ -54,12 +62,22 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
             "confidence": data.confidence,
         })
 
+        logger.info(
+            "Alert broadcast completed: alert_id=%s",
+            alert.id
+        )
+
         return alert
     except HTTPException:
         await db.rollback()
         raise
     except Exception as e:
         await db.rollback()
+
+        logger.exception(
+            "Failed to create alert: camera_id=%s",
+            data.camera_id
+        )
         raise HTTPException(
             status_code=500,
             detail=f"Failed to create alert: {str(e)}"
@@ -68,6 +86,7 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
 
 
 def _build_alert_res(alert: Alert) -> AlertRes:
+    """Convert an Alert database model into an AlertRes response object."""
     return AlertRes(
         id=alert.id,
         camera_id=alert.camera_id,
@@ -89,6 +108,7 @@ def _build_alert_res(alert: Alert) -> AlertRes:
     )
 
 async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) -> AlertRes:
+    """Acknowledge an open alert and record the responsible authorised user."""
     if not alert_id:
         raise HTTPException(400, "Alert id is required")
     if not db:
@@ -192,6 +212,8 @@ async def list_alerts_handler(
     limit: int = DEFAULT_PAGE_SIZE,
     offset: int = 0,
 ) -> tuple[list[AlertRes], int]:
+    """Return paginated alerts for an authorised neighbourhood with optional filters."""
+
     if not neighbourhood_id:
         raise HTTPException(400, "Neighbourhood id is required")
     if not db:
@@ -251,6 +273,8 @@ async def get_response_metrics_handler(
         camera_id: UUID | None = None,
         officer_id: UUID | None = None
 ) -> AlertMetricsRes:
+    """Calculate alert response metrics for an authorised neighbourhood."""
+
     caller_neighbourhood = claims.get("custom:neighbourhood_id")
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
         raise HTTPException(403, NOT_AUTHORISED)
@@ -328,6 +352,7 @@ async def get_alert_frequency_metrics_handler(
     time_period: TimePeriod,
     claims: dict
 ) -> AlertFrequencyMetricsRes:
+    """Return grouped alert-frequency metrics for an authorised neighbourhood."""
     
     if not db:
         raise HTTPException(500, "No db")
@@ -396,7 +421,7 @@ async def get_alert_frequency_metrics_handler(
 
 
 def _resolve_start_date(time_period: TimePeriod | None) -> date_cls | None:
-
+    """Convert a requested reporting period into its inclusive start date."""
 
     if not time_period:
         return None
@@ -421,7 +446,7 @@ def _resolve_start_date(time_period: TimePeriod | None) -> date_cls | None:
 
 
 def _compute_trend_direction(buckets: list[TrendBucket]) -> TrendDirection:
-
+    """Determine whether alert counts are increasing, decreasing, or stable."""
     if len(buckets) < 2:
         return TrendDirection.STABLE
 
@@ -448,6 +473,8 @@ async def get_trends_handler(
     incident_type: str | None = None,
     camera_id: UUID | None = None,
 ) -> TrendData:
+    """Return grouped alert trends and their overall direction for a neighbourhood."""
+
     
     if not db:
         raise HTTPException(500, NO_DATABASE_SESSION)
@@ -517,6 +544,8 @@ async def get_trends_handler(
     )
 
 async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession, claims: dict):
+    """Broadcast an alert and notify eligible residents in its neighbourhood."""
+    
     from app.api.controllers.alert import broadcast
 
     result = await db.execute(

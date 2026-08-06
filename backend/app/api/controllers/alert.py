@@ -161,8 +161,8 @@ async def get_alert_trends(
 async def list_alerts(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: dict = Depends(get_current_user),
-    status_filter: str | None = Query(default=None, alias="status"),
+    claims: Annotated[dict, Depends(get_current_user)],
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
     camera_id: Annotated[UUID | None, Query()] = None,
     detection_type: Annotated[str | None, Query()] = None,
     start_date: Annotated[datetime | None, Query()] = None,
@@ -196,7 +196,7 @@ async def list_alerts(
 async def acknowledge_alert(
     alert_id: UUID,
     db: DbSession,
-    claims: dict = Depends(get_current_user),
+    claims: Annotated[dict, Depends(get_current_user)],
 ):
     result = await acknowledge_alert_handler(alert_id, db, claims)
     return AcknowledgeAlertRes(status=200, data=result)

@@ -2,7 +2,6 @@ from fastapi import HTTPException
 from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code, respond_to_mfa
 from app.models.user import UserRole, User
 import asyncio
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction, TargetEntity
 
@@ -13,7 +12,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-async def register_user(payload, db: AsyncSession):
+async def register_user(payload, db):
+    """Register a local user and Cognito account from the supplied signup details."""    
     response = await asyncio.to_thread(
         sign_up,
         email=payload["email"],
@@ -35,6 +35,8 @@ async def register_user(payload, db: AsyncSession):
             neighbourhood_id=None
         )
         db.add(new_user)
+
+        logger.info("User registration completed: user_id=%s", new_user.id)
     
         # Generate ID before audit entry
         await db.flush()
@@ -60,6 +62,10 @@ async def register_user(payload, db: AsyncSession):
         await db.commit()
     except Exception:
         await db.rollback()
+
+        logger.warning(
+            "Authentication rejected because no local user profile exists"
+        )
         raise
 
     return {
@@ -71,6 +77,7 @@ async def register_user(payload, db: AsyncSession):
     }
 
 async def authenticate_user(payload):
+    """Authenticate a user with Cognito and return the authentication result."""
     response = await asyncio.to_thread(
         login,
         email=payload["email"],
@@ -100,15 +107,20 @@ async def authenticate_user(payload):
             }
         }
 
+    logger.exception("Cognito authentication operation failed unexpectedly")
+
     raise HTTPException( #Did not get expected values
         status_code=400,
         detail={
             "error": "AuthenticationFailed",
             "message": response,
         },
+        
     )
+    
 
 async def confirm_user(payload):
+    """Confirm a user's Cognito account using the supplied verification code."""
     await asyncio.to_thread(
         confirm_sign_up,
         email=payload["email"],
@@ -123,6 +135,7 @@ async def confirm_user(payload):
     }
 
 async def resend_confirmation_code(payload):
+    """Request that Cognito resend an account confirmation code to the user."""
     response = await asyncio.to_thread(
         resend_code,
         payload["email"]
@@ -136,6 +149,7 @@ async def resend_confirmation_code(payload):
     }
 
 async def complete_mfa(payload):
+    """Complete a Cognito multi-factor authentication challenge."""
     response = await asyncio.to_thread(
         respond_to_mfa,
         email=payload["email"],

@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
+from typing import Annotated
+
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
 from app.services.user_service import create_user
 from app.models.user import User
-from fastapi import Request
 from app.auth.rate_limiter import limiter
 
 from app.schemas.auth import ( #Check payloads from schemas
@@ -60,8 +61,8 @@ async def confirm(request: Request, payload: ConfirmSignUpRequest):
 @limiter.limit("10/minute")  # Limit to 10 requests per minute
 async def get_current_user_info(
     request: Request,
-    current_user: dict = Depends(get_current_user),
-    db: DbSession = None
+    db: DbSession,
+    current_user: Annotated[dict, Depends(get_current_user)],
 ):
     """Get current user info and create in database if needed"""
     cognito_sub = current_user.get("sub")
@@ -88,12 +89,6 @@ async def get_current_user_info(
         db=db
     )
     return user_output
-
-@router.post("/logout")
-@limiter.limit("10/minute")  # Limit to 10 requests per minute
-async def logout(request: Request, current_user: dict = Depends(get_current_user)):
-    """Logout endpoint"""
-    return {"message": "Logged out"}
 
 @router.post("/resend-code")
 @limiter.limit("10/minute")  # Limit to 10 requests per minute

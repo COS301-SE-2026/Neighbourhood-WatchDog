@@ -1,7 +1,7 @@
 from enum import Enum
 import uuid
 
-from sqlalchemy import Column, ForeignKey, Index, Text, text, Enum as SAEnum
+from sqlalchemy import Column, ForeignKey, Index, text, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy import TIMESTAMP
 from sqlalchemy.orm import relationship

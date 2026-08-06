@@ -1,5 +1,4 @@
 from fastapi import HTTPException, Request, Depends, status, Header
-from sqlalchemy.orm import Session
 from sqlalchemy import select
 from typing import Annotated
 import os
@@ -7,7 +6,7 @@ import hashlib
 import logging
 
 from app.models.user import User
-from app.core.database import get_db, DbSession
+from app.core.database import DbSession
 from app.auth.jwt import get_authenticated_claims
 from app.models.edge_agent_credentials import EdgeAgentCredential
 
@@ -24,7 +23,7 @@ CUSTOM_NEIGHBOURHOOD_CLAIM = "custom:neighbourhood_id"
 
 async def get_current_user(
     request: Request, 
-    db: DbSession
+    db: DbSession,
 ) -> dict:
     """Gets the current user and returns the user's ID, cognito sub, given name, family name, custom role claim, and neighbourhood claim."""
     claims = getattr(request.state, "claims", None)

@@ -137,7 +137,6 @@ The following routes cover the principal Demo 2 browser flows. Request and respo
 | `POST` | `/auth/login` | No | Authenticate a registered user. Rate limited to 5/minute. | R7.5.1 |
 | `POST` | `/auth/resend-code` | No | Re-send an account-confirmation code. | R7.1.2 |
 | `GET` | `/auth/me` | User | Return the current authenticated user's profile. | R4, R7.5.1 |
-| `POST` | `/auth/logout` | User | End the browser-side session workflow. | R7.5.2 |
 | `POST` | `/neighbourhood/create-neighbourhood` | Resident | Create a neighbourhood using name, location and initial property context. | R7.2 |
 | `POST` | `/neighbourhood/join` | User | Submit a join request using a neighbourhood join code. | R7.3.1–R7.3.3 |
 | `GET` | `/neighbourhood/join-requests` | User | List join requests visible in the caller's administrative context. | R7.3.4 |
