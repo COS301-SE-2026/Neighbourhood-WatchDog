@@ -110,6 +110,8 @@ async def pair_agent_handler(
     pairing_token: str,
     db: DbSession,
 ) -> EdgeAgentsCredentialsRes:
+    """Receives the pairing token from the edge agent and links the property to the agent 
+        by creating a record in the edge agent credentials table and return those credentials"""
     if not db:
         logger.warning("pair_agent: no db passed in for request with pairing_token=%s", pairing_token)
         raise HTTPException(500, "No database provided")
