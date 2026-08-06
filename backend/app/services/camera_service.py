@@ -7,6 +7,7 @@ from app.services.rtsp_encryption import encrypt_rtsp_url, decrypt_rtsp_url
 
 from app.services.audit_service import create_audit_log_item
 
+from fastapi import Response, status
 from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
@@ -14,13 +15,43 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from app.models.audit_log import AuditAction, TargetEntity
-
+from app.services.rtsp_encryption import decrypt_rtsp_url
+from app.schemas.camera import (
+    EnabledCamerasRes,
+    ListEnabledCameras,
+    MediaMtxAuthRequest,
+)
+import base64
+import hashlib
+import hmac
+import os
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
 NO_DB_SESSION = "No database session"
 NOT_AUTHENTICATED = "Not authenticated"
+
+_CAMERA_PATH_PATTERN = re.compile(r"^cameras/([0-9a-fA-F-]{36})$")
+
+
+def _publish_master_key() -> bytes:
+    value = os.getenv("MEDIAMTX_PUBLISH_MASTER_KEY")
+
+    if not value:
+        raise RuntimeError("MEDIAMTX_PUBLISH_MASTER_KEY is not configured.")
+
+    return value.encode("utf-8")
+
+
+def _camera_publish_credentials(camera_id: str) -> tuple[str, str]:
+    """Helper function which recevies a camera_id creates a username and password for the camera and returns them as a tuple"""
+    username = f"camera-{camera_id}"
+    digest = hmac.new(_publish_master_key(), camera_id.encode("utf-8"), hashlib.sha256).digest()
+    password = base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+
+    return username, password
 
 async def register_camera_handler(req, db, claims):
     """Register a camera for an authorised property user and audit the creation."""
@@ -293,3 +324,81 @@ async def list_cameras_handler(property_id, db, claims):
             for c in cameras
         ],
     )
+
+async def list_enabled_cameras_for_agent_handler(property_id: UUID, db:AsyncSession) -> ListEnabledCameras:
+    """Returns enabled cameras available to an authenticated AI worker."""
+
+    stmt = select(Camera).where(
+        Camera.property_id == property_id,
+        Camera.enabled.is_(True)
+    ).order_by(Camera.created_at.asc())
+
+    result = await db.execute(stmt)
+    cameras = result.scalars().all()
+
+    data: list[EnabledCamerasRes] = []
+
+    for camera in cameras:
+        camera_id = str(camera.id)
+
+        publish_username, publish_password = (_camera_publish_credentials(camera_id))
+        
+
+        data.append(
+            EnabledCamerasRes(
+                id=camera.id,
+                rtsp_url=decrypt_rtsp_url(camera.rtsp_url),
+                enabled=camera.enabled,
+                neighbourhood_id=camera.neighbourhood_id,
+                confidence_threshold=camera.confidence_threshold,
+                publish_username=publish_username,
+                publish_password=publish_password,
+            )
+        )
+        
+    return ListEnabledCameras(data=data)
+
+
+async def authorize_mediamtx_for_agent_handler(request: MediaMtxAuthRequest, db:AsyncSession) -> Response:
+    """Authorise a MediaMTX playback or camera publishing action."""
+
+    if request.action in {"read", "playback"}:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    if request.action != "publish":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This MediaMTX action is not allowed.")
+
+
+    match = _CAMERA_PATH_PATTERN.fullmatch(request.path)
+
+    if match is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Publish path mist be cameras/<camera-uuid>.")
+
+    try:
+        camera_id = UUID(match.group(1))
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Publish path contains an invalid camera ID.") from error
+
+
+    result = await db.execute(
+        select(Camera).where(
+            Camera.id == camera_id, Camera.enabled.is_(True)
+        )
+    )
+
+    camera = result.scalar_one_or_none()
+
+
+    if camera is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Camera does not exist or is disabled.")
+
+    expected_username, expected_password = (_camera_publish_credentials(str(camera_id)))
+
+
+    credentials_are_valid = (hmac.compare_digest(request.user, expected_username) and hmac.compare_digest(request.password, expected_password))
+
+    if not credentials_are_valid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid publish credential for the requested camera path.")
+
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
