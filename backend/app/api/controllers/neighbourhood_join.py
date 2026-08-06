@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
+from typing import Annotated
 
 from app.auth.dependencies import get_current_user, require_role
 from app.core.database import DbSession
@@ -24,11 +25,18 @@ router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
     response_model=JoinNeighbourhoodRes,
     status_code=status.HTTP_201_CREATED,
     summary="Request to join a neighbourhood",
+    responses={
+        400: {"description": "Missing join code"},
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions to access property"},
+        404: {"description": "Invalid join code"},
+        409: {"description": "Already have a pending request"},
+    },
 )
 async def join_neighbourhood(
     body: JoinNeighbourhoodReq,
     db: DbSession,
-    claims: dict = Depends(get_current_user),
+    claims: Annotated[dict, Depends(get_current_user)],
 ):
     result = await request_to_join_handler(body.join_code, db, claims)
     return JoinNeighbourhoodRes(status=201, message="Join request submitted", data=result)
@@ -42,7 +50,7 @@ async def join_neighbourhood(
 async def list_join_requests(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: dict = Depends(get_current_user),
+    claims: Annotated[dict, Depends(get_current_user)],
 ):
     return await list_join_requests_handler(neighbourhood_id, db, claims)
 
@@ -56,7 +64,7 @@ async def resolve_join_request(
     property_id: UUID,
     body: ResolveJoinRequestReq,
     db: DbSession,
-    claims: dict = Depends(get_current_user),
+    claims: Annotated[dict, Depends(get_current_user)],
 ):
     require_role("NEIGHBOURHOOD_ADMIN", "RESIDENT")
     result = await resolve_join_request_handler(request_id, property_id, body.action, db, claims)
