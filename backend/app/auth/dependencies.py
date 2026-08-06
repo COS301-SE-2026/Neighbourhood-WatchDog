@@ -24,7 +24,7 @@ CUSTOM_NEIGHBOURHOOD_CLAIM = "custom:neighbourhood_id"
 
 async def get_current_user(
     request: Request, 
-    db: DbSession = Depends(get_db)
+    db: DbSession
 ) -> dict:
     """Gets the current user and returns the user's ID, cognito sub, given name, family name, custom role claim, and neighbourhood claim."""
     claims = getattr(request.state, "claims", None)
