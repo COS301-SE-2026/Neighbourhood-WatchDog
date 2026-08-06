@@ -1,0 +1,19 @@
+backend/app/api/controllers/pairing_token.py
+  h_cf6208e37032c0 16-25,38-47
+  h_cf6208e37032c0 15,26,37,48
+backend/app/services/pairing_token.py
+  h_cf6208e37032c0 36,186
+backend/app/api/controllers/property.py
+  h_cf6208e37032c0 57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "1701018165652f2f836d5a7f6d9946c3bb163566",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
