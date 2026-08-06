@@ -1,0 +1,14 @@
+backend/app/api/controllers/neighbourhood_join.py
+  h_cf6208e37032c0 4,28-34,39,53,67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "5fb9403720ce057a73beb690e44d5366bd5b9bb5",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
