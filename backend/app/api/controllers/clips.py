@@ -14,7 +14,9 @@ from botocore.config import Config as BotoConfig
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from typing import Annotated
 
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
@@ -31,8 +33,6 @@ PRESIGN_TTL = 300
 FAULT_RETENTION_DAYS = 7
 
 S3_BUCKET = os.getenv("S3_BUCKET_NAME", "")
-
-
 
 # Current flow:
 # Find detection event in the db
@@ -59,18 +59,18 @@ def _s3_client():
 
 
 #claim: info about the authenticated user
-def _check_rbac(claims: dict, camera: Camera, db: Session) -> None:
+def _check_rbac(claims: dict, camera: Camera, db: AsyncSession) -> None:
     """Raise 403 if the caller lacks permission to view this camera's footage."""
 
     #this assumes that the claim came from a jwt token - need to consolidate this
     role = claims.get("role", claims.get("custom:role", ""))
-    user_neighbourhood = claims.get("neighbourhood_id", claims.get("custom:neighbourhood_id"))
+    user_neighbourhood = claims.get("neighbourhood_id", claims.get("custom:neighbourhood_id")) #TODO: will this neighbourhood id thing even work since users can be in multiple neighbourhoods
 
     #admins see everything
     if role in ADMIN_ROLES:
         return
 
-        if str(camera.neighbourhood_id) != str(user_neighbourhood):
+        if str(camera.neighbourhood_id) != str(user_neighbourhood): #TODO: This is dead code but if it wasnt it would cause an error because neighbourhood_id is no longer accessible through camera
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You do not have access to view footage from this neighbourhood."
@@ -115,9 +115,7 @@ def _check_rbac(claims: dict, camera: Camera, db: Session) -> None:
 async def get_clip_url(
     alert_id: str,
     db: DbSession,
-    claims: dict = Depends(get_current_user),
-
-
+    claims: Annotated[dict, Depends(get_current_user)],
 ):
     """
     return a pre signed s3 url for the requested clip
@@ -132,7 +130,6 @@ async def get_clip_url(
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, 
             detail="Clip storage has not been onfigured on this deployment",
-
         )
     
 
