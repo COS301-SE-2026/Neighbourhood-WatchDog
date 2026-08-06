@@ -10,15 +10,23 @@ from app.services.user_service import get_user_by_id_handler
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get("/{user_id}")
+@router.get(
+    "/{user_id}",
+    response_model=GetUserResSchema,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        404: {"description": "User not found"},
+        500: {"description": "No database session"},
+    },
+)
 async def get_user_by_id(
-	user_id: UUID,
-	db: DbSession,
-	claims: Annotated[dict, Depends(get_current_user)],
-) -> dict:
-	"""Returns the id, email, cognito_sub, role and created_at of the user with the passed in id"""
-	return await get_user_by_id_handler(
-		user_id,
-		db,
-		claims
-	)
+    user_id: UUID,
+    db: DbSession,
+    claims: Annotated[dict, Depends(get_current_user)],
+) -> GetUserResSchema:
+    """Returns the id, email, cognito_sub, role and created_at of the user with the passed in id"""
+    return await get_user_by_id_handler(
+        user_id,
+        db,
+        claims,
+    )
