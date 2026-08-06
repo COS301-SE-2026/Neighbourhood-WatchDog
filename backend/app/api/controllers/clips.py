@@ -1,4 +1,4 @@
-""""
+"""
 GET /api/clips/{detection_event_id}
 
 This endpoint will return a short lived S3 url for a detection event
@@ -26,11 +26,6 @@ from app.models.camera import Camera, CameraVisibilityEnum
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
 from app.models.property import Property
 from app.models.user import User, UserRole
-
-from app.auth.dependencies import get_current_user
-from app.core.database import DbSession
-from app.models.camera import Camera
-from app.models.alert import Alert
 
 
 router = APIRouter(prefix="/api/clips", tags=["clips"])
@@ -66,10 +61,10 @@ def _s3_client():
 
 
 #claim: info about the authenticated user
-async def _check_rbac(claims: dict, property_object: Property, db: DbSession) -> None:
+async def _check_rbac(claims: dict, camera: Camera, property_obj: Property, db: DbSession) -> None:
     """Raise 403 if the caller lacks permission to view this camera's footage."""
 
-    cognito_sub = claims.get("sub") or claims.get("custome:sub")
+    cognito_sub = claims.get("sub") or claims.get("custom:sub")
 
     if not cognito_sub:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authenticated user subject is missing.")
@@ -85,13 +80,13 @@ async def _check_rbac(claims: dict, property_object: Property, db: DbSession) ->
 
     if user.system_role == UserRole.SYSTEM_ADMIN: return
 
-    if property_object.neighbourhood_id is None:
+    if property_obj.neighbourhood_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This camera is not assigned to a neighbourhood.")
 
     membership_result = await db.execute(
         select(NeighbourhoodUser).where(
             NeighbourhoodUser.user_id == user.id,
-            NeighbourhoodUser.neighbourhood_id == property_object.neighbourhood_id
+            NeighbourhoodUser.neighbourhood_id == property_obj.neighbourhood_id
         )
     )
     membership = membership_result.scalar_one_or_none()
@@ -101,14 +96,17 @@ async def _check_rbac(claims: dict, property_object: Property, db: DbSession) ->
 
     if membership.role in {NeighbourhoodRole.NEIGHBOURHOOD_ADMIN, NeighbourhoodRole.SECURITY_OFFICER}: return
 
-    if membership.role == NeighbourhoodRole.RESIDENT: return
+    if membership.role == NeighbourhoodRole.RESIDENT: 
+        if camera.visibility != CameraVisibilityEnum.PUBLIC:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Residents can only view public-camera footage.")
+        return
 
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to view footage.")
 
 
 @router.get("/{alert_id}")
 async def get_clip_url(
-    alert_id: str,
+    alert_id: UUID,
     db: DbSession,
     claims: Annotated[dict, Depends(get_current_user)],
 ):
@@ -150,49 +148,30 @@ async def get_clip_url(
 
     await _check_rbac(
         claims=claims,
+        camera=camera,
         property_obj=property_obj,
         db=db,
     )
 
-    cognito_sub = claims.get("sub") or claims.get("custom:sub")
+    try:
+        s3 = _s3_client()
 
-    user_result = await db.execute(
-        select(User).where(User.cognito_sub == cognito_sub)
-    )
-    user = user_result.scalar_one_or_none()
-
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authenticated user does not have a local WatchDog profile.")
-
-    if user.system_role != UserRole.SYSTEM_ADMIN:
-        membership_result = await db.execute(
-            select(NeighbourhoodUser).where(
-                NeighbourhoodUser.user_id == user.id,
-                NeighbourhoodUser.neighbourhood_id == property_obj.neighbourhood_id
-            )
+        url = s3.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": S3_BUCKET,
+                "Key": alert.clip_s3_key,
+            },
+            ExpiresIn=PRESIGN_TTL,
         )
-        membership = membership_result.scalar_one_or_none()
 
-        if (membership is not None and membership.role == NeighbourhoodRole.RESIDENT and camera.visibility != CameraVisibilityEnum.PUBLIC):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Residents can only view public-camera footage.")
+    except (BotoCoreError, ClientError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Could not generate a temporary clip URL.",
+        ) from exc
 
-        try:
-            s3 = _s3_client()
-
-            url = s3.generate_presigned_url(
-                "get_object",
-                Params={
-                    "Bucket": S3_BUCKET,
-                    "Key": alert.clip_s3_key,
-                },
-                ExpiresIn=PRESIGN_TTL,
-            )
-
-        except (BotoCoreError, ClientError) as exc:
-            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Could not generate a temporary clip URL.") from exc
-
-        return {
-            "url": url,
-            "expires_in": PRESIGN_TTL,
-        }
-
+    return {
+        "url": url,
+        "expires_in": PRESIGN_TTL,
+    }
