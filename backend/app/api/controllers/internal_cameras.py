@@ -12,9 +12,14 @@ router = APIRouter(prefix="/internal", tags=["internal"])
 
 
 @router.get(
-    "/cameras/enabled", 
+    "/cameras/enabled",
     response_model=ListEnabledCameras,
-    summary="List enabled cameras for the AI worker"
+    status_code=status.HTTP_200_OK,
+    summary="List enabled cameras for the AI worker",
+    responses={
+        401: {"description": "Invalid or missing edge agent credentials"},
+        500: {"description": "Failed to retrieve enabled cameras"},
+    },
 )
 async def list_enabled_cameras(
     db: DbSession,
@@ -29,10 +34,14 @@ async def list_enabled_cameras(
     
 
 @router.post(
-    "/mediamtx/auth", 
-    status_code=status.HTTP_204_NO_CONTENT, 
-    summary="Authorize a MediaMTX action"
-
+    "/mediamtx/auth",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Authorize a MediaMTX action",
+    responses={
+        204: {"description": "MediaMTX action authorized"},
+        401: {"description": "Invalid camera path, credentials or disabled camera"},
+        403: {"description": "MediaMTX action not allowed"},
+    },
 )
 async def authorize_mediamtx(request: MediaMtxAuthRequest, db: DbSession) -> Response:
 
