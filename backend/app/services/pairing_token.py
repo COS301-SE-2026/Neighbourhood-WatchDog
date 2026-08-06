@@ -33,7 +33,7 @@ async def get_pairing_token_handler(
 
     if not property_id:
         logger.warning("get_pairing_token: no property_id provided in request with claims=%s", claims)
-        raise HTTPException(400, "No property provided")
+        raise HTTPException(400, "No property ID provided")
 
     if not db:
         logger.warning("get_pairing_token: no db provided in request with claims=%s", claims)
@@ -183,7 +183,7 @@ async def pair_agent_handler(
         )
 
         return EdgeAgentsCredentialsRes(
-            status=200,
+            status=201,
             data=agent_creds
         )
 

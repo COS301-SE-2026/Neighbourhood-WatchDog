@@ -54,7 +54,7 @@ async def create_property(
     status_code=200,
     responses={
         401: {"description": "Invalid or missing authentication token"},
-        403: {"description": "Insufficient permissions to create a property"},
+        403: {"description": "Insufficient permissions to access property"},
     },
 )
 async def get_user_properties(
