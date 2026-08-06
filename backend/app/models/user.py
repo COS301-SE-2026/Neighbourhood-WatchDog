@@ -11,9 +11,6 @@ from app.models.neighbourhood_user import NeighbourhoodUser
 class UserRole(str, Enum):
     SYSTEM_ADMIN = "SYSTEM_ADMIN"
     RESIDENT = "RESIDENT"
-    NEIGHBOURHOOD_ADMIN = "NEIGHBOURHOOD_ADMIN"
-    PROPERTY_ADMIN = "PROPERTY_ADMIN"
-    USER = "USER"
     SECURITY_OFFICER = "SECURITY_OFFICER"
 
 class User(Base):
