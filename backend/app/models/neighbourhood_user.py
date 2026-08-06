@@ -9,7 +9,6 @@ class NeighbourhoodRole(str, Enum):
     RESIDENT = "RESIDENT"
     NEIGHBOURHOOD_ADMIN = "NEIGHBOURHOOD_ADMIN"
     SECURITY_OFFICER = "SECURITY_OFFICER"
-    VIEWER = "VIEWER"
 
 class NeighbourhoodUser(Base):
     __tablename__ = "neighbourhood_user"
