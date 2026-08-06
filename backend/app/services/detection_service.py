@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.core.database import DbSession
-from app.models.alert import Alert, DetectionType
+from app.models.alert import Alert
 from app.models.camera import Camera
 from app.models.property_user import PropertyUser
 from app.models.zone import GeospatialZone

@@ -1,4 +1,4 @@
-from app.schemas.camera import RegisterCameraReq, CameraRes, CameraListItemRes, CamerasRes, CameraEditReq
+from app.schemas.camera import CameraRes, CameraListItemRes, CamerasRes, CameraEditReq
 from app.models.camera import Camera
 from app.models.property import Property
 from app.models.property_user import PropertyUser
@@ -11,7 +11,6 @@ from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
-from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from app.models.audit_log import AuditAction, TargetEntity

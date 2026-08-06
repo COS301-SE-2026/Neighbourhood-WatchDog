@@ -4,7 +4,6 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from uuid import UUID
-from typing import Annotated
 
 from app.core.database import DbSession
 from app.models.user import User, UserRole

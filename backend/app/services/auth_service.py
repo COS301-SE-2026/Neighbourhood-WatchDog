@@ -2,7 +2,6 @@ from fastapi import HTTPException
 from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code, respond_to_mfa
 from app.models.user import UserRole, User
 import asyncio
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction, TargetEntity
 

@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy import Column, ForeignKey, Integer, text, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy import TIMESTAMP, Index
+from sqlalchemy import TIMESTAMP
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 

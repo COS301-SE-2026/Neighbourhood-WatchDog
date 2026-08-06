@@ -17,7 +17,6 @@ from app.models.audit_log import AuditAction, TargetEntity
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.alert import Alert, DetectionType
-from app.api.controllers.alert import broadcast
 
 from app.services.notification_service import _format_whatsapp_message, _notify_users
 

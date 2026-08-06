@@ -1,11 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from typing import Annotated
 
 from app.core.database import DbSession
 from app.auth.dependencies import get_current_user
-from app.models.user import User
 from app.services.user_service import get_user_by_id_handler
 
 router = APIRouter(prefix="/users", tags=["users"])
