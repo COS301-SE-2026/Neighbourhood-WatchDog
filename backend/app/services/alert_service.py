@@ -34,6 +34,10 @@ DEFAULT_PAGE_SIZE = 25
 MAX_PAGE_SIZE = 100
 NO_DATABASE_SESSION = "No database session"
 NOT_AUTHORISED = "Not authorised for this neighbourhood"
+NOT_AUTHENTICATED = "Not authenticated"
+ALERT_NOT_FOUND = "Alert not found"
+CUSTOM_NEIGHBOURHOOD_ID = "custom:neighbourhood_id"
+
 
 async def create_alert(db: AsyncSession, data: AlertCreate):
     """Create and persist an alert from an authenticated edge-agent detection."""
@@ -116,11 +120,9 @@ def _build_alert_res(alert: Alert) -> AlertRes:
 async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) -> AlertRes:
     """Acknowledge an open alert and record the responsible authorised user."""
     if not alert_id:
+        logger.warning("acknowledge_alert_handler: no alert_id entered")
         raise HTTPException(400, "Alert id is required")
-    if not db:
-        raise HTTPException(500, NO_DATABASE_SESSION)
-    if not claims:
-        raise HTTPException(401, "Not authenticated")
+    _validate_db_and_claims(db, claims)
 
     role = claims.get("custom:role")
     if role not in ["SECURITY_OFFICER", "NEIGHBOURHOOD_ADMIN", "RESIDENT"]:
@@ -133,7 +135,7 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
         alert = result.scalar_one_or_none()
 
         if not alert:
-            raise HTTPException(404, "Alert not found")
+            raise HTTPException(404, ALERT_NOT_FOUND)
 
         if alert.status != "OPEN":
             raise HTTPException(409, "Alert is already acknowledged or resolved")
@@ -192,7 +194,7 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
             from app.api.controllers.alert import broadcast
 
             await broadcast(
-                neighbourhood_id=str(claims.get("custom:neighbourhood_id")),
+                neighbourhood_id=str(claims.get(CUSTOM_NEIGHBOURHOOD_ID)),
                 message={"event": "alert.acknowledged", "payload": alert_res.model_dump(mode="json")},
             )
         except Exception:
@@ -225,9 +227,9 @@ async def list_alerts_handler(
     if not db:
         raise HTTPException(500, NO_DATABASE_SESSION)
     if not claims:
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED)
 
-    caller_neighbourhood = claims.get("custom:neighbourhood_id")
+    caller_neighbourhood = claims.get(CUSTOM_NEIGHBOURHOOD_ID)
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
         raise HTTPException(403, NOT_AUTHORISED)
 
@@ -281,7 +283,7 @@ async def get_response_metrics_handler(
 ) -> AlertMetricsRes:
     """Calculate alert response metrics for an authorised neighbourhood."""
 
-    caller_neighbourhood = claims.get("custom:neighbourhood_id")
+    caller_neighbourhood = claims.get(CUSTOM_NEIGHBOURHOOD_ID)
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
         raise HTTPException(403, NOT_AUTHORISED)
     
@@ -364,12 +366,12 @@ async def get_alert_frequency_metrics_handler(
         raise HTTPException(500, "No db")
 
     if not claims:
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED)
     
     if not time_interval:
         raise HTTPException(400, "No time interval provided")
     
-    caller_neighbourhood = claims.get("custom:neighbourhood_id")
+    caller_neighbourhood = claims.get(CUSTOM_NEIGHBOURHOOD_ID)
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
         raise HTTPException(403, NOT_AUTHORISED)
     
@@ -486,10 +488,10 @@ async def get_trends_handler(
         raise HTTPException(500, NO_DATABASE_SESSION)
     
     if not claims:
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED)
     
 
-    caller_neighbourhood = claims.get("custom:neighbourhood_id")
+    caller_neighbourhood = claims.get(CUSTOM_NEIGHBOURHOOD_ID)
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
         raise HTTPException(403, NOT_AUTHORISED)
     
@@ -559,7 +561,7 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
     )
     alert = result.scalar_one_or_none()
     if not alert:
-        raise HTTPException(status_code=404, detail="Alert not found")
+        raise HTTPException(status_code=404, detail=ALERT_NOT_FOUND)
 
     result = await db.execute(
         select(Camera).where(Camera.id == alert.camera_id)
@@ -733,7 +735,7 @@ async def update_alert_clip_for_agent_handler(alert_id: str, body: UpdateAlertCl
             logger.warning("internal update_clip: alert with alert id=%s not found.", alert_id)
             raise HTTPException(
                 status_code=404,
-                detail="Alert not found"
+                detail=ALERT_NOT_FOUND
             )
 
         alert.clip_s3_key = body.clip_s3_key
@@ -755,3 +757,12 @@ async def update_alert_clip_for_agent_handler(alert_id: str, body: UpdateAlertCl
     except Exception:
         logger.exception("internal update_clip: unexpected error updating clip for alert_id=%s", alert_id)
         raise
+
+
+def _validate_db_and_claims(db: AsyncSession, claims: dict):
+    if not db:
+        logger.warning("acknowledge_alert_handler: no db entered")
+        raise HTTPException(500, NO_DATABASE_SESSION)
+    if not claims:
+        logger.warning("acknowledge_alert_handler: no claims entered")
+        raise HTTPException(401, NOT_AUTHENTICATED)
