@@ -127,3 +127,33 @@ class TrendResponse(BaseModel):
 
 class BroadcastAlertReq(BaseModel):
     alert_id: UUID
+
+class CreateInternalAlertRequest(BaseModel):
+    """Represent an alert-creation request sent by an authenticated AI agent."""
+
+    camera_id: str
+    detection_type: str
+    confidence_score: float
+    thumbnail_url: str | None = None
+    frame_timestamp: str | None = None
+
+
+class UpdateAlertClipRequest(BaseModel):
+    """Represent an AI agent request to attach a clip to an alert."""
+
+    clip_s3_key: str
+    clip_expires_at: str
+
+
+class InternalAlertCreateRes(BaseModel):
+    """Represent the identifier of an alert created by an AI agent."""
+
+    alert_id: UUID
+
+
+class AlertClipUpdateRes(BaseModel):
+    """Represent an alert after its clip details have been updated."""
+
+    alert_id: UUID
+    clip_s3_key: str
+    clip_expires_at: datetime

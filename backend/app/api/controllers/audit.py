@@ -5,7 +5,7 @@ from typing import Annotated, Optional
 from app.core.database import DbSession
 from app.auth.dependencies import get_current_user
 from app.auth.dependencies import require_role
-from app.schemas.audit_log import AuditAction
+from app.schemas.audit_log import AuditAction, GetAuditLogsRes
 from app.services.audit_service import get_audit_logs_handler
 
 PAGE = 1
@@ -13,7 +13,17 @@ SIZE = 30
 
 router = APIRouter(prefix="/audit", tags=["properties"])
 
-@router.get("/get-audit-logs")
+@router.get(
+    "/get-audit-logs",
+    response_model=GetAuditLogsRes,
+    summary="Retrieve audit logs",
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions"},
+        422: {"description": "Invalid pagination parameters or requested page exceeds available audit logs"},
+        500: {"description": "No database session"},
+    },
+)
 async def get_audit_logs(
     db: DbSession,
     claims: Annotated[dict, Depends(get_current_user)],

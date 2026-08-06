@@ -26,7 +26,7 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
         raise HTTPException(400, "No neighbourhood name given.")
 
     if not location or location == "":
-        raise HTTPException(400, "No neighbourhood locationation given")
+        raise HTTPException(400, "No neighbourhood location given")
     
     if not property_id:
         raise HTTPException(400, "No property id given to link the neighbourhood to")
