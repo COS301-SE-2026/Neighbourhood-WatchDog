@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from uuid import UUID
 
@@ -14,23 +15,28 @@ logger = logging.getLogger(__name__)
 
 @celery.task
 def recalculate_all_risk_scores():
-    db = SessionLocal()
-    try:
-        neighbourhood_ids = db.execute(select(Neighbourhood.id)).scalars().all()
-        for neighbourhood_id in neighbourhood_ids:
-            calculate_risk_score_task.delay(str(neighbourhood_id))
-    finally:
-        db.close()
+    asyncio.run(_recalculate_all_risk_scores())
+
+
+async def _recalculate_all_risk_scores():
+    async with SessionLocal() as db:
+        result = await db.execute(select(Neighbourhood.id))
+        neighbourhood_ids = result.scalars().all()
+
+    for neighbourhood_id in neighbourhood_ids:
+        calculate_risk_score_task.delay(str(neighbourhood_id))
+
+
 
 @celery.task
 def calculate_risk_score_task(neighbourhood_id: str):
-    db = SessionLocal()
-    try:
-        calculate_risk_score_handler(UUID(neighbourhood_id), db)
+    asyncio.run(_calculate_risk_score_task(neighbourhood_id))
 
-    except Exception:
-        db.rollback()
-        logger.exception("Failed to calculate risk score for neighbourhood %s", neighbourhood_id)
+async def _calculate_risk_score_task(neighbourhood_id: str):
+    async with SessionLocal() as db:
+        try:
+            await calculate_risk_score_handler(UUID(neighbourhood_id), db)
 
-    finally:
-        db.close()
+        except Exception:
+            await db.rollback()
+            logger.exception("Failed to calculate risk score for neighbourhood %s", neighbourhood_id)
