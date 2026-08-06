@@ -127,3 +127,15 @@ class TrendResponse(BaseModel):
 
 class BroadcastAlertReq(BaseModel):
     alert_id: UUID
+
+class CreateAlertRequest(BaseModel):
+    camera_id: str
+    detection_type: str
+    confidence_score: float
+    thumbnail_url: str | None = None
+    frame_timestamp: str | None = None
+
+
+class UpdateClipRequest(BaseModel):
+    clip_s3_key: str
+    clip_expires_at: str ##the iso datetime
