@@ -25,6 +25,20 @@ def verify_internal_token(x_internal_token: str = Header(...)) -> None:
     status_code=status.HTTP_201_CREATED,
     summary="Ingest a detection result from the worker",
     dependencies=[Depends(verify_internal_token)],
+    responses={
+        400: {
+            "description": (
+                "Invalid detection type or confidence score. "
+                "Confidence score must be between 0 and 1."
+            )
+        },
+        401: {
+            "description": "Invalid internal authentication token"
+        },
+        500: {
+            "description": "No database session or failed to ingest detection"
+        },
+    },
 )
 async def ingest_detection(
     body: DetectionIngestReq,
