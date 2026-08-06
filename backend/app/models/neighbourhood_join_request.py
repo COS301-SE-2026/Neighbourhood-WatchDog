@@ -30,4 +30,9 @@ class NeighbourhoodJoinRequest(Base):
             "neighbourhood_id",
             "status",
         ),
+        Index(
+            "ix_join_request_neighbourhood_created_at",
+            "neighbourhood_id",
+            "created_at",
+        )
     )
