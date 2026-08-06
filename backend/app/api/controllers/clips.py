@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
 from app.models.camera import Camera
-from app.models.detection_event import DetectionEvent
+from app.models.alert import DetectionEvent
 from app.models.neighbourhood_join_request import NeighbourhoodJoinRequest
 
 
@@ -31,6 +31,7 @@ PRESIGN_TTL = 300
 FAULT_RETENTION_DAYS = 7
 
 S3_BUCKET = os.getenv("S3_BUCKET_NAME", "")
+AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
 
 
 
@@ -49,8 +50,8 @@ ADMIN_ROLES = {"SYSTEM_ADMIN", "NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "RESIDEN
 def _s3_client():
     return boto3.client(
         "s3",
-        region_name="eu-north-1",
-        endpoint_url="https://s3.eu-north-1.amazonaws.com",
+        region_name=AWS_REGION,
+        endpoint_url=f"https://s3.{AWS_REGION}.amazonaws.com",
         config=BotoConfig(
             signature_version="s3v4",
             s3={"addressing_style": "virtual"},

@@ -56,7 +56,7 @@ WEAPON_CLASSES = {"gun", "knife", "grenade", "explosion"}
 CLIP_COOLDOWN_SECS = 30
 CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "")
-AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")
+AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
 
 
 #cooldown tracker per weapon class
@@ -75,7 +75,7 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
     try:
         response = httpx.post(
             f"{backend_url}/api/stream/cameras/{camera_id}/annotations",
-            headers={"X-Internal-Token": api_key}, 
+            headers={"X-Internal-Token": api_key},
             json={"tracks": tracks, "timestamp": timestamp},
             timeout=0.5,
         )
@@ -143,7 +143,7 @@ def _extract_detections(frame, confidence_threshold: float, zones: list | None =
         classes=[0],
         verbose=False
         )
-    
+
     for box in person_results[0].boxes:
         x1, y1, x2, y2 = box.xyxy[0].tolist()
         confidence = float(box.conf[0])
@@ -159,8 +159,8 @@ def _extract_detections(frame, confidence_threshold: float, zones: list | None =
 
 
     logger.debug("Threat boxes: %s, Person boxes: %s", len(weapon_detections), len(person_detections))
-        
-    
+
+
     return person_detections, weapon_detections
 
 
@@ -206,7 +206,7 @@ def _open_stream(rtsp_url: str):
     cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
     if not cap.isOpened():
         return None
-    
+
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
     return cap
@@ -314,7 +314,7 @@ def _schedule_weapon_clip(
         daemon=True,
     ).start()
 
-    logger.info("Scheduling weapon clip for camera %s: label=%s, confidence=%.2f, pre_frames=%s", 
+    logger.info("Scheduling weapon clip for camera %s: label=%s, confidence=%.2f, pre_frames=%s",
                 camera.id, label, confidence, len(pre_frames))
 
 def _save_weapon_clip(
@@ -343,7 +343,7 @@ def _save_weapon_clip(
 
     try:
         event_response = httpx.post(
-            f"{BACKEND_URL}/internal/detection-events",
+            f"{BACKEND_URL}/internal/detections",
             headers=headers,
             json={
                 "camera_id": camera.id,
@@ -354,7 +354,12 @@ def _save_weapon_clip(
             timeout=3.0,
         )
         event_response.raise_for_status()
-        detection_event_id = event_response.json()["detection_event_id"]
+        alert_id = event_response.json().get("alert_id")
+
+        if not alert_id:
+            logger.info("Detection for camera %s did not meet the configured threshold; no alert or clip will be created.", camera.id)
+            return
+
     except Exception:
         logger.exception(
             "Could not create detection event for camera %s",
@@ -469,18 +474,16 @@ def _save_weapon_clip(
             text=True,
         )
 
-        boto3.client("s3", region_name=AWS_REGION).upload_file(
-            h264_path,
-            S3_BUCKET_NAME,
-            s3_key,
-            ExtraArgs={"ContentType": "video/mp4"},
+        s3_key = (
+            f"clips/{camera.id}/"
+            f"{timestamp:%Y/%m/%d}/"
+            f"{weapon_label}_{timestamp:%Y%m%dT%H%M%SZ}.mp4"
         )
-
         expires_at = timestamp + timedelta(days=CLIP_RETENTION_DAYS)
 
         update_response = httpx.patch(
-            f"{BACKEND_URL}/internal/detection-events/"
-            f"{detection_event_id}/clip",
+            f"{BACKEND_URL}/internal/alerts/"
+            f"{alert_id}/clip",
             headers=headers,
             json={
                 "clip_s3_key": s3_key,
@@ -494,7 +497,7 @@ def _save_weapon_clip(
             "Clip uploaded: s3://%s/%s -> event %s",
             S3_BUCKET_NAME,
             s3_key,
-            detection_event_id,
+            alert_id,
         )
 
     except Exception:
@@ -505,7 +508,7 @@ def _save_weapon_clip(
     finally:
         for clip_path in (raw_path, h264_path):
             if os.path.exists(clip_path):
-                os.unlink(clip_path)     
+                os.unlink(clip_path)
 
 def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Event) -> None:
     """
@@ -541,10 +544,10 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
             pre_event_frames.append(frame.copy())
 
             person_detections, weapon_detections = _extract_detections(frame, camera.confidence_threshold)
-            
+
             #only tracking humans through deepsort
             tracks = tracker.update_tracks(person_detections, frame=frame)
-    
+
             tracks_payload = _collect_tracks(tracks, alerted_ids, camera)
 
             print(f"DEBUG: raw_tracks={len(tracks)}, confirmed={sum(1 for t in tracks if t.is_confirmed())}, payload={len(tracks_payload)}, person_dets={len(person_detections)}")
@@ -554,13 +557,13 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
             #adding raw weapon detections (no deepsort, no duplication)
             for i, (bbox, confidence, label) in enumerate(weapon_detections):
                 x, y, w, h = bbox
-        
+
                 tracks_payload.append({
                     "track_id": f"threat_{i}",
                     "confidence": confidence,
                     "bbox": [x, y, x + w, y + h],
                     "detection_type": label
-    
+
                 })
 
 
@@ -568,17 +571,17 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
                     _schedule_weapon_clip(
                         camera=camera,
                         rtsp_url=rtsp_url,
-                        pre_frames=list(pre_event_frames), 
-                        weapon_label=label, 
+                        pre_frames=list(pre_event_frames),
+                        weapon_label=label,
                         confidence=confidence,
                         stop_event=stop_event
 
                     )
 
             #filtering out zero confidence (0%) ghost tracks
-            tracks_payload = [t for t in tracks_payload 
+            tracks_payload = [t for t in tracks_payload
                 if t.get("confidence", 0) > 0.1 or str(t.get("track_id", "")).startswith("threat_")]
-            
+
 
             _push_annotations(BACKEND_URL, camera.id, tracks_payload, datetime.now(timezone.utc).isoformat())
 
@@ -632,10 +635,10 @@ async def lifespan(app_: FastAPI):
     """Start the detection background thread when the AI service starts."""
 
     supervisor = CameraSupervisor(
-        backend_url=BACKEND_URL, 
-        internal_token=INTERNAL_API_TOKEN, 
-        mediamtx_rtsp_url=MEDIAMTX_RTSP_URL, 
-        detection_target=_detection_loop, 
+        backend_url=BACKEND_URL,
+        internal_token=INTERNAL_API_TOKEN,
+        mediamtx_rtsp_url=MEDIAMTX_RTSP_URL,
+        detection_target=_detection_loop,
         reconcile_interval_seconds=5.0
     )
 
@@ -691,8 +694,8 @@ def annotated_mjpeg(rtsp_url: str):
             threat_results = threat_model.predict(frame, imgsz=640, conf=0.35, verbose=False)
             tracks_for_thumbnail = [
                 {
-                    "track_id": i, 
-                    "confidence": float(box.conf[0]), 
+                    "track_id": i,
+                    "confidence": float(box.conf[0]),
                     "bbox": box.xyxy[0].tolist(),
                     "detection_type": threat_model.names[int(box.cls[0])],
 
