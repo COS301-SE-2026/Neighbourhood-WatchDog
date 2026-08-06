@@ -8,12 +8,17 @@ from app.services.user_service import create_user
 from app.models.user import User
 from app.auth.rate_limiter import limiter
 
-from app.schemas.auth import ( #Check payloads from schemas
+from app.schemas.auth import (
     SignUpRequest,
     LoginRequest,
     ConfirmSignUpRequest,
     ResendCodeRequest,
-    VerifyMFARequest
+    VerifyMFARequest,
+    SignUpRes,
+    LoginRes,
+    ConfirmSignUpRes,
+    ResendCodeRes,
+    VerifyMFARes,
 )
 
 from app.services.auth_service import ( #use services
@@ -41,17 +46,36 @@ def auth_ping():
         "message":"auth router is ALIVE"
     }
 
-@router.post("/signup")
+@router.post("/signup", response_model=SignUpRes, status_code=201,
+    responses={
+        400: {"description": "Invalid signup details"},
+        409: {"description": "User already exists"},
+        429: {"description": "Too many signup attempts"},
+        500: {"description": "Failed to register user"},
+    },
+)
 @limiter.limit("3/minute")  # Limit to 3 requests per minute
 async def signup(request: Request, payload: SignUpRequest, db: DbSession):
     return await register_user(_payload_to_dict(payload), db)
 
-@router.post("/login")
+@router.post("/login", response_model=LoginRes,
+    responses={
+        400: {"description": "Invalid email, password, or authentication failed"},
+        401: {"description": "Invalid credentials"},
+        429: {"description": "Too many login attempts"},
+    },
+)
 @limiter.limit("5/minute")  # Limit to 5 requests per minute
 async def login(request: Request, payload: LoginRequest):
     return await authenticate_user(_payload_to_dict(payload))
 
-@router.post("/confirm")
+@router.post("/confirm", response_model=ConfirmSignUpRes,
+    responses={
+        400: {"description": "Invalid confirmation code"},
+        404: {"description": "User not found"},
+        429: {"description": "Too many confirmation attempts"},
+    },
+)
 @limiter.limit("15/minute")  # Limit to 15 requests per minute
 async def confirm(request: Request, payload: ConfirmSignUpRequest):
     return await confirm_user(_payload_to_dict(payload))
@@ -90,12 +114,24 @@ async def get_current_user_info(
     )
     return user_output
 
-@router.post("/resend-code")
+@router.post("/resend-code", response_model=ResendCodeRes,
+    responses={
+        400: {"description": "Invalid email"},
+        404: {"description": "User not found"},
+        429: {"description": "Too many resend attempts"},
+    },
+)
 @limiter.limit("10/minute")  # Limit to 10 requests per minute
 async def resend_code(request: Request, payload: ResendCodeRequest):
     return await resend_confirmation_code(_payload_to_dict(payload))
 
-@router.post("/verify-mfa")
+@router.post("/verify-mfa", response_model=VerifyMFARes,
+    responses={
+        400: {"description": "Invalid MFA code or session"},
+        401: {"description": "Authentication failed"},
+        429: {"description": "Too many MFA attempts"},
+    },
+)
 @limiter.limit("10/minute")
 async def verify_mfa(request: Request, payload: VerifyMFARequest):
     return await complete_mfa(_payload_to_dict(payload))
