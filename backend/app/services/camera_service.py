@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 NO_DB_SESSION = "No database session"
 NOT_AUTHENTICATED = "Not authenticated"
 
-async def register_camera_handler(req: RegisterCameraReq, db: AsyncSession, claims: dict) -> CameraRes:
+async def register_camera_handler(req, db, claims):
+    """Register a camera for an authorised property user and audit the creation."""
     if not db:
         raise HTTPException(500, NO_DB_SESSION)
     if not claims:
@@ -49,6 +50,12 @@ async def register_camera_handler(req: RegisterCameraReq, db: AsyncSession, clai
             location=req.location,
         )
         db.add(new_camera)
+
+        logger.info(
+            "Camera registered: camera_id=%s, property_id=%s",
+            new_camera.id,
+            new_camera.property_id,
+        )
 
         # Get ID before commit
         await db.flush()
@@ -90,7 +97,8 @@ async def register_camera_handler(req: RegisterCameraReq, db: AsyncSession, clai
         await db.rollback()
         raise he
 
-async def deregister_camera_handler(camera_id: UUID, db: Optional[AsyncSession], claims: Optional[dict]):
+async def deregister_camera_handler(camera_id, db, claims):
+    """Remove an authorised user's camera and audit the deletion."""
     if not db:
         raise HTTPException(status_code=500, detail=NO_DB_SESSION)
     if not claims:
@@ -151,6 +159,8 @@ async def edit_camera_handler(
     db: AsyncSession, 
     claims: dict
     ) -> CameraRes:
+    """Update an authorised user's camera details and audit the changes."""
+
     
     try:
 
@@ -229,7 +239,8 @@ async def edit_camera_handler(
 
 
 
-async def list_cameras_handler(property_id: str, db: AsyncSession, claims: dict) -> CamerasRes:
+async def list_cameras_handler(property_id, db, claims):
+    """Return cameras belonging to a property accessible to the requesting user."""
     if not db:
         raise HTTPException(500, NO_DB_SESSION)
 

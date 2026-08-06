@@ -51,6 +51,8 @@ def create_audit_log_item(
     return new_audit_log_item
 
 def _validate_required_create_fields(db, user_id, target_entity_type, target_entity_id, action):
+    """Validate required fields before creating an audit-log record."""
+
     required = {
         "database_session": db,
         "user id": user_id,
@@ -64,6 +66,7 @@ def _validate_required_create_fields(db, user_id, target_entity_type, target_ent
             raise HTTPException(400, f"Could not create audit log item. No {name} provided.")
         
 def _validate_action_values(action, old_values, new_values):
+    """Validate old and new value snapshots for the specified audit action."""
     if action == AuditAction.DELETE:
         if not old_values: # old must exist
             raise HTTPException(400, "Could not create audit log item. No old value provided.")
@@ -94,6 +97,8 @@ async def get_audit_logs_handler(
     end_date: datetime | None = None,
     sort_order: str | None = None,
 ) -> GetAuditLogsRes:
+    """Return filtered and paginated audit-log records."""
+
     #TODO: consider returning the username as well
     if not db:
         raise HTTPException(500, "No database.")
@@ -129,13 +134,15 @@ async def get_audit_logs_handler(
         ),
     )
 
-def _validate_pagination(page: int, size: int):
+def _validate_pagination(page, size):
+    """Validate that audit-log pagination values are within allowed limits."""
     if page < 1:
         raise HTTPException(422, "page must be >= 1")
     if size < 1:
         raise HTTPException(422, "size must be >= 1")
     
 def _apply_filters(stmt, search_term, action, start_date, end_date):
+    """Apply requested search, action, and date filters to an audit-log query."""
     if search_term:
         search_cols = [AuditLog.id, AuditLog.action, AuditLog.target_entity_type, AuditLog.target_entity_id]
         conditions = [cast(col, String).ilike(f"%{search_term}%") for col in search_cols]
@@ -152,10 +159,9 @@ def _apply_filters(stmt, search_term, action, start_date, end_date):
     
     return stmt
 
-def _apply_sort(
-        stmt,
-        sort_order: str | None = None
-    ):
+def _apply_sort(stmt, sort_order):
+    """Apply chronological sorting to an audit-log query."""
+    
     sort_map = {
         "ASC": AuditLog.timestamp.asc(),
         "DESC": AuditLog.timestamp.desc(),
