@@ -1,8 +1,9 @@
 import pytest
 from fastapi import HTTPException
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import MagicMock, Mock, AsyncMock, patch
 from app.services.neighbourhood_service import create_neighbourhood_handler
 from app.models.user import UserRole
+from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from uuid import uuid4
 from datetime import datetime
 from app.models.neighbourhood import Neighbourhood
@@ -18,9 +19,21 @@ def mock_audit():
         yield
 
 TEST_NEIGHBOURHOOD_NAME = "Test name"
+
+def make_mock_db():
+    mock_db = AsyncMock()
+    mock_result = MagicMock()
+    mock_db.execute = AsyncMock(return_value=mock_result)
+    mock_db.add = Mock()
+    mock_db.commit = AsyncMock()
+    mock_db.flush = AsyncMock()
+    mock_db.rollback = AsyncMock()
+    mock_db.refresh = AsyncMock()
+    return mock_db, mock_result
+
 class TestCreateNeighbourhood:
     def setup_method(self):
-        self.mock_db = AsyncMock()
+        self.mock_db, self.mock_result = make_mock_db()
 
         #mock the property
         self.mock_property = Mock()
@@ -45,15 +58,13 @@ class TestCreateNeighbourhood:
         self.mock_creator = Mock()
         self.mock_creator.id = uuid4()
         self.mock_creator.cognito_sub = "cognito-sub-123"
-        self.mock_creator.role = UserRole.RESIDENT
-        self.mock_creator.neighbourhood_id = None
 
         # mockin da queries
         self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
-            None,  # join_code uniqueness check
             self.mock_property,
             self.mock_property_user,
             self.mock_creator,
+            None,  # join_code uniqueness check
         ]
 
         def mock_add(obj):
@@ -62,10 +73,6 @@ class TestCreateNeighbourhood:
                 obj.created_at = datetime.now()
 
         self.mock_db.add = Mock(side_effect=mock_add)
-        self.mock_db.commit = AsyncMock()
-        self.mock_db.flush = AsyncMock()
-        self.mock_db.rollback = AsyncMock()
-        self.mock_db.refresh = AsyncMock(side_effect=mock_refresh)
 
         # Mock db.refresh to set id and created_at on the neighbourhood object
         def mock_refresh(obj):
@@ -74,12 +81,20 @@ class TestCreateNeighbourhood:
             if hasattr(obj, 'created_at') and obj.created_at is None:
                 obj.created_at = datetime.now()
 
-        self.mock_db.refresh = Mock(side_effect=mock_refresh)
+        self.mock_db.refresh = AsyncMock(side_effect=mock_refresh)
 
         self.claims = {
             "id": str(uuid4()),
             "sub": "cognito-sub-123",
         }
+
+    def _added_neighbourhood_users(self):
+        """Returns every NeighbourhoodUser instance passed to db.add()"""
+        return [
+            call.args[0]
+            for call in self.mock_db.add.call_args_list
+            if call.args and isinstance(call.args[0], NeighbourhoodUser)
+        ]
 
     @pytest.mark.asyncio
     async def test_happy_path(self):
@@ -96,7 +111,7 @@ class TestCreateNeighbourhood:
         assert neighbourhood.location == "second location"
         assert neighbourhood.join_code is not None
 
-        assert self.mock_db.add.call_count == 1
+        assert self.mock_db.add.call_count == 2
         assert self.mock_db.flush.call_count == 1
         assert self.mock_db.commit.call_count == 1
         assert self.mock_db.refresh.call_count == 1
@@ -152,7 +167,7 @@ class TestCreateNeighbourhood:
             )
 
         assert exception.value.status_code == 400
-        assert exception.value.detail == "No neighbourhood locationation given"
+        assert exception.value.detail == "No neighbourhood location given"
 
         assert self.mock_db.add.call_count == 0
         assert self.mock_db.flush.call_count == 0
@@ -172,7 +187,7 @@ class TestCreateNeighbourhood:
             )
 
         assert exception.value.status_code == 400
-        assert exception.value.detail == "No neighbourhood locationation given"
+        assert exception.value.detail == "No neighbourhood location given"
 
         assert self.mock_db.add.call_count == 0
         assert self.mock_db.flush.call_count == 0
@@ -244,7 +259,6 @@ class TestCreateNeighbourhood:
     async def test_property_not_found(self):
         #overriding it coz it's not a parameter directly passed into the function
         self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
-            None,  # join_code uniqueness check
             None,  # Property not found
         ]
 
@@ -260,8 +274,8 @@ class TestCreateNeighbourhood:
         assert exception.value.status_code == 404
         assert exception.value.detail == "Property not found"
 
-        assert self.mock_db.add.call_count == 1
-        assert self.mock_db.flush.call_count == 1
+        assert self.mock_db.add.call_count == 0
+        assert self.mock_db.flush.call_count == 0
         assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.rollback.call_count == 1
@@ -270,9 +284,8 @@ class TestCreateNeighbourhood:
     async def test_prop_user_not_found(self):
         #we overriding it again for the same reason as above
         self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
-            None,  # join_code uniqueness check
             self.mock_property,
-            None  # PropertyUser not found
+            None  # PropertyUser not found. caller doesnt own the property
         ]
 
         with pytest.raises(HTTPException) as exception:
@@ -285,62 +298,16 @@ class TestCreateNeighbourhood:
             )
 
         assert exception.value.status_code == 403
-        assert exception.value.detail == "User does not have access to this property"
+        assert exception.value.detail == "You do not own this property"
 
-        assert self.mock_db.add.call_count == 1
-        assert self.mock_db.flush.call_count == 1
+        assert self.mock_db.add.call_count == 0
+        assert self.mock_db.flush.call_count == 0
         assert self.mock_db.refresh.call_count == 0
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.rollback.call_count == 1
 
     @pytest.mark.asyncio
-    async def test_cognito_sub_mismatch(self):
-        #we overriding it again for the same reason as above
-        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
-            None,  # join_code uniqueness check
-            self.mock_property,
-            self.mock_property_user  # PropertyUser found but cognito_sub doesn't match
-        ]
-        self.mock_property_user.user.cognito_sub = "different-user"
-
-        self.claims = {
-            "id": str(uuid4()),
-            "sub": "cognito-sub-123",
-        }
-
-        with pytest.raises(HTTPException) as exception:
-            await create_neighbourhood_handler(
-                name = "Name",
-                location = "Location",
-                property_id = uuid4(),
-                db = self.mock_db,
-                claims = self.claims,
-            )
-
-        assert exception.value.status_code == 403
-        assert exception.value.detail == "User does not live in the property they are trying to link"
-
-        assert self.mock_db.add.call_count == 1
-        assert self.mock_db.flush.call_count == 1
-        assert self.mock_db.refresh.call_count == 0
-        assert self.mock_db.commit.call_count == 0
-        assert self.mock_db.rollback.call_count == 1
-    
-    @pytest.mark.asyncio
-    async def test_creator_assigned_neighbourhood_admin_role(self):
-        await create_neighbourhood_handler(
-            name=TEST_NEIGHBOURHOOD_NAME,
-            location="second location",
-            property_id=uuid4(),
-            db=self.mock_db,
-            claims=self.claims,
-        )
-
-        assert self.mock_creator.role == UserRole.NEIGHBOURHOOD_ADMIN
-        assert self.mock_creator.neighbourhood_id is not None
-    
-    @pytest.mark.asyncio
-    async def test_creator_neighbourhood_id_matches_new_neighbourhood(self):
+    async def test_creator_gets_neighbourhood_admin_membership(self):
         neighbourhood = await create_neighbourhood_handler(
             name=TEST_NEIGHBOURHOOD_NAME,
             location="second location",
@@ -349,15 +316,20 @@ class TestCreateNeighbourhood:
             claims=self.claims,
         )
 
-        assert self.mock_creator.neighbourhood_id == neighbourhood.id
+        added_memberships = self._added_neighbourhood_users()
+        assert len(added_memberships) == 1
+
+        membership = added_memberships[0]
+        assert membership.user_id == self.mock_creator.id
+        assert membership.role == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+        assert membership.neighbourhood_id == neighbourhood.id   
     
     @pytest.mark.asyncio
     async def test_creator_not_found_in_db_raises_401(self):
         self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
-            None,
             self.mock_property,
             self.mock_property_user,
-            None,
+            None, # creator lookup returns nothing
         ]
         property_id = uuid4()
 
@@ -378,7 +350,7 @@ class TestCreateNeighbourhood:
 
     @pytest.mark.asyncio
     async def test_two_neighbourhoods_have_distinct_join_codes(self):
-        mock_db_2 = Mock()
+        mock_db_2, mock_result_2 = make_mock_db()
  
         mock_property_2 = Mock()
         mock_property_2.id = uuid4()
@@ -390,20 +362,22 @@ class TestCreateNeighbourhood:
         mock_property_user_2.user.cognito_sub = "cognito-sub-123"
  
         mock_creator_2 = Mock()
+        mock_creator_2.id = uuid4()
         mock_creator_2.cognito_sub = "cognito-sub-123"
-        mock_creator_2.role = UserRole.RESIDENT
-        mock_creator_2.neighbourhood_id = None
  
         mock_db_2.execute.return_value.scalar_one_or_none.side_effect = [
-            None,               # join_code uniqueness check
             mock_property_2,
             mock_property_user_2,
             mock_creator_2,
+            None,               # join_code uniqueness check
         ]
-        mock_db_2.add = Mock()
-        mock_db_2.commit = Mock()
-        mock_db_2.flush = Mock()
-        mock_db_2.rollback = Mock()
+        
+        def mock_add_2(obj):
+            if isinstance(obj, Neighbourhood):
+                obj.id = uuid4()
+                obj.created_at = datetime.now()
+
+        mock_db_2.add = Mock(side_effect=mock_add_2)
  
         def mock_refresh_2(obj):
             if hasattr(obj, 'id') and obj.id is None:
@@ -411,7 +385,7 @@ class TestCreateNeighbourhood:
             if hasattr(obj, 'created_at') and obj.created_at is None:
                 obj.created_at = datetime.now()
  
-        mock_db_2.refresh = Mock(side_effect=mock_refresh_2)
+        mock_db_2.refresh = AsyncMock(side_effect=mock_refresh_2)
  
         nb1 = await create_neighbourhood_handler(
             name="Neighbourhood One",
