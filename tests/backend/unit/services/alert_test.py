@@ -137,7 +137,8 @@ class TestAcknowledgeAlert:
         ]
 
         with (patch(
-            "app.services.alert_service.create_audit_log_item"
+            "app.services.alert_service.create_audit_log_item",
+            new_callable=AsyncMock,
         ) as mock_audit,
         patch(
             "app.services.alert_service._get_neighbourhood_websocket_recipient_ids",
@@ -160,7 +161,7 @@ class TestAcknowledgeAlert:
         assert alert.resolved_by == self.user_id
 
         self.mock_db.commit.assert_awaited_once()
-        mock_audit.assert_called_once()
+        mock_audit.assert_awaited_once()
         mock_broadcast.assert_awaited_once()
         assert self.mock_db.execute.await_count == 3
 
@@ -790,7 +791,8 @@ class TestBroadcastNeighbourhoodAlert:
             "neighbourhood_id": str(self.neighbourhood_id),
         }
 
-        self.mock_db.commit.assert_awaited_once()
+        # create_audit_log_item commits, then the broadcast service commits.
+        assert self.mock_db.commit.await_count == 2
  
     @pytest.mark.asyncio
     async def test_no_residents_still_broadcasts_but_skips_notifications(self):
@@ -822,4 +824,5 @@ class TestBroadcastNeighbourhoodAlert:
         mock_broadcast.assert_awaited_once()
         mock_notify.assert_awaited_once()
         assert mock_notify.call_args.args[2] == []
-        self.mock_db.commit.assert_awaited_once()
+        # create_audit_log_item commits, then the broadcast service commits.
+        assert self.mock_db.commit.await_count == 2

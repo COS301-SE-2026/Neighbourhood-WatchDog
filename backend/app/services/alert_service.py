@@ -251,7 +251,7 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
         alert.resolved_at = datetime.now(timezone.utc)
         alert.resolved_by = resolver_id
 
-        create_audit_log_item(
+        await create_audit_log_item(
             db=db,
             user_id=resolver_id,
             action=AuditAction.UPDATE,
@@ -741,7 +741,7 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
 
     admin_user_id = UUID(claims["id"])
     
-    create_audit_log_item(
+    await create_audit_log_item(
         db=db,
         user_id=admin_user_id,
         action=AuditAction.UPDATE,
