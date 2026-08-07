@@ -6,6 +6,9 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 class Neighbourhood(Base):
+
+    CASCADE = "all, delete-orphan"
+
     __tablename__ = "neighbourhood"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(Text, nullable=False)
@@ -18,17 +21,17 @@ class Neighbourhood(Base):
     risk_scores = relationship(
         "RiskScoreHistory", 
         back_populates="neighbourhood",
-        cascade="all, delete-orphan",
+        cascade=CASCADE,
         passive_deletes=True,)
     risk_thresholds = relationship(
         "RiskThresholdConfig", 
         back_populates="neighbourhood",
-        cascade="all, delete-orphan",
+        cascade=CASCADE,
         passive_deletes=True,)
     join_requests = relationship(
         "NeighbourhoodJoinRequest",
         back_populates="neighbourhood",
-        cascade="all, delete-orphan",
+        cascade=CASCADE,
     )
     user_memberships = relationship("NeighbourhoodUser", back_populates="neighbourhood", cascade="delete")
     
