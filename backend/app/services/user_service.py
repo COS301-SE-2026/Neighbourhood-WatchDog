@@ -71,7 +71,7 @@ async def create_user(
             first_name=first_name,
             last_name=last_name,
             cognito_sub=cognito_sub,
-            role=UserRole.RESIDENT
+            system_role=UserRole.RESIDENT
         )
 
         db.add(new_user)
@@ -85,7 +85,7 @@ async def create_user(
             "create_user: successfully created user id=%s email=%s role=%s",
             new_user.id,
             new_user.email,
-            new_user.role,
+            new_user.system_role,
         )
 
         return new_user

@@ -18,11 +18,12 @@ class TestCreateProperty:
     def setup_method(self):
         """Runs before each test method"""
         self.mock_db = Mock()
-        self.mock_db.execute = AsyncMock()
+        self.mock_result = Mock()
+        self.mock_db.execute = AsyncMock(return_value=self.mock_result)
 
         self.mock_user = Mock()
         self.mock_user.id = uuid4()
-        self.mock_db.execute.return_value.scalar_one_or_none.return_value = self.mock_user
+        self.mock_result.scalar_one_or_none.return_value = self.mock_user
 
         self.mock_db.add = Mock()
         self.mock_db.commit = AsyncMock()
@@ -142,17 +143,19 @@ class TestGetUserProperties:
     def setup_method(self):
         """Runs before each test method"""
         self.mock_db = Mock()
-        self.mock_db.execute = AsyncMock()
+        self.mock_result = Mock()
+        self.mock_db.execute = AsyncMock(return_value=self.mock_result)
 
         self.mock_user = Mock()
         self.mock_user.id = uuid4()
+        self.mock_result.scalar_one_or_none.return_value = self.mock_user
         self.claims = {"sub": "cognito-sub-123"}
 
     @pytest.mark.asyncio
     async def test_happy_path_with_properties(self):
         """Test fetching properties when user has multiple properties"""
 
-        self.mock_db.execute.return_value.scalar_one_or_none.return_value = self.mock_user
+        self.mock_result.scalar_one_or_none.return_value = self.mock_user
 
         mock_prop1 = Mock()
         mock_prop1.id = uuid4()
@@ -168,7 +171,7 @@ class TestGetUserProperties:
         mock_prop2.property_type = PropertyTypeEnum.PUBLIC
         mock_prop2.created_at = Mock()
 
-        self.mock_db.execute.return_value.scalars.return_value.all.return_value = [mock_prop1, mock_prop2]
+        self.mock_result.scalars.return_value.all.return_value = [mock_prop1, mock_prop2]
 
         properties = await get_user_properties_handler(self.claims, self.mock_db)
 

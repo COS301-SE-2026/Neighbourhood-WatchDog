@@ -100,7 +100,7 @@ async def get_user_properties_handler(
     """Fetch all properties owned by the current user"""
 
     if not claims:
-        logger.warning("get_user_properties: no claims found for request for user properties with cognito_sub=%s", claims['sub'])
+        logger.warning("get_user_properties: no claims found for request for user properties")
         raise HTTPException(401, "Not authenticated")
 
     try:

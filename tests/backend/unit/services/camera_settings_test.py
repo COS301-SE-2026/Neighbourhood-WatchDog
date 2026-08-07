@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock
 from uuid import UUID
 from fastapi import HTTPException
 
@@ -32,7 +32,7 @@ def _mock_zone():
 
 def _make_db(camera=None, zones=None):
     db = MagicMock()
-    exec_mock = MagicMock()
+    exec_mock = AsyncMock()
     db.execute.return_value = exec_mock
     exec_mock.scalar_one_or_none.return_value = camera
     exec_mock.scalars.return_value.all.return_value = zones or []
