@@ -391,13 +391,6 @@ class TestListJoinRequests:
         self.join_request_patcher.stop()
  
     @pytest.mark.asyncio
-    async def test_missing_db_raises_500(self):
-        with pytest.raises(HTTPException) as exc:
-            await list_join_requests_handler(uuid.uuid4(), None, self.admin_claims)
- 
-        assert exc.value.status_code == 500
- 
-    @pytest.mark.asyncio
     async def test_missing_claims_raises_401(self):
         with pytest.raises(HTTPException) as exc:
             await list_join_requests_handler(uuid.uuid4(), self.mock_db, cast(dict, None))

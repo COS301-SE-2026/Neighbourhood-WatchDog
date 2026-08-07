@@ -1,6 +1,6 @@
 import pytest
 from uuid import uuid4
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from app.services.camera_service import register_camera_handler, deregister_camera_handler, edit_camera_handler
 from app.services.camera_service import CameraEditReq
 from app.schemas.camera import RegisterCameraReq
@@ -15,14 +15,25 @@ MOCK_CAMERA_NAME = "Camera 1"
 def mock_audit():
     with patch(
         "app.services.camera_service.create_audit_log_item",
-        new=Mock(),
+        new=AsyncMock(),
     ):
         yield
+
+def make_mock_db():
+    mock_db = Mock()
+    mock_result = MagicMock()
+    mock_db.execute = AsyncMock(return_value=mock_result)
+    mock_db.add = Mock()
+    mock_db.flush = AsyncMock()
+    mock_db.commit = AsyncMock()
+    mock_db.refresh = AsyncMock()
+    mock_db.rollback = AsyncMock()
+    return mock_db, mock_result
 
 class TestRegisterCamera:
     def setup_method(self):
         """Arrange"""
-        self.mock_db = Mock()
+        self.mock_db, self.mock_result = make_mock_db()
 
         self.mock_property = Mock()
         self.property_id = uuid4()
@@ -35,12 +46,6 @@ class TestRegisterCamera:
             self.mock_property,
             self.mock_property_user
         ]
-
-        self.mock_db.add = Mock()
-        self.mock_db.flush = Mock()
-        self.mock_db.refresh = Mock()
-        self.mock_db.commit = Mock()
-        self.mock_db.rollback = Mock()
 
         self.mock_camera = Mock()
         self.mock_camera.id = uuid4()
@@ -158,7 +163,7 @@ class TestRegisterCamera:
 class TestDeregisterCamera:
     def setup_method(self):
         """Arrange"""
-        self.mock_db = Mock()
+        self.mock_db, _ = make_mock_db()
         self.camera_id = uuid4()
 
         self.mock_camera = Mock()
@@ -186,8 +191,6 @@ class TestDeregisterCamera:
             self.mock_user_result,
         ])
 
-        self.mock_db.commit = Mock()
-        self.mock_db.rollback = Mock()
 
         self.claims = {
             "id": str(uuid4()),
@@ -289,7 +292,7 @@ class TestDeregisterCamera:
 
 class TestEditCamera:
     def setup_method(self):
-        self.mock_db = Mock()
+        self.mock_db, self.mock_result = make_mock_db()
 
         self.mock_camera = Mock()
         self.mock_camera.id = uuid4()
@@ -311,12 +314,6 @@ class TestEditCamera:
             self.mock_camera,
             self.mock_property_user
         ]
-
-        self.mock_db.add = Mock()
-        self.mock_db.flush = Mock()
-        self.mock_db.refresh = Mock()
-        self.mock_db.commit = Mock()
-        self.mock_db.rollback = Mock()
 
         self.mock_req = CameraEditReq(
             name="Secondary Camera",
