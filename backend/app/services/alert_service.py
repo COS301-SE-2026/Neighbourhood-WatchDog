@@ -6,7 +6,7 @@ from dateutil.relativedelta import relativedelta
 from fastapi import HTTPException
 from uuid import UUID
 
-from sqlalchemy import or_, select, func
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -31,7 +31,7 @@ from app.models.alert import Alert, DetectionType
 from app.models.neighbourhood import Neighbourhood
 from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes, NumberInPeriod, TrendGroupBy, TrendDirection, TrendBucket, TrendData
 from app.services.notification_service import _format_whatsapp_message, _notify_users
-from app.models.user import User, UserRole
+from app.models.user import User
 
 
 logger = logging.getLogger(__name__)

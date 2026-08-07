@@ -117,7 +117,6 @@ async def create_alert(
 @router.post("/dev/broadcast") #TODO: remove before production
 async def dev_broadcast_alert(data: dict):
     """Dev-only: broadcast alert without DB. Remove before production."""
-    neighbourhood_id = data.get("neighbourhood_id", "10000000-0000-0000-0000-000000000001")
     await broadcast([], {
         "event": "new_alert",
         "camera_id": data.get("camera_id", "unknown"),
