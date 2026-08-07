@@ -334,6 +334,8 @@ class TestDispatchNotifications:
                 confidence_score=0.9,
                 frame_timestamp=self.frame_timestamp,
             )
+            mock_send.assert_not_called()
+            mock_email.assert_not_called()
             self.mock_db.commit.assert_not_awaited()
 
 

@@ -15,7 +15,6 @@ from app.core.database import DbSession
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
 from app.models.notification import Notification, NotificationChannel, NotificationStatus
 from app.models.property import Property
-from app.models.property_user import PropertyUser
 from app.models.user import User
 from app.models.camera import Camera
 
