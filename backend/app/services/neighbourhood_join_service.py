@@ -9,7 +9,7 @@ from app.models.neighbourhood_user import NeighbourhoodUser
 from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.services.audit_service import create_audit_log_item
-from app.models.audit_log import AuditAction
+from app.models.audit_log import AuditAction, TargetEntity
 
 from app.core.database import DbSession
 from app.models.neighbourhood import Neighbourhood
@@ -84,7 +84,7 @@ async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -
             db=db,
             user_id=user.id,
             action=AuditAction.CREATE,
-            target_entity_type="NeighbourhoodJoinRequest",
+            target_entity_type=TargetEntity.NEIGHBOURHOODJOINREQUEST,
             target_entity_id=join_request.id,
             new_values={
                 "user_id": str(user.id),
@@ -254,7 +254,7 @@ async def resolve_join_request_handler(request_id: UUID, property_id: UUID, acti
             db=db,
             user_id=admin_id,
             action=AuditAction.UPDATE,
-            target_entity_type="NeighbourhoodJoinRequest",
+            target_entity_type=TargetEntity.NEIGHBOURHOODJOINREQUEST,
             target_entity_id=join_request.id,
             old_values=old_values,
             new_values={

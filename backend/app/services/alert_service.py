@@ -10,7 +10,11 @@ from sqlalchemy import or_, select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
-
+from app.models.neighbourhood_user import (
+    NeighbourhoodRole,
+    NeighbourhoodUser,
+)
+from app.models.property import Property
 from app.models.camera import Camera
 from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.schemas.alert import (
@@ -40,6 +44,20 @@ NOT_AUTHENTICATED = "Not authenticated"
 ALERT_NOT_FOUND = "Alert not found"
 CUSTOM_NEIGHBOURHOOD_ID = "custom:neighbourhood_id"
 
+async def _get_neighbourhood_websocket_recipient_ids(
+    db: AsyncSession,
+    neighbourhood_id: UUID,
+) -> list[str]:
+    """Return WebSocket recipient IDs for members of a neighbourhood."""
+
+    result = await db.execute(
+        select(NeighbourhoodUser.user_id).where(
+            NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+        )
+    )
+
+    return [str(user_id) for user_id in result.scalars().all()]
+
 
 async def create_alert(db: AsyncSession, data: AlertCreate):
     """Create and persist an alert from an authenticated edge-agent detection."""
@@ -66,7 +84,9 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
 
 
         from app.api.controllers.alert import broadcast
-        await broadcast(str(data.neighbourhood_id), {
+        recipient_ids = await _get_neighbourhood_websocket_recipient_ids(db, data.neighbourhood_id)
+
+        await broadcast(recipient_ids, {
             "event": "new_alert",
             "alert_id": str(alert.id),
             "camera_id": str(data.camera_id),
@@ -199,10 +219,26 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
         try:
             from app.api.controllers.alert import broadcast
 
-            await broadcast(
-                neighbourhood_id=str(claims.get(CUSTOM_NEIGHBOURHOOD_ID)),
-                message={"event": "alert.acknowledged", "payload": alert_res.model_dump(mode="json")},
+            neighbourhood_result = await db.execute(
+                select(Property.neighbourhood_id)
+                .join(Camera, Camera.property_id == Property.id)
+                .where(Camera.id == alert.camera_id)
             )
+            neighbourhood_id = neighbourhood_result.scalar_one_or_none()
+
+            if neighbourhood_id is not None:
+                recipient_ids = await _get_neighbourhood_websocket_recipient_ids(
+                    db,
+                    neighbourhood_id,
+                )
+
+                await broadcast(
+                    recipient_ids,
+                    {
+                        "event": "alert.acknowledged",
+                        "payload": alert_res.model_dump(mode="json"),
+                    },
+                )
         except Exception:
             pass
 
@@ -604,20 +640,36 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
     else str(alert.detection_type)
 
     alert_res = _build_alert_res(alert)
+    recipient_ids = await _get_neighbourhood_websocket_recipient_ids(
+        db,
+        neighbourhood_id,
+    )
+
     await broadcast(
-        neighbourhood_id=str(neighbourhood_id),
-        message={"event": "alert.broadcast", "payload": alert_res.model_dump(mode="json")},
+        recipient_ids,
+        {
+            "event": "alert.broadcast",
+            "payload": alert_res.model_dump(mode="json"),
+        },
     )
 
     result = await db.execute(
-        select(User).where(
-            User.neighbourhood_id == neighbourhood_id,
-            or_(
-                User.role == UserRole.RESIDENT,
-                User.role == UserRole.NEIGHBOURHOOD_ADMIN,
+        select(User)
+        .join(
+            NeighbourhoodUser,
+            NeighbourhoodUser.user_id == User.id,
+        )
+        .where(
+            NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+            NeighbourhoodUser.role.in_(
+                [
+                    NeighbourhoodRole.RESIDENT,
+                    NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
+                ]
             ),
         )
     )
+
     residents = result.scalars().all()
 
     timestamp_str = alert.frame_timestamp.strftime("%d %b %Y, %H:%M:%S")
@@ -764,11 +816,11 @@ async def update_alert_clip_for_agent_handler(alert_id: str, body: UpdateAlertCl
         await db.refresh(alert)
 
         logger.info("internal update_clip: clip with alert_id=%s successfully updated.", alert_id)
-        return{
-            "alert_id": str(alert.id),
-            "clip_s3_key": alert.clip_s3_key,
-            "clip_expires_at": alert.clip_expires_at
-        }
+        return AlertClipUpdateRes(
+            alert_id=alert.id,
+            clip_s3_key=alert.clip_s3_key,
+            clip_expires_at=alert.clip_expires_at,
+        )
         #TODO: Turn this dict into an actual pydantic response class object
 
     except HTTPException:

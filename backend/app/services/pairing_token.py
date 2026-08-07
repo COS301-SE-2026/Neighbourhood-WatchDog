@@ -6,6 +6,7 @@ from app.models.pairing_token import PairingToken
 from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.models.user import User
 from app.schemas.pairing_token import LinkPropertyToken, LinkPropertyTokenRes, EdgeAgentsCredentialsSchema, EdgeAgentsCredentialsRes
+from app.models.audit_log import TargetEntity
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -70,7 +71,7 @@ async def get_pairing_token_handler(
                 db=db,
                 user_id=user.id,
                 action=AuditAction.CREATE,
-                target_entity_type="PairingToken",
+                target_entity_type=TargetEntity.PAIRINGTOKEN,
                 target_entity_id=new_token.id,
                 new_values={
                     "property_id": str(property_id),

@@ -8,6 +8,7 @@ from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.user import User
+from app.models.audit_log import TargetEntity
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
@@ -115,7 +116,7 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
             db=db,
             user_id=creator_id,
             action=AuditAction.CREATE,
-            target_entity_type="Neighbourhood",
+            target_entity_type=TargetEntity.NEIGHBOURHOOD,
             target_entity_id=new_neighbourhood.id,
             new_values={
                 "name": new_neighbourhood.name,

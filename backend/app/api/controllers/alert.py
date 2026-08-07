@@ -118,7 +118,7 @@ async def create_alert(
 async def dev_broadcast_alert(data: dict):
     """Dev-only: broadcast alert without DB. Remove before production."""
     neighbourhood_id = data.get("neighbourhood_id", "10000000-0000-0000-0000-000000000001")
-    await broadcast(str(neighbourhood_id), {
+    await broadcast([], {
         "event": "new_alert",
         "camera_id": data.get("camera_id", "unknown"),
         "detection_type": data.get("detection_type", "HUMAN_PRESENCE"),
@@ -150,7 +150,7 @@ async def get_alert_trends(
         camera_id=camera_id 
 
     )
-    return TrendResponse(status=200, data=data)
+    return TrendResponse(status=200, data=data, message="Alert trends recieved successfully")
 
 
 @router.get(

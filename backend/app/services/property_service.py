@@ -14,6 +14,7 @@ from app.models.property_user import PropertyUser
 from app.models.camera import Camera
 from app.models.neighbourhood import Neighbourhood
 from app.core.database import DbSession
+from app.models.audit_log import TargetEntity
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ async def create_property_handler(
             db=db,
             user_id=user.id,
             action=AuditAction.CREATE,
-            target_entity_type="Property",
+            target_entity_type=TargetEntity.PROPERTY,
             target_entity_id=new_property.id,
             new_values={
                 "address": new_property.address,
@@ -193,12 +194,12 @@ async def get_property_details_handler(
             for cam in cameras
         ]
 
-        logger.info("get_property_details: details retrieved successfully for proeprty_id=%s.", property.id)
+        logger.info("get_property_details: details retrieved successfully for proeprty_id=%s.", property_obj.id)
         return {
-            "property_id": property.id,
-            "address": property.address,
-            "property_type": property.property_type.value,
-            "created_at": property.created_at,
+            "property_id": property_obj.id,
+            "address": property_obj.address,
+            "property_type": property_obj.property_type.value,
+            "created_at": property_obj.created_at,
             "users": users,
             "neighbourhood": neighbourhood,
             "cameras": camera_list,
