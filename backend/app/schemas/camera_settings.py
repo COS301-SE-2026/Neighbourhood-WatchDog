@@ -37,4 +37,7 @@ class CameraSettingsResponse(BaseModel):
     confidence_threshold: float
     zones: List[ZoneResponse]
 
+class UpdateCameraSettingsResponse(BaseModel):
+    camera_id: UUID
+    confidence_threshold: float
     

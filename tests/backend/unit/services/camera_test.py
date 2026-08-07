@@ -2,7 +2,8 @@ import pytest
 from uuid import uuid4
 from unittest.mock import AsyncMock, Mock, patch
 from app.services.camera_service import register_camera_handler, deregister_camera_handler, edit_camera_handler
-from app.services.camera_service import RegisterCameraReq, CameraEditReq
+from app.services.camera_service import CameraEditReq
+from app.schemas.camera import RegisterCameraReq
 from app.models.camera import CameraVisibilityEnum
 from fastapi import HTTPException
 from datetime import datetime

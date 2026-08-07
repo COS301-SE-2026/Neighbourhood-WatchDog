@@ -1,6 +1,6 @@
 import pytest
 from fastapi import HTTPException
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, AsyncMock, patch
 from app.services.neighbourhood_service import create_neighbourhood_handler
 from app.models.user import UserRole
 from uuid import uuid4
@@ -13,14 +13,14 @@ AUDIT_PATCH = "app.services.neighbourhood_service.create_audit_log_item"
 def mock_audit():
     with patch(
         "app.services.neighbourhood_service.create_audit_log_item",
-        new=Mock(),
+        new=AsyncMock(),
     ):
         yield
 
 TEST_NEIGHBOURHOOD_NAME = "Test name"
 class TestCreateNeighbourhood:
     def setup_method(self):
-        self.mock_db = Mock()
+        self.mock_db = AsyncMock()
 
         #mock the property
         self.mock_property = Mock()
@@ -62,9 +62,10 @@ class TestCreateNeighbourhood:
                 obj.created_at = datetime.now()
 
         self.mock_db.add = Mock(side_effect=mock_add)
-        self.mock_db.commit = Mock()
-        self.mock_db.flush = Mock()
-        self.mock_db.rollback = Mock()
+        self.mock_db.commit = AsyncMock()
+        self.mock_db.flush = AsyncMock()
+        self.mock_db.rollback = AsyncMock()
+        self.mock_db.refresh = AsyncMock(side_effect=mock_refresh)
 
         # Mock db.refresh to set id and created_at on the neighbourhood object
         def mock_refresh(obj):

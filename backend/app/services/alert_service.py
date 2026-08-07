@@ -1,14 +1,20 @@
+import logging
+
 from datetime import datetime, timezone, timedelta, date as date_cls
 from dateutil.relativedelta import relativedelta
 
-from app.models.neighbourhood import Neighbourhood
-from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes, NumberInPeriod, TrendGroupBy, TrendDirection, TrendBucket, TrendData
 from fastapi import HTTPException
+from uuid import UUID
 
-from app.models.user import User, UserRole
-from sqlalchemy import or_, select, func
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
-
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
+from app.models.neighbourhood_user import (
+    NeighbourhoodRole,
+    NeighbourhoodUser,
+)
+from app.models.property import Property
 from app.models.camera import Camera
 from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.schemas.alert import (
@@ -20,13 +26,13 @@ from app.schemas.alert import (
 )
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction, TargetEntity
-from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.alert import Alert, DetectionType
 
+from app.models.neighbourhood import Neighbourhood
+from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes, NumberInPeriod, TrendGroupBy, TrendDirection, TrendBucket, TrendData
 from app.services.notification_service import _format_whatsapp_message, _notify_users
+from app.models.user import User
 
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +40,24 @@ DEFAULT_PAGE_SIZE = 25
 MAX_PAGE_SIZE = 100
 NO_DATABASE_SESSION = "No database session"
 NOT_AUTHORISED = "Not authorised for this neighbourhood"
+NOT_AUTHENTICATED = "Not authenticated"
+ALERT_NOT_FOUND = "Alert not found"
+CUSTOM_NEIGHBOURHOOD_ID = "custom:neighbourhood_id"
+
+async def _get_neighbourhood_websocket_recipient_ids(
+    db: AsyncSession,
+    neighbourhood_id: UUID,
+) -> list[str]:
+    """Return WebSocket recipient IDs for members of a neighbourhood."""
+
+    result = await db.execute(
+        select(NeighbourhoodUser.user_id).where(
+            NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+        )
+    )
+
+    return [str(user_id) for user_id in result.scalars().all()]
+
 
 async def create_alert(db: AsyncSession, data: AlertCreate):
     """Create and persist an alert from an authenticated edge-agent detection."""
@@ -49,7 +73,7 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
         db.add(alert)
 
         logger.info(
-            "Alert created: alert_id=%s, camera_id=%s, detection_type=%s",
+            "create_alert: Alert created: alert_id=%s, camera_id=%s, detection_type=%s",
             alert.id,
             alert.camera_id,
             alert.detection_type
@@ -60,16 +84,32 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
 
 
         from app.api.controllers.alert import broadcast
-        await broadcast(str(data.neighbourhood_id), {
-            "event": "new_alert",
-            "alert_id": str(alert.id),
-            "camera_id": str(data.camera_id),
-            "detection_type": data.detection_type,
-            "confidence": data.confidence,
-        })
 
+        if data.neighbourhood_id is not None:
+            recipient_ids = await _get_neighbourhood_websocket_recipient_ids(
+                db,
+                data.neighbourhood_id,
+            )
+
+            await broadcast(
+                recipient_ids,
+                {
+                    "event": "new_alert",
+                    "alert_id": str(alert.id),
+                    "camera_id": str(data.camera_id),
+                    "detection_type": data.detection_type,
+                    "confidence": data.confidence,
+                },
+            )
+        else:
+            logger.warning(
+                "create_alert: skipped WebSocket broadcast because neighbourhood_id is missing; "
+                "alert_id=%s",
+                alert.id,
+            )
+            
         logger.info(
-            "Alert broadcast completed: alert_id=%s",
+            "create_alert: Alert broadcast completed: alert_id=%s",
             alert.id
         )
 
@@ -81,7 +121,7 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
         await db.rollback()
 
         logger.exception(
-            "Failed to create alert: camera_id=%s",
+            "create_alert: Failed to create alert: camera_id=%s",
             data.camera_id
         )
         raise HTTPException(
@@ -116,14 +156,13 @@ def _build_alert_res(alert: Alert) -> AlertRes:
 async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) -> AlertRes:
     """Acknowledge an open alert and record the responsible authorised user."""
     if not alert_id:
+        logger.warning("acknowledge_alert_handler: no alert_id entered")
         raise HTTPException(400, "Alert id is required")
-    if not db:
-        raise HTTPException(500, NO_DATABASE_SESSION)
-    if not claims:
-        raise HTTPException(401, "Not authenticated")
+    _validate_db_and_claims(db, claims)
 
     role = claims.get("custom:role")
     if role not in ["SECURITY_OFFICER", "NEIGHBOURHOOD_ADMIN", "RESIDENT"]:
+        logger.warning("acknowledge_alert: insufficient permissions to handle alert")
         raise HTTPException(403, "Insufficient permissions")
 
     try:
@@ -133,9 +172,11 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
         alert = result.scalar_one_or_none()
 
         if not alert:
-            raise HTTPException(404, "Alert not found")
+            logger.warning("acknowledge_alert: alert not found with alert_id=%s", alert_id)
+            raise HTTPException(404, ALERT_NOT_FOUND)
 
         if alert.status != "OPEN":
+            logger.warning("acknowledge_alert: alert not open with alert_id=%s", alert_id)
             raise HTTPException(409, "Alert is already acknowledged or resolved")
 
         user_id_str = claims.get("sub") or claims.get("custom:sub")
@@ -157,6 +198,7 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
             resolver = result.scalar_one_or_none()
 
             if resolver is None:
+                logger.warning("acknowledge_alert: user not found with cognito_sub=%s", user_id_str)
                 raise HTTPException(
                     status_code=401,
                     detail="Authenticated user does not have a local WatchDog profile.",
@@ -191,10 +233,26 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
         try:
             from app.api.controllers.alert import broadcast
 
-            await broadcast(
-                neighbourhood_id=str(claims.get("custom:neighbourhood_id")),
-                message={"event": "alert.acknowledged", "payload": alert_res.model_dump(mode="json")},
+            neighbourhood_result = await db.execute(
+                select(Property.neighbourhood_id)
+                .join(Camera, Camera.property_id == Property.id)
+                .where(Camera.id == alert.camera_id)
             )
+            neighbourhood_id = neighbourhood_result.scalar_one_or_none()
+
+            if neighbourhood_id is not None:
+                recipient_ids = await _get_neighbourhood_websocket_recipient_ids(
+                    db,
+                    neighbourhood_id,
+                )
+
+                await broadcast(
+                    recipient_ids,
+                    {
+                        "event": "alert.acknowledged",
+                        "payload": alert_res.model_dump(mode="json"),
+                    },
+                )
         except Exception:
             pass
 
@@ -202,9 +260,17 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
     except HTTPException as he:
         raise he
     except IntegrityError:
+        logger.error("acknowledge_alert: failed to acknowledge with alert_id=%s due to integrity error", alert_id)
         await db.rollback()
         raise HTTPException(500, "Failed to acknowledge alert")
 
+def _validate_db_and_claims(db: AsyncSession, claims: dict):
+    if not db:
+        logger.warning("acknowledge_alert_handler: no db entered")
+        raise HTTPException(500, NO_DATABASE_SESSION)
+    if not claims:
+        logger.warning("acknowledge_alert_handler: no claims entered")
+        raise HTTPException(401, NOT_AUTHENTICATED)
 
 async def list_alerts_handler(
     neighbourhood_id,
@@ -225,13 +291,15 @@ async def list_alerts_handler(
     if not db:
         raise HTTPException(500, NO_DATABASE_SESSION)
     if not claims:
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED)
 
-    caller_neighbourhood = claims.get("custom:neighbourhood_id")
+    caller_neighbourhood = claims.get(CUSTOM_NEIGHBOURHOOD_ID)
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
+        logger.warning("list_alerts: no neighbourhood_id included in claims for user with cognito_sub=%s", claims['sub'])
         raise HTTPException(403, NOT_AUTHORISED)
 
     if start_date and end_date and start_date > end_date:
+        logger.warning("list_alerts: start date and end date invalid for request for alerts for user with cognito_sub=%s", claims['sub'])
         raise HTTPException(400, "start_date must be less than end_date")
 
     try:
@@ -268,6 +336,7 @@ async def list_alerts_handler(
     except HTTPException as he:
         raise he
     except IntegrityError:
+        logger.error("list_alerts: failed to fetch alerts for user with cognito_sub=%s due to integrity error", claims['sub'])
         await db.rollback()
         raise HTTPException(500, "Failed to list alerts")
     
@@ -281,8 +350,9 @@ async def get_response_metrics_handler(
 ) -> AlertMetricsRes:
     """Calculate alert response metrics for an authorised neighbourhood."""
 
-    caller_neighbourhood = claims.get("custom:neighbourhood_id")
+    caller_neighbourhood = claims.get(CUSTOM_NEIGHBOURHOOD_ID)
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
+        logger.warning("get_response_metrics: no neighbourhood_id included in claims for user with cognito_sub=%s", claims['sub'])
         raise HTTPException(403, NOT_AUTHORISED)
     
 
@@ -335,7 +405,7 @@ async def get_response_metrics_handler(
 
     acknowledged_count = sum(1 for a in alerts if a.status in ("ACKNOWLEDGED", "RESOLVED"))
 
-
+    logger.info("get_response_metrics: successfully retrieved response metrics for user with cognito_sub=%s", claims['sub'])
     return AlertMetricsRes (
         total_alerts=len(alerts),
         acknowledged_count=acknowledged_count,
@@ -361,15 +431,18 @@ async def get_alert_frequency_metrics_handler(
     """Return grouped alert-frequency metrics for an authorised neighbourhood."""
     
     if not db:
+        logger.warning("get_alert_frequency_metrics: failed due to no db")
         raise HTTPException(500, "No db")
 
     if not claims:
-        raise HTTPException(401, "Not authenticated")
+        logger.warning("get_alert_frequency_metrics: failed due to no claims")
+        raise HTTPException(401, NOT_AUTHENTICATED)
     
     if not time_interval:
+        logger.warning("get_alert_frequency_metrics: failed due to no time_interval")
         raise HTTPException(400, "No time interval provided")
     
-    caller_neighbourhood = claims.get("custom:neighbourhood_id")
+    caller_neighbourhood = claims.get(CUSTOM_NEIGHBOURHOOD_ID)
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
         raise HTTPException(403, NOT_AUTHORISED)
     
@@ -418,6 +491,7 @@ async def get_alert_frequency_metrics_handler(
         count=count_arr
     )
 
+    logger.info("get_alert_frequency_metrics: successfully fetched alert frequency metrics for user with cognito_sub=%s", claims['sub'])
     return AlertFrequencyMetricsRes(
         status=200,
         data=data
@@ -481,73 +555,61 @@ async def get_trends_handler(
 ) -> TrendData:
     """Return grouped alert trends and their overall direction for a neighbourhood."""
 
-    
     if not db:
+        logger.warning("get_trends: failed to get trends due to no database")
         raise HTTPException(500, NO_DATABASE_SESSION)
     
     if not claims:
-        raise HTTPException(401, "Not authenticated")
+        logger.warning("get_trends: failed to get trends due to no claims")
+        raise HTTPException(401, NOT_AUTHENTICATED)
     
-
-    caller_neighbourhood = claims.get("custom:neighbourhood_id")
+    caller_neighbourhood = claims.get(CUSTOM_NEIGHBOURHOOD_ID)
     if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
+        logger.warning("get_trends: failed to get trends due to no neighbourhood_id included in claims for user with cognito_sub=%s", claims['sub'])
         raise HTTPException(403, NOT_AUTHORISED)
     
 
     start_date = _resolve_start_date(time_period)
 
-
     bucket = func.date_trunc(group_by.value, Alert.frame_timestamp).label("bucket")
-
 
     stmt = (
         select(bucket, func.count(Alert.id).label("count"))
         .join(Camera, Alert.camera_id == Camera.id)
         .where(Camera.neighbourhood_id == neighbourhood_id)
     )
-
     
     if start_date:
         stmt = stmt.where(Alert.frame_timestamp > start_date)
 
-
     if camera_id:
         stmt = stmt.where(Alert.camera_id == camera_id)
-
     
     if incident_type:
         stmt = stmt.where(Alert.detection_type == DetectionType(incident_type))
 
-
     stmt = stmt.group_by(bucket).order_by(bucket)
-
-
 
     try:
         result = await db.execute(stmt)
         rows = result.all()
     except IntegrityError:
+        logger.error("get_trends: failed due to integrity error for request from user with cognito_sub=%s", claims['sub'])
         await db.rollback()
         raise HTTPException(500, "Failed to fetch trend data")
     
-
-
+    
     buckets = [TrendBucket(period=row.bucket, count=row.count) for row in rows]
     total_count = sum(b.count for b in buckets)
     trend_direction = _compute_trend_direction(buckets)
 
-
-
-
-
+    logger.info("get_trends: successfully retrieved trend data for user with cognito_sub=%s", claims['sub'])
     return TrendData(
-        
         buckets=buckets,
         total_count=total_count,
         trend_direction=trend_direction
-
-
     )
+
 
 async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession, claims: dict):
     """Broadcast an alert and notify eligible residents in its neighbourhood."""
@@ -559,16 +621,23 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
     )
     alert = result.scalar_one_or_none()
     if not alert:
-        raise HTTPException(status_code=404, detail="Alert not found")
+        logger.warning("broadcast_neighbourhood_alert_service: could not find alert with alert_id=%s", alert_id)
+        raise HTTPException(status_code=404, detail=ALERT_NOT_FOUND)
 
     result = await db.execute(
-        select(Camera).where(Camera.id == alert.camera_id)
+        select(Camera)
+        .options(joinedload(Camera.property)) # to load the property so the neighbourhood id can be accessed through that
+        .where(Camera.id == alert.camera_id)
     )
     camera = result.scalar_one_or_none()
     if not camera:
+        logger.warning("broadcast_neighbourhood_alert_service: could not find camera linked to alert with alert_id=%s", alert_id)
         raise HTTPException(status_code=404, detail="Camera not found for alert")
 
-    neighbourhood_id = camera.neighbourhood_id
+    neighbourhood_id = camera.property.neighbourhood_id #has to access the neighbourhood via the camera's property
+
+    if not neighbourhood_id:
+        logger.warning("broadcast_neighbourhood_alert_service: property with property_id=%s not linked to neighbourhood", camera.property_id)
 
     result = await db.execute(
         select(Neighbourhood).where(
@@ -577,6 +646,7 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
     )
     neighbourhood = result.scalar_one_or_none()
     if not neighbourhood:
+        logger.warning("broadcast_neighbourhood_alert_service: could not find neighbourhoodcamera linked to alert with alert_id=%s", alert_id)
         raise HTTPException(status_code=404, detail="Neighbourhood not found")
 
     detection_type = alert.detection_type.value \
@@ -584,20 +654,36 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
     else str(alert.detection_type)
 
     alert_res = _build_alert_res(alert)
+    recipient_ids = await _get_neighbourhood_websocket_recipient_ids(
+        db,
+        neighbourhood_id,
+    )
+
     await broadcast(
-        neighbourhood_id=str(neighbourhood_id),
-        message={"event": "alert.broadcast", "payload": alert_res.model_dump(mode="json")},
+        recipient_ids,
+        {
+            "event": "alert.broadcast",
+            "payload": alert_res.model_dump(mode="json"),
+        },
     )
 
     result = await db.execute(
-        select(User).where(
-            User.neighbourhood_id == neighbourhood_id,
-            or_(
-                User.role == UserRole.RESIDENT,
-                User.role == UserRole.NEIGHBOURHOOD_ADMIN,
+        select(User)
+        .join(
+            NeighbourhoodUser,
+            NeighbourhoodUser.user_id == User.id,
+        )
+        .where(
+            NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+            NeighbourhoodUser.role.in_(
+                [
+                    NeighbourhoodRole.RESIDENT,
+                    NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
+                ]
             ),
         )
     )
+
     residents = result.scalars().all()
 
     timestamp_str = alert.frame_timestamp.strftime("%d %b %Y, %H:%M:%S")
@@ -609,6 +695,7 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
     )
     admin_user_id = result.scalar_one_or_none()
     if not admin_user_id:
+        logger.warning("broadcast_neighbourhood_alert_service: no admin_user_id found")
         raise HTTPException(status_code=404, detail="Admin user not found")
     
     create_audit_log_item(
@@ -733,7 +820,7 @@ async def update_alert_clip_for_agent_handler(alert_id: str, body: UpdateAlertCl
             logger.warning("internal update_clip: alert with alert id=%s not found.", alert_id)
             raise HTTPException(
                 status_code=404,
-                detail="Alert not found"
+                detail=ALERT_NOT_FOUND
             )
 
         alert.clip_s3_key = body.clip_s3_key
@@ -743,11 +830,11 @@ async def update_alert_clip_for_agent_handler(alert_id: str, body: UpdateAlertCl
         await db.refresh(alert)
 
         logger.info("internal update_clip: clip with alert_id=%s successfully updated.", alert_id)
-        return{
-            "alert_id": str(alert.id),
-            "clip_s3_key": alert.clip_s3_key,
-            "clip_expires_at": alert.clip_expires_at
-        }
+        return AlertClipUpdateRes(
+            alert_id=alert.id,
+            clip_s3_key=alert.clip_s3_key,
+            clip_expires_at=alert.clip_expires_at,
+        )
         #TODO: Turn this dict into an actual pydantic response class object
 
     except HTTPException:

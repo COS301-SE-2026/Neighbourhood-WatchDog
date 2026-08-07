@@ -4,7 +4,7 @@ from uuid import UUID
 from typing import Annotated
 from datetime import datetime
 from fastapi import APIRouter, Depends, Query, WebSocket
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import require_role
 from app.auth.dependencies import get_current_user, get_authenticated_edge_agent
 from app.core.database import DbSession, get_db
@@ -110,15 +110,14 @@ async def get_alert_frequency_metrics(
 async def create_alert(
     alert: AlertCreate, 
     credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)],
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     return await alert_service.create_alert(db, alert)
 
 @router.post("/dev/broadcast") #TODO: remove before production
 async def dev_broadcast_alert(data: dict):
     """Dev-only: broadcast alert without DB. Remove before production."""
-    neighbourhood_id = data.get("neighbourhood_id", "10000000-0000-0000-0000-000000000001")
-    await broadcast(str(neighbourhood_id), {
+    await broadcast([], {
         "event": "new_alert",
         "camera_id": data.get("camera_id", "unknown"),
         "detection_type": data.get("detection_type", "HUMAN_PRESENCE"),
@@ -150,7 +149,7 @@ async def get_alert_trends(
         camera_id=camera_id 
 
     )
-    return TrendResponse(status=200, data=data)
+    return TrendResponse(status=200, data=data, message="Alert trends recieved successfully")
 
 
 @router.get(

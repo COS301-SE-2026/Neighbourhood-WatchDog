@@ -15,7 +15,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from app.models.audit_log import AuditAction, TargetEntity
-from app.services.rtsp_encryption import decrypt_rtsp_url
 from app.schemas.camera import (
     EnabledCamerasRes,
     ListEnabledCameras,

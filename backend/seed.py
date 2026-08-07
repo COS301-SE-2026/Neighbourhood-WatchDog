@@ -16,7 +16,7 @@ from app.models.property_user import PropertyUser
 from app.models.camera import Camera, CameraVisibilityEnum
 from app.models.zone import GeospatialZone, SensitivityLevel
 from app.models.retention_policy import RetentionPolicy
-from app.models.alert import Alert, AlertStatus
+from app.models.alert import Alert, AlertStatus, DetectionType
 from app.models.audit_log import AuditLog, AuditAction
 from app.services.rtsp_encryption import encrypt_rtsp_url
 
@@ -246,7 +246,7 @@ def seed_database(bulk_audit_count: int = 500):
                     seconds=random.randint(0, 59),
                 )
 
-                detection_event = DetectionEvent(
+                alert = Alert(
                     id=uuid4(),
                     camera_id=CAMERA_ID,
                     frame_timestamp=event_time,
@@ -254,9 +254,11 @@ def seed_database(bulk_audit_count: int = 500):
                     confidence_score=round(random.uniform(0.55, 0.99), 2),
                     thumbnail_url=None,
                     processed=True,
+                    status=AlertStatus.OPEN.value,
+                    created_at=event_time
                 )
 
-                db.add(detection_event)
+                db.add(alert)
                 db.flush()  # need detection_event.id for the FK below
                 detection_events_created += 1
  
@@ -271,7 +273,11 @@ def seed_database(bulk_audit_count: int = 500):
                 alert = Alert(
                     id=uuid4(),
                     camera_id=CAMERA_ID,
-                    detection_event_id=detection_event.id,
+                    frame_timestamp=event_time,
+                    detection_type=random.choice(detection_types),
+                    confidence_score=round(random.uniform(0.55, 0.99), 2),
+                    thumbnail_url=None,
+                    processed=True,
                     status=status.value,
                     resolved_by=resolved_by,
                     resolved_at=resolved_at,

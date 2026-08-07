@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock , patch
+from unittest.mock import MagicMock, AsyncMock , patch
 import backend.app.services.auth_service as auth_service
 
 
@@ -55,7 +55,7 @@ async def test_register_user_success(mock_cognito):
         "address": "JHB"
     }
 
-    mock_db = MagicMock()
+    mock_db = AsyncMock()
 
     def refresh(user):
         user.id = "11111111-1111-1111-1111-111111111111"
