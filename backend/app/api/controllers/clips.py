@@ -14,7 +14,6 @@ from botocore.config import Config as BotoConfig
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Annotated
 from uuid import UUID
 from sqlalchemy import select
 from typing import Annotated
