@@ -779,7 +779,6 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
 
         return InternalAlertCreateRes(alert_id=alert.id)
 
-        #TODO: Turn this dict into an actual pydantic response class object
     
     except HTTPException:
         await db.rollback()
@@ -835,7 +834,6 @@ async def update_alert_clip_for_agent_handler(alert_id: str, body: UpdateAlertCl
             clip_s3_key=alert.clip_s3_key,
             clip_expires_at=alert.clip_expires_at,
         )
-        #TODO: Turn this dict into an actual pydantic response class object
 
     except HTTPException:
         raise
