@@ -24,6 +24,7 @@ def make_mock_db():
     mock_result = MagicMock()
     mock_db.execute = AsyncMock(return_value=mock_result)
     mock_db.add = Mock()
+    mock_db.delete = AsyncMock()
     mock_db.flush = AsyncMock()
     mock_db.commit = AsyncMock()
     mock_db.refresh = AsyncMock()
@@ -180,8 +181,8 @@ class TestDeregisterCamera:
         self.mock_camera_result = Mock()
         self.mock_camera_result.scalar_one_or_none.return_value = self.mock_camera
 
-        self.mock_user_result = Mock()
-        self.mock_user_result.scalar_one_or_none.return_value = self.mock_user
+        self.mock_prop_user_result = Mock()
+        self.mock_prop_user_result.scalar_one_or_none.return_value = self.mock_prop_user
 
         self.mock_db.execute = AsyncMock(side_effect=[
             self.mock_camera_result,
@@ -196,15 +197,15 @@ class TestDeregisterCamera:
     @pytest.mark.asyncio
     def reset_side_effects(self, camera=None, prop_user=None, user=None):
         """Helper to reset side_effect between tests"""
-        camera_result = Mock()
-        camera_result.scalar_one_or_none.return_value = camera
+        self.mock_camera_result = Mock()
+        self.mock_camera_result.scalar_one_or_none.return_value = camera
 
-        prop_user_result = Mock()
-        prop_user_result.scalar_one_or_none.return_value = prop_user
+        self.mock_prop_user_result = Mock()
+        self.mock_prop_user_result.scalar_one_or_none.return_value = prop_user
 
         self.mock_db.execute = AsyncMock(side_effect=[
-            camera_result,
-            prop_user_result,
+            self.mock_camera_result,
+            self.mock_prop_user_result,
         ])
 
     @pytest.mark.asyncio
