@@ -32,10 +32,16 @@ def _mock_zone():
 
 def _make_db(camera=None, zones=None):
     db = MagicMock()
-    exec_mock = AsyncMock()
-    db.execute.return_value = exec_mock
+    exec_mock = MagicMock()
     exec_mock.scalar_one_or_none.return_value = camera
-    exec_mock.scalars.return_value.all.return_value = zones or []
+    exec_mock.scalar.return_value.all.return_value = zones or []
+
+    db.execute = AsyncMock(return_value=exec_mock)
+    db.commit = AsyncMock()
+    db.rollback = AsyncMock()
+    db.flush = AsyncMock()
+    db.refresh = AsyncMock()
+    db.delete = AsyncMock()
     return db
 
 
@@ -60,10 +66,13 @@ async def test_get_settings_returns_threshold_and_zones():
 
     # first execute - camera, 
     # second execute - zones
-    db.execute.side_effect = [
-        MagicMock(**{"scalar_one_or_none.return_value": cam}),
-        MagicMock(**{"scalars.return_value.all.return_value": [zone]}),
-    ]
+    camera_result = MagicMock()
+    camera_result.scalar_one_or_none.return_value = cam
+
+    zones_result = MagicMock()
+    zones_result.scalars.return_value.all.return_value = [zone]
+
+    db.execute = AsyncMock(side_effect=[camera_result, zones_result])
 
     result = await get_camera_settings_handler(CAMERA_ID, db)
     assert result["confidence_threshold"] == pytest.approx(0.6)
@@ -144,5 +153,5 @@ async def test_delete_zone_ok():
 async def test_delete_zone_not_found():
     db = _make_db(camera=None)
     with pytest.raises(HTTPException) as exc:
-        await (CAMERA_ID, ZONE_ID, db, CLAIMS)
+        await delete_zone_handler(CAMERA_ID, ZONE_ID, db, CLAIMS)
     assert exc.value.status_code == 404
