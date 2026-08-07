@@ -93,22 +93,67 @@ def upgrade() -> None:
     op.drop_column('camera', 'neighbourhood_id')
     op.create_index(op.f('ix_camera_detection_zone_camera_id'), 'camera_detection_zone', ['camera_id'], unique=False)
     op.create_index(op.f('ix_geospatial_zone_neighbourhood_id'), 'geospatial_zone', ['neighbourhood_id'], unique=False)
-    op.alter_column('neighbourhood_join_request', 'status',
-               existing_type=sa.VARCHAR(),
-               type_=sa.Enum('PENDING', 'APPROVED', 'REJECTED', name='join_request_status'),
-               existing_nullable=False,
-               existing_server_default=sa.text("'PENDING'::character varying"))
+    join_request_status_enum = postgresql.ENUM(
+        "PENDING",
+        "APPROVED",
+        "REJECTED",
+        name="join_request_status",
+    )
+    join_request_status_enum.create(op.get_bind(), checkfirst=True)
+
+    # The existing VARCHAR default must be removed before converting the column.
+    op.execute(
+        "ALTER TABLE neighbourhood_join_request "
+        "ALTER COLUMN status DROP DEFAULT"
+    )
+
+    op.alter_column(
+        "neighbourhood_join_request",
+        "status",
+        existing_type=sa.VARCHAR(),
+        type_=join_request_status_enum,
+        existing_nullable=False,
+        postgresql_using="status::text::join_request_status",
+    )
+
+    op.alter_column(
+        "neighbourhood_join_request",
+        "status",
+        server_default=sa.text("'PENDING'::join_request_status"),
+    )
     op.create_index('ix_join_request_neighbourhood_created_at', 'neighbourhood_join_request', ['neighbourhood_id', 'created_at'], unique=False)
     op.create_index('ix_join_request_neighbourhood_status', 'neighbourhood_join_request', ['neighbourhood_id', 'status'], unique=False)
     op.create_index('ix_join_request_user_id', 'neighbourhood_join_request', ['user_id'], unique=False)
-    op.alter_column('notification', 'channel',
-               existing_type=sa.VARCHAR(),
-               type_=sa.Enum('WHATSAPP', 'EMAIL', name='notification_channel'),
-               existing_nullable=False)
-    op.alter_column('notification', 'status',
-               existing_type=sa.VARCHAR(),
-               type_=sa.Enum('SENT', 'FAILED', name='notification_status'),
-               existing_nullable=False)
+    notification_channel_enum = postgresql.ENUM(
+        "WHATSAPP",
+        "EMAIL",
+        name="notification_channel",
+    )
+    notification_channel_enum.create(op.get_bind(), checkfirst=True)
+
+    op.alter_column(
+        "notification",
+        "channel",
+        existing_type=sa.VARCHAR(),
+        type_=notification_channel_enum,
+        existing_nullable=False,
+        postgresql_using="channel::text::notification_channel",
+    )
+    notification_status_enum = postgresql.ENUM(
+        "SENT",
+        "FAILED",
+        name="notification_status",
+    )
+    notification_status_enum.create(op.get_bind(), checkfirst=True)
+
+    op.alter_column(
+        "notification",
+        "status",
+        existing_type=sa.VARCHAR(),
+        type_=notification_status_enum,
+        existing_nullable=False,
+        postgresql_using="status::text::notification_status",
+    )
     op.create_index('ix_notification_alert_id', 'notification', ['alert_id'], unique=False)
     op.create_index('ix_notification_user_sent_at', 'notification', ['user_id', 'sent_at'], unique=False)
     op.drop_constraint(op.f('notification_alert_id_fkey'), 'notification', type_='foreignkey')
