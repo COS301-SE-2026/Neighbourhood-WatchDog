@@ -1,7 +1,7 @@
 from typing import Annotated, AsyncGenerator
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import declarative_base
 import os
 from dotenv import load_dotenv
 
@@ -26,7 +26,7 @@ SessionLocal = async_sessionmaker(
     expire_on_commit=False
 )
 
-Base = DeclarativeBase()
+Base = declarative_base()
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with SessionLocal() as db:
