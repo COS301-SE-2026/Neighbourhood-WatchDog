@@ -68,7 +68,7 @@ async def create_property_handler(
         db.add(new_property_user)
         await db.flush()
 
-        create_audit_log_item(
+        await create_audit_log_item(
             db=db,
             user_id=user.id,
             action=AuditAction.CREATE,

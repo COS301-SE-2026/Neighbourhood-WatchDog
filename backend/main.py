@@ -23,16 +23,12 @@ from app.api.controllers.internal_cameras import router as internal_cameras_rout
 from app.api.controllers.pairing_token import router as pairing_token_router
 from slowapi.middleware import SlowAPIMiddleware
 from app.auth.rate_limiter import limiter
-from app.core.database import engine, Base
 from app import models  # noqa: F401  (imported for side effects: model registration)
-import os
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 
 configure_logging()
 
-if os.getenv("SKIP_DB_INIT", "false").lower() != "true":
-    Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=config.app_name,

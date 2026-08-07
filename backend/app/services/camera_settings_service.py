@@ -69,7 +69,7 @@ async def update_camera_settings_handler(camera_id: UUID, confidence_threshold: 
             "confidence_threshold": confidence_threshold
         }
 
-        create_audit_log_item(
+        await create_audit_log_item(
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.UPDATE,
@@ -131,7 +131,7 @@ async def create_zone_handler(camera_id: UUID, name: str, polygon: list, db: Asy
         # Generates zone.id without committing
         await db.flush()
 
-        create_audit_log_item(
+        await create_audit_log_item(
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.CREATE,
@@ -189,7 +189,7 @@ async def delete_zone_handler(camera_id: UUID,zone_id: UUID,db: AsyncSession,cla
 
         await db.delete(zone)
 
-        create_audit_log_item(
+        await create_audit_log_item(
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.DELETE,

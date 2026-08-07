@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock, AsyncMock, patch
 from uuid import UUID
 from fastapi import HTTPException
 
@@ -9,6 +9,15 @@ from app.services.camera_settings_service import (
     create_zone_handler,
     delete_zone_handler,
 )
+
+@pytest.fixture(autouse=True)
+def mock_create_audit_log_item():
+    """Prevent camera-settings unit tests from writing real audit records."""
+    with patch(
+        "app.services.camera_settings_service.create_audit_log_item",
+        new_callable=AsyncMock,
+    ) as mock_audit_log:
+        yield mock_audit_log
 
 CAMERA_ID = UUID("40000000-0000-0000-0000-000000000001")
 ZONE_ID   = UUID("f68ad3aa-6946-4019-9817-e35d27e15950")

@@ -233,7 +233,7 @@ async def edit_camera_handler(
         }
 
 
-        create_audit_log_item(
+        await create_audit_log_item(
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.UPDATE,

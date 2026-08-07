@@ -254,7 +254,7 @@ async def resolve_join_request_handler(request_id: UUID, property_id: UUID | Non
 
         join_request.resolved_at = datetime.now(timezone.utc)
 
-        create_audit_log_item(
+        await create_audit_log_item(
             db=db,
             user_id=admin_id,
             action=AuditAction.UPDATE,
