@@ -12,6 +12,7 @@ from uuid import UUID
 from sqlalchemy import select
 from app.core.database import DbSession
 
+from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
 from app.models.notification import Notification, NotificationChannel, NotificationStatus
 from app.models.property import Property
 from app.models.property_user import PropertyUser
@@ -332,18 +333,14 @@ async def dispatch_notifications(
 
         if severity == "CRITICAL" and neighbourhood_id:
             neighbourhood_users_result = await db.execute(
-            select(User.id)
-            .join(
-                PropertyUser,
-                PropertyUser.user_id == User.id,
+                select(NeighbourhoodUser.user_id).where(
+                    NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+                    NeighbourhoodUser.role == NeighbourhoodRole.RESIDENT,
+                )
             )
-            .join(
-                Property,
-                Property.id == PropertyUser.property_id,
-            )
-            .where(
-                Property.neighbourhood_id == neighbourhood_id,            
-            )
+
+            recipient_user_ids.update(
+                neighbourhood_users_result.scalars().all()
             )
 
             recipient_user_ids.update(

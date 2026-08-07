@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 import os
@@ -208,78 +208,120 @@ class TestLogNotification:
  
         self.mock_db.add.assert_called_once()
         record = self.mock_db.add.call_args.args[0]
-        assert record.status == NotificationStatus.SENT.value
+        assert record.status == NotificationStatus.SENT
         assert record.error_message is None
-        self.mock_db.commit.assert_called_once()
+        self.mock_db.commit.assert_not_called()
+        self.mock_db.rollback.assert_not_called()
  
     def test_failure_creates_failed_record_with_error(self):
         _log_notification(self.mock_db, uuid.uuid4(), uuid.uuid4(), NotificationChannel.WHATSAPP, False, "send failed")
- 
+
+        self.mock_db.add.assert_called_once()
         record = self.mock_db.add.call_args.args[0]
-        assert record.status == NotificationStatus.FAILED.value
+        assert record.status == NotificationStatus.FAILED
         assert record.error_message == "send failed"
- 
-    def test_db_error_rolls_back_and_does_not_raise(self):
-        self.mock_db.commit.side_effect = Exception("db down")
- 
-        _log_notification(self.mock_db, uuid.uuid4(), uuid.uuid4(), NotificationChannel.WHATSAPP, True, None)
- 
-        self.mock_db.rollback.assert_called_once()
+
 
 class TestDispatchNotifications:
     def setup_method(self):
         self.mock_db = Mock()
+        self.mock_db.execute = AsyncMock()
+        self.mock_db.commit = AsyncMock()
+        self.mock_db.rollback = AsyncMock()
+
         self.alert_id = uuid.uuid4()
         self.camera_id = uuid.uuid4()
+        self.property_id = uuid.uuid4()
         self.neighbourhood_id = uuid.uuid4()
+        self.direct_user_id = uuid.uuid4()
         self.frame_timestamp = datetime.now(timezone.utc)
 
         self.mock_camera = Mock()
+        self.mock_camera.id = self.camera_id
         self.mock_camera.name = "CAM 03"
         self.mock_camera.location = "Front Gate"
-        self.mock_camera.property_id = uuid.uuid4()
-        self.mock_db.execute.return_value.scalar_one_or_none.return_value = self.mock_camera
+        self.mock_camera.property_id = self.property_id
+
+    @staticmethod
+    def _scalar_result(value):
+        result = Mock()
+        result.scalar_one_or_none.return_value = value
+        return result
+
+    @staticmethod
+    def _scalars_result(values):
+        result = Mock()
+        result.scalars.return_value.all.return_value = values
+        return result
  
-    def _make_resident(self, phone_number="0821234567", email="resident@gmail.com"):
+    def _make_resident(
+            self, _id: uuid.UUID | None = None, 
+            phone_number: str | None = "0821234567",
+            email: str | None = "resident@gmail.com"
+    ):
         user = Mock()
         user.id = uuid.uuid4()
         user.phone_number = phone_number
         user.email = email
         return user
 
-    def _set_recipients(self, users):
-        self.mock_db.execute.return_value.scalars.return_value.all.return_value = users
- 
+    def _configure_high_recipients(self, users):
+        """HIGH alerts notify direct users of the camera's property."""
+        self.mock_db.execute.side_effect = [
+            self._scalar_result(self.mock_camera),
+            self._scalar_result(self.neighbourhood_id),
+            self._scalars_result(users),
+        ]
+
+
+    def _configure_critical_recipients(
+        self,
+        direct_users,
+        neighbourhood_users,
+    ):
+        """CRITICAL alerts notify direct users plus neighbourhood residents."""
+        self.mock_db.execute.side_effect = [
+            self._scalar_result(self.mock_camera),
+            self._scalar_result(self.neighbourhood_id),
+            self._scalars_result(
+                [user.id for user in neighbourhood_users]
+            ),
+            self._scalars_result(direct_users + neighbourhood_users),
+        ]
+
     @pytest.mark.asyncio
     async def test_below_threshold_skips_entirely(self):
         await dispatch_notifications(
             db=self.mock_db,
             alert_id=self.alert_id,
             camera_id=self.camera_id,
-            neighbourhood_id=self.neighbourhood_id,
+            user_ids=[self.direct_user_id],
             detection_type="LOITERING",
             confidence_score=0.2,
             frame_timestamp=self.frame_timestamp,
         )
-        self.mock_db.execute.assert_not_called()
+        self.mock_db.execute.assert_not_awaited()
+        self.mock_db.commit.assert_not_awaited()
  
     @pytest.mark.asyncio
-    async def test_notifications_disabled_skips(self):
+    async def test_notifications_disabled_skips_entirely(self):
         with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "false"}):
             await dispatch_notifications(
                 db=self.mock_db,
                 alert_id=self.alert_id,
                 camera_id=self.camera_id,
-                neighbourhood_id=self.neighbourhood_id,
+                user_ids=[self.direct_user_id],
                 detection_type="LOITERING",
                 confidence_score=0.9,
                 frame_timestamp=self.frame_timestamp,
             )
-            self.mock_db.execute.assert_not_called()
+            self.mock_db.execute.assert_not_awaited()
+            self.mock_db.commit.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_camera_not_found_returns_early(self):
-        self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
+        self.mock_db.execute.return_value = self._scalar_result(None)
+
         with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}), \
              patch("app.services.notification_service._send_whatsapp") as mock_send, \
              patch("app.services.notification_service.send_alert_email") as mock_email:
@@ -287,197 +329,254 @@ class TestDispatchNotifications:
                 db=self.mock_db,
                 alert_id=self.alert_id,
                 camera_id=self.camera_id,
-                neighbourhood_id=self.neighbourhood_id,
+                user_ids=[self.direct_user_id],
                 detection_type="WEAPON_DETECTED",
                 confidence_score=0.9,
                 frame_timestamp=self.frame_timestamp,
             )
-            mock_send.assert_not_called()
-            mock_email.assert_not_called()
+            self.mock_db.commit.assert_not_awaited()
 
 
     @pytest.mark.asyncio
     @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
     @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
     async def test_critical_type_notifies_neighbourhood_via_both_channels(self, mock_send, mock_email):
-        residents = [self._make_resident(), self._make_resident()]
-        self._set_recipients(residents)
+        direct_resident = self._make_resident()
+        neighbourhood_resident = self._make_resident()
+
+        self._configure_critical_recipients(
+            direct_users=[direct_resident],
+            neighbourhood_users=[neighbourhood_resident],
+        )
+
         with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}):
             await dispatch_notifications(
                 db=self.mock_db,
                 alert_id=self.alert_id,
                 camera_id=self.camera_id,
-                neighbourhood_id=self.neighbourhood_id,
+                user_ids=[direct_resident.id],
                 detection_type="WEAPON_DETECTED",
                 confidence_score=0.1,
                 frame_timestamp=self.frame_timestamp,
             )
 
-            assert mock_send.call_count == 2
-            assert mock_email.call_count == 2
+        assert mock_send.call_count == 2
+        assert mock_email.call_count == 2
+        self.mock_db.commit.assert_awaited_once()
+
 
     @pytest.mark.asyncio
     @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
     @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
     async def test_non_critical_high_confidence_still_notifies_both_channels(self, mock_send, mock_email):
-        residents = [self._make_resident()]
-        self._set_recipients(residents)
+        resident = self._make_resident()
+        self._configure_high_recipients([resident])
+
         with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}):
             await dispatch_notifications(
                 db=self.mock_db,
                 alert_id=self.alert_id,
                 camera_id=self.camera_id,
-                neighbourhood_id=self.neighbourhood_id,
+                user_ids=[resident.id],
                 detection_type="LOITERING",
                 confidence_score=0.9,
                 frame_timestamp=self.frame_timestamp,
             )
 
-            assert mock_send.call_count == 1
-            assert mock_email.call_count == 1
- 
+        assert mock_send.call_count == 1
+        assert mock_email.call_count == 1
+        self.mock_db.commit.assert_awaited_once()
+
+
     @pytest.mark.asyncio
+    @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
     @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
-    async def test_notifies_all_residents_with_phone_numbers(self, mock_send):
-        residents = [self._make_resident(), self._make_resident()]
-        self.mock_db.execute.return_value.scalars.return_value.all.return_value = residents
+    async def test_notifies_all_direct_property_users_with_phone_numbers(self, mock_send, mock_email):
+        residents = [
+            self._make_resident(),
+            self._make_resident(),
+        ]
+        self._configure_high_recipients(residents)
+
         with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}):
             await dispatch_notifications(
                 db=self.mock_db,
                 alert_id=self.alert_id,
                 camera_id=self.camera_id,
-                neighbourhood_id=self.neighbourhood_id,
+                user_ids=[resident.id for resident in residents],
                 detection_type="LOITERING",
                 confidence_score=0.9,
                 frame_timestamp=self.frame_timestamp,
             )
-    
-            assert mock_send.call_count == 2
- 
+
+        assert mock_send.call_count == 2
+        assert mock_email.call_count == 2
+
+
     @pytest.mark.asyncio
     @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
     @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
     async def test_skips_residents_without_phone_number(self, mock_send, mock_email):
-        residents = [self._make_resident(phone_number=None), self._make_resident()]
-        self._set_recipients(residents)
+        residents = [
+            self._make_resident(phone_number=None),
+            self._make_resident(),
+        ]
+        self._configure_high_recipients(residents)
 
         with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}):
             await dispatch_notifications(
                 db=self.mock_db,
                 alert_id=self.alert_id,
                 camera_id=self.camera_id,
-                neighbourhood_id=self.neighbourhood_id,
+                user_ids=[resident.id for resident in residents],
                 detection_type="LOITERING",
                 confidence_score=0.9,
                 frame_timestamp=self.frame_timestamp,
             )
 
-            assert mock_send.call_count == 1  
-            assert mock_email.call_count == 2
+        assert mock_send.call_count == 1
+        assert mock_email.call_count == 2
+
 
     @pytest.mark.asyncio
     @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
     @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
     async def test_skips_residents_without_email(self, mock_send, mock_email):
-        residents = [self._make_resident(email=None), self._make_resident()]
-        self._set_recipients(residents)
+        residents = [
+            self._make_resident(email=None),
+            self._make_resident(),
+        ]
+        self._configure_high_recipients(residents)
 
         with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}):
             await dispatch_notifications(
                 db=self.mock_db,
                 alert_id=self.alert_id,
                 camera_id=self.camera_id,
-                neighbourhood_id=self.neighbourhood_id,
+                user_ids=[resident.id for resident in residents],
                 detection_type="LOITERING",
                 confidence_score=0.9,
                 frame_timestamp=self.frame_timestamp,
             )
 
-            assert mock_send.call_count == 2 
-            assert mock_email.call_count == 1 
- 
+        assert mock_send.call_count == 2
+        assert mock_email.call_count == 1
+
+
     @pytest.mark.asyncio
-    async def test_no_residents_found_does_not_error(self):
-        self._set_recipients([])
-        with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}), \
-             patch("app.services.notification_service._send_whatsapp") as mock_send, \
-             patch("app.services.notification_service.send_alert_email") as mock_email:
+    async def test_no_recipients_found_does_not_error(self):
+        self.mock_db.execute.side_effect = [
+            self._scalar_result(self.mock_camera),
+            self._scalar_result(None),
+        ]
+
+        with (
+            patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}),
+            patch(
+                "app.services.notification_service._send_whatsapp",
+            ) as mock_send,
+            patch(
+                "app.services.notification_service.send_alert_email",
+            ) as mock_email,
+        ):
             await dispatch_notifications(
                 db=self.mock_db,
                 alert_id=self.alert_id,
                 camera_id=self.camera_id,
-                neighbourhood_id=self.neighbourhood_id,
+                user_ids=[],
                 detection_type="LOITERING",
                 confidence_score=0.9,
                 frame_timestamp=self.frame_timestamp,
             )
-            mock_send.assert_not_called()
-            mock_email.assert_not_called()
- 
+
+        mock_send.assert_not_called()
+        mock_email.assert_not_called()
+        self.mock_db.commit.assert_not_awaited()
+
+
     @pytest.mark.asyncio
-    async def test_db_error_fetching_residents_is_handled(self):
+    async def test_db_error_fetching_recipients_is_handled(self):
         self.mock_db.execute.side_effect = [
-            Mock(scalar_one_or_none=Mock(return_value=self.mock_camera)),
+            self._scalar_result(self.mock_camera),
             Exception("db unavailable"),
         ]
+
         with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}):
             await dispatch_notifications(
                 db=self.mock_db,
                 alert_id=self.alert_id,
                 camera_id=self.camera_id,
-                neighbourhood_id=self.neighbourhood_id,
+                user_ids=[uuid.uuid4()],
                 detection_type="WEAPON_DETECTED",
                 confidence_score=0.9,
                 frame_timestamp=self.frame_timestamp,
             )
 
+        self.mock_db.rollback.assert_awaited_once()
+
+
     @pytest.mark.asyncio
     @patch("app.services.notification_service._log_notification")
     @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
     @patch("app.services.notification_service._send_whatsapp", return_value=(False, "twilio error"))
-    async def test_failed_whatsapp_send_is_logged(self, mock_send, mock_email, mock_log):
-        residents = [self._make_resident(email=None)]
-        self._set_recipients(residents)
+    async def test_failed_whatsapp_send_is_logged(
+        self,
+        mock_send,
+        mock_email,
+        mock_log,
+    ):
+        resident = self._make_resident(email=None)
+        self._configure_high_recipients([resident])
+
         with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}):
             await dispatch_notifications(
                 db=self.mock_db,
                 alert_id=self.alert_id,
                 camera_id=self.camera_id,
-                neighbourhood_id=self.neighbourhood_id,
+                user_ids=[resident.id],
                 detection_type="LOITERING",
                 confidence_score=0.9,
                 frame_timestamp=self.frame_timestamp,
             )
 
-            mock_log.assert_called_once()
-            args = mock_log.call_args.args
-            assert args[3] == NotificationChannel.WHATSAPP
-            assert args[4] is False
-            assert args[5] == "twilio error"
- 
+        mock_log.assert_called_once()
+        args = mock_log.call_args.args
+
+        assert args[3] == NotificationChannel.WHATSAPP
+        assert args[4] is False
+        assert args[5] == "twilio error"
+
+
     @pytest.mark.asyncio
     @patch("app.services.notification_service._log_notification")
     @patch("app.services.notification_service.send_alert_email", return_value=(False, "smtp error"))
     @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
-    async def test_failed_email_send_is_logged(self, mock_send, mock_email, mock_log):
-        residents = [self._make_resident(phone_number=None)]
-        self._set_recipients(residents)
+    async def test_failed_email_send_is_logged(
+        self,
+        mock_send,
+        mock_email,
+        mock_log,
+    ):
+        resident = self._make_resident(phone_number=None)
+        self._configure_high_recipients([resident])
+
         with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}):
             await dispatch_notifications(
                 db=self.mock_db,
                 alert_id=self.alert_id,
                 camera_id=self.camera_id,
-                neighbourhood_id=self.neighbourhood_id,
+                user_ids=[resident.id],
                 detection_type="LOITERING",
                 confidence_score=0.9,
                 frame_timestamp=self.frame_timestamp,
             )
 
-            mock_log.assert_called_once()
-            args = mock_log.call_args.args
-            assert args[3] == NotificationChannel.EMAIL
-            assert args[4] is False
-            assert args[5] == "smtp error"
+        mock_log.assert_called_once()
+        args = mock_log.call_args.args
+
+        assert args[3] == NotificationChannel.EMAIL
+        assert args[4] is False
+        assert args[5] == "smtp error"
 
 class TestNotifyUsers:
     def setup_method(self):
@@ -488,20 +587,21 @@ class TestNotifyUsers:
         self.camera.location = "Front Gate"
         self.whatsapp_message = "some formatted whatsapp message"
 
-    def _make_user(self, phone_number="0821234567", email="resident@gmail.com"):
+    def _make_user(self, phone_number: str | None = "0821234567", email: str | None = "resident@gmail.com"):
         user = Mock()
         user.id = uuid.uuid4()
         user.phone_number = phone_number
         user.email = email
         return user
 
+    @pytest.mark.asyncio
     @patch("app.services.notification_service._log_notification")
     @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
     @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
-    def test_user_with_both_channels_gets_both_sends_and_logs(self, mock_send, mock_email, mock_log):
+    async def test_user_with_both_channels_gets_both_sends_and_logs(self, mock_send, mock_email, mock_log):
         user = self._make_user()
 
-        _notify_users(
+        await _notify_users(
             self.mock_db, self.alert_id, [user], self.whatsapp_message,
             "LOITERING", self.camera, "HIGH",
         )
@@ -510,13 +610,14 @@ class TestNotifyUsers:
         mock_email.assert_called_once_with(user.email, "LOITERING", self.camera.name, self.camera.location, "HIGH")
         assert mock_log.call_count == 2
 
+    @pytest.mark.asyncio
     @patch("app.services.notification_service._log_notification")
     @patch("app.services.notification_service.send_alert_email")
     @patch("app.services.notification_service._send_whatsapp")
-    def test_user_with_no_contact_info_skips_both_channels(self, mock_send, mock_email, mock_log):
+    async def test_user_with_no_contact_info_skips_both_channels(self, mock_send, mock_email, mock_log):
         user = self._make_user(phone_number=None, email=None)
 
-        _notify_users(
+        await _notify_users(
             self.mock_db, self.alert_id, [user], self.whatsapp_message,
             "LOITERING", self.camera, "HIGH",
         )
@@ -525,13 +626,14 @@ class TestNotifyUsers:
         mock_email.assert_not_called()
         mock_log.assert_not_called()
 
+    @pytest.mark.asyncio
     @patch("app.services.notification_service._log_notification")
     @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
     @patch("app.services.notification_service._send_whatsapp", return_value=(False, "twilio error"))
-    def test_whatsapp_failure_still_attempts_email_independently(self, mock_send, mock_email, mock_log):
+    async def test_whatsapp_failure_still_attempts_email_independently(self, mock_send, mock_email, mock_log):
         user = self._make_user()
 
-        _notify_users(
+        await _notify_users(
             self.mock_db, self.alert_id, [user], self.whatsapp_message,
             "LOITERING", self.camera, "HIGH",
         )
@@ -543,16 +645,18 @@ class TestNotifyUsers:
         assert whatsapp_log_call.args[4] is False
         assert whatsapp_log_call.args[5] == "twilio error"
 
+    @pytest.mark.asyncio
     @patch("app.services.notification_service._log_notification")
     @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
     @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
-    def test_multiple_users_processed_independently(self, mock_send, mock_email, mock_log):
+    async def test_multiple_users_processed_independently(self, mock_send, mock_email, mock_log):
         users = [self._make_user(), self._make_user(phone_number=None), self._make_user(email=None)]
 
-        _notify_users(
+        await _notify_users(
             self.mock_db, self.alert_id, users, self.whatsapp_message,
             "LOITERING", self.camera, "HIGH",
         )
 
         assert mock_send.call_count == 2  
         assert mock_email.call_count == 2  
+        assert mock_log.call_count == 4
