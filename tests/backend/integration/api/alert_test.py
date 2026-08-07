@@ -51,6 +51,8 @@ async def test_list_and_acknowledge(async_client, auth_headers):
         "detection_type": "HUMAN_PRESENCE",
         "confidence_score": 0.9,
         "thumbnail_url": None,
+        "frame_timestamp": "2026-07-01T12:00:00+00:00",
+        "processed": True,
     }
 
     with patch(
@@ -82,6 +84,8 @@ async def test_list_alerts_default_pagination_params(async_client, auth_headers)
         "detection_type": "HUMAN_PRESENCE",
         "confidence_score": 0.9,
         "thumbnail_url": None,
+        "frame_timestamp": "2026-07-01T12:00:00+00:00",
+        "processed": True,
     }
 
     with patch(
@@ -113,6 +117,8 @@ async def test_list_alerts_forwards_filters(async_client, auth_headers):
         "detection_type": "HUMAN_PRESENCE",
         "confidence_score": 0.9,
         "thumbnail_url": None,
+        "frame_timestamp": "2026-07-01T12:00:00+00:00",
+        "processed": True,
     }
 
     with patch(
@@ -176,6 +182,8 @@ async def test_list_alerts_has_more_true_when_pages_remain(async_client, auth_he
         "detection_type": "HUMAN_PRESENCE",
         "confidence_score": 0.9,
         "thumbnail_url": None,
+        "frame_timestamp": "2026-07-01T12:00:00+00:00",
+        "processed": True,
     }
 
     with patch(

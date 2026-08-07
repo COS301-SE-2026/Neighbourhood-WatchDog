@@ -1,7 +1,14 @@
-from sqlalchemy import Column, String, TIMESTAMP, text, ForeignKey
+from enum import Enum
+
+from sqlalchemy import Column, Index, TIMESTAMP, text, ForeignKey, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+
+class JoinRequestStatus(str, Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
 
 class NeighbourhoodJoinRequest(Base):
     __tablename__ = "neighbourhood_join_request"
@@ -9,9 +16,23 @@ class NeighbourhoodJoinRequest(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False, server_default=text("gen_random_uuid()"))
     neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    status = Column(String, nullable=False, server_default="PENDING")
+    status = Column(SAEnum(JoinRequestStatus, name="join_request_status"), nullable=False, server_default=JoinRequestStatus.PENDING.value)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
     resolved_at = Column(TIMESTAMP(timezone=True), nullable=True)
 
     neighbourhood = relationship("Neighbourhood", back_populates="join_requests")
     user = relationship("User", back_populates="join_requests")
+
+    __table_args__ = (
+        Index("ix_join_request_user_id", "user_id"),
+        Index(
+            "ix_join_request_neighbourhood_status",
+            "neighbourhood_id",
+            "status",
+        ),
+        Index(
+            "ix_join_request_neighbourhood_created_at",
+            "neighbourhood_id",
+            "created_at",
+        )
+    )

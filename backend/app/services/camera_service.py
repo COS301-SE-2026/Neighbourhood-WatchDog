@@ -1,33 +1,67 @@
-from app.schemas.camera import RegisterCameraReq, CameraRes, CameraListItemRes, CamerasRes, CameraEditReq
+from app.schemas.camera import CameraRes, CameraListItemRes, CamerasRes, CameraEditReq
 from app.models.camera import Camera
 from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.user import User
-from app.core.database import DbSession
 from app.services.rtsp_encryption import encrypt_rtsp_url, decrypt_rtsp_url
 
 from app.services.audit_service import create_audit_log_item
-from app.models.audit_log import AuditAction
 
+from fastapi import Response, status
 from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
-from sqlalchemy.orm import Session
-from typing import Optional
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
+from app.models.audit_log import AuditAction, TargetEntity
+from app.schemas.camera import (
+    EnabledCamerasRes,
+    ListEnabledCameras,
+    MediaMtxAuthRequest,
+)
+import base64
+import hashlib
+import hmac
+import os
+import logging
+import re
+
+logger = logging.getLogger(__name__)
 
 NO_DB_SESSION = "No database session"
 NOT_AUTHENTICATED = "Not authenticated"
 
-async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims: dict) -> CameraRes:
+_CAMERA_PATH_PATTERN = re.compile(r"^cameras/([0-9a-fA-F-]{36})$")
+
+
+def _publish_master_key() -> bytes:
+    value = os.getenv("MEDIAMTX_PUBLISH_MASTER_KEY")
+
+    if not value:
+        raise RuntimeError("MEDIAMTX_PUBLISH_MASTER_KEY is not configured.")
+
+    return value.encode("utf-8")
+
+
+def _camera_publish_credentials(camera_id: str) -> tuple[str, str]:
+    """Helper function which recevies a camera_id creates a username and password for the camera and returns them as a tuple"""
+    username = f"camera-{camera_id}"
+    digest = hmac.new(_publish_master_key(), camera_id.encode("utf-8"), hashlib.sha256).digest()
+    password = base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+
+    return username, password
+
+async def register_camera_handler(req, db, claims):
+    """Register a camera for an authorised property user and audit the creation."""
     if not db:
         raise HTTPException(500, NO_DB_SESSION)
     if not claims:
         raise HTTPException(401, NOT_AUTHENTICATED)
 
     try:
-        stmt = select(Property).where(Property.id == req.property_id)
-        property_obj = db.execute(stmt).scalar_one_or_none()
+        result = await db.execute(select(Property).where(Property.id == req.property_id))
+        property_obj = result.scalar_one_or_none()
 
         if not property_obj:
             raise HTTPException(404, "Property not found")
@@ -46,14 +80,20 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
         )
         db.add(new_camera)
 
+        logger.info(
+            "Camera registered: camera_id=%s, property_id=%s",
+            new_camera.id,
+            new_camera.property_id,
+        )
+
         # Get ID before commit
-        db.flush()
+        await db.flush()
 
         create_audit_log_item(
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.CREATE,
-            target_entity_type="Camera",
+            target_entity_type=TargetEntity.CAMERA,
             target_entity_id=new_camera.id,
             new_values={
                 "property_id": str(new_camera.property_id),
@@ -64,8 +104,8 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
             },
         )
 
-        db.commit()
-        db.refresh(new_camera)
+        await db.commit()
+        await db.refresh(new_camera)
 
         return CameraRes(
             id=new_camera.id,
@@ -80,30 +120,34 @@ async def register_camera_handler(req: RegisterCameraReq, db: DbSession, claims:
         )
 
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(500, "Could not register camera")
     except HTTPException as he:
-        db.rollback()
+        await db.rollback()
         raise he
 
-def deregister_camera_handler(camera_id: UUID, db: Optional[DbSession], claims: Optional[dict]):
+async def deregister_camera_handler(camera_id, db, claims):
+    """Remove an authorised user's camera and audit the deletion."""
     if not db:
         raise HTTPException(status_code=500, detail=NO_DB_SESSION)
     if not claims:
         raise HTTPException(status_code=500, detail=NOT_AUTHENTICATED)
     
     try:
-        stmt = select(Camera).where(Camera.id == camera_id)
-        camera_obj = db.execute(stmt).scalar_one_or_none()
+        result = await db.execute(select(Camera).where(Camera.id == camera_id))
+        camera_obj = result.scalar_one_or_none()
 
         if not camera_obj:
             raise HTTPException(status_code=404, detail="Camera not found")
         
-        prop_user = db.execute(
-            select(PropertyUser).where(PropertyUser.property_id == camera_obj.property_id)
-            ).scalar_one_or_none()
-        
-        if not prop_user or prop_user.user.cognito_sub != claims.get("sub"):
+        prop_user_result = await db.execute(
+            select(PropertyUser)
+            .options(joinedload(PropertyUser.user))
+            .where(PropertyUser.property_id == camera_obj.property_id)
+        )
+        prop_user = prop_user_result.scalar_one_or_none()
+
+        if not prop_user or prop_user.user.cognito_sub != claims["sub"]:
             raise HTTPException(status_code=403, detail="Forbidden")
 
         
@@ -115,35 +159,37 @@ def deregister_camera_handler(camera_id: UUID, db: Optional[DbSession], claims: 
             "location": camera_obj.location,
         }
 
-        db.delete(camera_obj)
+        await db.delete(camera_obj)
 
         create_audit_log_item(
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.DELETE,
-            target_entity_type="Camera",
+            target_entity_type=TargetEntity.CAMERA,
             target_entity_id=camera_obj.id,
             old_values=old_values,
         )
 
-        db.commit()
+        await db.commit()
         
     except HTTPException as he:
-        db.rollback()
+        await db.rollback()
         raise he
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(500, "Could not deregister camera")
     except Exception:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(500, "Failed to delete camera")
     
-def edit_camera_handler(
+async def edit_camera_handler(
     camera_id: UUID, 
     req: CameraEditReq,
-    db: Session, 
+    db: AsyncSession, 
     claims: dict
     ) -> CameraRes:
+    """Update an authorised user's camera details and audit the changes."""
+
     
     try:
 
@@ -151,13 +197,13 @@ def edit_camera_handler(
         if not update_data:
             raise HTTPException(status_code=400, detail="No fields provided to update")
     
-        stmt = select(Camera).where(Camera.id == camera_id)
-        camera_obj = db.execute(stmt).scalar_one_or_none()
+        result = await db.execute(select(Camera).where(Camera.id == camera_id))
+        camera_obj = result.scalar_one_or_none()
 
         if not camera_obj:
             raise HTTPException(status_code=404, detail="Camera not found")
         
-        prop_user = db.execute(
+        prop_user_result = await db.execute(
             select(PropertyUser)
             .join(PropertyUser.user)
             .where(
@@ -165,7 +211,8 @@ def edit_camera_handler(
                 User.cognito_sub == claims.get("sub")
                 
                 )
-            ).scalar_one_or_none()
+            )
+        prop_user = prop_user_result.scalar_one_or_none()
         
         if not prop_user:
             raise HTTPException(status_code=403, detail="Forbidden")
@@ -186,19 +233,19 @@ def edit_camera_handler(
         }
 
 
-        create_audit_log_item(
+        await create_audit_log_item(
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.UPDATE,
-            target_entity_type="Camera",
+            target_entity_type=TargetEntity.CAMERA,
             target_entity_id=camera_obj.id,
             old_values=old_values,
             new_values=new_values,
         )
 
 
-        db.commit()
-        db.refresh(camera_obj)
+        await db.commit()
+        await db.refresh(camera_obj)
 
         return CameraRes(
             id=camera_obj.id,
@@ -213,15 +260,16 @@ def edit_camera_handler(
         )
     
     except HTTPException as he:
-        db.rollback()
+        await db.rollback()
         raise he
     except Exception:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to update camera")
 
 
 
-async def list_cameras_handler(property_id: str, db: DbSession, claims: dict) -> CamerasRes:
+async def list_cameras_handler(property_id, db, claims):
+    """Return cameras belonging to a property accessible to the requesting user."""
     if not db:
         raise HTTPException(500, NO_DB_SESSION)
 
@@ -234,22 +282,28 @@ async def list_cameras_handler(property_id: str, db: DbSession, claims: dict) ->
         raise HTTPException(400, "Invalid property ID")
 
     stmt = select(Property).where(Property.id == prop_uuid)
-    property_obj = db.execute(stmt).scalar_one_or_none()
+    result = await db.execute(stmt)
+    property_obj = result.scalar_one_or_none()
 
     if not property_obj:
         raise HTTPException(403, "Property does not exist")
 
-    stmt = select(PropertyUser).where(PropertyUser.property_id == prop_uuid)
-    prop_user = db.execute(stmt).scalar_one_or_none()
+    prop_user_result = await db.execute(
+        select(PropertyUser)
+        .options(joinedload(PropertyUser.user))
+        .where(PropertyUser.property_id == prop_uuid)
+    )
+    prop_user = prop_user_result.scalar_one_or_none()
 
-    if not prop_user:
-        raise HTTPException(403, "User does not have access to this property")
-
-    if prop_user.user.cognito_sub != claims["sub"]:
-        raise HTTPException(403, "This user does not have access to this property")
+    if not prop_user or prop_user.user.cognito_sub != claims.get("sub"):
+        raise HTTPException(
+            status_code=403,
+            detail="This user does not have access to this property",
+        )
 
     stmt = select(Camera).where(Camera.property_id == prop_uuid).order_by(Camera.created_at.desc())
-    cameras = db.execute(stmt).scalars().all()
+    result = await db.execute(stmt)
+    cameras = result.scalars().all()
 
     return CamerasRes(
         status=200,
@@ -269,3 +323,81 @@ async def list_cameras_handler(property_id: str, db: DbSession, claims: dict) ->
             for c in cameras
         ],
     )
+
+async def list_enabled_cameras_for_agent_handler(property_id: UUID, db:AsyncSession) -> ListEnabledCameras:
+    """Returns enabled cameras available to an authenticated AI worker."""
+
+    stmt = select(Camera).where(
+        Camera.property_id == property_id,
+        Camera.enabled.is_(True)
+    ).order_by(Camera.created_at.asc())
+
+    result = await db.execute(stmt)
+    cameras = result.scalars().all()
+
+    data: list[EnabledCamerasRes] = []
+
+    for camera in cameras:
+        camera_id = str(camera.id)
+
+        publish_username, publish_password = (_camera_publish_credentials(camera_id))
+        
+
+        data.append(
+            EnabledCamerasRes(
+                id=camera.id,
+                rtsp_url=decrypt_rtsp_url(camera.rtsp_url),
+                enabled=camera.enabled,
+                neighbourhood_id=camera.neighbourhood_id,
+                confidence_threshold=camera.confidence_threshold,
+                publish_username=publish_username,
+                publish_password=publish_password,
+            )
+        )
+        
+    return ListEnabledCameras(data=data)
+
+
+async def authorize_mediamtx_for_agent_handler(request: MediaMtxAuthRequest, db:AsyncSession) -> Response:
+    """Authorise a MediaMTX playback or camera publishing action."""
+
+    if request.action in {"read", "playback"}:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    if request.action != "publish":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This MediaMTX action is not allowed.")
+
+
+    match = _CAMERA_PATH_PATTERN.fullmatch(request.path)
+
+    if match is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Publish path mist be cameras/<camera-uuid>.")
+
+    try:
+        camera_id = UUID(match.group(1))
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Publish path contains an invalid camera ID.") from error
+
+
+    result = await db.execute(
+        select(Camera).where(
+            Camera.id == camera_id, Camera.enabled.is_(True)
+        )
+    )
+
+    camera = result.scalar_one_or_none()
+
+
+    if camera is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Camera does not exist or is disabled.")
+
+    expected_username, expected_password = (_camera_publish_credentials(str(camera_id)))
+
+
+    credentials_are_valid = (hmac.compare_digest(request.user, expected_username) and hmac.compare_digest(request.password, expected_password))
+
+    if not credentials_are_valid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid publish credential for the requested camera path.")
+
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

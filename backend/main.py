@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.logging import configure_logging
 from app.core.config import config
@@ -22,16 +23,12 @@ from app.api.controllers.internal_cameras import router as internal_cameras_rout
 from app.api.controllers.pairing_token import router as pairing_token_router
 from slowapi.middleware import SlowAPIMiddleware
 from app.auth.rate_limiter import limiter
-from app.core.database import engine, Base
 from app import models  # noqa: F401  (imported for side effects: model registration)
-import os
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 
 configure_logging()
 
-if os.getenv("SKIP_DB_INIT", "false").lower() != "true":
-    Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=config.app_name,
@@ -83,3 +80,45 @@ app.include_router(pairing_token_router)
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+
+def custom_openapi():
+    """This is for the API Service Contract to make sure it returns the full schema, not just a reference"""
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        routes=app.routes,
+    )
+
+    schemas = openapi_schema.get("components", {}).get("schemas", {})
+
+    openapi_schema["paths"] = _resolve_refs(openapi_schema["paths"], schemas)
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
+
+def _resolve_refs(node, schemas, seen=frozenset()):
+    """Helper function for custom_openapi which resolves $ref references inline"""
+    if isinstance(node, dict):
+        if "$ref" in node:
+            key = node["$ref"].rsplit("/", 1)[-1]
+            if key in seen:
+                return node
+            target = schemas.get(key)
+            if target is None:
+                return node
+
+            resolved = _resolve_refs(target, schemas, seen | {key})
+            extras = {k: v for k, v in node.items() if k != "$ref"}
+            if extras:
+                return {**resolved, **_resolve_refs(extras, schemas, seen)}
+            return resolved
+        return {k: _resolve_refs(v, schemas, seen) for k, v in node.items()}
+    if isinstance(node, list):
+        return [_resolve_refs(item, schemas, seen) for item in node]
+    return node

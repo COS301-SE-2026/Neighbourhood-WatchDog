@@ -21,7 +21,7 @@ class CameraDetectionZone(Base):
     __tablename__ = "camera_detection_zone"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    camera_id = Column(UUID(as_uuid=True), ForeignKey("camera.id", ondelete="CASCADE"), nullable=False)
+    camera_id = Column(UUID(as_uuid=True), ForeignKey("camera.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String, nullable=False, default="Zone")
 
     

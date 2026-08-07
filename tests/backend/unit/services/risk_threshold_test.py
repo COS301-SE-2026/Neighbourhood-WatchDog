@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 import pytest
-from unittest.mock import Mock
+from unittest.mock import Mock, AsyncMock
 from fastapi import HTTPException
 from app.services.risk_threshold_config_service import get_neighbourhood_risk_threshold_handler, update_neighbourhood_risk_threshold_handler
 from app.schemas.risk_threshold_config import UpdateRiskThresholdConfigReq
@@ -27,26 +27,30 @@ class TestGetRiskThresholdConfig:
         self.mock_default_threshold_config.medium_max = 70
         self.mock_default_threshold_config.updated_at = datetime.now()
 
-
-        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+        self.mock_result = Mock()
+        self.mock_result.scalar_one_or_none.side_effect = [
             self.mock_risk_threshold_config,
         ]
 
-        self.mock_db.execute.return_value.scalar_one.side_effect = []
+        self.mock_result.scalar_one.side_effect = []
+        self.mock_db.execute = AsyncMock(return_value=self.mock_result)
 
         self.mock_db.add = Mock()
-        self.mock_db.flush = Mock()
-        self.mock_db.refresh = Mock()
-        self.mock_db.commit = Mock()
-        self.mock_db.rollback = Mock()
+        self.mock_db.flush = AsyncMock()
+        self.mock_db.refresh = AsyncMock()
+        self.mock_db.commit = AsyncMock()
+        self.mock_db.rollback = AsyncMock()
 
     def reset_side_effects(self, neighbourhood_threshold_config=None, global_default_config=None):
         """Helper to reset side_effect between tests"""
-        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+        self.mock_result = Mock()
+        self.mock_result.scalar_one_or_none.side_effect = [
             neighbourhood_threshold_config
         ]
         if global_default_config is not None:
-            self.mock_db.execute.return_value.scalar_one.side_effect = [global_default_config]
+            self.mock_result.scalar_one.side_effect = [global_default_config]
+
+        self.mock_db.execute = AsyncMock(return_value=self.mock_result)
 
     @pytest.mark.asyncio
     async def test_happy_path_get(self):
@@ -54,7 +58,7 @@ class TestGetRiskThresholdConfig:
             Neighbourhood admin successfuly gets theshold config
         """
 
-        neighbourhood_risk_config = get_neighbourhood_risk_threshold_handler(
+        neighbourhood_risk_config = await get_neighbourhood_risk_threshold_handler(
             self.neighbourhood_id, 
             self.mock_db, 
             self.mock_claims
@@ -80,7 +84,7 @@ class TestGetRiskThresholdConfig:
         
 
         with pytest.raises(HTTPException) as exception:
-            get_neighbourhood_risk_threshold_handler(
+            await get_neighbourhood_risk_threshold_handler(
                 wrong_neighbourhood_id,
                 self.mock_db,
                 self.mock_claims
@@ -100,7 +104,7 @@ class TestGetRiskThresholdConfig:
             global_default_config=self.mock_default_threshold_config
         )
 
-        neighbourhood_risk_config = get_neighbourhood_risk_threshold_handler(
+        neighbourhood_risk_config = await get_neighbourhood_risk_threshold_handler(
             self.neighbourhood_id, 
             self.mock_db, 
             self.mock_claims
@@ -137,26 +141,31 @@ class TestUpdateRiskThresholdConfig:
         self.mock_default_threshold_config.medium_max = 70
         self.mock_default_threshold_config.updated_at = datetime.now()
 
-        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+        self.mock_result = Mock()
+        self.mock_result.scalar_one_or_none.side_effect = [
             self.mock_risk_threshold_config,
         ]
 
-        self.mock_db.execute.return_value.scalar_one.side_effect = []
+        self.mock_result.scalar_one.side_effect = []
+        self.mock_db.execute = AsyncMock(return_value=self.mock_result)
 
         self.mock_db.add = Mock()
-        self.mock_db.flush = Mock()
-        self.mock_db.refresh = Mock()
-        self.mock_db.commit = Mock()
-        self.mock_db.rollback = Mock()
+        self.mock_db.flush = AsyncMock()
+        self.mock_db.refresh = AsyncMock()
+        self.mock_db.commit = AsyncMock()
+        self.mock_db.rollback = AsyncMock()
 
     def reset_side_effects(self, neighbourhood_threshold_config=None, global_default_config=None):
         """Helper to reset side_effect between tests"""
-        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+        self.mock_result = Mock()
+        self.mock_result.scalar_one_or_none.side_effect = [
             neighbourhood_threshold_config
         ]
         if global_default_config is not None:
-            self.mock_db.execute.return_value.scalar_one.side_effect = [global_default_config]
-        
+            self.mock_result.scalar_one.side_effect = [global_default_config]
+
+        self.mock_db.execute = AsyncMock(return_value=self.mock_result)
+
     @pytest.mark.asyncio
     async def test_happy_path_update(self):
         
@@ -165,7 +174,7 @@ class TestUpdateRiskThresholdConfig:
             medium_max=90.1
         )
 
-        updated_risk_threshold_config = update_neighbourhood_risk_threshold_handler(
+        updated_risk_threshold_config = await update_neighbourhood_risk_threshold_handler(
             self.neighbourhood_id,
             req,
             self.mock_db,
@@ -194,7 +203,7 @@ class TestUpdateRiskThresholdConfig:
         )
 
         with pytest.raises(HTTPException) as exception:
-            update_neighbourhood_risk_threshold_handler(
+            await update_neighbourhood_risk_threshold_handler(
                 wrong_neighbourhood_id,
                 req,
                 self.mock_db,
@@ -231,7 +240,7 @@ class TestUpdateRiskThresholdConfig:
         )
 
         with pytest.raises(HTTPException):
-            update_neighbourhood_risk_threshold_handler(
+            await update_neighbourhood_risk_threshold_handler(
                 self.neighbourhood_id,
                 req,
                 self.mock_db,
@@ -252,7 +261,7 @@ class TestUpdateRiskThresholdConfig:
             if obj.updated_at is None:
                 obj.updated_at = datetime.now()
 
-        self.mock_db.refresh.side_effect = fake_refresh
+        self.mock_db.refresh.side_effect = AsyncMock(side_effect=fake_refresh)
 
         self.reset_side_effects(
             neighbourhood_threshold_config=None, 
@@ -261,7 +270,7 @@ class TestUpdateRiskThresholdConfig:
 
         req = UpdateRiskThresholdConfigReq(low_max=28)
 
-        updated_risk_threshold_config = update_neighbourhood_risk_threshold_handler(
+        updated_risk_threshold_config = await update_neighbourhood_risk_threshold_handler(
             self.neighbourhood_id,
             req,
             self.mock_db,
@@ -284,7 +293,7 @@ class TestUpdateRiskThresholdConfig:
         """Existing neighbourhood-specific config, PATCH only one field, other field untoched"""
         req = UpdateRiskThresholdConfigReq(medium_max=60)
 
-        updated_config = update_neighbourhood_risk_threshold_handler(
+        updated_config = await update_neighbourhood_risk_threshold_handler(
             self.neighbourhood_id,
             req,
             self.mock_db,
@@ -305,7 +314,7 @@ class TestUpdateRiskThresholdConfig:
         req = UpdateRiskThresholdConfigReq(medium_max=15)
 
         with pytest.raises(HTTPException) as exception:
-            update_neighbourhood_risk_threshold_handler(
+            await update_neighbourhood_risk_threshold_handler(
                 self.neighbourhood_id,
                 req,
                 self.mock_db,

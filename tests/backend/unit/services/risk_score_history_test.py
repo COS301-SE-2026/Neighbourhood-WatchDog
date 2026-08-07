@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 import pytest
-from unittest.mock import Mock
+from unittest.mock import Mock, AsyncMock
 from datetime import datetime
 from uuid import uuid4
 
@@ -23,22 +23,25 @@ class TestGetNeighbourhoodScore:
         self.mock_risk_score.alert_count = 19
         self.mock_risk_score.calculated_at = datetime.now()
 
-        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [self.mock_risk_score]
-
+        self.mock_result = Mock()
+        self.mock_result.scalar_one_or_none.side_effect = [self.mock_risk_score]
+        self.mock_db.execute = AsyncMock(return_value=self.mock_result)
 
         self.mock_db.add = Mock()
-        self.mock_db.flush = Mock()
-        self.mock_db.refresh = Mock()
-        self.mock_db.commit = Mock()
-        self.mock_db.rollback = Mock()
+        self.mock_db.flush = AsyncMock()
+        self.mock_db.refresh = AsyncMock()
+        self.mock_db.commit = AsyncMock()
+        self.mock_db.rollback = AsyncMock()
 
     def reset_side_effects(self, neighbourhood_risk_history=None):
         """Helper to reset side_effect between tests"""
-        self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [neighbourhood_risk_history]
+        self.mock_result = Mock()
+        self.mock_result.scalar_one_or_none.side_effect = [neighbourhood_risk_history]
+        self.mock_db.execute = AsyncMock(return_value=self.mock_result)
 
     @pytest.mark.asyncio
     async def test_happy_path(self):
-        risk_score = get_neighbourhood_score_handler(
+        risk_score = await get_neighbourhood_score_handler(
             self.neighbourhood_id,
             self.mock_db,
             self.mock_claims
@@ -60,7 +63,7 @@ class TestGetNeighbourhoodScore:
         wrong_neighbourhood_id = UUID("717159e3-2ea3-4163-9773-e908fec43be6")
 
         with pytest.raises(HTTPException) as exception:
-            get_neighbourhood_score_handler(
+            await get_neighbourhood_score_handler(
                 wrong_neighbourhood_id,
                 self.mock_db,
                 self.mock_claims
@@ -78,7 +81,7 @@ class TestGetNeighbourhoodScore:
         self.reset_side_effects(neighbourhood_risk_history=None)
 
         with pytest.raises(HTTPException) as exception:
-            get_neighbourhood_score_handler(
+            await get_neighbourhood_score_handler(
                 self.neighbourhood_id,
                 self.mock_db,
                 self.mock_claims
@@ -125,21 +128,24 @@ class TestGetNeighbourhoodScoreHistory:
 
         self.mock_list = [self.mock_risk_score1, self.mock_risk_score2, self.mock_risk_score3]
 
-        self.mock_db.execute.return_value.all.side_effect = [self.mock_list]
-
+        self.mock_result = Mock()
+        self.mock_result.all.side_effect = [self.mock_list]
+        self.mock_db.execute = AsyncMock(return_value=self.mock_result)
 
         self.mock_db.add = Mock()
-        self.mock_db.flush = Mock()
-        self.mock_db.refresh = Mock()
-        self.mock_db.commit = Mock()
-        self.mock_db.rollback = Mock()
+        self.mock_db.flush = AsyncMock()
+        self.mock_db.refresh = AsyncMock()
+        self.mock_db.commit = AsyncMock()
+        self.mock_db.rollback = AsyncMock()
 
     def reset_side_effects(self, history_list=None):
-        self.mock_db.execute.return_value.all.side_effect = [history_list]
+        self.mock_result = Mock()
+        self.mock_result.all.side_effect = [history_list]
+        self.mock_db.execute = AsyncMock(return_value=self.mock_result)
 
     @pytest.mark.asyncio
     async def test_happy_path(self):
-        history = get_neighbourhood_score_history_handler(
+        history = await get_neighbourhood_score_history_handler(
             self.neighbourhood_id,
             "day",
             self.mock_db,
@@ -160,7 +166,7 @@ class TestGetNeighbourhoodScoreHistory:
         wrong_neighbourhood_id = UUID("717159e3-2ea3-4163-9773-e908fec43be6")
 
         with pytest.raises(HTTPException) as exception:
-            get_neighbourhood_score_history_handler(
+            await get_neighbourhood_score_history_handler(
                 wrong_neighbourhood_id,
                 "day",
                 self.mock_db,
@@ -177,7 +183,7 @@ class TestGetNeighbourhoodScoreHistory:
     @pytest.mark.asyncio
     async def test_invalid_granularity(self):
         with pytest.raises(HTTPException) as exception:
-            get_neighbourhood_score_history_handler(
+            await get_neighbourhood_score_history_handler(
                 self.neighbourhood_id,
                 "mock_wrong",
                 self.mock_db,
@@ -191,7 +197,7 @@ class TestGetNeighbourhoodScoreHistory:
     async def test_history_not_found(self):
         self.reset_side_effects(history_list=[])
         with pytest.raises(HTTPException) as exception:
-            get_neighbourhood_score_history_handler(
+            await get_neighbourhood_score_history_handler(
                 self.neighbourhood_id,
                 "day",
                 self.mock_db,

@@ -25,18 +25,21 @@ class AlertResponse(BaseModel):
         from_attributes = True
 
 class AlertRes(BaseModel):
-	id: UUID
-	camera_id: UUID
-	detection_event_id: UUID
-	status: str
-	resolved_by: UUID | None = None
-	resolved_at: datetime | None = None
-	created_at: datetime
-	detection_type: str | None = None
-	confidence_score: float | None = None
-	thumbnail_url: str | None = None
+    id: UUID
+    camera_id: UUID
+    frame_timestamp: datetime
+    detection_type: str
+    confidence_score: float
+    thumbnail_url: str | None = None
+    clip_s3_key: str | None = None
+    clip_expires_at: datetime | None = None
+    processed: bool
+    status: str
+    resolved_by: UUID | None = None
+    resolved_at: datetime | None = None
+    created_at: datetime
 
-	model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True}
 
 class AcknowledgeAlertRes(BaseModel):
 	status: int
@@ -124,3 +127,33 @@ class TrendResponse(BaseModel):
 
 class BroadcastAlertReq(BaseModel):
     alert_id: UUID
+
+class CreateInternalAlertRequest(BaseModel):
+    """Represent an alert-creation request sent by an authenticated AI agent."""
+
+    camera_id: str
+    detection_type: str
+    confidence_score: float
+    thumbnail_url: str | None = None
+    frame_timestamp: str | None = None
+
+
+class UpdateAlertClipRequest(BaseModel):
+    """Represent an AI agent request to attach a clip to an alert."""
+
+    clip_s3_key: str
+    clip_expires_at: str
+
+
+class InternalAlertCreateRes(BaseModel):
+    """Represent the identifier of an alert created by an AI agent."""
+
+    alert_id: UUID
+
+
+class AlertClipUpdateRes(BaseModel):
+    """Represent an alert after its clip details have been updated."""
+
+    alert_id: UUID
+    clip_s3_key: str
+    clip_expires_at: datetime
