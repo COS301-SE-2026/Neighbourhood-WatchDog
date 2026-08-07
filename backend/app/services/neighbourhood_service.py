@@ -112,7 +112,7 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
         )
 
         # Create single audit entry
-        create_audit_log_item(
+        await create_audit_log_item(
             db=db,
             user_id=creator_id,
             action=AuditAction.CREATE,
