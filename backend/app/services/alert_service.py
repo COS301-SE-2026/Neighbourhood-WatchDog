@@ -42,7 +42,50 @@ NO_DATABASE_SESSION = "No database session"
 NOT_AUTHORISED = "Not authorised for this neighbourhood"
 NOT_AUTHENTICATED = "Not authenticated"
 ALERT_NOT_FOUND = "Alert not found"
-CUSTOM_NEIGHBOURHOOD_ID = "custom:neighbourhood_id"
+
+def _neighbourhood_alert_stmt(neighbourhood_id: UUID):
+    """Build the base alert query scoped through Camera → Property."""
+    return (
+        select(Alert)
+        .join(Camera, Alert.camera_id == Camera.id)
+        .join(Property, Camera.property_id == Property.id)
+        .where(Property.neighbourhood_id == neighbourhood_id)
+    )
+
+async def _require_neighbourhood_membership(
+    db: AsyncSession,
+    claims: dict,
+    neighbourhood_id: UUID,
+    allowed_roles: set[NeighbourhoodRole] | None = None,
+) -> NeighbourhoodUser:
+    """Require the authenticated local user to belong to this neighbourhood."""
+
+    try:
+        user_id = UUID(claims["id"])
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(
+            status_code=401,
+            detail=NOT_AUTHENTICATED,
+        ) from exc
+
+    stmt = select(NeighbourhoodUser).where(
+        NeighbourhoodUser.user_id == user_id,
+        NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+    )
+
+    if allowed_roles is not None:
+        stmt = stmt.where(NeighbourhoodUser.role.in_(allowed_roles))
+
+    result = await db.execute(stmt)
+    membership = result.scalar_one_or_none()
+
+    if membership is None:
+        raise HTTPException(
+            status_code=403,
+            detail=NOT_AUTHORISED,
+        )
+
+    return membership
 
 async def _get_neighbourhood_websocket_recipient_ids(
     db: AsyncSession,
@@ -160,11 +203,6 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
         raise HTTPException(400, "Alert id is required")
     _validate_db_and_claims(db, claims)
 
-    role = claims.get("custom:role")
-    if role not in ["SECURITY_OFFICER", "NEIGHBOURHOOD_ADMIN", "RESIDENT"]:
-        logger.warning("acknowledge_alert: insufficient permissions to handle alert")
-        raise HTTPException(403, "Insufficient permissions")
-
     try:
         result = await db.execute(
             select(Alert).where(Alert.id == alert_id)
@@ -179,7 +217,26 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
             logger.warning("acknowledge_alert: alert not open with alert_id=%s", alert_id)
             raise HTTPException(409, "Alert is already acknowledged or resolved")
 
-        user_id_str = claims.get("sub") or claims.get("custom:sub")
+        neighbourhood_result = await db.execute(
+            select(Property.neighbourhood_id)
+            .join(Camera, Camera.property_id == Property.id)
+            .where(Camera.id == alert.camera_id)
+        )
+        neighbourhood_id = neighbourhood_result.scalar_one_or_none()
+
+        if neighbourhood_id is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Camera property is not assigned to a neighbourhood",
+            )
+
+        await _require_neighbourhood_membership(
+            db,
+            claims,
+            neighbourhood_id,
+        )
+
+        resolver_id = UUID(claims["id"])
 
         old_values = {
             "status": alert.status,
@@ -189,22 +246,6 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
             ),
         }
 
-        resolver_id = None
-
-        if user_id_str:
-            result = await db.execute(
-                select(User).where(User.cognito_sub == user_id_str)
-            )
-            resolver = result.scalar_one_or_none()
-
-            if resolver is None:
-                logger.warning("acknowledge_alert: user not found with cognito_sub=%s", user_id_str)
-                raise HTTPException(
-                    status_code=401,
-                    detail="Authenticated user does not have a local WatchDog profile.",
-                )
-
-            resolver_id = resolver.id
 
         alert.status = "ACKNOWLEDGED"
         alert.resolved_at = datetime.now(timezone.utc)
@@ -232,13 +273,6 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
 
         try:
             from app.api.controllers.alert import broadcast
-
-            neighbourhood_result = await db.execute(
-                select(Property.neighbourhood_id)
-                .join(Camera, Camera.property_id == Property.id)
-                .where(Camera.id == alert.camera_id)
-            )
-            neighbourhood_id = neighbourhood_result.scalar_one_or_none()
 
             if neighbourhood_id is not None:
                 recipient_ids = await _get_neighbourhood_websocket_recipient_ids(
@@ -293,21 +327,21 @@ async def list_alerts_handler(
     if not claims:
         raise HTTPException(401, NOT_AUTHENTICATED)
 
-    caller_neighbourhood = claims.get(CUSTOM_NEIGHBOURHOOD_ID)
-    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
-        logger.warning("list_alerts: no neighbourhood_id included in claims for user with cognito_sub=%s", claims['sub'])
-        raise HTTPException(403, NOT_AUTHORISED)
 
     if start_date and end_date and start_date > end_date:
         logger.warning("list_alerts: start date and end date invalid for request for alerts for user with cognito_sub=%s", claims['sub'])
         raise HTTPException(400, "start_date must be less than end_date")
 
+    neighbourhood_uuid = UUID(str(neighbourhood_id))
+
+    await _require_neighbourhood_membership(
+        db,
+        claims,
+        neighbourhood_uuid,
+    )
+
     try:
-        base_stmt = (
-            select(Alert)
-            .join(Camera, Alert.camera_id == Camera.id)
-            .where(Camera.neighbourhood_id == UUID(str(neighbourhood_id)))
-        )
+        base_stmt = _neighbourhood_alert_stmt(neighbourhood_uuid)
 
         if status_filter:
             base_stmt = base_stmt.where(Alert.status == status_filter)
@@ -350,20 +384,17 @@ async def get_response_metrics_handler(
 ) -> AlertMetricsRes:
     """Calculate alert response metrics for an authorised neighbourhood."""
 
-    caller_neighbourhood = claims.get(CUSTOM_NEIGHBOURHOOD_ID)
-    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
-        logger.warning("get_response_metrics: no neighbourhood_id included in claims for user with cognito_sub=%s", claims['sub'])
-        raise HTTPException(403, NOT_AUTHORISED)
-    
+    _validate_db_and_claims(db, claims)
 
-    stmt = (
-        select(Alert).join(
-            Camera, 
-            Alert.camera_id == Camera.id
-        ).where(
-            Camera.neighbourhood_id == neighbourhood_id
-        )
+    neighbourhood_uuid = UUID(str(neighbourhood_id))
+
+    await _require_neighbourhood_membership(
+        db,
+        claims,
+        neighbourhood_uuid,
     )
+
+    stmt = _neighbourhood_alert_stmt(neighbourhood_uuid)
 
     if camera_id:
         stmt = stmt.where(Alert.camera_id == camera_id)
@@ -441,10 +472,12 @@ async def get_alert_frequency_metrics_handler(
     if not time_interval:
         logger.warning("get_alert_frequency_metrics: failed due to no time_interval")
         raise HTTPException(400, "No time interval provided")
-    
-    caller_neighbourhood = claims.get(CUSTOM_NEIGHBOURHOOD_ID)
-    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
-        raise HTTPException(403, NOT_AUTHORISED)
+
+    await _require_neighbourhood_membership(
+        db,
+        claims,
+        neighbourhood_id,
+    )
     
     start_date = None
     today = date_cls.today()
@@ -467,7 +500,8 @@ async def get_alert_frequency_metrics_handler(
     stmt = (
         select(bucket, func.count(Alert.id).label("count"))
         .join(Camera, Alert.camera_id == Camera.id)
-        .where(Camera.neighbourhood_id == UUID(str(neighbourhood_id)))
+        .join(Property, Camera.property_id == Property.id)
+        .where(Property.neighbourhood_id == UUID(str(neighbourhood_id)))
     )
 
 
@@ -562,13 +596,13 @@ async def get_trends_handler(
     if not claims:
         logger.warning("get_trends: failed to get trends due to no claims")
         raise HTTPException(401, NOT_AUTHENTICATED)
-    
-    caller_neighbourhood = claims.get(CUSTOM_NEIGHBOURHOOD_ID)
-    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
-        logger.warning("get_trends: failed to get trends due to no neighbourhood_id included in claims for user with cognito_sub=%s", claims['sub'])
-        raise HTTPException(403, NOT_AUTHORISED)
-    
 
+    await _require_neighbourhood_membership(
+        db,
+        claims,
+        neighbourhood_id,
+    )
+    
     start_date = _resolve_start_date(time_period)
 
     bucket = func.date_trunc(group_by.value, Alert.frame_timestamp).label("bucket")
@@ -576,7 +610,8 @@ async def get_trends_handler(
     stmt = (
         select(bucket, func.count(Alert.id).label("count"))
         .join(Camera, Alert.camera_id == Camera.id)
-        .where(Camera.neighbourhood_id == neighbourhood_id)
+        .join(Property, Camera.property_id == Property.id)
+        .where(Property.neighbourhood_id == neighbourhood_id)
     )
     
     if start_date:
@@ -639,11 +674,25 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
     if not neighbourhood_id:
         logger.warning("broadcast_neighbourhood_alert_service: property with property_id=%s not linked to neighbourhood", camera.property_id)
 
+    if neighbourhood_id is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Camera property is not assigned to a neighbourhood",
+        )
+
+    await _require_neighbourhood_membership(
+        db,
+        claims,
+        neighbourhood_id,
+        allowed_roles={NeighbourhoodRole.NEIGHBOURHOOD_ADMIN},
+    )
+
     result = await db.execute(
         select(Neighbourhood).where(
-            Neighbourhood.id == camera.neighbourhood_id
+            Neighbourhood.id == neighbourhood_id
         )
     )
+
     neighbourhood = result.scalar_one_or_none()
     if not neighbourhood:
         logger.warning("broadcast_neighbourhood_alert_service: could not find neighbourhoodcamera linked to alert with alert_id=%s", alert_id)
@@ -690,13 +739,7 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
     whatsapp_message = _format_whatsapp_message("CRITICAL", detection_type, camera.name, timestamp_str)
     await _notify_users(db, alert.id, residents, whatsapp_message, detection_type, camera, "CRITICAL") #imma need to store val to know if failed or not
 
-    result = await db.execute(
-        select(User.id).where(User.cognito_sub == claims.get("sub"))
-    )
-    admin_user_id = result.scalar_one_or_none()
-    if not admin_user_id:
-        logger.warning("broadcast_neighbourhood_alert_service: no admin_user_id found")
-        raise HTTPException(status_code=404, detail="Admin user not found")
+    admin_user_id = UUID(claims["id"])
     
     create_audit_log_item(
         db=db,
