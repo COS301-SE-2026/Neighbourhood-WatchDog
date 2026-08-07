@@ -55,10 +55,36 @@ def upgrade() -> None:
     op.create_index('ix_detection_event_camera_timestamp', 'alert', ['camera_id', 'frame_timestamp'], unique=False)
     op.drop_constraint(op.f('alert_detection_event_id_fkey'), 'alert', type_='foreignkey')
     op.drop_column('alert', 'detection_event_id')
-    op.alter_column('audit_log', 'target_entity_type',
-               existing_type=sa.TEXT(),
-               type_=sa.Enum('ALERT', 'CAMERADETECTIONZONE', 'CAMERA', 'EDGEAGENTCREDENTIALS', 'NEIGHBOURHOODJOINREQUEST', 'NEIGHBOURHOOD', 'NOTIFICATION', 'PAIRINGTOKEN', 'PROPERTYUSER', 'PROPERTY', 'RETENTIONPOLICY', 'RISKSCOREHISTORY', 'RISKTHRESHOLDCONFIG', 'USER', 'ZONE', name='targetentity'),
-               existing_nullable=True)
+    target_entity_enum = postgresql.ENUM(
+        "ALERT",
+        "CAMERADETECTIONZONE",
+        "CAMERA",
+        "EDGEAGENTCREDENTIALS",
+        "NEIGHBOURHOODJOINREQUEST",
+        "NEIGHBOURHOOD",
+        "NOTIFICATION",
+        "PAIRINGTOKEN",
+        "PROPERTYUSER",
+        "PROPERTY",
+        "RETENTIONPOLICY",
+        "RISKSCOREHISTORY",
+        "RISKTHRESHOLDCONFIG",
+        "USER",
+        "ZONE",
+        name="targetentity",
+    )
+
+    # PostgreSQL enum types must exist before a TEXT column can use them.
+    target_entity_enum.create(op.get_bind(), checkfirst=True)
+
+    op.alter_column(
+        "audit_log",
+        "target_entity_type",
+        existing_type=sa.TEXT(),
+        type_=target_entity_enum,
+        existing_nullable=True,
+        postgresql_using="target_entity_type::text::targetentity",
+    )
     op.create_index('ix_audit_log_entity', 'audit_log', ['target_entity_type', 'target_entity_id', 'timestamp'], unique=False)
     op.create_index('ix_audit_log_user_action_timestamp', 'audit_log', ['user_id', 'action', 'timestamp'], unique=False)
     op.create_index('ix_audit_log_user_timestamp', 'audit_log', ['user_id', 'timestamp'], unique=False)
@@ -190,7 +216,8 @@ def downgrade() -> None:
     op.alter_column('audit_log', 'target_entity_type',
                existing_type=sa.Enum('ALERT', 'CAMERADETECTIONZONE', 'CAMERA', 'EDGEAGENTCREDENTIALS', 'NEIGHBOURHOODJOINREQUEST', 'NEIGHBOURHOOD', 'NOTIFICATION', 'PAIRINGTOKEN', 'PROPERTYUSER', 'PROPERTY', 'RETENTIONPOLICY', 'RISKSCOREHISTORY', 'RISKTHRESHOLDCONFIG', 'USER', 'ZONE', name='targetentity'),
                type_=sa.TEXT(),
-               existing_nullable=True)
+               existing_nullable=True,
+               postgresql_using="target_entity_type::text")
     op.add_column('alert', sa.Column('detection_event_id', sa.UUID(), autoincrement=False, nullable=False))
     op.create_foreign_key(op.f('alert_detection_event_id_fkey'), 'alert', 'detection_event', ['detection_event_id'], ['id'])
     op.drop_index('ix_detection_event_camera_timestamp', table_name='alert')
