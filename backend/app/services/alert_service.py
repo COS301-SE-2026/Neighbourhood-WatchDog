@@ -715,7 +715,7 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
 
     await db.commit()
 
-async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:AsyncSession) -> InternalAlertCreateRes:
+async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:AsyncSession, credential: EdgeAgentCredential) -> InternalAlertCreateRes:
     """Create an alert for a camera owned by the authenticated edge agent's property."""
 
     label_map = {
