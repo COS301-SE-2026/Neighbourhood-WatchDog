@@ -1,0 +1,16 @@
+backend/app/services/neighbourhood_join_service.py
+  h_cf6208e37032c0 22-25
+tests/backend/unit/services/neighbourhood_join_test.py
+  h_cf6208e37032c0 3,16,21-32,35,39,185,194,216-222,267,310-314,318-320,323-324,334,337-343,374,396,418-419
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "4f9a366c96d6f939ed72c35773265352a434b203",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
