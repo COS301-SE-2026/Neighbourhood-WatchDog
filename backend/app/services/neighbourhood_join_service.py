@@ -80,7 +80,7 @@ async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -
 
         await db.flush()
 
-        create_audit_log_item(
+        await create_audit_log_item(
             db=db,
             user_id=user.id,
             action=AuditAction.CREATE,
