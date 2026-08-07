@@ -283,5 +283,6 @@ async def resolve_join_request_handler(request_id: UUID, property_id: UUID | Non
         await db.rollback()
         raise HTTPException(500, "Failed to resolve join request")
     except Exception:
-        await db.rollback()
+        if db:
+            await db.rollback()
         raise HTTPException(500, "Failed to resolve join request")

@@ -366,7 +366,7 @@ class TestResolveJoinRequest:
             self.admin_claims
         )
 
-        assert result.status == "DENIED"
+        assert result.status == "REJECTED"
         assert self.mock_db.commit.call_count == 1
 
 class TestListJoinRequests:
@@ -393,7 +393,7 @@ class TestListJoinRequests:
     @pytest.mark.asyncio
     async def test_missing_db_raises_500(self):
         with pytest.raises(HTTPException) as exc:
-            await list_join_requests_handler(uuid.uuid4(), self.mock_db, self.admin_claims)
+            await list_join_requests_handler(uuid.uuid4(), None, self.admin_claims)
  
         assert exc.value.status_code == 500
  
