@@ -2,7 +2,6 @@ import pytest
 from fastapi import HTTPException
 from unittest.mock import MagicMock, Mock, AsyncMock, patch
 from app.services.neighbourhood_service import create_neighbourhood_handler
-from app.models.user import UserRole
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from uuid import uuid4
 from datetime import datetime
