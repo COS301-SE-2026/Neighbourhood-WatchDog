@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from app.models.alert import Alert
 from app.models.audit_log import AuditAction, TargetEntity
 from app.models.camera import Camera
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.schemas.alert import TimeIntervalsEnum, TimePeriod
 from app.services.alert_service import acknowledge_alert_handler, broadcast_neighbourhood_alert_service, list_alerts_handler, get_response_metrics_handler, get_alert_frequency_metrics_handler
 

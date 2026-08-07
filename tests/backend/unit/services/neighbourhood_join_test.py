@@ -320,7 +320,6 @@ class TestResolveJoinRequest:
             None,
         ]
 
-        property_id = uuid.uuid4()
 
         result = await resolve_join_request_handler(
             uuid.uuid4(), 
@@ -408,7 +407,6 @@ class TestListJoinRequests:
  
     @pytest.mark.asyncio
     async def test_returns_pending_requests_for_admin_neighbourhood(self):
-        admin_membership = Mock()
 
         request_1 = Mock()
         request_1.id = uuid.uuid4()
