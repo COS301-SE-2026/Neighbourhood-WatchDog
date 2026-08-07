@@ -83,14 +83,26 @@ class TestAcknowledgeAlert:
 
         assert exc.value.status_code == 401
 
-    @pytest.mark.skip(reason="temporary")
     @pytest.mark.asyncio
-    async def test_wrong_role_raises_403(self):
-        claims = {"sub": "cognito-sub-123", "custom:role": "RESIDENT"}
+    async def test_non_member_raises_403(self):
+        alert = self._make_alert(status="OPEN")
+
+        self.mock_db.execute.side_effect = [
+            self._exec_result(scalar_one_or_none=alert),
+            self._exec_result(scalar_one_or_none=self.neighbourhood_id),
+            self._exec_result(scalar_one_or_none=None),
+        ]
+
         with pytest.raises(HTTPException) as exc:
-            await acknowledge_alert_handler(uuid.uuid4(), self.mock_db, claims)
+            await acknowledge_alert_handler(
+                alert.id,
+                self.mock_db,
+                self.claims,
+            )
 
         assert exc.value.status_code == 403
+        assert self.mock_db.execute.await_count == 3
+        self.mock_db.commit.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_alert_not_found_raises_404(self):
