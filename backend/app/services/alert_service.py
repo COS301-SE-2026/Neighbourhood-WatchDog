@@ -84,16 +84,30 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
 
 
         from app.api.controllers.alert import broadcast
-        recipient_ids = await _get_neighbourhood_websocket_recipient_ids(db, data.neighbourhood_id)
 
-        await broadcast(recipient_ids, {
-            "event": "new_alert",
-            "alert_id": str(alert.id),
-            "camera_id": str(data.camera_id),
-            "detection_type": data.detection_type,
-            "confidence": data.confidence,
-        })
+        if data.neighbourhood_id is not None:
+            recipient_ids = await _get_neighbourhood_websocket_recipient_ids(
+                db,
+                data.neighbourhood_id,
+            )
 
+            await broadcast(
+                recipient_ids,
+                {
+                    "event": "new_alert",
+                    "alert_id": str(alert.id),
+                    "camera_id": str(data.camera_id),
+                    "detection_type": data.detection_type,
+                    "confidence": data.confidence,
+                },
+            )
+        else:
+            logger.warning(
+                "create_alert: skipped WebSocket broadcast because neighbourhood_id is missing; "
+                "alert_id=%s",
+                alert.id,
+            )
+            
         logger.info(
             "create_alert: Alert broadcast completed: alert_id=%s",
             alert.id

@@ -83,7 +83,6 @@ async def list_join_requests(
 )
 async def resolve_join_request(
     request_id: UUID,
-    property_id: UUID | None,
     body: ResolveJoinRequestReq,
     db: DbSession,
     claims: dict,

@@ -147,7 +147,7 @@ async def list_join_requests_handler(neighbourhood_id: UUID, db: DbSession, clai
     except IntegrityError:
         raise HTTPException(500, "Failed to list join requests")
 
-async def resolve_join_request_handler(request_id: UUID, property_id: UUID, action: str, db: DbSession, claims: dict) -> JoinRequestRes:
+async def resolve_join_request_handler(request_id: UUID, property_id: UUID | None, action: str, db: DbSession, claims: dict) -> JoinRequestRes:
     """Accepting or rejecting a users join request to a  neighbourhood"""
     if not request_id:
         raise HTTPException(400, "Join request id is required")
