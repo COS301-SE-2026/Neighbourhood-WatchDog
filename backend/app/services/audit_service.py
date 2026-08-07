@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 PAGE = 1
 SIZE = 30
 
-def create_audit_log_item(
+async def create_audit_log_item(
     db: AsyncSession,
     user_id: UUID | None = None, 
     action: AuditAction | None = None, 
@@ -60,6 +60,7 @@ def create_audit_log_item(
     )
 
     db.add(new_audit_log_item)
+    await db.commit()
 
     logger.info(
         "create_audit_log_item: successfully created audit log id=%s",

@@ -1,6 +1,6 @@
 import pytest
 from fastapi import HTTPException
-from unittest.mock import Mock
+from unittest.mock import Mock, AsyncMock
 from app.services.audit_service import create_audit_log_item, get_audit_logs_handler
 from app.models.audit_log import AuditAction, AuditLog
 from app.models.user import UserRole
@@ -16,15 +16,16 @@ class TestCreateAuditLogItem:
 
         self.mock_db = Mock()
         self.mock_db.add = Mock()
-        self.mock_db.rollback = Mock()
+        self.mock_db.commit = AsyncMock()
 
         self.mock_log_item = Mock()
         self.mock_log_item.user_id = uuid4()
         self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
 
+
     @pytest.mark.asyncio
     async def test_happy_path(self):
-        _ = create_audit_log_item(
+        _ = await create_audit_log_item(
             user_id=uuid4(),
             action=AuditAction.UPDATE,
             target_entity_type="USER",
@@ -59,7 +60,7 @@ class TestCreateAuditLogItem:
     async def test_same_old_new_values(self):
         with pytest.raises(HTTPException) as exception:
             now = datetime.now()
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=uuid4(),
                 action=AuditAction.UPDATE,
                 target_entity_type="USER",
@@ -93,7 +94,7 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_empty_user_id(self):
         with pytest.raises(HTTPException) as exception:
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=None,
                 action=AuditAction.UPDATE,
                 target_entity_type="USER",
@@ -127,7 +128,7 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_empty_action(self):
         with pytest.raises(HTTPException) as exception:
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=uuid4(),
                 action=None,
                 target_entity_type="USER",
@@ -161,7 +162,7 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_empty_target_entity_type(self):
         with pytest.raises(HTTPException) as exception:
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=uuid4(),
                 action=AuditAction.UPDATE,
                 target_entity_type=None,
@@ -195,7 +196,7 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_empty_target_entity_id(self):
         with pytest.raises(HTTPException) as exception:
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=uuid4(),
                 action=AuditAction.UPDATE,
                 target_entity_type="USER",
@@ -229,7 +230,7 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_update_empty_old(self):
         with pytest.raises(HTTPException) as exception:
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=uuid4(),
                 action=AuditAction.UPDATE,
                 target_entity_type="USER",
@@ -254,7 +255,7 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_update_empty_new(self):
         with pytest.raises(HTTPException) as exception:
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=uuid4(),
                 action=AuditAction.UPDATE,
                 target_entity_type="USER",
@@ -279,7 +280,7 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_create_empty_new(self):
         with pytest.raises(HTTPException) as exception:
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=uuid4(),
                 action=AuditAction.CREATE,
                 target_entity_type="USER",
@@ -304,7 +305,7 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_delete_empty_old(self):
         with pytest.raises(HTTPException) as exception:
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=uuid4(),
                 action=AuditAction.DELETE,
                 target_entity_type="USER",
@@ -331,6 +332,9 @@ class TestGetAuditLogsHandler:
         """Runs before the test method"""
 
         self.mock_db = Mock()
+        self.mock_db.execute = AsyncMock()
+        self.mock_db.execute.return_value.scalar_one.return_value = 5
+        self.mock_db.execute.return_value.scalars.return_value.all.return_value = {...}
 
         self.mock_log_item = Mock()
         self.mock_log_item.user_id = uuid4()
@@ -395,7 +399,7 @@ class TestGetAuditLogsHandler:
     @pytest.mark.asyncio
     async def test_happy_case(self):
         
-        get_audit_log_res = get_audit_logs_handler(
+        get_audit_log_res = await get_audit_logs_handler(
             page=self.page,
             size=self.size,
             db=self.mock_db
@@ -412,7 +416,7 @@ class TestGetAuditLogsHandler:
         self.page = 21
 
         with pytest.raises(HTTPException) as exception:
-            _ = get_audit_logs_handler(
+            _ = await get_audit_logs_handler(
                 page=self.page,
                 size=self.size,
                 db=self.mock_db
@@ -429,7 +433,7 @@ class TestGetAuditLogsHandler:
         self.page = 21
 
         with pytest.raises(HTTPException) as exception:
-            _ = get_audit_logs_handler(
+            _ = await get_audit_logs_handler(
                 page=self.page,
                 size=self.size,
                 db=None
