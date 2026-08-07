@@ -7,7 +7,7 @@ from app.schemas.neighbourhood import NeighbourhoodPropertyRes, NeighbourhoodRes
 from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property
 from app.models.property_user import PropertyUser
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select

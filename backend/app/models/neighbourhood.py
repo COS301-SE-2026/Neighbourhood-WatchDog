@@ -4,7 +4,6 @@ from sqlalchemy import Column, Text, text, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
-from app.models.neighbourhood_user import NeighbourhoodUser 
 
 class Neighbourhood(Base):
     __tablename__ = "neighbourhood"

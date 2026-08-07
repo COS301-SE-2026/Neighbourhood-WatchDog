@@ -77,7 +77,8 @@ async def _check_rbac(claims: dict, camera: Camera, property_obj: Property, db: 
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authenticated user does not have a local WatchDog profile.")
 
-    if user.system_role == UserRole.SYSTEM_ADMIN: return
+    if user.system_role == UserRole.SYSTEM_ADMIN: 
+        return
 
     if property_obj.neighbourhood_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This camera is not assigned to a neighbourhood.")
@@ -93,7 +94,8 @@ async def _check_rbac(claims: dict, camera: Camera, property_obj: Property, db: 
     if membership is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not belong to this camera's neighbourhood.")
 
-    if membership.role in {NeighbourhoodRole.NEIGHBOURHOOD_ADMIN, NeighbourhoodRole.SECURITY_OFFICER}: return
+    if membership.role in {NeighbourhoodRole.NEIGHBOURHOOD_ADMIN, NeighbourhoodRole.SECURITY_OFFICER}: 
+        return
 
     if membership.role == NeighbourhoodRole.RESIDENT: 
         if camera.visibility != CameraVisibilityEnum.PUBLIC:
