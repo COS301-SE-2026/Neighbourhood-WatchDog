@@ -1,0 +1,20 @@
+backend/app/api/controllers/clips.py
+  h_cf6208e37032c0 80-81
+backend/app/models/neighbourhood_user.py
+  h_cf6208e37032c0 3
+backend/app/services/neighbourhood_service.py
+  h_cf6208e37032c0 10
+backend/app/services/notification_service.py
+  h_cf6208e37032c0 18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "760ecd8fc0a288a60b1240c0d9f31c81aa18e43e",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
