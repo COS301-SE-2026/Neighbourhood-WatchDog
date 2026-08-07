@@ -31,8 +31,7 @@ async def register_user(payload, db):
             first_name=payload["firstName"],
             last_name=payload["lastName"],
             cognito_sub=user_sub,
-            role=UserRole.RESIDENT,
-            neighbourhood_id=None
+            system_role=UserRole.RESIDENT,
         )
         db.add(new_user)
 
