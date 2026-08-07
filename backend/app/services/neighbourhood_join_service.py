@@ -19,6 +19,10 @@ from app.schemas.neighbourhood_join import JoinRequestRes
 
 async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -> JoinRequestRes:
     """Requesting to join a neighbourhood"""
+
+    if not db:
+        raise HTTPException(500, "No database session")
+
     if not join_code or join_code.strip() == "":
         raise HTTPException(400, "Join code is required")
 

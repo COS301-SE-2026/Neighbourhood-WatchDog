@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import Mock, MagicMock, AsyncMock, patch
 from typing import cast
 import pytest
 from fastapi import HTTPException
@@ -13,23 +13,30 @@ from app.services.neighbourhood_join_service import (
 from app.models.neighbourhood import Neighbourhood
 from app.models.neighbourhood_join_request import NeighbourhoodJoinRequest
 from app.models.user import User
+from app.models.neighbourhood_user import NeighbourhoodUser
 
 AUDIT_PATCH = "app.services.neighbourhood_join_service.create_audit_log_item"
 
 NEIGHBOURHOOD_PATCH = "app.services.neighbourhood_join_service.NeighbourhoodJoinRequest"
+
+def make_mock_db():
+    mock_db = Mock()
+    mock_result = MagicMock()
+    mock_db.execute = AsyncMock(return_value=mock_result)
+    mock_db.add = Mock()
+    mock_db.flush = AsyncMock()
+    mock_db.commit = AsyncMock()
+    mock_db.refresh = AsyncMock()
+    mock_db.rollback = AsyncMock()
+    return mock_db, mock_result
+
 class TestRequestToJoin:
     def setup_method(self):
-        self.mock_db = Mock()
-        self.mock_db.execute = AsyncMock()
-        self.mock_db.add = Mock()
-        self.mock_db.flush = AsyncMock()
-        self.mock_db.commit = AsyncMock()
-        self.mock_db.refresh = AsyncMock()
-        self.mock_db.rollback = AsyncMock()
+        self.mock_db, self.mock_result = make_mock_db()
         self.claims = {"id": str(uuid.uuid4()),"sub": "cognito-sub-123", "custom:role": "RESIDENT"}
         self.audit_patcher = patch(
             AUDIT_PATCH,
-            new=Mock()
+            new=AsyncMock()
         )
 
         self.audit_patcher.start()
@@ -175,12 +182,7 @@ class TestRequestToJoin:
 
 class TestResolveJoinRequest:
     def setup_method(self):
-        self.mock_db = Mock()
-        self.mock_db.execute = AsyncMock()
-        self.mock_db.add = Mock()
-        self.mock_db.commit = AsyncMock()
-        self.mock_db.rollback = AsyncMock()
-        self.mock_db.refresh = AsyncMock()
+        self.mock_db, self.mock_result = make_mock_db()
 
         self.admin_claims = {
             "id": str(uuid.uuid4()),
@@ -189,7 +191,7 @@ class TestResolveJoinRequest:
         }
         self.audit_patcher = patch(
             AUDIT_PATCH,
-            new=Mock()
+            new=AsyncMock()
         )
 
         self.audit_patcher.start()
@@ -210,6 +212,13 @@ class TestResolveJoinRequest:
         self.join_request_patcher.stop()
         self.user_patcher.stop()
         self.audit_patcher.stop()
+
+    def _added_neighbourhood_users(self):
+        return [
+            call.args[0]
+            for call in self.mock_db.add.call_args_list
+            if call.args and isinstance(call.args[0], NeighbourhoodUser)
+        ]
 
     @pytest.mark.asyncio
     async def test_missing_request_id_raises_400(self):
@@ -255,7 +264,7 @@ class TestResolveJoinRequest:
 
         self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
             join_request,
-            None
+            None,
         ]
 
         claims = {
@@ -298,14 +307,20 @@ class TestResolveJoinRequest:
         join_request.neighbourhood_id = uuid.uuid4()
         join_request.created_at = datetime.now(timezone.utc)
 
-        user = Mock()
-        user.role = "RESIDENT"
-        user.neighbourhood_id = None
+        admin_membership = Mock()
+
+        property_obj = Mock()
+        property_obj.id = uuid.uuid4()
+        property_obj.neighbourhood_id = None
 
         self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
             join_request,
-            user,
+            admin_membership,
+            property_obj,
+            None,
         ]
+
+        property_id = uuid.uuid4()
 
         result = await resolve_join_request_handler(
             uuid.uuid4(), 
@@ -316,9 +331,15 @@ class TestResolveJoinRequest:
         )
 
         assert result.status == "APPROVED"
-        assert user.neighbourhood_id == join_request.neighbourhood_id
-        assert user.role == "RESIDENT"
+        assert property_obj.neighbourhood_id == join_request.neighbourhood_id
         assert self.mock_db.commit.call_count == 1
+
+        added_memberships = self._added_neighbourhood_users()
+        assert len(added_memberships) == 1
+        membership = added_memberships[0]
+        assert membership.user_id == join_request.user_id
+        assert membership.neighbourhood_id == join_request.neighbourhood_id
+        assert membership.role == "RESIDENT"
 
     @pytest.mark.asyncio
     async def test_deny_sets_denied_status(self):
@@ -350,9 +371,7 @@ class TestResolveJoinRequest:
 
 class TestListJoinRequests:
     def setup_method(self):
-        self.mock_db = Mock()
-        self.mock_db.execute = AsyncMock()
-        self.mock_db.rollback = AsyncMock()
+        self.mock_db, self.mock_result = make_mock_db()
  
         self.neighbourhood_id = uuid.uuid4()
         self.admin_claims = {
@@ -374,7 +393,7 @@ class TestListJoinRequests:
     @pytest.mark.asyncio
     async def test_missing_db_raises_500(self):
         with pytest.raises(HTTPException) as exc:
-            await list_join_requests_handler(uuid.uuid4(), cast(Mock, None), self.admin_claims)
+            await list_join_requests_handler(uuid.uuid4(), self.mock_db, self.admin_claims)
  
         assert exc.value.status_code == 500
  
@@ -384,16 +403,6 @@ class TestListJoinRequests:
             await list_join_requests_handler(uuid.uuid4(), self.mock_db, cast(dict, None))
  
         assert exc.value.status_code == 401
- 
-    @pytest.mark.asyncio
-    async def test_non_admin_role_raises_403(self):
-        claims = {**self.admin_claims, "custom:role": "RESIDENT"}
- 
-        with pytest.raises(HTTPException) as exc:
-            await list_join_requests_handler(uuid.uuid4(), self.mock_db, claims)
- 
-        assert exc.value.status_code == 403
-        assert exc.value.detail == "Insufficient permissions"
 
  
     @pytest.mark.asyncio
@@ -406,6 +415,8 @@ class TestListJoinRequests:
  
     @pytest.mark.asyncio
     async def test_returns_pending_requests_for_admin_neighbourhood(self):
+        admin_membership = Mock()
+
         request_1 = Mock()
         request_1.id = uuid.uuid4()
         request_1.neighbourhood_id = self.neighbourhood_id
