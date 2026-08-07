@@ -30,7 +30,6 @@ SENDER_PASSWORD = os.getenv('SMTP_APP_PASSWORD')
 CRITICAL_TYPES = {"WEAPON_DETECTED", "FALL_DETECTED"}
 
 def _classify_severity(detection_type: str, confidence_score: float) -> str:
-
     if detection_type in CRITICAL_TYPES:
         return "CRITICAL"
     elif confidence_score >= 0.65:
@@ -44,11 +43,11 @@ def should_notify(detection_type: str, confidence_score: float) -> bool:
     return severity in ("HIGH", "CRITICAL")
 
 def _format_whatsapp_message(
-        severity: str,
-        detection_type: str,
-        camera_name: str,
-        timestamp: str
-        
+    severity: str,
+    detection_type: str,
+    camera_name: str,
+    timestamp: str
+    
 ) -> str:
     severity_emoji = "🔴" if severity == "CRITICAL" else "🟡"
     formatted_type = detection_type.replace("_", " ").title()
@@ -64,14 +63,14 @@ def _send_whatsapp(to_phone: str, message: str) -> tuple[bool, str | None]:
     """Send whatsapp message using twilio snadbox. Recipient must be part of sandbox to receive messages"""
     try:
         from twilio.rest import Client
- 
+
         account_sid = os.getenv("TWILIO_ACCOUNT_SID")
         auth_token = os.getenv("TWILIO_AUTH_TOKEN")
         from_number = os.getenv("TWILIO_WHATSAPP_FROM", "whatsapp:+14155238886")
- 
+
         if not account_sid or not auth_token:
             return False, "Twilio credentials not configured"
- 
+
         #Ennsures number has whatsapp prefix and +27 country code e.g. 0821234567 -> whatsapp:+27821234567
         normalised = to_phone.strip()
         if not normalised.startswith("whatsapp:"):
@@ -80,7 +79,7 @@ def _send_whatsapp(to_phone: str, message: str) -> tuple[bool, str | None]:
             if not normalised.startswith("+"):
                 normalised = "+" + normalised
             normalised = f"whatsapp:{normalised}"
- 
+
         client = Client(account_sid, auth_token)
         client.messages.create(
             from_=from_number,
@@ -88,159 +87,158 @@ def _send_whatsapp(to_phone: str, message: str) -> tuple[bool, str | None]:
             body=message,
         )
         return True, None
- 
+
     except Exception as e:
         logger.exception(f"WhatsApp send failed to {to_phone}")
         return False, str(e)
-    
 
 def build_alert_email(alert_type: str, camera_name: str, location: str,
-                      risk_level: str = "HIGH", dashboard_url: str | None = "https://neighbourhood-watch-dog.vercel.app/auth/login") -> str:
+                    risk_level: str = "HIGH", dashboard_url: str | None = "https://neighbourhood-watch-dog.vercel.app/auth/login") -> str:
     timestamp = datetime.datetime.now().strftime("%d %b %Y · %H:%M")
-    
+
     cta_row = ""
     if dashboard_url:
         cta_row = f"""
             <tr>
-              <td style="padding-top: 32px;">
+                <td style="padding-top: 32px;">
                 <table role="presentation" cellspacing="0" cellpadding="0">
-                  <tr>
+                    <tr>
                     <td align="center" bgcolor="#10B981">
-                      <a href="{dashboard_url}" 
-                         style="display: inline-block; padding: 14px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: bold; color: #000000; text-decoration: none; letter-spacing: 0.5px; text-transform: uppercase;">
+                        <a href="{dashboard_url}" 
+                            style="display: inline-block; padding: 14px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: bold; color: #000000; text-decoration: none; letter-spacing: 0.5px; text-transform: uppercase;">
                         Review Alerts &rarr;
-                      </a>
+                        </a>
                     </td>
-                  </tr>
+                    </tr>
                 </table>
-              </td>
+                </td>
             </tr>"""
 
     return f"""\
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WatchDog Alert</title>
-</head>
-<body style="margin: 0; padding: 0; background-color: #000000; -webkit-font-smoothing: antialiased;">
-  
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #000000; padding: 40px 20px;">
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WatchDog Alert</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #000000; -webkit-font-smoothing: antialiased;">
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #000000; padding: 40px 20px;">
     <tr>
-      <td align="center">
+        <td align="center">
         
         <!-- Main Card: Darker, subtle border, sharp edges -->
         <table role="presentation" width="500" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; border: 1px solid #1f1f1f;">
-          
-          <!-- Industrial Top Accent -->
-          <tr>
+            
+            <!-- Industrial Top Accent -->
+            <tr>
             <td style="height: 4px; background-color: #10B981; line-height: 4px; font-size: 4px;">&nbsp;</td>
-          </tr>
+            </tr>
 
-          <!-- Single Padded Content Area -->
-          <tr>
+            <!-- Single Padded Content Area -->
+            <tr>
             <td style="padding: 40px;">
-              
-              <!-- App Header -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
+                
+                <!-- App Header -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
                 <tr>
-                  <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #ffffff; font-size: 14px; font-weight: 700; letter-spacing: 2px;">
+                    <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #ffffff; font-size: 14px; font-weight: 700; letter-spacing: 2px;">
                     <span style="color: #10B981; margin-right: 4px;">&#9632;</span> WATCHDOG
-                  </td>
-                  <td align="right" style="font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace; color: #555555; font-size: 12px;">
+                    </td>
+                    <td align="right" style="font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace; color: #555555; font-size: 12px;">
                     {timestamp}
-                  </td>
+                    </td>
                 </tr>
-              </table>
+                </table>
 
-              <!-- Alert Headline -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
+                <!-- Alert Headline -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
                 <tr>
-                  <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                    <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
                     <div style="color: #10B981; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px;">
-                      {risk_level} Priority Alert
+                        {risk_level} Priority Alert
                     </div>
                     <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600; line-height: 1.2; letter-spacing: -0.5px;">
-                      {alert_type}
+                        {alert_type}
                     </h1>
-                  </td>
+                    </td>
                 </tr>
-              </table>
+                </table>
 
-              <!-- Divider -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                <!-- Divider -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
                 <tr><td style="border-top: 1px solid #1f1f1f;"></td></tr>
-              </table>
+                </table>
 
-              <!-- Clean Data Grid -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <!-- Clean Data Grid -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <!-- Left Column -->
-                  <td width="50%" valign="top" style="padding-right: 20px;">
+                    <!-- Left Column -->
+                    <td width="50%" valign="top" style="padding-right: 20px;">
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                      <tr>
+                        <tr>
                         <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #666666; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding-bottom: 4px;">
-                          Camera Source
+                            Camera Source
                         </td>
-                      </tr>
-                      <tr>
+                        </tr>
+                        <tr>
                         <td style="font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace; color: #ffffff; font-size: 14px;">
-                          {camera_name}
+                            {camera_name}
                         </td>
-                      </tr>
+                        </tr>
                     </table>
-                  </td>
-                  
-                  <!-- Right Column -->
-                  <td width="50%" valign="top">
+                    </td>
+                    
+                    <!-- Right Column -->
+                    <td width="50%" valign="top">
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                      <tr>
+                        <tr>
                         <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #666666; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding-bottom: 4px;">
-                          Zone Location
+                            Zone Location
                         </td>
-                      </tr>
-                      <tr>
+                        </tr>
+                        <tr>
                         <td style="font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace; color: #ffffff; font-size: 14px;">
-                          {location}
+                            {location}
                         </td>
-                      </tr>
+                        </tr>
                     </table>
-                  </td>
+                    </td>
                 </tr>
-              </table>
+                </table>
 
-              <!-- CTA Row -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <!-- CTA Row -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 {cta_row}
-              </table>
+                </table>
 
             </td>
-          </tr>
-          
-          <!-- Minimal Footer -->
-          <tr>
+            </tr>
+            
+            <!-- Minimal Footer -->
+            <tr>
             <td style="padding: 0 40px 32px 40px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #444444; font-size: 11px; border-top: 1px solid #1f1f1f; padding-top: 24px;">
+                    <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #444444; font-size: 11px; border-top: 1px solid #1f1f1f; padding-top: 24px;">
                     System generated by WatchDog Security Node. Do not reply to this email.
-                  </td>
+                    </td>
                 </tr>
-              </table>
+                </table>
             </td>
-          </tr>
+            </tr>
 
         </table>
-      </td>
+        </td>
     </tr>
-  </table>
-</body>
-</html>
-"""
+    </table>
+    </body>
+    </html>
+    """
 
 def send_alert_email(recipient_email: str, alert_type: str, camera_name: str, location: str,
-                      risk_level: str = "HIGH", dashboard_url: str | None = "https://neighbourhood-watch-dog.vercel.app/auth/login/")-> tuple[bool, str | None]:
+                    risk_level: str = "HIGH", dashboard_url: str | None = "https://neighbourhood-watch-dog.vercel.app/auth/login/")-> tuple[bool, str | None]:
 
     if not SENDER_EMAIL or not SENDER_PASSWORD:
         logger.error("SMTP_SENDER_EMAIL or SMTP_APP_PASSWORD not configured")
@@ -276,64 +274,64 @@ def send_alert_email(recipient_email: str, alert_type: str, camera_name: str, lo
         return False, str(e)
 
 def _log_notification(
-        db: DbSession,
-        alert_id: UUID,
-        user_id: UUID,
-        channel: NotificationChannel,
-        success: bool,
-        error_message: str | None,
+    db: DbSession,
+    alert_id: UUID,
+    user_id: UUID,
+    channel: NotificationChannel,
+    success: bool,
+    error_message: str | None,
 ) -> None:
     db.add(
-      Notification(
-          alert_id=alert_id,
-          user_id=user_id,
-          channel=channel,
-          status=(
-              NotificationStatus.SENT
-              if success
-              else NotificationStatus.FAILED
-          ),
-          error_message=error_message,
-      )
+        Notification(
+            alert_id=alert_id,
+            user_id=user_id,
+            channel=channel,
+            status=(
+                NotificationStatus.SENT
+                if success
+                else NotificationStatus.FAILED
+            ),
+            error_message=error_message,
+        )
     )
 
 async def dispatch_notifications(
-        db: DbSession,
-        alert_id: UUID,
-        camera_id: UUID,
-        user_ids: list[UUID],
-        detection_type: str,
-        confidence_score: float,
-        frame_timestamp,
+    db: DbSession,
+    alert_id: UUID,
+    camera_id: UUID,
+    user_ids: list[UUID],
+    detection_type: str,
+    confidence_score: float,
+    frame_timestamp,
 ) -> None:
     if not should_notify(detection_type, confidence_score):
         logger.info(f"Alert {alert_id}: confidence {confidence_score:.2f} below notification threshold, skipping")
         return
-    
+
     if os.getenv("NOTIFICATION_ENABLED", "false").lower() != "true":
         logger.info(f"Alert {alert_id}: NOTIFICATION_ENABLED is not 'true', skipping")
         return
 
 
     try:
-      camera_result = await db.execute(select(Camera).where(Camera.id == camera_id))
-      camera = camera_result.scalar_one_or_none()
+        camera_result = await db.execute(select(Camera).where(Camera.id == camera_id))
+        camera = camera_result.scalar_one_or_none()
 
-      if not camera:
-          logger.error(f"Camera with id {camera_id} does not exist")
-          return
+        if not camera:
+            logger.error(f"Camera with id {camera_id} does not exist")
+            return
 
-      
+        
 
-      severity = _classify_severity(detection_type, confidence_score)
-      recipient_user_ids: set[UUID] = set(user_ids)
+        severity = _classify_severity(detection_type, confidence_score)
+        recipient_user_ids: set[UUID] = set(user_ids)
 
-      neighbourhood_result = await db.execute(select(Property.neighbourhood_id).where(Property.id == camera.property_id))
-      neighbourhood_id = neighbourhood_result.scalar_one_or_none()
+        neighbourhood_result = await db.execute(select(Property.neighbourhood_id).where(Property.id == camera.property_id))
+        neighbourhood_id = neighbourhood_result.scalar_one_or_none()
 
 
-      if severity == "CRITICAL" and neighbourhood_id:
-          neighbourhood_users_result = await db.execute(
+        if severity == "CRITICAL" and neighbourhood_id:
+            neighbourhood_users_result = await db.execute(
             select(User.id)
             .join(
                 PropertyUser,
@@ -346,62 +344,62 @@ async def dispatch_notifications(
             .where(
                 Property.neighbourhood_id == neighbourhood_id,            
             )
-          )
+            )
 
-          recipient_user_ids.update(
-              neighbourhood_users_result.scalars().all()
-          )
+            recipient_user_ids.update(
+                neighbourhood_users_result.scalars().all()
+            )
 
-      if not recipient_user_ids:
-        logger.info(
-            "Alert %s: no eligible notification recipients found",
-            alert_id,
-        )
-        return
+        if not recipient_user_ids:
+            logger.info(
+                "Alert %s: no eligible notification recipients found",
+                alert_id,
+            )
+            return
 
-      users_result = await db.execute(
+        users_result = await db.execute(
             select(User).where(User.id.in_(recipient_user_ids))
         )
-      users = list(users_result.scalars().all())
+        users = list(users_result.scalars().all())
 
-      if not users:
+        if not users:
             logger.info(
                 "Alert %s: recipient IDs did not resolve to users",
                 alert_id,
             )
             return
 
-      timestamp_str = (
+        timestamp_str = (
         frame_timestamp.strftime("%d %b %Y, %H:%M:%S")
         if frame_timestamp
         else "Unknown"
-      )
+        )
 
-      whatsapp_message = _format_whatsapp_message(
+        whatsapp_message = _format_whatsapp_message(
         severity,
         detection_type,
         camera.name,
         timestamp_str,
-      )
+        )
 
-      logger.info(
+        logger.info(
             "Alert %s [%s]: notifying %s eligible user(s)",
             alert_id,
             severity,
             len(users),
         )
 
-      await _notify_users(
-          db=db,
-          alert_id=alert_id,
-          users=users,
-          whatsapp_message=whatsapp_message,
-          detection_type=detection_type,
-          camera=camera,
-          severity=severity,
-      )
+        await _notify_users(
+            db=db,
+            alert_id=alert_id,
+            users=users,
+            whatsapp_message=whatsapp_message,
+            detection_type=detection_type,
+            camera=camera,
+            severity=severity,
+        )
 
-      await db.commit()
+        await db.commit()
 
     except Exception:
         await db.rollback()
@@ -412,13 +410,13 @@ async def dispatch_notifications(
 
 
 async def _notify_users(
-        db: DbSession,
-        alert_id: UUID,
-        users: list[User],
-        whatsapp_message: str,
-        detection_type: str,
-        camera: Camera,
-        severity: str,
+    db: DbSession,
+    alert_id: UUID,
+    users: list[User],
+    whatsapp_message: str,
+    detection_type: str,
+    camera: Camera,
+    severity: str,
 ) -> None:
     for user in users:
         if user.phone_number:
