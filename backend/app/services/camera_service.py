@@ -147,7 +147,7 @@ async def deregister_camera_handler(camera_id, db, claims):
         )
         prop_user = prop_user_result.scalar_one_or_none()
 
-        if not prop_user or prop_user.user.cognito_sub != claims.get("sub"):
+        if not prop_user or prop_user.user.cognito_sub != claims["sub"]:
             raise HTTPException(status_code=403, detail="Forbidden")
 
         

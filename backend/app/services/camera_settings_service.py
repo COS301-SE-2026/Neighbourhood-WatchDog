@@ -29,7 +29,7 @@ async def get_camera_settings_handler(camera_id: UUID, db: AsyncSession) -> dict
         select(CameraDetectionZone)
         .where(CameraDetectionZone.camera_id == camera_id)
     )
-    zones = zones_result.scalar_one_or_none().all()
+    zones = zones_result.scalars().all()
 
     logger.info("get_camera_settings: successfully retrieved the settings of the camera with id=%s", camera_id)
     return {

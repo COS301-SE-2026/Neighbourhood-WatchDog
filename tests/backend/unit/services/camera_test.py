@@ -24,6 +24,7 @@ def make_mock_db():
     mock_result = MagicMock()
     mock_db.execute = AsyncMock(return_value=mock_result)
     mock_db.add = Mock()
+    mock_db.delete = AsyncMock()
     mock_db.flush = AsyncMock()
     mock_db.commit = AsyncMock()
     mock_db.refresh = AsyncMock()
@@ -170,11 +171,12 @@ class TestDeregisterCamera:
         self.mock_camera.id = self.camera_id
         self.mock_camera.property_id = uuid4()
 
-        self.mock_prop_user = Mock()
-        self.mock_prop_user.user_id = uuid4()
-
         self.mock_user = Mock()
         self.mock_user.cognito_sub = "user-sub-123"
+
+        self.mock_prop_user = Mock()
+        self.mock_prop_user.user_id = uuid4()
+        self.mock_prop_user.user = self.mock_user
 
         self.mock_camera_result = Mock()
         self.mock_camera_result.scalar_one_or_none.return_value = self.mock_camera
@@ -182,37 +184,28 @@ class TestDeregisterCamera:
         self.mock_prop_user_result = Mock()
         self.mock_prop_user_result.scalar_one_or_none.return_value = self.mock_prop_user
 
-        self.mock_user_result = Mock()
-        self.mock_user_result.scalar_one_or_none.return_value = self.mock_user
-
         self.mock_db.execute = AsyncMock(side_effect=[
             self.mock_camera_result,
             self.mock_prop_user_result,
-            self.mock_user_result,
         ])
-
 
         self.claims = {
             "id": str(uuid4()),
             "sub": "user-sub-123",
         }
 
-
+    @pytest.mark.asyncio
     def reset_side_effects(self, camera=None, prop_user=None, user=None):
         """Helper to reset side_effect between tests"""
-        camera_result = Mock()
-        camera_result.scalar_one_or_none.return_value = camera
+        self.mock_camera_result = Mock()
+        self.mock_camera_result.scalar_one_or_none.return_value = camera
 
-        prop_user_result = Mock()
-        prop_user_result.scalar_one_or_none.return_value = prop_user
-
-        user_result = Mock()
-        user_result.scalar_one_or_none.return_value = user
+        self.mock_prop_user_result = Mock()
+        self.mock_prop_user_result.scalar_one_or_none.return_value = prop_user
 
         self.mock_db.execute = AsyncMock(side_effect=[
-            camera_result,
-            prop_user_result,
-            user_result,
+            self.mock_camera_result,
+            self.mock_prop_user_result,
         ])
 
     @pytest.mark.asyncio
@@ -224,7 +217,7 @@ class TestDeregisterCamera:
             claims=self.claims
         )
 
-        assert self.mock_db.execute.call_count == 3  
+        assert self.mock_db.execute.call_count == 2
         assert self.mock_db.commit.call_count == 1
         assert self.mock_db.rollback.call_count == 0
 
@@ -271,11 +264,18 @@ class TestDeregisterCamera:
     @pytest.mark.asyncio
     async def test_wrong_owner(self):
         """Camera belongs to a different user"""
+
+        wrong_user = Mock()
+        wrong_user.cognito_sub = "different-user-sub"
+
+        wrong_prop_user = Mock()
+        wrong_prop_user.user_id = uuid4()
+        wrong_prop_user.user =  wrong_user
+
         self.mock_user.cognito_sub = "different-user-sub"
         self.reset_side_effects(
             camera=self.mock_camera,
             prop_user=self.mock_prop_user,
-            user=self.mock_user,
         )
 
         with pytest.raises(HTTPException) as exc:
@@ -285,7 +285,7 @@ class TestDeregisterCamera:
                 claims=self.claims
             )
         assert exc.value.status_code == 403
-        assert self.mock_db.execute.call_count == 3
+        assert self.mock_db.execute.call_count == 2
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.rollback.call_count == 1
 
@@ -327,12 +327,14 @@ class TestEditCamera:
             "sub": "user-sub-123",
         }
 
+    @pytest.mark.asyncio
     def reset_side_effects(self, camera=None, prop_user=None):
         """Helper to reset side_effect between tests"""
         self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
             camera, prop_user
         ]
 
+    @pytest.mark.asyncio
     async def test_happy_path(self):
         """"Edit camera """
         camera = await edit_camera_handler(
@@ -356,6 +358,7 @@ class TestEditCamera:
         self.mock_db.rollback.assert_not_called()
         self.mock_db.add.assert_not_called()
 
+    @pytest.mark.asyncio
     async def test_empty_payload_raises_400(self):
         """Empty payload on camera"""
         
@@ -371,6 +374,7 @@ class TestEditCamera:
         assert exe.value.status_code == 400
         self.mock_db.rollback.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_partial_edit(self):
         """Partial edit for a camera"""
         partial_req = CameraEditReq(
@@ -397,6 +401,7 @@ class TestEditCamera:
         self.mock_db.rollback.assert_not_called()
         self.mock_db.add.assert_not_called()
 
+    @pytest.mark.asyncio
     async def test_camera_not_found_raises_404(self):
         """Camera non existent for edit camera"""
         self.reset_side_effects(camera=None, prop_user=self.mock_property_user)
@@ -413,7 +418,7 @@ class TestEditCamera:
         self.mock_db.commit.assert_not_called()
         self.mock_db.rollback.assert_called_once()
 
-    
+    @pytest.mark.asyncio
     async def test_wrong_owner_raises_403(self):
         """Unauthorised user makes request to edit camera"""
         self.reset_side_effects(camera=self.mock_camera, prop_user=None)
@@ -429,6 +434,7 @@ class TestEditCamera:
         self.mock_db.commit.assert_not_called()
         self.mock_db.rollback.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_unexpected_error_raises_500(self):
         """unexpected error, could be db"""
 
@@ -445,6 +451,7 @@ class TestEditCamera:
         assert exception.value.status_code == 500
         self.mock_db.rollback.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_re_enable_camera(self):
         """re enabling a camera that has been disabled"""
 
@@ -469,6 +476,7 @@ class TestEditCamera:
         self.mock_db.rollback.assert_not_called()
         self.mock_db.add.assert_not_called()
 
+    @pytest.mark.asyncio
     async def test_refresh_called_after_update(self):
         await edit_camera_handler(
             camera_id=self.mock_camera.id,
