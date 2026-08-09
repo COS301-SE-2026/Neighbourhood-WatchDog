@@ -1,6 +1,9 @@
 """
 This script builds a fixed evaluation dataset from your WatchDog test videos and images. 
 It extracts selected video frames, copies the still images into the evaluation folder, and creates a CSV manifest describing every evaluation image.
+
+Run from ai/:
+    python evaluation/extract_eval_frames.py --samples-per-video 20
 """
 
 from future import annotations
@@ -112,3 +115,33 @@ def add_still_images() -> list[dict[str, str | int | float]]:
             "split": "evaluation",
         })
     return rows
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Extract fixed frames for WatchDog evaluation.")
+    parser.add_argument("--samples-per-video", type=int, default=20)
+    parser.add_argument("--force", action="store_true", help="Overwrite existing extracted JPEGs, never labels.")
+    args = parser.parse_args()
+    
+    if args.samples_per_video < 1:
+        parser.error("--samples-per-video must be at least 1")
+
+    FRAMES_DIR.mkdir(parents=True, exist_ok=True)
+    (EVALUATION_DIR / "labels").mkdir(parents=True, exist_ok=True)
+    rows: list[dict[str, str | int | float]] = []
+    for filename in VIDEO_FILES:
+        rows.extend(extract_video_frames(FOOTAGE_DIR / filename, args.samples_per_video, args.force))
+    rows.extend(add_still_images())
+
+    with MANIFEST_PATH.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=MANIFEST_COLUMNS)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    print(f"Wrote {len(rows)} fixed evaluation items to {MANIFEST_PATH}")
+    print(f"Create one YOLO label file per item in {EVALUATION_DIR / 'labels'}.")
+    print("For confirmed negative frames, create an empty .txt label file.")
+
+
+if __name__ == "__main__":
+    main()
