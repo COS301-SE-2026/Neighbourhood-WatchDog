@@ -128,5 +128,42 @@ def predict(frame, person_model: YOLO, threat_model: YOLO, person_confidence: fl
             bbox_xyxy=tuple(float(value) for value in box.xyxy[0].tolist()),
             confidence=float(box.conf[0]),
         ))
-        
+
     return predictions
+
+
+def only_class(detections: list[Detection], class_id: int) -> list[Detection]:
+
+    return [item for item in detections if item.class_id == class_id]
+
+
+def weapon_view(detections: list[Detection]) -> list[Detection]:
+    """Collapse all valid weapon classes into one class for the combined metric."""
+
+    return [Detection(99, item.bbox_xyxy, item.confidence) for item in detections if item.class_id in WEAPON_CLASS_IDS]
+
+
+def add_counts(target: dict[str, int], score: dict[str, object]) -> None:
+
+    target["tp"] += int(score["tp"])
+    target["fp"] += int(score["fp"])
+    target["fn"] += int(score["fn"])
+
+
+def calculate_summary(counts: dict[str, int]) -> dict[str, float | int | str]:
+
+    tp, fp, fn = counts["tp"], counts["fp"], counts["fn"]
+    precision = tp / (tp + fp) if tp + fp else 0.0
+    recall = tp / (tp + fn) if tp + fn else 0.0
+
+    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+
+    return {
+        **counts,
+        "ground_truth_count": tp + fn,
+        "prediction_count": tp + fp,
+        "precision": round(precision, 6),
+        "recall": round(recall, 6),
+        "f1": round(f1, 6),
+        "status": "measurable" if tp + fn else "not_measurable_no_ground_truth_positive"
+    }
