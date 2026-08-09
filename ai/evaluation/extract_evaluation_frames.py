@@ -82,3 +82,33 @@ def extract_video_frames(video_path: Path, samples_per_video:int, force: bool) -
 
         capture.release()
         return rows
+
+
+def add_still_images() -> list[dict[str, str | int | float]]:
+    rows: list[dict[str, str | int | float]] = []
+
+    for filename in IMAGE_FILES:
+        source = IMAGE_DIR / filename
+        image = cv2.imread(str(source))
+
+        if image is None:
+            raise RuntimeError(f"Cannot read image: {source}")
+
+        frame_id = source.stem
+        output = FRAMES_DIR / f"{frame_id}.jpg"
+
+        if not output.exists() and not cv2.imwrite(str(output), image):
+            raise RuntimeError(f"Could not write {output}")
+
+        height, width = image.shape[:2]
+        rows.append({
+            "frame_id": frame_id,
+            "source_file": str(source.relative_to(AI_ROOT)).replace("\\", "/"),
+            "frame_number": "",
+            "timestamp_seconds": "",
+            "frame_path": str(output.relative_to(AI_ROOT)).replace("\\", "/"),
+            "width": width,
+            "height": height,
+            "split": "evaluation",
+        })
+    return rows
