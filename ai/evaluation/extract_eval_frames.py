@@ -39,53 +39,84 @@ MANIFEST_COLUMNS = (
 def frame_id_for(stem: str, frame_number:int) -> str:
     return f"{stem}_f{frame_number:06d}" #frame number is always going to be 6 digits
 
-def extract_video_frames(video_path: Path, samples_per_video:int, force: bool) -> list[dict[str, str | int | float]]:
+def extract_video_frames(video_path: Path, samples_per_video: int, force: bool) -> list[dict[str, str | int | float]]:
 
     capture = cv2.VideoCapture(str(video_path))
     if not capture.isOpened():
         raise RuntimeError(f"Cannot open video: {video_path}")
 
-
     frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = float(capture.get(cv2.CAP_PROP_FPS))
-    if frame_count <= 0  or fps <= 0:
+
+    if frame_count <= 0 or fps <= 0:
         capture.release()
-        raise RuntimeError(f"Invalid frame count or fps for {video_path}: {frame_count}/{fps}")
+        raise RuntimeError(
+            f"Invalid frame count or FPS for {video_path}: "
+            f"{frame_count}/{fps}"
+        )
 
+    #select fixed, evenly spaced frame numbers once.
+    selected_frame_numbers = sorted(
+        set(
+            int(value)
+            for value in np.linspace(
+                0,
+                frame_count - 1,
+                num=min(samples_per_video, frame_count),
+                dtype=int,
+            )
+        )
+    )
+    selected_set = set(selected_frame_numbers)
 
-    selected = np.linspace(0, frame_count - 1, num=min(samples_per_video, frame_count), dtype=int)
     rows: list[dict[str, str | int | float]] = []
-    for number in sorted(set(int(value) for value in selected)):
-        capture.set(cv2.CAP_PROP_POS_FRAMES, number)
+    current_frame_number = 0
+
+    while selected_set:
         ok, frame = capture.read()
 
         if not ok or frame is None:
-            capture.release()
-            raise RuntimeError(f"Could not rad frame {number} from {video_path}")
+            break
 
-        frame_id = frame_id_for(video_path.stem, number)
-        output = FRAMES_DIR / f"{frame_id}.jpg"
+        if current_frame_number in selected_set:
+            frame_id = frame_id_for(video_path.stem, current_frame_number)
+            output = FRAMES_DIR / f"{frame_id}.jpg"
 
-        if force or not output.exists():
-            if not cv2.imwrite(str(output), frame):
-                capture.release()
-                raise RuntimeError(f"Could not write {output}")
+            if force or not output.exists():
+                if not cv2.imwrite(str(output), frame):
+                    capture.release()
+                    raise RuntimeError(f"Could not write {output}")
 
-        height, width = frame.shape[:2]
-        rows.append({
-            "frame_id": frame_id,
-            "source_file": str(video_path.relative_to(AI_ROOT)).replace("\\", "/"),
-            "frame_number": number,
-            "timestamp_seconds": round(number / fps, 6),
-            "frame_path": str(output.relative_to(AI_ROOT)).replace("\\", "/"),
-            "width": width,
-            "height": height,
-            "split": "evaluation"
-        })
+            height, width = frame.shape[:2]
+            rows.append({
+                "frame_id": frame_id,
+                "source_file": str(
+                    video_path.relative_to(AI_ROOT)
+                ).replace("\\", "/"),
+                "frame_number": current_frame_number,
+                "timestamp_seconds": round(current_frame_number / fps, 6),
+                "frame_path": str(
+                    output.relative_to(AI_ROOT)
+                ).replace("\\", "/"),
+                "width": width,
+                "height": height,
+                "split": "evaluation",
+            })
 
-        capture.release()
-        return rows
+            selected_set.remove(current_frame_number)
 
+        current_frame_number += 1
+
+    capture.release()
+
+    if selected_set:
+        missing = ", ".join(str(number) for number in sorted(selected_set))
+        raise RuntimeError(
+            f"Video ended before selected frames could be decoded: "
+            f"{video_path}. Missing frame numbers: {missing}"
+        )
+
+    return rows
 
 def add_still_images() -> list[dict[str, str | int | float]]:
     rows: list[dict[str, str | int | float]] = []
