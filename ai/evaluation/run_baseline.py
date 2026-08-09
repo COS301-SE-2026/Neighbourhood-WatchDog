@@ -167,3 +167,122 @@ def calculate_summary(counts: dict[str, int]) -> dict[str, float | int | str]:
         "f1": round(f1, 6),
         "status": "measurable" if tp + fn else "not_measurable_no_ground_truth_positive"
     }
+
+
+def write_markdown_report(report_path: Path, result: dict[str, object]) -> None:
+
+    lines = [
+        "# WatchDog Detection Baseline v1",
+        "",
+        f"- **Run date:** {result['evaluation_date']}",
+        f"- **Evaluation frames/images:** {result['evaluation_item_count']}",
+        f"- **IoU match threshold:** {result['iou_match_threshold']}",
+        f"- **Person model:** `{result['person_model']['path']}` (confidence `{result['person_model']['confidence_threshold']}`)",
+        f"- **Threat model:** `{result['threat_model']['path']}` (confidence `{result['threat_model']['confidence_threshold']}`)",
+        "",
+        "## Metrics",
+        "",
+        "| Class | TP | FP | FN | Precision | Recall | F1 | Status |",
+        "|---|---:|---:|---:|---:|---:|---:|---|",
+    ]
+
+    for name, metric in result["classes"].items():
+        lines.append(
+            f"| {name} | {metric['tp']} | {metric['fp']} | {metric['fn']} | "
+            f"{metric['precision']:.4f} | {metric['recall']:.4f} | {metric['f1']:.4f} | {metric['status']} |"
+        )
+
+    lines += [
+        "",
+        "## Interpretation",
+        "",
+        "This is an offline, fixed-dataset raw-detection baseline. It excludes DeepSort, zones, alert cooldowns, API calls and alert creation.",
+        "A class with no human-labelled positive objects is marked **not measurable** for recall/F1; do not treat a zero value as a model result.",
+    ]
+
+    report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def main() -> None:
+
+    parser = argparse.ArgumentParser(description="Evaluate WatchDog detection accuracy against human YOLO labels.")
+    parser.add_argument("--manifest", type=Path, default=MANIFEST_PATH)
+    parser.add_argument("--labels-dir", type=Path, default=LABELS_DIR)
+    parser.add_argument("--report-dir", type=Path, default=EVALUATION_DIR / "reports" / "baseline-v1")
+    parser.add_argument("--person-conf", type=float, default=0.25)
+    parser.add_argument("--weapon-conf", type=float, required=True)
+    parser.add_argument("--match-iou", type=float, default=0.50)
+    args = parser.parse_args()
+
+    if not 0 < args.person_conf <= 1 or not 0 < args.weapon_conf <= 1 or not 0 < args.match_iou <= 1:
+        parser.error("confidence and IoU values must be greater than 0 and no more than 1")
+
+    if not args.manifest.exists():
+        parser.error(f"Manifest does not exist: {args.manifest}. Run extract_eval_frames.py first.")
+
+    with args.manifest.open(newline="", encoding="utf-8") as handle:
+        manifest = list(csv.DictReader(handle))
+
+    if not manifest:
+        parser.error("Manifest contains no evaluation items")
+
+    person_model = YOLO(PERSON_MODEL_PATH)
+    threat_model = YOLO(THREAT_MODEL_PATH)
+    all_counts = {name: {"tp": 0, "fp": 0, "fn": 0} for name in (*CLASS_NAMES.values(), "weapon")}
+
+    for row in manifest:
+        frame_path = AI_ROOT / row["frame_path"]
+        frame = cv2.imread(str(frame_path))
+        if frame is None:
+            raise RuntimeError(f"Cannot read manifest frame: {frame_path}")
+
+        height, width = frame.shape[:2]
+        ground_truth = read_ground_truth(args.labels_dir / f"{row['frame_id']}.txt", width, height)
+        predictions = predict(frame, person_model, threat_model, args.person_conf, args.weapon_conf)
+
+        for class_id, class_name in CLASS_NAMES.items():
+            score = score_class(only_class(predictions, class_id), only_class(ground_truth, class_id), args.match_iou)
+            add_counts(all_counts[class_name], score)
+
+        combined = score_class(weapon_view(predictions), weapon_view(ground_truth), args.match_iou)
+
+        add_counts(all_counts["weapon"], combined)
+
+    args.report_dir.mkdir(parents=True, exist_ok=True)
+
+    result = {
+        "dataset": "watchdog-real-footage-baseline-v1",
+        "evaluation_date": datetime.now(timezone.utc).isoformat(),
+        "evaluation_item_count": len(manifest),
+        "manifest": str(args.manifest.relative_to(AI_ROOT)).replace("\\", "/"),
+        "iou_match_threshold": args.match_iou,
+        "person_model": {
+            "path": str(PERSON_MODEL_PATH.relative_to(AI_ROOT)).replace("\\", "/"),
+            "sha256": sha256(PERSON_MODEL_PATH),
+            "confidence_threshold": args.person_conf,
+            "imgsz": 640
+        },
+        "threat_model": {
+            "path": str(THREAT_MODEL_PATH.relative_to(AI_ROOT)).replace("\\", "/"),
+            "sha256": sha256(THREAT_MODEL_PATH),
+            "confidence_threshold": args.weapon_conf,
+            "imgsz": 512
+        },
+        "classes": {name: calculate_summary(counts) for name, counts in all_counts.items()},
+    }
+
+    (args.report_dir / "metrics.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+
+    with (args.report_dir / "metrics.csv").open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=("class", "tp", "fp", "fn", "ground_truth_count", "prediction_count", "precision", "recall", "f1", "status"))
+        writer.writeheader()
+        for name, metric in result["classes"].items():
+            writer.writerow({"class": name, **metric})
+
+    write_markdown_report(args.report_dir / "baseline.md", result)
+
+    print(f"Baseline report written to {args.report_dir}")
+
+
+if __name__ == "__main__":
+    main()
