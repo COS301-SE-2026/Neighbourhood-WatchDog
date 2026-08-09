@@ -37,5 +37,55 @@ def iou_xyxy(a: tuple[float, float, float, float], b: tuple[float, float, float,
     area_b = max(0.0, bx2 - bx1) * max(0.0, by2 - by1)
 
     union = area_a + area_b - intersection
-    
+
     return intersection / union if union > 0 else 0.0
+
+
+def score_class(predictions: Iterable[Detection], ground_truth: Iterable[Detection], iou_threshold: float = 0.50) -> dict[str, object]:
+    """Greedily match confidence-sorted predictions to one ground-truth box each."""
+
+    predictions = sorted(predictions, key=lambda item: item.confidence, reverse=True)
+    ground_truth = list(ground_truth)
+
+    unmatched_truth = set(range(len(ground_truth)))
+    matched_pairs: list[tuple[int, int, float]] = []
+    false_positive_indices: list[int] = []
+
+    for prediction_index, prediction in enumerate(predictions):
+        candidates = [
+            (truth_index, iou_xyxy(prediction.bbox_xyxy, ground_truth[truth_index].bbox_xyxy))
+            for truth_index in unmatched_truth
+        ]
+
+        if not candidates:
+            false_positive_indices.append(prediction_index)
+            continue
+
+        truth_index, best_iou = max(candidates, key=lambda item: item[1])
+
+        if best_iou >= iou_threshold:
+            unmatched_truth.remove(truth_index)
+            matched_pairs.append((prediction_index, truth_index, best_iou))
+        else:
+            false_positive_indices.append(prediction_index)
+
+    tp = len(matched_pairs)
+    fp = len(false_positive_indices)
+    fn = len(unmatched_truth)
+
+    precision = tp / (tp + fp) if tp + fp else 0.0
+    recall = tp / (tp + fn) if tp + fn else 0.0
+
+    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+
+    return {
+        "tp": tp,
+        "fp": fp,
+        "fn": fn,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+        "matched_pairs": matched_pairs,
+        "false_positive_indices": false_positive_indices,
+        "false_negative_indices": sorted(unmatched_truth)
+    }
