@@ -6,7 +6,7 @@ Run from ai/:
     python evaluation/extract_eval_frames.py --samples-per-video 20
 """
 
-from future import annotations
+from __future__ import annotations
 from pathlib import Path
 import argparse
 import csv
@@ -122,7 +122,7 @@ def main() -> None:
     parser.add_argument("--samples-per-video", type=int, default=20)
     parser.add_argument("--force", action="store_true", help="Overwrite existing extracted JPEGs, never labels.")
     args = parser.parse_args()
-    
+
     if args.samples_per_video < 1:
         parser.error("--samples-per-video must be at least 1")
 
