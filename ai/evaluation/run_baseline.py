@@ -90,3 +90,43 @@ def read_ground_truth(label_path: Path, width: int, height: int) -> list[Detecti
         detections.append(Detection(class_id=class_id, bbox_xyxy=yolo_to_xyxy(values, width, height)))
 
     return detections
+
+
+def predict(frame, person_model: YOLO, threat_model: YOLO, person_confidence: float, weapon_confidence: float) -> list[Detection]:
+
+    predictions: list[Detection] = []
+
+    person_results = person_model.predict(
+        frame, 
+        imgsz=640, 
+        conf=person_confidence, 
+        classes=[0], 
+        verbose=False
+    )
+
+    for box in person_results[0].boxes:
+        predictions.append(Detection(
+            class_id=0,
+            bbox_xyxy=tuple(float(value) for value in box.xyxy[0].tolist()),
+            confidence=float(box.conf[0]),
+        ))
+
+    threat_results = threat_model.predict(frame, 
+                                          imgsz=512, 
+                                          conf=weapon_confidence, 
+                                          verbose=False
+                                          )
+    
+    for box in threat_results[0].boxes:
+        threat_class_id = int(box.cls[0])
+
+        if threat_class_id not in THREAT_MODEL_TO_EVALUATION_CLASS:
+            raise ValueError(f"Unexpected best.pt class ID {threat_class_id}; update the evaluation mapping.")
+
+        predictions.append(Detection(
+            class_id=THREAT_MODEL_TO_EVALUATION_CLASS[threat_class_id],
+            bbox_xyxy=tuple(float(value) for value in box.xyxy[0].tolist()),
+            confidence=float(box.conf[0]),
+        ))
+        
+    return predictions
