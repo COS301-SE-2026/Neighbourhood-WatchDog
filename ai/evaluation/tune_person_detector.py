@@ -22,7 +22,7 @@ import cv2
 
 
 DEFAULT_CONFIDENCES = (0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50)
-DEFAULT_NMS_IOUS = (0.40, 0.45, 0.50, 0.55, 0.60)
+DEFAULT_NMS_IOUS = (0.40, 0.45, 0.50, 0.55, 0.60, 0.65,)
 
 
 def parse_values(value: str) -> tuple[float, ...]:
@@ -70,25 +70,25 @@ def evaluate_candidate(manifest: list[dict[str, str]], labels_dir: Path, model: 
         for key in ("tp", "fp", "fn"):
             counts[key] += int(score[key])
 
-        tp = counts["tp"]
-        fp = counts["fp"]
-        fn = counts["fn"]
+    tp = counts["tp"]
+    fp = counts["fp"]
+    fn = counts["fn"]
 
-        precision = tp / (tp + fp) if tp + fp else 0.0
-        recall = tp / (tp + fn) if tp + fn else 0.0
+    precision = tp / (tp + fp) if tp + fp else 0.0
+    recall = tp / (tp + fn) if tp + fn else 0.0
 
-        f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
 
-        return{
-            "person_confidence": confidence, 
-            "person_nms_iou": nms_iou, 
-            "tp": tp, 
-            "fp": fp, 
-            "fn": fn, 
-            "precision": round(precision, 6),
-            "recall": round(recall, 6),
-            "f1": round(f1, 6)
-        }
+    return{
+        "person_confidence": confidence, 
+        "person_nms_iou": nms_iou, 
+        "tp": tp, 
+        "fp": fp, 
+        "fn": fn, 
+        "precision": round(precision, 6),
+        "recall": round(recall, 6),
+        "f1": round(f1, 6)
+    }
 
 
 def main() -> None:
@@ -154,7 +154,7 @@ def main() -> None:
         "selected": selected,
         "weapon_tuning": "not performed: fixed evaluation set has no ground-truth weapon-positive objects; retain weapon confidence 0.50",
     }
-    
+
     (args.report_dir / "tuning_summary.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
     print("Selected person settings:")

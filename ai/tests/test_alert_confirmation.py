@@ -18,7 +18,7 @@ def test_does_not_alert_before_three_consec_hits():
 
 
 def test_alerts_on_third_current_confirmed_hit():
-    assert not is_track_ready_to_alert(track(hits=3, confirmed=True), set(), 3)
+    assert is_track_ready_to_alert(track(hits=3, confirmed=True), set(), 3)
 
 def test_does_not_alert_when_track_has_no_current_detection():
     assert not is_track_ready_to_alert(track(hits=4, confirmed=True, time_since_update=1), set(), 3)

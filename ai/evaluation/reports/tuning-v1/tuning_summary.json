@@ -1,0 +1,25 @@
+{
+  "dataset": "evaluation/dataset_manifest.csv",
+  "evaluation_date": "2026-08-10T09:18:30.562081+00:00",
+  "person_model": {
+    "path": "pipeline/models/weights/yolov8n.pt",
+    "sha256": "f59b3d833e2ff32e194b5bb8e08d211dc7c5bdf144b90d2c8412c47ccfc83b36",
+    "imgsz": 640
+  },
+  "match_iou": 0.5,
+  "minimum_recall": 0.966667,
+  "candidate_count": 49,
+  "selected": {
+    "person_confidence": 0.25,
+    "person_nms_iou": 0.7,
+    "tp": 29,
+    "fp": 1,
+    "fn": 1,
+    "precision": 0.966667,
+    "recall": 0.966667,
+    "f1": 0.966667,
+    "meets_recall_constraint": true,
+    "selected": true
+  },
+  "weapon_tuning": "not performed: fixed evaluation set has no ground-truth weapon-positive objects; retain weapon confidence 0.50"
+}
