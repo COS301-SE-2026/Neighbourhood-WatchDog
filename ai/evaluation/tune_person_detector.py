@@ -89,3 +89,78 @@ def evaluate_candidate(manifest: list[dict[str, str]], labels_dir: Path, model: 
             "recall": round(recall, 6),
             "f1": round(f1, 6)
         }
+
+
+def main() -> None:
+
+    parser = argparse.ArgumentParser(description="Grid-search person confidence/NMS against the fixed labels.")
+
+    parser.add_argument("--manifest", type=Path, default=MANIFEST_PATH)
+    parser.add_argument("--labels-dir", type=Path, default=LABELS_DIR)
+    parser.add_argument("--match-iou", type=float, default=0.50)
+    parser.add_argument("--min-recall", type=float, default=0.966667)
+    parser.add_argument("--confidences", type=parse_values, default=DEFAULT_CONFIDENCES)
+    parser.add_argument("--nms-ious", type=parse_values, default=DEFAULT_NMS_IOUS)
+    parser.add_argument("--report-dir", type=Path, default=AI_ROOT / "evaluation" / "reports" / "tuning-v1")
+
+    args = parser.parse_args()
+
+    if not 0.0 < args.match_iou <= 1.0 or not 0.0 <= args.min_recall <= 1.0:
+        parser.error("IoU and recall constraints must be in [0, 1].")
+
+    with args.manifest.open(newline="", encoding="utf-8") as handle:
+        manifest = list(csv.DictReader(handle))
+
+    if not manifest:
+        parser.error("The manifest has no evaluation rows.")
+
+
+    model = YOLO(PERSON_MODEL_PATH)
+
+    rows = [
+        evaluate_candidate(manifest, args.labels_dir, model, confidence, nms_iou, args.match_iou)
+        for confidence in args.confidences
+        for nms_iou in args.nms_ious
+    ]
+
+    eligible = [row for row in rows if row["recall"] >= args.min_recall]
+
+    if not eligible:
+        raise RuntimeError("No candidate preserved the required recall. Do not tune production settings.")
+
+    selected = max(eligible, key=lambda row: (row["f1"], row["precision"], row["person_confidence"]))
+
+    for row in rows:
+        row["meets_recall_constraint"] = row["recall"] >= args.min_recall
+        row["selected"] = row is selected
+
+
+    args.report_dir.mkdir(parents=True, exist_ok=True)
+
+    fieldnames = list(rows[0].keys())
+
+    with (args.report_dir / "tuning_results.csv").open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    report = {
+        "dataset": str(args.manifest.relative_to(AI_ROOT)).replace("\\", "/"),
+        "evaluation_date": datetime.now(timezone.utc).isoformat(),
+        "person_model": {"path": str(PERSON_MODEL_PATH.relative_to(AI_ROOT)).replace("\\", "/"), "sha256": sha256(PERSON_MODEL_PATH), "imgsz": 640},
+        "match_iou": args.match_iou,
+        "minimum_recall": args.min_recall,
+        "candidate_count": len(rows),
+        "selected": selected,
+        "weapon_tuning": "not performed: fixed evaluation set has no ground-truth weapon-positive objects; retain weapon confidence 0.50",
+    }
+    
+    (args.report_dir / "tuning_summary.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+
+    print("Selected person settings:")
+    print(json.dumps(selected, indent=2))
+    print(f"Full tuning report: {args.report_dir}")
+
+
+if __name__ == "__main__":
+    main()
