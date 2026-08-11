@@ -25,3 +25,14 @@ DEFAULT_MODEL = AI_ROOT / "pipeline/models/weights/best.pt"
 DEFAULT_REPORT = AI_ROOT / "evaluation/reports/weapon-baseline-v1"
 DATASET_CLASSES = {0: "Gun", 1: "knife"}
 MODEL_TO_DATASET = {0: 0, 3: 1}
+
+
+def sha256(path: Path) -> str:
+    """hashing calc"""
+
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+
+    return digest.hexdigest()
