@@ -124,6 +124,6 @@ async def get_user_by_id_handler(
         id=str(user.id),
         email=user.email,
         cognito_sub=user.cognito_sub,
-        role=user.role.value if hasattr(user.role, "value") else str(user.role),
+        role=user.system_role.value if hasattr(user.system_role, "value") else str(user.system_role),
         created_at=user.created_at,
     )

@@ -350,7 +350,7 @@ class TestResolveJoinRequest:
         join_request.created_at = datetime.now(timezone.utc)
 
         user = Mock()
-        user.role = "RESIDENT"
+        user.system_role = "RESIDENT"
 
         self.mock_db.execute.return_value.scalar_one_or_none.side_effect = [
             join_request,

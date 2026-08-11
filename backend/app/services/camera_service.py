@@ -313,7 +313,7 @@ async def list_cameras_handler(property_id, db, claims):
                 id=c.id,
                 name=c.name,
                 property_id=c.property_id,
-                neighbourhood_id=c.neighbourhood_id,
+                neighbourhood_id=property_obj.neighbourhood_id,
                 rtsp_url=decrypt_rtsp_url(c.rtsp_url),
                 visibility=c.visibility,
                 location=c.location,
