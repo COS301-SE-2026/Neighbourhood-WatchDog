@@ -88,3 +88,32 @@ def draw_preview(image_path: Path, label_path: Path, destination: Path) -> None:
             image = cv2.resize(image, (round(width * scale), round(height * scale)))
 
     cv2.imwrite(str(destination), image)
+
+
+def write_html(rows: list[dict[str, str]], audit_dir: Path) -> None:
+    """generates an html webpage for reviewing the images."""
+
+    lines = [
+        "<!doctype html><html><head><meta charset='utf-8'>",
+        "<title>Gun curation audit</title>",
+        "<style>body{font-family:system-ui;margin:24px;background:#f7f7f7}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}.card{background:white;padding:12px;border-radius:8px;box-shadow:0 1px 3px #bbb}.card img{width:100%;height:auto}.meta{font-size:14px;margin-top:8px}</style>",
+        "</head><body><h1>Gun curation audit</h1>",
+        "<p>Every red box is only a generic <code>weapon</code> label. Mark <code>keep</code> in <code>gun_review.csv</code> only if it is clearly a firearm. Do not use this page as ground truth.</p>",
+        "<div class='grid'>",
+    ]
+
+    for row in rows:
+        image_name = Path(row["source_image"]).name
+
+        preview = f"previews/{image_name}"
+
+        lines += [
+            "<div class='card'>",
+            f"<a href='{preview}'><img src='{preview}' alt='{image_name}'></a>",
+            f"<div class='meta'><strong>{image_name}</strong><br>Scene: {row['scene_group']} · generic weapon boxes: {row['weapon_box_count']}<br>Decision: review in <code>gun_review.csv</code></div>",
+            "</div>",
+        ]
+
+    lines += ["</div></body></html>"]
+
+    (audit_dir / "index.html").write_text("\n".join(lines), encoding="utf-8")
