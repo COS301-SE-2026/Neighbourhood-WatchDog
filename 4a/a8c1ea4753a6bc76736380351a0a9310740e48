@@ -1,0 +1,14 @@
+backend/alembic/versions/8b72bc8de0d6_added_neighbourhood_user_table_and_.py
+  h_cf6208e37032c0 190-202
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "4aa8c1ea4753a6bc76736380351a0a9310740e48",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
