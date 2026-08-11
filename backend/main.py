@@ -27,7 +27,7 @@ from app import models  # noqa: F401  (imported for side effects: model registra
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 
-configure_logging()
+configure_logging(config.debug and "DEBUG" or "INFO")
 
 
 app = FastAPI(
