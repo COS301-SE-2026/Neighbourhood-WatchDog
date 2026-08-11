@@ -30,6 +30,7 @@ class TestGetNeighbourhoodScore:
         self.mock_db.refresh = AsyncMock()
         self.mock_db.commit = AsyncMock()
         self.mock_db.rollback = AsyncMock()
+        self.mock_neighbourhood = Mock()
 
         self.mock_user = Mock()
         self.mock_user.id = uuid4()
@@ -59,12 +60,6 @@ class TestGetNeighbourhoodScore:
 
         self.mock_db.execute = AsyncMock(side_effect=[auth_result, score_result])
 
-    # def reset_side_effects(self, neighbourhood_risk_history=None):
-    #     """Helper to reset side_effect between tests"""
-    #     self.mock_result = Mock()
-    #     self.mock_result.scalar_one_or_none.side_effect = [neighbourhood_risk_history]
-    #     self.mock_db.execute = AsyncMock(return_value=self.mock_result)
-
     @pytest.mark.asyncio
     async def test_happy_path(self):
         risk_score = await get_neighbourhood_score_handler(
@@ -86,6 +81,7 @@ class TestGetNeighbourhoodScore:
 
     @pytest.mark.asyncio
     async def test_not_authorised(self):
+        self._wire_db(authorised=False)
         wrong_neighbourhood_id = UUID("717159e3-2ea3-4163-9773-e908fec43be6")
 
         with pytest.raises(HTTPException) as exception:
@@ -104,7 +100,7 @@ class TestGetNeighbourhoodScore:
 
     @pytest.mark.asyncio
     async def test_risk_not_found(self):
-        self.reset_side_effects(neighbourhood_risk_history=None)
+        self._wire_db(authorised=True, risk_score=None)
 
         with pytest.raises(HTTPException) as exception:
             await get_neighbourhood_score_handler(
