@@ -57,3 +57,8 @@ def parse_yolo(path: Path) -> list[tuple[int, float, float, float, float]]:
 
 
     return records
+
+def write_yolo(path: Path, records: list[tuple[int, float, float, float, float]]) -> None:
+    """python annotations converted into yolo format"""
+
+    path.write_text("".join(f"{class_id} {cx:.6f} {cy:.6f} {width:.6f} {height:.6f}\n" for class_id, cx, cy, width, height in records), encoding="utf-8")
