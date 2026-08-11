@@ -36,3 +36,34 @@ def sha256(path: Path) -> str:
             digest.update(block)
 
     return digest.hexdigest()
+
+
+def read_labels(path: Path, width: int, height: int) -> list[Detection]:
+    """reads yolo txt annotation file"""
+
+    records: list[Detection] = []
+
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if not line.strip():
+            continue
+
+        fields = line.split()
+
+        if len(fields) != 5:
+            raise ValueError(f"{path}:{number}: expected five YOLO fields")
+
+        class_id = int(fields[0])
+
+        if class_id not in DATASET_CLASSES:
+            raise ValueError(f"{path}:{number}: unexpected dataset class {class_id}")
+
+        cx, cy, bw, bh = (float(value) for value in fields[1:])
+
+        records.append(Detection(
+            bbox_xyxy=((cx - bw / 2) * width, (cy - bh / 2) * height, (cx + bw / 2) * width, (cy + bh / 2) * height),
+            confidence=1.0
+        ))
+
+        
+
+    return records
