@@ -56,13 +56,25 @@ async def get_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, db: D
 
 
 async def update_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, req: UpdateRiskThresholdConfigReq,db: DbSession, claims: dict) -> RiskThresholdConfigRes:
-    caller_neighbourhood = claims.get("custom:neighbourhood_id")
     """Updates a neighbourhood's risk threshold config, validating low_max < medium_max"""
 
-    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
-        logger.warning("update_neigbourhood_risk_threshold: unauthorised access attempt for neigbourhood_id=%s by caller_neighbourhood=%s", neighbourhood_id, caller_neighbourhood)
+    user = await get_user_by_claims(claims, db)
+        
+    stmt = (
+        select(Neighbourhood)
+        .join(Property, Property.neighbourhood_id == Neighbourhood.id)
+        .join(PropertyUser, PropertyUser.property_id == Property.id)
+        .where(
+            Neighbourhood.id == neighbourhood_id,
+            PropertyUser.user_id == user.id,
+        )
+    )
+    result = await db.execute(stmt)
+    caller_neighbourhood = result.scalars().first()
+
+    if not caller_neighbourhood:
+        logger.warning("update_neigbourhood_risk_threshold: unauthorised access attempt for neigbourhood_id=%s", neighbourhood_id)
         raise HTTPException(403, "Not authorised for this neighbourhood")
-    
 
     update_data = req.model_dump(exclude_unset=True)
     
