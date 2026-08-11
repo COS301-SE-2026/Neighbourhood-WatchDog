@@ -4,6 +4,10 @@ from fastapi import HTTPException
 from sqlalchemy import select
 
 from app.core.database import DbSession
+from app.auth.dependencies import get_user_by_claims
+from app.models.neighbourhood import Neighbourhood
+from app.models.property import Property
+from app.models.property_user import PropertyUser
 from app.models.risk_threshold_config import RiskThresholdConfig
 from app.schemas.risk_threshold_config import RiskThresholdConfigRes, UpdateRiskThresholdConfigReq
 import logging
@@ -13,11 +17,28 @@ logger = logging.getLogger(__name__)
 async def get_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, db: DbSession, claims: dict) -> RiskThresholdConfigRes:
     """Returns neighbourhood risk threshold config (falls back to default if none is set)"""
 
-    caller_neighbourhood = claims.get("custom:neighbourhood_id")
-    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
-        logger.warning("get_neigbourhood_risk_threshold: unauthorised access attempt for neighbourhood_id=%s by caller_neighbourhood=%s", neighbourhood_id, caller_neighbourhood)
-        raise HTTPException(403, "Not authorised for this neighbourhood")
+    user = await get_user_by_claims(claims, db)
+
+    if user is None:
+        logger.warning("get_neigbourhood_risk_threshold: unauthorised access attempt for neighbourhood_id=%s", neighbourhood_id)
+        raise HTTPException(401, "Could not get neighbourhood risk threshold. User not authenticated.")
     
+    stmt = (
+        select(Neighbourhood)
+        .join(Property, Property.neighbourhood_id == Neighbourhood.id)
+        .join(PropertyUser, PropertyUser.property_id == Property.id)
+        .where(
+            Neighbourhood.id == neighbourhood_id,
+            PropertyUser.user_id == user.id,
+        )
+    )
+    result = await db.execute(stmt)
+    caller_neighbourhood = result.scalars().first()
+
+    if not caller_neighbourhood:
+        logger.warning("get_neigbourhood_risk_threshold: unauthorised access attempt for neighbourhood_id=%s", neighbourhood_id)
+        raise HTTPException(403, "Not authorised for this neighbourhood")
+
     stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id == neighbourhood_id)
     result = await db.execute(stmt)
     neighbourhood_risk_config = result.scalar_one_or_none()
@@ -39,13 +60,29 @@ async def get_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, db: D
 
 
 async def update_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, req: UpdateRiskThresholdConfigReq,db: DbSession, claims: dict) -> RiskThresholdConfigRes:
-    caller_neighbourhood = claims.get("custom:neighbourhood_id")
     """Updates a neighbourhood's risk threshold config, validating low_max < medium_max"""
 
-    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
-        logger.warning("update_neigbourhood_risk_threshold: unauthorised access attempt for neigbourhood_id=%s by caller_neighbourhood=%s", neighbourhood_id, caller_neighbourhood)
+    user = await get_user_by_claims(claims, db)
+
+    if user is None:
+        logger.warning("get_neigbourhood_risk_threshold: unauthorised access attempt for neighbourhood_id=%s", neighbourhood_id)
+        raise HTTPException(401, "Could not get neighbourhood risk threshold. User not authenticated.")
+        
+    stmt = (
+        select(Neighbourhood)
+        .join(Property, Property.neighbourhood_id == Neighbourhood.id)
+        .join(PropertyUser, PropertyUser.property_id == Property.id)
+        .where(
+            Neighbourhood.id == neighbourhood_id,
+            PropertyUser.user_id == user.id,
+        )
+    )
+    result = await db.execute(stmt)
+    caller_neighbourhood = result.scalars().first()
+
+    if not caller_neighbourhood:
+        logger.warning("update_neigbourhood_risk_threshold: unauthorised access attempt for neigbourhood_id=%s", neighbourhood_id)
         raise HTTPException(403, "Not authorised for this neighbourhood")
-    
 
     update_data = req.model_dump(exclude_unset=True)
     

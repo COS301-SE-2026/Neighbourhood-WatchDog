@@ -50,7 +50,7 @@ async def create_property(
 
 @router.get(
     "/my-properties",
-    response_model=PropertyRes,
+    response_model=List[PropertyRes],
     status_code=200,
     responses={
         401: {"description": "Invalid or missing authentication token"},

@@ -4,8 +4,12 @@ from app.core.database import DbSession
 from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy import select, func
+from app.auth.dependencies import get_user_by_claims
 from app.models.risk_score_history import RiskScoreHistory
 from app.schemas.risk_score_history import RiskScoreRes
+from app.models.neighbourhood import Neighbourhood
+from app.models.property import Property
+from app.models.property_user import PropertyUser
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,9 +19,26 @@ VALID_GRANULARITIES = {"minute", "hour", "day", "week"}
 async def get_neighbourhood_score_handler(neighbourhood_id: UUID, db: DbSession, claims: dict) -> RiskScoreRes:
     """Returns most recently calculated risk score for a neighbourhood"""
 
-    caller_neighbourhood = claims.get("custom:neighbourhood_id")
-    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
-        logger.warning("get_neigbourhood_score: unauthorised access attempt for neighbourhood_id=%s by caller_neighbourhood=%s", neighbourhood_id, caller_neighbourhood)
+    user = await get_user_by_claims(claims, db)
+
+    if user is None:
+        logger.warning("get_neigbourhood_risk_threshold: unauthorised access attempt for neighbourhood_id=%s", neighbourhood_id)
+        raise HTTPException(401, "Could not get neighbourhood risk threshold. User not authenticated.")
+
+    stmt = (
+        select(Neighbourhood)
+        .join(Property, Property.neighbourhood_id == Neighbourhood.id)
+        .join(PropertyUser, PropertyUser.property_id == Property.id)
+        .where(
+            Neighbourhood.id == neighbourhood_id,
+            PropertyUser.user_id == user.id,
+        )
+    )
+    result = await db.execute(stmt)
+    caller_neighbourhood = result.scalars().first()
+
+    if not caller_neighbourhood:
+        logger.warning("get_neighbourhood_score: unauthorised access attempt for neighbourhood_id=%s", neighbourhood_id)
         raise HTTPException(403, "Not authorised for this neighbourhood")
     
     stmt = (
@@ -55,11 +76,28 @@ async def get_neighbourhood_score_history_handler(
 ) -> list[RiskScoreRes]:
     """Returns bucketed (by granularity) historical risk scores for a neighbourhood over a date range"""
 
-    caller_neighbourhood = claims.get("custom:neighbourhood_id")
-    if not caller_neighbourhood or caller_neighbourhood != str(neighbourhood_id):
-        logger.warning("get_neigbourhood_score_history: unauthorised access attempt for neighbourhood_id=%s by caller_neighbourhood=%s", neighbourhood_id, caller_neighbourhood)
-        raise HTTPException(403, "Not authorised for this neighbourhood")
+    user = await get_user_by_claims(claims, db)
+
+    if user is None:
+        logger.warning("get_neigbourhood_risk_threshold: unauthorised access attempt for neighbourhood_id=%s", neighbourhood_id)
+        raise HTTPException(401, "Could not get neighbourhood risk threshold. User not authenticated.")
     
+    stmt = (
+        select(Neighbourhood)
+        .join(Property, Property.neighbourhood_id == Neighbourhood.id)
+        .join(PropertyUser, PropertyUser.property_id == Property.id)
+        .where(
+            Neighbourhood.id == neighbourhood_id,
+            PropertyUser.user_id == user.id,
+        )
+    )
+    result = await db.execute(stmt)
+    caller_neighbourhood = result.scalars().first()
+
+    if not caller_neighbourhood:
+        logger.warning("get_neigbourhood_score_history: unauthorised access attempt for neighbourhood_id=%s", neighbourhood_id)
+        raise HTTPException(403, "Not authorised for this neighbourhood")
+
     if granularity not in VALID_GRANULARITIES:
         logger.warning("get_neigbourhood_score_history: invalid granularity=%s requested for neighbourhood_id=%s", granularity, neighbourhood_id)
         raise HTTPException(400, "Invalid granularity")

@@ -6,6 +6,8 @@ import hashlib
 import logging
 
 from app.models.user import User
+from app.models.property import Property
+from app.models.property_user import PropertyUser
 from app.core.database import DbSession
 from app.auth.jwt import get_authenticated_claims
 from app.models.edge_agent_credentials import EdgeAgentCredential
@@ -65,16 +67,29 @@ async def get_current_user(
                 CUSTOM_NEIGHBOURHOOD_CLAIM: request.headers.get("X-Mock-Neighbourhood-Id"),
             }
 
+
+    stmt = (
+        select(Property)
+        .join(PropertyUser, PropertyUser.property_id == Property.id)
+        .where(PropertyUser.user_id == user.id)
+    )
+    result = await db.execute(stmt)
+    properties = result.scalars().all()
+
+    neighbourhood_id = properties[0].neighbourhood_id if (properties and (len(properties) > 0)) else None
+    # TODO: Fix this custom claims neighbourhood issue
+
+
     logger.info("get_current_user: returning user info.")
     return {
         "id": str(user.id),
         "sub": sub,
         "given_name": user.first_name,
         "family_name": user.last_name,
-        CUSTOM_ROLE_CLAIM: user.role.value,
+        CUSTOM_ROLE_CLAIM: user.system_role.value,
         CUSTOM_NEIGHBOURHOOD_CLAIM: (
-            str(user.neighbourhood_id)
-            if user.neighbourhood_id
+            str(neighbourhood_id)
+            if neighbourhood_id
             else None
         ),
     }
@@ -116,3 +131,23 @@ async def get_authenticated_edge_agent(
         raise HTTPException(401, "Invalid or revoked edge agent credential.")
 
     return credential
+
+async def get_user_by_claims(claims: dict, db: DbSession) -> User | None:
+    """Receives the claims dictionary and DbSession and returns the User object associated with it. 
+        Returns None if there is a problem. 
+        Does not raise any exceptions"""
+
+    if claims is None:
+        logger.warning("get_user_by_claims: could not fetch user because claims is None")
+        return None
+
+    cognito_sub = claims['sub']
+
+    if cognito_sub is None:
+        return None
+
+    stmt = select(User).where(User.cognito_sub == cognito_sub)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    return user
