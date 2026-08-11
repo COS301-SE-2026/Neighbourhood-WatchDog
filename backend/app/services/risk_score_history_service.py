@@ -21,6 +21,10 @@ async def get_neighbourhood_score_handler(neighbourhood_id: UUID, db: DbSession,
 
     user = await get_user_by_claims(claims, db)
 
+    if user is None:
+        logger.warning("get_neigbourhood_risk_threshold: unauthorised access attempt for neighbourhood_id=%s", neighbourhood_id)
+        raise HTTPException(401, "Could not get neighbourhood risk threshold. User not authenticated.")
+
     stmt = (
         select(Neighbourhood)
         .join(Property, Property.neighbourhood_id == Neighbourhood.id)
@@ -73,6 +77,10 @@ async def get_neighbourhood_score_history_handler(
     """Returns bucketed (by granularity) historical risk scores for a neighbourhood over a date range"""
 
     user = await get_user_by_claims(claims, db)
+
+    if user is None:
+        logger.warning("get_neigbourhood_risk_threshold: unauthorised access attempt for neighbourhood_id=%s", neighbourhood_id)
+        raise HTTPException(401, "Could not get neighbourhood risk threshold. User not authenticated.")
     
     stmt = (
         select(Neighbourhood)

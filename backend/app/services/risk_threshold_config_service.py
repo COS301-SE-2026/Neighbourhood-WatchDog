@@ -18,6 +18,10 @@ async def get_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, db: D
     """Returns neighbourhood risk threshold config (falls back to default if none is set)"""
 
     user = await get_user_by_claims(claims, db)
+
+    if user is None:
+        logger.warning("get_neigbourhood_risk_threshold: unauthorised access attempt for neighbourhood_id=%s", neighbourhood_id)
+        raise HTTPException(401, "Could not get neighbourhood risk threshold. User not authenticated.")
     
     stmt = (
         select(Neighbourhood)
@@ -59,6 +63,10 @@ async def update_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, re
     """Updates a neighbourhood's risk threshold config, validating low_max < medium_max"""
 
     user = await get_user_by_claims(claims, db)
+
+    if user is None:
+        logger.warning("get_neigbourhood_risk_threshold: unauthorised access attempt for neighbourhood_id=%s", neighbourhood_id)
+        raise HTTPException(401, "Could not get neighbourhood risk threshold. User not authenticated.")
         
     stmt = (
         select(Neighbourhood)
