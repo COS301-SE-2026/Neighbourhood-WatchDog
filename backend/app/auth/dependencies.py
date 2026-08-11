@@ -131,3 +131,23 @@ async def get_authenticated_edge_agent(
         raise HTTPException(401, "Invalid or revoked edge agent credential.")
 
     return credential
+
+async def get_user_by_claims(claims: dict, db: DbSession) -> User | None:
+    """Receives the claims dictionary and DbSession and returns the User object associated with it. 
+        Returns None if there is a problem. 
+        Does not raise any exceptions"""
+
+    if claims is None:
+        logger.warning("get_user_by_claims: could not fetch user because claims is None")
+        return None
+
+    cognito_sub = claims['sub']
+
+    if cognito_sub is None:
+        return None
+
+    stmt = select(User).where(User.cognito_sub == cognito_sub)
+    result = db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    return user
