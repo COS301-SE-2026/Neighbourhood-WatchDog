@@ -92,4 +92,11 @@ def prepare_output(output: Path, overwrite: bool) -> None:
         (output / split / "images").mkdir(parents=True, exist_ok=True)
         (output / split / "labels").mkdir(parents=True, exist_ok=True)
 
-        
+
+def copy_item(image: Path, labels: list[tuple[int, float, float, float, float]],split: str, destination: Path, name:str) -> None:
+    """copies one image and creates its corresponding label."""
+
+    image_destination = destination / split / "images" / name
+    label_destination = destination / split / "labels" / f"{Path(name).stem}.txt"
+    shutil.copy2(image, image_destination)
+    write_yolo(label_destination, labels)
