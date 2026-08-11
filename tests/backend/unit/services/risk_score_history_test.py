@@ -175,12 +175,10 @@ class TestGetNeighbourhoodScoreHistory:
 
     def _wire_db(self, authorised: bool, history_rows=None):
         """Rebuilds db.execute matching the real call order:
-        [auth check] then, only if authorised AND granularity is valid,
-        [history query]. Since the granularity check happens between the
-        two queries with no DB call of its own, tests that only need the
-        auth check to pass (e.g. invalid granularity) still get a second
-        item queued — it's just never consumed if the function raises
-        before reaching it."""
+        [auth check] then, only if authorised AND granularity is valid, [history query]. 
+        Since the granularity check happens between the two queries with no DB call of its own, 
+        tests that only need the auth check to pass (e.g. invalid granularity) still get a second
+        item queued, it's just never consumed if the function raises before reaching it."""
         auth_result = Mock()
         auth_result.scalars.return_value.first.return_value = (
             self.mock_neighbourhood if authorised else None
@@ -192,7 +190,7 @@ class TestGetNeighbourhoodScoreHistory:
 
         history_result = Mock()
         history_result.all.return_value = history_rows if history_rows is not None else []
-
+ 
         self.mock_db.execute = AsyncMock(side_effect=[auth_result, history_result])
 
     @pytest.mark.asyncio
@@ -234,9 +232,6 @@ class TestGetNeighbourhoodScoreHistory:
 
     @pytest.mark.asyncio
     async def test_invalid_granularity(self):
-        # auth check must pass for the function to even reach the
-        # granularity validation — default setup_method wiring already
-        # has authorised=True, so no re-wiring needed here.
         with pytest.raises(HTTPException) as exception:
             await get_neighbourhood_score_history_handler(
                 self.neighbourhood_id,
@@ -246,8 +241,6 @@ class TestGetNeighbourhoodScoreHistory:
             )
 
         assert exception.value.status_code == 400
-        # only the auth check ran — granularity check fails before the
-        # history query is ever built
         assert self.mock_db.execute.call_count == 1
 
     @pytest.mark.asyncio
