@@ -1,3 +1,6 @@
 /__pycache__
 ai/evaluation/frames
 ai/evaluation/labels
+
+data/external/
+data/curated/

@@ -51,3 +51,6 @@ mediamtx/mediamtx
 
 ai/evaluation/frames
 ai/evaluation/labels
+
+ai/data/external/
+ai/data/curated/
