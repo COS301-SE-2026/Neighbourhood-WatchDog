@@ -187,7 +187,19 @@ def upgrade() -> None:
     op.create_index(op.f('ix_risk_threshold_config_neighbourhood_id'), 'risk_threshold_config', ['neighbourhood_id'], unique=False)
     op.drop_constraint(op.f('risk_threshold_config_neighbourhood_id_fkey'), 'risk_threshold_config', type_='foreignkey')
     op.create_foreign_key(None, 'risk_threshold_config', 'neighbourhood', ['neighbourhood_id'], ['id'], ondelete='CASCADE')
-    op.add_column('users', sa.Column('system_role', sa.Enum('SYSTEM_ADMIN', 'RESIDENT', 'SECURITY_OFFICER', name='userrole'), nullable=False))
+    op.add_column('users', sa.Column('system_role', sa.Enum('SYSTEM_ADMIN', 'RESIDENT', 'SECURITY_OFFICER', name='userrole'), nullable=True))
+    op.execute("""
+        UPDATE users
+        SET system_role = CASE role::text
+            WHEN 'SYSTEM_ADMIN' THEN 'SYSTEM_ADMIN'
+            WHEN 'SECURITY_OFFER' THEN 'SECURITY_OFFER'
+            WHEN 'RESIDENT' THEN 'RESIDENT'
+            WHEN 'NEIGHBOURHOOD_ADMIN' THEN 'RESIDENT'
+            WHEN 'PROPERTY_ADMIN' THEN 'RESIDENT'
+            WHEN 'USER' THEN 'RESIDENT'
+        END::userrole
+    """)
+    op.alter_column('users', 'system_role', nullable=False)
     op.drop_constraint(op.f('users_neighbourhood_id_fkey'), 'users', type_='foreignkey')
     op.drop_column('users', 'neighbourhood_id')
     op.drop_column('users', 'role')
