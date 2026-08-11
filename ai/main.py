@@ -33,10 +33,10 @@ class WatchDogDesktopApp:
         self.current_frame = page_class(self.root, controller=self)
         self.current_frame.pack(fill="both", expand=True)
 
-    def show_installer(self):
-        self.show_page(WatchDogAgentApp)
+    def show_installer(self): #Install dependencies
+        self.show_page(WatchDogAgentApp) 
 
-    def show_pairing(self):
+    def show_pairing(self): #Links pairing token
         self.show_page(WatchDogPinPage)
 
 
