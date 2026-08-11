@@ -79,3 +79,17 @@ def knife_split(image_name: str) -> str:
             return split
 
     raise ValueError(f"Knife filename is outside the expected 1..114 range: {image_name}")
+
+def prepare_output(output: Path, overwrite: bool) -> None:
+    """output dataset directories"""
+
+    if output.exists():
+        if not overwrite:
+            raise FileExistsError(f"Output already exists: {output}. Review it or pass --overwrite deliberately.")
+        shutil.rmtree(output)
+
+    for split in ("train", "validation", "evaluation"):
+        (output / split / "images").mkdir(parents=True, exist_ok=True)
+        (output / split / "labels").mkdir(parents=True, exist_ok=True)
+
+        
