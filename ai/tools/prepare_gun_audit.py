@@ -42,7 +42,18 @@ def parse_yolo(path: Path) -> list[tuple[int, float, float, float, float]]:
         if not all(0.0 <= value <= 1.0 for value in values):
             raise ValueError(f"{path}:{number}: normalized values must be in [0,1]")
 
-        boxes.append(class_id, *values)
+        boxes.append((class_id, *values))
 
 
     return boxes
+
+
+def scene_group(image_name: str) -> str:
+    """extracts scene identifier from an image filename"""
+
+    match = re.match(r"^(Scene\d+)_", image_name)
+
+    if not match:
+        raise ValueError(f"Cannot derive source scene from {image_name}")
+
+    return match.group(1)
