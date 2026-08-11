@@ -62,3 +62,20 @@ def write_yolo(path: Path, records: list[tuple[int, float, float, float, float]]
     """python annotations converted into yolo format"""
 
     path.write_text("".join(f"{class_id} {cx:.6f} {cy:.6f} {width:.6f} {height:.6f}\n" for class_id, cx, cy, width, height in records), encoding="utf-8")
+
+
+def knife_split(image_name: str) -> str:
+    """determines which split a knife image belongs to"""
+
+    prefix = "Knife_scenario_"
+
+    if not image_name.startswith(prefix) or not image_name.endswith(".png"):
+        raise ValueError(f"Unexpected knife filename: {image_name}")
+
+    number = int(image_name[len(prefix):-4])
+
+    for split, numbers in KNIFE_SPLITS.items():
+        if number in numbers:
+            return split
+
+    raise ValueError(f"Knife filename is outside the expected 1..114 range: {image_name}")
