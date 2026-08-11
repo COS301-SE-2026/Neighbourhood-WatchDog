@@ -64,6 +64,29 @@ def read_labels(path: Path, width: int, height: int) -> list[Detection]:
             confidence=1.0
         ))
 
-        
+
 
     return records
+
+
+def summary(counts: dict[str, int]) -> dict[str, int | float | str]:
+    """calc precsion, recall, f1"""
+
+    tp = counts["tp"]
+    fp = counts["fp"]
+    fn = counts["fn"]
+
+    precision = tp / (tp + fp) if tp + fp else 0.0
+    recall = tp / (tp + fn) if tp + fn else 0.0
+
+    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+
+    return {
+        **counts,
+        "ground_truth_count": tp + fn,
+        "prediction_count": tp + fp,
+        "precision": round(precision, 6),
+        "recall": round(recall, 6),
+        "f1": round(f1, 6),
+        "status": "measurable" if tp + fn else "not_measurable_no_ground_truth_positive"
+    }
