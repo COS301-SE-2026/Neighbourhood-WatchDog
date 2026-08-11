@@ -5,18 +5,21 @@ Run from ai/:
     python tools/evaluate_weapon_baseline.py
 """
 
-
 from __future__ import annotations
-from collections import defaultdict
-from datetime import datetime, timezone
-from pathlib import Path
-from ultralytics import YOLO
-from evaluation.metrics import Detection, score_class
+
+
 import argparse
 import csv
 import hashlib
 import json
 import cv2
+
+from collections import defaultdict
+from datetime import datetime, timezone
+from pathlib import Path
+from ultralytics import YOLO
+from evaluation.metrics import Detection, score_class
+
 
 
 AI_ROOT = Path(__file__).resolve().parents[1]
@@ -60,6 +63,7 @@ def read_labels(path: Path, width: int, height: int) -> list[Detection]:
         cx, cy, bw, bh = (float(value) for value in fields[1:])
 
         records.append(Detection(
+            class_id=class_id,
             bbox_xyxy=((cx - bw / 2) * width, (cy - bh / 2) * height, (cx + bw / 2) * width, (cy + bh / 2) * height),
             confidence=1.0
         ))
