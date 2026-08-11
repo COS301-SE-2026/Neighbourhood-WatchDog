@@ -147,7 +147,7 @@ async def get_user_by_claims(claims: dict, db: DbSession) -> User | None:
         return None
 
     stmt = select(User).where(User.cognito_sub == cognito_sub)
-    result = db.execute(stmt)
+    result = await db.execute(stmt)
     user = result.scalar_one_or_none()
 
     return user
