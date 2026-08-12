@@ -1,9 +1,11 @@
-from app_config import save_config
+# from app_config import save_config
 
 import tkinter as tk
 from tkinter import ttk
 import requests
-import keyring
+# import keyring
+from services.config_service import ConfigService
+from services.keyring_service import KeyringService
 
 API_BASE_URL = "https://api.neighbourhoodwatchdog.co.za"
 SEGOE_FONT = "Segoe UI"
@@ -49,7 +51,7 @@ class WatchDogPinPage(ttk.Frame):
         self.log.config(state="normal")
         self.log.insert(
             "end",
-            f"[INFO] Pairing token entered: {self.formatted_pairing_token}\n"
+            "[INFO] Pairing token entered.\n"
         )
         self.log.insert("end", "[INFO] Contacting server...\n")
         self.log.see("end")
@@ -70,8 +72,8 @@ class WatchDogPinPage(ttk.Frame):
 
                 if api_key:
                     config_data = {k: v for k, v in inner.items() if k != "api_key"}
-                    save_config(config_data)
-                    keyring.set_password("WatchDog", "api_key", api_key)
+                    self.config_service.save(config_data)
+                    self.keyring_service.save_api_key(api_key)
                     # to get the key back you say:  "api_key = keyring.get_password("Watchdog", "api_key")"
                     
                     self.status_label.config(text="Status: Pairing successful.")
@@ -131,7 +133,8 @@ class WatchDogPinPage(ttk.Frame):
         self.controller = controller
 
         self.columnconfigure(0, weight=1)
-
+        self.config_service = ConfigService()
+        self.keyring_service = KeyringService()
         ttk.Label(
             self,
             text="WatchDog Agent Setup",

@@ -41,21 +41,21 @@ class WatchDogDesktopApp:
 
 
 if __name__ == "__main__":
-    if sys.version_info[:2] != SUPPORTED_PYTHON:
-        required = ".".join(map(str, SUPPORTED_PYTHON))
-        current = f"{sys.version_info.major}.{sys.version_info.minor}"
+    
+    required = ".".join(map(str, SUPPORTED_PYTHON))
+    current = f"{sys.version_info.major}.{sys.version_info.minor}"
 
-        root = tk.Tk()
-        root.withdraw()
-        messagebox.showerror(
-            "Unsupported Python Version",
-            (
-                f"WatchDog Agent requires Python {required}.x.\n\n"
-                f"Current Python: {current}\n\n"
-                "Install Python 3.12 and launch the application again."
-            ),
-        )
-        root.destroy()
-        raise SystemExit(1)
+    root = tk.Tk()
+    root.withdraw()
+    messagebox.showerror(
+        "Unsupported Python Version",
+        (
+            f"WatchDog Agent requires Python {required}.x.\n\n"
+            f"Current Python: {current}\n\n"
+            "Install Python 3.12 and launch the application again."
+        ),
+    )
+    root.destroy()
+    raise SystemExit(1)
 
-    WatchDogDesktopApp()
+WatchDogDesktopApp()
