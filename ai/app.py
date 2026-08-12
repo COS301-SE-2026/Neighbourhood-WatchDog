@@ -18,6 +18,8 @@ from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
 from pipeline.utils.zone_config import filter_detections_by_zones
+from pipeline.processing.alert_confirmation import is_track_ready_to_alert
+
 import httpx
 import logging
 import keyring
@@ -29,6 +31,11 @@ os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = ("rtsp_transport;tcp|fflags;nobuff
 threat_model = YOLO("pipeline/models/weights/best.pt")
 person_model = YOLO("pipeline/models/weights/yolov8n.pt")
 
+PERSON_CONFIDENCE_THRESHOLD = float(os.getenv("PERSON_CONFIDENCE_THRESHOLD", "0.25"))
+PERSON_NMS_IOU_THRESHOLD = float(os.getenv("PERSON_NMS_IOU_THRESHOLD", "0.70"))
+WEAPON_CONFIDENCE_THRESHOLD = float(os.getenv("WEAPON_CONFIDENCE_THRESHOLD", "0.50"))
+WEAPON_NMS_IOU_THRESHOLD = float(os.getenv("WEAPON_NMS_IOU_THRESHOLD", "0.50"))
+TEMPORAL_CONFIRMATION_FRAMES = int(os.getenv("TEMPORAL_CONFIRMATION_FRAMES", "3"))
 
 
 # #cache for the camera settings, refresh every 30 seconds ---- still need to test
@@ -116,7 +123,8 @@ def _extract_detections(frame, confidence_threshold: float, zones: list | None =
         threat_results = threat_model.predict(
             frame,
             imgsz=512,
-            conf=confidence_threshold,
+            conf=WEAPON_CONFIDENCE_THRESHOLD,
+            iou=WEAPON_NMS_IOU_THRESHOLD,
             verbose=False
         )
 
@@ -125,7 +133,8 @@ def _extract_detections(frame, confidence_threshold: float, zones: list | None =
         person_results = person_model.predict(
             frame,
             imgsz=512,
-            conf=confidence_threshold,
+            conf=PERSON_CONFIDENCE_THRESHOLD,
+            iou=PERSON_NMS_IOU_THRESHOLD,
             classes=[0],
             verbose=False
             )
@@ -348,7 +357,7 @@ def _save_weapon_clip(
 
     try:
         event_response = httpx.post(
-            f"{BACKEND_URL}/internal/detection-events",
+            f"{BACKEND_URL}/internal/detections",
             headers=headers,
             json={
                 "camera_id": camera.id,
@@ -508,7 +517,7 @@ def _save_weapon_clip(
             "Clip uploaded: s3://%s/%s -> event %s",
             S3_BUCKET_NAME,
             s3_key,
-            detection_event_id,
+            alert_id,
         )
 
     except Exception:
@@ -530,7 +539,7 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
 
     tracker = DeepSort(
         max_age=10,
-        n_init=3,
+        n_init=TEMPORAL_CONFIRMATION_FRAMES,
         max_iou_distance=0.5,  #for stricter matching and less duplicate boxes
         embedder="mobilenet",
         embedder_gpu=False,
@@ -554,7 +563,7 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
 
             pre_event_frames.append(frame.copy())
 
-            person_detections, weapon_detections = _extract_detections(frame, camera.confidence_threshold)
+            person_detections, weapon_detections = _extract_detections(frame)
 
             #only tracking humans through deepsort
             tracks = tracker.update_tracks(person_detections, frame=frame)
@@ -631,7 +640,7 @@ def _collect_tracks(tracks, alerted_ids: set, camera: CameraSpec) -> list:
         track_data = _build_track_payload(track)
         payload.append(track_data)
 
-        if track_id not in alerted_ids and track.det_conf is not None:
+        if (track.det_conf is not None and is_track_ready_to_alert(track, alerted_ids, TEMPORAL_CONFIRMATION_FRAMES)):
             alerted_ids.add(track_id)
 
             detection_type = track.get_det_class() or "UNKNOWN"

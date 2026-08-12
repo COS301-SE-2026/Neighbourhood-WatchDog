@@ -25,7 +25,8 @@ class JoinNeighbourhoodRes(BaseModel):
 
 class ResolveJoinRequestReq(BaseModel):
     action: str
-
+    property_id: UUID | None = None
+    
     @field_validator("action")
     @classmethod
     def action_is_valid(cls, v: str) -> str:

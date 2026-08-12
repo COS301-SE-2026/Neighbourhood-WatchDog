@@ -4,11 +4,14 @@ from uuid import UUID
 from app.core.database import DbSession
 from sqlalchemy import select, func
 
-from app.models.alert import Alert
+from app.models.alert import Alert, DetectionType
 from app.models.camera import Camera
-from app.models.detection_event import DetectionEvent, DetectionType
 from app.models.risk_score_history import RiskLevel, RiskScoreHistory
 from app.models.risk_threshold_config import RiskThresholdConfig
+from app.models.property import Property
+import logging
+
+logger = logging.getLogger(__name__)
 
 SEVERITY_WEIGHTS = {
     DetectionType.WEAPON_DETECTED: 10,
@@ -23,20 +26,22 @@ CRITICAL_DETECTION_TYPES = {
     DetectionType.FALL_DETECTED
 }
 
-def calculate_risk_score_handler(neighbourhood_id: UUID, db: DbSession):
+async def calculate_risk_score_handler(neighbourhood_id: UUID, db: DbSession):
+    """Calculates neighbourhood risk score from alerts in the last 24hrs, classifies it against thresholds and stores the result"""
+    
     window_start = datetime.now(timezone.utc) - timedelta(hours=24)
-
+    logger.info("calculate_risk_score: starting calculation for neighbourhood_id=%s window_start=%s", neighbourhood_id, window_start)
     stmt = (
-        select(DetectionEvent.detection_type, func.count().label("count"))
-        .select_from(Alert)
+        select(Alert.detection_type, func.count().label("count"))
         .join(Camera, Alert.camera_id == Camera.id)
-        .join(DetectionEvent, Alert.detection_event_id == DetectionEvent.id)
-        .where(Camera.neighbourhood_id == neighbourhood_id)
+        .join(Property, Camera.property_id == Property.id)
+        .where(Property.neighbourhood_id == neighbourhood_id)
         .where(Alert.created_at >= window_start)
-        .group_by(DetectionEvent.detection_type)
+        .group_by(Alert.detection_type)
     )
 
-    rows = db.execute(stmt).all()
+    result = await db.execute(stmt)
+    rows = result.all()
 
     score = 0.0
     alert_count = 0
@@ -48,13 +53,17 @@ def calculate_risk_score_handler(neighbourhood_id: UUID, db: DbSession):
         alert_count += count
         if detection_type in CRITICAL_DETECTION_TYPES and count > 0:
             critical_event_detected = True
+            logger.warning("calculate_risk_score: critical detection_type=%s count=%d observed for neighbour_id=%s", detection_type, count, neighbourhood_id)
 
     threshold_stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id == neighbourhood_id)
-    threshold = db.execute(threshold_stmt).scalar_one_or_none()
+    threshold_result = await db.execute(threshold_stmt)
+    threshold = threshold_result.scalar_one_or_none()
 
     if not threshold:
+        logger.info("calculate_risk_score: no threshold config for neighbourhood_id=$s falling back to default", neighbourhood_id)
         default_stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id.is_(None))
-        threshold = db.execute(default_stmt).scalar_one()
+        default_result = await db.execute(default_stmt)
+        threshold = default_result.scalar_one()
 
     if score <= threshold.low_max:
         classification = RiskLevel.LOW
@@ -65,6 +74,8 @@ def calculate_risk_score_handler(neighbourhood_id: UUID, db: DbSession):
 
     #override
     if critical_event_detected:
+        if classification != RiskLevel.HIGH:
+            logger.warning("calculate_risk_score: overriding classification=%s to HIGH for neighbourhood_id=%s due to critical event", classification, neighbourhood_id)
         classification = RiskLevel.HIGH
 
     new_score = RiskScoreHistory(
@@ -75,7 +86,7 @@ def calculate_risk_score_handler(neighbourhood_id: UUID, db: DbSession):
     )
 
     db.add(new_score)
-    db.commit()
-    db.refresh(new_score)
-
+    await db.commit()
+    await db.refresh(new_score)
+    logger.info("calculate_risk_score: completed for neigbbourhood_id=%s score=%s classification=%s alert_count=%d", neighbourhood_id, score, classification, alert_count)
     return new_score

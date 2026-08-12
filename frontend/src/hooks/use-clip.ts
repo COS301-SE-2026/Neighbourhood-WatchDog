@@ -74,7 +74,7 @@ const handleApiError = (
 };
 
 export function useClip(
-    detectionEventId: string | null,
+    alertId: string | null,
 ): UseClipResult {
     const [state, setState] = useState<ClipState>({
         url: null,
@@ -84,7 +84,7 @@ export function useClip(
 
     const requestClip = useCallback(
         async (): Promise<ClipRequestResult> => {
-            if (!detectionEventId) {
+            if (!alertId) {
                 return "stop";
             }
 
@@ -101,7 +101,7 @@ export function useClip(
                 const data = await apiFetch<{
                     url: string;
                     expires_in: number;
-                }>(`/api/clips/${detectionEventId}`);
+                }>(`/api/clips/${alertId}`);
 
                 setState({
                     url: data.url,
@@ -125,7 +125,7 @@ export function useClip(
                 return setGenericError(setState);
             }
         },
-        [detectionEventId],
+        [alertId],
     );
 
     const loadClip = useCallback(async () => {
@@ -133,7 +133,7 @@ export function useClip(
     }, [requestClip]);
 
     useEffect(() => {
-        if (!detectionEventId) {
+        if (!alertId) {
             return;
         }
 
@@ -175,7 +175,7 @@ export function useClip(
                 clearTimeout(timeoutId);
             }
         };
-    }, [detectionEventId, requestClip]);
+    }, [alertId, requestClip]);
 
     return { ...state, loadClip };
 }

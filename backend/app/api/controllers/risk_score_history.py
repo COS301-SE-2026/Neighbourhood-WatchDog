@@ -12,13 +12,22 @@ from app.services.risk_score_history_service import get_neighbourhood_score_hand
 router = APIRouter(prefix="/risk-score", tags=["risk-score"])
 
 
-@router.get("/neighbourhood/{neighbourhood_id}", status_code=status.HTTP_200_OK)
-def get_neighbourhood_score(neighbourhood_id: UUID, db: DbSession, claims: Annotated[dict, Depends(get_current_user)]):
+@router.get(
+    "/neighbourhood/{neighbourhood_id}",
+    response_model=NeighbourhoodRiskScoreRes,
+    status_code=status.HTTP_200_OK,
+    summary="Get Risk Score for a Neighbourhood",
+    responses={
+        403: {"description": "Not authorised for this neighbourhood"},
+        404: {"description": "No risk score calculated for this neighbourhood"},
+    },
+)
+async def get_neighbourhood_score(neighbourhood_id: UUID, db: DbSession, claims: Annotated[dict, Depends(get_current_user)]):
     """Get Risk Score for a Neighbourhood"""
 
     require_role('NEIGHBOURHOOD_ADMIN', 'RESIDENT')
 
-    neighbourhood_risk = get_neighbourhood_score_handler(neighbourhood_id, db, claims)
+    neighbourhood_risk = await get_neighbourhood_score_handler(neighbourhood_id, db, claims)
 
     return NeighbourhoodRiskScoreRes(
         status=200,
@@ -26,14 +35,24 @@ def get_neighbourhood_score(neighbourhood_id: UUID, db: DbSession, claims: Annot
         data=neighbourhood_risk
     )
 
-@router.get("/neighbourhood/{neighbourhood_id}/history", status_code=status.HTTP_200_OK)
-def get_neighbourhood_score_history(neighbourhood_id: UUID, granularity: str,db: DbSession, claims: Annotated[dict, Depends(get_current_user)], start: datetime | None = None, end: datetime | None = None,):
+@router.get(
+    "/neighbourhood/{neighbourhood_id}/history",
+    response_model=NeighbourhoodRiskScoreHistoryRes,
+    status_code=status.HTTP_200_OK,
+    summary="Get Risk Score History of a Neighbourhood",
+    responses={
+        400: {"description": "Invalid granularity"},
+        403: {"description": "Not authorised for this neighbourhood"},
+        404: {"description": "Neighbourhood does not have risk score history"},
+    },
+)
+async def get_neighbourhood_score_history(neighbourhood_id: UUID, granularity: str,db: DbSession, claims: Annotated[dict, Depends(get_current_user)], start: datetime | None = None, end: datetime | None = None,):
     """Get Risk Score History of a Neighbourhood"""
 
     require_role('RESIDENT','NEIGHBOURHOOD_ADMIN')
 
 
-    neighbourhood_risk_history = get_neighbourhood_score_history_handler(neighbourhood_id, granularity, db, claims, start, end)
+    neighbourhood_risk_history = await get_neighbourhood_score_history_handler(neighbourhood_id, granularity, db, claims, start, end)
 
     return NeighbourhoodRiskScoreHistoryRes(
         status=200,

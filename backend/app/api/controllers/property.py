@@ -1,6 +1,5 @@
 from app.schemas.property import CreatePropertyReq, CreatePropertyRes, PropertyRes
 from app.services.property_service import create_property_handler, get_user_properties_handler, get_property_details_handler
-from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
 from app.auth.dependencies import require_role
 
@@ -11,16 +10,28 @@ from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/properties", tags=["properties"])
 
-@router.post("/create-property")
+@router.post(
+    "/create-property",
+    response_model=CreatePropertyRes,
+    status_code=201,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions to create a property"},
+    },
+)
 async def create_property(
     req: CreatePropertyReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Annotated[dict, Depends(require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN'))],
 ):
     """Create property endpoint returns the property object that was created"""
-
-    require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN')
-    new_property = await create_property_handler(req.address, req.property_type, claims, db)
+    
+    new_property = await create_property_handler(
+        req.address, 
+        req.property_type, 
+        claims, 
+        db
+    )
 
     property_res = PropertyRes(
         property_id=new_property.id,
@@ -37,13 +48,21 @@ async def create_property(
     )
 
 
-@router.get("/my-properties")
+@router.get(
+    "/my-properties",
+    response_model=List[PropertyRes],
+    status_code=200,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions to access property"},
+    },
+)
 async def get_user_properties(
     db: DbSession, 
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Annotated[dict, Depends(require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN'))],
 ) -> List[PropertyRes]:
     """Fetch all properties for the current user"""
-    require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN')
+    
     properties = await get_user_properties_handler(claims, db)
 
     return [
@@ -61,8 +80,7 @@ async def get_user_properties(
 async def get_property_details(
     property_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Annotated[dict, Depends(require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN'))],
 ):
     """Fetch property details including users, neighbourhood, and cameras"""
-    require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN')
     return await get_property_details_handler(property_id, db)

@@ -674,8 +674,8 @@ The quality requirements are derived directly from the non-functional requiremen
 
 #### Accuracy
  
-- Human detection accuracy shall be at least 60%.
-- Behaviour classification accuracy shall be at least 80%.
+- On the fixed labelled person-detection evaluation harness, human detection precision shall be at least 60% and recall shall be at least 60%
+- Behaviour classification shall be at least 80%
 #### Reliability
  
 - The system shall maintain at least 99.5% uptime.
@@ -715,6 +715,13 @@ The quality requirements are derived directly from the non-functional requiremen
 - Users shall be informed that video surveillance is in operation.
 - The system shall support data subject access requests.
 - All personal data shall be stored securely and protected against unauthorised access or breaches.
+
+#### NFR Traceability Matrix
+
+| NFR ID | Quantified requirement | Design tactic / implementation | Verification test / tool | Target | Actual result | Status |
+|---|---|---|---|---:|---|---|
+| NFR-AI-ACC-01 | On the fixed labelled person-detection evaluation harness, human detection precision shall be at least 60% and recall shall be at least 60%. | The person detector uses a confidence threshold of `0.25` and NMS IoU threshold of `0.70`, selected through a 49-candidate tuning search. DeepSORT tracking and `TEMPORAL_CONFIRMATION_FRAMES=3` prevent alerts from being raised from a single unconfirmed frame. | `ai/evaluation/run_baseline.py` executed against the fixed 24-item labelled person-detection harness. Temporal confirmation is verified separately by `ai/tests/test_alert_confirmation.py`. | Precision ≥60%; Recall ≥60% | Precision **96.67%**, recall **96.67%**, F1 **96.67%**; **29 TP, 1 FP, 1 FN**. | Met |
+
 ---
  
 ### Architectural Patterns

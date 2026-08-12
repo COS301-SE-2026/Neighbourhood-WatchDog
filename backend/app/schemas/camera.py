@@ -57,3 +57,26 @@ class EditCameraRes(BaseModel):
     status: int
     message: NonEmptyString | None = None
     data: CameraRes | None = None
+
+class EnabledCamerasRes(BaseModel):
+    id: UUID
+    rtsp_url: NonEmptyString
+    enabled: bool
+    neighbourhood_id: UUID | None = None
+    confidence_threshold: float
+    publish_username: NonEmptyString
+    publish_password: NonEmptyString
+
+class ListEnabledCameras(BaseModel):
+    data: list[EnabledCamerasRes]
+
+class MediaMtxAuthRequest(BaseModel):
+    user: str = ""
+    password: str = ""
+    action: str = ""
+    path: str = ""
+    protocol: str = ""
+    ip: str = ""
+    id: str = ""
+    query: str = ""
+
