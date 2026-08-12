@@ -105,7 +105,7 @@ async def _check_rbac(claims: dict, camera: Camera, property_obj: Property, db: 
             )
             .first()
         )
-    )
+
     membership = membership_result.scalar_one_or_none()
 
     if membership is None:
