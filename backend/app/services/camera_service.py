@@ -73,7 +73,6 @@ async def register_camera_handler(req, db, claims):
         new_camera = Camera(
             property_id=req.property_id,
             name=req.name,
-            neighbourhood_id=property_obj.neighbourhood_id,
             rtsp_url=ciphertext_rtsp_url,
             visibility=req.visibility,
             location=req.location,
@@ -98,7 +97,6 @@ async def register_camera_handler(req, db, claims):
             new_values={
                 "property_id": str(new_camera.property_id),
                 "name": new_camera.name,
-                "neighbourhood_id": str(new_camera.neighbourhood_id),
                 "visibility": new_camera.visibility,
                 "location": new_camera.location,
             },
@@ -111,7 +109,7 @@ async def register_camera_handler(req, db, claims):
             id=new_camera.id,
             name=new_camera.name,
             property_id=new_camera.property_id,
-            neighbourhood_id=new_camera.neighbourhood_id,
+            neighbourhood_id=property_obj.neighbourhood_id,
             rtsp_url=new_camera.rtsp_url,
             visibility=new_camera.visibility,
             location=new_camera.location,
