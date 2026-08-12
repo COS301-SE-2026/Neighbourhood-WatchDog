@@ -12,8 +12,12 @@ class AppState:
     """
 
     api_key: str | None = None
-    agent_id: str | None = None
-    account_name: str | None = None
+    property_id: str | None = None
+    address: str | None = None
+    cameras: list = field(default_factory=list)
+    created_at: str | None = None
+    agent_status: str = "stopped"
+    is_paired: bool = False
 
     # Non-secret configuration loaded after pairing.
     config_data: dict[str, Any] = field(default_factory=dict)

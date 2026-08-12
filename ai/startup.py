@@ -18,7 +18,7 @@ class StartupDecision:
     api_key: str | None = None
     reason: str | None = None
 
-
+# Decide whether the user should be sent to the setup/pairing page or the main application.
 class StartupResolver:
     """
     Determines which screen should be shown when the application opens.
