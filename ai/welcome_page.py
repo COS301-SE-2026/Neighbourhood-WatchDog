@@ -43,16 +43,28 @@ class WelcomePage(ttk.Frame):
         ttk.Button(
             button_row,
             text="Cancel",
-            command=on_cancel,
+            command=self.on_cancel,
         ).pack(side="left", padx=(10, 0))
 
-        def on_next(self):
-            self.controller.show_pairing()
+    def on_next(self):
+        self.controller.show_pairing()
 
-        def on_cancel(self):
-            confirmed = messagebox.askyesno(
-                "Cancel Setup",
-                "Exit the WatchDog Agent setup wizard?"
-            )
-            if confirmed:
-                self.winfo_toplevel().destroy()
+    def on_cancel(self):
+        confirmed = messagebox.askyesno(
+            "Cancel Setup",
+            "Exit the WatchDog Agent setup wizard?"
+        )
+        if confirmed:
+            self.winfo_toplevel().destroy()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    root.title("WatchDog Agent Setup")
+    root.geometry("800x650")
+
+    class _DummyController:
+        def show_pairing(self):
+            print("Next clicked -> would move to pairing page")
+
+    WelcomePage(root, controller=_DummyController()).pack(fill="both", expand=True)
+    root.mainloop()
