@@ -377,9 +377,7 @@ class WatchDogPinPage(ttk.Frame):
                 api_key=api_key,
                 config_data=config_data,
             )
-
-            self.controller.show_main_app()
-
+            
         except PairingError as e:
 
             # Pairing failed
