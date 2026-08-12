@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
 
 SEGOUE_FONT = "Segoe UI"
 
@@ -41,8 +42,17 @@ class WelcomePage(ttk.Frame):
 
         ttk.Button(
             button_row,
-            text="Cancel"
+            text="Cancel",
+            command=on_cancel,
         ).pack(side="left", padx=(10, 0))
 
         def on_next(self):
             self.controller.show_pairing()
+
+        def on_cancel(self):
+            confirmed = messagebox.askyesno(
+                "Cancel Setup",
+                "Exit the WatchDog Agent setup wizard?"
+            )
+            if confirmed:
+                self.winfo_toplevel().destroy()
