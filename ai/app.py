@@ -63,7 +63,12 @@ WEAPON_CLASSES = {"gun", "knife", "grenade", "explosion"}
 CLIP_COOLDOWN_SECS = 30
 CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "")
-AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")
+AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
+
+def _s3_client(): 
+    return boto3.client("s3", region_name=AWS_REGION, endpoint_url=f"https://s3.{AWS_REGION}.amazonaws.com")
+
+
 
 
 #cooldown tracker per weapon class
@@ -142,6 +147,16 @@ def _extract_detections(frame, confidence_threshold: float, zones: list | None =
 
         weapon_detections.append(([x1, y1, x2 - x1, y2 - y1], confidence, label))
 
+
+
+    #person detection
+    person_results = person_model.predict(
+        frame,
+        imgsz=640,
+        conf=0.25,
+        classes=[0],
+        verbose=False
+        )
 
     for box in person_results[0].boxes:
         x1, y1, x2, y2 = box.xyxy[0].tolist()
@@ -337,12 +352,12 @@ def _save_weapon_clip(
 
     # The old implementation created the event first, then wrote its S3 key
     # after the upload completes.
-    api_key = keyring.get_password("WatchDog", "api_key")
-    headers = {"X-Internal-Token": api_key} if api_key else {}
+    api_key = keyring.get_password("WatchDog", "api_key") or INTERNAL_API_TOKEN
+    headers = {"X-Internal-Token": api_key} 
 
     try:
         event_response = httpx.post(
-            f"{BACKEND_URL}/internal/detections",
+            f"{BACKEND_URL}/internal/alerts",
             headers=headers,
             json={
                 "camera_id": camera.id,
@@ -356,8 +371,7 @@ def _save_weapon_clip(
         alert_id = event_response.json().get("alert_id")
 
         if not alert_id:
-            logger.info("Detection for camera %s did not meet the configured threshold; no alert or clip will be created.", camera.id)
-            return
+            raise RuntimeError("Backend created no alert for the clip")
 
     except Exception:
         logger.exception(
@@ -473,13 +487,18 @@ def _save_weapon_clip(
             text=True,
         )
 
-        boto3.client("s3", region_name=AWS_REGION).upload_file(
-            h264_path,
-            S3_BUCKET_NAME,
-            s3_key,
-            ExtraArgs={"ContentType": "video/mp4"},
+        _s3_client().upload_file(
+            h264_path, 
+            S3_BUCKET_NAME, 
+            s3_key, 
+            ExtraArgs={"ContentType": "video/mp4", "ServerSideEncryption": "AES256"}
         )
 
+        s3_key = (
+            f"clips/{camera.id}/"
+            f"{timestamp:%Y/%m/%d}/"
+            f"{weapon_label}_{timestamp:%Y%m%dT%H%M%SZ}.mp4"
+        )
         expires_at = timestamp + timedelta(days=CLIP_RETENTION_DAYS)
 
         update_response = httpx.patch(
