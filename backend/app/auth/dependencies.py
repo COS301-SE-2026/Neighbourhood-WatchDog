@@ -87,11 +87,6 @@ async def get_current_user(
         "given_name": user.first_name,
         "family_name": user.last_name,
         CUSTOM_ROLE_CLAIM: user.system_role.value,
-        CUSTOM_NEIGHBOURHOOD_CLAIM: (
-            str(neighbourhood_id)
-            if neighbourhood_id
-            else None
-        ),
     }
 
 def require_role(*allowed_roles: str):#input any number of roles that are allowed and it will check for you

@@ -6,8 +6,9 @@ from sqlalchemy.exc import IntegrityError
 from uuid import UUID
 
 from app.core.database import DbSession
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User, UserRole
-from app.schemas.user import GetUserResSchema
+from app.schemas.user import CurrentUserContextRes, GetUserResSchema
 
 logger = logging.getLogger(__name__)
 
@@ -127,3 +128,7 @@ async def get_user_by_id_handler(
         role=user.system_role.value if hasattr(user.system_role, "value") else str(user.system_role),
         created_at=user.created_at,
     )
+
+async def get_current_user_context_handler(claims: dict, db: AsyncSession) -> CurrentUserContextRes:
+    """Retrieves the context of a user"""
+    pass
