@@ -288,37 +288,44 @@ class LatestFrameReader:
             if cap is not None:
                 cap.release()
 
-def _create_weapon_alert(
-    camera: CameraSpec,
-    weapon_label: str,
-    confidence: float,
-) -> str | None:
-    """
-    Create the database/UI alert immediately.
+def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: float) -> str | None:
+    """Create a weapon alert immediately, independently of S3 footage."""
 
-    Footage capture is deliberately not part of this critical alert path:
-    a valid weapon detection must remain visible even if FFmpeg, RTSP,
-    credentials, or S3 is unavailable.
-    """
     api_key = keyring.get_password("WatchDog", "api_key") or INTERNAL_API_TOKEN
+
+    payload = {
+        "camera_id": camera.id,
+        "detection_type": "WEAPON_DETECTED",
+        "confidence_score": confidence,
+        "frame_timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+    logger.info(
+        "Creating weapon alert: camera=%s, label=%s, confidence=%.3f, backend=%s",
+        camera.id,
+        weapon_label,
+        confidence,
+        BACKEND_URL,
+    )
 
     try:
         response = httpx.post(
             f"{BACKEND_URL}/internal/alerts",
             headers={"X-Internal-Token": api_key},
-            json={
-                "camera_id": camera.id,
-                "detection_type": "WEAPON_DETECTED",
-                "confidence_score": confidence,
-                "frame_timestamp": datetime.now(timezone.utc).isoformat(),
-            },
+            json=payload,
             timeout=10.0,
         )
+
+        logger.info("Weapon alert API response: status=%s, body=%s", response.status_code, response.text)
+
         response.raise_for_status()
 
         alert_id = response.json().get("alert_id")
         if not alert_id:
-            raise RuntimeError("Backend created no alert_id for weapon detection")
+            raise RuntimeError(
+                "Weapon alert API returned 2xx but no alert_id: "
+                f"{response.text}"
+            )
 
         logger.info(
             "Created weapon alert %s for camera %s (%s, %.2f)",
@@ -327,16 +334,33 @@ def _create_weapon_alert(
             weapon_label,
             confidence,
         )
+
+
         return str(alert_id)
+
+    except httpx.HTTPStatusError as error:
+        logger.error(
+            "Weapon alert API rejected request: status=%s, body=%s",
+            error.response.status_code,
+            error.response.text,
+        )
+        return None
+
+    except httpx.RequestError as error:
+        logger.error(
+            "Could not reach weapon alert API at %s: %s",
+            BACKEND_URL,
+            error,
+        )
+        return None
 
     except Exception:
         logger.exception(
-            "Could not create weapon alert for camera %s (%s)",
+            "Unexpected weapon-alert creation failure for camera %s (%s)",
             camera.id,
             weapon_label,
         )
         return None
-
 
 def _schedule_weapon_clip(camera: CameraSpec, rtsp_url: str, pre_frames: list, weapon_label: str, confidence: float, stop_event: threading.Event) -> None:
     
@@ -618,6 +642,14 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
 
 
                 if label.lower() in WEAPON_CLASSES:
+
+                    logger.info(
+                        "Weapon detection observed: camera=%s, label=%s, confidence=%.3f",
+                        camera.id,
+                        label,
+                        confidence,
+                    )
+                    
                     _schedule_weapon_clip(
                         camera=camera,
                         rtsp_url=rtsp_url,
