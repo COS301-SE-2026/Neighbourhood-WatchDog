@@ -11,7 +11,6 @@ from pathlib import Path
 import argparse
 import csv
 import re
-import shutil
 import cv2
 
 AI_ROOT = Path(__file__).resolve().parents[1]
