@@ -16,18 +16,62 @@ import {
 import logoImage from "@/assets/images/logo-mark-only.svg"
 import Image from "next/image"
 
+import { useState } from "react";
 
 import {
     BellRing,
+    Building2,
     Camera,
+    Check,
+    ChevronDown,
     History,
     House,
     LayoutDashboard,
+    MapPin,
     Megaphone,
-    Settings,
+    Plus,
     User,
 } from "lucide-react";
+
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import Link from "next/link";
+
+const exampleContexts = [
+    {
+        id: "greenfields-estate",
+        propertyId: "greenfields-property-id",
+        neighbourhoodId: "greenfields-neighbourhood-id",
+        name: "Greenfields Estate",
+        address: "45 Oak Avenue",
+        role: "Resident",
+        icon: MapPin,
+    },
+    {
+        id: "test-neighbourhood",
+        propertyId: "test-property-id",
+        neighbourhoodId: "test-neighbourhood-id",
+        name: "Test Neighbourhood",
+        address: "123 Test Street",
+        role: "Neighbourhood Admin",
+        icon: Building2,
+    },
+    {
+        id: "brook-street-property",
+        propertyId: "brook-street-property-id",
+        neighbourhoodId: null,
+        name: "Brook Street Property",
+        address: "1332 Brook Street",
+        role: null,
+        icon: House,
+    },
+];
 
 const residentSidebarGroups = [
     {
@@ -89,6 +133,18 @@ function WatchdogLogo({ size = 28 }: { size?: number }) {
 
 
 const AppDashSidebar = () => {
+
+    const [activeContext, setActiveContext] = useState(
+        exampleContexts[0],
+    );
+
+    const ActiveContextIcon = activeContext.icon;
+
+    const activeContextDescription =
+        activeContext.neighbourhoodId === null
+            ? `${activeContext.address} · Standalone property`
+            : `${activeContext.address} · ${activeContext.role}`;
+
     return (
         <Sidebar collapsible="icon">
             <SidebarHeader className="border-b border-sidebar-border px-3 py-3 group-data-[collapsible=icon]:px-2">
@@ -101,7 +157,7 @@ const AppDashSidebar = () => {
                             className="group-data-[collapsible=icon]:justify-center"
                         >
                             <Link
-                                href="/dashboard-v2"
+                                href="/dashboard"
                                 className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center"
                             >
                                 <div className="flex size-9 shrink-0 items-center justify-center">
@@ -121,6 +177,105 @@ const AppDashSidebar = () => {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
+
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            type="button"
+                            className="mt-3 flex w-full items-start gap-2.5 rounded-lg border border-white/10 bg-white/[0.03] p-3 text-left transition-colors hover:bg-white/[0.06] group-data-[collapsible=icon]:hidden"
+                        >
+                            <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-emerald-500/10">
+                                <ActiveContextIcon className="size-3.5 text-emerald-400" />
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[10px] font-medium uppercase tracking-wider text-white/40">
+                                    Viewing
+                                </p>
+
+                                <p className="mt-1 truncate text-sm font-medium text-white">
+                                    {activeContext.name}
+                                </p>
+
+                                <p className="mt-0.5 truncate text-xs text-white/50">
+                                    {activeContextDescription}
+                                </p>
+                            </div>
+
+                            <ChevronDown className="mt-1 size-4 shrink-0 text-white/40" />
+                        </button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent
+                        align="start"
+                        side="bottom"
+                        className="w-72 border-white/10 bg-zinc-950 p-1.5 text-white"
+                    >
+                        <DropdownMenuLabel className="px-2 py-2 text-xs font-medium uppercase tracking-wider text-white/40">
+                            Switch location
+                        </DropdownMenuLabel>
+
+                        {exampleContexts.map((context) => {
+                            const ContextIcon = context.icon;
+
+                            const isActive = context.id === activeContext.id;
+
+                            const contextDescription =
+                                context.neighbourhoodId === null
+                                    ? `${context.address} · Standalone property`
+                                    : `${context.address} · ${context.role}`;
+
+                            return (
+                                <DropdownMenuItem
+                                    key={context.id}
+                                    onSelect={() => setActiveContext(context)}
+                                    className={`flex cursor-pointer items-start gap-3 rounded-md px-2 py-2.5 focus:text-white ${
+                                        isActive
+                                            ? "bg-emerald-500/10 focus:bg-emerald-500/15"
+                                            : "focus:bg-white/10"
+                                    }`}
+                                >
+                                    <div
+                                        className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md ${
+                                            isActive
+                                                ? "bg-emerald-500/15"
+                                                : "bg-white/5"
+                                        }`}
+                                    >
+                                        <ContextIcon
+                                            className={`size-3.5 ${
+                                                isActive
+                                                    ? "text-emerald-400"
+                                                    : "text-white/60"
+                                            }`}
+                                        />
+                                    </div>
+
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-medium">
+                                            {context.name}
+                                        </p>
+
+                                        <p className="mt-0.5 truncate text-xs text-white/50">
+                                            {contextDescription}
+                                        </p>
+                                    </div>
+
+                                    {isActive && (
+                                        <Check className="mt-1 size-4 shrink-0 text-emerald-400" />
+                                    )}
+                                </DropdownMenuItem>
+                            );
+                        })}
+
+                        <DropdownMenuSeparator className="my-1 bg-white/10" />
+
+                        <DropdownMenuItem className="cursor-pointer gap-2 rounded-md px-2 py-2.5 text-emerald-400 focus:bg-emerald-500/10 focus:text-emerald-300">
+                            <Plus className="size-4" />
+                            Add property
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </SidebarHeader>
 
             <SidebarContent>
