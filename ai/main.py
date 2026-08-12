@@ -4,7 +4,7 @@ import sys
 
 from watchdog_gui import WatchDogAgentApp, messagebox, SUPPORTED_PYTHON
 from authenticator import WatchDogPinPage
-
+from welcome_page import WelcomePage
 
 class WatchDogDesktopApp:
     def __init__(self):
@@ -32,6 +32,9 @@ class WatchDogDesktopApp:
             self.current_frame.destroy()
         self.current_frame = page_class(self.root, controller=self)
         self.current_frame.pack(fill="both", expand=True)
+
+    def show_welcome(self): #Wizard welcome page
+        self.show_welcome(WelcomePage)
 
     def show_installer(self): #Install dependencies
         self.show_page(WatchDogAgentApp) 
