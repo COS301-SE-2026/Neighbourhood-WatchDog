@@ -335,7 +335,7 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
             confidence,
         )
 
-        
+
         return str(alert_id)
 
     except httpx.HTTPStatusError as error:
@@ -642,6 +642,14 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
 
 
                 if label.lower() in WEAPON_CLASSES:
+
+                    logger.info(
+                        "Weapon detection observed: camera=%s, label=%s, confidence=%.3f",
+                        camera.id,
+                        label,
+                        confidence,
+                    )
+                    
                     _schedule_weapon_clip(
                         camera=camera,
                         rtsp_url=rtsp_url,
