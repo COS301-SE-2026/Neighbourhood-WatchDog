@@ -36,9 +36,13 @@ class WelcomePage(ttk.Frame):
         ttk.Button(
             button_row,
             text="Next >",
+            command=self.on_next,
         ).pack(side="left")
 
         ttk.Button(
             button_row,
             text="Cancel"
         ).pack(side="left", padx=(10, 0))
+
+        def on_next(self):
+            self.controller.show_pairing()
