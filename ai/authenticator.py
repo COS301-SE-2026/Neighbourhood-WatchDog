@@ -275,10 +275,7 @@ class WatchDogPinPage(ttk.Frame):
             f"{part1}-{part2}-{part3}"
         )
 
-        # ---------------------------------------------------------
         # Local validation
-        # ---------------------------------------------------------
-
         if (
             len(part1) != 3
             or len(part2) != 3
@@ -302,10 +299,7 @@ class WatchDogPinPage(ttk.Frame):
 
             return
 
-        # ---------------------------------------------------------
         # Update UI while pairing
-        # ---------------------------------------------------------
-
         self.status_label.config(
             text="Status: Contacting server..."
         )
@@ -340,9 +334,7 @@ class WatchDogPinPage(ttk.Frame):
 
         self.update_idletasks()
 
-        # ---------------------------------------------------------
         # Pair with backend
-        # ---------------------------------------------------------
 
         try:
             result = self.pairing_service.pair(
@@ -362,9 +354,8 @@ class WatchDogPinPage(ttk.Frame):
                 api_key
             )
 
-            # -----------------------------------------------------
+            # ====================================================
             # Successful pairing
-            # -----------------------------------------------------
 
             self.status_label.config(
                 text="Status: Pairing successful."
@@ -380,25 +371,18 @@ class WatchDogPinPage(ttk.Frame):
             )
 
             self.log.see("end")
-            self.log.config(
-                state="disabled"
+            self.log.config(state="disabled")
+
+            self.controller.handle_pairing_success(
+                api_key=api_key,
+                config_data=config_data,
             )
 
-            # TODO:
-            # This currently goes back to the installer because
-            # that is how the old application flow works.
-            #
-            # This will eventually become:
-            #
-            # self.controller.show_main_app()
-            #
             self.controller.show_main_app()
 
         except PairingError as e:
 
-            # -----------------------------------------------------
             # Pairing failed
-            # -----------------------------------------------------
 
             self.status_label.config(
                 text="Status: Pairing failed."

@@ -65,7 +65,7 @@ class MainApplicationPage(ttk.Frame):
 
         ttk.Label(
             status_frame,
-            text="Account:"
+            text="Property:"
         ).grid(
             row=0,
             column=0,
@@ -73,18 +73,16 @@ class MainApplicationPage(ttk.Frame):
             padx=(0, 15)
         )
 
-        account_text = ( #TODO: Check the account connected and display it later
-            self.state.account_name
-            if self.state.account_name
-            else "Connected"
+        property_text = ( #TODO: Check the account connected and display it later
+            self.state.address or "Unknown property"
         )
 
-        self.account_label = ttk.Label(
+        self.property_label = ttk.Label(
             status_frame,
-            text=account_text,
+            text=property_text,
         )
 
-        self.account_label.grid(
+        self.property_label.grid(
             row=0,
             column=1,
             sticky="w"
@@ -180,11 +178,15 @@ class MainApplicationPage(ttk.Frame):
         )
 
         
-        self.camera_list.insert(# This will eventually come from the website/backend.
-            "",
-            "end",
-            values=("No cameras loaded", "Unknown")
-        )
+        for camera in self.state.cameras:
+            self.camera_list.insert(
+                "",
+                "end",
+                values=(
+                    camera.get("name", "Unnamed camera"),
+                    "Configured",
+                ),
+            )
 
         # AI Agent Controls
         controls_frame = ttk.LabelFrame(

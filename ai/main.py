@@ -64,6 +64,17 @@ class WatchDogDesktopApp:
             expand=True,
         )
 
+    def handle_pairing_success(
+        self,
+        api_key: str,
+        config_data: dict,
+    ) -> None:
+        self.state = AppState.from_config(
+            config_data=config_data,
+            api_key=api_key,
+        )
+        self.show_main_app()
+
     def show_installer(self) -> None:
         self.show_page(WatchDogAgentApp)
 
