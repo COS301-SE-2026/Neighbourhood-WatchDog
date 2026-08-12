@@ -96,7 +96,7 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
         logger.warning("Could not push annotations for camera %s: %s", camera_id, error)
 
 
-def _extract_detections(frame, confidence_threshold: float, zones: list | None = None) -> tuple[list, list]:
+def _extract_detections(frame, zones: list | None = None) -> tuple[list, list]:
     """Convert YOLO results to DeepSort detection format."""
 
     zones = zones or []
