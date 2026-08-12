@@ -26,3 +26,19 @@ class WelcomePage(ttk.Frame):
             wraplength=680,
             justify="left"
             ).grid(row=1, column=0, sticky="w", pady=(0, 30))
+
+        self.rowconfigure(2, weight=1)
+
+        button_row = ttk.Frame(self)
+        button_row.grid(row=3, column=0, sticky="ew")
+        button_row.columnconfigure(0, weight=1)
+
+        ttk.Button(
+            button_row,
+            text="Next >",
+        ).pack(side="left")
+
+        ttk.Button(
+            button_row,
+            text="Cancel"
+        ).pack(side="left", padx=(10, 0))
