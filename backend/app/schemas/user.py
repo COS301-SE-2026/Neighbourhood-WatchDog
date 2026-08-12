@@ -37,6 +37,9 @@ class CurrentUserProperty(BaseModel):
         default=None,
         alias="neighbourhoodId",
     )
+    is_admin: bool = Field(
+        alias="isAdmin"
+    )
 
 
 class CurrentUserContextRes(BaseModel):

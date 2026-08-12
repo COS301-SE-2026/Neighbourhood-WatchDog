@@ -45,6 +45,6 @@ async def get_user_by_id(
 async def get_my_context(
     claims: Annotated[dict, Depends(get_current_user)],
     db: DbSession,
-) -> CurrentUserContextRes:
+):
     """Returns the context of a user, for the properties and neighbourhoods"""
     return await get_current_user_context_handler(claims, db)

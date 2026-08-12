@@ -7,8 +7,12 @@ from uuid import UUID
 
 from app.core.database import DbSession
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.neighbourhood import Neighbourhood
+from app.models.neighbourhood_user import NeighbourhoodUser
+from app.models.property import Property
+from app.models.property_user import PropertyUser
 from app.models.user import User, UserRole
-from app.schemas.user import CurrentUserContextRes, GetUserResSchema
+from app.schemas.user import CurrentUserContextRes, CurrentUserNeighbourhood, CurrentUserProperty, CurrentUserSummary, GetUserResSchema
 
 logger = logging.getLogger(__name__)
 
@@ -131,4 +135,64 @@ async def get_user_by_id_handler(
 
 async def get_current_user_context_handler(claims: dict, db: AsyncSession) -> CurrentUserContextRes:
     """Retrieves the context of a user"""
-    pass
+    user_id = UUID(claims["id"])
+
+    user_result = await db.execute(
+        select(User).where(User.id == user_id)
+    )
+
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Authenticated user not found in databse")
+
+    user_summary = CurrentUserSummary(
+        id=user_id,
+        name=user.first_name + " " + user.last_name,
+        system_role=user.system_role
+    )
+
+    neighbourhoods_result = await db.execute(
+        select(NeighbourhoodUser, Neighbourhood.name)
+        .join(Neighbourhood, Neighbourhood.id == NeighbourhoodUser.neighbourhood_id)
+        .where(NeighbourhoodUser.user_id == user_id)
+    )
+
+    neighbourhood_rows = neighbourhoods_result.all()
+
+    current_neighbourhoods = []
+
+    for membership, neighbourhood_name in neighbourhood_rows:
+        current_neighbourhoods.append(
+            CurrentUserNeighbourhood(
+                id=membership.neighbourhood_id,
+                name=neighbourhood_name,
+                role=membership.role,
+            )
+        )
+
+    properties_result = await db.execute(
+        select(PropertyUser, Property)
+        .join(Property, Property.id == PropertyUser.property_id)
+        .where(PropertyUser.user_id == user_id)
+    )
+
+    properties_rows = properties_result.all()
+
+    current_properties = []
+
+    for prop_user, property in properties_rows:
+        current_properties.append(
+            CurrentUserProperty(
+                id=prop_user.property_id,
+                address=property.address,
+                neighbourhood_id=property.neighbourhood_id,
+                is_admin=prop_user.is_admin
+            )
+        )
+
+    return CurrentUserContextRes(
+        user=user_summary,
+        neighbourhoods=current_neighbourhoods,
+        properties=current_properties
+    )
