@@ -58,6 +58,11 @@ CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "")
 AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
 
+def _s3_client(): 
+    return boto3.client("s3", region_name=AWS_REGION, endpoint_url=f"https://s3.{AWS_REGION}.amazonaws.com")
+
+
+
 
 #cooldown tracker per weapon class
 _clips_cooldowns: dict[tuple[str, str], float] = {}

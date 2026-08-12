@@ -48,3 +48,9 @@ ai/.env.example
 watchdog-ec2-key.pem
 
 mediamtx/mediamtx
+
+ai/evaluation/frames
+ai/evaluation/labels
+
+ai/data/external/
+ai/data/curated/
