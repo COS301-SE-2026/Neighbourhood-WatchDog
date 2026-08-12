@@ -392,7 +392,7 @@ class WatchDogPinPage(ttk.Frame):
             #
             # self.controller.show_main_app()
             #
-            self.controller.show_installer()
+            self.controller.show_main_app()
 
         except PairingError as e:
 

@@ -1,0 +1,307 @@
+import tkinter as tk
+from tkinter import ttk
+
+
+SEGOE_FONT = "Segoe UI"
+
+
+class MainApplicationPage(ttk.Frame):
+
+    def __init__(self, parent, controller=None):
+        super().__init__(parent, padding=25)
+
+        self.controller = controller
+
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(2, weight=1)
+
+        # Header
+        ttk.Label(
+            self,
+            text="WatchDog Agent",
+            font=(SEGOE_FONT, 20, "bold")
+        ).grid(
+            row=0,
+            column=0,
+            sticky="w"
+        )
+
+        ttk.Label(
+            self,
+            text="Desktop Agent",
+            font=(SEGOE_FONT, 11)
+        ).grid(
+            row=1,
+            column=0,
+            sticky="w",
+            pady=(0, 20)
+        )
+
+        # Agent Status
+        status_frame = ttk.LabelFrame(
+            self,
+            text="Agent Status",
+            padding=15
+        )
+
+        status_frame.grid(
+            row=2,
+            column=0,
+            sticky="ew",
+            pady=(0, 15)
+        )
+
+        status_frame.columnconfigure(1, weight=1)
+
+        ttk.Label(
+            status_frame,
+            text="Account:"
+        ).grid(
+            row=0,
+            column=0,
+            sticky="w",
+            padx=(0, 15)
+        )
+
+        self.account_label = ttk.Label(
+            status_frame,
+            text="Connected"
+        )
+
+        self.account_label.grid(
+            row=0,
+            column=1,
+            sticky="w"
+        )
+
+        ttk.Label(
+            status_frame,
+            text="Agent:"
+        ).grid(
+            row=1,
+            column=0,
+            sticky="w",
+            padx=(0, 15),
+            pady=(10, 0)
+        )
+
+        self.agent_status_label = ttk.Label(
+            status_frame,
+            text="Stopped"
+        )
+
+        self.agent_status_label.grid(
+            row=1,
+            column=1,
+            sticky="w",
+            pady=(10, 0)
+        )
+
+        # Cameras
+        cameras_frame = ttk.LabelFrame(
+            self,
+            text="Cameras",
+            padding=15
+        )
+
+        cameras_frame.grid(
+            row=3,
+            column=0,
+            sticky="nsew",
+            pady=(0, 15)
+        )
+
+        cameras_frame.columnconfigure(0, weight=1)
+        cameras_frame.rowconfigure(0, weight=1)
+
+        self.camera_list = ttk.Treeview(
+            cameras_frame,
+            columns=("camera", "status"),
+            show="headings",
+            height=8
+        )
+
+        self.camera_list.heading(
+            "camera",
+            text="Camera"
+        )
+
+        self.camera_list.heading(
+            "status",
+            text="Status"
+        )
+
+        self.camera_list.column(
+            "camera",
+            width=400
+        )
+
+        self.camera_list.column(
+            "status",
+            width=150
+        )
+
+        self.camera_list.grid(
+            row=0,
+            column=0,
+            sticky="nsew"
+        )
+
+        camera_scrollbar = ttk.Scrollbar(
+            cameras_frame,
+            orient="vertical",
+            command=self.camera_list.yview
+        )
+
+        camera_scrollbar.grid(
+            row=0,
+            column=1,
+            sticky="ns"
+        )
+
+        self.camera_list.configure(
+            yscrollcommand=camera_scrollbar.set
+        )
+
+        
+        self.camera_list.insert(# This will eventually come from the website/backend.
+            "",
+            "end",
+            values=("No cameras loaded", "Unknown")
+        )
+
+        # AI Agent Controls
+        controls_frame = ttk.LabelFrame(
+            self,
+            text="AI Agent",
+            padding=15
+        )
+
+        controls_frame.grid(
+            row=4,
+            column=0,
+            sticky="ew",
+            pady=(0, 15)
+        )
+
+        self.ai_status_label = ttk.Label(
+            controls_frame,
+            text="AI Agent is stopped."
+        )
+
+        self.ai_status_label.pack(
+            side="left"
+        )
+
+        self.start_button = ttk.Button(
+            controls_frame,
+            text="Start Agent",
+            command=self.start_agent
+        )
+
+        self.start_button.pack(
+            side="right",
+            padx=(10, 0)
+        )
+
+        self.stop_button = ttk.Button(
+            controls_frame,
+            text="Stop Agent",
+            command=self.stop_agent,
+            state="disabled"
+        )
+
+        self.stop_button.pack(
+            side="right"
+        )
+
+        # Bottom Controls
+        button_frame = ttk.Frame(self)
+
+        button_frame.grid(
+            row=5,
+            column=0,
+            sticky="ew"
+        )
+
+        ttk.Button(
+            button_frame,
+            text="Exit",
+            command=self.exit_application
+        ).pack(
+            side="right"
+        )
+
+    # AI AGENT CONTROLS
+    def start_agent(self):
+        """
+        Start the WatchDog AI agent.
+
+        The actual AI/MediaMTX implementation will be connected
+        here later.
+        """
+
+        self.agent_status_label.config(
+            text="Running"
+        )
+
+        self.ai_status_label.config(
+            text="AI Agent is running."
+        )
+
+        self.start_button.config(
+            state="disabled"
+        )
+
+        self.stop_button.config(
+            state="normal"
+        )
+
+    def stop_agent(self):
+        """
+        Stop the WatchDog AI agent.
+
+        The actual AI/MediaMTX implementation will be connected
+        here later.
+        """
+
+        self.agent_status_label.config(
+            text="Stopped"
+        )
+
+        self.ai_status_label.config(
+            text="AI Agent is stopped."
+        )
+
+        self.start_button.config(
+            state="normal"
+        )
+
+        self.stop_button.config(
+            state="disabled"
+        )
+
+    # APPLICATION
+    def exit_application(self):
+        """Close the desktop application."""
+
+        if self.controller:
+            self.controller.quit_application()
+        else:
+            self.winfo_toplevel().destroy()
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+
+    root.title("WatchDog Agent")
+    root.geometry("800x650")
+
+    MainApplicationPage(
+        root
+    ).pack(
+        fill="both",
+        expand=True
+    )
+
+    root.mainloop()

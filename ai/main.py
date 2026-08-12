@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import sys
 
+from main_app import MainApplicationPage
 from watchdog_gui import WatchDogAgentApp
 from authenticator import WatchDogPinPage
 
@@ -25,7 +26,7 @@ class WatchDogDesktopApp:
         self.config_data = {}
 
         self.current_frame = None
-        
+
         # Start application
         self.show_installer()
 
@@ -50,6 +51,9 @@ class WatchDogDesktopApp:
 
     def show_pairing(self):
         self.show_page(WatchDogPinPage)
+
+    def show_main_app(self):
+        self.show_page(MainApplicationPage)
 
 
 if __name__ == "__main__":

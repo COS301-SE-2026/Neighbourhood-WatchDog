@@ -11,13 +11,13 @@ class WelcomePage(ttk.Frame):
 
         self.columnconfigure(0, weight=1)
 
-        ttk.label(
+        ttk.Label(
             self,
             text="Welcome to WatchDog Agent",
             font=(SEGOUE_FONT, 20, "bold"),
             ).grid(row=0, column=0, sticky="w", pady=(0, 12))
         
-        ttk.label(
+        ttk.Label(
             self,
             text=("This wizard sets up the WatchDog Agent on this computer by"
                   "installing the required dependencies and pairing it to your"
