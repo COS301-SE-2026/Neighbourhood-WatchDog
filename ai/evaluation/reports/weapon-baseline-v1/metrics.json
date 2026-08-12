@@ -1,0 +1,52 @@
+{
+  "dataset": "weapons-gun-knife-v1/frozen-evaluation",
+  "evaluation_date": "2026-08-11T13:30:58.775625+00:00",
+  "evaluation_image_count": 89,
+  "model": {
+    "path": "pipeline/models/weights/best.pt",
+    "sha256": "86c43444ae8319d2276dd300edc3e7f7a1137fe7566737f994ca579ad770f6ce"
+  },
+  "model_class_map": {
+    "0": "Gun",
+    "1": "explosion",
+    "2": "grenade",
+    "3": "knife"
+  },
+  "dataset_class_map": {
+    "0": "Gun",
+    "1": "knife"
+  },
+  "confidence_threshold": 0.5,
+  "nms_iou_threshold": 0.5,
+  "match_iou_threshold": 0.5,
+  "metrics": {
+    "Gun": {
+      "tp": 0,
+      "fp": 1,
+      "fn": 33,
+      "ground_truth_count": 33,
+      "prediction_count": 1,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "status": "measurable"
+    },
+    "knife": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 30,
+      "ground_truth_count": 30,
+      "prediction_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "status": "measurable"
+    }
+  },
+  "ignored_explosion_grenade_predictions": {},
+  "limitations": [
+    "Gun examples are source-separated by scene; knife source grouping is unknown.",
+    "Twenty-five held-out WatchDog hard-negative frames come from one source clip.",
+    "This is a fixed regression evaluation, not a field-performance estimate."
+  ]
+}

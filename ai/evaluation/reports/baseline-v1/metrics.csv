@@ -1,0 +1,7 @@
+class,tp,fp,fn,ground_truth_count,prediction_count,precision,recall,f1,status
+person,29,1,1,30,30,0.966667,0.966667,0.966667,measurable
+Gun,0,0,0,0,0,0.0,0.0,0.0,not_measurable_no_ground_truth_positive
+explosion,0,0,0,0,0,0.0,0.0,0.0,not_measurable_no_ground_truth_positive
+grenade,0,0,0,0,0,0.0,0.0,0.0,not_measurable_no_ground_truth_positive
+knife,0,0,0,0,0,0.0,0.0,0.0,not_measurable_no_ground_truth_positive
+weapon,0,0,0,0,0,0.0,0.0,0.0,not_measurable_no_ground_truth_positive
