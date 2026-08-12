@@ -73,9 +73,15 @@ class MainApplicationPage(ttk.Frame):
             padx=(0, 15)
         )
 
+        account_text = ( #TODO: Check the account connected and display it later
+            self.state.account_name
+            if self.state.account_name
+            else "Connected"
+        )
+
         self.account_label = ttk.Label(
             status_frame,
-            text="Connected"
+            text=account_text,
         )
 
         self.account_label.grid(
