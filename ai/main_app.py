@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from app_state import AppState
 
 
 SEGOE_FONT = "Segoe UI"
@@ -7,11 +8,20 @@ SEGOE_FONT = "Segoe UI"
 
 class MainApplicationPage(ttk.Frame):
 
-    def __init__(self, parent, controller=None):
+    def __init__(
+        self,
+        parent,
+        controller=None,
+        state: AppState | None = None,
+        agent_service=None,
+        camera_service=None,
+    ):
         super().__init__(parent, padding=25)
 
         self.controller = controller
-
+        self.state = state or AppState()
+        self.agent_service = agent_service
+        self.camera_service = camera_service
         self.columnconfigure(0, weight=1)
         self.rowconfigure(2, weight=1)
 
