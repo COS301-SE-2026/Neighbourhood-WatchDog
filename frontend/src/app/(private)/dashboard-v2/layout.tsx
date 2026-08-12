@@ -7,14 +7,12 @@ export default function DashboardV2Layout({
   children: React.ReactNode;
 }) {
   return (
-    <html>
-        <body>
-            <AppDashSidebar/>
-            <main className="w-full">
-                <Navbar/>
-                <div className="px-4">{children}</div>
-            </main>
-        </body>
-    </html>
+    <>
+        <AppDashSidebar/>
+        <main className="w-full">
+            <Navbar/>
+            <div className="px-4">{children}</div>
+        </main>
+    </>
   );
 }
