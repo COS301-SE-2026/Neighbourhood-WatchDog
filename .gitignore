@@ -54,3 +54,4 @@ ai/evaluation/labels
 
 ai/data/external/
 ai/data/curated/
+ai/.smoke-venv

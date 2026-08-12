@@ -19,7 +19,7 @@ load_dotenv(AI_DIR / ".env")
 load_dotenv(ROOT_DIR / ".env")
 
 
-BACKEND_URL = os.getenv("BACKEND_URL", "https:api.neighbourhoodwatchdog.co.za").rstrip("/")
+BACKEND_URL = os.getenv("BACKEND_URL", "https://api.neighbourhoodwatchdog.co.za").rstrip("/")
 S3_BUCKET_NAME = (os.getenv("S3_BUCKET_NAME") or os.getenv("AWS_BUCKET_NAME", ""))
 AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
 CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
