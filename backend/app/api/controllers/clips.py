@@ -24,8 +24,8 @@ from app.models.alert import Alert
 from app.models.camera import Camera, CameraVisibilityEnum
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
 from app.models.property import Property
+from app.models.property_user import PropertyUser
 from app.models.user import User, UserRole
-
 
 router = APIRouter(prefix="/api/clips", tags=["clips"])
 
@@ -36,6 +36,7 @@ FAULT_RETENTION_DAYS = 7
 
 S3_BUCKET = os.getenv("S3_BUCKET_NAME", "")
 AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
+
 
 # Current flow:
 # Find detection event in the db
@@ -62,65 +63,61 @@ def _s3_client():
 
 #claim: info about the authenticated user
 async def _check_rbac(claims: dict, camera: Camera, property_obj: Property, db: DbSession) -> None:
-    """Raise 403 if the caller lacks permission to view this camera's footage."""
+    """Raise 403 unless the authenticated user may review this footage."""
 
-    cognito_sub = claims.get("sub") or claims.get("custom:sub")
+    cognito_sub = claims.get("sub")
+    if not cognito_sub:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Authenticated user identity is missing.")
 
-    if role == "SYSTEM_ADMIN":
+    user_result = await db.execute(
+        select(User).where(User.cognito_sub == cognito_sub)
+    )
+    user = user_result.scalar_one_or_none()
+
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No application user is associated with this identity.")
+
+    #system administrators may review all footage.
+    if user.system_role == UserRole.SYSTEM_ADMIN:
         return
 
-    
-    #admins see everything
-    if role in {"NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SECURITY_OFFICER"}:
-        return
-
-        if str(camera.neighbourhood_id) == str(user_neighbourhood):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have access to view footage from this neighbourhood."
-            )
-    
-    # #security officers only see what is available in their neighbourhood
-    # if role == "SECURITY_OFFICER":
-    #     return
-    
-    if role == "RESIDENT":
-        if str(camera.neighbourhood_id) != str(user_neighbourhood):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have access to footage from this neighbourhood.",
-            )
-
-        if camera.visibility != "PUBLIC":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Residents can only view public-camera footage.",
-
-            )
-        approved = (
-            db.query(NeighbourhoodJoinRequest).filter_by(
-                neighbourhood_id=camera.neighbourhood_id,
-                user_id=claims.get("sub"),
-                status="APPROVED",
-            )
-            .first()
+    #property administrator may review footage from their own property.
+    property_admin_result = await db.execute(
+        select(PropertyUser).where(
+            PropertyUser.user_id == user.id,
+            PropertyUser.property_id == property_obj.id,
+            PropertyUser.is_admin.is_(True),
         )
+    )
+    if property_admin_result.scalar_one_or_none() is not None:
+        return
 
+    #  all remaining access is governed by neighbourhood membership.
+    if property_obj.neighbourhood_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This camera is not associated with a neighbourhood.")
+
+    membership_result = await db.execute(
+        select(NeighbourhoodUser).where(
+            NeighbourhoodUser.user_id == user.id,
+            NeighbourhoodUser.neighbourhood_id
+            == property_obj.neighbourhood_id,
+        )
+    )
     membership = membership_result.scalar_one_or_none()
 
     if membership is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not belong to this camera's neighbourhood.")
 
-    if membership.role in {NeighbourhoodRole.NEIGHBOURHOOD_ADMIN, NeighbourhoodRole.SECURITY_OFFICER}: 
+    if membership.role in {NeighbourhoodRole.NEIGHBOURHOOD_ADMIN, NeighbourhoodRole.SECURITY_OFFICER}:
         return
 
-    if membership.role == NeighbourhoodRole.RESIDENT: 
-        if camera.visibility != CameraVisibilityEnum.PUBLIC:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Residents can only view public-camera footage.")
-        return
+    if membership.role == NeighbourhoodRole.RESIDENT:
+        if camera.visibility == CameraVisibilityEnum.PUBLIC:
+            return
+
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Residents can only view public-camera footage.")
 
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to view footage.")
-
 
 @router.get("/{alert_id}")
 async def get_clip_url(

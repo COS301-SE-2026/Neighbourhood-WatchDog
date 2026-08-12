@@ -357,7 +357,7 @@ def _save_weapon_clip(
 
     try:
         event_response = httpx.post(
-            f"{BACKEND_URL}/internal/detections",
+            f"{BACKEND_URL}/internal/alerts",
             headers=headers,
             json={
                 "camera_id": camera.id,
@@ -368,10 +368,10 @@ def _save_weapon_clip(
             timeout=3.0,
         )
         event_response.raise_for_status()
-        detection_event_id = event_response.json().get("detection_event_id")
+        alert_id = event_response.json().get("alert_id")
 
-        if not detection_event_id:
-            raise RuntimeError("Backend created no detection event for the clip")
+        if not alert_id:
+            raise RuntimeError("Backend created no alert for the clip")
 
     except Exception:
         logger.exception(
@@ -503,7 +503,7 @@ def _save_weapon_clip(
 
         update_response = httpx.patch(
             f"{BACKEND_URL}/internal/alerts/"
-            f"{detection_event_id}/clip",
+            f"{alert_id}/clip",
             headers=headers,
             json={
                 "clip_s3_key": s3_key,
