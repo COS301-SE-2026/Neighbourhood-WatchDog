@@ -478,6 +478,13 @@ def _save_weapon_clip(
             text=True,
         )
 
+        _s3_client().upload_file(
+            h264_path, 
+            S3_BUCKET_NAME, 
+            s3_key, 
+            ExtraArgs={"ContentType": "video/mp4", "ServerSideEncryption": "AES256"}
+        )
+
         s3_key = (
             f"clips/{camera.id}/"
             f"{timestamp:%Y/%m/%d}/"
@@ -487,7 +494,7 @@ def _save_weapon_clip(
 
         update_response = httpx.patch(
             f"{BACKEND_URL}/internal/alerts/"
-            f"{alert_id}/clip",
+            f"{detection_event_id}/clip",
             headers=headers,
             json={
                 "clip_s3_key": s3_key,
@@ -501,7 +508,7 @@ def _save_weapon_clip(
             "Clip uploaded: s3://%s/%s -> event %s",
             S3_BUCKET_NAME,
             s3_key,
-            alert_id,
+            detection_event_id,
         )
 
     except Exception:
