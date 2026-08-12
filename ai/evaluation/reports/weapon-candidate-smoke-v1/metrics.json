@@ -1,0 +1,50 @@
+{
+  "dataset": "weapons-gun-knife-v1/frozen-evaluation",
+  "evaluation_date": "2026-08-12T04:10:29.673176+00:00",
+  "evaluation_image_count": 89,
+  "model": {
+    "path": "data/curated/weapons-gun-knife-v1/training-runs/weapons-gun-knife-smoke-v1/weights/best.pt",
+    "sha256": "e0dc0dc17217b6d4937ae704e72252b6b89d47d9324722bea9f909600018b230"
+  },
+  "model_class_map": {
+    "0": "Gun",
+    "1": "knife"
+  },
+  "dataset_class_map": {
+    "0": "Gun",
+    "1": "knife"
+  },
+  "confidence_threshold": 0.5,
+  "nms_iou_threshold": 0.5,
+  "match_iou_threshold": 0.5,
+  "metrics": {
+    "Gun": {
+      "tp": 0,
+      "fp": 1,
+      "fn": 33,
+      "ground_truth_count": 33,
+      "prediction_count": 1,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "status": "measurable"
+    },
+    "knife": {
+      "tp": 6,
+      "fp": 4,
+      "fn": 24,
+      "ground_truth_count": 30,
+      "prediction_count": 10,
+      "precision": 0.6,
+      "recall": 0.2,
+      "f1": 0.3,
+      "status": "measurable"
+    }
+  },
+  "ignored_explosion_grenade_predictions": {},
+  "limitations": [
+    "Gun examples are source-separated by scene; knife source grouping is unknown.",
+    "Twenty-five held-out WatchDog hard-negative frames come from one source clip.",
+    "This is a fixed regression evaluation, not a field-performance estimate."
+  ]
+}
