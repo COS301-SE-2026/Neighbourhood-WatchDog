@@ -348,7 +348,7 @@ def _save_weapon_clip(
 
     try:
         event_response = httpx.post(
-            f"{BACKEND_URL}/internal/detections",
+            f"{BACKEND_URL}/internal/detection-events",
             headers=headers,
             json={
                 "camera_id": camera.id,
@@ -359,11 +359,10 @@ def _save_weapon_clip(
             timeout=3.0,
         )
         event_response.raise_for_status()
-        alert_id = event_response.json().get("alert_id")
+        detection_event_id = event_response.json().get("detection_event_id")
 
-        if not alert_id:
-            logger.info("Detection for camera %s did not meet the configured threshold; no alert or clip will be created.", camera.id)
-            return
+        if not detection_event_id:
+            raise RuntimeError("Backend created no detection event for the clip")
 
     except Exception:
         logger.exception(
