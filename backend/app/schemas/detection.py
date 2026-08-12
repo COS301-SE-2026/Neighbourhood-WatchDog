@@ -32,20 +32,9 @@ class DetectionIngestReq(BaseModel):
             raise ValueError(f"detection_type must be one of {sorted(valid)}")
         return v
 
-class DetectionEventRes(BaseModel):
-    id: UUID
-    camera_id: UUID
-    frame_timestamp: datetime
-    detection_type: str
-    confidence_score: float
-    thumbnail_url: str | None = None
-    processed: bool
-
-    model_config = {"from_attributes": True}
 
 class DetectionIngestRes(BaseModel):
     status: int
     message: str | None = None
-    data: DetectionEventRes | None = None
     alert_created: bool
     alert_id: UUID | None = None

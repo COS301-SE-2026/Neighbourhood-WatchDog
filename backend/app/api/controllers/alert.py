@@ -4,7 +4,7 @@ from uuid import UUID
 from typing import Annotated
 from datetime import datetime
 from fastapi import APIRouter, Depends, Query, WebSocket
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import require_role
 from app.auth.dependencies import get_current_user, get_authenticated_edge_agent
 from app.core.database import DbSession, get_db
@@ -35,33 +35,43 @@ router = APIRouter(prefix="/alerts", tags=["alerts"])
 _connections: dict[str, set[WebSocket]] = {}
 #TODO: NOTHING HERE SHOULD BE PUBLIC, NEED TO MAKE EVERYTHING PRIVATE 
 
-def _get_bucket(neighbourhood_id: str) -> set[WebSocket]:
-    if neighbourhood_id not in _connections:
-        _connections[neighbourhood_id] = set()
-    return _connections[neighbourhood_id]
+def _get_bucket(user_id: str) -> set[WebSocket]:
+    if user_id not in _connections:
+        _connections[user_id] = set()
+    return _connections[user_id]
 
 
-def register_connection(neighbourhood_id: str, websocket: WebSocket) -> None:
-    _get_bucket(neighbourhood_id).add(websocket)
+def register_connection(user_id: str, websocket: WebSocket) -> None:
+    _get_bucket(user_id).add(websocket)
 
 
-def remove_connection(neighbourhood_id: str, websocket: WebSocket) -> None:
-    _get_bucket(neighbourhood_id).discard(websocket)
+def remove_connection(user_id: str, websocket: WebSocket) -> None:
+    connections = _connections.get(user_id)
+
+    if not connections:
+        return
+
+    connections.discard(websocket)
+
+    if not connections:
+        _connections.pop(user_id, None)
 
 
-async def broadcast(neighbourhood_id: str, message: dict) -> None:
-    connections = _get_bucket(neighbourhood_id)
-    dead: set[WebSocket] = set()
-
+async def broadcast(user_ids: list[str], message: dict) -> None:
     payload = json.dumps(message)
-    for ws in connections:
-        try:
-            await ws.send_text(payload)
-        except Exception:
-            dead.add(ws)
 
-    for ws in dead:
-        connections.discard(ws)
+    for user_id in user_ids:
+        connections = _connections.get(user_id, set())
+        dead: set[WebSocket] = set()
+
+        for ws in connections:
+            try:
+                await ws.send_text(payload)
+            except Exception:
+                dead.add(ws)
+
+        for ws in dead:
+            connections.discard(ws)
 
 
 Claims = Annotated[dict, Depends(get_current_user)]
@@ -77,7 +87,7 @@ async def get_alert_metrics(
 ):
     """This will rep the time metrics for the alerts in the neighbourhood; can be filtered by camera and officer"""
 
-    return get_response_metrics_handler(neighbourhood_id, db, claims, camera_id, officer_id)
+    return await get_response_metrics_handler(neighbourhood_id, db, claims, camera_id, officer_id)
 
 @router.get("/frequency-metrics", response_model=AlertFrequencyMetricsRes)
 async def get_alert_frequency_metrics(
@@ -100,15 +110,14 @@ async def get_alert_frequency_metrics(
 async def create_alert(
     alert: AlertCreate, 
     credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)],
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     return await alert_service.create_alert(db, alert)
 
 @router.post("/dev/broadcast") #TODO: remove before production
 async def dev_broadcast_alert(data: dict):
     """Dev-only: broadcast alert without DB. Remove before production."""
-    neighbourhood_id = data.get("neighbourhood_id", "10000000-0000-0000-0000-000000000001")
-    await broadcast(str(neighbourhood_id), {
+    await broadcast([], {
         "event": "new_alert",
         "camera_id": data.get("camera_id", "unknown"),
         "detection_type": data.get("detection_type", "HUMAN_PRESENCE"),
@@ -140,7 +149,7 @@ async def get_alert_trends(
         camera_id=camera_id 
 
     )
-    return TrendResponse(status=200, data=data)
+    return TrendResponse(status=200, data=data, message="Alert trends recieved successfully")
 
 
 @router.get(
@@ -151,8 +160,8 @@ async def get_alert_trends(
 async def list_alerts(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: dict = Depends(get_current_user),
-    status_filter: str | None = Query(default=None, alias="status"),
+    claims: Annotated[dict, Depends(get_current_user)],
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
     camera_id: Annotated[UUID | None, Query()] = None,
     detection_type: Annotated[str | None, Query()] = None,
     start_date: Annotated[datetime | None, Query()] = None,
@@ -186,28 +195,23 @@ async def list_alerts(
 async def acknowledge_alert(
     alert_id: UUID,
     db: DbSession,
-    claims: dict = Depends(get_current_user),
+    claims: Annotated[dict, Depends(get_current_user)],
 ):
     result = await acknowledge_alert_handler(alert_id, db, claims)
     return AcknowledgeAlertRes(status=200, data=result)
 
 
-@router.websocket("/{neighbourhood_id}/ws")
+@router.websocket("/ws")
 async def alert_websocket(
     neighbourhood_id: UUID,
     websocket: WebSocket,
-    token: str | None = Query(default=None),
+    claims: Annotated[dict, Depends(get_current_user)]
 ):
-    _ = token  # TODO: verify real Cognito token when auth is live
-
-    # claims = {
-    #     "sub": "mock-websocket-user",
-    #     "custom:role": "RESIDENT",
-    #     "custom:neighbourhood_id": str(neighbourhood_id),
-    # }
+   
+    user_id = claims["id"]
 
     await websocket.accept()
-    register_connection(str(neighbourhood_id), websocket)
+    register_connection(user_id, websocket)
 
     try:
         while True:

@@ -1,4 +1,4 @@
-""""
+"""
 GET /api/clips/{detection_event_id}
 
 This endpoint will return a short lived S3 url for a detection event
@@ -14,14 +14,18 @@ from botocore.config import Config as BotoConfig
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from uuid import UUID
+from sqlalchemy import select
+from typing import Annotated
 
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
-from app.models.camera import Camera
-from app.models.detection_event import DetectionEvent
-from app.models.neighbourhood_join_request import NeighbourhoodJoinRequest
-
+from app.models.alert import Alert
+from app.models.camera import Camera, CameraVisibilityEnum
+from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
+from app.models.property import Property
+from app.models.property_user import PropertyUser
+from app.models.user import User, UserRole
 
 router = APIRouter(prefix="/api/clips", tags=["clips"])
 
@@ -31,7 +35,7 @@ PRESIGN_TTL = 300
 FAULT_RETENTION_DAYS = 7
 
 S3_BUCKET = os.getenv("S3_BUCKET_NAME", "")
-
+AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
 
 
 # Current flow:
@@ -43,14 +47,13 @@ S3_BUCKET = os.getenv("S3_BUCKET_NAME", "")
 # Return URL
 
 
-ADMIN_ROLES = {"SYSTEM_ADMIN", "NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "RESIDENT"}
 
 #create an aws s3 client for the applications aws region
 def _s3_client():
     return boto3.client(
         "s3",
-        region_name="eu-north-1",
-        endpoint_url="https://s3.eu-north-1.amazonaws.com",
+        region_name=AWS_REGION,
+        endpoint_url=f"https://s3.{AWS_REGION}.amazonaws.com",
         config=BotoConfig(
             signature_version="s3v4",
             s3={"addressing_style": "virtual"},
@@ -59,65 +62,68 @@ def _s3_client():
 
 
 #claim: info about the authenticated user
-def _check_rbac(claims: dict, camera: Camera, db: Session) -> None:
-    """Raise 403 if the caller lacks permission to view this camera's footage."""
+async def _check_rbac(claims: dict, camera: Camera, property_obj: Property, db: DbSession) -> None:
+    """Raise 403 unless the authenticated user may review this footage."""
 
-    #this assumes that the claim came from a jwt token - need to consolidate this
-    role = claims.get("role", claims.get("custom:role", ""))
-    user_neighbourhood = claims.get("neighbourhood_id", claims.get("custom:neighbourhood_id"))
+    cognito_sub = claims.get("sub")
+    if not cognito_sub:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Authenticated user identity is missing.")
 
-    #admins see everything
-    if role in ADMIN_ROLES:
-        return
-
-        if str(camera.neighbourhood_id) != str(user_neighbourhood):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have access to view footage from this neighbourhood."
-            )
-    
-    #security officers only see what is available in their neighbourhood
-    if role == "SECURITY_OFFICER":
-        return
-    
-    if role == "RESIDENT":
-
-        if camera.visibility != "PUBLIC":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Residents can only view public-camera footage.",
-
-            )
-        approved = (
-            db.query(NeighbourhoodJoinRequest).filter_by(
-                neighbourhood_id=camera.neighbourhood_id,
-                user_id=claims.get("sub"),
-                status="APPROVED",
-            )
-            .first()
-        )
-        if not approved:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Your neighbourhood membership has not been approved",
-
-            )
-        return
-    
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN, 
-        detail="Insufficient permissions to view footage.",
-
+    user_result = await db.execute(
+        select(User).where(User.cognito_sub == cognito_sub)
     )
+    user = user_result.scalar_one_or_none()
 
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No application user is associated with this identity.")
 
-@router.get("/{detection_event_id}")
+    #system administrators may review all footage.
+    if user.system_role == UserRole.SYSTEM_ADMIN:
+        return
+
+    #property administrator may review footage from their own property.
+    property_admin_result = await db.execute(
+        select(PropertyUser).where(
+            PropertyUser.user_id == user.id,
+            PropertyUser.property_id == property_obj.id,
+            PropertyUser.is_admin.is_(True),
+        )
+    )
+    if property_admin_result.scalar_one_or_none() is not None:
+        return
+
+    #  all remaining access is governed by neighbourhood membership.
+    if property_obj.neighbourhood_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This camera is not associated with a neighbourhood.")
+
+    membership_result = await db.execute(
+        select(NeighbourhoodUser).where(
+            NeighbourhoodUser.user_id == user.id,
+            NeighbourhoodUser.neighbourhood_id
+            == property_obj.neighbourhood_id,
+        )
+    )
+    membership = membership_result.scalar_one_or_none()
+
+    if membership is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not belong to this camera's neighbourhood.")
+
+    if membership.role in {NeighbourhoodRole.NEIGHBOURHOOD_ADMIN, NeighbourhoodRole.SECURITY_OFFICER}:
+        return
+
+    if membership.role == NeighbourhoodRole.RESIDENT:
+        if camera.visibility == CameraVisibilityEnum.PUBLIC:
+            return
+
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Residents can only view public-camera footage.")
+
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to view footage.")
+
+@router.get("/{alert_id}")
 async def get_clip_url(
-    detection_event_id: str,
+    alert_id: UUID,
     db: DbSession,
-    claims: dict = Depends(get_current_user),
-
-
+    claims: Annotated[dict, Depends(get_current_user)],
 ):
     """
     return a pre signed s3 url for the requested clip
@@ -132,70 +138,55 @@ async def get_clip_url(
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, 
             detail="Clip storage has not been onfigured on this deployment",
-
         )
+
+    stmt = (
+        select(Alert, Camera, Property)
+        .join(Camera, Alert.camera_id == Camera.id)
+        .join(Property, Camera.property_id == Property.id)
+        .where(Alert.id == alert_id)
+    )
     
+    result = await db.execute(stmt)
+    record = result.one_or_none()
 
-    #load the detection event
-    #fetching the detection event and its respective camera
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert or associated camera/property was not found.")
 
-    event: DetectionEvent | None = db.query(DetectionEvent).filter_by(
-        id=detection_event_id
-    ).first()
+    alert, camera, property_obj = record
 
-    if not event: 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Detection event not found"
+    if not alert.clip_s3_key:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No clip is available for this alert.")
 
+    if (alert.clip_expires_at and alert.clip_expires_at < datetime.now(timezone.utc)):
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="This clip has expired and is no longer available.")
+
+    await _check_rbac(
+        claims=claims,
+        camera=camera,
+        property_obj=property_obj,
+        db=db,
     )
 
-    if not event.clip_s3_key:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No clip is available for this event"
-
-        )
-
-
-    #checking the events retention expiry
-    if event.clip_expires_at and event.clip_expires_at < datetime.now(tz=timezone.utc):
-        raise HTTPException(
-            status_code=status.HTTP_410_GONE,
-            detail="This clip has expired and is no longer available",
-
-        )
-
-    #rbac: laoding the camera, and applying permission rules
-    camera : Camera | None = db.query(Camera).filter_by(
-        id=event.camera_id
-    ).first()
-
-    if not camera:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Camera not found"
-
-        )
-
-    _check_rbac(claims, camera, db)
-
-
-    #generating the pre signed url
     try:
         s3 = _s3_client()
+
         url = s3.generate_presigned_url(
             "get_object",
-            Params={"Bucket": S3_BUCKET, "Key": event.clip_s3_key},
+            Params={
+                "Bucket": S3_BUCKET,
+                "Key": alert.clip_s3_key,
+            },
             ExpiresIn=PRESIGN_TTL,
-
         )
+
     except (BotoCoreError, ClientError) as exc:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, 
-            detail=f"Could not generate clip URL: {exc}",
-
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Could not generate a temporary clip URL.",
         ) from exc
-    
+
     return {
         "url": url,
-        "expires_in": PRESIGN_TTL
+        "expires_in": PRESIGN_TTL,
     }

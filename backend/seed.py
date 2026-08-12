@@ -2,11 +2,13 @@
 """Database seeder script for development"""
 
 import secrets
+import asyncio
 import sys
 import random
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4, UUID
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import SessionLocal, engine, Base
 from app.models.risk_threshold_config import RiskThresholdConfig
 from app.models.user import User, UserRole
@@ -16,9 +18,9 @@ from app.models.property_user import PropertyUser
 from app.models.camera import Camera, CameraVisibilityEnum
 from app.models.zone import GeospatialZone, SensitivityLevel
 from app.models.retention_policy import RetentionPolicy
-from app.models.detection_event import DetectionEvent, DetectionType
-from app.models.alert import Alert, AlertStatus
+from app.models.alert import Alert, AlertStatus, DetectionType
 from app.models.audit_log import AuditLog, AuditAction
+from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
 from app.services.rtsp_encryption import encrypt_rtsp_url
 
 # Fixed UUIDs for testing
@@ -66,7 +68,7 @@ def _fake_values_for_action(action: AuditAction):
     return None, None
 
 
-def seed_bulk_audit_logs(db: Session, user_id: UUID, count: int = 500) -> int:
+async def seed_bulk_audit_logs(db: AsyncSession, user_id: UUID, count: int = 500) -> int:
     """Generate `count` randomized audit log rows spread across the last 90 days,
     so pagination, filtering, and sorting can actually be exercised."""
     actions = list(AuditAction)
@@ -98,20 +100,27 @@ def seed_bulk_audit_logs(db: Session, user_id: UUID, count: int = 500) -> int:
         )
 
     db.add_all(logs)
-    db.flush()
+    await db.flush()
     return len(logs)
 
 
-def seed_database(bulk_audit_count: int = 500):
+async def seed_database(bulk_audit_count: int = 500):
     """Seed the database with test data"""
-    Base.metadata.create_all(bind=engine)
-    db: Session = SessionLocal()
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.create_all)
+
+    db: AsyncSession = SessionLocal()
 
     try:
         # Check if test data already exists
-        existing_neighbourhood = db.query(Neighbourhood).filter(
-            Neighbourhood.id == NEIGHBOURHOOD_ID
-        ).first()
+        existing_neighbourhood_result = await db.execute(
+            select(Neighbourhood).where(
+                Neighbourhood.id == NEIGHBOURHOOD_ID
+            )
+        )
+        existing_neighbourhood = (
+            existing_neighbourhood_result.scalar_one_or_none()
+        )
 
         if existing_neighbourhood:
             print("Test data already exists")
@@ -125,7 +134,7 @@ def seed_database(bulk_audit_count: int = 500):
             join_code="TEST_CODE_001"
         )
         db.add(test_neighbourhood)
-        db.flush()
+        await db.flush()
         print("Created test neighbourhood")
 
         #make test user
@@ -135,12 +144,20 @@ def seed_database(bulk_audit_count: int = 500):
             first_name="Test",
             last_name="User",
             cognito_sub="a16cd2b8-c0c1-70f7-1fb6-17b5cea57bcf",
-            role=UserRole.RESIDENT,
-            neighbourhood_id=NEIGHBOURHOOD_ID
+            system_role=UserRole.RESIDENT,
         )
         db.add(test_user)
-        db.flush()
+        await db.flush()
         print("Created test user")
+
+        neighbourhood_membership = NeighbourhoodUser(
+            user_id=USER_ID,
+            neighbourhood_id=NEIGHBOURHOOD_ID,
+            role=NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
+        )
+        db.add(neighbourhood_membership)
+        await db.flush()
+        print("Created test neighbourhood-admin membership")
 
         #create test property
         test_property = Property(
@@ -150,7 +167,7 @@ def seed_database(bulk_audit_count: int = 500):
             property_type=PropertyTypeEnum.PRIVATE
         )
         db.add(test_property)
-        db.flush()
+        await db.flush()
         print("Created test property")
 
         #link the  user to the prop
@@ -160,7 +177,7 @@ def seed_database(bulk_audit_count: int = 500):
             is_admin=True
         )
         db.add(property_user)
-        db.flush()
+        await db.flush()
         print("Linked user to property")
 
         #create test camera
@@ -171,14 +188,13 @@ def seed_database(bulk_audit_count: int = 500):
             id=CAMERA_ID,
             name="Camera x",
             property_id=PROPERTY_ID,
-            neighbourhood_id=NEIGHBOURHOOD_ID,
             visibility=CameraVisibilityEnum.PRIVATE,
             enabled=True,
             location="Front Entrance",
             rtsp_url=ciphertext_rtsp_url
         )
         db.add(test_camera)
-        db.flush()
+        await db.flush()
         print("Created test camera")
 
         #create retention policy for camera
@@ -190,7 +206,7 @@ def seed_database(bulk_audit_count: int = 500):
             cold_seconds=2592000  # 30 days
         )
         db.add(retention_policy)
-        db.flush()
+        await db.flush()
         print("Created retention policy")
 
         #create test zone
@@ -202,13 +218,18 @@ def seed_database(bulk_audit_count: int = 500):
             sensitivity_level=SensitivityLevel.MEDIUM
         )
         db.add(test_zone)
-        db.flush()
+        await db.flush()
         print("Created test zone")
 
         #global default risk threshold config
-        existing_default_threshold = db.query(RiskThresholdConfig).filter(
-            RiskThresholdConfig.neighbourhood_id.is_(None)
-        ).first()
+        existing_default_threshold_result = await db.execute(
+            select(RiskThresholdConfig).where(
+                RiskThresholdConfig.neighbourhood_id.is_(None)
+            )
+        )
+        existing_default_threshold = (
+            existing_default_threshold_result.scalar_one_or_none()
+        )
 
         if not existing_default_threshold:
             default_threshold = RiskThresholdConfig(
@@ -218,7 +239,7 @@ def seed_database(bulk_audit_count: int = 500):
                 medium_max=70.0 
             )
             db.add(default_threshold)
-            db.flush()
+            await db.flush()
             print("Created global risk threshold config")
         else:
             print("Global default risk threshold config already exists")
@@ -247,7 +268,7 @@ def seed_database(bulk_audit_count: int = 500):
                     seconds=random.randint(0, 59),
                 )
 
-                detection_event = DetectionEvent(
+                alert = Alert(
                     id=uuid4(),
                     camera_id=CAMERA_ID,
                     frame_timestamp=event_time,
@@ -255,10 +276,12 @@ def seed_database(bulk_audit_count: int = 500):
                     confidence_score=round(random.uniform(0.55, 0.99), 2),
                     thumbnail_url=None,
                     processed=True,
+                    status=AlertStatus.OPEN.value,
+                    created_at=event_time
                 )
 
-                db.add(detection_event)
-                db.flush()  # need detection_event.id for the FK below
+                db.add(alert)
+                await db.flush()  # need detection_event.id for the FK below
                 detection_events_created += 1
  
                 status = random.choices(alert_statuses, weights=status_weights)[0]
@@ -272,7 +295,11 @@ def seed_database(bulk_audit_count: int = 500):
                 alert = Alert(
                     id=uuid4(),
                     camera_id=CAMERA_ID,
-                    detection_event_id=detection_event.id,
+                    frame_timestamp=event_time,
+                    detection_type=random.choice(detection_types),
+                    confidence_score=round(random.uniform(0.55, 0.99), 2),
+                    thumbnail_url=None,
+                    processed=True,
                     status=status.value,
                     resolved_by=resolved_by,
                     resolved_at=resolved_at,
@@ -282,9 +309,9 @@ def seed_database(bulk_audit_count: int = 500):
                 alerts_created += 1
 
             if day_offset % 30 == 0:
-                db.flush()
+                await db.flush()
 
-        db.flush()
+        await db.flush()
         print(f"Created {detection_events_created} test detection events")
         print(f"Created {alerts_created} test alerts spread across the last year")
         audit_create = AuditLog(
@@ -313,16 +340,16 @@ def seed_database(bulk_audit_count: int = 500):
         )
         db.add(audit_update)
 
-        db.flush()
+        await db.flush()
         print("Created test audit logs")
 
         # Bulk audit logs for pagination/filtering/sorting testing
         print(f"Creating {bulk_audit_count} bulk audit log records...")
-        created = seed_bulk_audit_logs(db, USER_ID, count=bulk_audit_count)
+        created = await seed_bulk_audit_logs(db, USER_ID, count=bulk_audit_count)
         print(f"Created {created} bulk audit log records")
 
         #commit all changes
-        db.commit()
+        await db.commit()
         print("\nDatabase seeded successfully!")
         print("\nTest Credentials:")
         print("Email: testuser@example.com")
@@ -332,15 +359,15 @@ def seed_database(bulk_audit_count: int = 500):
         print(f"Alerts seeded: {alerts_created}")
 
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         print(f"✗ Error seeding database: {e}", file=sys.stderr)
         import traceback
         traceback.print_exc()
         sys.exit(1)
     finally:
-        db.close()
+        await db.close()
 
 if __name__ == "__main__":
     # Optional: override the number of bulk audit logs, e.g. `python seed.py 2000`
     bulk_count = int(sys.argv[1]) if len(sys.argv) > 1 else 500
-    seed_database(bulk_audit_count=bulk_count)
+    asyncio.run(seed_database(bulk_audit_count=bulk_count))

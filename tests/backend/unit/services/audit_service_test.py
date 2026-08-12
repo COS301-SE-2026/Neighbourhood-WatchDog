@@ -1,6 +1,6 @@
 import pytest
 from fastapi import HTTPException
-from unittest.mock import Mock
+from unittest.mock import Mock, AsyncMock
 from app.services.audit_service import create_audit_log_item, get_audit_logs_handler
 from app.models.audit_log import AuditAction, AuditLog
 from app.models.user import UserRole
@@ -16,15 +16,16 @@ class TestCreateAuditLogItem:
 
         self.mock_db = Mock()
         self.mock_db.add = Mock()
-        self.mock_db.rollback = Mock()
+        self.mock_db.commit = AsyncMock()
 
         self.mock_log_item = Mock()
         self.mock_log_item.user_id = uuid4()
         self.mock_db.execute.return_value.scalar_one_or_none.return_value = None
 
+
     @pytest.mark.asyncio
     async def test_happy_path(self):
-        _ = create_audit_log_item(
+        _ = await create_audit_log_item(
             user_id=uuid4(),
             action=AuditAction.UPDATE,
             target_entity_type="USER",
@@ -59,7 +60,7 @@ class TestCreateAuditLogItem:
     async def test_same_old_new_values(self):
         with pytest.raises(HTTPException) as exception:
             now = datetime.now()
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=uuid4(),
                 action=AuditAction.UPDATE,
                 target_entity_type="USER",
@@ -93,7 +94,7 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_empty_user_id(self):
         with pytest.raises(HTTPException) as exception:
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=None,
                 action=AuditAction.UPDATE,
                 target_entity_type="USER",
@@ -127,7 +128,7 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_empty_action(self):
         with pytest.raises(HTTPException) as exception:
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=uuid4(),
                 action=None,
                 target_entity_type="USER",
@@ -161,7 +162,7 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_empty_target_entity_type(self):
         with pytest.raises(HTTPException) as exception:
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=uuid4(),
                 action=AuditAction.UPDATE,
                 target_entity_type=None,
@@ -195,7 +196,7 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_empty_target_entity_id(self):
         with pytest.raises(HTTPException) as exception:
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=uuid4(),
                 action=AuditAction.UPDATE,
                 target_entity_type="USER",
@@ -229,7 +230,7 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_update_empty_old(self):
         with pytest.raises(HTTPException) as exception:
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=uuid4(),
                 action=AuditAction.UPDATE,
                 target_entity_type="USER",
@@ -254,7 +255,7 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_update_empty_new(self):
         with pytest.raises(HTTPException) as exception:
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=uuid4(),
                 action=AuditAction.UPDATE,
                 target_entity_type="USER",
@@ -279,7 +280,7 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_create_empty_new(self):
         with pytest.raises(HTTPException) as exception:
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=uuid4(),
                 action=AuditAction.CREATE,
                 target_entity_type="USER",
@@ -304,7 +305,7 @@ class TestCreateAuditLogItem:
     @pytest.mark.asyncio
     async def test_delete_empty_old(self):
         with pytest.raises(HTTPException) as exception:
-            _ = create_audit_log_item(
+            _ = await create_audit_log_item(
                 user_id=uuid4(),
                 action=AuditAction.DELETE,
                 target_entity_type="USER",
@@ -331,13 +332,9 @@ class TestGetAuditLogsHandler:
         """Runs before the test method"""
 
         self.mock_db = Mock()
+        self.mock_db.execute = AsyncMock()
 
-        self.mock_log_item = Mock()
-        self.mock_log_item.user_id = uuid4()
-        self.mock_log_item.user_id = uuid4()
-
-        self.mock_db.scalar.return_value = 5
-        self.mock_db.scalars.return_value.all.return_value = {
+        self.audit_logs = [
             AuditLog(
                 id=uuid4(),
                 user_id=uuid4(),
@@ -347,14 +344,14 @@ class TestGetAuditLogsHandler:
                 timestamp=datetime.now(),
                 old_values=None,
                 new_values={
-                    "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": NEW_EMAIL, 
+                    "id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "email": NEW_EMAIL,
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
                     "role": UserRole.RESIDENT,
                     "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "created_at": datetime.now()
+                    "created_at": datetime.now(),
                 },
             ),
             AuditLog(
@@ -365,76 +362,86 @@ class TestGetAuditLogsHandler:
                 target_entity_id=uuid4(),
                 timestamp=datetime.now(),
                 old_values={
-                    "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
                     "email": OLD_EMAIL,
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
                     "role": UserRole.RESIDENT,
                     "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "created_at": datetime.now()
+                    "created_at": datetime.now(),
                 },
                 new_values={
-                    "id" : "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "email": NEW_EMAIL, #changed the email address
+                    "id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
+                    "email": NEW_EMAIL,
                     "first_name": "John",
                     "last_name": "Doe",
                     "cognito_sub": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
                     "role": UserRole.RESIDENT,
                     "neighbourhood_id": "f4b3e8c9-2d10-4f5c-b17a-59368dca86b2",
-                    "created_at": datetime.now()
+                    "created_at": datetime.now(),
                 },
             ),
-        }
-        
-        self.total = 10
+        ]
+
+        # Result of: count_result = await db.execute(count_stmt)
+        self.count_result = Mock()
+        self.count_result.scalar_one.return_value = len(self.audit_logs)
+
+        # Result of: logs_result = await db.execute(stmt)
+        self.logs_result = Mock()
+        self.logs_result.scalars.return_value.all.return_value = self.audit_logs
+
         self.page = 1
         self.size = 20
 
     #TODO: Happy case
     @pytest.mark.asyncio
     async def test_happy_case(self):
-        
-        get_audit_log_res = get_audit_logs_handler(
+
+        self.mock_db.execute.side_effect = [
+            self.count_result,
+            self.logs_result,
+        ]
+
+        get_audit_log_res = await get_audit_logs_handler(
             page=self.page,
             size=self.size,
             db=self.mock_db
         )
 
-        assert self.mock_db.scalars.return_value.all.call_count == 1
-        assert self.mock_db.scalar.call_count == 1
         assert get_audit_log_res.status == 200
+        assert self.mock_db.execute.await_count == 2
+        self.count_result.scalar_one.assert_called_once()
+        self.logs_result.scalars.return_value.all.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_offset_greater_than_total(self):
         #this line will make the total return 1
         self.mock_db.scalar.return_value = 1
+        self.mock_db.execute.side_effect = [self.count_result]
         self.page = 21
 
         with pytest.raises(HTTPException) as exception:
-            _ = get_audit_logs_handler(
+            await get_audit_logs_handler(
                 page=self.page,
                 size=self.size,
                 db=self.mock_db
             )
 
         assert exception.value.status_code == 422
-        assert self.mock_db.scalars.return_value.all.call_count == 0
-        assert self.mock_db.scalar.call_count == 1
+        assert self.mock_db.execute.await_count == 1
+        self.count_result.scalar_one.assert_called_once()
+        self.logs_result.scalars.return_value.all.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_no_db(self):
-        #this line will make the total return 1
-        self.mock_db.scalar.return_value = 1
-        self.page = 21
-
         with pytest.raises(HTTPException) as exception:
-            _ = get_audit_logs_handler(
+            await get_audit_logs_handler(
                 page=self.page,
                 size=self.size,
                 db=None
             )
 
         assert exception.value.status_code == 500
-        assert self.mock_db.scalars.return_value.all.call_count == 0
-        assert self.mock_db.scalar.call_count == 0
+        self.mock_db.execute.assert_not_awaited()

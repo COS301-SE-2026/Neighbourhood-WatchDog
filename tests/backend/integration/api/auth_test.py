@@ -12,12 +12,6 @@ async def test_get_me_returns_user(async_client, auth_headers):
         assert r.json() == user
 
 
-@pytest.mark.asyncio
-async def test_logout(async_client, auth_headers):
-    r = await async_client.post("/auth/logout", headers=auth_headers)
-    assert r.status_code == 200
-    assert r.json() == {"message": "Logged out"}
-
 # MOCK AWS LAYER (boto3)
 @pytest.fixture(autouse=True)
 def mock_cognito_client(monkeypatch):

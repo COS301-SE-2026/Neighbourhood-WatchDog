@@ -9,7 +9,8 @@ from app.schemas.camera_settings import (
     CameraSettingsResponse,
     CreateZoneRequest,
     UpdateCameraSettingsRequest,
-    ZoneResponse
+    ZoneResponse,
+    UpdateCameraSettingsResponse
 )
 
 from app.services.camera_settings_service import (
@@ -26,14 +27,33 @@ router = APIRouter(prefix="/cameras", tags=["camera-settings"])
 Claims = Annotated[dict, Depends(get_current_user)]
 
 
-@router.get("/{camera_id}/settings", response_model=CameraSettingsResponse)
+@router.get(
+    "/{camera_id}/settings",
+    response_model=CameraSettingsResponse,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions"},
+        404: {"description": "Camera not found"},
+        500: {"description": "Failed to retrieve camera settings"},
+    },
+)
 async def get_settings(camera_id: UUID, db: DbSession, claims: Claims):
     """Getting the confidence threshold and detection zones for a camera"""
     require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN")
-    return get_camera_settings_handler(camera_id, db)
+    return await get_camera_settings_handler(camera_id, db)
 
 
-@router.patch("/{camera_id}/settings",responses={400: {"description": "confidence_threshold is required"}})
+@router.patch(
+    "/{camera_id}/settings",
+    response_model=UpdateCameraSettingsResponse,
+    responses={
+        400: {"description": "confidence_threshold is required"},
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions"},
+        404: {"description": "Camera not found"},
+        500: {"description": "Failed to update camera settings"},
+    },
+)
 async def update_settings(
     camera_id: UUID,
     payload: UpdateCameraSettingsRequest,
@@ -45,10 +65,18 @@ async def update_settings(
 
     if payload.confidence_threshold is None:
         raise HTTPException(400, "confidence_threshold is required")
-    return update_camera_settings_handler(camera_id, payload.confidence_threshold, db, claims)
+    return await update_camera_settings_handler(camera_id, payload.confidence_threshold, db, claims)
 
 
-@router.post("/{camera_id}/zones", response_model=ZoneResponse, status_code=201)
+@router.post("/{camera_id}/zones", response_model=ZoneResponse, status_code=201,
+    responses={
+        400: {"description": "Zone polygon must contain at least 3 points"},
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions"},
+        404: {"description": "Camera not found"},
+        500: {"description": "Failed to create detection zone"},
+    }
+)
 async def create_zone(
     camera_id: UUID,
     payload: CreateZoneRequest,
@@ -57,10 +85,19 @@ async def create_zone(
 ):
     """Adding a detection zone polygon to a camera"""
     require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN")
-    return create_zone_handler(camera_id, payload.name, payload.polygon, db, claims)
+    return await create_zone_handler(camera_id, payload.name, payload.polygon, db, claims)
 
 
-@router.delete("/{camera_id}/zones/{zone_id}", status_code=204)
+@router.delete(
+    "/{camera_id}/zones/{zone_id}",
+    status_code=204,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions"},
+        404: {"description": "Zone not found"},
+        500: {"description": "Failed to delete detection zone"},
+    },
+)
 async def delete_zone(
     camera_id: UUID,
     zone_id: UUID,
@@ -69,4 +106,4 @@ async def delete_zone(
 ):
     """Removing a detection zone from a camera"""
     require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
-    return delete_zone_handler(camera_id, zone_id, db, claims)
+    return await delete_zone_handler(camera_id, zone_id, db, claims)

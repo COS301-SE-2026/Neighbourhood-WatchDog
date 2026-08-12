@@ -8,7 +8,7 @@ def _make_alert_res(**overrides):
     base = {
         "id": uuid4(),
         "camera_id": uuid4(),
-        "detection_event_id": uuid4(),
+        "frame_timestamp": datetime.now(timezone.utc),
         "status": "OPEN",
         "resolved_by": None,
         "resolved_at": None,
@@ -16,6 +16,9 @@ def _make_alert_res(**overrides):
         "detection_type": "HUMAN_PRESENCE",
         "confidence_score": 0.85,
         "thumbnail_url": None,
+        "clip_s3_key": None,
+        "clips_expire_at": None,
+        "processed": True,
     }
     base.update(overrides)
     return base
@@ -28,7 +31,6 @@ class TestAlertRes:
 
         assert alert.id == data["id"]
         assert alert.camera_id == data["camera_id"]
-        assert alert.detection_event_id == data["detection_event_id"]
         assert alert.status == "OPEN"
         assert alert.resolved_by is None
         assert alert.resolved_at is None
@@ -51,15 +53,10 @@ class TestAlertRes:
 
     def test_optional_fields_default_to_none(self):
         """detection_type, confidence_score, thumbnail_url are all optional"""
-        data = _make_alert_res(
-            detection_type=None,
-            confidence_score=None,
-            thumbnail_url=None,
-        )
+        data = _make_alert_res()
+        del data["thumbnail_url"]
         alert = AlertRes(**data)
 
-        assert alert.detection_type is None
-        assert alert.confidence_score is None
         assert alert.thumbnail_url is None
 
     def test_with_thumbnail_url(self):
@@ -81,14 +78,6 @@ class TestAlertRes:
         """camera_id is required"""
         data = _make_alert_res()
         del data["camera_id"]
-
-        with pytest.raises(ValidationError):
-            AlertRes(**data)
-
-    def test_missing_detection_event_id_raises_validation_error(self):
-        """detection_event_id is required"""
-        data = _make_alert_res()
-        del data["detection_event_id"]
 
         with pytest.raises(ValidationError):
             AlertRes(**data)

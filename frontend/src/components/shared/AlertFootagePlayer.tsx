@@ -6,7 +6,7 @@ import { useClip  } from "@/hooks/use-clip";
 
 
 interface AlertFootagePlayerProps {
-    readonly detectionEventId: string;
+    readonly alertId: string;
     readonly timestamp: string;
 
 }
@@ -18,10 +18,10 @@ interface AlertFootagePlayerProps {
  *
  */
 
-export function AlertFootagePlayer({ detectionEventId, timestamp }: AlertFootagePlayerProps) {
+export function AlertFootagePlayer({ alertId, timestamp }: AlertFootagePlayerProps) {
     // const videoRef = useRef<HTMLVideoElement>(null);
 
-    const { url, status, errorMessage, loadClip } = useClip(detectionEventId);
+    const { url, status, errorMessage, loadClip } = useClip(alertId);
 
     const formattedTs = (() => {
         try {

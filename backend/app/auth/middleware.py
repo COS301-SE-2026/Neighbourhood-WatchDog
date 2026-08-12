@@ -14,7 +14,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if request.headers.get("upgrade", "").lower() == "websocket":
             return await call_next(request)
 
-        PUBLIC_EXACT = {"/health", "/docs", "/openapi.json", "/redoc"}
+        PUBLIC_EXACT = {"/health", "/docs", "/openapi.json", "/redoc", "/favicon.ico"}
         PUBLIC_PREFIXES = ["/stream", "/alerts", "/api/stream", "/auth", "/internal", "/pairing-token/token"]
 
 
