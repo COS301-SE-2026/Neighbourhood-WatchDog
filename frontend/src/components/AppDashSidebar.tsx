@@ -90,24 +90,25 @@ function WatchdogLogo({ size = 28 }: { size?: number }) {
 
 const AppDashSidebar = () => {
     return (
-        <Sidebar>
-            <SidebarHeader className="border-b border-sidebar-border px-3 py-3">
+        <Sidebar collapsible="icon">
+            <SidebarHeader className="border-b border-sidebar-border px-3 py-3 group-data-[collapsible=icon]:px-2">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton
                             asChild
                             size="lg"
                             tooltip="Neighbourhood WatchDog"
+                            className="group-data-[collapsible=icon]:justify-center"
                         >
                             <Link
                                 href="/dashboard-v2"
-                                className="flex items-center gap-3"
+                                className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center"
                             >
-                                <div className="flex size-9 items-center justify-center">
+                                <div className="flex size-9 shrink-0 items-center justify-center">
                                     <WatchdogLogo size={25} />
                                 </div>
 
-                                <div className="grid flex-1 text-left leading-tight">
+                                <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
                                     <span className="text-sm font-semibold tracking-tight text-sidebar-foreground">
                                         Neighbourhood
                                     </span>
@@ -157,13 +158,16 @@ const AppDashSidebar = () => {
                 ))}
             </SidebarContent>
 
-            <SidebarFooter className="border-t border-white/10 px-5 py-4">
-                <div className="flex items-center gap-3">
+            <SidebarFooter className="border-t border-white/10 px-5 py-4 group-data-[collapsible=icon]:px-2">
+                <div
+                    title="Obed Edom Mbaya · Resident"
+                    className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center"
+                >
                     <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10">
                         <User className="size-4 text-emerald-400" />
                     </div>
 
-                    <div className="min-w-0">
+                    <div className="min-w-0 group-data-[collapsible=icon]:hidden">
                         <p className="truncate text-sm font-medium text-white">
                             Obed Edom Mbaya
                         </p>

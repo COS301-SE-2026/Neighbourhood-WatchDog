@@ -11,11 +11,12 @@ import {
     DropdownMenuSeparator, 
     DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import { SidebarTrigger } from "./ui/sidebar";
 
 const Navbar = () => {
     return (
         <nav className="p-4 flex items-center justify-between">
-            collapseButton
+            <SidebarTrigger/>
             <div className="flex items-center gap-4">
                 <Link href="">Dashboard</Link>
                 <DropdownMenu>
