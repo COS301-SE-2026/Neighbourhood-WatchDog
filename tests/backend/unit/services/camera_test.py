@@ -37,6 +37,7 @@ class TestRegisterCamera:
         self.mock_db, self.mock_result = make_mock_db()
 
         self.mock_property = Mock()
+        self.mock_property.neighbourhood_id = uuid4()
         self.property_id = uuid4()
 
         self.mock_property_user = Mock()
@@ -56,7 +57,7 @@ class TestRegisterCamera:
         self.mock_camera.visibility=CameraVisibilityEnum.PRIVATE
         self.mock_camera.property_id=uuid4()
         self.mock_camera.enabled = True
-        self.mock_camera.neighbourhood_id = uuid4()
+        self.mock_camera.neighbourhood_id = self.mock_property.neighbourhood_id
         self.mock_camera.created_at = datetime.now()
         
         self.mock_req = RegisterCameraReq(
