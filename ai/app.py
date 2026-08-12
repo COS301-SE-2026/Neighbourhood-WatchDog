@@ -343,8 +343,8 @@ def _save_weapon_clip(
 
     # The old implementation created the event first, then wrote its S3 key
     # after the upload completes.
-    api_key = keyring.get_password("WatchDog", "api_key")
-    headers = {"X-Internal-Token": api_key} if api_key else {}
+    api_key = keyring.get_password("WatchDog", "api_key") or INTERNAL_API_TOKEN
+    headers = {"X-Internal-Token": api_key} 
 
     try:
         event_response = httpx.post(
