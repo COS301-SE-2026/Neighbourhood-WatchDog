@@ -1,3 +1,5 @@
+"use client"
+
 import { Bell, LogOut, Monitor, Moon, User, UserRound } from "lucide-react";
 import Link from "next/link";
 import { AvatarFallback, Avatar } from "@/components/ui/avatar";
@@ -16,7 +18,6 @@ const Navbar = () => {
             collapseButton
             <div className="flex items-center gap-4">
                 <Link href="">Dashboard</Link>
-                <Moon/>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Avatar>
