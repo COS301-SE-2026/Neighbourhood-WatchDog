@@ -337,11 +337,6 @@ async def list_enabled_cameras_for_agent_handler(property_id: UUID, db:AsyncSess
     result = await db.execute(stmt)
     cameras = result.scalars().all()
 
-    for camera in cameras:
-        print(camera.property.address)   
-
-    cameras.property
-
     data: list[EnabledCamerasRes] = []
 
     for camera in cameras:
