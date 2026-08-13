@@ -1,21 +1,22 @@
-"use client"
-import { 
-    Sidebar, 
-    SidebarContent, 
-    SidebarFooter, 
-    SidebarGroup, 
-    SidebarGroupContent, 
-    SidebarGroupLabel, 
-    SidebarHeader, 
-    SidebarMenu, 
-    SidebarMenuBadge, 
-    SidebarMenuButton, 
-    SidebarMenuItem 
+"use client";
+
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuBadge,
+    SidebarMenuButton,
+    SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-import logoImage from "@/assets/images/logo-mark-only.svg"
-import Image from "next/image"
-
+import logoImage from "@/assets/images/logo-mark-only.svg";
+import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 
 import {
@@ -24,6 +25,7 @@ import {
     Camera,
     Check,
     ChevronDown,
+    ClipboardList,
     History,
     House,
     LayoutDashboard,
@@ -31,6 +33,8 @@ import {
     Megaphone,
     Plus,
     User,
+    UserPlus,
+    type LucideIcon,
 } from "lucide-react";
 
 import {
@@ -41,9 +45,35 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Link from "next/link";
 
-const exampleContexts = [
+type ContextRole = "Resident" | "Neighbourhood Admin" | null;
+
+type PropertyContext = {
+    id: string;
+    propertyId: string;
+    neighbourhoodId: string | null;
+    name: string;
+    address: string;
+    role: ContextRole;
+    icon: LucideIcon;
+
+    // static permission flag for now.
+    canRequestNeighbourhoodJoin: boolean;
+};
+
+type SidebarItemData = {
+    title: string;
+    url: string;
+    icon: LucideIcon;
+    badge?: number;
+};
+
+type SidebarGroupData = {
+    label: string;
+    items: SidebarItemData[];
+};
+
+const exampleContexts: PropertyContext[] = [
     {
         id: "greenfields-estate",
         propertyId: "greenfields-property-id",
@@ -52,6 +82,7 @@ const exampleContexts = [
         address: "45 Oak Avenue",
         role: "Resident",
         icon: MapPin,
+        canRequestNeighbourhoodJoin: false,
     },
     {
         id: "test-neighbourhood",
@@ -61,6 +92,7 @@ const exampleContexts = [
         address: "123 Test Street",
         role: "Neighbourhood Admin",
         icon: Building2,
+        canRequestNeighbourhoodJoin: false,
     },
     {
         id: "brook-street-property",
@@ -70,71 +102,137 @@ const exampleContexts = [
         address: "1332 Brook Street",
         role: null,
         icon: House,
+        canRequestNeighbourhoodJoin: true,
     },
 ];
 
-const residentSidebarGroups = [
-    {
-        label: "WORKSPACE",
-        items: [
-            {
-                title: "Overview",
-                url: "/dashboard-v2",
-                icon: LayoutDashboard,
-            },
-            {
-                title: "Live alerts",
-                url: "/dashboard-v2",
-                icon: BellRing,
-                badge: 3,
-            },
-            {
-                title: "Alert history",
-                url: "/dashboard-v2",
-                icon: History,
-            },
-            {
-                title: "Neighbourhood updates",
-                url: "/dashboard-v2",
-                icon: Megaphone,
-            },
-        ],
-    },
-    {
-        label: "MY HOME",
-        items: [
-            {
-                title: "My property",
-                url: "/dashboard-v2",
-                icon: House,
-            },
-            {
-                title: "My cameras",
-                url: "/dashboard-v2/properties/greenfields-property-id/cameras",
-                icon: Camera,
-            },
-        ],
-    },
-];
+function getSidebarGroups(
+    activeContext: PropertyContext,
+): SidebarGroupData[] {
+    const propertyBaseUrl = `/dashboard-v2/properties/${activeContext.propertyId}`;
 
+    const propertyItems: SidebarItemData[] = [
+        {
+            title: "My property",
+            url: propertyBaseUrl,
+            icon: House,
+        },
+        {
+            title: "My cameras",
+            url: `${propertyBaseUrl}/cameras`,
+            icon: Camera,
+        },
+    ];
 
-function WatchdogLogo({ size = 28 }: { size?: number }) {
-  return (
-    <Image
-      src={logoImage}
-      width={size}
-      height={size}
-      alt=""
-      aria-hidden="true"
-      className="block object-contain"
-    />
-  )
+    // Standalone property: it has no neighbourhood_id.
+    // Only show joining if this user can make a request for this property.
+    if (activeContext.neighbourhoodId === null) {
+        const groups: SidebarGroupData[] = [
+            {
+                label: "WORKSPACE",
+                items: [
+                    {
+                        title: "Overview",
+                        url: "/dashboard-v2",
+                        icon: LayoutDashboard,
+                    },
+                    {
+                        title: "Alert history",
+                        url: `${propertyBaseUrl}/alerts`,
+                        icon: History,
+                    },
+                ],
+            },
+            {
+                label: "MY HOME",
+                items: propertyItems,
+            },
+        ];
+
+        if (activeContext.canRequestNeighbourhoodJoin) {
+            groups.push({
+                label: "NEIGHBOURHOOD",
+                items: [
+                    {
+                        title: "Join a neighbourhood",
+                        url: `${propertyBaseUrl}/join-neighbourhood`,
+                        icon: UserPlus,
+                    },
+                ],
+            });
+        }
+
+        return groups;
+    }
+
+    // A property already belongs to a neighbourhood.
+    // Therefore it should NEVER show "Join a neighbourhood".
+    const groups: SidebarGroupData[] = [
+        {
+            label: "WORKSPACE",
+            items: [
+                {
+                    title: "Overview",
+                    url: "/dashboard-v2",
+                    icon: LayoutDashboard,
+                },
+                {
+                    title: "Live alerts",
+                    url: "/dashboard-v2",
+                    icon: BellRing,
+                    badge: 3,
+                },
+                {
+                    title: "Alert history",
+                    url: `${propertyBaseUrl}/alerts`,
+                    icon: History,
+                },
+                {
+                    title: "Neighbourhood updates",
+                    url: `/dashboard-v2/neighbourhoods/${activeContext.neighbourhoodId}/updates`,
+                    icon: Megaphone,
+                },
+            ],
+        },
+        {
+            label: "MY HOME",
+            items: propertyItems,
+        },
+    ];
+
+    // Only an admin for THIS active neighbourhood sees management actions.
+    if (activeContext.role === "Neighbourhood Admin") {
+        groups.push({
+            label: "MANAGE NEIGHBOURHOOD",
+            items: [
+                {
+                    title: "Join requests",
+                    url: `/dashboard-v2/neighbourhoods/${activeContext.neighbourhoodId}/join-requests`,
+                    icon: ClipboardList,
+                    badge: 2,
+                },
+            ],
+        });
+    }
+
+    return groups;
 }
 
+function WatchdogLogo({ size = 28 }: { size?: number }) {
+    return (
+        <Image
+            src={logoImage}
+            width={size}
+            height={size}
+            alt=""
+            aria-hidden="true"
+            className="block object-contain"
+        />
+    );
+}
 
 const AppDashSidebar = () => {
-
-    const [activeContext, setActiveContext] = useState(
+    const [activeContext, setActiveContext] = useState<PropertyContext>(
         exampleContexts[0],
     );
 
@@ -144,6 +242,8 @@ const AppDashSidebar = () => {
         activeContext.neighbourhoodId === null
             ? `${activeContext.address} · Standalone property`
             : `${activeContext.address} · ${activeContext.role}`;
+
+    const sidebarGroups = getSidebarGroups(activeContext);
 
     return (
         <Sidebar collapsible="icon">
@@ -157,7 +257,7 @@ const AppDashSidebar = () => {
                             className="group-data-[collapsible=icon]:justify-center"
                         >
                             <Link
-                                href="/dashboard"
+                                href="/dashboard-v2"
                                 className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center"
                             >
                                 <div className="flex size-9 shrink-0 items-center justify-center">
@@ -217,8 +317,8 @@ const AppDashSidebar = () => {
 
                         {exampleContexts.map((context) => {
                             const ContextIcon = context.icon;
-
-                            const isActive = context.id === activeContext.id;
+                            const isActive =
+                                context.id === activeContext.id;
 
                             const contextDescription =
                                 context.neighbourhoodId === null
@@ -228,7 +328,9 @@ const AppDashSidebar = () => {
                             return (
                                 <DropdownMenuItem
                                     key={context.id}
-                                    onSelect={() => setActiveContext(context)}
+                                    onSelect={() =>
+                                        setActiveContext(context)
+                                    }
                                     className={`flex cursor-pointer items-start gap-3 rounded-md px-2 py-2.5 focus:text-white ${
                                         isActive
                                             ? "bg-emerald-500/10 focus:bg-emerald-500/15"
@@ -279,7 +381,7 @@ const AppDashSidebar = () => {
             </SidebarHeader>
 
             <SidebarContent>
-                {residentSidebarGroups.map((group) => (
+                {sidebarGroups.map((group) => (
                     <SidebarGroup key={group.label}>
                         <SidebarGroupLabel>
                             {group.label}
@@ -299,7 +401,7 @@ const AppDashSidebar = () => {
                                                 </Link>
                                             </SidebarMenuButton>
 
-                                            {item.badge && (
+                                            {item.badge !== undefined && (
                                                 <SidebarMenuBadge>
                                                     {item.badge}
                                                 </SidebarMenuBadge>
@@ -334,7 +436,7 @@ const AppDashSidebar = () => {
                 </div>
             </SidebarFooter>
         </Sidebar>
-    )
-}
+    );
+};
 
 export default AppDashSidebar;
