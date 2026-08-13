@@ -1,7 +1,10 @@
 import sys
 import tkinter as tk
 from tkinter import ttk
+import queue
 
+from services.agent_service import AgentService
+from runtime.agent_runtime import AgentEvent
 from app_state import AppState
 from main_app import MainApplicationPage
 from startup import StartupDestination, StartupResolver
@@ -22,8 +25,15 @@ class WatchDogDesktopApp:
         self.state = AppState()
         self.startup_resolver = StartupResolver()
 
-        self.root.protocol("WM_DELETE_WINDOW", self.quit_application)
+        self.agent_events: queue.Queue[AgentEvent] = queue.Queue()
+        self.exit_requested = False
 
+        self.agent_service = AgentService(
+            event_callback=self.enqueue_agent_event,
+        )
+
+        self.root.protocol("WM_DELETE_WINDOW", self.quit_application)
+        self.root.after(100, self.process_agent_events)
         self.start_application()
 
         self.root.mainloop()
@@ -75,6 +85,52 @@ class WatchDogDesktopApp:
         )
         self.show_main_app()
 
+    def enqueue_agent_event(
+        self,
+        event: AgentEvent,
+    ) -> None:
+        """
+        Called from AgentRuntime background threads.
+
+        This method must not update Tkinter widgets directly.
+        """
+
+        self.agent_events.put(event)
+
+    def process_agent_events(self) -> None:
+        """
+        Runs in the Tkinter main thread.
+
+        It forwards runtime events to the current page safely.
+        """
+
+        try:
+            while True:
+                event = self.agent_events.get_nowait()
+
+                if self.current_frame is not None:
+                    handler = getattr(
+                        self.current_frame,
+                        "handle_agent_event",
+                        None,
+                    )
+
+                    if callable(handler):
+                        handler(event)
+
+                if (
+                    self.exit_requested
+                    and event.event_type == "status"
+                    and event.status == "stopped"
+                ):
+                    self.root.destroy()
+                    return
+
+        except queue.Empty:
+            pass
+
+        self.root.after(100, self.process_agent_events)
+
     def show_installer(self) -> None:
         self.show_page(WatchDogAgentApp)
 
@@ -85,6 +141,7 @@ class WatchDogDesktopApp:
         self.show_page(
             MainApplicationPage,
             state=self.state,
+            agent_service=self.agent_service,
         )
 
     def quit_application(self) -> None:

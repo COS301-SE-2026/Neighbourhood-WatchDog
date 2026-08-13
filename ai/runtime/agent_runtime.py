@@ -53,11 +53,21 @@ class AgentRuntime:
 
     @property
     def status(self) -> str:
+        """
+        Return the current agent lifecycle state safely.
+
+        Example values:
+        stopped, starting, running, stopping, crashed, error
+        """
+
         with self._lock:
             return self._status
 
 
     def is_running(self) -> bool:
+        """
+        Return True only when the Uvicorn process exists and has not exited.
+        """
         with self._lock:
             return (
                 self._process is not None

@@ -4,7 +4,7 @@ from app_state import AppState
 
 
 SEGOE_FONT = "Segoe UI"
-
+from runtime.agent_runtime import AgentEvent
 
 class MainApplicationPage(ttk.Frame):
 
@@ -251,62 +251,100 @@ class MainApplicationPage(ttk.Frame):
         )
 
     # AI AGENT CONTROLS
-    def start_agent(self):
+    def start_agent(self) -> None:
         """
-        Start the WatchDog AI agent.
+        Ask AgentService to start the real local AI service.
+        """
 
-        The actual AI/MediaMTX implementation will be connected
-        here later.
+        if self.agent_service is None:
+            self.update_agent_ui(
+                state="error",
+                message="Agent controls are not available.",
+            )
+            return
+
+        self.agent_service.start()
+
+    def stop_agent(self) -> None:
         """
+        Ask AgentService to stop the real local AI service.
+        """
+
+        if self.agent_service is None:
+            return
+
+        self.agent_service.stop()
+
+    def handle_agent_event(
+        self,
+        event: AgentEvent,
+    ) -> None:
+        """
+        Called by main.py on the Tkinter thread.
+        """
+
+        if event.event_type == "status":
+            self.update_agent_ui(
+                state=event.status or "error",
+                message=event.message,
+            )
+
+        elif event.event_type == "error":
+            self.update_agent_ui(
+                state="error",
+                message=event.message,
+            )
+
+        elif event.event_type == "log":
+            # The main page does not yet have a log panel.
+            # We can add one later, or write logs to a file.
+            pass
+
+    def update_agent_ui(
+        self,
+        state: str,
+        message: str,
+    ) -> None:
+        """
+        Update labels and button availability only.
+
+        This method never starts or stops processes.
+        """
+
+        self.state.agent_status = state
 
         self.agent_status_label.config(
-            text="Running"
+            text=state.capitalize(),
         )
 
         self.ai_status_label.config(
-            text="AI Agent is running."
+            text=message,
         )
 
         self.start_button.config(
-            state="disabled"
+            state=(
+                "normal"
+                if state in {"stopped", "crashed", "error"}
+                else "disabled"
+            )
         )
 
         self.stop_button.config(
-            state="normal"
-        )
-
-    def stop_agent(self):
-        """
-        Stop the WatchDog AI agent.
-
-        The actual AI/MediaMTX implementation will be connected
-        here later.
-        """
-
-        self.agent_status_label.config(
-            text="Stopped"
-        )
-
-        self.ai_status_label.config(
-            text="AI Agent is stopped."
-        )
-
-        self.start_button.config(
-            state="normal"
-        )
-
-        self.stop_button.config(
-            state="disabled"
+            state=(
+                "normal"
+                if state in {"starting", "running"}
+                else "disabled"
+            )
         )
 
     # APPLICATION
-    def exit_application(self):
-        """Close the desktop application."""
+    def quit_application(self) -> None:
+        if self.agent_service.is_running():
+            self.exit_requested = True
+            self.agent_service.shutdown()
+            return
 
-        if self.controller:
-            self.controller.quit_application()
-        else:
-            self.winfo_toplevel().destroy()
+        self.root.destroy()
 
 
 if __name__ == "__main__":
