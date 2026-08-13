@@ -1,15 +1,15 @@
+import queue
 import sys
 import tkinter as tk
 from tkinter import ttk
-import queue
 
-from services.agent_service import AgentService
-from runtime.agent_runtime import AgentEvent
 from app_state import AppState
+from authenticator import WatchDogPinPage
 from main_app import MainApplicationPage
+from runtime.agent_runtime import AgentEvent
+from services.agent_service import AgentService
 from startup import StartupDestination, StartupResolver
 from watchdog_gui import WatchDogAgentApp
-from authenticator import WatchDogPinPage
 
 
 class WatchDogDesktopApp:
