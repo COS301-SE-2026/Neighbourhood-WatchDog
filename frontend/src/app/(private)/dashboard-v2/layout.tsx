@@ -16,7 +16,7 @@ export default async function DashboardV2Layout({
     <>
         <SidebarProvider defaultOpen={defaultOpen}>
           <AppDashSidebar/>
-          <main className="w-full">
+          <main className="w-full bg-black">
               <Navbar/>
               <div className="px-4">{children}</div>
           </main>

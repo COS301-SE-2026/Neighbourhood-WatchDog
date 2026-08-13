@@ -110,7 +110,7 @@ const residentSidebarGroups = [
             },
             {
                 title: "My cameras",
-                url: "/dashboard-v2",
+                url: "/dashboard-v2/properties/greenfields-property-id/cameras",
                 icon: Camera,
             },
         ],

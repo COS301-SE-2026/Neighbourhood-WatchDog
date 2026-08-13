@@ -15,7 +15,7 @@ import { SidebarTrigger } from "./ui/sidebar";
 
 const Navbar = () => {
     return (
-        <nav className="p-4 flex items-center justify-between">
+        <nav className="p-4 flex items-center text-white justify-between">
             <SidebarTrigger/>
             <div className="flex items-center gap-4">
                 <Link href="">Dashboard</Link>
