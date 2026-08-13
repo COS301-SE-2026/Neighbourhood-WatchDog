@@ -165,7 +165,7 @@ async def pair_agent_handler(
                 id=c.id,
                 name=c.name,
                 property_id=c.property_id,
-                neighbourhood_id=c.neighbourhood_id,
+                neighbourhood_id=property_record.neighbourhood_id,
                 rtsp_url=c.rtsp_url,
                 visibility=c.visibility,
                 location=c.location,
