@@ -325,13 +325,22 @@ async def list_cameras_handler(property_id, db, claims):
 async def list_enabled_cameras_for_agent_handler(property_id: UUID, db:AsyncSession) -> ListEnabledCameras:
     """Returns enabled cameras available to an authenticated AI worker."""
 
-    stmt = select(Camera).where(
-        Camera.property_id == property_id,
-        Camera.enabled.is_(True)
-    ).order_by(Camera.created_at.asc())
-
+    stmt = (
+    select(Camera)
+        .options(joinedload(Camera.property))
+        .where(
+            Camera.property_id == property_id,
+            Camera.enabled.is_(True)
+        )
+        .order_by(Camera.created_at.asc())
+    )
     result = await db.execute(stmt)
     cameras = result.scalars().all()
+
+    for camera in cameras:
+        print(camera.property.address)   
+
+    cameras.property
 
     data: list[EnabledCamerasRes] = []
 
@@ -346,7 +355,7 @@ async def list_enabled_cameras_for_agent_handler(property_id: UUID, db:AsyncSess
                 id=camera.id,
                 rtsp_url=decrypt_rtsp_url(camera.rtsp_url),
                 enabled=camera.enabled,
-                neighbourhood_id=camera.neighbourhood_id,
+                neighbourhood_id=camera.property.neighbourhood_id,
                 confidence_threshold=camera.confidence_threshold,
                 publish_username=publish_username,
                 publish_password=publish_password,
