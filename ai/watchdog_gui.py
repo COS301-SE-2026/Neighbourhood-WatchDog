@@ -123,8 +123,13 @@ def is_installation_valid() -> bool:
     except (OSError, json.JSONDecodeError):
         return False
 
-
-    return (state.get("schema_version") == INSTALL_SCHEMA_VERSION and state.get("python_version", "").startswith("3.12"))
+    installed_version = state.get("python_version", "")
+    try:
+        installed_major, installed_minor, *_ = (int(part) for part in installed_version.split("."))
+    except ValueError:
+        return False
+    
+    return (state.get("schema_version") == INSTALL_SCHEMA_VERSION and (installed_major, installed_minor) >= SUPPORTED_PYTHON)
 
 
 
@@ -413,7 +418,7 @@ class WatchDogAgentApp(ttk.Frame):
         if self.setup_running:
             return
 
-        if sys.version_info[:2] != SUPPORTED_PYTHON:
+        if sys.version_info[:2] < SUPPORTED_PYTHON:
             required = ".".join(map(str, SUPPORTED_PYTHON))
             current = f"{sys.version_info.major}.{sys.version_info.minor}"
 
@@ -422,7 +427,7 @@ class WatchDogAgentApp(ttk.Frame):
                 (
                     f"WatchDog Agent currently requries Python {required}.x.\n\n"
                     f"This GUI was launched with Python {current}.\n\n"
-                    "Install Python 3.12 and relaunch setup.bat."
+                    "Install Python 3.12 or newer and relaunch setup.bat."
                 )
             )
             return
@@ -1121,7 +1126,7 @@ class WatchDogAgentApp(ttk.Frame):
         self.winfo_toplevel().destroy()
 
 def main() -> None:
-    if sys.version_info[:2] != SUPPORTED_PYTHON:
+    if sys.version_info[:2] < SUPPORTED_PYTHON:
         required = ".".join(map(str, SUPPORTED_PYTHON))
         current = f"{sys.version_info.major}.{sys.version_info.minor}"
 
@@ -1133,7 +1138,7 @@ def main() -> None:
             (
                 f"WatchDog Agent requires Python {required}.x.\n\n"
                 f"Current Python: {current}\n\n"
-                "Install Python 3.12 and launch the application again."
+                "Install Python 3.12 or newer and launch the application again."
             ),
         )
 
