@@ -17,7 +17,7 @@ interface CameraSettingsPanelProps {
 
 
 //the roles that can access the zone settigns
-const ADMIN_ROLES = new Set(["NEIGHBOURHOOD_ADMIN", "PROP_ADMIN", "SYSTEM_ADMIN"])
+const ADMIN_ROLES = new Set(["NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN"])
 
 
 export function CameraSettingsPanel({
