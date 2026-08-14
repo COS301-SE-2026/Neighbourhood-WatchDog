@@ -41,7 +41,7 @@ export default function PropertyCamerasPage() {
 
     return (
         <main className="min-h-full w-full bg-black px-6 py-7 text-white md:px-8">
-            <div className="mx-auto max-w-7xl">
+            <div className="max-w-full">
                 <header className="mb-7 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <p className="text-sm text-white/45">
