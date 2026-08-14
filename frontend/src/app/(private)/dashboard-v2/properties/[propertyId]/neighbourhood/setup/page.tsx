@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import {
     ArrowLeft,
-    Check,
     MapPin,
 } from "lucide-react";
 
@@ -115,6 +114,31 @@ export default function NeighbourhoodSetupPage() {
                     </div>
                 </section>
 
+                <section className="border-t border-white/10 pt-6">
+                    <div className="flex items-start gap-3">
+                        <p className="text-sm leading-relaxed text-white/50">
+                            You will become the first neighbourhood administrator.
+                            You can then invite residents and review join requests.                        
+                        </p>
+                    </div>
+
+                    <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <Link
+                            href="/dashboard-v2"
+                            className="inline-flex h-9 items-center justify-center rounded-md px-3.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+                        >
+                            Cancel
+                        </Link>
+
+                        <button
+                            type="button"
+                            disabled={!neighbourhoodName.trim() || !location.trim()}
+                            className="inline-flex h-9 items-center justify-center rounded-md bg-emerald-500 px-3.5 text-sm font-medium text-black transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/30 disabled:text-black/50"
+                        >
+                            Create neighbourhood
+                        </button>
+                    </div>
+                </section>
             </div>
         </main>
     )
