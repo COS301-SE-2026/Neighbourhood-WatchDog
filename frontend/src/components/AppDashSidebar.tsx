@@ -158,6 +158,11 @@ function getSidebarGroups(
                         url: `${propertyBaseUrl}/join-neighbourhood`,
                         icon: UserPlus,
                     },
+                    {
+                        title: "Create a neighbourhood",
+                        url: `${propertyBaseUrl}/neighbourhood/setup`,
+                        icon: Building2,
+                    }
                 ],
             });
         }
