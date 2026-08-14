@@ -615,7 +615,7 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
 
             pre_event_frames.append(frame.copy())
 
-            person_detections, weapon_detections = _extract_detections(frame)
+            person_detections, weapon_detections = _extract_detections(frame, zones=camera.zones, confidence_threshold=camera.confidence_threshold)
 
             #only tracking humans through deepsort
             tracks = tracker.update_tracks(person_detections, frame=frame)
