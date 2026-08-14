@@ -55,43 +55,76 @@ jobs:
         run: |
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
             | docker login --username AWS --password-stdin 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+          IMAGE_TAG="${{ github.sha }}
           docker build -t watchdog-backend ./backend
-          docker tag watchdog-backend:latest 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:latest
-          docker push 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:latest
+          docker tag watchdog-backend:latest 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:$IMAGE_TAG
+          docker push 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:$IMAGE_TAG
 
-      # - name: Run database migrations
-      #   run: |
-      #     TASK_ARN=$(aws ecs run-task \
-      #     --cluster watchdog-prod-cluster \
-      #     --task-definition watchdog-backend-task \
-      #     --launch-type EC2 \
-      #     --overrides '{"containerOverrides":[{"name":"backend","command":["alembic","upgrade","head"]}]}' \
-      #     --query 'tasks[0].taskArn' \
-      #     --output text)
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
-      #     echo "Migration task: $TASK_ARN"
+      - name: Run database migrations
+        run: |
+          RESULT=$(aws ecs run-task \
+            --cluster watchdog-prod-cluster \
+            --task-definition watchdog-backend-task \
+            --launch-type EC2 \
+            --overrides '{"containerOverrides":[{"name":"backend","command":["alembic","upgrade","head"]}]}')
 
-      #     aws ecs wait tasks-stopped \
-      #       --cluster watchdog-prod-cluster \
-      #       --tasks "$TASK_ARN"
+          TASK_ARN=$(echo "$RESULT" | jq -r '.tasks[0].taskArn // empty')
 
-      #     EXIT_CODE=$(aws ecs describe-tasks \
-      #       --cluster watchdog-prod-cluster \
-      #       --tasks "$TASK_ARN" \
-      #       --query 'tasks[0].containers[0].exitCode' \
-      #       --output text)
-          
-      #     echo "Migration exit code: $EXIT_CODE"
-      #     if [ "$EXIT_CODE" != "0" ]; then 
-      #       echo "Migration failed"
-      #       exit 1
-      #     fi
+          if [ -z "$TASK_ARN" ]; then
+            echo "Migration task failed to start. Failure:"
+            echo "$RESULT" | jq -r '.failures'
+            exit 1
+          fi
+
+          echo "Migration task: $TASK_ARN"
+
+          aws ecs wait tasks-stopped \
+            --cluster watchdog-prod-cluster \
+            --tasks "$TASK_ARN"
+
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --cluster watchdog-prod-cluster \
+            --tasks "$TASK_ARN" \
+            --query 'tasks[0].containers[0].exitCode' \
+            --output text)
+
+          echo "Migration exit code: $EXIT_CODE"
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Migration failed"
+            exit 1
+          fi
+
+      - name: Register new task definition with SHA-tagged image
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition watchdog-backend-task \
+            --query 'taskDefinition' \
+            --region ${{ secrets.AWS_REGION }} > task-def.json
+
+            NEW_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:${{ env.IMAGE_TAG }}"
+              '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
+              task-def.json)
+
+            echo "$NEW_TASK_DEF" > new-task-def.json
+
+            NEW_REVISION=$(aws ecs register-task-definition \
+              --cli-input-json file://new-task-def.json \
+              --region ${{ secrets.AWS_REGION }} \
+              --query 'taskDefinition.revision' \
+              --output text)
+            
+            echo "NEW_REVISION=$NEW_REVISION" >> $GITHUB_ENV
+            echo "Registered task definition revision: $NEW_REVISION"
 
       - name: Deploy new task definition to service
         run: | 
           aws ecs update-service \
             --cluster watchdog-prod-cluster \
             --service watchdog-backend-service \
+            --task-definition watchdog-backend-task:${{ env.NEW_REVISION }} \
             --force-new-deployment
 
           aws ecs wait services-stable \
