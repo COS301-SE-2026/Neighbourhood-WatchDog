@@ -233,6 +233,11 @@ class MainApplicationPage(ttk.Frame):
             side="right"
         )
 
+        self.update_agent_ui(
+            state=self.state.agent_status,
+            message="AI Agent is stopped.",
+        )
+
         # Bottom Controls
         button_frame = ttk.Frame(self)
 
@@ -253,7 +258,10 @@ class MainApplicationPage(ttk.Frame):
     # AI AGENT CONTROLS
     def start_agent(self) -> None:
         """
-        Ask AgentService to start the real local AI service.
+        Ask AgentService to start the real local AI process.
+
+        Do not update labels here. AgentRuntime will emit events
+        once startup succeeds, fails, or the health check passes.
         """
 
         if self.agent_service is None:
@@ -267,7 +275,7 @@ class MainApplicationPage(ttk.Frame):
 
     def stop_agent(self) -> None:
         """
-        Ask AgentService to stop the real local AI service.
+        Ask AgentService to stop the real local AI process.
         """
 
         if self.agent_service is None:
@@ -280,7 +288,10 @@ class MainApplicationPage(ttk.Frame):
         event: AgentEvent,
     ) -> None:
         """
-        Called by main.py on the Tkinter thread.
+        Receive an AgentRuntime event from main.py.
+
+        main.py calls this method on the Tkinter main thread, so it
+        is safe to update labels and buttons here.
         """
 
         if event.event_type == "status":
@@ -296,8 +307,8 @@ class MainApplicationPage(ttk.Frame):
             )
 
         elif event.event_type == "log":
-            # The main page does not yet have a log panel.
-            # We can add one later, or write logs to a file.
+            # The main page does not have an agent log panel yet.
+            # We will later display or write these log messages.
             pass
 
     def update_agent_ui(
@@ -306,9 +317,10 @@ class MainApplicationPage(ttk.Frame):
         message: str,
     ) -> None:
         """
-        Update labels and button availability only.
+        Reflect the actual runtime state in the page.
 
-        This method never starts or stops processes.
+        This method changes widgets only. It never starts/stops
+        a process and never calls AgentRuntime directly.
         """
 
         self.state.agent_status = state
@@ -338,13 +350,19 @@ class MainApplicationPage(ttk.Frame):
         )
 
     # APPLICATION
-    def quit_application(self) -> None:
-        if self.agent_service.is_running():
-            self.exit_requested = True
-            self.agent_service.shutdown()
+    def exit_application(self) -> None:
+        """
+        Ask the application controller to begin shutdown.
+
+        The controller owns AgentService and the Tk root, so this page
+        must not destroy the root or stop processes directly.
+        """
+
+        if self.controller is not None:
+            self.controller.quit_application()
             return
 
-        self.root.destroy()
+        self.winfo_toplevel().destroy()
 
 
 if __name__ == "__main__":

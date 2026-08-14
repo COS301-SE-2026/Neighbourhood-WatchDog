@@ -46,10 +46,12 @@ class AgentRuntime:
         self._process: subprocess.Popen | None = None
         self._status = "stopped"
         self._stop_requested = False
+        self._startup_failure_message: str | None = None
         self._lock = threading.RLock()
 
         self._monitor_thread: threading.Thread | None = None
         self._log_thread: threading.Thread | None = None
+
 
     @property
     def status(self) -> str:
@@ -161,6 +163,9 @@ class AgentRuntime:
         else:
             popen_options["start_new_session"] = True
 
+        with self._lock:
+            self._startup_failure_message = None
+
         self._set_status(
             "starting",
             "Starting local AI service...",
@@ -238,12 +243,22 @@ class AgentRuntime:
 
             if exit_code is not None:
                 with self._lock:
+                    # Ignore an old monitor if another process has already
+                    # been started and replaced this one.
+                    if self._process is not process:
+                        return
+
                     was_requested_stop = self._stop_requested
+                    startup_failure_message = self._startup_failure_message
+                    self._process = None
 
-                    if self._process is process:
-                        self._process = None
+                if startup_failure_message is not None:
+                    self._set_status(
+                        "error",
+                        startup_failure_message,
+                    )
 
-                if was_requested_stop:
+                elif was_requested_stop:
                     self._set_status(
                         "stopped",
                         f"Stopped (exit code {exit_code}).",
@@ -276,6 +291,10 @@ class AgentRuntime:
                     )
 
                 elif time.monotonic() - started_at > health_timeout_seconds:
+                    with self._lock:
+                        self._startup_failure_message = (
+                            "The local AI service did not become ready."
+                        )
                     self._set_status(
                         "error",
                         "The local AI service did not become ready.",

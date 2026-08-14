@@ -146,16 +146,16 @@ class WatchDogDesktopApp:
 
     def quit_application(self) -> None:
         """
-        Central shutdown point.
-
-        Later this will stop AgentService and CameraSupervisor.
+        Shut down the local AI service before closing the desktop app.
         """
 
-        if self.current_frame is not None:
-            on_close = getattr(self.current_frame, "on_close", None)
+        if self.exit_requested:
+            return
 
-            if callable(on_close):
-                on_close()
+        if self.agent_service.is_running():
+            self.exit_requested = True
+            self.agent_service.shutdown()
+            return
 
         self.root.destroy()
 
