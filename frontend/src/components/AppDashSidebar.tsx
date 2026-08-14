@@ -155,7 +155,7 @@ function getSidebarGroups(
                 items: [
                     {
                         title: "Join a neighbourhood",
-                        url: `${propertyBaseUrl}/join-neighbourhood`,
+                        url: `${propertyBaseUrl}/neighbourhood/join`,
                         icon: UserPlus,
                     },
                     {
