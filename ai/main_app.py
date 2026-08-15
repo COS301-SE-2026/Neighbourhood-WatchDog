@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from app_state import AppState
-
+from services.camera_service import CameraService, CameraSummary
 
 SEGOE_FONT = "Segoe UI"
 from runtime.agent_runtime import AgentEvent
@@ -254,6 +254,20 @@ class MainApplicationPage(ttk.Frame):
         ).pack(
             side="right"
         )
+
+    def _render_camera_rows(self, summaries: list[CameraSummary]) -> None:
+        """Displays camera summaries in UI"""
+        self.camera_list.delete(*self.camera_list.get_children())
+
+        for summary in summaries:
+            self.camera_list.insert(
+                "",
+                "end",
+                values=(
+                    summary.name,
+                    summary.display_status,
+                ),
+            )
 
     # AI AGENT CONTROLS
     def start_agent(self) -> None:
