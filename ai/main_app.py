@@ -289,6 +289,19 @@ class MainApplicationPage(ttk.Frame):
 
         self._camera_events.put(updated)
 
+    def _refresh_cameras(self) -> None:
+        """Starts background camera connectivity checks"""
+        if self._camera_refresh_in_flight:
+            return
+
+        self._camera_refresh_in_flight = True
+
+        threading.Thread(
+            target=self._refresh_cameras_worker,
+            name="watchdog-camera-refresh",
+            daemon=True,
+        ).start()
+
     # AI AGENT CONTROLS
     def start_agent(self) -> None:
         """
