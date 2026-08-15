@@ -1,7 +1,7 @@
 import pytest
 from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
-from app.services.camera_service import register_camera_handler, deregister_camera_handler, edit_camera_handler
+from app.services.camera_service import register_camera_handler, deregister_camera_handler, edit_camera_handler, list_enabled_cameras_for_agent_handler
 from app.services.camera_service import CameraEditReq
 from app.schemas.camera import RegisterCameraReq
 from app.models.camera import CameraVisibilityEnum
@@ -489,4 +489,53 @@ class TestEditCamera:
         self.mock_db.refresh.assert_called_once_with(self.mock_camera)
 
 
+    @pytest.mark.asyncio
+    async def test_enabled_camera_payload_includes_detection_zone_polygons():
 
+        property_id = uuid4()
+        neighbourhood_id = uuid4()
+
+        camera = MagicMock()
+        camera.id = uuid4()
+        camera.rtsp_url = "encrypted-value"
+        camera.enabled = True
+        camera.confidence_threshold = 0.70
+        camera.property = MagicMock(neighbourhood_id=neighbourhood_id)
+        camera.detection_zones = [
+            MagicMock(
+                polygon=[
+                    [0.1, 0.1],
+                    [0.5, 0.1],
+                    [0.5, 0.5],
+                    [0.1, 0.5]
+                ]
+            )
+        ]
+
+        result = MagicMock()
+
+        result.scalars.return_value.all.return_value = [camera]
+
+        db = MagicMock()
+
+        db.execute = AsyncMock(return_value=result)
+
+        with patch(
+            "app.services.camera_service.decrypt_rtsp_url",
+            return_value="rtsp://example.test/camera"
+        ), patch(
+            "app.services.camera_service._camera_publish_credentials",
+            return_value=("camera-user", "camera-password")
+        ):
+            payload = await list_enabled_cameras_for_agent_handler(property_id, db)
+
+        assert len(payload.data) == 1
+        assert payload.data[0].confidence_threshold == 0.70
+        assert payload.data[0].zones == [
+            [
+                [0.1, 0.1],
+                [0.5, 0.1],
+                [0.5, 0.5],
+                [0.1, 0.5]
+            ]
+        ]
