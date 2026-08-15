@@ -27,6 +27,7 @@ import {
     Check,
     ChevronDown,
     ClipboardList,
+    FileText,
     History,
     House,
     LayoutDashboard,
@@ -74,6 +75,12 @@ type SidebarGroupData = {
     items: SidebarItemData[];
 };
 
+const currentUser = {
+    id: "user-1",
+    name: "user_name",
+    systemRole: "SYSTEM_ADMIN",
+};
+
 const exampleContexts: PropertyContext[] = [
     {
         id: "greenfields-estate",
@@ -109,6 +116,7 @@ const exampleContexts: PropertyContext[] = [
 
 function getSidebarGroups(
     activeContext: PropertyContext,
+    systemRole: string | null,
 ): SidebarGroupData[] {
     const propertyBaseUrl = `/dashboard-v2/properties/${activeContext.propertyId}`;
 
@@ -124,6 +132,23 @@ function getSidebarGroups(
             icon: Camera,
         },
     ];
+
+    const addSystemAdminGroup = (groups: SidebarGroupData[]) => {
+        if (systemRole === "SYSTEM_ADMIN") {
+            groups.push({
+                label: "SYSTEM",
+                items: [
+                    {
+                        title: "Audit log",
+                        url: "/dashboard-v2/admin/audit",
+                        icon: FileText,
+                    },
+                ],
+            });
+        }
+
+        return groups;
+    };
 
     // Standalone property: it has no neighbourhood_id.
     // Only show joining if this user can make a request for this property.
@@ -226,7 +251,7 @@ function getSidebarGroups(
         });
     }
 
-    return groups;
+    return addSystemAdminGroup(groups);
 }
 
 function WatchdogLogo({ size = 28 }: { size?: number }) {
@@ -254,8 +279,10 @@ const AppDashSidebar = () => {
             ? `${activeContext.address} · Standalone property`
             : `${activeContext.address} · ${activeContext.role}`;
 
-    const sidebarGroups = getSidebarGroups(activeContext);
-
+    const sidebarGroups = getSidebarGroups(
+        activeContext,
+        currentUser.systemRole,
+    );
     return (
         <Sidebar collapsible="icon">
             <SidebarHeader className="border-b border-sidebar-border px-3 py-3 group-data-[collapsible=icon]:px-2">
