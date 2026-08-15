@@ -51,6 +51,32 @@ class CameraService:
             ) -> None:
         self.agent_status_url = agent_status_url
         self.timeout_seconds = timeout_seconds
-    
+
+    def summaries_from_config(self, config_data: dict | None) -> list[CameraSummary]:
+        """Builds camera summary list from local config data"""
+        config_data = config_data or {}
+        cameras = config_data.get("cameras" or [])
+        summaries: list[CameraSummary] = []
+
+        for camera in cameras:
+            if not isinstance(camera, dict):
+                continue
+
+            camera_id = camera.get("id")
+            if camera_id is None:
+                continue
+
+            summaries.append(
+                CameraSummary(
+                    id=str(camera_id),
+                    name=str(camera.get("name") or "Unnamed camera"),
+                    location=camera.get("location"),
+                    enabled=bool(camera.get("enabled", True)),
+                    status=CONFIGURED,
+                    status_reason=None,
+                )
+            )
+
+        return summaries
 
 
