@@ -336,6 +336,7 @@ class WatchDogPinPage(ttk.Frame):
 
         # Pair with backend
 
+        pairing_result = None
         try:
             result = self.pairing_service.pair(
                 self.formatted_pairing_token
@@ -357,6 +358,8 @@ class WatchDogPinPage(ttk.Frame):
             # ====================================================
             # Successful pairing
 
+            pairing_result = (api_key, config_data)
+
             self.status_label.config(
                 text="Status: Pairing successful."
             )
@@ -372,11 +375,6 @@ class WatchDogPinPage(ttk.Frame):
 
             self.log.see("end")
             self.log.config(state="disabled")
-
-            self.controller.handle_pairing_success(
-                api_key=api_key,
-                config_data=config_data,
-            )
             
         except PairingError as e:
 
@@ -414,6 +412,13 @@ class WatchDogPinPage(ttk.Frame):
                 self.connect_button.config(
                     state="normal"
                 )
+
+        if pairing_result is not None:
+            api_key, config_data = pairing_result
+            self.controller.handle_pairing_sucess(
+                api_key=api_key,
+                config_data=config_data,
+            )
 
 
 if __name__ == "__main__":
