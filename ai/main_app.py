@@ -269,6 +269,26 @@ class MainApplicationPage(ttk.Frame):
                 ),
             )
 
+    def _refresh_cameras_worker(self) -> None:
+        """Fetches connectivity status via background thread"""
+        agent_running = False
+
+        if self.agent_service is not None:
+            try:
+                agent_running = self.agent_service.is_running()
+            except Exception:
+                agent_running = False
+
+        try:
+            updated = self.camera_service.refresh_connectivity(
+                self._camera_summaries,
+                agent_is_running=agent_running,
+            )
+        except Exception:
+            updated = self._camera_summaries
+
+        self._camera_events.put(updated)
+
     # AI AGENT CONTROLS
     def start_agent(self) -> None:
         """
