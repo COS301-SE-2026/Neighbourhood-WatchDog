@@ -490,7 +490,7 @@ class TestEditCamera:
 
 
     @pytest.mark.asyncio
-    async def test_enabled_camera_payload_includes_detection_zone_polygons():
+    async def test_enabled_camera_payload_includes_detection_zone_polygons(self):
 
         property_id = uuid4()
         neighbourhood_id = uuid4()

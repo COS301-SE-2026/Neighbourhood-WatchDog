@@ -60,6 +60,6 @@ def test_enabled_camera_payload_maps_zones_and_threshold_to_camera_spec():
             (0.1, 0.1),
             (0.5, 0.1),
             (0.5, 0.5),
-            (0.1, 0.5)
-        )
+            (0.1, 0.5),
+        ),
     )

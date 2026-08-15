@@ -1,7 +1,14 @@
 import pytest
 from pydantic import ValidationError
 from uuid import uuid4
-from app.schemas.camera_settings import CameraSettingsResponse, ZoneResponse, UpdateCameraSettingsRequest, ZonePoint, CreateZoneRequest
+
+from app.schemas.camera_settings import (
+    CameraSettingsResponse,
+    CreateZoneRequest,
+    UpdateCameraSettingsRequest,
+    ZoneResponse
+)
+
 
 def _zone_response(**overrides):
     base = {
@@ -13,84 +20,47 @@ def _zone_response(**overrides):
     base.update(overrides)
     return base
 
-class TestZonePoint:
-    def test_valid_point(self):
-        point = ZonePoint(x=0.5, y=0.5)
-
-        assert point.x == 0.5
-        assert point.y == 0.5
-
-    def test_x_at_lower_boundary(self):
-        point = ZonePoint(x=0.0, y=0.5)
-
-        assert point.x == 0.0
-
-    def test_x_at_upper_boundary(self):
-        point = ZonePoint(x=1.0, y=0.5)
-
-        assert point.x == 1.0
-
-    def test_x_above_lower_boundary_raises(self):
-        with pytest.raises(ValidationError):
-            ZonePoint(x=1.1, y=0.5)
-
-    def test_y_below_lower_boundary_raises(self):
-        with pytest.raises(ValidationError):
-            ZonePoint(x=0.5, y=-0.1)
-
-    def test_y_above_upper_boundary_raises(self):
-        with pytest.raises(ValidationError):
-            ZonePoint(x=0.5, y=1.1)
-
-    def test_missing_x_raises(self):
-        with pytest.raises(ValidationError):
-            ZonePoint(y=0.5)
-
-    def test_missing_y_raises(self):
-        with pytest.raises(ValidationError):
-            ZonePoint(x=0.5)
 
 class TestCreateZoneReq:
-    class TestCreateZoneReq:
-        VALID_POLYGON = [
-            [0.0, 0.0],
-            [1.0, 0.0],
-            [0.5, 1.0]
-        ]
+    VALID_POLYGON = [
+        [0.0, 0.0],
+        [1.0, 0.0],
+        [0.5, 1.0]
+    ]
 
-        def test_valid_req(self):
-            req = CreateZoneRequest(name="Backyard", polygon=self.VALID_POLYGON)
+    def test_valid_req(self):
+        req = CreateZoneRequest(name="Backyard", polygon=self.VALID_POLYGON)
 
-            assert req.name == "Backyard"
-            assert req.polygon == self.VALID_POLYGON
+        assert req.name == "Backyard"
+        assert req.polygon == self.VALID_POLYGON
 
-        def test_name_defaults_to_zone(self):
-            req = CreateZoneRequest(polygon=self.VALID_POLYGON)
+    def test_name_defaults_to_zone(self):
+        req = CreateZoneRequest(polygon=self.VALID_POLYGON)
 
-            assert req.name == "Zone"
+        assert req.name == "Zone"
 
-        def test_rejects_polygon_with_fewer_than_three_points(self):
-            with pytest.raises(ValidationError):
-                CreateZoneRequest(polygon=[[0.0, 0.0], [1.0, 1.0]])
+    def test_rejects_polygon_with_fewer_than_three_points(self):
+        with pytest.raises(ValidationError):
+            CreateZoneRequest(polygon=[[0.0, 0.0], [1.0, 1.0]])
 
 
-        def test_rejects_point_without_exactly_two_coordinates(self):
-            with pytest.raises(ValidationError):
-                CreateZoneRequest(polygon=[
-                        [0.0, 0.0, 0.5],
-                        [1.0, 0.0],
-                        [0.5, 1.0]
-                    ]
-                )
+    def test_rejects_point_without_exactly_two_coordinates(self):
+        with pytest.raises(ValidationError):
+            CreateZoneRequest(polygon=[
+                    [0.0, 0.0, 0.5],
+                    [1.0, 0.0],
+                    [0.5, 1.0]
+                ]
+            )
 
-        def test_rejects_coordinate_outside_normalized_range(self):
-            with pytest.raises(ValidationError):
-                CreateZoneRequest(
-                    polygon=[[0.0, 0.0], [1.2, 0.0], [0.5, 1.0]])
+    def test_rejects_coordinate_outside_normalized_range(self):
+        with pytest.raises(ValidationError):
+            CreateZoneRequest(
+                polygon=[[0.0, 0.0], [1.2, 0.0], [0.5, 1.0]])
 
-        def test_rejects_blank_zone_name(self):
-            with pytest.raises(ValidationError):
-                CreateZoneRequest(name="", polygon=self.VALID_POLYGON)
+    def test_rejects_blank_zone_name(self):
+        with pytest.raises(ValidationError):
+            CreateZoneRequest(name="", polygon=self.VALID_POLYGON)
 
 class TestZoneRes:
     def test_valid_fields(self):

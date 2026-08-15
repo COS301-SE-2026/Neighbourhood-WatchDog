@@ -7,10 +7,6 @@ from pydantic import BaseModel, ConfigDict, Field
 Coordinate = Annotated[float, Field(ge=0.0, le=1.0)]
 PolygonPoint = Annotated[List[Coordinate], Field(min_length=2, max_length=2)]
 
-# class ZonePoint(BaseModel):
-#     x: float = Field(..., ge=0.0, le=1.0)
-#     y: float = Field(..., ge=0.0, le=1.0)
-
 
 
 class CreateZoneRequest(BaseModel):
