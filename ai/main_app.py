@@ -1,4 +1,5 @@
 import tkinter as tk
+import queue
 from tkinter import ttk
 from app_state import AppState
 from services.camera_service import CameraService, CameraSummary
@@ -7,6 +8,8 @@ SEGOE_FONT = "Segoe UI"
 from runtime.agent_runtime import AgentEvent
 
 class MainApplicationPage(ttk.Frame):
+
+    CAMERA_REFRESH_INTERVAL = 5000
 
     def __init__(
         self,
@@ -289,7 +292,7 @@ class MainApplicationPage(ttk.Frame):
 
         self._camera_events.put(updated)
 
-    def _refresh_cameras(self) -> None:
+    def refresh_cameras(self) -> None:
         """Starts background camera connectivity checks"""
         if self._camera_refresh_in_flight:
             return
@@ -301,6 +304,24 @@ class MainApplicationPage(ttk.Frame):
             name="watchdog-camera-refresh",
             daemon=True,
         ).start()
+
+    def _camera_poll_tick(self) -> None:
+        """
+        Runs on Tkinter main thread via `after()`
+        Applies completed background refreshes to the table, 
+        then starts the next one and reschedules itself
+        """
+        try:
+            while True:
+                summaries = self._camera_events.get_nowait()
+                self._camera_summaries = summaries
+                self._camera_refresh_in_flight = False
+                self._render_camera_rows(summaries)
+        except queue.Empty:
+            pass
+
+        self.refresh_cameras()
+        self.after(self.CAMERA_REFRESH_INTERVAL, self._camera_poll_tick)
 
     # AI AGENT CONTROLS
     def start_agent(self) -> None:
