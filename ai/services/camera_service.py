@@ -4,6 +4,8 @@ import logging
 import httpx
 from dataclasses import dataclass
 
+logger = logging.getLogger("watchdog.desktop.camera_service")
+
 CONFIGURED = "configured"
 CHECKING = "checking"
 CONNECTED = "connected"
@@ -64,6 +66,10 @@ class CameraService:
 
             camera_id = camera.get("id")
             if camera_id is None:
+                logger.warning(
+                    "Skipping a configured camera with no id in persisted config: %r",
+                    camera.get("name", "<unnamed>")
+                )
                 continue
 
             summaries.append(
@@ -106,6 +112,7 @@ class CameraService:
             response.raise_for_status()
             payload = response.json()
         except (httpx.RequestError, httpx.HTTPStatusError, ValueError) as error:
+            logger.warning("Could not fetch camera status: %s", error)
             return[
                 summary.with_status(
                     UNAVAILABLE,
