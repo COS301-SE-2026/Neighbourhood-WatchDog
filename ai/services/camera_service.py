@@ -41,6 +41,16 @@ class CameraSummary:
     @property
     def display_status(self) -> str:
         return STATUS_LABELS(self.status, self.status.title())
+
+class CameraService:
+    def __init__(
+            self, 
+            *,
+            agent_status_url: str = "http://127.0.0.1:8001/internal/camera-status",
+            timeout_seconds: float = 2.0,
+            ) -> None:
+        self.agent_status_url = agent_status_url
+        self.timeout_seconds = timeout_seconds
     
 
 
