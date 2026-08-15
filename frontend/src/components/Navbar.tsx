@@ -12,8 +12,15 @@ import {
     DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "./ui/sidebar";
+import React from "react";
 
 const Navbar = () => {
+
+    const [username, setUsername] = React.useState("");
+    React.useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setUsername(localStorage.getItem("fullname") ?? "");
+        }, []);
     return (
         <nav className="p-4 flex items-center text-white justify-between">
             <SidebarTrigger/>
@@ -31,7 +38,7 @@ const Navbar = () => {
                     <DropdownMenuContent align="end" className="w-56">
                         <DropdownMenuLabel>
                         <div className="flex flex-col">
-                            <span className="text-sm font-medium">Obed Mbaya</span>
+                            <span className="text-sm font-medium">{username}</span>
                             <span className="text-xs font-normal text-muted-foreground">
                                 Resident
                             </span>

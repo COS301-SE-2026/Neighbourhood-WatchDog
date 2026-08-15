@@ -47,6 +47,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import React from "react";
 
 type ContextRole = "Resident" | "Neighbourhood Admin" | null;
 
@@ -283,6 +284,14 @@ const AppDashSidebar = () => {
         activeContext,
         currentUser.systemRole,
     );
+
+    const [username, setUsername] = React.useState("");
+    React.useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setUsername(localStorage.getItem("fullname") ?? "");
+    }, []);
+
+    
     return (
         <Sidebar collapsible="icon">
             <SidebarHeader className="border-b border-sidebar-border px-3 py-3 group-data-[collapsible=icon]:px-2">
@@ -464,7 +473,7 @@ const AppDashSidebar = () => {
 
                     <div className="min-w-0 group-data-[collapsible=icon]:hidden">
                         <p className="truncate text-sm font-medium text-white">
-                            Obed Edom Mbaya
+                            {username}
                         </p>
 
                         <p className="mt-0.5 truncate text-xs text-white/50">
