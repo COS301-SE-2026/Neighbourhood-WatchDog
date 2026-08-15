@@ -18,3 +18,25 @@ STATUS_LABELS = {
     UNAVAILABLE: "Unavailable",
 }
 
+@dataclass(frozen=True)
+class CameraSummary:
+    id: str
+    name: str
+    location: str | None
+    enabled: bool
+    status: str = CONFIGURED
+    status_reason: str | None = None
+
+    def with_status(self, status: str, reason: str | None) -> "CameraSummary":
+        """Returns camera summary with updated status"""
+        return CameraSummary(
+            id=self.id,
+            name=self.name,
+            location=self.location,
+            enabled=self.enabled,
+            status=status,
+            status_reason=reason,
+        )
+    
+
+
