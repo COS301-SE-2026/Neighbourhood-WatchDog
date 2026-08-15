@@ -37,6 +37,10 @@ class CameraSummary:
             status=status,
             status_reason=reason,
         )
+
+    @property
+    def display_status(self) -> str:
+        return STATUS_LABELS(self.status, self.status.title())
     
 
 
