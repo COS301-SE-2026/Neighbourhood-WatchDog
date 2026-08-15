@@ -23,6 +23,7 @@ import {
     BellRing,
     Building2,
     Camera,
+    ChartNoAxesCombined,
     Check,
     ChevronDown,
     ClipboardList,
@@ -191,6 +192,11 @@ function getSidebarGroups(
                     title: "Alert history",
                     url: `${propertyBaseUrl}/alerts`,
                     icon: History,
+                },
+                {
+                    title: "Analytics",
+                    url: `/dashboard-v2/neighbourhood/${activeContext.neighbourhoodId}/analytics`,
+                    icon: ChartNoAxesCombined
                 },
                 {
                     title: "Neighbourhood updates",
