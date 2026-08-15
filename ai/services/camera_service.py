@@ -79,4 +79,74 @@ class CameraService:
 
         return summaries
 
+    def refresh_connectivity(
+        self,
+        summaries: list[CameraSummary],
+        *,
+        agent_is_running: bool,
+    ) -> list[CameraSummary]:
+        """Checks camera connectivity via local agent. Cameras marked as unavailable if agent isn't running or unavailable"""
+        if not summaries:
+            return []
 
+        if not agent_is_running:
+            return[
+                summary.with_status(
+                    UNAVAILABLE,
+                    "Local AI service is not running.",
+                )
+                for summary in summaries
+            ]
+
+        try:
+            response = httpx.get(
+                self.agent_status_url,
+                timeout=self.timeout_seconds,
+            )
+            response.raise_for_status()
+            payload = response.json()
+        except (httpx.RequestError, httpx.HTTPStatusError, ValueError) as error:
+            return[
+                summary.with_status(
+                    UNAVAILABLE,
+                    "Could not reach local AI service.",
+                )
+                for summary in summaries
+            ]
+
+        status_by_id = {
+            str(entry.get("id")): entry
+            for entry in payload.get("cameras", [])
+            if entry.get("id") is not None
+        }
+
+        updated: list[CameraSummary] = []
+
+        for summary in summaries:
+            entry = status_by_id.get(summary.id)
+
+            if entry is None:
+                #Camera configured but agent hasn't registered it yet
+                updated.append(
+                    summary.with_status(
+                        CHECKING,
+                        "Waiting for agent to pick up this camera.",
+                    )
+                )
+                continue
+
+            runtime_status = entry.get("status", CHECKING)
+
+            if runtime_status == "connected":
+                updated.append(summary.with_status(CONNECTED, None))
+            elif runtime_status == "disconnected":
+                updated.append(
+                    summary.with_status(
+                        DISCONNECTED,
+                        "This camera could not be reached.",
+                    )
+                )
+            else:
+                updated.append(summary.with_status(CHECKING, None))
+
+        return updated
