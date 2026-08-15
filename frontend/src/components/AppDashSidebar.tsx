@@ -212,7 +212,7 @@ function getSidebarGroups(
             items: [
                 {
                     title: "Join requests",
-                    url: `/dashboard-v2/neighbourhoods/${activeContext.neighbourhoodId}/join-requests`,
+                    url: `/dashboard-v2/neighbourhood/${activeContext.neighbourhoodId}/join-requests`,
                     icon: ClipboardList,
                     badge: 2,
                 },
