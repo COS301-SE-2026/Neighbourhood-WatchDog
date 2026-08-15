@@ -1,5 +1,6 @@
 import tkinter as tk
 import queue
+import threading
 from tkinter import ttk
 from app_state import AppState
 from services.camera_service import CameraService, CameraSummary
@@ -24,9 +25,16 @@ class MainApplicationPage(ttk.Frame):
         self.controller = controller
         self.state = state or AppState()
         self.agent_service = agent_service
-        self.camera_service = camera_service
+        self.camera_service = camera_service or CameraService()
         self.columnconfigure(0, weight=1)
         self.rowconfigure(2, weight=1)
+
+        self._camera_summaries: list[CameraSummary] = (
+            self.camera_service.summaries_from_config(self.state.config_data)
+        )
+
+        self._camera_events: "queue.Queue[list[CameraSummary]]" = queue.Queue()
+        self._camera_refresh_in_flight = False
 
         # Header
         ttk.Label(
@@ -180,16 +188,7 @@ class MainApplicationPage(ttk.Frame):
             yscrollcommand=camera_scrollbar.set
         )
 
-        
-        for camera in self.state.cameras:
-            self.camera_list.insert(
-                "",
-                "end",
-                values=(
-                    camera.get("name", "Unnamed camera"),
-                    "Configured",
-                ),
-            )
+        self._render_camera_rows(self._camera_summaries)
 
         # AI Agent Controls
         controls_frame = ttk.LabelFrame(
@@ -257,6 +256,9 @@ class MainApplicationPage(ttk.Frame):
         ).pack(
             side="right"
         )
+
+        self.after(50, self.refresh_cameras)
+        self.after(self.CAMERA_REFRESH_INTERVAL, self._camera_poll_tick)
 
     def _render_camera_rows(self, summaries: list[CameraSummary]) -> None:
         """Displays camera summaries in UI"""
@@ -367,6 +369,11 @@ class MainApplicationPage(ttk.Frame):
                 state=event.status or "error",
                 message=event.message,
             )
+
+            if event.status == "running":
+                #Cameras likely unavailable while agent was starting
+                #checks again now instead of waiting for next scheduled poll
+                self.refresh_cameras()
 
         elif event.event_type == "error":
             self.update_agent_ui(
