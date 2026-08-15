@@ -1,26 +1,26 @@
 import { z } from "zod"
 
-export const SystemRoleEnum = z.enum([
+export const SystemRoleEnumSchema = z.enum([
   "SYSTEM_ADMIN",
   "RESIDENT",
   "SECURITY_OFFICER",
 ]);
 
-export const CurrentUserSummary= z.object({
+export const CurrentUserSummarySchema = z.object({
 
     id: z.string(),
     name: z.string(),
-    system_role: SystemRoleEnum,
+    system_role: SystemRoleEnumSchema ,
 });
 
-export const CurrentUserNeighbourhood = z.object({
+export const CurrentUserNeighbourhoodSchema  = z.object({
 
     id: z.string(),
     name: z.string(),
-    role: SystemRoleEnum,
+    role: SystemRoleEnumSchema,
 });
 
-export const CurrentUserProperty = z.object({
+export const CurrentUserPropertySchema  = z.object({
 
     id: z.string(),
     address: z.string(),
@@ -28,8 +28,13 @@ export const CurrentUserProperty = z.object({
     is_admin: z.boolean(),
 });
 
-export const CurrentUserContextRes = z.object({
-    user: CurrentUserSummary,
-    neighbourhoods: z.array(CurrentUserNeighbourhood),
-    properties: z.array(CurrentUserProperty),
+export const CurrentUserContextResSchema = z.object({
+    user: CurrentUserSummarySchema,
+    neighbourhoods: z.array(CurrentUserNeighbourhoodSchema ),
+    properties: z.array(CurrentUserPropertySchema),
 });
+
+export type CurrentUserSummary = z.infer<typeof CurrentUserSummarySchema>
+export type CurrentUserNeighbourhood = z.infer<typeof CurrentUserNeighbourhoodSchema>
+export type CurrentUserProperty = z.infer<typeof CurrentUserPropertySchema>
+export type CurrentUserContextRes = z.infer<typeof CurrentUserContextResSchema>
