@@ -323,7 +323,7 @@ class CameraSupervisor:
         return public_url.replace("rtsp://", f"rtsp://{username}:{password}@", 1)
 
     def get_status_snapshot(self) -> list[dict]:
-        with self.lock:
+        with self._lock:
             runtimes = list(self._runtimes.values())
 
         snapshot = []

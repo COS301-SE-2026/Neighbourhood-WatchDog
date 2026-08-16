@@ -42,7 +42,10 @@ class CameraSummary:
 
     @property
     def display_status(self) -> str:
-        return STATUS_LABELS(self.status, self.status.title())
+        return STATUS_LABELS.get(
+            self.status,
+            self.status.title(),
+        )
 
 class CameraService:
     def __init__(
@@ -57,7 +60,7 @@ class CameraService:
     def summaries_from_config(self, config_data: dict | None) -> list[CameraSummary]:
         """Builds camera summary list from local config data"""
         config_data = config_data or {}
-        cameras = config_data.get("cameras" or [])
+        cameras = config_data.get("cameras") or []
         summaries: list[CameraSummary] = []
 
         for camera in cameras:
