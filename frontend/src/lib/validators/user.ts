@@ -24,7 +24,7 @@ export const CurrentUserPropertySchema  = z.object({
 
     id: z.string(),
     address: z.string(),
-    neighbourhoodId: z.string() || z.string().nullable(),
+    neighbourhood_id: z.string().nullable(),
     is_admin: z.boolean(),
 });
 

@@ -17,7 +17,7 @@ class CurrentUserSummary(BaseModel):
 
     id: UUID
     name: str | None = None
-    system_role: UserRole = Field(alias="systemRole")
+    system_role: UserRole
 
 
 class CurrentUserNeighbourhood(BaseModel):
@@ -33,13 +33,8 @@ class CurrentUserProperty(BaseModel):
 
     id: UUID
     address: str
-    neighbourhood_id: UUID | None = Field(
-        default=None,
-        alias="neighbourhoodId",
-    )
-    is_admin: bool = Field(
-        alias="isAdmin"
-    )
+    neighbourhood_id: UUID | None
+    is_admin: bool
 
 
 class CurrentUserContextRes(BaseModel):
