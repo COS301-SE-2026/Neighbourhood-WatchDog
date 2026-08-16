@@ -5,6 +5,7 @@ import httpx
 from dataclasses import dataclass
 
 logger = logging.getLogger("watchdog.desktop.camera_service")
+BACKEND_URL = "https://api.neighbourhoodwatchdog.co.za"
 
 CONFIGURED = "configured"
 CHECKING = "checking"
@@ -49,11 +50,15 @@ class CameraSummary:
 
 class CameraService:
     def __init__(
-            self, 
-            *,
-            agent_status_url: str = "http://127.0.0.1:8001/internal/camera-status",
-            timeout_seconds: float = 2.0,
-            ) -> None:
+        self,
+        *,
+        backend_url: str = BACKEND_URL,
+        agent_status_url: str = (
+            "http://127.0.0.1:8001/internal/camera-status"
+        ),
+        timeout_seconds: float = 2.0,
+    ) -> None:
+        self.backend_url = backend_url.rstrip("/")
         self.agent_status_url = agent_status_url
         self.timeout_seconds = timeout_seconds
 
@@ -160,3 +165,43 @@ class CameraService:
                 updated.append(summary.with_status(CHECKING, None))
 
         return updated
+
+    def fetch_summaries(
+        self,
+        *,
+        api_key: str,
+    ) -> list[CameraSummary]:
+        """
+        Fetch the latest non-secret camera list for the paired property.
+        """
+
+        response = httpx.get(
+            f"{self.backend_url}/internal/cameras/summary",
+            headers={"X-Internal-Token": api_key},
+            timeout=self.timeout_seconds,
+        )
+        response.raise_for_status()
+
+        payload = response.json()
+        cameras = payload.get("data") or []
+
+        summaries: list[CameraSummary] = []
+
+        for camera in cameras:
+            if not isinstance(camera, dict):
+                continue
+
+            camera_id = camera.get("id")
+            if camera_id is None:
+                continue
+
+            summaries.append(
+                CameraSummary(
+                    id=str(camera_id),
+                    name=str(camera.get("name") or "Unnamed camera"),
+                    location=camera.get("location"),
+                    enabled=bool(camera.get("enabled", True)),
+                )
+            )
+
+        return summaries

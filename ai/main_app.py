@@ -1,3 +1,4 @@
+from email.mime import message
 import tkinter as tk
 import queue
 import threading
@@ -275,7 +276,31 @@ class MainApplicationPage(ttk.Frame):
             )
 
     def _refresh_cameras_worker(self) -> None:
-        """Fetches connectivity status via background thread"""
+        """
+        Fetch the latest safe camera metadata from the backend, then
+        merge it with connectivity information from the local AI service.
+
+        This method runs in a background thread. It must not update
+        Tkinter widgets directly.
+        """
+
+        # Fallback: keep showing the most recently known safe camera list
+        # if the backend cannot be reached.
+        summaries = self._camera_summaries
+
+        # Step 1: Get the current camera names, locations, and enabled
+        # states from the authenticated backend endpoint.
+        if self.state.api_key:
+            try:
+                summaries = self.camera_service.fetch_summaries(
+                    api_key=self.state.api_key,
+                )
+            except Exception:
+                # Backend may be offline temporarily. The UI will still use
+                # the last known/pairing-time safe summaries.
+                pass
+
+        # Step 2: Determine whether the local AI process is running.
         agent_running = False
 
         if self.agent_service is not None:
@@ -284,28 +309,20 @@ class MainApplicationPage(ttk.Frame):
             except Exception:
                 agent_running = False
 
+        # Step 3: If the local agent is running, merge its safe local
+        # connectivity snapshot into the latest backend camera list.
         try:
             updated = self.camera_service.refresh_connectivity(
-                self._camera_summaries,
+                summaries,
                 agent_is_running=agent_running,
             )
         except Exception:
-            updated = self._camera_summaries
+            # Do not lose the latest camera list merely because the local
+            # connectivity endpoint is unavailable.
+            updated = summaries
 
+        # Step 4: Send results back to the Tkinter main thread.
         self._camera_events.put(updated)
-
-    def refresh_cameras(self) -> None:
-        """Starts background camera connectivity checks"""
-        if self._camera_refresh_in_flight:
-            return
-
-        self._camera_refresh_in_flight = True
-
-        threading.Thread(
-            target=self._refresh_cameras_worker,
-            name="watchdog-camera-refresh",
-            daemon=True,
-        ).start()
 
     def _camera_poll_tick(self) -> None:
         """
@@ -322,6 +339,11 @@ class MainApplicationPage(ttk.Frame):
         except queue.Empty:
             pass
 
+        state, message = self._agent_summary_from_cameras()
+        self.update_agent_ui(
+            state=state,
+            message=message,
+        )
         self.refresh_cameras()
         self.after(self.CAMERA_REFRESH_INTERVAL, self._camera_poll_tick)
 
@@ -424,6 +446,22 @@ class MainApplicationPage(ttk.Frame):
             )
         )
 
+        self.start_button.config(
+            state=(
+                "normal"
+                if state in {"stopped", "crashed", "error"}
+                else "disabled"
+            )
+        )
+
+        self.stop_button.config(
+            state=(
+                "normal"
+                if state in {"starting", "running", "running_with_warnings"}
+                else "disabled"
+            )
+        )
+
     # APPLICATION
     def exit_application(self) -> None:
         """
@@ -438,6 +476,43 @@ class MainApplicationPage(ttk.Frame):
             return
 
         self.winfo_toplevel().destroy()
+
+    def _agent_summary_from_cameras(self) -> tuple[str, str]:
+        """
+        Return a user-facing agent status based on the real runtime state
+        and the current enabled-camera summaries.
+        """
+
+        runtime_state = self.agent_service.status if self.agent_service else "stopped"
+
+        if runtime_state != "running":
+            return runtime_state, self.ai_status_label.cget("text")
+
+        enabled = [
+            summary
+            for summary in self._camera_summaries
+            if summary.enabled
+        ]
+
+        disconnected = [
+            summary
+            for summary in enabled
+            if summary.status == "disconnected"
+        ]
+
+        if disconnected:
+            return (
+                "running_with_warnings",
+                (
+                    f"AI Agent is running, but "
+                    f"{len(disconnected)} camera(s) could not be reached."
+                ),
+            )
+
+        return (
+            "running",
+            "AI Agent is running.",
+        )
 
 
 if __name__ == "__main__":

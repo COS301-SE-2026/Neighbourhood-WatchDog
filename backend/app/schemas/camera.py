@@ -80,3 +80,14 @@ class MediaMtxAuthRequest(BaseModel):
     id: str = ""
     query: str = ""
 
+class AgentCameraSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: NonEmptyString
+    location: NonEmptyString
+    enabled: bool
+
+
+class AgentCameraSummaryList(BaseModel):
+    data: list[AgentCameraSummary] = []

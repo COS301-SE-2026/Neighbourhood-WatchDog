@@ -7,6 +7,34 @@ API_BASE_URL = "https://api.neighbourhoodwatchdog.co.za"
 class PairingError(Exception):
     """Raised when the agent cannot be paired successfully."""
 
+def _sanitize_cameras(cameras: object) -> list[dict]:
+    """
+    Keep only camera data safe to persist in local configuration.
+    """
+
+    if not isinstance(cameras, list):
+        return []
+
+    safe_fields = {
+        "id",
+        "property_id",
+        "neighbourhood_id",
+        "name",
+        "visibility",
+        "location",
+        "enabled",
+        "created_at",
+    }
+
+    return [
+        {
+            field: camera[field]
+            for field in safe_fields
+            if field in camera
+        }
+        for camera in cameras
+        if isinstance(camera, dict)
+    ]
 
 class PairingService:
     """Handles communication with the WatchDog backend for agent pairing."""
@@ -67,11 +95,17 @@ class PairingService:
                 "The pairing response did not contain an API key."
             )
 
+        config = {
+            key: value
+            for key, value in inner.items()
+            if key not in {"api_key", "cameras"}
+        }
+
+        config["cameras"] = _sanitize_cameras(
+            inner.get("cameras")
+        )
+
         return {
             "api_key": api_key,
-            "config": {
-                key: value
-                for key, value in inner.items()
-                if key != "api_key"
-            },
+            "config": config,
         }

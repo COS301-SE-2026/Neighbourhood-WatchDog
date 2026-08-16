@@ -415,7 +415,7 @@ class WatchDogPinPage(ttk.Frame):
 
         if pairing_result is not None:
             api_key, config_data = pairing_result
-            self.controller.handle_pairing_sucess(
+            self.controller.handle_pairing_success(
                 api_key=api_key,
                 config_data=config_data,
             )

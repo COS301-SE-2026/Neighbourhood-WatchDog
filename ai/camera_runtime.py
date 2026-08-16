@@ -221,10 +221,11 @@ class CameraSupervisor:
                 command,
                 **popen_options,
             )
-            runtime.consecutive_failures += 1
 
-            delay = min(2 ** runtime.consecutive_failures, 30)
-            runtime.next_restart_at = time.monotonic() + delay
+            # FFmpeg started successfully, so previous retry failures no
+            # longer apply to this camera.
+            runtime.consecutive_failures = 0
+            runtime.next_restart_at = 0.0
 
             logger.info(
                 "Started FFmpeg publisher for camera %s → %s",
