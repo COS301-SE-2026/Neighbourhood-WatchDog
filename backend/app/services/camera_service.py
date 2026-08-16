@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from app.models.audit_log import AuditAction, TargetEntity
 from app.schemas.camera import (
     EnabledCamerasRes,
@@ -327,7 +327,7 @@ async def list_enabled_cameras_for_agent_handler(property_id: UUID, db:AsyncSess
 
     stmt = (
     select(Camera)
-        .options(joinedload(Camera.property))
+        .options(joinedload(Camera.property), selectinload(Camera.detection_zones))
         .where(
             Camera.property_id == property_id,
             Camera.enabled.is_(True)
@@ -352,6 +352,7 @@ async def list_enabled_cameras_for_agent_handler(property_id: UUID, db:AsyncSess
                 enabled=camera.enabled,
                 neighbourhood_id=camera.property.neighbourhood_id,
                 confidence_threshold=camera.confidence_threshold,
+                zones=[zone.polygon for zone in camera.detection_zones],
                 publish_username=publish_username,
                 publish_password=publish_password,
             )
