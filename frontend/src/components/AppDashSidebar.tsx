@@ -17,7 +17,6 @@ import {
 import logoImage from "@/assets/images/logo-mark-only.svg";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
 
 import {
     BellRing,
@@ -47,22 +46,10 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import React from "react";
 
-type ContextRole = "Resident" | "Neighbourhood Admin" | null;
-
-type PropertyContext = {
-    id: string;
-    propertyId: string;
-    neighbourhoodId: string | null;
-    name: string;
-    address: string;
-    role: ContextRole;
-    icon: LucideIcon;
-
-    // static permission flag for now.
-    canRequestNeighbourhoodJoin: boolean;
-};
+import { usePropertyContext, type PropertyContext } from "@/hooks/use-property-context";
+import { useAuth } from "@/lib/auth/auth-context";
+import { useUserContext } from "@/hooks/use-user-context";
 
 type SidebarItemData = {
     title: string;
@@ -76,44 +63,26 @@ type SidebarGroupData = {
     items: SidebarItemData[];
 };
 
-const currentUser = {
-    id: "user-1",
-    name: "user_name",
-    systemRole: "SYSTEM_ADMIN",
-};
-
-const exampleContexts: PropertyContext[] = [
-    {
-        id: "greenfields-estate",
-        propertyId: "greenfields-property-id",
-        neighbourhoodId: "greenfields-neighbourhood-id",
-        name: "Greenfields Estate",
-        address: "45 Oak Avenue",
-        role: "Resident",
-        icon: MapPin,
-        canRequestNeighbourhoodJoin: false,
-    },
-    {
-        id: "test-neighbourhood",
-        propertyId: "test-property-id",
-        neighbourhoodId: "test-neighbourhood-id",
-        name: "Test Neighbourhood",
-        address: "123 Test Street",
-        role: "Neighbourhood Admin",
-        icon: Building2,
-        canRequestNeighbourhoodJoin: false,
-    },
-    {
-        id: "brook-street-property",
-        propertyId: "brook-street-property-id",
-        neighbourhoodId: null,
-        name: "Brook Street Property",
-        address: "1332 Brook Street",
-        role: null,
-        icon: House,
-        canRequestNeighbourhoodJoin: true,
-    },
-];
+function SidebarSkeleton() {
+    return (
+        <Sidebar collapsible="icon">
+            <SidebarHeader>
+                <div className="flex items-center gap-3 px-1 py-2">
+                    <div className="size-9 shrink-0 rounded-md bg-white/5 animate-pulse" />
+                    <div className="h-4 w-32 rounded bg-white/5 animate-pulse" />
+                </div>
+                <div className="mt-3 h-16 w-full rounded-lg bg-white/[0.03] animate-pulse" />
+            </SidebarHeader>
+            <SidebarContent>
+                <div className="space-y-2 px-3 py-4">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="h-8 w-full rounded-md bg-white/5 animate-pulse" />
+                    ))}
+                </div>
+            </SidebarContent>
+        </Sidebar>
+    )
+}
 
 function getSidebarGroups(
     activeContext: PropertyContext,
@@ -151,8 +120,7 @@ function getSidebarGroups(
         return groups;
     };
 
-    // Standalone property: it has no neighbourhood_id.
-    // Only show joining if this user can make a request for this property.
+
     if (activeContext.neighbourhoodId === null) {
         const groups: SidebarGroupData[] = [
             {
@@ -197,8 +165,6 @@ function getSidebarGroups(
         return groups;
     }
 
-    // A property already belongs to a neighbourhood.
-    // Therefore it should NEVER show "Join a neighbourhood".
     const groups: SidebarGroupData[] = [
         {
             label: "WORKSPACE",
@@ -237,7 +203,6 @@ function getSidebarGroups(
         },
     ];
 
-    // Only an admin for THIS active neighbourhood sees management actions.
     if (activeContext.role === "Neighbourhood Admin") {
         groups.push({
             label: "MANAGE NEIGHBOURHOOD",
@@ -269,28 +234,24 @@ function WatchdogLogo({ size = 28 }: { size?: number }) {
 }
 
 const AppDashSidebar = () => {
-    const [activeContext, setActiveContext] = useState<PropertyContext>(
-        exampleContexts[0],
-    );
+    
+    const {contexts, activeContext, isLoading, selectContext} = usePropertyContext();
+    const { user: authUser } = useAuth();
+    const { data: userContext } = useUserContext();
+    const systemRole = userContext?.user.system_role ?? null;
+
+    if (isLoading || !activeContext) {
+        return <SidebarSkeleton/>;
+    }
 
     const ActiveContextIcon = activeContext.icon;
 
-    const activeContextDescription =
-        activeContext.neighbourhoodId === null
-            ? `${activeContext.address} · Standalone property`
-            : `${activeContext.address} · ${activeContext.role}`;
+    const activeContextDescription = 
+        activeContext.neighbourhoodId === null 
+            ? `${activeContext.address} - Standalone property`
+            : `${activeContext.address} - ${activeContext.role}`
 
-    const sidebarGroups = getSidebarGroups(
-        activeContext,
-        currentUser.systemRole,
-    );
-
-    const [username, setUsername] = React.useState("");
-    React.useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setUsername(localStorage.getItem("fullname") ?? "");
-    }, []);
-
+    const sidebarGroups = getSidebarGroups(activeContext, systemRole);
     
     return (
         <Sidebar collapsible="icon">
@@ -362,7 +323,7 @@ const AppDashSidebar = () => {
                             Switch location
                         </DropdownMenuLabel>
 
-                        {exampleContexts.map((context) => {
+                        {contexts.map((context) => {
                             const ContextIcon = context.icon;
                             const isActive =
                                 context.id === activeContext.id;
@@ -376,7 +337,7 @@ const AppDashSidebar = () => {
                                 <DropdownMenuItem
                                     key={context.id}
                                     onSelect={() =>
-                                        setActiveContext(context)
+                                        selectContext(context)
                                     }
                                     className={`flex cursor-pointer items-start gap-3 rounded-md px-2 py-2.5 focus:text-white ${
                                         isActive
@@ -464,7 +425,7 @@ const AppDashSidebar = () => {
 
             <SidebarFooter className="border-t border-white/10 px-5 py-4 group-data-[collapsible=icon]:px-2">
                 <div
-                    title="Obed Edom Mbaya · Resident"
+                    title={`${authUser?.fullname ?? ""} - ${activeContext.role ?? "."}`}
                     className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center"
                 >
                     <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10">
@@ -473,11 +434,11 @@ const AppDashSidebar = () => {
 
                     <div className="min-w-0 group-data-[collapsible=icon]:hidden">
                         <p className="truncate text-sm font-medium text-white">
-                            {username}
+                            {authUser?.fullname}
                         </p>
 
                         <p className="mt-0.5 truncate text-xs text-white/50">
-                            Resident
+                            {activeContext.role ?? "-"}
                         </p>
                     </div>
                 </div>
