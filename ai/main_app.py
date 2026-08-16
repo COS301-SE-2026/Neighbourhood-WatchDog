@@ -426,29 +426,21 @@ class MainApplicationPage(ttk.Frame):
 
         self.state.agent_status = state
 
+        display_state = {
+            "running_with_warnings": "Running with warnings",
+        }.get(
+            state,
+            state.capitalize(),
+        )
+
         self.agent_status_label.config(
-            text=state.capitalize(),
+            text=display_state,
         )
 
         self.ai_status_label.config(
             text=message,
         )
 
-        self.start_button.config(
-            state=(
-                "normal"
-                if state in {"stopped", "crashed", "error"}
-                else "disabled"
-            )
-        )
-
-        self.stop_button.config(
-            state=(
-                "normal"
-                if state in {"starting", "running"}
-                else "disabled"
-            )
-        )
 
         self.start_button.config(
             state=(
