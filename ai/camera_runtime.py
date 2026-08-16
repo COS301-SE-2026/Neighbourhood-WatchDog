@@ -95,6 +95,9 @@ class CameraSupervisor:
 
     def _fetch_enabled_cameras(self) -> dict[str, CameraSpec]:
         print("Fetching cameras from: ", self.backend_url)
+        logger.debug(
+            "Fetching enabled camera runtime configuration."
+        )
 
         api_key = keyring.get_password("WatchDog", "api_key")
 

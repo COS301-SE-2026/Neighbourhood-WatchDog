@@ -10,10 +10,12 @@ import urllib.error
 import urllib.request
 from collections.abc import Callable
 from pathlib import Path
+import logging
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
+logger = logging.getLogger("watchdog.desktop.agent_runtime")
 
 @dataclass
 class AgentEvent:
@@ -83,6 +85,25 @@ class AgentRuntime:
         message: str,
         status: str | None = None,
     ) -> None:
+        """
+        Persist the event and forward it to the desktop UI queue.
+
+        Do not include API keys, stream URLs, or credentials in messages.
+        """
+
+        if event_type == "error":
+            logger.error(message)
+
+        elif event_type == "status":
+            logger.info(
+                "Agent status changed to %s: %s",
+                status,
+                message,
+            )
+
+        elif event_type == "log":
+            logger.info("[AI service] %s", message)
+
         self.event_callback(
             AgentEvent(
                 event_type=event_type,

@@ -2,7 +2,9 @@ import queue
 import sys
 import tkinter as tk
 from tkinter import ttk
+import logging
 
+from services.logging_service import configure_application_logging
 from app_state import AppState
 from authenticator import WatchDogPinPage
 from main_app import MainApplicationPage
@@ -11,10 +13,14 @@ from services.agent_service import AgentService
 from startup import StartupDestination, StartupResolver
 from watchdog_gui import WatchDogAgentApp
 
+logger = logging.getLogger("watchdog.desktop.main")
 
 class WatchDogDesktopApp:
 
     def __init__(self):
+        configure_application_logging()
+        logger.info("Starting WatchDog desktop application.")
+
         self.root = tk.Tk()
         self.root.title("WatchDog Agent")
         self.root.geometry("800x650")
@@ -153,10 +159,15 @@ class WatchDogDesktopApp:
             return
 
         if self.agent_service.is_running():
+            logger.info(
+                "Desktop application exit requested while AI service is running."
+            )
+
             self.exit_requested = True
             self.agent_service.shutdown()
             return
 
+        logger.info("Closing WatchDog desktop application.")
         self.root.destroy()
 
 

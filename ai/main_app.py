@@ -1,10 +1,13 @@
-from email.mime import message
 import tkinter as tk
 import queue
 import threading
+import logging
+
 from tkinter import ttk
 from app_state import AppState
 from services.camera_service import CameraService, CameraSummary
+
+logger = logging.getLogger("watchdog.desktop.main_app")
 
 SEGOE_FONT = "Segoe UI"
 from runtime.agent_runtime import AgentEvent
@@ -296,9 +299,9 @@ class MainApplicationPage(ttk.Frame):
                     api_key=self.state.api_key,
                 )
             except Exception:
-                # Backend may be offline temporarily. The UI will still use
-                # the last known/pairing-time safe summaries.
-                pass
+                logger.exception(
+                    "Could not refresh safe camera summaries from backend."
+                )
 
         # Step 2: Determine whether the local AI process is running.
         agent_running = False
@@ -317,8 +320,9 @@ class MainApplicationPage(ttk.Frame):
                 agent_is_running=agent_running,
             )
         except Exception:
-            # Do not lose the latest camera list merely because the local
-            # connectivity endpoint is unavailable.
+            logger.exception(
+                "Could not refresh local camera connectivity."
+            )
             updated = summaries
 
         # Step 4: Send results back to the Tkinter main thread.
