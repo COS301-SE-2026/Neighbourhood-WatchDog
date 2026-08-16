@@ -24,13 +24,12 @@ export const CurrentUserPropertySchema  = z.object({
 
     id: z.string(),
     address: z.string(),
-    neighbourhood_id: z.string().nullable(),
+    neighbourhood: CurrentUserNeighbourhoodSchema.nullable(),
     is_admin: z.boolean(),
 });
 
 export const CurrentUserContextResSchema = z.object({
     user: CurrentUserSummarySchema,
-    neighbourhoods: z.array(CurrentUserNeighbourhoodSchema ),
     properties: z.array(CurrentUserPropertySchema),
 });
 

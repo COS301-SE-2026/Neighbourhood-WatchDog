@@ -33,11 +33,10 @@ class CurrentUserProperty(BaseModel):
 
     id: UUID
     address: str
-    neighbourhood_id: UUID | None
+    neighbourhood: CurrentUserNeighbourhood | None = None
     is_admin: bool
 
 
 class CurrentUserContextRes(BaseModel):
     user: CurrentUserSummary
-    neighbourhoods: list[CurrentUserNeighbourhood]
     properties: list[CurrentUserProperty]

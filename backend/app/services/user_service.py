@@ -158,18 +158,14 @@ async def get_current_user_context_handler(claims: dict, db: AsyncSession) -> Cu
         .where(NeighbourhoodUser.user_id == user_id)
     )
 
-    neighbourhood_rows = neighbourhoods_result.all()
-
-    current_neighbourhoods = []
-
-    for membership, neighbourhood_name in neighbourhood_rows:
-        current_neighbourhoods.append(
-            CurrentUserNeighbourhood(
-                id=membership.neighbourhood_id,
-                name=neighbourhood_name,
-                role=membership.role,
-            )
+    neighbourhood_lookup: dict[UUID, CurrentUserNeighbourhood] = {
+        membership.neighbourhood_id: CurrentUserNeighbourhood(
+            id=membership.neighbourhood_id,
+            name=name,
+            role=membership.role,
         )
+        for membership, name in neighbourhoods_result.all()
+    }
 
     properties_result = await db.execute(
         select(PropertyUser, Property)
@@ -177,22 +173,20 @@ async def get_current_user_context_handler(claims: dict, db: AsyncSession) -> Cu
         .where(PropertyUser.user_id == user_id)
     )
 
-    properties_rows = properties_result.all()
 
-    current_properties = []
-
-    for prop_user, property in properties_rows:
-        current_properties.append(
-            CurrentUserProperty(
-                id=prop_user.property_id,
-                address=property.address,
-                neighbourhood_id=property.neighbourhood_id,
-                is_admin=prop_user.is_admin
-            )
+    current_properties = [
+        CurrentUserProperty(
+            id=prop_user.property_id,
+            address=property.address,
+            neighbourhood=neighbourhood_lookup.get(property.neighbourhood_id),
+            is_admin=prop_user.is_admin,
         )
+        for prop_user, property in properties_result.all()
+    ]
+
+    
 
     return CurrentUserContextRes(
         user=user_summary,
-        neighbourhoods=current_neighbourhoods,
         properties=current_properties
     )
