@@ -1070,6 +1070,19 @@ class WatchDogAgentApp(ttk.Frame):
         
         self.controller.agent_service.stop()
 
+    def handle_agent_event(self, event) -> None:
+        if event.event_type == "status":
+            self.set_agent_ui_state(
+                event.status or "error",
+                event.message,
+            )
+
+        elif event.event_type == "error":
+            self.set_agent_ui_state("error", event.message)
+
+        elif event.event_type == "log":
+            self.append_agent_log(event.message)
+
     def repair_installation(self) -> None:
     
         #remove only the venv and installation marker.
