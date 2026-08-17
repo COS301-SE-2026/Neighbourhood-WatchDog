@@ -29,7 +29,7 @@ from app.models.audit_log import AuditAction, TargetEntity
 from app.models.alert import Alert, DetectionType
 
 from app.models.neighbourhood import Neighbourhood
-from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes, NumberInPeriod, TrendGroupBy, TrendDirection, TrendBucket, TrendData
+from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes, NumberInPeriod, TrendGroupBy, TrendDirection, TrendBucket, TrendData, AlertResponse
 from app.services.notification_service import _format_whatsapp_message, _notify_users
 from app.models.user import User
 
@@ -156,7 +156,14 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
             alert.id
         )
 
-        return alert
+        alert_response = AlertResponse(
+            id=alert.id,
+            camera_id=alert.camera_id,
+            status=alert.status,
+            created_at=alert.created_at,
+        )
+
+        return alert_response
     except HTTPException:
         await db.rollback()
         raise
