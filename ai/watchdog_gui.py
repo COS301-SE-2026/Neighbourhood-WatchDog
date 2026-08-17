@@ -1054,6 +1054,16 @@ class WatchDogAgentApp(ttk.Frame):
         except Exception:
             pass
 
+    def start_agent(self) -> None:
+        if self.controller is None or self.controller.agent_service is None:
+            self.set_agent_ui_state(
+                "error",
+                "Agent controls are not available",
+            )
+            return
+
+        self.controller.agent_service.start()
+
     def repair_installation(self) -> None:
     
         #remove only the venv and installation marker.
