@@ -17,7 +17,6 @@ class AlertCreate(BaseModel):
 class AlertResponse(BaseModel):
     id: UUID
     camera_id: UUID
-    detection_event_id: UUID
     status: str
     created_at: datetime
 
