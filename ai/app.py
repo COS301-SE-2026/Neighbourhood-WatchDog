@@ -96,12 +96,20 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
         logger.warning("Could not push annotations for camera %s: %s", camera_id, error)
 
 
-def _extract_detections(frame, zones: list | None = None) -> tuple[list, list]:
-    """Convert YOLO results to DeepSort detection format."""
+def _extract_detections(frame, zones: list | tuple | None = None, confidence_threshold: float | None = None) -> tuple[list, list]:
+    """Convert YOLO results to DeepSort detection format.
+    
+    runs both models and retains their detection inside the configured camera zones
+    
+    no zones = all detection are retained
+    configured zones = detections are retained only when the centre of the boundary box falls inside at least one polygon
+    """
 
     zones = zones or []
 
 
+    person_confidence = (PERSON_CONFIDENCE_THRESHOLD if confidence_threshold is None else confidence_threshold)
+    weapon_confidence = (WEAPON_CONFIDENCE_THRESHOLD if confidence_threshold is None else confidence_threshold)
 
     # #running yolo on frame, applying the confidendce threshold and zone filters
     # with _settings_lock:
@@ -123,7 +131,7 @@ def _extract_detections(frame, zones: list | None = None) -> tuple[list, list]:
         threat_results = threat_model.predict(
             frame,
             imgsz=512,
-            conf=WEAPON_CONFIDENCE_THRESHOLD,
+            conf=weapon_confidence,
             iou=WEAPON_NMS_IOU_THRESHOLD,
             verbose=False
         )
@@ -132,8 +140,8 @@ def _extract_detections(frame, zones: list | None = None) -> tuple[list, list]:
         #person detection
         person_results = person_model.predict(
             frame,
-            imgsz=512,
-            conf=PERSON_CONFIDENCE_THRESHOLD,
+            imgsz=640,
+            conf=person_confidence,
             iou=PERSON_NMS_IOU_THRESHOLD,
             classes=[0],
             verbose=False
@@ -147,16 +155,6 @@ def _extract_detections(frame, zones: list | None = None) -> tuple[list, list]:
 
         weapon_detections.append(([x1, y1, x2 - x1, y2 - y1], confidence, label))
 
-
-
-    #person detection
-    person_results = person_model.predict(
-        frame,
-        imgsz=640,
-        conf=0.25,
-        classes=[0],
-        verbose=False
-        )
 
     for box in person_results[0].boxes:
         x1, y1, x2, y2 = box.xyxy[0].tolist()
@@ -172,7 +170,7 @@ def _extract_detections(frame, zones: list | None = None) -> tuple[list, list]:
 
 
 
-    logger.debug("Threat boxes: %s, Person boxes: %s", len(weapon_detections), len(person_detections))
+    logger.debug("Filtered detections: persons=%s, threats=%s, zones=%s, threshold=%.2f", len(person_detections), len(weapon_detections), len(zones), confidence_threshold if confidence_threshold is not None else person_confidence)
 
 
     return person_detections, weapon_detections
@@ -617,7 +615,7 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
 
             pre_event_frames.append(frame.copy())
 
-            person_detections, weapon_detections = _extract_detections(frame)
+            person_detections, weapon_detections = _extract_detections(frame, zones=camera.zones, confidence_threshold=camera.confidence_threshold)
 
             #only tracking humans through deepsort
             tracks = tracker.update_tracks(person_detections, frame=frame)
