@@ -47,7 +47,7 @@ class WelcomePage(ttk.Frame):
         ).pack(side="left", padx=(10, 0))
 
     def on_next(self):
-        self.controller.show_pairing()
+        self.controller.show_installer()
 
     def on_cancel(self):
         confirmed = messagebox.askyesno(
@@ -63,8 +63,8 @@ if __name__ == "__main__":
     root.geometry("800x650")
 
     class _DummyController:
-        def show_pairing(self):
-            print("Next clicked -> would move to pairing page")
+        def show_installer(self):
+            print("Next clicked -> would move to install page")
 
     WelcomePage(root, controller=_DummyController()).pack(fill="both", expand=True)
     root.mainloop()
