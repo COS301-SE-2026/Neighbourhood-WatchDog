@@ -1064,6 +1064,12 @@ class WatchDogAgentApp(ttk.Frame):
 
         self.controller.agent_service.start()
 
+    def stop_agent(self) -> None:
+        if self.controller is None or self.controller.agent_service is None:    
+            return
+        
+        self.controller.agent_service.stop()
+
     def repair_installation(self) -> None:
     
         #remove only the venv and installation marker.
