@@ -12,6 +12,7 @@ from runtime.agent_runtime import AgentEvent
 from services.agent_service import AgentService
 from startup import StartupDestination, StartupResolver
 from watchdog_gui import WatchDogAgentApp
+from welcome_page import WelcomePage
 
 logger = logging.getLogger("watchdog.desktop.main")
 
@@ -136,6 +137,9 @@ class WatchDogDesktopApp:
             pass
 
         self.root.after(100, self.process_agent_events)
+
+    def show_welcome(self) -> None:
+        self.show_page(WelcomePage)
 
     def show_installer(self) -> None:
         self.show_page(WatchDogAgentApp)
