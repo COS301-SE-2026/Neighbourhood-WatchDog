@@ -104,7 +104,7 @@ jobs:
             --query 'taskDefinition' \
             --region ${{ secrets.AWS_REGION }} > task-def.json
 
-            NEW_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:${{ env.IMAGE_TAG }}"
+            NEW_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:${{ env.IMAGE_TAG }}" \
               '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
               task-def.json)
 
