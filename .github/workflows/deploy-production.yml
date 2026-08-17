@@ -56,7 +56,7 @@ jobs:
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
             | docker login --username AWS --password-stdin 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
-          IMAGE_TAG="${{ github.sha }}
+          IMAGE_TAG="${{ github.sha }}"
           docker build -t watchdog-backend ./backend
           docker tag watchdog-backend:latest 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:$IMAGE_TAG
           docker push 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:$IMAGE_TAG
