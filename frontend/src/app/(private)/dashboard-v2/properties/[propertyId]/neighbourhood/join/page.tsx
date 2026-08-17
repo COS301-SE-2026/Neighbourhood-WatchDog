@@ -9,7 +9,7 @@ import {
     ShieldCheck,
     XCircle,
 } from "lucide-react";
-
+import { usePropertyContext } from "@/hooks/use-property-context";
 import {
     submitJoinRequest,
     ApiError,
@@ -233,11 +233,20 @@ function JoinForm({
 }
 
 export default function JoinNeighbourhoodPage() {
+
+    const { activeContext, isLoading: isLoadingProperty} = usePropertyContext();
     const [state, setState] = useState<RequestState>({
         kind: "idle",
     });
 
     async function handleSubmit(code: string) {
+        if (!activeContext) {
+            setState({
+                kind: "error",
+                message: "No property currently selected"
+            })
+            return;
+        }
         setState({ kind: "loading" });
 
         try {
@@ -261,6 +270,38 @@ export default function JoinNeighbourhoodPage() {
             });
         }
     }
+
+    if (isLoadingProperty) {
+        return (
+            <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+                <div className="flex min-h-64 items-center justify-center">
+                    <Loader2 className="size-5 animate-spin text-emerald-400"/>
+                </div>
+            </main>
+        )
+    }
+
+    if (!activeContext) {
+        return (
+            <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+                <div className="mx-auto max-w-3xl">
+                    <p className="text-sm text-emerald-400">
+                        Neighbourhood
+                    </p>
+
+                    <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+                        Join a neighbourhood
+                    </h1>
+
+                    <p className="mt-3 text-sm text-white/50">
+                        Select a property before requesting to join a neighbourhood.
+                    </p>
+                </div>
+            </main>
+        )
+    }
+
+
 
     if (state.kind === "pending") {
         return (
@@ -289,6 +330,13 @@ export default function JoinNeighbourhoodPage() {
                         your selected property. Once approved, you will be able
                         to view neighbourhood alerts and activity.
                     </p>
+
+                    <div className="mt-4 text-sm text-white/40">
+                        Property:{" "}
+                        <span className="text-white/70">
+                            {activeContext.address}
+                        </span>
+                    </div>
                 </header>
 
                 <section className="py-7">
