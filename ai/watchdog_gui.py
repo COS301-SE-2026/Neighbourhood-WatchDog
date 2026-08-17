@@ -1131,28 +1131,7 @@ class WatchDogAgentApp(ttk.Frame):
             )
             return
 
-        agent_is_running = (self.agent_process is not None and self.agent_process.poll() is None)
-
-        if agent_is_running:
-            should_stop = messagebox.askyesno(
-                "Stop WatchDog Agent?", 
-                (
-                    "The local WatchDog AI service is still running.\n\n"
-                    "Stop the service and exit?\n\n"
-                    "Choosing No keeps the GUI open."
-                )
-            )
-
-            if not should_stop:
-                return
-
-            self.exit_after_stop = True
-            self.stop_agent()
-            return
-
-        
-
-        self.winfo_toplevel().destroy()
+        self.controller.quit_application()
 
 def main() -> None:
     if sys.version_info[:2] < SUPPORTED_PYTHON:
