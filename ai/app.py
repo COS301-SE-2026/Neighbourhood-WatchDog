@@ -109,7 +109,7 @@ def _extract_detections(frame, zones: list | tuple | None = None, confidence_thr
 
 
     person_confidence = (PERSON_CONFIDENCE_THRESHOLD if confidence_threshold is None else confidence_threshold)
-    weapon_confidence = (WEAPON_CONFIDENCE_THRESHOLD if confidence_threshold is None else confidence_threshold)
+    weapon_confidence = WEAPON_CONFIDENCE_THRESHOLD
 
     # #running yolo on frame, applying the confidendce threshold and zone filters
     # with _settings_lock:
@@ -386,6 +386,10 @@ def _schedule_weapon_clip(camera: CameraSpec, rtsp_url: str, pre_frames: list, w
     )
 
     if alert_id is None:
+        with _cooldown_lock:
+            if _clips_cooldowns.get(cooldown_key) == now:
+                _clips_cooldowns.pop(cooldown_key, None)
+
         return
 
     if not S3_BUCKET_NAME:
