@@ -90,7 +90,7 @@ class WatchDogAgentApp(ttk.Frame):
         self.after(100, self.process_ui_events)
 
         if self.dependency_service.is_valid():
-            self.show_run_screen()
+            self.show_setup_screen()
         else:
             self.show_setup_screen()
 
@@ -286,6 +286,18 @@ class WatchDogAgentApp(ttk.Frame):
             column=1,
             sticky="e",
             padx=(8, 8),
+        )
+
+        self.next_button = ttk.Button(
+            button_frame,
+            text="Next >",
+            command=self.go_next,
+            style="Secondary.TButton",
+            width=12,
+        ).grid(
+            row=0,
+            column=2,
+            sticky="e",
         )
 
         ttk.Button(
@@ -1228,7 +1240,7 @@ def main() -> None:
         def quit_application(self):
             root.destroy()
 
-    WatchDogAgentApp(root, controller=_DummyController)
+    WatchDogAgentApp(root, controller=_DummyController())
     root.mainloop()
 
 #This should also be removed later so that this page cannot be run directly. It should only be run through the main.py file.
