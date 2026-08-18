@@ -98,4 +98,44 @@ class DependencyService:
         self.person_model = person_model or PERSON_MODEL
         self.supported_python = supported_python
         self.install_schema_version = install_schema_version
+
+    def check(self) -> DependencyReport:
+        """Runs all dependency checks and returns list of problems found"""
+        problems: list[str] = []
+
+        if not self.venv_python.is_file():
+            problems.append("venv_missing")
+            return DependencyReport(problems=problems)
+
+        if not model_is_valid(self.threat_model):
+            problems.append("threat_model_invalid")
+            
+        if not model_is_valid(self.person_model):
+            problems.append("person_model_invalid")
+
+        if not self.state_file.is_file():
+            problems.append("install_state_missing")
+            return DependencyReport(problems=problems)
+
+        try:
+            state = json.loads(self.state_file.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            problems.append("install_state_unreadable")
+            return DependencyReport(problems=problems)
+
+        if state.get("schema_version") != self.install_schema_version:
+            problems.append("install_schema_outdated")
+
+        installed_version = state.get("python_version", "")
+        try:
+            installed_major, installed_minor, *_ = (
+                int(part) for part in installed_version.split(".")
+            )
+        except ValueError:
+            problems.append("install_python_version_unknown")
+        else:
+            if (installed_major, installed_minor) < self.supported_python:
+                problems.append("install_python_version_unsupported")
+
+        return DependencyReport(problems=problems)
         
