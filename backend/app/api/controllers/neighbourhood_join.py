@@ -9,11 +9,13 @@ from app.schemas.neighbourhood_join import (
     JoinNeighbourhoodReq,
     JoinNeighbourhoodRes,
     JoinRequestRes,
+    RegenerateJoinCodeRes,
     ResolveJoinRequestReq,
     ResolveJoinRequestRes,
 )
 from app.services.neighbourhood_join_service import (
     list_join_requests_handler,
+    regenerate_join_code_handler,
     request_to_join_handler,
     resolve_join_request_handler,
 )
@@ -90,3 +92,18 @@ async def resolve_join_request(
     require_role("NEIGHBOURHOOD_ADMIN")
     result = await resolve_join_request_handler(request_id, body.property_id, body.action, db, claims)
     return ResolveJoinRequestRes(status=200, message="Join request updated", data=result)
+
+@router.patch(
+    "/join-code/{neighbourhood_id}",
+    response_model=RegenerateJoinCodeRes
+)
+async def regenerate_join_code(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: Annotated[dict, Depends(get_current_user)]
+):
+    return await regenerate_join_code_handler(
+        neighbourhood_id,
+        db,
+        claims
+    )
