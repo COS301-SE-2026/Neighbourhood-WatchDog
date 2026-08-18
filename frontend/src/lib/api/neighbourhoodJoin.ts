@@ -95,9 +95,10 @@ export async function submitJoinRequest(
 }
 
 export async function fetchJoinRequests(
+  neighbourhoodId: string,
   signal?: AbortSignal,
 ): Promise<JoinRequest[]> {
-  const res = await fetch(`${API_BASE}/neighbourhood/join-requests`, {
+  const res = await fetch(`${API_BASE}/neighbourhood/join-requests/${neighbourhoodId}`, {
     headers: getAuthHeaders(),
     signal,
   });
@@ -130,6 +131,7 @@ export async function fetchJoinRequests(
 
 export async function resolveJoinRequest(
   requestId: string,
+  propertyId: string,
   action: "APPROVE" | "DENY",
 ): Promise<JoinRequest> {
   let res: Response;
@@ -138,7 +140,7 @@ export async function resolveJoinRequest(
     res = await fetch(`${API_BASE}/neighbourhood/join-requests/${requestId}`, {
       method: "PATCH",
       headers: getAuthHeaders(),
-      body: JSON.stringify({ action }),
+      body: JSON.stringify({ property_id: propertyId ,action }),
     });
   } catch (error) {
     console.error("Join request resolution network error", {

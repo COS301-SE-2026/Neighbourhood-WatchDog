@@ -9,6 +9,7 @@ import {
     useState,
 } from "react";
 
+import { useParams } from "next/navigation";
 import {
     AlertCircle,
     Loader2,
@@ -26,6 +27,7 @@ import {
     resolveJoinRequest,
     ApiError,
 } from "@/lib/api/neighbourhoodJoin";
+import { useUserContext } from "@/hooks/use-user-context";
 
 const ALL_STATUSES: JoinRequestStatus[] = [
     "PENDING",
@@ -158,6 +160,14 @@ function EmptyState({ filter }: { filter: FilterValue }) {
 }
 
 export default function JoinRequestsPage() {
+
+    const { neighbourhoodId } = useParams<{neighbourhoodId: string }>();
+    const { data: userContext, isLoading: userContextLoading } = useUserContext();
+
+    const adminProperty = userContext?.properties.find(
+        (p) => p.neighbourhood?.id === neighbourhoodId && p.is_admin
+    );
+
     const [{ requests, loading, error }, dispatch] = useReducer(
         fetchReducer,
         initialFetchState,
@@ -187,7 +197,7 @@ export default function JoinRequestsPage() {
 
         dispatch({ type: "FETCH_START" });
 
-        fetchJoinRequests(controller.signal)
+        fetchJoinRequests(neighbourhoodId, controller.signal)
             .then((data) => {
                 if (!mountedRef.current) return;
 
@@ -220,13 +230,14 @@ export default function JoinRequestsPage() {
             });
 
         return () => controller.abort();
-    }, [fetchTick]);
+    }, [fetchTick, neighbourhoodId]);
 
     const handleApprove = useCallback(async (id: string) => {
+        if (!adminProperty) return;
         setActionError(null);
 
         try {
-            const updated = await resolveJoinRequest(id, "APPROVE");
+            const updated = await resolveJoinRequest(id, adminProperty.id ,"APPROVE");
 
             dispatch({
                 type: "UPDATE_REQUEST",
@@ -241,13 +252,14 @@ export default function JoinRequestsPage() {
                         : "Failed to approve join request.",
             );
         }
-    }, []);
+    }, [adminProperty]);
 
     const handleDeny = useCallback(async (id: string) => {
+        if (!adminProperty) return;
         setActionError(null);
 
         try {
-            const updated = await resolveJoinRequest(id, "DENY");
+            const updated = await resolveJoinRequest(id, adminProperty.id, "DENY");
 
             dispatch({
                 type: "UPDATE_REQUEST",
@@ -262,7 +274,7 @@ export default function JoinRequestsPage() {
                         : "Failed to deny join request.",
             );
         }
-    }, []);
+    }, [adminProperty]);
 
     const filteredRequests = useMemo(() => {
         if (activeFilter === "ALL") {
@@ -277,6 +289,18 @@ export default function JoinRequestsPage() {
     const pendingCount = requests.filter(
         (request) => request.status === "PENDING",
     ).length;
+
+    if (!userContextLoading && !adminProperty) {
+        return (
+            <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+                <div className="mx-auto max-w-5xl">
+                    <p className="text-sm text-white/60">
+                        You don&apos;t have admin access to this neighbourhood.
+                    </p>
+                </div>
+            </main>
+        )
+    }
 
     return (
         <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
