@@ -27,11 +27,8 @@ import {
     ChevronDown,
     ClipboardList,
     FileText,
-    History,
     House,
-    LayoutDashboard,
-    MapPin,
-    Megaphone,
+    KeyRound,
     Plus,
     User,
     UserPlus,
@@ -90,60 +87,25 @@ function getSidebarGroups(
 ): SidebarGroupData[] {
     const propertyBaseUrl = `/dashboard-v2/properties/${activeContext.propertyId}`;
 
-    const propertyItems: SidebarItemData[] = [
+    const groups: SidebarGroupData[] = [
         {
-            title: "My property",
-            url: propertyBaseUrl,
-            icon: House,
-        },
-        {
-            title: "My cameras",
-            url: `${propertyBaseUrl}/cameras`,
-            icon: Camera,
+            label: "MY HOME",
+            items: [
+                {
+                    title: "My cameras",
+                    url: `${propertyBaseUrl}/cameras`,
+                    icon: Camera,
+                },
+                {
+                    title: "Connect agent",
+                    url: `${propertyBaseUrl}/agent`,
+                    icon: KeyRound, 
+                },
+            ],
         },
     ];
 
-    const addSystemAdminGroup = (groups: SidebarGroupData[]) => {
-        if (systemRole === "SYSTEM_ADMIN") {
-            groups.push({
-                label: "SYSTEM",
-                items: [
-                    {
-                        title: "Audit log",
-                        url: "/dashboard-v2/admin/audit",
-                        icon: FileText,
-                    },
-                ],
-            });
-        }
-
-        return groups;
-    };
-
-
     if (activeContext.neighbourhoodId === null) {
-        const groups: SidebarGroupData[] = [
-            {
-                label: "WORKSPACE",
-                items: [
-                    {
-                        title: "Overview",
-                        url: "/dashboard-v2",
-                        icon: LayoutDashboard,
-                    },
-                    {
-                        title: "Alert history",
-                        url: `${propertyBaseUrl}/alerts`,
-                        icon: History,
-                    },
-                ],
-            },
-            {
-                label: "MY HOME",
-                items: propertyItems,
-            },
-        ];
-
         if (activeContext.canRequestNeighbourhoodJoin) {
             groups.push({
                 label: "NEIGHBOURHOOD",
@@ -157,51 +119,36 @@ function getSidebarGroups(
                         title: "Create a neighbourhood",
                         url: `${propertyBaseUrl}/neighbourhood/setup`,
                         icon: Building2,
-                    }
+                    },
                 ],
             });
         }
 
-        return groups;
+        return addSystemAdminGroup(groups, systemRole);
     }
 
-    const groups: SidebarGroupData[] = [
-        {
-            label: "WORKSPACE",
-            items: [
-                {
-                    title: "Overview",
-                    url: "/dashboard-v2",
-                    icon: LayoutDashboard,
-                },
-                {
-                    title: "Live alerts",
-                    url: "/dashboard-v2",
-                    icon: BellRing,
-                    badge: 3,
-                },
-                {
-                    title: "Alert history",
-                    url: `${propertyBaseUrl}/alerts`,
-                    icon: History,
-                },
-                {
-                    title: "Analytics",
-                    url: `/dashboard-v2/neighbourhood/${activeContext.neighbourhoodId}/analytics`,
-                    icon: ChartNoAxesCombined
-                },
-                {
-                    title: "Neighbourhood updates",
-                    url: `/dashboard-v2/neighbourhoods/${activeContext.neighbourhoodId}/updates`,
-                    icon: Megaphone,
-                },
-            ],
-        },
-        {
-            label: "MY HOME",
-            items: propertyItems,
-        },
-    ];
+    groups.push({
+        label: "NEIGHBOURHOOD",
+        items: [
+            {
+                title: "Live alerts",
+                url: `/dashboard-v2/neighbourhood/${activeContext.neighbourhoodId}/alerts`,
+                icon: BellRing,
+                badge: 3,
+            },
+            {
+                title: "Analytics",
+                url: `/dashboard-v2/neighbourhood/${activeContext.neighbourhoodId}/analytics`,
+                icon: ChartNoAxesCombined,
+            },
+            // "Neighbourhood updates" — no /updates route exists yet, add back once it's built:
+            // {
+            //     title: "Neighbourhood updates",
+            //     url: `/dashboard-v2/neighbourhood/${activeContext.neighbourhoodId}/updates`,
+            //     icon: Megaphone,
+            // },
+        ],
+    });
 
     if (activeContext.role === "Neighbourhood Admin") {
         groups.push({
@@ -217,8 +164,25 @@ function getSidebarGroups(
         });
     }
 
-    return addSystemAdminGroup(groups);
+    return addSystemAdminGroup(groups, systemRole);
 }
+
+function addSystemAdminGroup(groups: SidebarGroupData[], systemRole: string | null) {
+    if (systemRole === "SYSTEM_ADMIN") {
+        groups.push({
+            label: "SYSTEM",
+            items: [
+                {
+                    title: "Audit log",
+                    url: "/dashboard-v2/admin/audit",
+                    icon: FileText,
+                },
+            ],
+        });
+    }
+    return groups;
+}
+
 
 function WatchdogLogo({ size = 28 }: { size?: number }) {
     return (

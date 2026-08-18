@@ -63,7 +63,7 @@ export function usePropertyContext() {
 
     function selectContext(context: PropertyContext) {
         localStorage.setItem(LAST_PROPERTY_KEY, context.id);
-        router.push(`/dashboard-v2/properties/${context.propertyId}`);
+        router.push(`/dashboard-v2/properties/${context.propertyId}/cameras`);
     }
 
     return { contexts, activeContext, isLoading, selectContext };

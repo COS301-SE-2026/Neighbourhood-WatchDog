@@ -4,6 +4,7 @@ export const SystemRoleEnumSchema = z.enum([
   "SYSTEM_ADMIN",
   "RESIDENT",
   "SECURITY_OFFICER",
+  "NEIGHBOURHOOD_ADMIN"
 ]);
 
 export const CurrentUserSummarySchema = z.object({
