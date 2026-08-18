@@ -35,10 +35,10 @@
 
             if (firstProperty) {
                 router.replace(
-                    `/dashboard-v2/properties/${firstProperty.id}/cameras`
+                    `/dashboard/properties/${firstProperty.id}/cameras`
                 );
             } else {
-                router.replace("/dashboard-v2");
+                router.replace("/dashboard");
             }
         } catch (error) {
             console.error(
@@ -61,10 +61,10 @@
 
     if (firstProperty) {
         router.push(
-            `/dashboard-v2/properties/${firstProperty.id}/cameras`
+            `/dashboard/properties/${firstProperty.id}/cameras`
         );
     } else {
-        router.push("/dashboard-v2");
+        router.push("/dashboard");
     }
     };
 

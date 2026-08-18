@@ -32,7 +32,7 @@ export default function ConnectAgentPage() {
         <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
             <div className="mx-auto max-w-3xl">
                 <Link
-                    href={`/dashboard-v2/properties/${propertyId}`}
+                    href={`/dashboard/properties/${propertyId}`}
                     className="inline-flex items-center gap-2 text-sm text-white/45 transition-colors hover:text-white"
                 >
                     <ArrowLeft className="size-4" />

@@ -85,7 +85,7 @@ function getSidebarGroups(
     activeContext: PropertyContext,
     systemRole: string | null,
 ): SidebarGroupData[] {
-    const propertyBaseUrl = `/dashboard-v2/properties/${activeContext.propertyId}`;
+    const propertyBaseUrl = `/dashboard/properties/${activeContext.propertyId}`;
 
     const groups: SidebarGroupData[] = [
         {
@@ -132,19 +132,19 @@ function getSidebarGroups(
         items: [
             {
                 title: "Live alerts",
-                url: `/dashboard-v2/neighbourhood/${activeContext.neighbourhoodId}/alerts`,
+                url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/alerts`,
                 icon: BellRing,
                 badge: 3,
             },
             {
                 title: "Analytics",
-                url: `/dashboard-v2/neighbourhood/${activeContext.neighbourhoodId}/analytics`,
+                url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/analytics`,
                 icon: ChartNoAxesCombined,
             },
             // "Neighbourhood updates" — no /updates route exists yet, add back once it's built:
             // {
             //     title: "Neighbourhood updates",
-            //     url: `/dashboard-v2/neighbourhood/${activeContext.neighbourhoodId}/updates`,
+            //     url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/updates`,
             //     icon: Megaphone,
             // },
         ],
@@ -156,7 +156,7 @@ function getSidebarGroups(
             items: [
                 {
                     title: "Join requests",
-                    url: `/dashboard-v2/neighbourhood/${activeContext.neighbourhoodId}/join-requests`,
+                    url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/join-requests`,
                     icon: ClipboardList,
                     badge: 2,
                 },
@@ -174,7 +174,7 @@ function addSystemAdminGroup(groups: SidebarGroupData[], systemRole: string | nu
             items: [
                 {
                     title: "Audit log",
-                    url: "/dashboard-v2/admin/audit",
+                    url: "/dashboard/admin/audit",
                     icon: FileText,
                 },
             ],
@@ -229,7 +229,7 @@ const AppDashSidebar = () => {
                             className="group-data-[collapsible=icon]:justify-center"
                         >
                             <Link
-                                href="/dashboard-v2"
+                                href="/dashboard"
                                 className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center"
                             >
                                 <div className="flex size-9 shrink-0 items-center justify-center">

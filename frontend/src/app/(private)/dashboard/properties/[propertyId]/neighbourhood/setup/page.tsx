@@ -45,7 +45,7 @@ export default function NeighbourhoodSetupPage() {
 
             console.log("Created neighbourhood:", neighbourhood);
 
-            window.location.href = "/dashboard-v2";
+            window.location.href = `/dashboard/properties/${activeContext.propertyId}/cameras`;
         } catch (error) {
             console.error("Failed to create neighbourhood", error);
 
@@ -74,7 +74,7 @@ export default function NeighbourhoodSetupPage() {
             <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
                 <div className="mx-auto max-w-3xl">
                     <Link
-                        href="/dashboard-v2"
+                        href="/dashboard"
                         className="inline-flex items-center gap-2 text-sm text-white/45 transition-colors hover:text-white"
                     >
                         <ArrowLeft className="size-4" />
@@ -102,7 +102,7 @@ export default function NeighbourhoodSetupPage() {
     return (
         <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
             <div className="max-w-full">
-                <Link href="/dashboard-v2" className="inline-flex items-center gap-2 text-sm text-white/45 transition-colors hover:text-white">
+                <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-white/45 transition-colors hover:text-white">
                     <ArrowLeft className="size-4" />
                     Back to property
                 </Link>
@@ -205,13 +205,13 @@ export default function NeighbourhoodSetupPage() {
                         </div>
                         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                             <Link
-                                href="/dashboard-v2"
+                                href="/dashboard"
                                 className="inline-flex h-9 items-center justify-center rounded-md px-3.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white"
                             >
                                 Cancel
                             </Link>
                             <button
-                                type="button"
+                                type="submit"
                                 disabled={isCreating || !neighbourhoodName.trim() || !location.trim()}
                                 className="inline-flex h-9 items-center justify-center rounded-md bg-emerald-500 px-3.5 text-sm font-medium text-black transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/30 disabled:text-black/50"
                             >
