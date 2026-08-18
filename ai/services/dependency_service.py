@@ -138,4 +138,9 @@ class DependencyService:
                 problems.append("install_python_version_unsupported")
 
         return DependencyReport(problems=problems)
-        
+
+    def is_valid(self) -> bool:
+        return self.check().is_valid
+
+    def get_problems(self) -> list[str]:
+        return self.check().problems
