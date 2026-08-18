@@ -8,13 +8,12 @@ from app_state import AppState
 from services.camera_service import CameraService, CameraSummary
 
 from ui.theme import (
-    ABYSS,
     ASH,
     CAUTION,
-    DEPTH,
     EMERALD,
-    FROST,
+    PULSE,
     THREAT,
+    configure_theme,
 )
 
 logger = logging.getLogger("watchdog.desktop.main_app")
@@ -45,7 +44,7 @@ class MainApplicationPage(ttk.Frame):
         self.agent_service = agent_service
         self.camera_service = camera_service or CameraService()
         self.columnconfigure(0, weight=1)
-        self.rowconfigure(2, weight=1)
+        self.rowconfigure(3, weight=1)
 
         self._camera_summaries: list[CameraSummary] = (
             self.camera_service.summaries_from_config(self.state.config_data)
@@ -57,23 +56,28 @@ class MainApplicationPage(ttk.Frame):
         # Header
         ttk.Label(
             self,
-            text="Desktop Agent",
-            style="Subtitle.TLabel",
+            text="WatchDog Desktop Agent",
+            style="Title.TLabel",
         ).grid(
             row=0,
             column=0,
-            sticky="w"
+            sticky="w",
         )
 
         ttk.Label(
             self,
-            text="Desktop Agent",
-            font=(SEGOE_FONT, 11)
+            text=(
+                "Monitor your cameras and control local AI processing "
+                "from this computer."
+            ),
+            style="Subtitle.TLabel",
+            wraplength=700,
+            justify="left",
         ).grid(
             row=1,
             column=0,
             sticky="w",
-            pady=(0, 20)
+            pady=(8, 20),
         )
 
         # Agent Status
@@ -95,7 +99,8 @@ class MainApplicationPage(ttk.Frame):
 
         ttk.Label(
             status_frame,
-            text="Property:"
+            text="Property:",
+            style="CardBody.TLabel",
         ).grid(
             row=0,
             column=0,
@@ -110,6 +115,7 @@ class MainApplicationPage(ttk.Frame):
         self.property_label = ttk.Label(
             status_frame,
             text=property_text,
+            style="CardValue.TLabel",
         )
 
         self.property_label.grid(
@@ -120,7 +126,8 @@ class MainApplicationPage(ttk.Frame):
 
         ttk.Label(
             status_frame,
-            text="Agent:"
+            text="Agent:",
+            style="CardBody.TLabel",
         ).grid(
             row=1,
             column=0,
@@ -132,6 +139,7 @@ class MainApplicationPage(ttk.Frame):
         self.agent_status_label = ttk.Label(
             status_frame,
             text="Stopped",
+            style="Section.TLabel",
         )
 
         self.agent_status_label.grid(
@@ -161,7 +169,7 @@ class MainApplicationPage(ttk.Frame):
 
         self.camera_list = ttk.Treeview(
             cameras_frame,
-            columns=("camera", "status"),
+            columns=("camera", "location", "status"),
             show="headings",
             height=8
         )
@@ -169,6 +177,11 @@ class MainApplicationPage(ttk.Frame):
         self.camera_list.heading(
             "camera",
             text="Camera"
+        )
+
+        self.camera_list.heading(
+            "location",
+            text="Location",
         )
 
         self.camera_list.heading(
@@ -208,6 +221,31 @@ class MainApplicationPage(ttk.Frame):
             yscrollcommand=camera_scrollbar.set
         )
 
+        self.camera_list.tag_configure(
+            "connected",
+            foreground=EMERALD,
+        )
+
+        self.camera_list.tag_configure(
+            "checking",
+            foreground=PULSE,
+        )
+
+        self.camera_list.tag_configure(
+            "configured",
+            foreground=ASH,
+        )
+
+        self.camera_list.tag_configure(
+            "unavailable",
+            foreground=CAUTION,
+        )
+
+        self.camera_list.tag_configure(
+            "disconnected",
+            foreground=THREAT,
+        )
+
         self._render_camera_rows(self._camera_summaries)
 
         # AI Agent Controls
@@ -227,7 +265,8 @@ class MainApplicationPage(ttk.Frame):
 
         self.ai_status_label = ttk.Label(
             controls_frame,
-            text="AI Agent is stopped."
+            text="AI Agent is stopped.",
+            style="CardBody.TLabel",
         )
 
         self.ai_status_label.pack(
@@ -239,6 +278,7 @@ class MainApplicationPage(ttk.Frame):
             text="Start Agent",
             command=self.start_agent,
             style="Primary.TButton",
+            width=15,
         )
 
         self.start_button.pack(
@@ -252,6 +292,7 @@ class MainApplicationPage(ttk.Frame):
             command=self.stop_agent,
             state="disabled",
             style="Secondary.TButton",
+            width=15,
         )
 
         self.stop_button.pack(
@@ -263,37 +304,54 @@ class MainApplicationPage(ttk.Frame):
             message="AI Agent is stopped.",
         )
 
-        # Bottom Controls
-        button_frame = ttk.Frame(self)
+        # Bottom controls
+        button_frame = ttk.Frame(
+            self,
+            style="App.TFrame",
+        )
 
         button_frame.grid(
             row=5,
             column=0,
-            sticky="ew"
+            sticky="ew",
         )
+
+        button_frame.columnconfigure(0, weight=1)
 
         ttk.Button(
             button_frame,
             text="Exit",
             command=self.exit_application,
             style="Secondary.TButton",
+            width=12,
+        ).grid(
+            row=0,
+            column=0,
+            sticky="e",
         )
 
-        self.after(50, self.refresh_cameras)
-        self.after(self.CAMERA_REFRESH_INTERVAL, self._camera_poll_tick)
+    def _render_camera_rows(
+        self,
+        summaries: list[CameraSummary],
+    ) -> None:
+        """Render the latest safe camera summaries in the table."""
 
-    def _render_camera_rows(self, summaries: list[CameraSummary]) -> None:
-        """Displays camera summaries in UI"""
-        self.camera_list.delete(*self.camera_list.get_children())
+        self.camera_list.delete(
+            *self.camera_list.get_children()
+        )
 
         for summary in summaries:
+            location = summary.location or "Not specified"
+
             self.camera_list.insert(
                 "",
                 "end",
                 values=(
                     summary.name,
-                    summary.display_status,
+                    location,
+                    f"● {summary.display_status}",
                 ),
+                tags=(summary.status,),
             )
 
     def refresh_cameras(self) -> None:
@@ -561,6 +619,8 @@ if __name__ == "__main__":
 
     root.title("WatchDog Agent")
     root.geometry("800x650")
+
+    configure_theme(root) # ONLY FOR DEVELOPMENT TESTING. REMOVE LATER. This should only be called once in main.py when the app starts.
 
     MainApplicationPage(
         root
