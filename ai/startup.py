@@ -5,6 +5,7 @@ from typing import Any
 from services.config_service import ConfigService
 from services.keyring_service import KeyringService
 from services.authentication_service import AuthenticationService, CredentialStatus
+from services.dependency_service import DependencyService
 
 class StartupDestination(str, Enum):
     INSTALLER = "installer"
@@ -119,4 +120,16 @@ class StartupResolver:
             config_data=config_data,
             api_key=api_key,
             reason=reason,
+        )
+
+    def _resolve_dependencies(self) -> StartupDecision | None:
+        """Returns INSTALLER decision if dependencies are invalid otherwise proceeds to authentication"""
+        problems = self.dependency_service.get_problems()
+
+        if not problems:
+            return None
+
+        return StartupDecision(
+            destination=StartupDestination.INSTALLER,
+            reason=f"dependencies_invalid:{','.join(problems)}",
         )
