@@ -3,7 +3,7 @@ import queue
 import threading
 import logging
 
-from tkinter import ttk
+from tkinter import ttk, scrolledtext
 from app_state import AppState
 from services.camera_service import CameraService, CameraSummary
 
@@ -302,6 +302,32 @@ class MainApplicationPage(ttk.Frame):
         self.update_agent_ui(
             state=self.state.agent_status,
             message="AI Agent is stopped.",
+        )
+
+        #Agent log gives feedback while stream is running
+        ttk.Label(
+            self,
+            text="Agent Log",
+            font=(SEGOE_FONT, 10, "bold")
+        ).grid(
+            row=5,
+            column=0,
+            sticky="w"
+        )
+
+        self.agent_log_box = scrolledtext.Scrolledtext(
+            self,
+            height=10,
+            wrap="word",
+            state="disabled",
+            font=("Consolas", 9)
+        )
+
+        self.agent_log_box.grid(
+            row=6,
+            column=0,
+            sticky="nsew",
+            pady=(4, 15)
         )
 
         # Bottom controls
