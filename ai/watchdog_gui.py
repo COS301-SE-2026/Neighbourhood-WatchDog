@@ -1221,7 +1221,14 @@ def main() -> None:
     elif "clam" in available_themes:
         style.theme_use("clam")
 
-    WatchDogAgentApp(root)
+    class _DummyController:
+        def advance_past_dependencies(self):
+            print("Next clicked -> would advance past dependencies")
+
+        def quit_application(self):
+            root.destroy()
+
+    WatchDogAgentApp(root, controller=_DummyController)
     root.mainloop()
 
 #This should also be removed later so that this page cannot be run directly. It should only be run through the main.py file.
