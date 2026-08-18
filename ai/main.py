@@ -87,6 +87,11 @@ class WatchDogDesktopApp:
         decision = self.startup_resolver.resolve()
         self._apply_startup_decision(decision)
 
+    def advance_past_dependencies(self) -> None:
+        """Called by installer's next button to skip dependencies if already done"""
+        decision = self.startup_resolver.resolve_authentication()
+        self._apply_startup_decision(decision)
+
     def show_page(self, page_class, **page_kwargs) -> None:
         if self.current_frame is not None:
             self.current_frame.destroy()
