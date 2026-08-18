@@ -278,6 +278,22 @@ class MainApplicationPage(ttk.Frame):
                 ),
             )
 
+    def refresh_cameras(self) -> None:
+        """
+        Starts backgorund refresh of camera summaries/connectivity if one isn't in progress
+        Must only be called from Tkinter main thread only
+        """
+        if self._camera_refresh_in_flight:
+            return
+        
+        self._camera_refresh_in_flight = True
+
+        threading.Thread(
+            target=self._refresh_cameras_worker,
+            name="watchdog-camera-refresh",
+            daemon=True,
+        ).start()
+
     def _refresh_cameras_worker(self) -> None:
         """
         Fetch the latest safe camera metadata from the backend, then
