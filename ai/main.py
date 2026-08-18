@@ -51,16 +51,7 @@ class WatchDogDesktopApp:
 
     def start_application(self) -> None:
         decision = self.startup_resolver.resolve()
-
-        if decision.destination == StartupDestination.MAIN_APPLICATION:
-            self.state = AppState.from_config(
-                config_data=decision.config_data or {},
-                api_key=decision.api_key,
-            )
-            self.show_main_app()
-            return
-
-        self.show_installer()
+        self._apply_startup_decision(decision)
 
     def _apply_startup_decision(self, decision) -> None:
         """Shows the right page for each startup destination"""
