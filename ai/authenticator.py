@@ -4,8 +4,7 @@ from tkinter import ttk
 from services.config_service import ConfigService
 from services.keyring_service import KeyringService
 from services.pairing_service import PairingService, PairingError
-from ui.theme import configure_log_text_widget
-
+from ui.theme import configure_log_text_widget, configure_theme
 
 SEGOE_FONT = "Segoe UI"
 KEY_RELEASE = "<KeyRelease>"
@@ -435,10 +434,14 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.title("WatchDog Agent Setup")
     root.geometry("800x650")
+    configure_theme(root) #ONLY FOR DEVELOPMENT TESTING. REMOVE LATER. This should only be called once in main.py when the app starts.
 
     class _DummyController:
         def show_installer(self):
             print("Back clicked -> would return to install page")
+
+        def handle_pairing_success(self, api_key, config_data):
+            print("Pairing succeeded -> would open the main application")
 
     WatchDogPinPage(
         root,
