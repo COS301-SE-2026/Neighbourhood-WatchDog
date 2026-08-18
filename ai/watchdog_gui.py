@@ -1126,6 +1126,14 @@ class WatchDogAgentApp(ttk.Frame):
     #     elif event.event_type == "log":
     #         self.append_agent_log(event.message)
 
+    def go_next(self) -> None:
+        """Hands off to controller to decide next step"""
+        if self.controller is not None and hasattr(self.controller, "advance_past_dependencies"):
+            self.controller.advance_past_dependencies()
+            return
+
+        print("Next clicked -> would advance past dependencies page")
+
     def repair_installation(self) -> None:
     
         #remove only the venv and installation marker.
