@@ -84,6 +84,13 @@ def configure_theme(root: tk.Tk) -> None:
     )
 
     style.configure(
+        "CardBody.TLabel",
+        background=DEPTH,
+        foreground=ASH,
+        font=(FONT_FAMILY, 10),
+    )
+
+    style.configure(
         "Muted.TLabel",
         background=ABYSS,
         foreground=ASH,
