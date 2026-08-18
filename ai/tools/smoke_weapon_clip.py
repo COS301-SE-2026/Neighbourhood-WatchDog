@@ -125,9 +125,6 @@ def main() -> None:
     if not CAMERA_ID:
         fail("TEST_CAMERA_ID is required.")
 
-    if not S3_BUCKET_NAME:
-        fail("S3_BUCKET_NAME is not configured. Set it in the AI/root .env before running this test.")
-
     api_key = (keyring.get_password("WatchDog", "api_key") or os.getenv("INTERNAL_API_TOKEN"))
 
     if not api_key:
@@ -137,8 +134,8 @@ def main() -> None:
     headers = {"X-Internal-Token": api_key}
 
     print(f"Backend: {BACKEND_URL}")
-    print(f"Bucket: {S3_BUCKET_NAME}")
     print(f"Camera ID: {CAMERA_ID}")
+    print("Clip storage: backend-owned S3 upload")
 
     #create a real database alert
     print("\n1/4 Creating test weapon alert...")
@@ -171,74 +168,26 @@ def main() -> None:
     #  generate a local synthetic H.264 test clip
     print("\n2/4 Generating synthetic H.264 MP4...")
 
-    s3_key = (
-        f"clips/{CAMERA_ID}/"
-        f"{timestamp:%Y/%m/%d}/"
-        f"test_weapon_{timestamp:%Y%m%dT%H%M%SZ}.mp4"
-    )
-
-    with tempfile.TemporaryDirectory(prefix="watchdog-s3-smoke-") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="watchdog-clip-upload-smoke-") as temp_dir:
         video_path = Path(temp_dir) / "watchdog-test-footage.mp4"
         create_test_h264_video(video_path)
 
-        #  uploading to S3
-        print("\n3/4 Uploading test clip to S3...")
+        print("\n3/4 Uploading test clip through backend...")
+        with video_path.open("rb") as clip_file:
+            upload_response = httpx.post(
+                f"{BACKEND_URL}/internal/alerts/{alert_id}/clip",
+                headers=headers,
+                files={"clip": ("test-weapon.mp4", clip_file, "video/mp4")},
+                timeout=30.0,
+            )
 
-        s3 = boto3.client(
-            "s3",
-            region_name=AWS_REGION,
-            endpoint_url=f"https://s3.{AWS_REGION}.amazonaws.com"
-        )
-
-        s3.upload_file(
-            str(video_path),
-            S3_BUCKET_NAME,
-            s3_key,
-            ExtraArgs={"ContentType": "video/mp4", "ServerSideEncryption": "AES256"},
-        )
-
-
-        uploaded_object = s3.head_object(
-            Bucket=S3_BUCKET_NAME,
-            Key=s3_key
-        )
-
-        print(
-            "S3 upload verified:",
-            f"s3://{S3_BUCKET_NAME}/{s3_key}",
-        )
-
-        print("Content-Type:", uploaded_object.get("ContentType"))
-
-    #linking the uploaded object to the alert.
-    print("\n4/4 Linking test clip to alert...")
-
-
-    expires_at = timestamp + timedelta(days=CLIP_RETENTION_DAYS)
-
-    patch_response = httpx.patch(
-        f"{BACKEND_URL}/internal/alerts/{alert_id}/clip",
-        headers=headers,
-        json={
-            "clip_s3_key": s3_key,
-            "clip_expires_at": expires_at.isoformat(),
-        },
-        timeout=15.0
-    )
-
-
-    print(
-        "Clip-link response:",
-        patch_response.status_code,
-        patch_response.text,
-    )
-
-
-    patch_response.raise_for_status()
+    print("Backend clip-upload response:", upload_response.status_code, upload_response.text)
+    upload_response.raise_for_status()
+    clip_metadata = upload_response.json()
 
     print("\nSUCCESS")
     print("Alert ID:", alert_id)
-    print("S3 key:", s3_key)
+    print("S3 key:", clip_metadata["clip_s3_key"])
 
     print("Open the alert page as an authorised user and review this test clip.")
 
