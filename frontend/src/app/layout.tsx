@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import { SidebarProvider } from "@/components/ui/sidebar"
-import HideSidebar from "@/components/hide-sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
 import { AppViewProvider } from "@/components/app-view-context"
@@ -34,12 +32,9 @@ export default function RootLayout({
         <Providers>
           <TooltipProvider>
             <AppViewProvider>
-              <SidebarProvider>
-                <HideSidebar /> {/*Check if the current layout is allowed to have a sidebar */}
                 <main className="flex-1 w-full">
                   {children}
                 </main>
-              </SidebarProvider>
             </AppViewProvider>
           </TooltipProvider>
           <Toaster position="top-right" />
