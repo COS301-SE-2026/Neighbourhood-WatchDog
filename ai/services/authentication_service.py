@@ -5,7 +5,7 @@ from enum import Enum
 
 import httpx
 
-ABI_BASE_URL = "https://api.neighbourhoodwatchdog.co.za"
+API_BASE_URL = "https://api.neighbourhoodwatchdog.co.za"
 
 class CredentialStatus(str, Enum):
     VALID = "valid"
@@ -20,3 +20,11 @@ class ValidationResult:
     @property
     def is_valid(self) -> bool:
         return self.status is CredentialStatus.VALID
+
+class AuthenticationService:
+    def __init__(self, 
+                 base_url: str = API_BASE_URL, 
+                 timeout_seconds: float = 5.0,
+                 ) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.timeout_seconds = timeout_seconds
