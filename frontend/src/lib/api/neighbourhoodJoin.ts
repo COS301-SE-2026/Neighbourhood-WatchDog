@@ -3,6 +3,8 @@ import type {
   JoinRequestStatus,
 } from "@/components/shared/RequestCard";
 import { getApiBaseUrl, getAuthHeaders } from "@/lib/api/auth";
+import { JoinCodeRes } from "../validators/neighbourhoodJoin";
+import { apiCall } from "./client";
 
 const API_BASE = getApiBaseUrl();
 
@@ -178,4 +180,18 @@ export async function resolveJoinRequest(
     ...request,
     user_name: getDisplayName(user),
   };
+}
+
+
+export async function fetchJoinCodeRequest(neighbourhoodId: string): Promise<JoinCodeRes> {
+  return apiCall<JoinCodeRes>(`/neighbourhood/join-code/${neighbourhoodId}`, {
+      method: 'GET',
+  })
+}
+
+
+export async function regenerateJoinCodeRequest(neighbourhoodId: string): Promise<JoinCodeRes> {
+  return apiCall<JoinCodeRes>(`/neighbourhood/join-code/${neighbourhoodId}`, {
+      method: 'PATCH',
+  })
 }
