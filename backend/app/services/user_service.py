@@ -133,7 +133,7 @@ async def get_user_by_id_handler(
         created_at=user.created_at,
     )
 
-async def get_current_user_context_handler(claims: dict, db: AsyncSession) -> CurrentUserContextRes:
+async def get_current_user_context_handler(claims: dict, db: DbSession) -> CurrentUserContextRes:
     """Retrieves the context of a user"""
     user_id = UUID(claims["id"])
 

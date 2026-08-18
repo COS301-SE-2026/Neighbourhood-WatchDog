@@ -18,6 +18,9 @@ class JoinRequestRes(BaseModel):
 
     model_config = {"from_attributes": True}
 
+class RegenerateJoinCodeRes(BaseModel):
+    join_code: str
+
 class JoinNeighbourhoodRes(BaseModel):
     status: int
     message: str | None = None
