@@ -639,6 +639,19 @@ class MainApplicationPage(ttk.Frame):
             "AI Agent is running.",
         )
 
+    def append_agent_log(self, message: str) -> None:
+        """Writes a line to the agent log box"""
+        if self.agent_log_box is None:
+            return
+
+        try:
+            self.agent_log_box.configure(state="normal")
+            self.agent_log_box.insert("end", f"{message}\n")
+            self.agent_log_box.see("end")
+            self.agent_log_box.configure(state="disabled")
+        except Exception:
+            pass
+
 
 if __name__ == "__main__":
     root = tk.Tk()
