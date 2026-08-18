@@ -6,6 +6,7 @@ from typing import Annotated
 from app.auth.dependencies import get_current_user, require_role
 from app.core.database import DbSession
 from app.schemas.neighbourhood_join import (
+    JoinCodeRes,
     JoinNeighbourhoodReq,
     JoinNeighbourhoodRes,
     JoinRequestRes,
@@ -14,6 +15,7 @@ from app.schemas.neighbourhood_join import (
     ResolveJoinRequestRes,
 )
 from app.services.neighbourhood_join_service import (
+    get_join_code_handler,
     list_join_requests_handler,
     regenerate_join_code_handler,
     request_to_join_handler,
@@ -105,5 +107,20 @@ async def regenerate_join_code(
     return await regenerate_join_code_handler(
         neighbourhood_id,
         db,
+        claims
+    )
+
+@router.get(
+    "/join-code/{neighbourhood_id}",
+    response_model=JoinCodeRes
+)
+async def get_join_code(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: Annotated[dict, Depends(get_current_user)]
+):
+    return await get_join_code_handler(
+        neighbourhood_id,
+        db, 
         claims
     )

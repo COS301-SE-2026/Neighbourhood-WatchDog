@@ -21,6 +21,9 @@ class JoinRequestRes(BaseModel):
 class RegenerateJoinCodeRes(BaseModel):
     join_code: str
 
+class JoinCodeRes(BaseModel):
+    join_code: str
+
 class JoinNeighbourhoodRes(BaseModel):
     status: int
     message: str | None = None

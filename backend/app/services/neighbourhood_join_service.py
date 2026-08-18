@@ -17,7 +17,7 @@ from app.core.database import DbSession
 from app.models.neighbourhood import Neighbourhood
 from app.models.neighbourhood_join_request import JoinRequestStatus, NeighbourhoodJoinRequest
 from app.models.user import User
-from app.schemas.neighbourhood_join import JoinRequestRes, RegenerateJoinCodeRes
+from app.schemas.neighbourhood_join import JoinCodeRes, JoinRequestRes, RegenerateJoinCodeRes
 
 async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -> JoinRequestRes:
     """Requesting to join a neighbourhood"""
@@ -110,6 +110,54 @@ async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -
         raise HTTPException(409, "Pending request already exists for this neighbourhood")
 
 
+async def get_join_code_handler(neighbourhood_id: UUID, db: DbSession, claims: dict) -> JoinCodeRes:
+    """Retrieve a neighbourhoods join code"""
+
+    if not claims:
+        raise HTTPException(401, "Not authenticated")
+
+    try:
+        user_id = UUID(claims["id"])
+        
+        user_result = await db.execute(
+            select(User).where(User.id == user_id)
+        )
+
+        user = user_result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(status_code=401, detail="Authenticated user not found in databse")
+
+        neighbourhood_result = await db.execute(
+            select(Neighbourhood)
+            .join(NeighbourhoodUser, NeighbourhoodUser.neighbourhood_id == Neighbourhood.id)
+            .where(
+                Neighbourhood.id == neighbourhood_id,
+                NeighbourhoodUser.user_id == user_id,
+                NeighbourhoodUser.role == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+            )
+        )
+
+        neighbourhood = neighbourhood_result.scalar_one_or_none()
+
+        if not neighbourhood:
+            raise HTTPException(403, "User is not an administrator this neighbourhood")  
+
+        return JoinCodeRes(
+            join_code=neighbourhood.join_code
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        raise HTTPException(
+            500,
+            "Failed to get neighbourhood join code"
+        )
+
+          
+
 async def regenerate_join_code_handler(neighbourhood_id: UUID, db: DbSession, claims: dict) -> RegenerateJoinCodeRes:
     """Regenerates a neighbours join code"""
 
@@ -141,7 +189,7 @@ async def regenerate_join_code_handler(neighbourhood_id: UUID, db: DbSession, cl
         neighbourhood = neighbourhood_result.scalar_one_or_none()
 
         if not neighbourhood:
-            raise HTTPException(403, "User not authorized to regenerate join code for this neighbourhood")
+            raise HTTPException(403, "User is not an administrator this neighbourhood")
 
         # Generate a unique join code
         while True:
