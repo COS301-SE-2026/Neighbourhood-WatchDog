@@ -7,6 +7,16 @@ from tkinter import ttk
 from app_state import AppState
 from services.camera_service import CameraService, CameraSummary
 
+from ui.theme import (
+    ABYSS,
+    ASH,
+    CAUTION,
+    DEPTH,
+    EMERALD,
+    FROST,
+    THREAT,
+)
+
 logger = logging.getLogger("watchdog.desktop.main_app")
 
 SEGOE_FONT = "Segoe UI"
@@ -24,7 +34,11 @@ class MainApplicationPage(ttk.Frame):
         agent_service=None,
         camera_service=None,
     ):
-        super().__init__(parent, padding=25)
+        super().__init__(
+            parent,
+            padding=24,
+            style="App.TFrame",
+        )
 
         self.controller = controller
         self.state = state or AppState()
@@ -43,8 +57,8 @@ class MainApplicationPage(ttk.Frame):
         # Header
         ttk.Label(
             self,
-            text="WatchDog Agent",
-            font=(SEGOE_FONT, 20, "bold")
+            text="Desktop Agent",
+            style="Subtitle.TLabel",
         ).grid(
             row=0,
             column=0,
@@ -66,7 +80,8 @@ class MainApplicationPage(ttk.Frame):
         status_frame = ttk.LabelFrame(
             self,
             text="Agent Status",
-            padding=15
+            padding=16,
+            style="Card.TLabelframe"
         )
 
         status_frame.grid(
@@ -116,7 +131,7 @@ class MainApplicationPage(ttk.Frame):
 
         self.agent_status_label = ttk.Label(
             status_frame,
-            text="Stopped"
+            text="Stopped",
         )
 
         self.agent_status_label.grid(
@@ -130,7 +145,8 @@ class MainApplicationPage(ttk.Frame):
         cameras_frame = ttk.LabelFrame(
             self,
             text="Cameras",
-            padding=15
+            padding=16,
+            style="Card.TLabelframe"
         )
 
         cameras_frame.grid(
@@ -198,7 +214,8 @@ class MainApplicationPage(ttk.Frame):
         controls_frame = ttk.LabelFrame(
             self,
             text="AI Agent",
-            padding=15
+            padding=16,
+            style="Card.TLabelframe"
         )
 
         controls_frame.grid(
@@ -220,7 +237,8 @@ class MainApplicationPage(ttk.Frame):
         self.start_button = ttk.Button(
             controls_frame,
             text="Start Agent",
-            command=self.start_agent
+            command=self.start_agent,
+            style="Primary.TButton",
         )
 
         self.start_button.pack(
@@ -232,7 +250,8 @@ class MainApplicationPage(ttk.Frame):
             controls_frame,
             text="Stop Agent",
             command=self.stop_agent,
-            state="disabled"
+            state="disabled",
+            style="Secondary.TButton",
         )
 
         self.stop_button.pack(
@@ -256,9 +275,8 @@ class MainApplicationPage(ttk.Frame):
         ttk.Button(
             button_frame,
             text="Exit",
-            command=self.exit_application
-        ).pack(
-            side="right"
+            command=self.exit_application,
+            style="Secondary.TButton",
         )
 
         self.after(50, self.refresh_cameras)
@@ -449,8 +467,19 @@ class MainApplicationPage(ttk.Frame):
             state.capitalize(),
         )
 
+        status_style = {
+            "running": "Success.TLabel",
+            "running_with_warnings": "Warning.TLabel",
+            "error": "Error.TLabel",
+            "crashed": "Error.TLabel",
+        }.get(
+            state,
+            "Section.TLabel",
+        )
+
         self.agent_status_label.config(
             text=display_state,
+             style=status_style,
         )
 
         self.ai_status_label.config(

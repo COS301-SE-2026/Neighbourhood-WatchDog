@@ -13,6 +13,7 @@ from services.agent_service import AgentService
 from startup import StartupDestination, StartupResolver
 from watchdog_gui import WatchDogAgentApp
 from welcome_page import WelcomePage
+from ui.theme import configure_theme
 
 logger = logging.getLogger("watchdog.desktop.main")
 
@@ -46,12 +47,7 @@ class WatchDogDesktopApp:
         self.root.mainloop()
 
     def configure_style(self) -> None:
-        style = ttk.Style(self.root)
-
-        if "vista" in style.theme_names() and sys.platform == "win32":
-            style.theme_use("vista")
-        elif "clam" in style.theme_names():
-            style.theme_use("clam")
+        configure_theme(self.root)
 
     def start_application(self) -> None:
         decision = self.startup_resolver.resolve()
