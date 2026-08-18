@@ -4,6 +4,7 @@ from tkinter import ttk
 from services.config_service import ConfigService
 from services.keyring_service import KeyringService
 from services.pairing_service import PairingService, PairingError
+from ui.theme import configure_log_text_widget
 
 
 SEGOE_FONT = "Segoe UI"
@@ -13,7 +14,11 @@ KEY_RELEASE = "<KeyRelease>"
 class WatchDogPinPage(ttk.Frame):
 
     def __init__(self, parent, controller=None):
-        super().__init__(parent, padding=25)
+        super().__init__(
+            parent,
+            padding=24,
+            style="App.TFrame",
+        )
 
         self.controller = controller
 
@@ -28,7 +33,8 @@ class WatchDogPinPage(ttk.Frame):
         ttk.Label(
             self,
             text="WatchDog Agent Setup",
-            font=(SEGOE_FONT, 18, "bold")
+            font=(SEGOE_FONT, 18, "bold"),
+            style="Title.TLabel"
         ).grid(row=0, column=0, sticky="w")
 
         # Description
@@ -41,7 +47,8 @@ class WatchDogPinPage(ttk.Frame):
                 "your camera configuration and continue the setup."
             ),
             wraplength=700,
-            justify="left"
+            justify="left",
+            style="Subtitle.TLabel"
         ).grid(row=1, column=0, sticky="w", pady=(10, 20))
 
         # Status
@@ -184,6 +191,7 @@ class WatchDogPinPage(ttk.Frame):
             fill="both",
             expand=True
         )
+        configure_log_text_widget(self.log)
 
         scrollbar.config(
             command=self.log.yview
@@ -217,7 +225,8 @@ class WatchDogPinPage(ttk.Frame):
         self.connect_button = ttk.Button(
             button_frame,
             text="Connect Agent",
-            command=self.connect_agent
+            command=self.connect_agent,
+            style="Primary.TButton",
         )
         self.connect_button.grid(
             row=0,
@@ -228,7 +237,8 @@ class WatchDogPinPage(ttk.Frame):
         self.back_button = ttk.Button(
             button_frame,
             text="Back",
-            command=self.controller.show_installer
+            command=self.controller.show_installer,
+            style="Secondary.TButton",
         )
         self.back_button.grid(
             row=0,
