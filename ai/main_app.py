@@ -315,7 +315,7 @@ class MainApplicationPage(ttk.Frame):
             sticky="w"
         )
 
-        self.agent_log_box = scrolledtext.Scrolledtext(
+        self.agent_log_box = scrolledtext.ScrolledText(
             self,
             height=10,
             wrap="word",
