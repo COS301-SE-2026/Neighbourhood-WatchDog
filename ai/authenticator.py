@@ -426,8 +426,13 @@ if __name__ == "__main__":
     root.title("WatchDog Agent Setup")
     root.geometry("800x650")
 
+    class _DummyController:
+        def show_installer(self):
+            print("Back clicked -> would return to install page")
+
     WatchDogPinPage(
-        root
+        root,
+        controller=_DummyController(),
     ).pack(
         fill="both",
         expand=True
