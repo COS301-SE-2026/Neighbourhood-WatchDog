@@ -1175,8 +1175,12 @@ class WatchDogAgentApp(ttk.Frame):
                 ),
             )
             return
+        
+        if self.controller is not None:
+            self.controller.quit_application()
+        else:
+            self.winfo_toplevel().destroy()
 
-        self.controller.quit_application()
 # Main needs to be removed later so that this page cannot be run directly. It should only be run through the main.py file.
 def main() -> None:
     if sys.version_info[:2] < SUPPORTED_PYTHON:
