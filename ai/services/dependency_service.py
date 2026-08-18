@@ -9,7 +9,7 @@ from pathlib import Path
 AI_DIR = Path(__file__).resolve().parent.parent
 RUNTIME_DIR = AI_DIR / ".watchdog-agent"
 VENV_DIR = RUNTIME_DIR / "venv"
-STALE_FILE = RUNTIME_DIR / "install-state.json"
+STATE_FILE = RUNTIME_DIR / "install-state.json"
 
 WEIGHTS_DIR = AI_DIR / "pipeline" / "models" / "weights"
 THREAT_MODEL_PATH = WEIGHTS_DIR / "best.pt"
@@ -80,3 +80,22 @@ class DependencyReport:
     @property
     def is_valid(self) -> bool:
         return not self.problems
+
+class DependencyService:
+    def __init__(
+            self,
+            *,
+            venv_python: Path | None = None,
+            state_file: Path | None = None,
+            threat_model: Path | None = None,
+            person_model: Path | None = None,
+            supported_python: tuple[int, int] = SUPPORTED_PYTHON,
+            install_schema_version: int = INSTALL_SCHEMA_VERSION,
+            ) -> None:
+        self.venv_python = venv_python or get_venv_python()
+        self.state_file = state_file or STATE_FILE
+        self.threat_model = threat_model or THREAT_MODEL
+        self.person_model = person_model or PERSON_MODEL
+        self.supported_python = supported_python
+        self.install_schema_version = install_schema_version
+        
