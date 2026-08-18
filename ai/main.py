@@ -62,6 +62,27 @@ class WatchDogDesktopApp:
 
         self.show_installer()
 
+    def _apply_startup_decision(self, decision) -> None:
+        """Shows the right page for each startup destination"""
+        if decision.destination == StartupDestination.MAIN_APPLICATION:
+            self.state = AppState.from_config(
+                config_data=decision.config_data or {},
+                api_key=decision.api_key,
+            )
+            self.show_main_app()
+        elif decision.destination == StartupDestination.AUTHENTICATION:
+            self.show_pairing()
+        elif decision.destination == StartupDestination.INSTALLER:
+            self.show_installer()
+        else:
+            logger.error(
+                "Unhandled startup detination: %s (reason=%s)",
+                decision.destination,
+                decision.reason,
+            )
+            self.show_installer()
+        
+
     def show_page(self, page_class, **page_kwargs) -> None:
         if self.current_frame is not None:
             self.current_frame.destroy()
