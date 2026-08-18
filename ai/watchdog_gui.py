@@ -90,7 +90,7 @@ class WatchDogAgentApp(ttk.Frame):
         self.after(100, self.process_ui_events)
 
         if self.dependency_service.is_valid():
-            self.show_setup_screen()
+            self.show_run_screen()
         else:
             self.show_setup_screen()
 
@@ -1240,7 +1240,10 @@ def main() -> None:
         def quit_application(self):
             root.destroy()
 
-    WatchDogAgentApp(root, controller=_DummyController())
+    WatchDogAgentApp(root, controller=_DummyController()).pack(
+        fill="both",
+        expand=True,
+    )
     root.mainloop()
 
 #This should also be removed later so that this page cannot be run directly. It should only be run through the main.py file.
