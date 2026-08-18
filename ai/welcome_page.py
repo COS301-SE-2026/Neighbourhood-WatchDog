@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
+from ui.theme import configure_theme
 
 SEGOUE_FONT = "Segoe UI"
 
@@ -136,6 +137,8 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.title("WatchDog Agent Setup")
     root.geometry("800x650")
+
+    configure_theme(root) #ONLY FOR DEVELOPMENT TESTING. REMOVE LATER. This should only be called once in main.py when the app starts.
 
     class _DummyController:
         def show_installer(self):
