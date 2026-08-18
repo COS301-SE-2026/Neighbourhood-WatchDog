@@ -25,6 +25,8 @@ import {
 import {
     fetchJoinRequests,
     resolveJoinRequest,
+    fetchJoinCodeRequest,
+    regenerateJoinCodeRequest,
     ApiError,
 } from "@/lib/api/neighbourhoodJoin";
 import { useUserContext } from "@/hooks/use-user-context";
@@ -180,6 +182,11 @@ export default function JoinRequestsPage() {
         null,
     );
 
+    const [joinCode, setJoinCode] = useState<string | null>(null);
+    const [joinCodeLoading, setJoinCodeLoading] = useState(true);
+    const [regeneratingJoinCode, setRegeneratingJoinCode] = useState(false);
+    
+
     const [fetchTick, setFetchTick] = useState(0);
 
     const mountedRef = useRef(true);
@@ -231,6 +238,46 @@ export default function JoinRequestsPage() {
 
         return () => controller.abort();
     }, [fetchTick, neighbourhoodId]);
+
+
+    useEffect(() => {
+        const controller = new AbortController();
+
+        setJoinCodeLoading(true);
+
+        fetchJoinCodeRequest(neighbourhoodId)
+            .then((data) => {
+                if (!mountedRef.current) return;
+
+                setJoinCode(data.join_code);
+            })
+            .catch((err: unknown) => {
+                if (!mountedRef.current) return;
+
+                if (
+                    err instanceof DOMException &&
+                    err.name === "AbortError"
+                ) {
+                    return;
+                }
+
+                setActionError(
+                    err instanceof ApiError
+                        ? err.message
+                        : err instanceof Error
+                            ? err.message
+                            : "Failed to load join code.",
+                );
+            })
+            .finally(() => {
+                if (mountedRef.current) {
+                    setJoinCodeLoading(false);
+                }
+            });
+
+        return () => controller.abort();
+    }, [neighbourhoodId]);
+
 
     const handleApprove = useCallback(async (id: string) => {
         if (!adminProperty) return;
@@ -286,6 +333,28 @@ export default function JoinRequestsPage() {
         );
     }, [requests, activeFilter]);
 
+    const handleRegenerateJoinCode = useCallback(async () => {
+        setActionError(null);
+        setRegeneratingJoinCode(true);
+
+        try {
+            const data = await regenerateJoinCodeRequest(neighbourhoodId);
+
+            setJoinCode(data.join_code);
+        } catch (err) {
+            setActionError(
+                err instanceof ApiError
+                    ? err.message
+                    : err instanceof Error
+                        ? err.message
+                        : "Failed to regenerate join code.",
+            );
+        } finally {
+            setRegeneratingJoinCode(false);
+        }
+    }, [neighbourhoodId]);
+
+
     const pendingCount = requests.filter(
         (request) => request.status === "PENDING",
     ).length;
@@ -320,12 +389,48 @@ export default function JoinRequestsPage() {
                             join this neighbourhood.
                         </p>
                     </div>
+                    
+                    <div className="flex items-center gap-8">
+                        <div>
+                            <p className="text-xs uppercase tracking-wider text-white/35">
+                                Join code
+                            </p>
 
-                    <div className="text-sm text-white/45">
-                        <span className="font-medium text-white">
-                            {pendingCount}
-                        </span>{" "}
-                        pending
+                            <div className="mt-1 flex items-center gap-2">
+                                {joinCodeLoading ? (
+                                    <Loader2 className="size-4 animate-spin text-emerald-400" />
+                                ) : (
+                                    <>
+                                        <code className="rounded-md bg-white/5 px-2.5 py-1 font-mono text-sm font-medium tracking-widest text-white">
+                                            {joinCode ?? "Unavailable"}
+                                        </code>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleRegenerateJoinCode}
+                                            disabled={
+                                                regeneratingJoinCode || !joinCode
+                                            }
+                                            className="inline-flex size-7 items-center justify-center rounded-md text-white/40 transition-colors hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                                            title="Regenerate join code"
+                                        >
+                                            {regeneratingJoinCode ? (
+                                                <Loader2 className="size-3.5 animate-spin" />
+                                            ) : (
+                                                <RefreshCw className="size-3.5" />
+                                            )}
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="text-sm text-white/45">
+                            <span className="font-medium text-white">
+                                {pendingCount}
+                            </span>{" "}
+                            pending
+                        </div>
                     </div>
                 </header>
 
