@@ -19,6 +19,7 @@ import urllib.error
 import urllib.request
 import time
 import signal
+from ui.theme import configure_log_text_widget
 
 def _resolve_requirements_file() -> Path:#Determine what OS user is using, windows -> requirements.txt | WSL/Linux -> requirements-linux.txt
     if platform.system() == "Linux":
@@ -137,7 +138,11 @@ def is_installation_valid() -> bool:
 class WatchDogAgentApp(ttk.Frame):
 
     def __init__(self, parent, controller) -> None:
-        super().__init__(parent, padding=20)
+        super().__init__(
+            parent,
+            padding=20,
+            style="App.TFrame",
+        )
 
         self.controller = controller
         self.root = parent
@@ -188,24 +193,29 @@ class WatchDogAgentApp(ttk.Frame):
 
         self.clear_screen()
 
-        outer = ttk.Frame(self, padding=24)
+        outer = ttk.Frame(
+            self,
+            padding=24,
+            style="App.TFrame",
+        )
         outer.pack(fill="both", expand=True)
 
         ttk.Label(
-            outer, 
-            text="WatchDog Agent Setup", 
-            font=(SEGOE_FONT, 20, "bold") 
+            outer,
+            text="WatchDog Agent Setup",
+            style="Title.TLabel",
         ).pack(anchor="w")
 
 
         ttk.Label(
-            outer, 
+            outer,
             text=(
-                "This one-time setup creates an isolated AI environment, "
-                "installs dependencies, and downloads the detection models."
+                "This one-time setup prepares this computer to run "
+                "WatchDog AI processing and downloads the required models."
             ),
+            style="Subtitle.TLabel",
             wraplength=680,
-            justify="left"
+            justify="left",
         ).pack(anchor="w", pady=(8, 12))
 
 
@@ -214,30 +224,49 @@ class WatchDogAgentApp(ttk.Frame):
             f"({sys.executable})"
         )   
 
-        ttk.Label(outer, text=python_text).pack(anchor="w")
+        ttk.Label(
+            outer,
+            text=python_text,
+            style="Muted.TLabel",
+        ).pack(anchor="w")
 
 
         if reason:
             ttk.Label(
-                outer, 
+                outer,
                 text=reason,
-                foreground="#b45309", 
-                wraplength=680, 
-                justify="left"
+                style="Muted.TLabel",
+                wraplength=680,
+                justify="left",
             ).pack(anchor="w", pady=(10, 0))
 
+        setup_card = ttk.LabelFrame(
+            outer,
+            text="Installation",
+            padding=16,
+            style="Card.TLabelframe",
+        )
+        setup_card.pack(
+            fill="both",
+            expand=True,
+            pady=(20, 14),
+        )
 
-        self.status_var = StringVar(value="Ready to set up the WatchDog Agent.")
+
+        self.status_var = StringVar(
+            value="Ready to set up the WatchDog Agent."
+        )
+
         ttk.Label(
-            outer, 
-            textvariable=self.status_var, 
-            font=(SEGOE_FONT, 10, "bold")
-        ).pack(anchor="w", pady=(18, 6))
+            setup_card,
+            textvariable=self.status_var,
+            style="Section.TLabel",
+        ).pack(anchor="w", pady=(0, 8))
 
 
         self.progress_var = DoubleVar(value=0)
         self.progress_bar = ttk.Progressbar(
-            outer, 
+            setup_card,
             variable=self.progress_var, 
             maximum=100, 
             mode="determinate"
@@ -247,30 +276,37 @@ class WatchDogAgentApp(ttk.Frame):
         self.progress_bar.pack(fill="x", pady=(0, 12))
 
         self.log_box = scrolledtext.ScrolledText(
-            outer, 
-            height=18, 
+            setup_card,
+            height=18,
             wrap="word",
-            state="disabled", 
-            font=("Consolas", 9)
+            state="disabled",
+            font=("Consolas", 9),
         )
-        self.log_box.pack(fill="both", expand=True, pady=(0, 14))
+        configure_log_text_widget(self.log_box)
+        self.log_box.pack(
+            fill="both",
+            expand=True,
+            pady=(0, 4),
+        )
 
         controls = ttk.Frame(outer)
         controls.pack(fill="x")
 
 
         self.setup_button = ttk.Button(
-            controls, 
+            controls,
             text="Set Up Agent",
-            command=self.start_setup
+            command=self.start_setup,
+            style="Primary.TButton",
         )
         self.setup_button.pack(side="left")
 
 
         ttk.Button(
-            controls, 
-            text="Exit", 
-            command=self.on_close 
+            controls,
+            text="Exit",
+            command=self.on_close,
+            style="Secondary.TButton",
         ).pack(side="right")
 
 
@@ -402,9 +438,10 @@ class WatchDogAgentApp(ttk.Frame):
 
 
         ttk.Button(
-            controls, 
-            text="Exit", 
-            command=self.on_close
+            controls,
+            text="Exit",
+            command=self.on_close,
+            style="Secondary.TButton",
         ).pack(side="right")
 
         self.set_agent_ui_state("stopped", "Stopped")
