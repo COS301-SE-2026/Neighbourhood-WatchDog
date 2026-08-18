@@ -82,6 +82,10 @@ class WatchDogDesktopApp:
             )
             self.show_installer()
         
+    def advance_past_welcome(self) -> None:
+        """Called by welcome page's next button to skip setup/auth if already done"""
+        decision = self.startup_resolver.resolve()
+        self._apply_startup_decision(decision)
 
     def show_page(self, page_class, **page_kwargs) -> None:
         if self.current_frame is not None:
