@@ -16,6 +16,7 @@ import {
 
 import logoImage from "@/assets/images/logo-mark-only.svg";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 import {
@@ -30,6 +31,7 @@ import {
     House,
     KeyRound,
     Plus,
+    SlidersHorizontal,
     User,
     UserPlus,
     type LucideIcon,
@@ -160,6 +162,11 @@ function getSidebarGroups(
                     icon: ClipboardList,
                     badge: 2,
                 },
+                {
+                    title: "Risk thresholds",
+                    url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/risk-threshold`,
+                    icon: SlidersHorizontal,
+                }
             ],
         });
     }
@@ -200,6 +207,7 @@ function WatchdogLogo({ size = 28 }: { size?: number }) {
 const AppDashSidebar = () => {
     
     const {contexts, activeContext, isLoading, selectContext} = usePropertyContext();
+    const pathname = usePathname();
     const { user: authUser } = useAuth();
     const { data: userContext } = useUserContext();
     const systemRole = userContext?.user.system_role ?? null;
@@ -306,7 +314,7 @@ const AppDashSidebar = () => {
                                     className={`flex cursor-pointer items-start gap-3 rounded-md px-2 py-2.5 focus:text-white ${
                                         isActive
                                             ? "bg-emerald-500/10 focus:bg-emerald-500/15"
-                                            : "focus:bg-white/10"
+                                            : ""
                                     }`}
                                 >
                                     <div
@@ -363,10 +371,10 @@ const AppDashSidebar = () => {
                             <SidebarMenu>
                                 {group.items.map((item) => {
                                     const Icon = item.icon;
-
+                                    const isActive = pathname === item.url;
                                     return (
                                         <SidebarMenuItem key={item.title}>
-                                            <SidebarMenuButton asChild>
+                                            <SidebarMenuButton asChild isActive={isActive}>
                                                 <Link href={item.url}>
                                                     <Icon />
                                                     <span>{item.title}</span>
