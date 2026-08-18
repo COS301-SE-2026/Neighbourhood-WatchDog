@@ -32,44 +32,20 @@ class StartupResolver:
         self,
         config_service: ConfigService | None = None,
         keyring_service: KeyringService | None = None,
+        dependency_service: DependencyService | None = None,
+        authentication_service: AuthenticationService | None = None,
     ) -> None:
         self.config_service = config_service or ConfigService()
         self.keyring_service = keyring_service or KeyringService()
+        self.dependency_service = dependency_service or DependencyService()
+        self.authentication_service = authentication_service or AuthenticationService()
 
     def resolve(self) -> StartupDecision:
-        try:
-            config_data = self.config_service.load()
-        except (OSError, ValueError, TypeError):
-            return StartupDecision(
-                destination=StartupDestination.INSTALLER,
-                reason="configuration_unavailable",
-            )
+        dependency_decision = self._resolve_dependencies()
+        if dependency_decision is not None:
+            return dependency_decision
 
-        if not isinstance(config_data, dict) or not config_data:
-            return StartupDecision(
-                destination=StartupDestination.INSTALLER,
-                reason="configuration_missing",
-            )
-
-        try:
-            api_key = self.keyring_service.get_api_key()
-        except Exception:
-            return StartupDecision(
-                destination=StartupDestination.INSTALLER,
-                reason="credential_store_unavailable",
-            )
-
-        if not api_key:
-            return StartupDecision(
-                destination=StartupDestination.INSTALLER,
-                reason="api_key_missing",
-            )
-
-        return StartupDecision(
-            destination=StartupDestination.MAIN_APPLICATION,
-            config_data=config_data,
-            api_key=api_key,
-        )
+        return self.resolve_authentication()
 
     def resolve_authentication(self) -> StartupDecision:
         """Checks config, api key, backend validation, assumes dependencies already installed"""
