@@ -71,3 +71,12 @@ def model_is_valid(model: dict) -> bool:
     model_path: Path = model["path"]
 
     return (model_path.is_file() and model_path.stat().st_size == model["expected_bytes"])
+
+@dataclass
+class DependencyReport:
+    """Holds list of problems found by dependency check"""
+    problems: list[str] = field(default_factory=list)
+
+    @property
+    def is_valid(self) -> bool:
+        return not self.problems
