@@ -90,7 +90,7 @@ async def resolve_join_request(
     request_id: UUID,
     body: ResolveJoinRequestReq,
     db: DbSession,
-    claims: dict,
+    claims: Annotated[dict, Depends(get_current_user)],
 ):
     require_role("NEIGHBOURHOOD_ADMIN")
     result = await resolve_join_request_handler(request_id, body.action, db, claims)
