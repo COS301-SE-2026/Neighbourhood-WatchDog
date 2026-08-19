@@ -89,10 +89,11 @@ class WatchDogAgentApp(ttk.Frame):
         #polling messages from background
         self.after(100, self.process_ui_events)
 
-        if self.dependency_service.is_valid():
-            self.show_run_screen()
-        else:
-            self.show_setup_screen()
+        # if self.dependency_service.is_valid():
+        #     self.show_run_screen()
+        # else:
+        #     self.show_setup_screen()
+        self.show_setup_screen()
 
 
     #screen helper function
