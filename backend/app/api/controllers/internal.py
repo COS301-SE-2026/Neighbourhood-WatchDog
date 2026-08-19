@@ -87,7 +87,7 @@ async def upload_clip(
     alert_id: str,
     db: DbSession,
     credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)],
-    clip: UploadFile = File(...),
+    clip: Annotated[UploadFile, File(...)]
 ) -> AlertClipUpdateRes:
     """Receive an H.264 MP4 from an authenticated Edge Agent and store it in S3."""
     if clip.content_type not in {"video/mp4", "application/octet-stream"}:
