@@ -30,6 +30,10 @@ export async function apiFetch<T>(
       headers: getAuthHeaders(init?.headers ?? {}),
     });
   } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw error;
+    }
+
     console.error("API request failed before a response was received", {
       path,
       apiBase: API_BASE,
