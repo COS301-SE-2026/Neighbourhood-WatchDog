@@ -289,6 +289,18 @@ class WatchDogAgentApp(ttk.Frame):
             padx=(8, 8),
         )
 
+        self.next_button = ttk.Button(
+            button_frame,
+            text="Next >",
+            command=self.go_next,
+            style="Secondary.TButton",
+            width=12,
+        ).grid(
+            row=0,
+            column=2,
+            sticky="e",
+        )
+
         ttk.Button(
             button_frame,
             text="Exit",
@@ -1127,6 +1139,14 @@ class WatchDogAgentApp(ttk.Frame):
     #     elif event.event_type == "log":
     #         self.append_agent_log(event.message)
 
+    def go_next(self) -> None:
+        """Hands off to controller to decide next step"""
+        if self.controller is not None and hasattr(self.controller, "advance_past_dependencies"):
+            self.controller.advance_past_dependencies()
+            return
+
+        print("Next clicked -> would advance past dependencies page")
+
     def repair_installation(self) -> None:
     
         #remove only the venv and installation marker.
@@ -1176,8 +1196,12 @@ class WatchDogAgentApp(ttk.Frame):
                 ),
             )
             return
+        
+        if self.controller is not None:
+            self.controller.quit_application()
+        else:
+            self.winfo_toplevel().destroy()
 
-        self.controller.quit_application()
 # Main needs to be removed later so that this page cannot be run directly. It should only be run through the main.py file.
 def main() -> None:
     if sys.version_info[:2] < SUPPORTED_PYTHON:
@@ -1210,7 +1234,17 @@ def main() -> None:
     elif "clam" in available_themes:
         style.theme_use("clam")
 
-    WatchDogAgentApp(root)
+    class _DummyController:
+        def advance_past_dependencies(self):
+            print("Next clicked -> would advance past dependencies")
+
+        def quit_application(self):
+            root.destroy()
+
+    WatchDogAgentApp(root, controller=_DummyController()).pack(
+        fill="both",
+        expand=True,
+    )
     root.mainloop()
 
 #This should also be removed later so that this page cannot be run directly. It should only be run through the main.py file.

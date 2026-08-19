@@ -51,16 +51,37 @@ class WatchDogDesktopApp:
 
     def start_application(self) -> None:
         decision = self.startup_resolver.resolve()
+        self._apply_startup_decision(decision)
 
+    def _apply_startup_decision(self, decision) -> None:
+        """Shows the right page for each startup destination"""
         if decision.destination == StartupDestination.MAIN_APPLICATION:
             self.state = AppState.from_config(
                 config_data=decision.config_data or {},
                 api_key=decision.api_key,
             )
             self.show_main_app()
-            return
+        elif decision.destination == StartupDestination.AUTHENTICATION:
+            self.show_pairing()
+        elif decision.destination == StartupDestination.INSTALLER:
+            self.show_installer()
+        else:
+            logger.error(
+                "Unhandled startup detination: %s (reason=%s)",
+                decision.destination,
+                decision.reason,
+            )
+            self.show_installer()
+        
+    def advance_past_welcome(self) -> None:
+        """Called by welcome page's next button to skip setup/auth if already done"""
+        decision = self.startup_resolver.resolve()
+        self._apply_startup_decision(decision)
 
-        self.show_installer()
+    def advance_past_dependencies(self) -> None:
+        """Called by installer's next button to skip dependencies if already done"""
+        decision = self.startup_resolver.resolve_authentication()
+        self._apply_startup_decision(decision)
 
     def show_page(self, page_class, **page_kwargs) -> None:
         if self.current_frame is not None:

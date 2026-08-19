@@ -122,7 +122,7 @@ class WelcomePage(ttk.Frame):
         )
 
     def on_next(self):
-        self.controller.show_installer()
+        self.controller.advance_past_welcome()
 
     def on_cancel(self):
         confirmed = messagebox.askyesno(
