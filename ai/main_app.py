@@ -13,6 +13,7 @@ from ui.theme import (
     EMERALD,
     PULSE,
     THREAT,
+    configure_log_text_widget,
     configure_theme,
 )
 
@@ -322,6 +323,7 @@ class MainApplicationPage(ttk.Frame):
             state="disabled",
             font=("Consolas", 9)
         )
+        configure_log_text_widget(self.agent_log_box)
 
         self.agent_log_box.grid(
             row=6,
@@ -337,7 +339,7 @@ class MainApplicationPage(ttk.Frame):
         )
 
         button_frame.grid(
-            row=5,
+            row=7,
             column=0,
             sticky="ew",
         )
@@ -354,6 +356,12 @@ class MainApplicationPage(ttk.Frame):
             row=0,
             column=0,
             sticky="e",
+        )
+        self.after(50, self.refresh_cameras)
+
+        self.after(
+            self.CAMERA_REFRESH_INTERVAL,
+            self._camera_poll_tick,
         )
 
     def _render_camera_rows(
@@ -526,9 +534,7 @@ class MainApplicationPage(ttk.Frame):
             )
 
         elif event.event_type == "log":
-            # The main page does not have an agent log panel yet.
-            # We will later display or write these log messages.
-            pass
+            self.append_agent_log(event.message)
 
     def update_agent_ui(
         self,
