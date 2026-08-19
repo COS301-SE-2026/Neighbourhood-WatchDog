@@ -56,7 +56,7 @@ def _s3_client():
     return boto3.client(
         "s3",
         region_name="eu-north-1",
-        endpoint_url=f"https://s3.eu-north-1.amazonaws.com",
+        endpoint_url="https://s3.eu-north-1.amazonaws.com",
         config=BotoConfig(
             signature_version="s3v4",
             s3={"addressing_style": "virtual"},
