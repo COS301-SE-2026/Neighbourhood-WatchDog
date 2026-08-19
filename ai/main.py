@@ -5,6 +5,7 @@ from tkinter import ttk
 import logging
 
 from services.logging_service import configure_application_logging
+from services.onboarding_service import OnboardingService
 from app_state import AppState
 from authenticator import WatchDogPinPage
 from main_app import MainApplicationPage
@@ -32,6 +33,7 @@ class WatchDogDesktopApp:
         self.current_frame = None
         self.state = AppState()
         self.startup_resolver = StartupResolver()
+        self.onboarding_service = OnboardingService()
 
         self.agent_events: queue.Queue[AgentEvent] = queue.Queue()
         self.exit_requested = False
@@ -50,6 +52,10 @@ class WatchDogDesktopApp:
         configure_theme(self.root)
 
     def start_application(self) -> None:
+        if not self.onboarding_service.has_seen_welcome():
+            self.show_welcome()
+            return
+        
         decision = self.startup_resolver.resolve()
         self._apply_startup_decision(decision)
 
@@ -75,6 +81,7 @@ class WatchDogDesktopApp:
         
     def advance_past_welcome(self) -> None:
         """Called by welcome page's next button to skip setup/auth if already done"""
+        self.onboarding_service.mark_welcome_seen()
         decision = self.startup_resolver.resolve()
         self._apply_startup_decision(decision)
 
