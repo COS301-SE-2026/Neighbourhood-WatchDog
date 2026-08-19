@@ -1,7 +1,5 @@
 import queue
-import sys
 import tkinter as tk
-from tkinter import ttk
 import logging
 
 from services.logging_service import configure_application_logging

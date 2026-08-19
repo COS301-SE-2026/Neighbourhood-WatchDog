@@ -3,8 +3,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from tkinter import Tk, messagebox, scrolledtext, StringVar, DoubleVar
 from tkinter import ttk
-import platform
-
 
 import json
 import os
@@ -41,37 +39,25 @@ from services.dependency_service import (
 SEGOE_FONT = "Segoe UI"
 PARTITION_LINE = "============================"
 ICON_CODE = "&#9679;"
-
+APP_TFRAME = "App.TFrame"
+MUTED_TLABEL = "Muted.TLabel"
+REPAIR_INSTALLATION = "Repair Installation"
+SECONDARY_TBUTTON = "Secondary.TButton"
 class WatchDogAgentApp(ttk.Frame):
 
     def __init__(self, parent, controller=None) -> None:
         super().__init__(
             parent,
             padding=20,
-            style="App.TFrame",
+            style=APP_TFRAME,
         )
 
         self.controller = controller
         self.root = parent
         self.dependency_service = DependencyService()
-        # self.root.title("Neighbourhood WatchDog Agent")
-        # self.root.geometry("760x560")
-        # self.root.minsize(700, 500)
 
         self.events: queue.Queue[tuple[str, object]] = queue.Queue()
         self.setup_running = False
-
-        # self.agent_process = None
-        # self.agent_status = "stopped"
-        # self.agent_stop_requested = False
-        # self.health_check_in_progress = False
-        # self.exit_after_stop = False
-
-        # self.agent_status_var = None
-        # self.agent_status_label = None
-        # self.agent_log_box = None
-        # self.start_agent_button = None
-        # self.stop_agent_button = None
 
         self.status_var = None
         self.progress_var = None
@@ -107,7 +93,7 @@ class WatchDogAgentApp(ttk.Frame):
         outer = ttk.Frame(
             self,
             padding=24,
-            style="App.TFrame",
+            style=APP_TFRAME,
         )
         outer.pack(fill="both", expand=True)
 
@@ -148,7 +134,7 @@ class WatchDogAgentApp(ttk.Frame):
         ttk.Label(
             outer,
             text=python_text,
-            style="Muted.TLabel",
+            style=MUTED_TLABEL,
         ).grid(
             row=2,
             column=0,
@@ -159,7 +145,7 @@ class WatchDogAgentApp(ttk.Frame):
             ttk.Label(
                 outer,
                 text=reason,
-                style="Muted.TLabel",
+                style=MUTED_TLABEL,
                 wraplength=700,
                 justify="left",
             ).grid(
@@ -221,7 +207,7 @@ class WatchDogAgentApp(ttk.Frame):
 
         log_frame = ttk.Frame(
             outer,
-            style="App.TFrame",
+            style=APP_TFRAME,
         )
         log_frame.grid(
             row=8,
@@ -247,7 +233,7 @@ class WatchDogAgentApp(ttk.Frame):
 
         button_frame = ttk.Frame(
             outer,
-            style="App.TFrame",
+            style=APP_TFRAME,
         )
         button_frame.grid(
             row=9,
@@ -275,9 +261,9 @@ class WatchDogAgentApp(ttk.Frame):
 
         self.repair_button = ttk.Button(
             button_frame,
-            text="Repair Installation",
+            text=REPAIR_INSTALLATION,
             command=self.repair_installation,
-            style="Secondary.TButton",
+            style=SECONDARY_TBUTTON,
             width=19,
         )
 
@@ -292,7 +278,7 @@ class WatchDogAgentApp(ttk.Frame):
             button_frame,
             text="Exit",
             command=self.on_close,
-            style="Secondary.TButton",
+            style=SECONDARY_TBUTTON,
             width=12,
         ).grid(
             row=0,
@@ -306,7 +292,7 @@ class WatchDogAgentApp(ttk.Frame):
 
         outer = ttk.Frame(self, 
                 padding=24,
-                style="App.TFrame",)
+                style=APP_TFRAME,)
         outer.pack(fill="both", expand=True)
 
         outer.columnconfigure(0, weight=1)
@@ -329,7 +315,7 @@ class WatchDogAgentApp(ttk.Frame):
                 "This computer is ready to connect to your WatchDog account"
                 "Click Next to continue"
                 ),
-                style="Muted.TLabel",
+                style=MUTED_TLABEL,
                 wraplength=700,
                 justify="left" 
         ).grid(row=2, column=0, sticky="w", pady=(0, 16))
@@ -345,11 +331,11 @@ class WatchDogAgentApp(ttk.Frame):
         ttk.Label(
              outer,
              text=details,
-             style="Muted.TLabel",
+             style=MUTED_TLABEL,
              justify="left",
         ).grid(row=3, column=0, sticky="w", pady=(0, 12))
 
-        button_frame = ttk.Frame(outer, style="App.TFrame")
+        button_frame = ttk.Frame(outer, style=APP_TFRAME)
         button_frame.grid(row=4, column=0, sticky="ew", pady=(20, 0))
 
         button_frame.columnconfigure(0, weight=1)
@@ -357,9 +343,9 @@ class WatchDogAgentApp(ttk.Frame):
 
         self.repair_button = ttk.Button(
             button_frame,
-            text="Repair Installation",
+            text=REPAIR_INSTALLATION,
             command=self.repair_installation,
-            style="Secondary.TButton",
+            style=SECONDARY_TBUTTON,
             width=19
         )
         self.repair_button.grid(row=0, column=0, sticky="w")
@@ -918,28 +904,6 @@ class WatchDogAgentApp(ttk.Frame):
             )
         )
 
-
-    # def _handle_agent_log(self, payload) -> None:
-    #     self.append_agent_log(str(payload))
-
-
-    # def _handle_agent_health(self, payload) -> None:
-    #     self.health_check_in_progress = False
-
-    #     is_running = (bool(payload) and self.agent_process is not None and self.agent_process.poll() is None)
-
-    #     if is_running and self.agent_status != "running":
-    #         self.set_agent_ui_state("running", "Running: local AI service is healthy")
-
-
-    # def _handle_agent_stop_error(self, payload) -> None:
-    #     self.exit_after_stop = False
-    #     self.set_agent_ui_state("error", "Could not stop service")
-
-    #     self.append_agent_log(f"ERROR: {payload}")
-
-    #     messagebox.showerror("Agent Stop Failed", str(payload))
-
     def start_indeterminate_progress(self) -> None:
         if self.progress_bar is None:
             return
@@ -970,96 +934,6 @@ class WatchDogAgentApp(ttk.Frame):
             #the screen may have changed while queued events were draining.
             pass
 
-
-    # def set_agent_ui_state(self, state: str, message: str) -> None:
-    #     #update run screen status and its button availabilitty
-    #     self.agent_status = state
-
-    #     colours = {
-    #         "stopped": "#b91c1c", 
-    #         "starting": "#b45309", 
-    #         "running": "#15803d", 
-    #         "stopping": "#b45309", 
-    #         "error": "#b91c1c"
-    #     }
-
-    #     status_icons = {
-    #         "stopped": ICON_CODE, 
-    #         "starting": ICON_CODE, 
-    #         "running": ICON_CODE, 
-    #         "stopping": ICON_CODE, 
-    #         "error": ICON_CODE
-    #     }
-
-    #     if self.agent_status_var is not None:
-    #         self.agent_status_var.set(f"{status_icons[state]} {message}")
-
-    #     if self.agent_status_label is not None:
-    #         self.agent_status_label.configure(foreground=colours.get(state, "#111827"))
-
-    #     if self.start_agent_button is not None:
-    #         self.start_agent_button.configure(
-    #             state=(
-    #                 "normal"
-    #                 if state in {"stopped", "error"}
-    #                 else "disabled"
-    #             )
-    #         )
-
-
-    #     if self.stop_agent_button is not None:
-    #         self.stop_agent_button.configure(
-    #             state=(
-    #                 "normal"
-    #                 if state in {"starting", "running"}
-    #                 else "disabled"
-    #             )
-    #         )
-
-
-    # def append_agent_log(self, message: str) -> None:
-    #     #appends the ai service line to the run screen live log
-
-    #     if self.agent_log_box is None:
-    #         return
-
-    #     try:
-    #         self.agent_log_box.configure(state="normal")
-    #         self.agent_log_box.insert("end", f"{message}\n")
-    #         self.agent_log_box.see("end")
-    #         self.agent_log_box.configure(state="disabled")
-    #     except Exception:
-    #         pass
-
-    # def start_agent(self) -> None:
-    #     if self.controller is None or self.controller.agent_service is None:
-    #         self.set_agent_ui_state(
-    #             "error",
-    #             "Agent controls are not available",
-    #         )
-    #         return
-
-    #     self.controller.agent_service.start()
-
-    # def stop_agent(self) -> None:
-    #     if self.controller is None or self.controller.agent_service is None:    
-    #         return
-        
-    #     self.controller.agent_service.stop()
-
-    # def handle_agent_event(self, event) -> None:
-    #     if event.event_type == "status":
-    #         self.set_agent_ui_state(
-    #             event.status or "error",
-    #             event.message,
-    #         )
-
-    #     elif event.event_type == "error":
-    #         self.set_agent_ui_state("error", event.message)
-
-    #     elif event.event_type == "log":
-    #         self.append_agent_log(event.message)
-
     def go_next(self) -> None:
         """Hands off to controller to decide next step"""
         if self.controller is not None and hasattr(self.controller, "advance_past_dependencies"):
@@ -1076,7 +950,7 @@ class WatchDogAgentApp(ttk.Frame):
             return
 
         confirmed = messagebox.askyesno(
-            "Repair Installation",
+            REPAIR_INSTALLATION,
             (
                 "This removes the local Python environment and setup marker, "
                 "then returns to Setup.\n\n"

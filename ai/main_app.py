@@ -22,6 +22,8 @@ logger = logging.getLogger("watchdog.desktop.main_app")
 SEGOE_FONT = "Segoe UI"
 from runtime.agent_runtime import AgentEvent
 
+CARDBODY_TLABEL = "CardBody.TLabel"
+CARD_TLABEL_FRAME = "Card.TLabelframe"
 class MainApplicationPage(ttk.Frame):
 
     CAMERA_REFRESH_INTERVAL = 5000
@@ -86,7 +88,7 @@ class MainApplicationPage(ttk.Frame):
             self,
             text="Agent Status",
             padding=16,
-            style="Card.TLabelframe"
+            style=CARD_TLABEL_FRAME
         )
 
         status_frame.grid(
@@ -101,7 +103,7 @@ class MainApplicationPage(ttk.Frame):
         ttk.Label(
             status_frame,
             text="Property:",
-            style="CardBody.TLabel",
+            style=CARDBODY_TLABEL,
         ).grid(
             row=0,
             column=0,
@@ -128,7 +130,7 @@ class MainApplicationPage(ttk.Frame):
         ttk.Label(
             status_frame,
             text="Agent:",
-            style="CardBody.TLabel",
+            style=CARDBODY_TLABEL,
         ).grid(
             row=1,
             column=0,
@@ -155,7 +157,7 @@ class MainApplicationPage(ttk.Frame):
             self,
             text="Cameras",
             padding=16,
-            style="Card.TLabelframe"
+            style=CARD_TLABEL_FRAME
         )
 
         cameras_frame.grid(
@@ -254,7 +256,7 @@ class MainApplicationPage(ttk.Frame):
             self,
             text="AI Agent",
             padding=16,
-            style="Card.TLabelframe"
+            style=CARD_TLABEL_FRAME
         )
 
         controls_frame.grid(
@@ -267,7 +269,7 @@ class MainApplicationPage(ttk.Frame):
         self.ai_status_label = ttk.Label(
             controls_frame,
             text="AI Agent is stopped.",
-            style="CardBody.TLabel",
+            style=CARDBODY_TLABEL,
         )
 
         self.ai_status_label.pack(
