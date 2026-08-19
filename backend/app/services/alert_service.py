@@ -55,8 +55,8 @@ AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
 def _s3_client():
     return boto3.client(
         "s3",
-        region_name=AWS_REGION,
-        endpoint_url=f"https://s3.{AWS_REGION}.amazonaws.com",
+        region_name="eu-north-1",
+        endpoint_url="https://s3.eu-north-1.amazonaws.com",
         config=BotoConfig(
             signature_version="s3v4",
             s3={"addressing_style": "virtual"},
