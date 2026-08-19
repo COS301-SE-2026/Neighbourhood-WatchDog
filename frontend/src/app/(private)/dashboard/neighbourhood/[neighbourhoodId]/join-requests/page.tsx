@@ -280,11 +280,10 @@ export default function JoinRequestsPage() {
 
 
     const handleApprove = useCallback(async (id: string) => {
-        if (!adminProperty) return;
         setActionError(null);
 
         try {
-            const updated = await resolveJoinRequest(id, adminProperty.id ,"APPROVE");
+            const updated = await resolveJoinRequest(id , "APPROVE");
 
             dispatch({
                 type: "UPDATE_REQUEST",
@@ -302,11 +301,10 @@ export default function JoinRequestsPage() {
     }, [adminProperty]);
 
     const handleDeny = useCallback(async (id: string) => {
-        if (!adminProperty) return;
         setActionError(null);
 
         try {
-            const updated = await resolveJoinRequest(id, adminProperty.id, "DENY");
+            const updated = await resolveJoinRequest(id, "DENY");
 
             dispatch({
                 type: "UPDATE_REQUEST",

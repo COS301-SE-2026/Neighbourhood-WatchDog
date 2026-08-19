@@ -250,7 +250,7 @@ export default function JoinNeighbourhoodPage() {
         setState({ kind: "loading" });
 
         try {
-            const request = await submitJoinRequest(code);
+            const request = await submitJoinRequest(activeContext.propertyId, code);
 
             setState({
                 kind: "pending",

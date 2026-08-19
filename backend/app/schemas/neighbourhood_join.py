@@ -12,6 +12,7 @@ class JoinNeighbourhoodReq(BaseModel):
 class JoinRequestRes(BaseModel):
     id: UUID
     neighbourhood_id: UUID
+    property_id: UUID
     user_id: UUID
     status: str
     created_at: datetime
@@ -31,7 +32,6 @@ class JoinNeighbourhoodRes(BaseModel):
 
 class ResolveJoinRequestReq(BaseModel):
     action: str
-    property_id: UUID | None = None
     
     @field_validator("action")
     @classmethod

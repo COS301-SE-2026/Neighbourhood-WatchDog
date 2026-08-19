@@ -68,9 +68,10 @@ function getDisplayName(
 }
 
 export async function submitJoinRequest(
+  property_id: string,
   joinCode: string,
 ): Promise<JoinRequest> {
-  const res = await fetch(`${API_BASE}/neighbourhood/join`, {
+  const res = await fetch(`${API_BASE}/neighbourhood/join/${property_id}`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify({ join_code: joinCode }),
@@ -133,7 +134,6 @@ export async function fetchJoinRequests(
 
 export async function resolveJoinRequest(
   requestId: string,
-  propertyId: string,
   action: "APPROVE" | "DENY",
 ): Promise<JoinRequest> {
   let res: Response;
@@ -142,7 +142,7 @@ export async function resolveJoinRequest(
     res = await fetch(`${API_BASE}/neighbourhood/join-requests/${requestId}`, {
       method: "PATCH",
       headers: getAuthHeaders(),
-      body: JSON.stringify({ property_id: propertyId ,action }),
+      body: JSON.stringify({ action }),
     });
   } catch (error) {
     console.error("Join request resolution network error", {

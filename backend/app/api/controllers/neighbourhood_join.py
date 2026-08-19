@@ -25,7 +25,7 @@ from app.services.neighbourhood_join_service import (
 router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
 
 @router.post(
-    "/join",
+    "/join/{property_id}",
     response_model=JoinNeighbourhoodRes,
     status_code=status.HTTP_201_CREATED,
     summary="Request to join a neighbourhood",
@@ -38,11 +38,12 @@ router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
     },
 )
 async def join_neighbourhood(
+    property_id: UUID,
     body: JoinNeighbourhoodReq,
     db: DbSession,
     claims: Annotated[dict, Depends(get_current_user)],
 ):
-    result = await request_to_join_handler(body.join_code, db, claims)
+    result = await request_to_join_handler(property_id, body.join_code, db, claims)
     return JoinNeighbourhoodRes(status=201, message="Join request submitted", data=result)
 
 
@@ -92,7 +93,7 @@ async def resolve_join_request(
     claims: dict,
 ):
     require_role("NEIGHBOURHOOD_ADMIN")
-    result = await resolve_join_request_handler(request_id, body.property_id, body.action, db, claims)
+    result = await resolve_join_request_handler(request_id, body.action, db, claims)
     return ResolveJoinRequestRes(status=200, message="Join request updated", data=result)
 
 @router.patch(

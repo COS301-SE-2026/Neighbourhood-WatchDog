@@ -19,7 +19,7 @@ from app.models.neighbourhood_join_request import JoinRequestStatus, Neighbourho
 from app.models.user import User
 from app.schemas.neighbourhood_join import JoinCodeRes, JoinRequestRes, RegenerateJoinCodeRes
 
-async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -> JoinRequestRes:
+async def request_to_join_handler(property_id: UUID, join_code: str, db: DbSession, claims: dict) -> JoinRequestRes:
     """Requesting to join a neighbourhood"""
 
     if not db:
@@ -53,22 +53,31 @@ async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -
         if not user:
             raise HTTPException(401, "User profile not found")
 
-
-        membership_result = await db.execute(
-            select(NeighbourhoodUser).where(
-                NeighbourhoodUser.user_id == user.id,
-                NeighbourhoodUser.neighbourhood_id == neighbourhood.id,
+        property_user_result = await db.execute(
+            select(Property, PropertyUser)
+            .join(PropertyUser, PropertyUser.property_id == Property.id)
+            .where(
+                Property.id == property_id,
+                PropertyUser.user_id == user_id,
+                PropertyUser.is_admin.is_(True)
             )
         )
-        existing_membership = membership_result.scalar_one_or_none()
 
-        if existing_membership:
-            raise HTTPException(409, "You are already a member of this neighbourhood")
+        row = property_user_result.first()
+
+        if not row:
+            raise HTTPException(403, "This user is not authorized to make a join request for this property")
+        
+        property_obj, property_user = row
+
+
+        if property_obj.neighbourhood_id == neighbourhood.id:
+            raise HTTPException(409, "Thid property is already a member of this neighbourhood")
 
         pending_result = await db.execute(
             select(NeighbourhoodJoinRequest).where(
                 NeighbourhoodJoinRequest.neighbourhood_id == neighbourhood.id,
-                NeighbourhoodJoinRequest.user_id == user.id,
+                NeighbourhoodJoinRequest.property_id == property_id,
                 NeighbourhoodJoinRequest.status == JoinRequestStatus.PENDING,
             )
         )
@@ -79,6 +88,7 @@ async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -
 
         join_request = NeighbourhoodJoinRequest(
             neighbourhood_id=neighbourhood.id,
+            property_id=property_id,
             user_id=user.id,
             status=JoinRequestStatus.PENDING,
         )
@@ -94,6 +104,7 @@ async def request_to_join_handler(join_code: str, db: DbSession, claims: dict) -
             target_entity_id=join_request.id,
             new_values={
                 "user_id": str(user.id),
+                "property_id": str(join_request.property_id),
                 "neighbourhood_id": str(join_request.neighbourhood_id),
                 "status": join_request.status.value,
             },
@@ -268,7 +279,7 @@ async def list_join_requests_handler(neighbourhood_id: UUID, db: DbSession, clai
     except IntegrityError:
         raise HTTPException(500, "Failed to list join requests")
 
-async def resolve_join_request_handler(request_id: UUID, property_id: UUID | None, action: str, db: DbSession, claims: dict) -> JoinRequestRes:
+async def resolve_join_request_handler(request_id: UUID, action: str, db: DbSession, claims: dict) -> JoinRequestRes:
     """Accepting or rejecting a users join request to a  neighbourhood"""
     if not request_id:
         raise HTTPException(400, "Join request id is required")
@@ -296,7 +307,7 @@ async def resolve_join_request_handler(request_id: UUID, property_id: UUID | Non
                 NeighbourhoodUser.user_id == admin_id,
                 NeighbourhoodUser.neighbourhood_id
                 == join_request.neighbourhood_id,
-                NeighbourhoodUser.role == "NEIGHBOURHOOD_ADMIN",
+                NeighbourhoodUser.role == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
             )
         )
         admin_membership = admin_membership_result.scalar_one_or_none()
@@ -312,29 +323,16 @@ async def resolve_join_request_handler(request_id: UUID, property_id: UUID | Non
         }
 
         if action == "APPROVE":
-            if property_id is None:
-                raise HTTPException(
-                    400,
-                    "A property is required when approving a join request",
-                )
-            
             property_result = await db.execute(
                 select(Property)
-                .join(
-                    PropertyUser,
-                    PropertyUser.property_id == Property.id,
-                )
-                .where(
-                    Property.id == property_id,
-                    PropertyUser.user_id == join_request.user_id,
-                )
+                .where(Property.id == join_request.property_id)
             )
             property_obj = property_result.scalar_one_or_none()
 
             if not property_obj:
                 raise HTTPException(
-                    403,
-                    "The selected property does not belong to the applicant",
+                    404,
+                    "Property associateed with this join request no longer exists",
                 )
 
             if property_obj.neighbourhood_id is not None:
@@ -348,8 +346,7 @@ async def resolve_join_request_handler(request_id: UUID, property_id: UUID | Non
             existing_membership_result = await db.execute(
                 select(NeighbourhoodUser).where(
                     NeighbourhoodUser.user_id == join_request.user_id,
-                    NeighbourhoodUser.neighbourhood_id
-                    == join_request.neighbourhood_id,
+                    NeighbourhoodUser.neighbourhood_id == join_request.neighbourhood_id,
                 )
             )
             existing_membership = (
@@ -361,7 +358,7 @@ async def resolve_join_request_handler(request_id: UUID, property_id: UUID | Non
                     NeighbourhoodUser(
                         user_id=join_request.user_id,
                         neighbourhood_id=join_request.neighbourhood_id,
-                        role="RESIDENT",
+                        role=NeighbourhoodRole.RESIDENT,
                     )
                 )
 
@@ -386,7 +383,7 @@ async def resolve_join_request_handler(request_id: UUID, property_id: UUID | Non
                     else str(join_request.status)
                 ),
                 "resolved_at": join_request.resolved_at.isoformat(),
-                "property_id": str(property_id) if property_id else None,
+                "property_id": str(join_request.property_id),
             },
         )
         await db.commit()
