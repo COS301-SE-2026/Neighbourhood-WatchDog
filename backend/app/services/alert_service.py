@@ -1,5 +1,10 @@
+import asyncio
 import logging
+import os
 
+import boto3
+from botocore.config import Config as BotoConfig
+from botocore.exceptions import BotoCoreError, ClientError
 from datetime import datetime, timezone, timedelta, date as date_cls
 from dateutil.relativedelta import relativedelta
 
@@ -42,6 +47,29 @@ NO_DATABASE_SESSION = "No database session"
 NOT_AUTHORISED = "Not authorised for this neighbourhood"
 NOT_AUTHENTICATED = "Not authenticated"
 ALERT_NOT_FOUND = "Alert not found"
+CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
+S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "")
+AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
+
+
+def _s3_client():
+    return boto3.client(
+        "s3",
+        region_name=AWS_REGION,
+        endpoint_url=f"https://s3.{AWS_REGION}.amazonaws.com",
+        config=BotoConfig(
+            signature_version="s3v4",
+            s3={"addressing_style": "virtual"},
+        ),
+    )
+
+
+def _clip_s3_key(alert: Alert, timestamp: datetime) -> str:
+    return (
+        f"clips/{alert.camera_id}/{timestamp:%Y/%m/%d}/"
+        f"weapon_{timestamp:%Y%m%dT%H%M%SZ}_{alert.id}.mp4"
+    )
+
 
 def _neighbourhood_alert_stmt(neighbourhood_id: UUID):
     """Build the base alert query scoped through Camera → Property."""
@@ -890,3 +918,90 @@ async def update_alert_clip_for_agent_handler(alert_id: str, body: UpdateAlertCl
     except Exception:
         logger.exception("internal update_clip: unexpected error updating clip for alert_id=%s", alert_id)
         raise
+
+
+async def upload_alert_clip_for_agent_handler(
+    alert_id: str,
+    clip_bytes: bytes,
+    content_type: str | None,
+    credential: EdgeAgentCredential,
+    db: AsyncSession,
+) -> AlertClipUpdateRes:
+    """Upload an Edge Agent clip to backend-owned S3 storage and link it to its alert."""
+    if not S3_BUCKET_NAME:
+        raise HTTPException(status_code=503, detail="Clip storage has not been configured.")
+
+    if not clip_bytes:
+        raise HTTPException(status_code=400, detail="The uploaded clip is empty.")
+
+    if len(clip_bytes) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Clip exceeds the 50 MiB upload limit.")
+
+    try:
+        alert_uuid = UUID(alert_id)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail="alert_id is not a valid UUID") from error
+
+    stmt = (
+        select(Alert)
+        .join(Camera, Alert.camera_id == Camera.id)
+        .where(
+            Alert.id == alert_uuid,
+            Camera.property_id == credential.property_id,
+        )
+    )
+    result = await db.execute(stmt)
+    alert = result.scalar_one_or_none()
+    if alert is None:
+        raise HTTPException(status_code=404, detail=ALERT_NOT_FOUND)
+
+    timestamp = datetime.now(timezone.utc)
+    s3_key = _clip_s3_key(alert, timestamp)
+    expires_at = timestamp + timedelta(days=CLIP_RETENTION_DAYS)
+    uploaded = False
+
+    try:
+        await asyncio.to_thread(
+            _s3_client().put_object,
+            Bucket=S3_BUCKET_NAME,
+            Key=s3_key,
+            Body=clip_bytes,
+            ContentType=content_type or "video/mp4",
+            ServerSideEncryption="AES256",
+        )
+        uploaded = True
+
+        alert.clip_s3_key = s3_key
+        alert.clip_expires_at = expires_at
+        await db.commit()
+        await db.refresh(alert)
+
+        logger.info(
+            "Uploaded and linked clip for alert %s: s3://%s/%s",
+            alert.id,
+            S3_BUCKET_NAME,
+            s3_key,
+        )
+        return AlertClipUpdateRes(
+            alert_id=alert.id,
+            clip_s3_key=alert.clip_s3_key,
+            clip_expires_at=alert.clip_expires_at,
+        )
+    except (BotoCoreError, ClientError) as error:
+        await db.rollback()
+        logger.exception("S3 upload failed for alert %s", alert_id)
+        raise HTTPException(status_code=503, detail="Could not store clip in S3.") from error
+    except Exception:
+        await db.rollback()
+        logger.exception("Clip upload/link failed for alert %s", alert_id)
+        raise
+    finally:
+        if uploaded and alert.clip_s3_key != s3_key:
+            try:
+                await asyncio.to_thread(
+                    _s3_client().delete_object,
+                    Bucket=S3_BUCKET_NAME,
+                    Key=s3_key,
+                )
+            except Exception:
+                logger.exception("Could not remove orphaned S3 clip %s", s3_key)

@@ -10,7 +10,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from collections import deque
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from fastapi import APIRouter, FastAPI, Query
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -60,13 +60,13 @@ _model_lock = threading.Lock()
 
 #clip recording settings
 WEAPON_CLASSES = {"gun", "knife", "grenade", "explosion"}
-CLIP_COOLDOWN_SECS = 30
+CLIP_COOLDOWN_SECS = 0
 CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME") or os.getenv("AWS_BUCKET_NAME", "")
-AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
+AWS_REGION = os.getenv("AWS_REGION", "eu-central-1")
 
 def _s3_client(): 
-    return boto3.client("s3", region_name=AWS_REGION, endpoint_url=f"https://s3.{AWS_REGION}.amazonaws.com")
+    return boto3.client("s3", region_name=AWS_REGION)
 
 
 
@@ -392,15 +392,6 @@ def _schedule_weapon_clip(camera: CameraSpec, rtsp_url: str, pre_frames: list, w
 
         return
 
-    if not S3_BUCKET_NAME:
-        logger.warning(
-            "Created weapon alert %s for camera %s, but skipped footage: "
-            "S3_BUCKET_NAME is not configured.",
-            alert_id,
-            camera.id,
-        )
-        return
-
     threading.Thread(
         target=_save_weapon_clip,
         args=(
@@ -428,10 +419,6 @@ def _schedule_weapon_clip(camera: CameraSpec, rtsp_url: str, pre_frames: list, w
 
 def _save_weapon_clip(alert_id: str, camera: CameraSpec, rtsp_url: str, pre_frames: list, weapon_label: str, confidence: float, stop_event: threading.Event) -> None:
     
-    if not S3_BUCKET_NAME:
-        logger.warning("Skipping footage capture for alert %s: S3_BUCKET_NAME is not configured.", alert_id)
-        return
-
     api_key = keyring.get_password("WatchDog", "api_key") or INTERNAL_API_TOKEN
     headers = {"X-Internal-Token": api_key}
 
@@ -481,22 +468,11 @@ def _save_weapon_clip(alert_id: str, camera: CameraSpec, rtsp_url: str, pre_fram
         logger.warning("No consistently sized frames available for alert %s / camera %s", alert_id, camera.id)
         return
 
-    timestamp = datetime.now(timezone.utc)
-
-    s3_key = (
-        f"clips/{camera.id}/"
-        f"{timestamp:%Y/%m/%d}/"
-        f"{weapon_label}_{timestamp:%Y%m%dT%H%M%SZ}.mp4"
-    )
-    expires_at = timestamp + timedelta(days=CLIP_RETENTION_DAYS)
-
     raw_fd, raw_path = tempfile.mkstemp(suffix=".mp4")
     h264_fd, h264_path = tempfile.mkstemp(suffix=".mp4")
 
     os.close(raw_fd)
     os.close(h264_fd)
-
-    uploaded = False
 
     try:
         writer = cv2.VideoWriter(
@@ -540,46 +516,22 @@ def _save_weapon_clip(alert_id: str, camera: CameraSpec, rtsp_url: str, pre_fram
             text=True,
         )
 
-        s3 = _s3_client()
-        s3.upload_file(
-            h264_path,
-            S3_BUCKET_NAME,
-            s3_key,
-            ExtraArgs={"ContentType": "video/mp4", "ServerSideEncryption": "AES256"},
-        )
-        uploaded = True
-
-
-        update_response = httpx.patch(
-            f"{BACKEND_URL}/internal/alerts/{alert_id}/clip",
-            headers=headers,
-            json={
-                "clip_s3_key": s3_key,
-                "clip_expires_at": expires_at.isoformat(),
-            },
-            timeout=10.0,
-        )
-        update_response.raise_for_status()
+        with open(h264_path, "rb") as clip_file:
+            upload_response = httpx.post(
+                f"{BACKEND_URL}/internal/alerts/{alert_id}/clip",
+                headers=headers,
+                files={"clip": ("weapon-alert.mp4", clip_file, "video/mp4")},
+                timeout=30.0,
+            )
+        upload_response.raise_for_status()
 
         logger.info(
-            "Clip uploaded and linked: s3://%s/%s -> alert %s",
-            S3_BUCKET_NAME,
-            s3_key,
+            "Clip uploaded through backend and linked to alert %s",
             alert_id,
         )
 
     except Exception:
-        logger.exception("Footage capture/upload failed for alert %s / camera %s", alert_id, camera.id)
-
-        if uploaded:
-            try:
-                _s3_client().delete_object(
-                    Bucket=S3_BUCKET_NAME,
-                    Key=s3_key,
-                )
-                logger.info("Removed orphaned footage object after failed metadata update: %s", s3_key)
-            except Exception:
-                logger.exception("Could not remove orphaned S3 object %s", s3_key)
+        logger.exception("Footage capture/backend upload failed for alert %s / camera %s", alert_id, camera.id)
 
     finally:
         for clip_path in (raw_path, h264_path):
