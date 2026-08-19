@@ -72,6 +72,37 @@ def model_is_valid(model: dict) -> bool:
 
     return (model_path.is_file() and model_path.stat().st_size == model["expected_bytes"])
 
+_REQUIREMENT_NAME_PATTERN = re.compile(r"^[A-Za-z0-9._]+")
+
+def _parse_requirement_names(path: Path, _seen: set[Path] | None = None) -> list[str]:
+    """Extract top-level distribution names from requirements file"""
+    seen = _seen if _seen is not None else set()
+
+    if not path.is_file():
+        return []
+
+    resolved = path.resolve()
+    if resolved in seen:
+        return []
+    seen.add(resolved)
+
+    names: list[str] = []
+
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.split("#", 1)[0].strip()
+        if not line:
+            continue
+
+        if line.startswith("-r "):
+            included = (path.parent / line[3:].strip())
+            names.extend(_parse_requirement_names(included, _seen=seen))
+            continue
+
+        match = _REQUIREMENT_NAME_PATTERN.match(line)
+        if match:
+            names.append(match.group(0))
+
+    return names
 @dataclass
 class DependencyReport:
     """Holds list of problems found by dependency check"""
