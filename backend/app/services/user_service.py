@@ -6,7 +6,6 @@ from sqlalchemy.exc import IntegrityError
 from uuid import UUID
 
 from app.core.database import DbSession
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.neighbourhood import Neighbourhood
 from app.models.neighbourhood_user import NeighbourhoodUser
 from app.models.property import Property
