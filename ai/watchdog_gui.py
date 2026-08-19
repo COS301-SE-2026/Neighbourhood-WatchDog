@@ -89,11 +89,10 @@ class WatchDogAgentApp(ttk.Frame):
         #polling messages from background
         self.after(100, self.process_ui_events)
 
-        # if self.dependency_service.is_valid():
-        #     self.show_run_screen()
-        # else:
-        #     self.show_setup_screen()
-        self.show_setup_screen()
+        if self.dependency_service.is_valid():
+            self.show_run_screen()
+        else:
+            self.show_setup_screen()
 
 
     #screen helper function
@@ -289,18 +288,6 @@ class WatchDogAgentApp(ttk.Frame):
             padx=(8, 8),
         )
 
-        self.next_button = ttk.Button(
-            button_frame,
-            text="Next >",
-            command=self.go_next,
-            style="Secondary.TButton",
-            width=12,
-        ).grid(
-            row=0,
-            column=2,
-            sticky="e",
-        )
-
         ttk.Button(
             button_frame,
             text="Exit",
@@ -314,144 +301,78 @@ class WatchDogAgentApp(ttk.Frame):
         )
 
 
-    # def show_run_screen(self) -> None:
+    def show_run_screen(self) -> None:
+        self.clear_screen()
 
-    #     self.clear_screen()
+        outer = ttk.Frame(self, 
+                padding=24,
+                style="App.TFrame",)
+        outer.pack(fill="both", expand=True)
 
-    #     outer = ttk.Frame(self, padding=24)
-    #     outer.pack(fill="both", expand=True)
+        outer.columnconfigure(0, weight=1)
 
+        ttk.Label(
+             outer, 
+             text="WatchDog Agent Setup", 
+             style="Title.TLabel"
+         ).grid(row=0, column=0, sticky="w")
 
-    #     ttk.Label(
-    #         outer, 
-    #         text="WatchDog Agent", 
-    #         font=("Segou UI", 20, "bold")
-    #     ).pack(anchor="w")
+        ttk.Label(
+            outer, 
+            text="Setup complete: agent environment is ready.",
+            style="Subtitle.TLabel",
+        ).grid(row=1, column=0, sticky="w", pady=(10, 4))
 
+        ttk.Label(
+            outer, 
+            text=(
+                "This computer is ready to connect to your WatchDog account"
+                "Click Next to continue"
+                ),
+                style="Muted.TLabel",
+                wraplength=700,
+                justify="left" 
+        ).grid(row=2, column=0, sticky="w", pady=(0, 16))
 
-    #     ttk.Label(
-    #         outer, 
-    #         text="Setup complete: agent environment is ready.",
-    #         foreground="#15803d",
-    #         font=(SEGOE_FONT, 11, "bold")
-    #     ).pack(anchor="w", pady=(10, 4))
+        details = (
+            f"Python environment: {get_venv_python()}\n"
+            f"Threat model: {THREAT_MODEL_PATH.name}"
+            f"({format_bytes(THREAT_MODEL_PATH.stat().st_size)})\n"
+            f"Person model: {PERSON_MODEL_PATH.name}"
+            f"({format_bytes(PERSON_MODEL_PATH.stat().st_size)})\n"
+        )
 
+        ttk.Label(
+             outer,
+             text=details,
+             style="Muted.TLabel",
+             justify="left",
+        ).grid(row=3, column=0, sticky="w", pady=(0, 12))
 
-    #     ttk.Label(
-    #         outer, 
-    #         text=(
-    #             "Start the local AI service to run detection and send"
-    #             " annotaion data to the backend"
-    #             ), 
-    #             wraplength=680,
-    #             justify="left" 
-    #     ).pack(anchor="w", pady=(0, 16))
+        button_frame = ttk.Frame(outer, style="App.TFrame")
+        button_frame.grid(row=4, column=0, sticky="ew", pady=(20, 0))
 
+        button_frame.columnconfigure(0, weight=1)
+        button_frame.columnconfigure(1, weight=1)
 
-    #     #service status row
-    #     status_row = ttk.Frame(outer)
-    #     status_row.pack(fill="x", pady=(0, 12))
+        self.repair_button = ttk.Button(
+            button_frame,
+            text="Repair Installation",
+            command=self.repair_installation,
+            style="Secondary.TButton",
+            width=19
+        )
+        self.repair_button.grid(row=0, column=0, sticky="w")
 
-
-    #     self.agent_status_var = StringVar(value="&#9679;" "Stopped")
-    #     self.agent_status_label = ttk.Label(
-    #         status_row, 
-    #         textvariable=self.agent_status_var, 
-    #         foreground="#b91c1c", 
-    #         font=(SEGOE_FONT, 11, "bold")
-
-    #     )
-    #     self.agent_status_label.pack(side="left")
-
-
-    #     #start stop controls
-    #     action_row = ttk.Frame(outer)
-    #     action_row.pack(fill="x", pady=(0, 16))
-
-    #     self.start_agent_button = ttk.Button(
-    #         action_row, 
-    #         text="Start Agent", 
-    #         command=self.start_agent 
-
-    #     )
-    #     self.start_agent_button.pack(side="left")
-
-
-    #     self.stop_agent_button = ttk.Button(
-    #         action_row, 
-    #         text="Stop Agent", 
-    #         command=self.stop_agent, 
-    #         state="disabled" 
-
-    #     )
-    #     self.stop_agent_button.pack(side="left", padx=(10, 0))
-
-
-
-    #     self.pair_button = ttk.Button(
-    #         action_row,
-    #         text="Pair Agent",
-    #         command=self.controller.show_pairing,
-    #     )
-    #     self.pair_button.pack(side="left", padx=5)
-
-
-    #     #live service log
-    #     ttk.Label(
-    #         outer, 
-    #         text="Agent Log", 
-    #         font=(SEGOE_FONT, 10, "bold") 
-    #     ).pack(anchor="w")
-
-    #     self.agent_log_box = scrolledtext.ScrolledText(
-    #         outer, 
-    #         height=16, 
-    #         wrap="word", 
-    #         state="disabled", 
-    #         font=("Consolas", 9) 
-    #     )
-    #     self.agent_log_box.pack(fill="both", expand=True, pady=(6, 12))
-
-
-
-    #     details = (
-    #         f"Python environment: {get_venv_python()}\n"
-    #         f"Threat model: {THREAT_MODEL_PATH.name}"
-    #         f"({format_bytes(THREAT_MODEL_PATH.stat().st_size)})\n"
-    #         f"Person model: {PERSON_MODEL_PATH.name}"
-    #         f"({format_bytes(PERSON_MODEL_PATH.stat().st_size)})\n"
-    #     )
-
-
-    #     ttk.Label(
-    #         outer, 
-    #         text=details, 
-    #         justify="left"
-    #     ).pack(anchor="w", pady=(0, 12))
-
-
-    #     controls = ttk.Frame(outer)
-    #     controls.pack(fill="x", side="bottom", pady=(8, 0))
-
-
-    #     ttk.Button(
-    #         controls, 
-    #         text="Repair Installation", 
-    #         command=self.repair_installation
-    #     ).pack(side="left")
-
-
-    #     ttk.Button(
-    #         controls,
-    #         text="Exit",
-    #         command=self.on_close,
-    #         style="Secondary.TButton",
-    #     ).pack(side="right")
-
-    #     self.set_agent_ui_state("stopped", "Stopped")
-
-
-
+        self.next_button = ttk.Button(
+            button_frame,
+            text="Next >",
+            command=self.go_next,
+            style="Primary.TButton",
+            width=12,
+        )
+        self.next_button.grid(row=0, column=1, sticky="e")
+    
     #setup lifecycle
     def start_setup(self) -> None:
         #start the installation without blocking the tkninter thread
