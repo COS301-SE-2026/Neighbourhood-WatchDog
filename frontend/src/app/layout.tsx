@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
-import { AppViewProvider } from "@/components/app-view-context"
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -31,11 +30,9 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col">
         <Providers>
           <TooltipProvider>
-            <AppViewProvider>
                 <main className="flex-1 w-full">
                   {children}
                 </main>
-            </AppViewProvider>
           </TooltipProvider>
           <Toaster position="top-right" />
         </Providers>
