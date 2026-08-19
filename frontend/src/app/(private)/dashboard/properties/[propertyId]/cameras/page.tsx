@@ -5,16 +5,16 @@ import { CameraOff, LoaderCircle, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import type { Camera } from "@/lib/validators/camera";
-import { 
+import {
     addCamera as apiAddCamera,
     fetchCameras as apiFetchCameras
- } from "@/lib/api/camera";
+} from "@/lib/api/camera";
 
- import { NewCameraCard } from "@/components/new-camera-card";
- import { usePropertyContext } from "@/hooks/use-property-context";
+import { NewCameraCard } from "@/components/new-camera-card";
+import CameraCard from "@/components/CameraCard";
+import { usePropertyContext } from "@/hooks/use-property-context";
 
-
- interface CameraProp {
+interface CameraProp {
     id: string;
     name: string;
     visibility: Camera["visibility"],
@@ -24,8 +24,7 @@ import {
 }
 
 export default function PropertyCamerasPage() {
-
-    const { activeContext, isLoading: isLoadingProperty} = usePropertyContext();
+    const { activeContext, isLoading: isLoadingProperty } = usePropertyContext();
 
     const [cameras, setCameras] = useState<CameraProp[]>([]);
     const [isLoadingCameras, setIsLoadingCameras] = useState(true);
@@ -35,11 +34,11 @@ export default function PropertyCamerasPage() {
 
     useEffect(() => {
         if (!propertyId) {
-            setCameras([]),
+            setCameras([]);
             setIsLoadingCameras(false);
             return;
         }
-        
+
         const loadCameras = async () => {
             setIsLoadingCameras(true);
 
@@ -47,13 +46,13 @@ export default function PropertyCamerasPage() {
                 const data = await apiFetchCameras(propertyId);
 
                 setCameras(
-                    data.map( (camera) => ({
+                    data.map((camera) => ({
                         id: camera.id,
                         name: camera.name,
                         location: camera.location,
                         visibility: camera.visibility,
                         enabled: camera.enabled
-                  })),
+                    })),
                 );
             } catch (error) {
                 console.error("Failed to fetch cameras", error);
@@ -62,19 +61,17 @@ export default function PropertyCamerasPage() {
             } finally {
                 setIsLoadingCameras(false);
             }
-
         }
-        
+
         loadCameras();
     }, [propertyId]);
-
 
     const handleAddCamera = async (data: { name: string, location: string, rtspUrl: string }) => {
         if (!propertyId) {
             toast.error("Select a property before adding a camera");
             return;
         }
-        
+
         try {
             const newCamera = await apiAddCamera({
                 name: data.name,
@@ -83,13 +80,13 @@ export default function PropertyCamerasPage() {
                 rtsp_url: data.rtspUrl,
                 property_id: propertyId
             });
-            setCameras((prev) => [...prev, 
+            setCameras((prev) => [...prev,
                 {
-            id: newCamera.id,
-            name: newCamera.name,
-            location: newCamera.location,
-            visibility: newCamera.visibility,
-            enabled: newCamera.enabled,
+                    id: newCamera.id,
+                    name: newCamera.name,
+                    location: newCamera.location,
+                    visibility: newCamera.visibility,
+                    enabled: newCamera.enabled,
                 }
             ]);
             setShowCard(false);
@@ -98,14 +95,13 @@ export default function PropertyCamerasPage() {
             console.error("Failed to add camera", error);
             toast.error("Failed to add camera");
         }
-        
     };
 
     if (isLoadingProperty) {
         return (
             <main className="min-h-full w-full bg-black px-6 py-7 text-white md:px-8">
                 <div className="flex min-h-64 items-center justify-center">
-                    <LoaderCircle className="size-6 animate-spin text-white/60"/>
+                    <LoaderCircle className="size-6 animate-spin text-white/60" />
                 </div>
             </main>
         )
@@ -127,13 +123,8 @@ export default function PropertyCamerasPage() {
         );
     }
 
-    const enabledCameraCount = cameras.filter(
-        (camera) => camera.enabled,
-    ).length;
-
-    const disabledCameraCount = cameras.filter(
-        (camera) => !camera.enabled,
-    ).length;
+    const enabledCameraCount = cameras.filter((camera) => camera.enabled).length;
+    const disabledCameraCount = cameras.filter((camera) => !camera.enabled).length;
 
     return (
         <main className="min-h-full w-full bg-black px-6 py-7 text-white md:px-8">
@@ -141,9 +132,8 @@ export default function PropertyCamerasPage() {
                 <header className="mb-7 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <p className="text-sm text-white/45">
-                            {activeContext.name} - {activeContext.address} 
+                            {activeContext.name} - {activeContext.address}
                         </p>
-
                         <h1 className="mt-1 text-2xl font-semibold tracking-tight">
                             Cameras
                         </h1>
@@ -161,18 +151,14 @@ export default function PropertyCamerasPage() {
 
                 <div className="mb-8 flex flex-wrap items-center gap-x-5 gap-y-2 border-y border-white/10 py-3 text-sm">
                     <span className="text-white/55">
-                        <span className="font-medium text-white">
-                            {enabledCameraCount}
-                        </span>{" "}
+                        <span className="font-medium text-white">{enabledCameraCount}</span>{" "}
                         enabled
                     </span>
 
                     <span className="flex items-center gap-2 text-white/55">
                         <span className="size-1.5 rounded-full bg-emerald-400" />
                         <span>
-                            <span className="font-medium text-white">
-                                {disabledCameraCount}
-                            </span>{" "}
+                            <span className="font-medium text-white">{disabledCameraCount}</span>{" "}
                             disabled
                         </span>
                     </span>
@@ -180,13 +166,9 @@ export default function PropertyCamerasPage() {
 
                 <section aria-labelledby="camera-feeds-heading">
                     <div className="mb-4">
-                        <h2
-                            id="camera-feeds-heading"
-                            className="text-base font-semibold"
-                        >
+                        <h2 id="camera-feeds-heading" className="text-base font-semibold">
                             Cameras
                         </h2>
-
                         <p className="mt-1 text-sm text-white/45">
                             Cameras configured for this property.
                         </p>
@@ -199,16 +181,10 @@ export default function PropertyCamerasPage() {
                     ) : cameras.length === 0 ? (
                         <div className="flex min-h-72 flex-col items-center justify-center rounded-lg border border-dashed border-white/10 bg-[#101011] px-6 py-12 text-center">
                             <CameraOff className="mb-4 size-8 text-white/30" />
-
-                            <h2 className="text-base font-semibold">
-                                No cameras added yet
-                            </h2>
-
+                            <h2 className="text-base font-semibold">No cameras added yet</h2>
                             <p className="mt-2 max-w-sm text-sm text-white/45">
-                                Add a camera to this property to start
-                                monitoring it.
+                                Add a camera to this property to start monitoring it.
                             </p>
-
                             <button
                                 type="button"
                                 onClick={() => setShowCard(true)}
@@ -221,51 +197,15 @@ export default function PropertyCamerasPage() {
                     ) : (
                         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                             {cameras.map((camera) => (
-                                <article
+                                <CameraCard
                                     key={camera.id}
-                                    className="overflow-hidden rounded-lg border border-white/10 bg-[#101011]"
-                                >
-                                    <div className="relative aspect-video bg-[#18181a]">
-                                        <div className="absolute left-3 top-3 flex items-center gap-2 text-xs font-medium text-white/75">
-                                            <span
-                                                className={`size-1.5 rounded-full ${
-                                                    camera.enabled
-                                                        ? "bg-emerald-400"
-                                                        : "bg-amber-400"
-                                                }`}
-                                            />
-
-                                            {camera.enabled
-                                                ? "Enabled"
-                                                : "Disabled"}
-                                        </div>
-
-                                        <div className="flex h-full items-center justify-center">
-                                            <span className="text-xs text-white/25">
-                                                Camera feed
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="border-t border-white/10 p-4">
-                                        <h3 className="truncate text-sm font-semibold text-white">
-                                            {camera.name}
-                                        </h3>
-
-                                        <p className="mt-1 truncate text-xs text-white/45">
-                                            {camera.location}
-                                        </p>
-
-                                        <div className="mt-4 border-t border-white/10 pt-3">
-                                            <p className="text-xs text-white/45">
-                                                Visibility:{" "}
-                                                <span className="text-white/65">
-                                                    {camera.visibility}
-                                                </span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </article>
+                                    id={camera.id}
+                                    name={camera.name}
+                                    location={camera.location}
+                                    visibility={camera.visibility}
+                                    enabled={camera.enabled}
+                                    userRole={activeContext.role === "Neighbourhood Admin" ? "NEIGHBOURHOOD_ADMIN" : "RESIDENT"}
+                                />
                             ))}
                         </div>
                     )}
