@@ -156,6 +156,7 @@ class DependencyService:
             state_file: Path | None = None,
             threat_model: Path | None = None,
             person_model: Path | None = None,
+            requirements_file : Path | None = None,
             supported_python: tuple[int, int] = SUPPORTED_PYTHON,
             install_schema_version: int = INSTALL_SCHEMA_VERSION,
             ) -> None:
@@ -163,6 +164,7 @@ class DependencyService:
         self.state_file = state_file or STATE_FILE
         self.threat_model = threat_model or THREAT_MODEL
         self.person_model = person_model or PERSON_MODEL
+        self.requirements_file = requirements_file or REQUIREMENTS_FILE
         self.supported_python = supported_python
         self.install_schema_version = install_schema_version
 
@@ -174,6 +176,12 @@ class DependencyService:
             problems.append("venv_missing")
             return DependencyReport(problems=problems)
 
+        missing_packages = find_missing_packages(self.venv_python, self.requirements_file)
+
+        if missing_packages:
+            problems.append(f"packages_missing:{','.join(missing_packages)}")
+            return DependencyReport(problems=problems)
+        
         if not model_is_valid(self.threat_model):
             problems.append("threat_model_invalid")
             
