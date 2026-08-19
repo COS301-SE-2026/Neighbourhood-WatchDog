@@ -288,18 +288,6 @@ class WatchDogAgentApp(ttk.Frame):
             padx=(8, 8),
         )
 
-        self.next_button = ttk.Button(
-            button_frame,
-            text="Next >",
-            command=self.go_next,
-            style="Secondary.TButton",
-            width=12,
-        ).grid(
-            row=0,
-            column=2,
-            sticky="e",
-        )
-
         ttk.Button(
             button_frame,
             text="Exit",
