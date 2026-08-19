@@ -1,9 +1,8 @@
 import os
 import subprocess
 import tempfile
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
-import boto3
 import cv2
 import httpx
 import keyring

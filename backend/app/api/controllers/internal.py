@@ -75,7 +75,6 @@ async def update_clip(
 
 @router.post(
     "/alerts/{alert_id}/clip",
-    response_model=AlertClipUpdateRes,
     responses={
         400: {"description": "Empty or invalid clip upload"},
         401: {"description": "Invalid or revoked edge agent credential"},
