@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import platform
+import re
+import subprocess
 import json
 import sys
 from dataclasses import dataclass, field
@@ -103,6 +105,40 @@ def _parse_requirement_names(path: Path, _seen: set[Path] | None = None) -> list
             names.append(match.group(0))
 
     return names
+
+def find_missing_packages(venv_python: Path, requirements_file: Path) -> list[str]:
+    """returns list of missing packages that are not installed in the venv"""
+    required_names = _parse_requirement_names(requirements_file)
+    if not required_names:
+        return []
+
+    check_script = (
+        "import importlib.metadata, sys\n"
+        "missing = []\n"
+        "for name in sys.argv[1:]:\n"
+        "   try:\n"
+        "       importlib.metadata.version(name)\n"
+        "   except importlib.metadata.PackageNotFoundError:\n"
+        "       missing.append(name)\n"
+        "print(','.join(missing)\n)"
+    )
+
+    try:
+        result = subprocess.run(
+            [str(venv_python), "-c", check_script, *required_names],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return required_names
+
+    if result.returncode != 0:
+        return required_names
+
+    missing = result.stdout.strip()
+    return missing.split(",") if missing else []
 @dataclass
 class DependencyReport:
     """Holds list of problems found by dependency check"""
