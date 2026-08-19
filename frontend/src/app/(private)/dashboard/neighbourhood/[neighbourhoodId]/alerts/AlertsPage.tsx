@@ -50,7 +50,7 @@ const STATUS_LABELS: Record<AlertStatus, string> = {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center" role="status" aria-live="polite">
-      <p className="text-base font-semibold" style={{ color: "var(--color-body)" }}>No alerts</p>
+      <p className="text-base font-semibold text-white/45">No alerts</p>
     </div>
   );
 }
@@ -58,9 +58,9 @@ function EmptyState() {
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-      <p className="text-base font-semibold text-threat">Failed to load alerts</p>
-      <p className="max-w-xs text-xs text-mist">{message}</p>
-      <Button size="sm" variant="outline" onClick={onRetry} className="border-steel text-mist hover:bg-steel hover:text-white text-xs">
+      <p className="text-base font-semibold text-red-400">Failed to load alerts</p>
+      <p className="max-w-xs text-xs text-white/45">{message}</p>
+      <Button size="sm" variant="outline" onClick={onRetry} className="border-white/10 bg-transparent text-white/70 hover:bg-white/5 hover:text-white text-xs">
         Try again
       </Button>
     </div>
@@ -69,9 +69,9 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 
 function ActionErrorBanner({ message, onDismiss }: { message: string; onDismiss: () => void }) {
   return (
-    <div role="alert" className="mb-4 flex items-center gap-2 rounded-lg border border-threat/30 bg-threat/10 px-4 py-3 text-sm text-threat">
+    <div role="alert" className="mb-4 flex items-center gap-2 rounded-lg border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-400">
       <span className="flex-1">{message}</span>
-      <button type="button" onClick={onDismiss} aria-label="Dismiss error" className="ml-2 text-threat/60 transition-colors hover:text-threat">✕</button>
+      <button type="button" onClick={onDismiss} aria-label="Dismiss error" className="ml-2 text-red-400/60 transition-colors hover:text-red-400">✕</button>
     </div>
   );
 }
@@ -269,39 +269,25 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
 
   return (
     <TooltipProvider>
-      <div className="w-full flex flex-col items-center px-8 py-10 bg-navy min-h-full font-sans">
+      <div className="w-full flex flex-col items-center px-8 py-10 bg-black min-h-full font-sans">
         <div className="w-full max-w-2xl">
           <header className="mb-6 text-center">
             <div className="flex items-center justify-center gap-2">
               <h1 className="text-[2rem] font-bold leading-[2.5rem] text-white">Alerts</h1>
               <span title={wsConnected ? "Live updates connected" : "Live updates disconnected"} aria-label={wsConnected ? "Live" : "Offline"}>
-                {wsConnected ? <Wifi className="h-4 w-4 text-safe mt-1" /> : <WifiOff className="h-4 w-4 text-mist/50 mt-1" />}
+                {wsConnected ? <Wifi className="h-4 w-4 text-emerald-400 mt-1" /> : <WifiOff className="h-4 w-4 text-white/30 mt-1" />}
               </span>
             </div>
 
             {(newCount > 0 || criticalCount > 0) && (
               <div className="mt-3 flex flex-wrap justify-center gap-2" aria-live="polite">
                 {newCount > 0 && (
-                  <span
-                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
-                    style={{
-                      backgroundColor: "color-mix(in srgb, var(--color-blue) 12%, transparent)",
-                      border: "1px solid color-mix(in srgb, var(--color-blue) 25%, transparent)",
-                      color: "var(--color-blue)",
-                    }}
-                  >
+                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
                     {newCount} new
                   </span>
                 )}
                 {criticalCount > 0 && (
-                  <span
-                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
-                    style={{
-                      backgroundColor: "color-mix(in srgb, var(--color-threat) 12%, transparent)",
-                      border: "1px solid color-mix(in srgb, var(--color-threat) 25%, transparent)",
-                      color: "var(--color-threat)",
-                    }}
-                  >
+                  <span className="inline-flex items-center gap-1 rounded-full border border-red-400/25 bg-red-400/10 px-3 py-1 text-xs font-semibold text-red-400">
                     {criticalCount} critical
                   </span>
                 )}
@@ -312,46 +298,40 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
           {actionError && <ActionErrorBanner message={actionError} onDismiss={() => setActionError(null)} />}
 
           <div className="mb-4 flex justify-center gap-2" role="tablist">
-            <Button role="tab" aria-selected={activeTab === "current"} size="sm" variant={activeTab === "current" ? "default" : "outline"} onClick={() => setActiveTab("current")} className="text-xs font-medium">
+            <Button role="tab" aria-selected={activeTab === "current"} size="sm" variant={activeTab === "current" ? "default" : "outline"} onClick={() => setActiveTab("current")} className={activeTab === "current" ? "bg-emerald-500 text-black hover:bg-emerald-400 text-xs font-medium" : "border-white/10 bg-transparent text-white/70 hover:bg-white/5 hover:text-white text-xs font-medium"}>
               Current
             </Button>
-            <Button role="tab" aria-selected={activeTab === "history"} size="sm" variant={activeTab === "history" ? "default" : "outline"} onClick={() => setActiveTab("history")} className="text-xs font-medium">
+            <Button role="tab" aria-selected={activeTab === "history"} size="sm" variant={activeTab === "history" ? "default" : "outline"} onClick={() => setActiveTab("history")} className={activeTab === "history" ? "bg-emerald-500 text-black hover:bg-emerald-400 text-xs font-medium" : "border-white/10 bg-transparent text-white/70 hover:bg-white/5 hover:text-white text-xs font-medium"}>
               History
             </Button>
           </div>
 
-          <Card className="bg-steel/40 border-steel rounded-xl">
-            <div className="flex items-center justify-between gap-3 rounded-t-xl border-b border-steel px-5 py-4">
+          <Card className="bg-[#101011] border-white/10 rounded-xl">
+            <div className="flex items-center justify-between gap-3 rounded-t-xl border-b border-white/10 px-5 py-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-xs font-medium transition-colors"
-                    style={{
-                      borderColor: hasActiveFilters ? "var(--color-blue)" : "var(--color-mist)",
-                      backgroundColor: "transparent",
-                      color: hasActiveFilters ? "var(--color-blue)" : "var(--color-body)",
-                    }}
+                    className={`text-xs font-medium transition-colors bg-transparent ${hasActiveFilters ? "border-emerald-400 text-emerald-400" : "border-white/10 text-white/45"}`}
                     aria-label="Open filter options"
                   >
                     <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
                     Filter
                     {hasActiveFilters && (
-                      <span className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: "var(--color-blue)", color: "var(--color-white)" }}>
+                      <span className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400 text-xs font-bold text-black">
                         !
                       </span>
                     )}
                   </Button>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent align="start" className="w-52" style={{ backgroundColor: "var(--color-white)", borderColor: "var(--color-mist)", color: "var(--color-ink)" }}>
-                  <DropdownMenuLabel className="text-xs uppercase tracking-wider" style={{ color: "var(--color-body)" }}>Severity</DropdownMenuLabel>
+                <DropdownMenuContent align="start" className="w-52 border-white/10 bg-zinc-950 text-white">
+                  <DropdownMenuLabel className="text-xs uppercase tracking-wider text-white/45">Severity</DropdownMenuLabel>
                   {ALL_SEVERITIES.map((severity) => (
                     <DropdownMenuCheckboxItem
                       key={severity}
-                      className="cursor-pointer text-sm"
-                      style={{ color: "var(--color-ink)" }}
+                      className="cursor-pointer text-sm text-white/80 focus:bg-white/5 focus:text-white"
                       checked={selectedSeverities.has(severity)}
                       onCheckedChange={(checked) => {
                         setSelectedSeverities((previous) => {
@@ -365,29 +345,29 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
                     </DropdownMenuCheckboxItem>
                   ))}
 
-                  <DropdownMenuSeparator style={{ backgroundColor: "var(--color-mist)" }} />
-                  <DropdownMenuLabel className="text-xs uppercase tracking-wider" style={{ color: "var(--color-body)" }}>Status</DropdownMenuLabel>
-                  <DropdownMenuCheckboxItem className="cursor-pointer text-sm" style={{ color: "var(--color-ink)" }} checked={selectedStatus === null} onCheckedChange={() => setSelectedStatus(null)}>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuLabel className="text-xs uppercase tracking-wider text-white/45">Status</DropdownMenuLabel>
+                  <DropdownMenuCheckboxItem className="cursor-pointer text-sm text-white/80 focus:bg-white/5 focus:text-white" checked={selectedStatus === null} onCheckedChange={() => setSelectedStatus(null)}>
                     All
                   </DropdownMenuCheckboxItem>
                   {ALL_STATUSES.map((status) => (
-                    <DropdownMenuCheckboxItem key={status} className="cursor-pointer text-sm" style={{ color: "var(--color-ink)" }} checked={selectedStatus === status} onCheckedChange={(checked) => setSelectedStatus(checked ? status : null)}>
+                    <DropdownMenuCheckboxItem key={status} className="cursor-pointer text-sm text-white/80 focus:bg-white/5 focus:text-white" checked={selectedStatus === status} onCheckedChange={(checked) => setSelectedStatus(checked ? status : null)}>
                       {STATUS_LABELS[status]}
                     </DropdownMenuCheckboxItem>
                   ))}
 
                   {activeTab === "history" && (
                     <>
-                      <DropdownMenuSeparator style={{ backgroundColor: "var(--color-mist)" }} />
-                      <DropdownMenuLabel className="text-xs uppercase tracking-wider" style={{ color: "var(--color-body)" }}>Date range</DropdownMenuLabel>
+                      <DropdownMenuSeparator className="bg-white/10" />
+                      <DropdownMenuLabel className="text-xs uppercase tracking-wider text-white/45">Date range</DropdownMenuLabel>
                       <div className="flex flex-col gap-2 px-2 py-1.5">
-                        <label className="text-xs" style={{ color: "var(--color-body)" }}>
+                        <label className="text-xs text-white/45">
                           From
-                          <input type="date" value={historyStartDate} onChange={(event) => setHisoryStartDate(event.target.value)} className="mt-1 w-full rounded border px-2 py-1 text-xs" style={{ borderColor: "var(--color-mist)", color: "var(--color-ink)" }} />
+                          <input type="date" value={historyStartDate} onChange={(event) => setHisoryStartDate(event.target.value)} className="mt-1 w-full rounded border border-white/10 bg-zinc-950 px-2 py-1 text-xs text-white" />
                         </label>
-                        <label className="text-xs" style={{ color: "var(--color-body)" }}>
+                        <label className="text-xs text-white/45">
                           To
-                          <input type="date" value={historyEndDate} onChange={(event) => setHisoryEndDate(event.target.value)} className="mt-1 w-full rounded border px-2 py-1 text-xs" style={{ borderColor: "var(--color-mist)", color: "var(--color-ink)" }} />
+                          <input type="date" value={historyEndDate} onChange={(event) => setHisoryEndDate(event.target.value)} className="mt-1 w-full rounded border border-white/10 bg-zinc-950 px-2 py-1 text-xs text-white" />
                         </label>
                       </div>
                     </>
@@ -395,7 +375,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
 
                   {hasActiveFilters && (
                     <>
-                      <DropdownMenuSeparator style={{ backgroundColor: "var(--color-mist)" }} />
+                      <DropdownMenuSeparator className="bg-white/10" />
                       <button
                         type="button"
                         onClick={() => {
@@ -404,10 +384,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
                           setHisoryStartDate("");
                           setHisoryEndDate("");
                         }}
-                        className="w-full px-2 py-1.5 text-left text-xs transition-colors"
-                        style={{ color: "var(--color-blue)" }}
-                        onMouseEnter={(event) => { event.currentTarget.style.color = "var(--color-navy)"; }}
-                        onMouseLeave={(event) => { event.currentTarget.style.color = "var(--color-blue)"; }}
+                        className="w-full px-2 py-1.5 text-left text-xs text-emerald-400 transition-colors hover:text-emerald-300"
                       >
                         Clear all filters
                       </button>
@@ -416,7 +393,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Button variant="ghost" size="sm" onClick={triggerRefresh} disabled={loading} className="text-sky hover:text-white hover:bg-steel transition-colors text-xs" aria-label="Refresh alerts">
+              <Button variant="ghost" size="sm" onClick={triggerRefresh} disabled={loading} className="text-emerald-400 hover:text-white hover:bg-white/5 transition-colors text-xs" aria-label="Refresh alerts">
                 <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
                 Refresh
               </Button>
@@ -425,7 +402,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
             <section aria-label="Alert list" aria-live="polite" className="rounded-b-xl p-4">
               {loading && alerts.length === 0 ? (
                 <div className="flex items-center justify-center py-20">
-                  <RefreshCw className="h-5 w-5 animate-spin text-sky" />
+                  <RefreshCw className="h-5 w-5 animate-spin text-emerald-400" />
                 </div>
               ) : error ? (
                 <ErrorState message={error} onRetry={() => setFetchTick((tick) => tick + 1)} />
