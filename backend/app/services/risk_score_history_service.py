@@ -137,7 +137,7 @@ async def get_neighbourhood_score_history_handler(
 
     if not neighbourhood_history:
         logger.warning("get_neigbourhood_score_history: no history found for neighbourhood_id=%s granularity=%s start=%s end=%s", neighbourhood_id, granularity, start, end)
-        raise HTTPException(status_code=404, detail="Neighbourhood does not have history")
+        return []
     
     neighbourhood_history_scores = []
     for curr_neighbourhood_risk in neighbourhood_history:
