@@ -6,14 +6,18 @@ from typing import Annotated
 from app.auth.dependencies import get_current_user, require_role
 from app.core.database import DbSession
 from app.schemas.neighbourhood_join import (
+    JoinCodeRes,
     JoinNeighbourhoodReq,
     JoinNeighbourhoodRes,
     JoinRequestRes,
+    RegenerateJoinCodeRes,
     ResolveJoinRequestReq,
     ResolveJoinRequestRes,
 )
 from app.services.neighbourhood_join_service import (
+    get_join_code_handler,
     list_join_requests_handler,
+    regenerate_join_code_handler,
     request_to_join_handler,
     resolve_join_request_handler,
 )
@@ -21,7 +25,7 @@ from app.services.neighbourhood_join_service import (
 router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
 
 @router.post(
-    "/join",
+    "/join/{property_id}",
     response_model=JoinNeighbourhoodRes,
     status_code=status.HTTP_201_CREATED,
     summary="Request to join a neighbourhood",
@@ -34,11 +38,12 @@ router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
     },
 )
 async def join_neighbourhood(
+    property_id: UUID,
     body: JoinNeighbourhoodReq,
     db: DbSession,
     claims: Annotated[dict, Depends(get_current_user)],
 ):
-    result = await request_to_join_handler(body.join_code, db, claims)
+    result = await request_to_join_handler(property_id, body.join_code, db, claims)
     return JoinNeighbourhoodRes(status=201, message="Join request submitted", data=result)
 
 
@@ -85,8 +90,38 @@ async def resolve_join_request(
     request_id: UUID,
     body: ResolveJoinRequestReq,
     db: DbSession,
-    claims: dict,
+    claims: Annotated[dict, Depends(get_current_user)],
 ):
     require_role("NEIGHBOURHOOD_ADMIN")
-    result = await resolve_join_request_handler(request_id, body.property_id, body.action, db, claims)
+    result = await resolve_join_request_handler(request_id, body.action, db, claims)
     return ResolveJoinRequestRes(status=200, message="Join request updated", data=result)
+
+@router.patch(
+    "/join-code/{neighbourhood_id}",
+    response_model=RegenerateJoinCodeRes
+)
+async def regenerate_join_code(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: Annotated[dict, Depends(get_current_user)]
+):
+    return await regenerate_join_code_handler(
+        neighbourhood_id,
+        db,
+        claims
+    )
+
+@router.get(
+    "/join-code/{neighbourhood_id}",
+    response_model=JoinCodeRes
+)
+async def get_join_code(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: Annotated[dict, Depends(get_current_user)]
+):
+    return await get_join_code_handler(
+        neighbourhood_id,
+        db, 
+        claims
+    )

@@ -59,6 +59,13 @@ interface VerifyMfaResponse {
   };
 }
 
+export interface StoredUser {
+  sub: string;
+  fullname: string;
+  email: string;
+  address: string;
+}
+
 // API Client with error handling
 const apiClient = async <T>(
   endpoint: string,
@@ -237,6 +244,21 @@ export const logout = (): void => {
   localStorage.removeItem('idToken');
   localStorage.removeItem('tokenExpiry');
 };
+
+export const getStoredUser = (): StoredUser | null => {
+  if (typeof window === 'undefined') return null;
+  if (!isAuthenticated()) return null;
+
+  const sub = localStorage.getItem('userSub');
+  if (!sub) return null;
+
+  return {
+    sub,
+    fullname: localStorage.getItem('fullname') ?? '',
+    email: localStorage.getItem('email') ?? '',
+    address: localStorage.getItem('address') ?? '',
+  }
+}
 
 export const verifyMfa = async (
   email: string,

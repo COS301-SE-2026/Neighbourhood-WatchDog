@@ -12,11 +12,18 @@ class JoinNeighbourhoodReq(BaseModel):
 class JoinRequestRes(BaseModel):
     id: UUID
     neighbourhood_id: UUID
+    property_id: UUID
     user_id: UUID
     status: str
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+class RegenerateJoinCodeRes(BaseModel):
+    join_code: str
+
+class JoinCodeRes(BaseModel):
+    join_code: str
 
 class JoinNeighbourhoodRes(BaseModel):
     status: int
@@ -25,7 +32,6 @@ class JoinNeighbourhoodRes(BaseModel):
 
 class ResolveJoinRequestReq(BaseModel):
     action: str
-    property_id: UUID | None = None
     
     @field_validator("action")
     @classmethod

@@ -3,6 +3,8 @@ import type {
   JoinRequestStatus,
 } from "@/components/shared/RequestCard";
 import { getApiBaseUrl, getAuthHeaders } from "@/lib/api/auth";
+import { JoinCodeRes } from "../validators/neighbourhoodJoin";
+import { apiCall } from "./client";
 
 const API_BASE = getApiBaseUrl();
 
@@ -66,9 +68,10 @@ function getDisplayName(
 }
 
 export async function submitJoinRequest(
+  property_id: string,
   joinCode: string,
 ): Promise<JoinRequest> {
-  const res = await fetch(`${API_BASE}/neighbourhood/join`, {
+  const res = await fetch(`${API_BASE}/neighbourhood/join/${property_id}`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify({ join_code: joinCode }),
@@ -95,9 +98,10 @@ export async function submitJoinRequest(
 }
 
 export async function fetchJoinRequests(
+  neighbourhoodId: string,
   signal?: AbortSignal,
 ): Promise<JoinRequest[]> {
-  const res = await fetch(`${API_BASE}/neighbourhood/join-requests`, {
+  const res = await fetch(`${API_BASE}/neighbourhood/join-requests/${neighbourhoodId}`, {
     headers: getAuthHeaders(),
     signal,
   });
@@ -176,4 +180,18 @@ export async function resolveJoinRequest(
     ...request,
     user_name: getDisplayName(user),
   };
+}
+
+
+export async function fetchJoinCodeRequest(neighbourhoodId: string): Promise<JoinCodeRes> {
+  return apiCall<JoinCodeRes>(`/neighbourhood/join-code/${neighbourhoodId}`, {
+      method: 'GET',
+  })
+}
+
+
+export async function regenerateJoinCodeRequest(neighbourhoodId: string): Promise<JoinCodeRes> {
+  return apiCall<JoinCodeRes>(`/neighbourhood/join-code/${neighbourhoodId}`, {
+      method: 'PATCH',
+  })
 }

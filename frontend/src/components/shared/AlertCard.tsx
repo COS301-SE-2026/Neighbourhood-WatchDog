@@ -66,51 +66,45 @@ export function getSeverity(detection_type?: string | null): AlertSeverity {
   }
 }
 
-const SEVERITY_CONFIG: Record<
-  AlertSeverity,
-  { bg: string; label: string; icon: ReactNode }
-> = {
+const SEVERITY_CONFIG: Record<AlertSeverity, { bg: string; label: string; icon: ReactNode }> = {
   CRITICAL: {
-    bg: "bg-threat text-white",
+    bg: "bg-red-600 text-white",
     label: "Critical",
     icon: <ShieldAlert className="h-3 w-3" />,
   },
   HIGH: {
-    bg: "bg-caution text-white",
+    bg: "bg-amber-600 text-white",
     label: "High",
     icon: <AlertTriangle className="h-3 w-3" />,
   },
   MEDIUM: {
-    bg: "bg-info text-white",
+    bg: "bg-sky-600 text-white",
     label: "Medium",
     icon: <Info className="h-3 w-3" />,
   },
   LOW: {
-    bg: "bg-safe text-white",
+    bg: "bg-emerald-600 text-white",
     label: "Low",
     icon: <CheckCircle2 className="h-3 w-3" />,
   },
 };
 
-const STATUS_CONFIG: Record<
-  AlertStatus,
-  { bg: string; textColor: string; label: string; icon: ReactNode }
-> = {
+const STATUS_CONFIG: Record<AlertStatus, { bg: string; textColor: string; label: string; icon: ReactNode }> = {
   NEW: {
-    bg: "bg-blue/20 border border-blue/40",
-    textColor: "text-sky",
+    bg: "bg-sky-500/15 border border-sky-500/40",
+    textColor: "text-sky-400",
     label: "New",
     icon: <Activity className="h-3 w-3" />,
   },
   ACKNOWLEDGED: {
-    bg: "bg-mist/20 border border-mist/40",
-    textColor: "text-mist",
+    bg: "bg-white/5 border border-white/15",
+    textColor: "text-white/50",
     label: "Acknowledged",
     icon: <CheckCheck className="h-3 w-3" />,
   },
   RESOLVED: {
-    bg: "bg-safe/20 border border-safe/40",
-    textColor: "text-safe",
+    bg: "bg-emerald-500/15 border border-emerald-500/40",
+    textColor: "text-emerald-400",
     label: "Resolved",
     icon: <CheckCircle2 className="h-3 w-3" />,
   },
@@ -197,8 +191,7 @@ function AlertDetailSheet({
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
         side="right"
-        className="w-full max-w-md border-l border-steel bg-navy text-white"
-        style={{ boxShadow: "var(--shadow-lg)" }}
+        className="w-full max-w-md border-l border-white/10 bg-black text-white"
       >
         <SheetHeader className="mb-6">
           <div className="flex items-center gap-2 mb-1">
@@ -208,14 +201,14 @@ function AlertDetailSheet({
           <SheetTitle className="text-white text-xl font-semibold leading-7">
             {detectionLabel(alert.detection_type)}
           </SheetTitle>
-          <SheetDescription className="text-mist text-sm">
+          <SheetDescription className="text-white/45 text-sm">
             Full alert details
           </SheetDescription>
         </SheetHeader>
 
         <div className="space-y-4">
           {alert.thumbnail_url ? (
-            <div className="relative rounded-lg overflow-hidden border border-steel">
+            <div className="relative rounded-lg overflow-hidden border border-white/10">
               <Image
                 src={alert.thumbnail_url}
                 alt="Detection thumbnail"
@@ -226,9 +219,9 @@ function AlertDetailSheet({
               />
             </div>
           ) : (
-            <div className="rounded-lg border border-steel bg-steel/40 h-40 flex items-center justify-center gap-2">
-              <Camera className="h-8 w-8 text-sky opacity-50" />
-              <span className="text-sm text-mist/60">No thumbnail</span>
+            <div className="rounded-lg border border-white/10 bg-white/5 h-40 flex items-center justify-center gap-2">
+              <Camera className="h-8 w-8 text-emerald-400 opacity-50" />
+              <span className="text-sm text-white/35">No thumbnail</span>
             </div>
           )}
 
@@ -240,7 +233,7 @@ function AlertDetailSheet({
 
           )}
 
-          <Separator className="bg-steel" />
+          <Separator className="bg-white/10" />
 
           <div className="space-y-3">
             <MetaRow label="Alert ID" value={alert.id} mono />
@@ -274,11 +267,11 @@ function AlertDetailSheet({
             )}
           </div>
 
-          <Separator className="bg-steel" />
+          <Separator className="bg-white/10" />
 
           {isNew && (
             <Button
-              className="w-full bg-blue hover:bg-sky text-white font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:ring-offset-navy"
+              className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
               onClick={() => onAcknowledge(alert.id)}
               disabled={acknowledging}
               aria-label="Acknowledge this alert"
@@ -313,7 +306,7 @@ function MetaRow({
 }) {
   return (
     <div className="flex justify-between gap-4">
-      <span className="text-xs font-medium text-mist/70 shrink-0">
+      <span className="text-xs font-medium text-white/45 shrink-0">
         {label}
       </span>
       <span
@@ -359,12 +352,12 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
       <Card
         className={[
           "relative flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-xl border transition-all duration-200",
-          "bg-steel border-steel",
+          "bg-[#101011] border-white/10",
           isNew
-            ? "hover:border-blue/60 hover:shadow-md"
+            ? "hover:border-emerald-500/50 hover:shadow-md"
             : "opacity-80 hover:opacity-100",
           isCritical && isNew
-            ? "border-threat/40 shadow-alert"
+            ? "border-red-400/40"
             : "",
         ]
           .filter(Boolean)
@@ -382,16 +375,16 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
             {detectionLabel(alert.detection_type)}
           </p>
           <div className="flex flex-wrap items-center gap-3 mt-1">
-            <span className="flex items-center gap-1 text-xs text-mist/70 font-mono">
+            <span className="flex items-center gap-1 text-xs text-white/45 font-mono">
               <Camera className="h-3 w-3" />
               {alert.camera_id.slice(0, 8)}…
             </span>
             {alert.confidence_score != null && (
-              <span className="text-xs text-mist/70 font-mono">
+              <span className="text-xs text-white/45 font-mono">
                 {(alert.confidence_score * 100).toFixed(0)}% confidence
               </span>
             )}
-            <span className="flex items-center gap-1 text-xs text-mist/60 font-mono">
+            <span className="flex items-center gap-1 text-xs text-white/40 font-mono">
               <Clock className="h-3 w-3" />
               {timeAgo(alert.created_at)}
             </span>
@@ -405,7 +398,7 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-sky hover:bg-blue/20 hover:text-white text-xs font-medium transition-colors duration-100"
+                className="text-emerald-400 hover:bg-white/5 hover:text-white text-xs font-medium transition-colors duration-100"
                 onClick={() => setDetailOpen(true)}
                 aria-label="View alert details"
               >
@@ -422,7 +415,7 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-threat/50 text-threat hover:bg-threat hover:text-white text-xs font-semibold transition-colors duration-100"
+                  className="border-red-400/40 text-red-400 hover:bg-red-500 hover:text-white text-xs font-semibold transition-colors duration-100"
                   onClick={handleBroadcast}
                   disabled={broadcasting}
                   aria-label="Broadcast alert to the neighbourhood"
@@ -451,7 +444,7 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
               <TooltipTrigger asChild>
                 <Button
                   size="sm"
-                  className="bg-blue hover:bg-sky text-white text-xs font-semibold transition-colors duration-100 focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:ring-offset-steel"
+                  className="bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-semibold transition-colors duration-100 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#101011]"
                   onClick={() => handleAcknowledge(alert.id)}
                   disabled={acknowledging || broadcasting}
                   aria-label="Acknowledge alert"
