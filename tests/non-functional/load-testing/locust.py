@@ -3,9 +3,6 @@ Locust load test for POST /internal/alerts (the endpoint for edge agent alert cr
 """
 
 import os
-import random
-import uuid
-from datetime import datetime, timezone
 
 from locust import HttpUser, task, between
 
