@@ -64,7 +64,12 @@ class WatchDogAgentApp(ttk.Frame):
         self.progress_bar = None
         self.setup_button = None
         self.repair_button = None
+        self.cancel_button = None
         self.log_box = None
+
+        self.cancel_event = threading.Event()
+        self.active_process: subprocess.Popen | None = None
+        self._process_lock = threading.Lock()
 
         self.transitioning = False
         
@@ -270,6 +275,22 @@ class WatchDogAgentApp(ttk.Frame):
         self.repair_button.grid(
             row=0,
             column=1,
+            sticky="e",
+            padx=(8, 8),
+        )
+
+        self.cancel_button = ttk.Button(
+            button_frame,
+            text="Cancel",
+            command=self.cancel_setup,
+            style=SECONDARY_TBUTTON,
+            width=12,
+            state="disabled",
+        )
+
+        self.cancel_button.grid(
+            row=0,
+            coulmn=2,
             sticky="e",
             padx=(8, 8),
         )
