@@ -1018,6 +1018,39 @@ class WatchDogAgentApp(ttk.Frame):
         else:
             self.winfo_toplevel().destroy()
 
+    def cancel_setup(self) -> None:
+        """Cancels installation"""
+        if not self.setup_running:
+            return
+
+        confirmed = messagebox.askyesno(
+            "Cancel Setup",
+            (
+                "Stop the current installation?\n\n"
+                "You can restart it later by clicking Set Up Agent again."
+            ),
+        )
+
+        if not confirmed:
+            return
+
+        if self.cancel_button is not None:
+            self.cancel_button.configure(state="disabled")
+
+        self.append_log("")
+        self.append_log("cancelling setup...")
+
+        self.cancel_event.set()
+
+        with self._process_lock:
+            process = self.active_process
+
+        if process is not None and process.poll() is None:
+            try:
+                process.terminate()
+            except OSError:
+                pass
+
 # Main needs to be removed later so that this page cannot be run directly. It should only be run through the main.py file.
 def main() -> None:
     if sys.version_info[:2] < SUPPORTED_PYTHON:
