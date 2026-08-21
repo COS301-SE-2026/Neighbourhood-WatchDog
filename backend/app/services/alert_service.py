@@ -860,6 +860,26 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
             alert.detection_type,
         )
 
+        recipients_result = await db.execute(
+            select(PropertyUser.user_id).where(
+                PropertyUser.property_id == camera.property_id
+            )
+        )
+
+        recipient_user_ids = list(
+            set(recipients_result.scalars().all())
+        )
+
+        await dispatch_notifications(
+            db=db, 
+            alert_id=alert.id,
+            camera_id=alert.camera_id,
+            user_ids=recipient_user_ids,
+            detection_type=det_type.value,
+            confidence_score=body.confidence_score,
+            frame_timestamp=frame_timestamp
+        )
+
         return InternalAlertCreateRes(alert_id=alert.id)
 
     
