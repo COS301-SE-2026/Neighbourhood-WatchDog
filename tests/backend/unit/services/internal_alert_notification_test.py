@@ -11,7 +11,7 @@ from app.services.alert_service import create_alert_for_agent_handler
 class TestInternalAlertNotifications:
     @pytest.mark.asyncio
 
-    async def test_agent_alert_dispatches_notifications_to_property_users():
+    async def test_agent_alert_dispatches_notifications_to_property_users(self):
 
         camera_id = uuid.uuid4()
         property_id = uuid.uuid4()
