@@ -1,4 +1,4 @@
-name: ZAP Baseline S3_BUCKET_NAME
+name: ZAP Baseline Scan
 
 on:
   workflow_dispatch:
