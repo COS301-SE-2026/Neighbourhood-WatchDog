@@ -20,6 +20,7 @@ from app.models.neighbourhood_user import (
     NeighbourhoodUser,
 )
 from app.models.property import Property
+from app.models.property_user import PropertyUser
 from app.models.camera import Camera
 from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.schemas.alert import (
@@ -35,7 +36,11 @@ from app.models.alert import Alert, DetectionType
 
 from app.models.neighbourhood import Neighbourhood
 from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes, NumberInPeriod, TrendGroupBy, TrendDirection, TrendBucket, TrendData, AlertResponse
-from app.services.notification_service import _format_whatsapp_message, _notify_users
+from app.services.notification_service import (
+    _format_whatsapp_message, 
+    _notify_users, 
+    dispatch_notifications
+)
 from app.models.user import User
 
 
