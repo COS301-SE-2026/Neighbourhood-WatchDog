@@ -292,7 +292,7 @@ class WatchDogAgentApp(ttk.Frame):
 
         self.cancel_button.grid(
             row=0,
-            coulmn=2,
+            column=2,
             sticky="e",
             padx=(8, 8),
         )
