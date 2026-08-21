@@ -1,0 +1,31 @@
+name: ZAP Baseline Scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'URL to scan'
+        required: false
+        default: 'https://api-staging.neighbourhoodwatchdog.co.za'
+
+jobs:
+  zap_scan:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+
+    - name: ZAP Baseline scan
+      uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 #0.12.0
+      with:
+        target: $ {{ github.event.inputs.target_url }}
+        cmd_options: '-a'
+        issue_title: 'ZAP Scan Report'
+        fail_action: false
+
+    - name: Upload ZAP Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: zap-report
+        path: report_html.html
