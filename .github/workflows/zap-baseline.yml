@@ -16,7 +16,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: ZAP Baseline scan
-      uses: zaproxy/action-baseline@vde8ad967d3548d44ef623df22cf95c3b0baf8b25 #0.12.0
+      uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 #0.12.0
       with:
         target: $ {{ github.event.inputs.target_url }}
         cmd_options: '-a'
