@@ -2,7 +2,7 @@ name: Deploy to Staging
 
 on:
   push:
-    branches: ["dev"]
+    branches: ["dev", "fix/staging-and-ci"]
 
 jobs: 
   deploy:
@@ -86,6 +86,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/app
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull backend celery_worker celery_beat mediamtx
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build backend celery_worker celery_beat mediamtx
             docker compose exec backend alembic upgrade head
