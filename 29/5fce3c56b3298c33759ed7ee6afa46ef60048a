@@ -1,0 +1,20 @@
+tests/backend/unit/models/neighbourhood_join_test.py
+  h_cf6208e37032c0 245,258,270,278,286,291
+tests/backend/unit/services/risk_score_history_test.py
+  h_cf6208e37032c0 242
+.github/workflows/ci.yml
+  h_cf6208e37032c0 123
+tests/backend/unit/services/neighbourhood_join_test.py
+  h_cf6208e37032c0 89,97,105,113,124,139,165,230,244,252,260,270,298,314,357,422-423
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "295fce3c56b3298c33759ed7ee6afa46ef60048a",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
