@@ -25,12 +25,6 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
 
-      - name: Debug token # temporary step to debug 
-        run: |
-          echo "Token length: ${#TOKEN}"
-        env:
-          TOKEN: ${{ steps.auth.outputs.token }}
-
       - name: ZAP Baseline scan
         uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 #0.12.0
         env:
@@ -39,7 +33,7 @@ jobs:
           ZAP_AUTH_HEADER_SITE: ${{ github.event.inputs.target_url }}
         with:
           target: ${{ github.event.inputs.target_url }}
-          cmd_options: '-a'
+          cmd_options: '-a --autooff'
           issue_title: 'ZAP Scan Report'
           fail_action: false
 
