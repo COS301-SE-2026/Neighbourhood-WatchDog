@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import platform
 import subprocess
 import json
 import sys
@@ -34,7 +35,12 @@ PERSON_MODEL = {
 }
 
 def resolve_requirements_file() -> Path:
-    return AI_DIR / "requirements-linux.txt"
+    """Determine what OS user is using, windows -> requirements.txt | WSL/Linux -> requirements-linux.txt"""
+    if platform.system() == "Linux":
+        candidate = AI_DIR / "requirements-linux.txt"
+        if candidate.is_file():
+            return candidate
+    return AI_DIR / "requirements.txt"
 
 REQUIREMENTS_FILE = resolve_requirements_file()
 
