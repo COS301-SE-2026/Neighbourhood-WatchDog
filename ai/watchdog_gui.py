@@ -43,6 +43,7 @@ APP_TFRAME = "App.TFrame"
 MUTED_TLABEL = "Muted.TLabel"
 REPAIR_INSTALLATION = "Repair Installation"
 SECONDARY_TBUTTON = "Secondary.TButton"
+SETUP_CANCELLED_BY_USER = "Setup cancelled by user."
 class WatchDogAgentApp(ttk.Frame):
 
     def __init__(self, parent, controller=None) -> None:
@@ -250,6 +251,7 @@ class WatchDogAgentApp(ttk.Frame):
         button_frame.columnconfigure(0, weight=1)
         button_frame.columnconfigure(1, weight=1)
         button_frame.columnconfigure(2, weight=1)
+        button_frame.columnconfigure(3, weight=1)
 
         self.setup_button = ttk.Button(
             button_frame,
@@ -303,7 +305,7 @@ class WatchDogAgentApp(ttk.Frame):
             width=12,
         ).grid(
             row=0,
-            column=2,
+            column=3,
             sticky="e",
         )
 
@@ -409,6 +411,8 @@ class WatchDogAgentApp(ttk.Frame):
             )
             return
 
+        self.cancel_event.clear()
+
         self.setup_running = True
 
         if self.setup_button is not None:
@@ -416,6 +420,9 @@ class WatchDogAgentApp(ttk.Frame):
 
         if self.repair_button is not None:
             self.repair_button.configure(state="disabled")
+
+        if self.cancel_button is not None:
+            self.cancel_button.configure(state="normal")
 
         self.progress_var.set(0)
 
@@ -434,6 +441,7 @@ class WatchDogAgentApp(ttk.Frame):
 
     def run_setup_worker(self) -> None:
         try:
+            self._raise_if_cancelled()
             self.emit("status", "Preparing local folders...")
             self.emit("progress", 3)
 
@@ -461,7 +469,7 @@ class WatchDogAgentApp(ttk.Frame):
                     "Python interpreter could not be found."
                 )
 
-
+            self._raise_if_cancelled()
             self.emit("status", "Upgrading pip...")
             self.emit("progress", 15)
             self.run_command_stream(
@@ -477,7 +485,7 @@ class WatchDogAgentApp(ttk.Frame):
                 "Pip upgrade"
             )
 
-
+            self._raise_if_cancelled()
             self.emit("status", "Installing AI dependencies - this can take SEVERAL MINUTES...")
             self.emit("log", "")
             self.emit("log", "Installing requirements.")
@@ -502,25 +510,27 @@ class WatchDogAgentApp(ttk.Frame):
             finally:
                 self.emit("indeterminate", False)
 
-
+            self._raise_if_cancelled()
             self.emit("status", "Applying Python 3.12 DeepSORT compatibility patch...")
             self.emit("progress", 45)
 
             self.patch_deep_sort(venv_python)
 
+            self._raise_if_cancelled()
             self.download_model(
                 model=THREAT_MODEL,
                 progress_start=50, 
                 progress_span=23
             )
 
-
+            self._raise_if_cancelled()
             self.download_model(
                 model=PERSON_MODEL,
                 progress_start=73, 
                 progress_span=22
             )
 
+            self._raise_if_cancelled()
             self.emit("status", "Validating installations...")
             self.emit("progress", 97)
 
@@ -543,6 +553,11 @@ class WatchDogAgentApp(ttk.Frame):
 
         except Exception as error:
             self.emit("indeterminate", False)
+
+            if self.cancel_event.is_set():
+                self.emit("cancelled", None)
+                return
+            
             self.emit("error", str(error))
             self.emit("log", "")
             self.emit("log", "=== Detailed setup error ===")
@@ -550,7 +565,10 @@ class WatchDogAgentApp(ttk.Frame):
             self.emit("log", PARTITION_LINE)
 
 
-
+    def _raise_if_cancelled(self) -> None:
+        if self.cancel_event.is_set():
+            raise RuntimeError(SETUP_CANCELLED_BY_USER)
+        
     def run_command_stream(self, command: list[str], description: str) -> None:
         #running a command and streams the output lines to the gui log
 
@@ -575,16 +593,25 @@ class WatchDogAgentApp(ttk.Frame):
 
         )
 
+        with self._process_lock:
+            self.active_process = process
 
-        assert process.stdout is not None
+        try: 
+            assert process.stdout is not None
 
+            for line in process.stdout:
+                cleaned = line.rstrip()
+                if cleaned:
+                    self.emit("log", cleaned)
 
-        for line in process.stdout:
-            cleaned = line.rstrip()
-            if cleaned:
-                self.emit("log", cleaned)
+            return_code = process.wait()
+        finally:
+            with self._process_lock:
+                if self.active_process is process:
+                    self.active_process = None
 
-        return_code = process.wait()
+        if self.cancel_event.is_set():
+            raise RuntimeError(SETUP_CANCELLED_BY_USER)
 
 
         if return_code != 0:
@@ -750,29 +777,41 @@ class WatchDogAgentApp(ttk.Frame):
             errors="replace",
         )
 
-        # Poll the growing .part file to provide byte-level progress to Tkinter.
-        while process.poll() is None:
-            if temporary_path.exists():
-                downloaded = temporary_path.stat().st_size
-                ratio = min(downloaded / expected_bytes, 1.0)
+        with self._process_lock:
+            self.active_process = process
 
-                self.emit(
-                    "progress",
-                    progress_start + (progress_span * ratio),
-                )
-                self.emit(
-                    "status",
-                    (
-                        f"Downloading {model_path.name}: "
-                        f"{format_bytes(downloaded)} / "
-                        f"{format_bytes(expected_bytes)}"
-                    ),
-                )
+        try:
+            # Poll the growing .part file to provide byte-level progress to Tkinter.
+            while process.poll() is None:
+                if temporary_path.exists():
+                    downloaded = temporary_path.stat().st_size
+                    ratio = min(downloaded / expected_bytes, 1.0)
 
-            time.sleep(0.2)
+                    self.emit(
+                        "progress",
+                        progress_start + (progress_span * ratio),
+                    )
+                    self.emit(
+                        "status",
+                        (
+                            f"Downloading {model_path.name}: "
+                            f"{format_bytes(downloaded)} / "
+                            f"{format_bytes(expected_bytes)}"
+                        ),
+                    )
 
-        _, stderr_output = process.communicate()
+                time.sleep(0.2)
 
+            _, stderr_output = process.communicate()
+        finally:
+            with self._process_lock:
+                if self.active_process is process:
+                    self.active_process = None
+
+        if self.cancel_event.is_set():
+            temporary_path.unlink(missing_ok=True)
+            raise RuntimeError(SETUP_CANCELLED_BY_USER)
+        
         if process.returncode != 0:
             temporary_path.unlink(missing_ok=True)
 
@@ -846,6 +885,7 @@ class WatchDogAgentApp(ttk.Frame):
             "indeterminate": self._handle_indeterminate,
             "complete": self._handle_complete,
             "error": self._handle_error,
+            "cancelled": self._handle_cancelled,
             # "agent_log": self._handle_agent_log,
             # "agent_health": self._handle_agent_health,
             # "agent_stop_error": self._handle_agent_stop_error
@@ -924,6 +964,25 @@ class WatchDogAgentApp(ttk.Frame):
                 "and click Set Up Agent to retry."
             )
         )
+
+    def _handle_cancelled(self, _payload: object) -> None:
+        self.setup_running = False
+        self.stop_indeterminate_progress()
+
+        if self.status_var is not None:
+            self.status_var.set("Setup cancelld.")
+
+        self.append_log("")
+        self.append_log("Setup was cancelled.")
+
+        if self.setup_button is not None:
+            self.setup_button.configure(state="normal")
+
+        if self.repair_button is not None:
+            self.repair_button.configure(state="normal")
+
+        if self.cancel_button is not None:
+            self.cancel_button.configure(state="disabled")
 
     def start_indeterminate_progress(self) -> None:
         if self.progress_bar is None:
