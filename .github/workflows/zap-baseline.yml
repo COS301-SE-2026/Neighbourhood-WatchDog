@@ -30,7 +30,7 @@ jobs:
         env:
           ZAP_AUTH_HEADER: "Authorization"
           ZAP_AUTH_HEADER_VALUE: "Bearer ${{ steps.auth.outputs.token }}"
-          ZAP_AUTH_HEADER_SITE: ${{ github.event.inputs.target_url }}
+          ZAP_AUTH_HEADER_SITE: "https://api-staging.neighbourhoodwatchdog.co.za" # ${{ github.event.inputs.target_url }}
         with:
           target: ${{ github.event.inputs.target_url }}
           cmd_options: '-a --autooff'
