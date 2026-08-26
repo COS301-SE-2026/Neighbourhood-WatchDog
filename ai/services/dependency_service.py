@@ -20,6 +20,10 @@ PERSON_MODEL_PATH = WEIGHTS_DIR / "yolov8n.pt"
 SUPPORTED_PYTHON = (3, 12)
 INSTALL_SCHEMA_VERSION = 1
 
+#Measured dependency disk size by installing dependencies on windows and linux
+WINDOWS_SIZE = 2_020_000_000 #2.02GB
+LINUX_SIZE = 8_010_000_000 #8.01GB
+
 THREAT_MODEL = {
     "name": "Threat-detection model (best.pt)",
     "path": THREAT_MODEL_PATH,
@@ -55,6 +59,13 @@ def get_venv_python() -> Path:
 
     #linux dir
     return VENV_DIR / "bin" / "python"
+
+def get_dependency_bytes() -> int:
+    """Returns measured dependency disk-space requirement for OS"""
+    if platform.system() == "Linux":    
+        return LINUX_SIZE
+
+    return WINDOWS_SIZE
 
 def format_bytes(value: int) -> str:
     """format bytes for readability in UI"""
