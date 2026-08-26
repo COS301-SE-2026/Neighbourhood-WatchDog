@@ -77,6 +77,21 @@ def get_available_disk_space(path: Path | None = None) -> int:
     except OSError:
         return 0
 
+def has_enough_disk_space(
+        required_byetes: int | None = None,
+        path: Path | None = None,
+) -> bool:
+    "Returns whether enough disk space to install dependencies"
+
+    required = (required_byetes 
+                if required_byetes is not None 
+                else get_dependency_bytes()
+    )
+
+    available = get_available_disk_space(path)
+
+    return available >= required
+
 def format_bytes(value: int) -> str:
     """format bytes for readability in UI"""
     size = float(value)
