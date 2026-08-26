@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import shutil
 import platform
 import subprocess
 import json
@@ -66,6 +67,15 @@ def get_dependency_bytes() -> int:
         return LINUX_SIZE
 
     return WINDOWS_SIZE
+
+def get_available_disk_space(path: Path | None = None) -> int:
+    """Returns avaliable disk space"""
+    target = path | AI_DIR
+
+    try:
+        return shutil.disk_usage(target).free
+    except OSError:
+        return 0
 
 def format_bytes(value: int) -> str:
     """format bytes for readability in UI"""
