@@ -253,6 +253,20 @@ class WatchDogAgentApp(ttk.Frame):
             pady=(8, 0),
         )
 
+        self.refresh_disk_button = ttk.Button(
+            outer,
+            text="Refresh Disk Space",
+            command=self.refresh_disk_space,
+            style=SECONDARY_TBUTTON,
+            width=19,
+        )
+        self.refresh_disk_button.grid(
+            row=5,
+            column=0,
+            columnspan=5,
+            pady=(0, 10),
+        )
+
         self.status_var = StringVar(
             value="Ready to prepare this computer."
         )
@@ -262,7 +276,7 @@ class WatchDogAgentApp(ttk.Frame):
             textvariable=self.status_var,
             font=(SEGOE_FONT, 10, "bold"),
         ).grid(
-            row=4,
+            row=6,
             column=0,
             sticky="w",
             pady=(18, 8),
@@ -273,7 +287,7 @@ class WatchDogAgentApp(ttk.Frame):
             text="Installation Progress",
             font=(SEGOE_FONT, 10, "bold"),
         ).grid(
-            row=5,
+            row=7,
             column=0,
             sticky="w",
         )
@@ -287,7 +301,7 @@ class WatchDogAgentApp(ttk.Frame):
             mode="determinate",
         )
         self.progress_bar.grid(
-            row=6,
+            row=8,
             column=0,
             sticky="ew",
             pady=(5, 15),
@@ -298,7 +312,7 @@ class WatchDogAgentApp(ttk.Frame):
             text="Installation Log",
             font=(SEGOE_FONT, 10, "bold"),
         ).grid(
-            row=7,
+            row=9,
             column=0,
             sticky="w",
         )
@@ -308,7 +322,7 @@ class WatchDogAgentApp(ttk.Frame):
             style=APP_TFRAME,
         )
         log_frame.grid(
-            row=8,
+            row=10,
             column=0,
             sticky="nsew",
             pady=(6, 0),
@@ -334,7 +348,7 @@ class WatchDogAgentApp(ttk.Frame):
             style=APP_TFRAME,
         )
         button_frame.grid(
-            row=9,
+            row=11,
             column=0,
             sticky="ew",
             pady=(20, 0),
@@ -344,7 +358,6 @@ class WatchDogAgentApp(ttk.Frame):
         button_frame.columnconfigure(1, weight=1)
         button_frame.columnconfigure(2, weight=1)
         button_frame.columnconfigure(3, weight=1)
-        button_frame.columnconfigure(4, weight=1)
 
         self.setup_button = ttk.Button(
             button_frame,
@@ -357,20 +370,6 @@ class WatchDogAgentApp(ttk.Frame):
             row=0,
             column=0,
             sticky="w",
-        )
-
-        self.refresh_disk_button = ttk.Button(
-            button_frame,
-            text="Refresh Disk Space",
-            command=self.refresh_disk_space,
-            style=SECONDARY_TBUTTON,
-            width=19,
-        )
-        self.refresh_disk_button.grid(
-            row=0,
-            column=1,
-            sticky="w",
-            padx=(8, 8),
         )
 
         self.repair_button = ttk.Button(
@@ -442,8 +441,8 @@ class WatchDogAgentApp(ttk.Frame):
         ttk.Label(
             outer, 
             text=(
-                "This computer is ready to connect to your WatchDog account"
-                "Click Next to continue"
+                "This computer is ready to connect to your WatchDog account. "
+                "Click Next to continue."
                 ),
                 style=MUTED_TLABEL,
                 wraplength=700,
@@ -452,9 +451,9 @@ class WatchDogAgentApp(ttk.Frame):
 
         details = (
             f"Python environment: {get_venv_python()}\n"
-            f"Threat model: {THREAT_MODEL_PATH.name}"
+            f"Threat model: {THREAT_MODEL_PATH.name} "
             f"({format_bytes(THREAT_MODEL_PATH.stat().st_size)})\n"
-            f"Person model: {PERSON_MODEL_PATH.name}"
+            f"Person model: {PERSON_MODEL_PATH.name} "
             f"({format_bytes(PERSON_MODEL_PATH.stat().st_size)})\n"
         )
 
