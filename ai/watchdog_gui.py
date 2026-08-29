@@ -108,7 +108,7 @@ class WatchDogAgentApp(ttk.Frame):
         outer.pack(fill="both", expand=True)
 
         outer.columnconfigure(0, weight=1)
-        outer.rowconfigure(8, weight=1)
+        outer.rowconfigure(10, weight=1)
 
         ttk.Label(
             outer,
@@ -328,11 +328,9 @@ class WatchDogAgentApp(ttk.Frame):
             pady=(6, 0),
         )
 
-        outer.rowconfigure(8, weight=1)
-
         self.log_box = scrolledtext.ScrolledText(
             log_frame,
-            height=16,
+            height=10,
             wrap="word",
             state="disabled",
             font=("Consolas", 10),
@@ -546,7 +544,7 @@ class WatchDogAgentApp(ttk.Frame):
         if self.repair_button is not None:
             self.repair_button.configure(state="disabled")
 
-        if getattr(self, "refresh_disk_button", None) is not None:
+        if self.refresh_disk_button is not None:
             self.refresh_disk_button.configure(state="disabled")
 
         if self.cancel_button is not None:
@@ -1293,7 +1291,8 @@ def main() -> None:
         raise SystemExit(1)
 
     root = Tk()
-
+    root.geometry("900x900")
+    root.minsize(850, 800)
   
     style = ttk.Style(root)
     available_themes = style.theme_names()
