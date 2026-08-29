@@ -65,6 +65,7 @@ class WatchDogAgentApp(ttk.Frame):
 
         self.status_var = None
         self.progress_var = None
+        self.disk_status_var = None
         self.progress_bar = None
         self.setup_button = None
         self.repair_button = None
@@ -107,7 +108,7 @@ class WatchDogAgentApp(ttk.Frame):
         outer.pack(fill="both", expand=True)
 
         outer.columnconfigure(0, weight=1)
-        outer.rowconfigure(7, weight=1)
+        outer.rowconfigure(8, weight=1)
 
         ttk.Label(
             outer,
@@ -167,7 +168,6 @@ class WatchDogAgentApp(ttk.Frame):
         disk_report = get_disk_space_report()
         required_bytes = int(disk_report["required_bytes"])
         available_bytes = int(disk_report["available_bytes"])
-        enough_space = bool(disk_report["enough_space"])
 
         disk_frame = ttk.Frame(
             outer,
@@ -644,6 +644,23 @@ class WatchDogAgentApp(ttk.Frame):
     def _raise_if_cancelled(self) -> None:
         if self.cancel_event.is_set():
             raise RuntimeError(SETUP_CANCELLED_BY_USER)
+
+    def _set_disk_status(self, report: dict[str, int | bool]) -> None:
+        """Updates the setup screen with current disk space status"""
+        if self.status_var is None:
+            return
+
+        shortage_bytes = int(report["shortage_bytes"])
+        enough_space = bool(report["enough_space"])
+
+        if enough_space:
+            self.disk_status_var.set(
+                "Enough disk space is available."
+            )
+        else:
+            self.disk_status_var.set(
+                f"Insufficient disk space. You need {format_bytes(shortage_bytes)} more before installation can begin."
+            )
         
     def run_command_stream(self, command: list[str], description: str) -> None:
         #running a command and streams the output lines to the gui log
