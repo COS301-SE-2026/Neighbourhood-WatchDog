@@ -92,6 +92,17 @@ def has_enough_disk_space(
 
     return available >= required
 
+def get_disk_space_report() -> dict[str, int | bool]:
+    """Returns disk space info needed by UI"""
+    required = get_dependency_bytes()
+    available = get_available_disk_space()
+
+    return{
+        "required_bytes": required,
+        "available_bytes": available,
+        "enough_space": available >= required,
+    }
+
 def format_bytes(value: int) -> str:
     """format bytes for readability in UI"""
     size = float(value)
