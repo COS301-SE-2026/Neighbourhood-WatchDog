@@ -1142,6 +1142,9 @@ class WatchDogAgentApp(ttk.Frame):
         if self.cancel_button is not None:
             self.cancel_button.configure(state="disabled")
 
+        if self.refresh_disk_button is not None:
+            self.refresh_disk_button.configure(state="normal")
+
     def start_indeterminate_progress(self) -> None:
         if self.progress_bar is None:
             return
