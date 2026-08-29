@@ -14,29 +14,39 @@ export default function RiskThresholdPage() {
     const [lowMax, setLowMax] = useState("");
     const [mediumMax, setMediumMax] = useState("");
     const [updatedAt, setUpdatedAt] = useState<string | null>(null);
-    const [isLoadingThreshold, setIsLoadingThreshold] = useState(true);
+    const [resolvedNeighbourhoodId, setResolvedNeighbourhoodId] = useState<string | null>(null); 
     const [isSaving, setIsSaving] = useState(false);
 
+    const activeNeighbourhoodId = activeContext?.neighbourhoodId ?? null;
+
+    const isLoadingThreshold = 
+        activeNeighbourhoodId !== null && resolvedNeighbourhoodId !== activeNeighbourhoodId;
+
     useEffect(() => {
-        if (!activeContext || activeContext.neighbourhoodId === null) {
-            setIsLoadingThreshold(false);
+        if (!activeNeighbourhoodId) {
             return;
         }
-        const neighbourhoodId = activeContext.neighbourhoodId;
-        (async () => {
-            setIsLoadingThreshold(true);
-            try {
-                const { data } = await fetchNeighbourhoodRiskThreshold(neighbourhoodId);
+
+        let cancelled = false;
+        
+        fetchNeighbourhoodRiskThreshold(activeNeighbourhoodId)
+            .then(({data}) => {
+                if (cancelled) return;
                 setLowMax(String(data.low_max));
                 setMediumMax(String(data.medium_max));
                 setUpdatedAt(data.updated_at);
-            } catch (error) {
+                setResolvedNeighbourhoodId(activeNeighbourhoodId);
+            })
+            .catch((error) => {
+                if (cancelled) return;
                 toast.error(error instanceof Error ? error.message : "Failed to load risk threshold.");
-            } finally {
-                setIsLoadingThreshold(false);
-            }
-        })();
-    }, [activeContext]);
+                setResolvedNeighbourhoodId(activeNeighbourhoodId);
+            });
+
+        return () => {
+            cancelled = true;
+        }
+    }, [activeNeighbourhoodId]);
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
