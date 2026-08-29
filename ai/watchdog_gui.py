@@ -33,9 +33,8 @@ from services.dependency_service import (
     format_bytes,
     get_venv_python,
     model_is_valid,
-    get_available_disk_space,
-    get_dependency_bytes,
     get_disk_space_report,
+    has_enough_disk_space,
 )
 
 # CONSTANTS
@@ -519,6 +518,25 @@ class WatchDogAgentApp(ttk.Frame):
             )
             return
 
+        disk_report = get_disk_space_report()
+        if not has_enough_disk_space(int(disk_report["required_bytes"]), AI_DIR):
+            required_bytes = int(disk_report["required_bytes"])
+            available_bytes = int(disk_report["available_bytes"])
+            shortage_bytes = int(disk_report["shortage_bytes"])
+
+            self._set_disk_status(disk_report)
+            messagebox.showerror(
+                "Insufficient Disk Space",
+                (
+                    "WatchDog cannot start the installation because there is "
+                    "not enough disk space.\n\n"
+                    f"Required: {format_bytes(required_bytes)}\n"
+                    f"Available: {format_bytes(available_bytes)}\n"
+                    f"Additional space needed: {format_bytes(shortage_bytes)}"
+                ),
+            )
+            return
+
         self.cancel_event.clear()
 
         self.setup_running = True
@@ -528,6 +546,9 @@ class WatchDogAgentApp(ttk.Frame):
 
         if self.repair_button is not None:
             self.repair_button.configure(state="disabled")
+
+        if getattr(self, "refresh_disk_button", None) is not None:
+            self.refresh_disk_button.configure(state="disabled")
 
         if self.cancel_button is not None:
             self.cancel_button.configure(state="normal")
