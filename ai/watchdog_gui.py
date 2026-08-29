@@ -197,6 +197,26 @@ class WatchDogAgentApp(ttk.Frame):
             pady=(0, 8),
         )
 
+        ttk.Label(
+            disk_frame,
+            text="Required:",
+            style=MUTED_TLABEL,
+        ).grid(
+            row=1,
+            column=0,
+            sticky="w",
+            padx=(0, 20),
+        )
+
+        ttk.Label(
+            disk_frame,
+            text=format_bytes(required_bytes),
+        ).grid(
+            row=1,
+            column=1,
+            sticky="w",
+        )
+
         self.status_var = StringVar(
             value="Ready to prepare this computer."
         )
