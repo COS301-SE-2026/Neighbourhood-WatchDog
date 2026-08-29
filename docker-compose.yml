@@ -122,6 +122,7 @@ services:
       SKIP_DB_INIT: "true"
       MEDIAMTX_PUBLISH_MASTER_KEY: ${MEDIAMTX_PUBLISH_MASTER_KEY}
       INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
+      FAILOVER_CONTROLLER_TOKEN: ${FAILOVER_CONTROLLER_TOKEN}
     volumes:
       - ./backend:/app
     depends_on:
