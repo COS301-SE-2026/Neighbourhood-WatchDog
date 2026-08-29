@@ -27,24 +27,23 @@ export default function PropertyCamerasPage() {
     const { activeContext, isLoading: isLoadingProperty } = usePropertyContext();
 
     const [cameras, setCameras] = useState<CameraProp[]>([]);
-    const [isLoadingCameras, setIsLoadingCameras] = useState(true);
+    const [resolvedPropertyId, setResolvedPropertyId] = useState<string | null>(null);
     const [showCard, setShowCard] = useState(false);
 
-    const propertyId = activeContext?.propertyId;
+    const propertyId = activeContext?.propertyId ?? null;
+
+    const isLoadingCameras = propertyId !== null && resolvedPropertyId !== propertyId;
 
     useEffect(() => {
         if (!propertyId) {
-            setCameras([]);
-            setIsLoadingCameras(false);
             return;
         }
 
-        const loadCameras = async () => {
-            setIsLoadingCameras(true);
+        let cancelled = false;
 
-            try {
-                const data = await apiFetchCameras(propertyId);
-
+        apiFetchCameras(propertyId)
+            .then((data) => {
+                if (cancelled) return;
                 setCameras(
                     data.map((camera) => ({
                         id: camera.id,
@@ -54,16 +53,20 @@ export default function PropertyCamerasPage() {
                         enabled: camera.enabled
                     })),
                 );
-            } catch (error) {
+
+                setResolvedPropertyId(propertyId);
+            })
+            .catch((error) => {
+                if (cancelled) return;
                 console.error("Failed to fetch cameras", error);
                 toast.error("Failed to load cameras");
                 setCameras([]);
-            } finally {
-                setIsLoadingCameras(false);
-            }
+                setResolvedPropertyId(propertyId);
+            });
+        return () => {
+            cancelled = true;
         }
 
-        loadCameras();
     }, [propertyId]);
 
     const handleAddCamera = async (data: { name: string, location: string, rtspUrl: string }) => {
