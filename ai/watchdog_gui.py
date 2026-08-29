@@ -237,6 +237,22 @@ class WatchDogAgentApp(ttk.Frame):
             sticky="w",
         )
 
+        self.disk_status_var = StringVar()
+        self._set_disk_status(disk_report)
+
+        ttk.Label(
+            disk_frame,
+            textvariable=self.disk_status_var,
+            wraplength=650,
+            justify="left",
+        ).grid(
+            row=3,
+            column=0,
+            columnspan=2,
+            sticky="w",
+            pady=(8, 0),
+        )
+
         self.status_var = StringVar(
             value="Ready to prepare this computer."
         )
