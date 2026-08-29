@@ -70,7 +70,7 @@ def get_dependency_bytes() -> int:
 
 def get_available_disk_space(path: Path | None = None) -> int:
     """Returns avaliable disk space"""
-    target = path | AI_DIR
+    target = path or AI_DIR
 
     try:
         return shutil.disk_usage(target).free
@@ -101,6 +101,7 @@ def get_disk_space_report() -> dict[str, int | bool]:
         "required_bytes": required,
         "available_bytes": available,
         "enough_space": available >= required,
+        "shortage_bytes": max(required - available, 0),
     }
 
 def format_bytes(value: int) -> str:
