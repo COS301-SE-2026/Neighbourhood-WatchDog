@@ -33,6 +33,9 @@ from services.dependency_service import (
     format_bytes,
     get_venv_python,
     model_is_valid,
+    get_available_disk_space,
+    get_dependency_bytes,
+    get_disk_space_report,
 )
 
 # CONSTANTS
@@ -160,6 +163,39 @@ class WatchDogAgentApp(ttk.Frame):
                 sticky="w",
                 pady=(8, 0),
             )
+
+        disk_report = get_disk_space_report()
+        required_bytes = int(disk_report["required_bytes"])
+        available_bytes = int(disk_report["available_bytes"])
+        enough_space = bool(disk_report["enough_space"])
+
+        disk_frame = ttk.Frame(
+            outer,
+            padding=14,
+            style=APP_TFRAME,
+            relief="groove",
+        )
+
+        disk_frame.grid(
+            row=4,
+            column=0,
+            sticky="ew",
+            pady=(18,8),
+        )
+
+        disk_frame.columnconfigure(1, weight=1)
+
+        ttk.Label(
+            disk_frame,
+            text="Disk Space",
+            font=(SEGOE_FONT, 10, "bold"),
+        ).grid(
+            row=0,
+            column=0,
+            columnspan=2,
+            sticky="w",
+            pady=(0, 8),
+        )
 
         self.status_var = StringVar(
             value="Ready to prepare this computer."
