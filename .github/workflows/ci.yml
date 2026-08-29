@@ -17,7 +17,6 @@ jobs:
         uses: astral-sh/ruff-action@278981a28ce3188b1e39527901f38254bf3aac89  #v4.1.0
         with:
           version: "0.16.4"
-          checksum: "11c76bf48fdac06b2f240cba502eda96da4dce77" # checks the rust version is correct
 
       - name: Check using ruff
         run: ruff check

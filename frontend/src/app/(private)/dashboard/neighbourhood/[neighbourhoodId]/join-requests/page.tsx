@@ -30,6 +30,7 @@ import {
     ApiError,
 } from "@/lib/api/neighbourhoodJoin";
 import { useUserContext } from "@/hooks/use-user-context";
+import { resolve } from "path";
 
 const ALL_STATUSES: JoinRequestStatus[] = [
     "PENDING",
@@ -182,8 +183,11 @@ export default function JoinRequestsPage() {
         null,
     );
 
-    const [joinCode, setJoinCode] = useState<string | null>(null);
-    const [joinCodeLoading, setJoinCodeLoading] = useState(true);
+    const [joinCodeState, setJoinCodeState] = useState<{
+        code: string | null;
+        resolvedId: string | null;
+    }>({code: null, resolvedId: null});
+    const joinCodeLoading = joinCodeState.resolvedId !== neighbourhoodId;
     const [regeneratingJoinCode, setRegeneratingJoinCode] = useState(false);
     
 
@@ -243,13 +247,14 @@ export default function JoinRequestsPage() {
     useEffect(() => {
         const controller = new AbortController();
 
-        setJoinCodeLoading(true);
-
         fetchJoinCodeRequest(neighbourhoodId)
             .then((data) => {
                 if (!mountedRef.current) return;
 
-                setJoinCode(data.join_code);
+                setJoinCodeState({
+                    code: data.join_code,
+                    resolvedId: neighbourhoodId,
+                });
             })
             .catch((err: unknown) => {
                 if (!mountedRef.current) return;
@@ -268,11 +273,7 @@ export default function JoinRequestsPage() {
                             ? err.message
                             : "Failed to load join code.",
                 );
-            })
-            .finally(() => {
-                if (mountedRef.current) {
-                    setJoinCodeLoading(false);
-                }
+                setJoinCodeState((s) => ({...s, resolvedId: neighbourhoodId}));
             });
 
         return () => controller.abort();
@@ -338,7 +339,10 @@ export default function JoinRequestsPage() {
         try {
             const data = await regenerateJoinCodeRequest(neighbourhoodId);
 
-            setJoinCode(data.join_code);
+            setJoinCodeState({
+                code: data.join_code,
+                resolvedId: neighbourhoodId,
+            });
         } catch (err) {
             setActionError(
                 err instanceof ApiError
@@ -400,14 +404,14 @@ export default function JoinRequestsPage() {
                                 ) : (
                                     <>
                                         <code className="rounded-md bg-white/5 px-2.5 py-1 font-mono text-sm font-medium tracking-widest text-white">
-                                            {joinCode ?? "Unavailable"}
+                                            {joinCodeState.code ?? "Unavailable"}
                                         </code>
 
                                         <button
                                             type="button"
                                             onClick={handleRegenerateJoinCode}
                                             disabled={
-                                                regeneratingJoinCode || !joinCode
+                                                regeneratingJoinCode || !joinCodeState.code
                                             }
                                             className="inline-flex size-7 items-center justify-center rounded-md text-white/40 transition-colors hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                                             title="Regenerate join code"
