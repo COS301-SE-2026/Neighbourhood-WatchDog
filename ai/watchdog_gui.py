@@ -70,6 +70,7 @@ class WatchDogAgentApp(ttk.Frame):
         self.setup_button = None
         self.repair_button = None
         self.cancel_button = None
+        self.refresh_disk_button = None
         self.log_box = None
 
         self.cancel_event = threading.Event()
@@ -344,6 +345,7 @@ class WatchDogAgentApp(ttk.Frame):
         button_frame.columnconfigure(1, weight=1)
         button_frame.columnconfigure(2, weight=1)
         button_frame.columnconfigure(3, weight=1)
+        button_frame.columnconfigure(4, weight=1)
 
         self.setup_button = ttk.Button(
             button_frame,
@@ -356,6 +358,20 @@ class WatchDogAgentApp(ttk.Frame):
             row=0,
             column=0,
             sticky="w",
+        )
+
+        self.refresh_disk_button = ttk.Button(
+            button_frame,
+            text="Refresh Disk Space",
+            command=self.refresh_disk_space,
+            style=SECONDARY_TBUTTON,
+            width=19,
+        )
+        self.refresh_disk_button.grid(
+            row=0,
+            column=1,
+            sticky="w",
+            padx=(8, 8),
         )
 
         self.repair_button = ttk.Button(
