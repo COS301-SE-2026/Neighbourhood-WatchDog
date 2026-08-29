@@ -100,7 +100,7 @@ def get_disk_space_report() -> dict[str, int | bool]:
     return{
         "required_bytes": required,
         "available_bytes": available,
-        "enough_space": available >= required,
+        "enough_space": has_enough_disk_space(required, AI_DIR),
         "shortage_bytes": max(required - available, 0),
     }
 
