@@ -661,6 +661,19 @@ class WatchDogAgentApp(ttk.Frame):
             self.disk_status_var.set(
                 f"Insufficient disk space. You need {format_bytes(shortage_bytes)} more before installation can begin."
             )
+
+    def refresh_disk_space(self) -> None:
+        """Refreshes disk space information"""
+        if self.setup_running:
+            return
+
+        report = get_disk_space_report()
+        self._set_disk_status(report)
+
+        if self.setup_button is not None:
+            self.setup_button.configure(
+                state="normal" if bool(report["enough_space"]) else "disabled"
+            )
         
     def run_command_stream(self, command: list[str], description: str) -> None:
         #running a command and streams the output lines to the gui log
