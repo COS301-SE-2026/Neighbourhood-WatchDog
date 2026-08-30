@@ -49,3 +49,7 @@ class BenchmarkPage(ttk.Frame):
         self.skip_button = None
         self.continue_button = None
         self.results_frame = None
+
+    def clear_screen(self) -> None:
+        for child in self.winfo_children():
+            child.destroy() 
