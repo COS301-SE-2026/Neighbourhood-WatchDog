@@ -30,7 +30,6 @@ import {
     ApiError,
 } from "@/lib/api/neighbourhoodJoin";
 import { useUserContext } from "@/hooks/use-user-context";
-import { resolve } from "path";
 
 const ALL_STATUSES: JoinRequestStatus[] = [
     "PENDING",
