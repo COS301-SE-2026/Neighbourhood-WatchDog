@@ -6,7 +6,7 @@ from celery import Celery
 
 celery = Celery(
     __name__,
-    include=["app.tasks.risk_score_tasks"]
+    include=["app.tasks.risk_score_tasks", "app.tasks.clip_tasks"]
 )
 
 celery.conf.broker_url = os.environ.get("REDIS_URL")
