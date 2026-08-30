@@ -33,7 +33,7 @@ jobs:
           node-version: "20.9.0"
 
       - name: Install pnpm
-        run: npm install -g pnpm@8
+        run: npm install -g pnpm@9
 
       - name: Install frontend dependencies
         run: cd frontend && pnpm install
@@ -89,7 +89,7 @@ jobs:
           node-version: "20.9.0"
 
       - name: Install pnpm
-        run: npm install -g pnpm@8
+        run: npm install -g pnpm@9
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
@@ -168,7 +168,7 @@ jobs:
           node-version: "20.9.0"
 
       - name: Install pnpm
-        run: npm install -g pnpm@8
+        run: npm install -g pnpm@9
 
       - name: Install frontend dependencies
         run: cd frontend && pnpm install
