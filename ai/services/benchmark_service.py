@@ -258,3 +258,17 @@ class BenchmarkService:
 
         report("Benchmark complete", 1.0)
         return result
+
+def estimate_max_cameras(
+        avg_fps: float,
+        target_fps_per_camera: float = MIN_FPS_PER_CAMERA_GOOD,
+) -> int:
+    """
+    Rough estimate of how many concurrent camera streams user machine could sustain 
+    based on single stream throughput
+    This is not a gurantee, rather an optimistic upper bound
+    """
+    if target_fps_per_camera <= 0:
+        return 0
+
+    return max(int(avg_fps // target_fps_per_camera), 0)
