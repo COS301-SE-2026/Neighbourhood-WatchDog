@@ -39,6 +39,25 @@ def to_yolo_line(x1: float, y1: float, x2: float, y2: float, width: int, height:
     y_center = (y1 + y2) / 2 / height
     return f"0 {x_center:.6f} {y_center:.6f} {box_width / width:.6f} {box_height / height:.6f}"
 
+# Validation helper functions
+def _resolve_within(base: Path, candidate: Path, what: str) -> Path:
+    """Resolve `candidate` and ensure that it remains within the `base` path. Raise if it would escape"""
+    base_resolved = base.resolve()
+    candidate_resolved = candidate.resolve()
+
+    try: 
+        candidate_resolved.relative_to(base_resolved)
+    except ValueError:
+        raise SystemExit(
+            f"Refusing to use {what} outside of {base_resolved}"
+        )
+    return candidate_resolved
+
+def _safe_frame_id(frame_id: str) -> str:
+    """Reject frame ids that could be used for path traversal or absolute paths"""
+    if not frame_id or frame_id in {".", ".."} or "/" in frame_id or "\\" in frame_id:
+        raise ValueError(f"Unsafe frame_id in manifest: {frame_id!r}")
+    return frame_id
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Create review-only person label drafts.")
@@ -56,12 +75,14 @@ def main() -> None:
     with args.manifest.open(newline="", encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
     candidates = [row for row in rows if is_person_positive_candidate(row["source_file"])]
+    args.labels_dir = _resolve_within(EVALUATION_DIR, args.labels_dir, "--labels-dir")
     args.labels_dir.mkdir(parents=True, exist_ok=True)
 
     model = YOLO(PERSON_MODEL_PATH)
     created = skipped = empty_drafts = 0
     for row in candidates:
-        label_path = args.labels_dir / f"{row['frame_id']}.txt"
+        frame_id = _safe_frame_id(row["frame_id"])
+        label_path = args.labels_dir / f"{frame_id}.txt"
         if label_path.exists() and not args.overwrite:
             skipped += 1
             print(f"SKIP existing label (preserve human work): {label_path.name}")
