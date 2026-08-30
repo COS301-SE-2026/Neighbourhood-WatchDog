@@ -1005,3 +1005,25 @@ async def upload_alert_clip_for_agent_handler(
                 )
             except Exception:
                 logger.exception("Could not remove orphaned S3 clip %s", s3_key)
+
+
+async def get_alert_for_agent(
+    alert_id: str,
+    credential: EdgeAgentCredential,
+    db: AsyncSession,
+) -> Alert | None:
+    try:
+        alert_uuid = UUID(alert_id)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail="alert_id is not a valid UUID") from error
+
+    stmt = (
+        select(Alert)
+        .join(Camera, Alert.camera_id == Camera.id)
+        .where(
+            Alert.id == alert_uuid,
+            Camera.property_id == credential.property_id,
+        )
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
