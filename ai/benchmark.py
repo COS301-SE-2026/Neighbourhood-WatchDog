@@ -25,3 +25,27 @@ RATING_LABELS = {
     RATING_LIMITED: "Limited - WatchDog will run, but consider connecting fewer cameras or lowering the resolution.",
     RATING_INSUFFICIENT: "Insufficient - this machine may struggle to keep up with real-time detection."
 }
+
+class BenchmarkPage(ttk.Frame):
+    """
+    Screen that runs BenchmarkService against test clip and reports whetehr the current
+    machine can run WatchDog comfortably.
+    """
+
+    def __init__(self, parent, controller=None) -> None:
+        super().__init__(parent, padding=20, style=APP_TFRAME)
+
+        self.controller = controller
+        self.root = parent
+        self.benchmark_service = BenchmarkService()
+
+        self.events: queue.Queue[tuple[str, object]] = queue.Queue()
+        self.benchmark_running = False
+
+        self.status_var = None
+        self.progress_var = None
+        self.progress_bar = None
+        self.run_button = None
+        self.skip_button = None
+        self.continue_button = None
+        self.results_frame = None
