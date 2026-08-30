@@ -253,18 +253,12 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
     void connect().catch((error: unknown) => {
       connecting = false;
 
-      if (
-        error instanceof DOMException &&
-        error.name === "AbortError"
-      ) 
+      if (error instanceof DOMException && error.name === "AbortError") 
       {
         return;
       }
 
-      console.warn(
-        `WEBRTC stream unavailable for camera ${cameraId}:`,
-        error
-      );
+      console.warn(`WEBRTC stream unavailable for camera ${cameraId}:`, error);
 
       reportState("unavailable");
       scheduleReconnect();
