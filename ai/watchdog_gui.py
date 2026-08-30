@@ -764,7 +764,7 @@ class WatchDogAgentApp(ttk.Frame):
             command,
             cwd=AI_DIR,
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
             text=True,
             encoding="utf-8",
             errors="replace",

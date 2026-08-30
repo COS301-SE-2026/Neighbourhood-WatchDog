@@ -12,3 +12,7 @@
 api-staging.neighbourhoodwatchdog.co.za {
     reverse_proxy backend:8000
 }
+
+stream-staging.neighbourhoodwatchdog.co.za {
+    reverse_proxy mediamtx:8889
+}
