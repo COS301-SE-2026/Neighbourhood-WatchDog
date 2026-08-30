@@ -78,4 +78,17 @@ class BenchmarkService:
     def video_is_available(self) -> bool:
         """Checks whether test clip exists"""
         return self.video_path.is_file()
+
+    def _detect_gpu(self) -> tuple[bool, str | None]:
+        """Checks whether torch can see a usable CUDA device"""
+        if torch is None:
+            return False, None
+
+        try:
+            if torch.cuda.is_available():
+                return True, torch.cuda.get_device_name(0)
+        except Exception:
+            pass
+
+        return False, None
         
