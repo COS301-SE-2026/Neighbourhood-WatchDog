@@ -12,6 +12,7 @@ services:
       GO2RTC_API_USERNAME: ${GO2RTC_API_USERNAME}
       GO2RTC_API_PASSWORD: ${GO2RTC_API_PASSWORD}
     command:
+      - go2rtc
       - -config
       - /config/go2rtc.yaml
     volumes:
