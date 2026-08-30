@@ -1,6 +1,7 @@
 __pycache__/
 *.py[cod]
 *.pyo
+
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -12,6 +13,7 @@ htmlcov/
 .venv/
 venv/
 env/
+backend/.venv/
 
 .env
 .env.*
@@ -27,6 +29,8 @@ env/
 uploads/
 media/
 clips/
+runs/
+
 node_modules/
 dist/
 build/
