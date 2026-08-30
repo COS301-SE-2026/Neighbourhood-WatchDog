@@ -36,3 +36,22 @@ RATING_MARGINAL = "marginal"
 RATING_INSUFFICIENT = "insufficient"
 
 ProgressCallback = Callable[[str, float], None]
+
+@dataclass
+class BenchmarkResult:
+    """Contains the measured performance data from a single benchmark run"""
+    frames_processed: int = 0
+    duration: float = 0.0
+    avg_fps: float = 0.0
+    p95_frame_time: float = 0.0 #milliseconds
+    peak_memory: float = 0.0
+    peak_cpu_percent: float = 0.0
+    gpu_available: bool = False
+    gpu_name: str | None = None
+    peak_gpu_memory: float = 0.0
+    rating: str = RATING_INSUFFICIENT
+    error: str | None = None
+
+    @property
+    def is_valid(self) -> bool:
+        return self.error is None
