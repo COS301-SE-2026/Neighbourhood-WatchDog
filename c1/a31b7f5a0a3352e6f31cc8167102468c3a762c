@@ -1,0 +1,14 @@
+ai/app.py
+  h_cf6208e37032c0 340,348
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "c1a31b7f5a0a3352e6f31cc8167102468c3a762c",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
