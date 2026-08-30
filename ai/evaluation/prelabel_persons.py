@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import csv
 from pathlib import Path
+from tools.security import _resolve_within, _safe_frame_id
 
 import cv2
 from ultralytics import YOLO
@@ -38,26 +39,6 @@ def to_yolo_line(x1: float, y1: float, x2: float, y2: float, width: int, height:
     x_center = (x1 + x2) / 2 / width
     y_center = (y1 + y2) / 2 / height
     return f"0 {x_center:.6f} {y_center:.6f} {box_width / width:.6f} {box_height / height:.6f}"
-
-# Validation helper functions
-def _resolve_within(base: Path, candidate: Path, what: str) -> Path:
-    """Resolve `candidate` and ensure that it remains within the `base` path. Raise if it would escape"""
-    base_resolved = base.resolve()
-    candidate_resolved = candidate.resolve()
-
-    try: 
-        candidate_resolved.relative_to(base_resolved)
-    except ValueError:
-        raise SystemExit(
-            f"Refusing to use {what} outside of {base_resolved}"
-        )
-    return candidate_resolved
-
-def _safe_frame_id(frame_id: str) -> str:
-    """Reject frame ids that could be used for path traversal or absolute paths"""
-    if not frame_id or frame_id in {".", ".."} or "/" in frame_id or "\\" in frame_id:
-        raise ValueError(f"Unsafe frame_id in manifest: {frame_id!r}")
-    return frame_id
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Create review-only person label drafts.")

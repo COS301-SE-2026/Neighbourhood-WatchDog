@@ -8,6 +8,7 @@ Run from ai/:
 
 from __future__ import annotations
 from pathlib import Path
+from tools.security import _resolve_within
 import argparse
 import csv
 import re
@@ -128,6 +129,9 @@ def main() -> None:
     parser.add_argument("--overwrite", action="store_true", help="Replace an existing review CSV.")
 
     args = parser.parse_args()
+
+    args.source_dir = _resolve_within(AI_ROOT, args.source_dir, "--source-dir")
+    args.audit_dir = _resolve_within(AI_ROOT, args.audit_dir, "--audit-dir")
 
     images_dir = args.source_dir / "images"
     labels_dir = args.source_dir / "labels"
