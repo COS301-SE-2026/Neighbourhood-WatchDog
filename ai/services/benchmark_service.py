@@ -55,3 +55,23 @@ class BenchmarkResult:
     @property
     def is_valid(self) -> bool:
         return self.error is None
+
+class BenchmarkService:
+    """
+    Runs the detection pipeline against a test clip to benchmark the user's hardware
+    To determine whether they can comfortably run the local AI processing
+    """
+    def __init__(
+            self,
+            *,
+            video_path: Path | None = None,
+            person_model_path: Path | None = None,
+            warmup_frames: int = WARMUP_FRAMES,
+            duration: float = BENCHMARK_DURATION,
+            ) -> None:
+        self.video_path = video_path or BENCHMARK_VIDEO_PATH
+        self.person_model_path = person_model_path or PERSON_MODEL_PATH
+        self.warmup_frames = warmup_frames
+        self.duration = duration
+        self._process = psutil.Process()
+        
