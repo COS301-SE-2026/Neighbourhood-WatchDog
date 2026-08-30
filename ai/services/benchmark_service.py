@@ -100,4 +100,16 @@ class BenchmarkService:
         if avg_fps >= MIN_FPS_PER_CAMERA_MARGINAL:
             return RATING_MARGINAL
         return RATING_INSUFFICIENT
+
+    def _run_warmup(self, detector: Detector, capture: cv2.VideoCapture) -> None:
+        """
+        Feeds first few frames through pipeline without timing them
+        so that loading the model and starting GPU doesn't skew the results
+        """
+        for _ in range(self.warmup_frames):
+            ok, frame = capture.read()
+            if not ok:
+                break
+
+            detector.process_frame(frame)
         
