@@ -167,4 +167,34 @@ class BenchmarkService:
             )
 
             return frame_times, peak_memory, peak_cpu_percent, peak_gpu_memory
-        
+
+    def _build_result(
+            self,
+            *,
+            frame_times: list[float],
+            peak_memory: float,
+            peak_cpu_percent: float,
+            gpu_available: bool,
+            gpu_name: str | None,
+            peak_gpu_memory: float,
+    ) -> BenchmarkResult:
+        """Turns per-frame timings into summarised result"""
+        frames_processed = len(frame_times)
+        duration = sum(frame_times)
+        avg_fps = frames_processed / duration if duration > 0 else 0.0
+        sorted_times = sorted(frame_times)
+        p95_index = min(int(len(sorted_times) * 0.95), len(sorted_times) - 1)
+        p95_frame_time = sorted_times[p95_index] * 1000 #milliseconds
+
+        return BenchmarkResult(
+            frames_processed=frames_processed,
+            duration=duration,
+            avg_fps=avg_fps,
+            p95_frame_time=p95_frame_time,
+            peak_memory=peak_memory,
+            peak_cpu_percent=peak_cpu_percent,
+            gpu_available=gpu_available,
+            gpu_name=gpu_name,
+            peak_gpu_memory=peak_gpu_memory,
+            rating=self._rate_fps(avg_fps),
+        )
