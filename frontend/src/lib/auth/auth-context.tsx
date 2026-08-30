@@ -17,8 +17,12 @@ export default function AuthProvider({children}: {children: ReactNode}) {
 
     useEffect(() => {
         const sync = () => setUser(getStoredUser());
+
+        /* eslint-disable react-hooks/set-state-in-effect -- reading localStorage must happen client-side, after hydration to avoid SSR  mismatch */
         sync();
         setIsLoading(false);
+        /* eslint-enable react-hooks/set-state-in-effect */
+
         window.addEventListener(AUTH_EVENT, sync);
         return () => window.removeEventListener(AUTH_EVENT, sync);
     }, []);

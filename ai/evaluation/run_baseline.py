@@ -19,6 +19,7 @@ import cv2
 from ultralytics import YOLO
 
 from evaluation.metrics import Detection, score_class
+from tools.security import _resolve_within, _safe_frame_id
 
 AI_ROOT = Path(__file__).resolve().parents[1]
 EVALUATION_DIR = AI_ROOT / "evaluation"
@@ -213,6 +214,9 @@ def main() -> None:
     parser.add_argument("--match-iou", type=float, default=0.50)
     args = parser.parse_args()
 
+    args.manifest = _resolve_within(EVALUATION_DIR, args.manifest, "--manifest")
+    args.manifest = _resolve_within(EVALUATION_DIR, args.labels_dir, "--labels-dir")
+
     if not 0 < args.person_conf <= 1 or not 0 < args.weapon_conf <= 1 or not 0 < args.match_iou <= 1:
         parser.error("confidence and IoU values must be greater than 0 and no more than 1")
 
@@ -230,13 +234,14 @@ def main() -> None:
     all_counts = {name: {"tp": 0, "fp": 0, "fn": 0} for name in (*CLASS_NAMES.values(), "weapon")}
 
     for row in manifest:
-        frame_path = AI_ROOT / row["frame_path"]
+        frame_path = _resolve_within(AI_ROOT, AI_ROOT / row["frame_path"], "frame_path")
         frame = cv2.imread(str(frame_path))
         if frame is None:
             raise RuntimeError(f"Cannot read manifest frame: {frame_path}")
 
         height, width = frame.shape[:2]
-        ground_truth = read_ground_truth(args.labels_dir / f"{row['frame_id']}.txt", width, height)
+        frame_id = _safe_frame_id(row["frame_id"])
+        ground_truth = read_ground_truth(args.labels_dir / f"{frame_id}.txt", width, height)
         predictions = predict(frame, person_model, threat_model, args.person_conf, args.weapon_conf)
 
         for class_id, class_name in CLASS_NAMES.items():
@@ -247,6 +252,7 @@ def main() -> None:
 
         add_counts(all_counts["weapon"], combined)
 
+    args.report_dir = _resolve_within(EVALUATION_DIR, args.report_dir, "--report-dir")
     args.report_dir.mkdir(parents=True, exist_ok=True)
 
     result = {
