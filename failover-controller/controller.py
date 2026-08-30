@@ -240,16 +240,28 @@ class FailoverController:
             source_url,
             "-map",
             "0:v:0",
-            "-map",
-            "0:a?",
-            "-c",
-            "copy",
+            "-an",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-tune",
+            "zerolatency",
+            "-pix_fmt",
+            "yuv420p",
+            "-g",
+            "30",
+            "-keyint_min",
+            "30",
+            "-sc_threshold",
+            "0",
             "-f",
             "rtsp",
             "-rtsp_transport",
             "tcp",
             target_url
 
+            
         ]
 
         logger.info("Starting Go2RTC backup for camera %s", camera.id)
