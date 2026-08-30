@@ -29,10 +29,10 @@ BENCHMARK_DURATION = 45.0
 
 #Modest thresholds to determine if hardware can process AI detection
 MIN_FPS_PER_CAMERA_GOOD = 10.0 #10+ FPS -> runs comfortably
-MIN_FPS_PER_CAMERA_MARGINAL = 6.0 #6-10 -> usable, but tight
+MIN_FPS_PER_CAMERA_LIMITED = 6.0 #6-10 -> usable, but tight
 
 RATING_GOOD = "good"
-RATING_MARGINAL = "marginal"
+RATING_LIMITED = "limited"
 RATING_INSUFFICIENT = "insufficient"
 
 ProgressCallback = Callable[[str, float], None]
@@ -94,11 +94,11 @@ class BenchmarkService:
 
     @staticmethod
     def _rate_fps(avg_fps: float) -> str:
-        """Classifies sustained fps into good/marginal/insufficient ratings"""
+        """Classifies sustained fps into good/limited/insufficient ratings"""
         if avg_fps >= MIN_FPS_PER_CAMERA_GOOD:
             return RATING_GOOD
-        if avg_fps >= MIN_FPS_PER_CAMERA_MARGINAL:
-            return RATING_MARGINAL
+        if avg_fps >= MIN_FPS_PER_CAMERA_LIMITED:
+            return RATING_LIMITED
         return RATING_INSUFFICIENT
 
     def _run_warmup(self, detector: Detector, capture: cv2.VideoCapture) -> None:
