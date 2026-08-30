@@ -1,0 +1,48 @@
+services:
+  #fallback phase restores video only.
+
+  ai:
+    profiles:
+      - edge-ai
+
+  go2rtc:
+    image: alexxit/go2rtc:1.9.14
+    restart: unless-stopped
+    environment:
+      GO2RTC_API_USERNAME: ${GO2RTC_API_USERNAME}
+      GO2RTC_API_PASSWORD: ${GO2RTC_API_PASSWORD}
+    command:
+      - -config
+      - /config/go2rtc.yaml
+    volumes:
+      - ./go2rtc/go2rtc.yaml:/config/go2rtc.yaml:ro
+    expose:
+      - "1984"
+      - "8554"
+    networks:
+      - default
+
+  stream_failover:
+    build:
+      context: ./failover-controller
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:8000
+      FAILOVER_CONTROLLER_TOKEN: ${FAILOVER_CONTROLLER_TOKEN}
+
+      GO2RTC_URL: http://go2rtc:1984
+      GO2RTC_API_USERNAME: ${GO2RTC_API_USERNAME}
+      GO2RTC_API_PASSWORD: ${GO2RTC_API_PASSWORD}
+
+      MEDIAMTX_API_URL: http://mediamtx:9997
+      MEDIAMTX_RTSP_URL: rtsp://mediamtx:8554
+      GO2RTC_RTSP_URL: rtsp://go2rtc:8554
+
+      FAILOVER_POLL_SECONDS: ${FAILOVER_POLL_SECONDS:-5}
+      FAILOVER_FAILURE_PROBES: ${FAILOVER_FAILURE_PROBES:-3}
+    depends_on:
+      - backend
+      - go2rtc
+      - mediamtx
+    networks:
+      - default
