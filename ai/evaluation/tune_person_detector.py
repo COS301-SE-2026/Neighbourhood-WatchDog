@@ -15,6 +15,7 @@ from pathlib import Path
 from ultralytics import YOLO
 from evaluation.metrics import Detection, score_class
 from evaluation.run_baseline import AI_ROOT, LABELS_DIR, MANIFEST_PATH, PERSON_MODEL_PATH, read_ground_truth, sha256
+from prelabel_persons import _safe_frame_id, _resolve_within 
 import argparse
 import csv
 import json
@@ -42,13 +43,14 @@ def evaluate_candidate(manifest: list[dict[str, str]], labels_dir: Path, model: 
     counts = defaultdict(int)
 
     for row in manifest:
-        frame = cv2.imread(str(AI_ROOT / row["frame_path"]))
+        frame_path = _resolve_within(AI_ROOT, AI_ROOT / row["frame_path"], "frame_path")
+        frame = cv2.imread(str(AI_ROOT / frame_path))
         if frame is None:
             raise RuntimeError(f"Cannot read evaluation frame: {row['frame_path']}")
 
         height, width = frame.shape[:2]
-
-        ground_truth = [item for item in read_ground_truth(labels_dir / f"{row['frame_id']}.txt", width, height) if item.class_id == 0]
+        frame_id = _safe_frame_id(row["frame_id"])
+        ground_truth = [item for item in read_ground_truth(labels_dir / f"{frame_id}.txt", width, height) if item.class_id == 0]
 
         result = model.predict(
             frame, 
@@ -104,6 +106,9 @@ def main() -> None:
     parser.add_argument("--report-dir", type=Path, default=AI_ROOT / "evaluation" / "reports" / "tuning-v1")
 
     args = parser.parse_args()
+    EVALUATION_DIR = AI_ROOT / "evaluation"
+    args.manifest = _resolve_within(EVALUATION_DIR, args.manifest, "--manifest")
+    args.manifest = _resolve_within(EVALUATION_DIR, args.labels_dir, "--labels-dir")
 
     if not 0.0 < args.match_iou <= 1.0 or not 0.0 <= args.min_recall <= 1.0:
         parser.error("IoU and recall constraints must be in [0, 1].")
@@ -134,7 +139,7 @@ def main() -> None:
         row["meets_recall_constraint"] = row["recall"] >= args.min_recall
         row["selected"] = row is selected
 
-
+    args.report_dir = _resolve_within(EVALUATION_DIR, args.report_dir, "--report-dir")
     args.report_dir.mkdir(parents=True, exist_ok=True)
 
     fieldnames = list(rows[0].keys())

@@ -2,7 +2,7 @@ name: Deploy mediamtx to Production
 
 on:
   push:
-    branches: [ "main", "fix/main-deployment" ]
+    branches: [ "main" ]
     paths:
       - 'mediamtx/**'
       - 'docker-compose.yml'

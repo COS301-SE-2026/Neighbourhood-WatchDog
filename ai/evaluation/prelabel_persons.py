@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import csv
 from pathlib import Path
+from tools.security import _resolve_within, _safe_frame_id
 
 import cv2
 from ultralytics import YOLO
@@ -39,7 +40,6 @@ def to_yolo_line(x1: float, y1: float, x2: float, y2: float, width: int, height:
     y_center = (y1 + y2) / 2 / height
     return f"0 {x_center:.6f} {y_center:.6f} {box_width / width:.6f} {box_height / height:.6f}"
 
-
 def main() -> None:
     parser = argparse.ArgumentParser(description="Create review-only person label drafts.")
     parser.add_argument("--manifest", type=Path, default=MANIFEST_PATH)
@@ -56,12 +56,14 @@ def main() -> None:
     with args.manifest.open(newline="", encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
     candidates = [row for row in rows if is_person_positive_candidate(row["source_file"])]
+    args.labels_dir = _resolve_within(EVALUATION_DIR, args.labels_dir, "--labels-dir")
     args.labels_dir.mkdir(parents=True, exist_ok=True)
 
     model = YOLO(PERSON_MODEL_PATH)
     created = skipped = empty_drafts = 0
     for row in candidates:
-        label_path = args.labels_dir / f"{row['frame_id']}.txt"
+        frame_id = _safe_frame_id(row["frame_id"])
+        label_path = args.labels_dir / f"{frame_id}.txt"
         if label_path.exists() and not args.overwrite:
             skipped += 1
             print(f"SKIP existing label (preserve human work): {label_path.name}")

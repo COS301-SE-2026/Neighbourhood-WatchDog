@@ -12,20 +12,50 @@ jobs:
   zap_scan:
     runs-on: ubuntu-latest
     steps:
-    - name: checkout
-      uses: actions/checkout@v4
+      - name: checkout
+        uses: actions/checkout@v4
 
-    - name: ZAP Baseline scan
-      uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 #0.12.0
-      with:
-        target: $ {{ github.event.inputs.target_url }}
-        cmd_options: '-a'
-        issue_title: 'ZAP Scan Report'
-        fail_action: false
+      - name: Get JWT for authenciated scan
+        id: auth
+        env:
+          TARGET_URL: ${{ github.event.inputs.target_url }}
+          ZAP_TEST_EMAIL: ${{ secrets.ZAP_TEST_EMAIL }}
+          ZAP_TEST_PASSWORD: ${{ secrets.ZAP_TEST_PASSWORD }}
+        run: |
+          set -euo pipefail
 
-    - name: Upload ZAP Report
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: zap-report
-        path: report_html.html
+          if [[ ! "$TARGET_URL" =~ ^https://[a-zA-Z0-9.-]+\.neighbourhoodwatchdog\.co\.za$ ]]; then
+            echo "::error::target_url must be an https URL on an allowed neighbourhoodwatchdog.co.za host"
+            exit 1
+          fi
+
+          RESPONSE=$(curl -sf -X POST "$TARGET_URL/auth/login" \
+            -H "Content-Type: application/json" \
+            -d "{ \"email\": \"${ZAP_TEST_EMAIL}\", \"password\": \"${ZAP_TEST_PASSWORD}\" }")
+
+          TOKEN=$(printf '%s' "$RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin)['data']['access_token'])")
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: ZAP Baseline scan
+        uses: zaproxy/action-api-scan@5158fe4d9d8fcc75ea204db81317cce7f9e5453d #0.10.0
+        with:
+          target: '${{ github.event.inputs.target_url }}/openapi.json'
+          format: openapi
+          cmd_options: >-
+            -a
+            -z "-config replacer.full_list(0).description=auth1
+            -config replacer.full_list(0).enabled=true
+            -config replacer.full_list(0).matchtype=REQ_HEADER
+            -config replacer.full_list(0).matchstr=Authorization
+            -config replacer.full_list(0).regex=false
+            -config replacer.full_list(0).replacement=Bearer\ ${{ steps.auth.outputs.token }}"
+          issue_title: 'ZAP Scan Report'
+          fail_action: false
+
+      - name: Upload ZAP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: report_html.html

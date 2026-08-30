@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from ultralytics import YOLO
 from evaluation.metrics import Detection, score_class
-
+from tools.security import _resolve_within
 
 
 AI_ROOT = Path(__file__).resolve().parents[1]
@@ -108,6 +108,10 @@ def main() -> None:
     parser.add_argument("--match-iou", type=float, default=0.50)
 
     args = parser.parse_args()
+
+    args.dataset = _resolve_within(AI_ROOT, args.dataset, "--dataset")
+    args.model = _resolve_within(AI_ROOT, args.model, "--model")
+    args.report_dir = _resolve_within(AI_ROOT, args.report, "--report")
 
     if not all(0.0 < value <= 1.0 for value in (args.confidence, args.nms_iou, args.match_iou)):
         parser.error("confidence and IoU values must be in (0, 1]")

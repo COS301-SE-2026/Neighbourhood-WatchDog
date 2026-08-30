@@ -53,6 +53,7 @@ export function usePropertyContext() {
     const [fallbackId, setFallbackId] = useState<string | null>(null);
     useEffect(() => {
         if (!urlPropertyId) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- reading localStorage must happen client-side, after hydration to avoid SSR  mismatch 
             setFallbackId(localStorage.getItem(LAST_PROPERTY_KEY));
         }
     }, [urlPropertyId]);
