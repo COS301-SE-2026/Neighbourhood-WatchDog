@@ -129,6 +129,9 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
       reconnectTimer = setTimeout(() => {
         reconnectTimer = undefined;
         void connect().catch((error: unknown) => {
+          
+          connecting = false
+
           if (
             error instanceof DOMException &&
             error.name === "AbortError"
