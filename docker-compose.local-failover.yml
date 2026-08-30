@@ -1,0 +1,8 @@
+services:
+  mediamtx:
+    environment:
+      MTX_WEBRTCENCRYPTION: "no"
+      MTX_WEBRTCSERVERCERT: ""
+      MTX_WEBRTCSERVERKEY: ""
+      MTX_WEBRTCADDITIONALHOSTS: localhost
+      MTX_WEBRTCALLOWORIGIN: "*"
