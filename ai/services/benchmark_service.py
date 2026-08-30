@@ -74,4 +74,8 @@ class BenchmarkService:
         self.warmup_frames = warmup_frames
         self.duration = duration
         self._process = psutil.Process()
+
+    def video_is_available(self) -> bool:
+        """Checks whether test clip exists"""
+        return self.video_path.is_file()
         
