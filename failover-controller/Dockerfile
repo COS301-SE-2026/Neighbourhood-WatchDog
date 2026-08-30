@@ -8,7 +8,6 @@ RUN find /etc/apt -type f \( -name "*.list" -o -name "*.sources" \) \
     && apt-get update \
     && apt-get install --no-install-recommends -y ffmpeg \
     && rm -rf /var/lib/apt/lists/*
-    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
