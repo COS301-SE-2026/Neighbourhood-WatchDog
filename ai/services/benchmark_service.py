@@ -198,3 +198,63 @@ class BenchmarkService:
             peak_gpu_memory=peak_gpu_memory,
             rating=self._rate_fps(avg_fps),
         )
+
+    def run(self, progress_callback: ProgressCallback | None = None) -> BenchmarkResult:
+        """
+        Runs a warmup pass then a measured pass of the detector over the test clip
+        and returns benchmark results.
+
+        progress_callback receives message and fraction 
+        and is used to update gui status label and progress bar during run
+        Safe to call from a backgorund thread - it does not touch Tkinter
+        """
+        def report(message: str, fraction: float) -> None:
+            if progress_callback is not None:
+                progress_callback(message, fraction)
+
+        if not self.video_is_available():
+            return BenchmarkResult(
+                error=f"Benchmark clip not found: {self.video_path}"
+            )
+        
+        try:
+            report("Loading detection model...", 0.0)
+            detector = Detector(str(self.person_model_path))
+        except Exception as error:
+            return BenchmarkResult(error=f"Could not load model: {error}")
+
+        gpu_available, gpu_name = self._detect_gpu()
+
+        capture = cv2.VideoCapture(str(self.video_path))
+        if not capture.isOpened():
+            return BenchmarkResult(
+                error=f"Could not open benchmark clip: {self.video_path}"
+            )
+
+        try:
+            report("Warming up...", 0.05)
+            self._run_warmup(detector, capture)
+
+            report("Measuring performance...", 0.2)
+            frame_times, peak_memory, peak_cpu_percent, peak_gpu_memory = (
+                self._run_measured(detector, capture, report)
+            )
+        finally:
+            capture.release()
+
+        if not frame_times:
+            return BenchmarkResult(
+                error="Benchmark clip ended before any frames could be measured."
+            )
+
+        result = self._build_result(
+            frame_times=frame_times,
+            peak_memory=peak_memory,
+            peak_cpu_percent=peak_cpu_percent,
+            gpu_available=gpu_available,
+            gpu_name=gpu_name,
+            peak_gpu_memory=peak_gpu_memory,
+        )
+
+        report("Benchmark complete", 1.0)
+        return result
