@@ -91,4 +91,13 @@ class BenchmarkService:
             pass
 
         return False, None
+
+    @staticmethod
+    def _rate_fps(avg_fps: float) -> str:
+        """Classifies sustained fps into good/marginal/insufficient ratings"""
+        if avg_fps >= MIN_FPS_PER_CAMERA_GOOD:
+            return RATING_GOOD
+        if avg_fps >= MIN_FPS_PER_CAMERA_MARGINAL:
+            return RATING_MARGINAL
+        return RATING_INSUFFICIENT
         
