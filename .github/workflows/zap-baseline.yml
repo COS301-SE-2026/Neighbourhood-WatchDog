@@ -17,11 +17,23 @@ jobs:
 
       - name: Get JWT for authenciated scan
         id: auth
+        env:
+          TARGET_URL: ${{ github.event.inputs.target_url }}
+          ZAP_TEST_EMAIL: ${{ secrets.ZAP_TEST_EMAIL }}
+          ZAP_TEST_PASSWORD: ${{ secrets.ZAP_TEST_PASSWORD }}
         run: |
-          TOKEN=$(curl -s -X POST "${{ github.event.inputs.target_url }}/auth/login" \
+          set -euo pipefail
+
+          if [[ ! "$TARGET_URL" =~ ^https://[a-zA-Z0-9.-]+\.neighbourhoodwatchdog\.co\.za$ ]]; then
+            echo "::error::target_url must be an https URL on an allowed neighbourhoodwatchdog.co.za host"
+            exit 1
+          fi
+
+          RESPONSE=$(curl -sf -X POST "$TARGET_URL/auth/login" \
             -H "Content-Type: application/json" \
-            -d "{ \"email\": \"${{ secrets.ZAP_TEST_EMAIL }}\", \"password\": \"${{ secrets.ZAP_TEST_PASSWORD }}\" }" \
-            | python3 -c "import sys, json; print(json.load(sys.stdin)['data']['access_token'])")
+            -d "{ \"email\": \"${ZAP_TEST_EMAIL}\", \"password\": \"${ZAP_TEST_PASSWORD}\" }")
+
+          TOKEN=$(printf '%s' "$RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin)['data']['access_token'])")
           echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
 
