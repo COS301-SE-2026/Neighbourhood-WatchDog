@@ -74,7 +74,7 @@ services:
       MTX_WEBRTCADDITIONALHOSTS: ${MTX_WEBRTCADDITIONALHOSTS}
       MTX_WEBRTCALLOWORIGIN: ${MTX_WEBRTCALLOWORIGIN}
       MTX_AUTHHTTPADDRESS: ${MTX_AUTHHTTPADDRESS}
-      expose:
+    expose:
       - "9997"
     build:
       context: ./mediamtx

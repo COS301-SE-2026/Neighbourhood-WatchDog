@@ -11,7 +11,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.camera import Camera
-from app.schemas.edge_failover import FailoverCameraRes
+from app.schemas.edge_failover import FailoverCameraRes, FailoverCamerasRes
 from app.services.rtsp_encryption import decrypt_rtsp_url
 
 
@@ -33,7 +33,7 @@ def camera_publish_credentials(camera_id: UUID | str) -> tuple[str, str]:
     camera_id_text = str(camera_id)
     username = f"camera-{camera_id_text}"
     digest = hmac.new(_publish_master_key(), camera_id_text.encode("utf-8"), hashlib.sha256).digest()
-    password = base64.urlsafe_b64decode(digest).decode("ascii").rstrip("=")
+    password = base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
 
 
     return username, password
@@ -48,7 +48,7 @@ def require_failover_controller_token(provided_token: str | None) -> None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid failover controller token")
 
 
-async def list_failover_cameras(db: AsyncSession) -> FailoverCameraRes:
+async def list_failover_cameras(db: AsyncSession) -> FailoverCamerasRes:
     """returns enabled camera and the private connection info required by the ec2 failover controller"""
 
     statement = (select(Camera)
@@ -77,6 +77,6 @@ async def list_failover_cameras(db: AsyncSession) -> FailoverCameraRes:
         )
 
 
-    return FailoverCameraRes(data=data)
+    return FailoverCamerasRes(data=data)
 
 

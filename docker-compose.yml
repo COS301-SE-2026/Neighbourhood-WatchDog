@@ -175,7 +175,7 @@ services:
       MTX_WEBRTCENCRYPTION: "yes"
       MTX_WEBRTCSERVERCERT: /certs/fullchain.pem
       MTX_WEBRTCSERVERKEY: /certs/privkey.pem
-      expose:
+    expose:
       - "9997"
     build:
       context: ./mediamtx

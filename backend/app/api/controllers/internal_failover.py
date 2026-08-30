@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import APIRouter, Header, status
 from app.core.database import DbSession
-from app.schemas.edge_failover import FailoverCameraRes
+from app.schemas.edge_failover import FailoverCamerasRes
 from app.services.edge_failover_service import list_failover_cameras, require_failover_controller_token
 
 
@@ -13,10 +13,10 @@ router = APIRouter(
 
 @router.get(
     "/failover/cameras", 
-    response_model=FailoverCameraRes, 
+    response_model=FailoverCamerasRes, 
     status_code=status.HTTP_200_OK
 )
-async def failover_cameras(db: DbSession, x_failover_token: Annotated[str | None, Header()] = None) -> FailoverCameraRes:
+async def failover_cameras(db: DbSession, x_failover_token: Annotated[str | None, Header()] = None) -> FailoverCamerasRes:
 
     require_failover_controller_token(x_failover_token)
 

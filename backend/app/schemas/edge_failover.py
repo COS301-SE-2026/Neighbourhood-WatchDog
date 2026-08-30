@@ -11,5 +11,5 @@ class FailoverCameraRes(BaseModel):
     publish_password: str
 
 
-class FailoverCameraRes(BaseModel):
+class FailoverCamerasRes(BaseModel):
     data: list[FailoverCameraRes]
