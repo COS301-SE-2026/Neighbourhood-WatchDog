@@ -61,29 +61,3 @@ class WatchDogUser(HttpUser):
     @task(1)
     def list_detections(self):
         self.client.get("/detections", headers=self.headers)
-
-    # @task
-    # def create_alert(self):
-    #     payload = {
-    #         "camera_id": CAMERA_ID,
-    #         "detection_type": "HUMAN_PRESENCE",
-    #         "confidence_score": round(random.uniform(0.55, 0.99), 2),
-    #         "thumbnail_url": None,
-    #         "frame_timestamp": datetime.now(timezone.utc).isoformat(),
-    #     }
-    #     with self.client.post(
-    #         "/internal/alerts",
-    #         json=payload,
-    #         headers=self.headers,
-    #         catch_response=True,
-    #     ) as response:
-    #         if response.status_code == 201:
-    #             response.success()
-    #         elif response.status_code == 400:
-    #             response.failure(f"400 Bad Request: {response.text}")
-    #         elif response.status_code == 401:
-    #             response.failure(f"401: EDGE_AGENT_TOKEN is invalid or revoked")
-    #         elif response.status_code == 404:
-    #             response.failure(f"404: camera_id {CAMERA_ID} not found")
-    #         else:
-    #             response.failure(f"Unexpected status {response.status_code}: {response.text}")
