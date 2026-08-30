@@ -75,72 +75,189 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
   useEffect(() => {
     const baseUrl = whepBaseUrl.replace(/\/$/, "");
     const whepUrl = `${baseUrl}/${streamPath}/whep`;
-
     const video = videoRef.current;
 
     const controller = new AbortController();
 
     let peerConnection: RTCPeerConnection | null = null;
     let whepSessionUrl: string | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    let reconnectAttempt = 0;
+    let connecting = false;
     let disposed = false;
 
     const reportState = (state: CameraStreamState) => {
+      if (!disposed) {
+        onStreamStateChange?.(state);
+      }
+    };
 
-      if (!disposed) {onStreamStateChange?.(state);}
+    const closeCurrentConnection = () => {
+      if (whepSessionUrl) {
+        void fetch(whepSessionUrl, {
+          method: "DELETE",
+          keepalive: true,
+        }).catch(() => undefined);
+      }
+
+      whepSessionUrl = null;
+
+      peerConnection?.close();
+      peerConnection = null;
+
+      if (video) {
+        video.srcObject = null;
+      }
+    };
+
+    const scheduleReconnect = () => {
+      if (
+        disposed ||
+        reconnectTimer !== undefined ||
+        connecting
+      ) {
+        return;
+      }
+
+      const delay = Math.min(
+        10000,
+        2000 * 2 ** reconnectAttempt
+      );
+
+      reconnectAttempt += 1;
+
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = undefined;
+        void connect().catch((error: unknown) => {
+          if (
+            error instanceof DOMException &&
+            error.name === "AbortError"
+          ) 
+          {
+            return;
+          }
+
+          console.warn(
+            `WEBRTC reconnect failed for camera ${cameraId}:`,
+            error
+          );
+
+          reportState("unavailable");
+          scheduleReconnect();
+        });
+      }, delay);
     };
 
     const connect = async () => {
+      if (disposed || connecting) {
+        return;
+      }
+
+      connecting = true;
       reportState("connecting");
 
-      peerConnection = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }],});
+      closeCurrentConnection();
 
-      peerConnection.ontrack = (event) => {
-        if (!video) return;
+      const currentPeerConnection = new RTCPeerConnection({
+        iceServers: [
+          {
+            urls: "stun:stun.l.google.com:19302",
+          }
+        ]
+      });
 
-        attachVideoStream(video, event.streams[0], reportState);
+      peerConnection = currentPeerConnection;
+
+      currentPeerConnection.ontrack = (event) => {
+        if (!video || disposed) {
+          return;
+        }
+
+        const stream = event.streams[0];
+
+        if (stream) {
+          attachVideoStream(video, stream, reportState);
+        }
       };
 
-      peerConnection.onconnectionstatechange = () => {
-        if (!peerConnection) return;
+      currentPeerConnection.onconnectionstatechange = () => {
+        if (
+          disposed ||
+          peerConnection !== currentPeerConnection
+        ) 
+        {
+          return;
+        }
 
-        handleConnectionStateChange(peerConnection, reportState);
+        const state = currentPeerConnection.connectionState;
+
+        if (state === "connected") {
+          reportState("live");
+          return;
+        }
+
+        if (
+          state === "failed" ||
+          state === "disconnected" ||
+          state === "closed"
+        ) {
+          reportState("unavailable");
+          scheduleReconnect();
+        }
       };
 
-      peerConnection.addTransceiver("video", { direction: "recvonly" });
+      currentPeerConnection.addTransceiver(
+        "video",
+        { direction: "recvonly" },
+      );
 
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
+      const offer = await currentPeerConnection.createOffer();
+
+      await currentPeerConnection.setLocalDescription(offer);
 
       const response = await fetch(whepUrl, {
         method: "POST",
         headers: {
-          "Content-Type": "application/sdp",
+          "Content-Type": "application/sdp"
         },
-        body: peerConnection.localDescription?.sdp,
-        signal: controller.signal,
+        body: currentPeerConnection.localDescription?.sdp,
+        signal: controller.signal
       });
 
       if (!response.ok) {
-        throw new Error(`WHEP request failed with HTTP ${response.status}`);
+        throw new Error(
+          `WHEP request failed with HTTP ${response.status}`
+        );
       }
 
       const location = response.headers.get("location");
 
       if (location) {
-        whepSessionUrl = new URL(location, whepUrl).toString();
+        whepSessionUrl = new URL(
+          location,
+          whepUrl
+        ).toString();
       }
 
       const answerSdp = await response.text();
 
-      await peerConnection.setRemoteDescription({
+      await currentPeerConnection.setRemoteDescription({
         type: "answer",
-        sdp: answerSdp
+        sdp: answerSdp,
       });
+
+      reconnectAttempt = 0;
+      connecting = false;
     };
 
     void connect().catch((error: unknown) => {
+      connecting = false;
 
-      if (error instanceof DOMException && error.name === "AbortError") {
+      if (
+        error instanceof DOMException &&
+        error.name === "AbortError"
+      ) 
+      {
         return;
       }
 
@@ -150,32 +267,21 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
       );
 
       reportState("unavailable");
+      scheduleReconnect();
     });
-
-
-
-
 
     return () => {
       disposed = true;
 
       controller.abort();
 
-      if (video) video.srcObject = null;
-    
-
-      peerConnection?.close();
-
-      if (whepSessionUrl) {
-        void fetch(whepSessionUrl, {
-
-          method: "DELETE",
-          keepalive: true
-
-        }).catch(() => undefined);
+      if (reconnectTimer !== undefined) {
+        clearTimeout(reconnectTimer);
       }
+
+      closeCurrentConnection();
     };
-  }, [cameraId, onStreamStateChange, streamPath, videoRef, whepBaseUrl,]);
+  }, [cameraId, onStreamStateChange, streamPath, videoRef, whepBaseUrl]);
 
   useEffect(() => {
     if (!canvasRef.current || !videoWidth || !videoHeight) {
