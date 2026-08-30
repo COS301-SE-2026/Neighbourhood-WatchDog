@@ -19,6 +19,7 @@ import cv2
 from ultralytics import YOLO
 
 from evaluation.metrics import Detection, score_class
+from prelabel_persons import _resolve_within, _safe_frame_id
 
 AI_ROOT = Path(__file__).resolve().parents[1]
 EVALUATION_DIR = AI_ROOT / "evaluation"
@@ -236,7 +237,8 @@ def main() -> None:
             raise RuntimeError(f"Cannot read manifest frame: {frame_path}")
 
         height, width = frame.shape[:2]
-        ground_truth = read_ground_truth(args.labels_dir / f"{row['frame_id']}.txt", width, height)
+        frame_id = _safe_frame_id(row["frame_id"])
+        ground_truth = read_ground_truth(args.labels_dir / f"{frame_id}.txt", width, height)
         predictions = predict(frame, person_model, threat_model, args.person_conf, args.weapon_conf)
 
         for class_id, class_name in CLASS_NAMES.items():
@@ -247,6 +249,7 @@ def main() -> None:
 
         add_counts(all_counts["weapon"], combined)
 
+    args.report_dir = _resolve_within(EVALUATION_DIR, args.report_dir, "--report-dir")
     args.report_dir.mkdir(parents=True, exist_ok=True)
 
     result = {
