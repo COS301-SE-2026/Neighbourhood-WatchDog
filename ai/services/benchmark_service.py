@@ -112,4 +112,59 @@ class BenchmarkService:
                 break
 
             detector.process_frame(frame)
+
+    def _run_measured(
+            self,
+            detector: Detector,
+            capture: cv2.VideoCapture,
+            report: Callable[[str, float], None]
+    ) -> tuple[list[float], float, float, float]:
+        """
+        Runs detector against clip and records per-frame timings
+        and peak CPU, memory and VRAM usage along the way
+        """
+        frame_times: list[float] = []
+        peak_memory = 0.0
+        peak_cpu_percent = 0.0
+        peak_gpu_memory = 0.0
+
+        self._process.cpu_percent(interval=None)
+
+        start_time = time.monotonic()
+
+        while (time.monotonic() - start_time) < self.duration:
+            ok, frame = capture.read()
+
+            if not ok:
+                capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                continue
+
+            frame_start = time.perf_counter()
+            detector.process_frame(frame)
+            frame_times.append(time.perf_counter() - frame_start)
+
+            peak_memory = max(
+                peak_memory,
+                self._process.memory_info.rss / (1024 * 1024),
+            )
+
+            peak_cpu_percent = max(
+                peak_cpu_percent,
+                self._process.cpu_percent(interval=None),
+            )
+
+            if torch is not None and torch.cuda.is_available():
+                peak_gpu_memory = max(
+                    peak_gpu_memory,
+                    torch.cuda.max_memory_allocated() / (1024 * 1024),
+                )
+
+            elapsed_fraction = (time.monotonic() - start_time / self.duration)
+
+            report(
+                "Measuring performance...",
+                min(0.2 + elapsed_fraction * 0.8, 0.99),
+            )
+
+            return frame_times, peak_memory, peak_cpu_percent, peak_gpu_memory
         
