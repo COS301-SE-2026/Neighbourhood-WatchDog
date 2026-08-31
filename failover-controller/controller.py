@@ -18,6 +18,11 @@ logging.basicConfig(
 
 logger = logging.getLogger("watchdog.failover")
 
+#   httpx logs complete request URLs at INFO level. dnamic Go2RTC
+#requests contain the camera RTSP URL, which may contain credentials.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+
 
 
 BACKEND_URL = os.environ["BACKEND_URL"].rstrip("/")
