@@ -26,6 +26,7 @@ from services.dependency_service import (
     RUNTIME_DIR,
     STATE_FILE,
     SUPPORTED_PYTHON,
+    MAX_SUPPORTED_PYTHON,
     THREAT_MODEL,
     THREAT_MODEL_PATH,
     VENV_DIR,
@@ -493,16 +494,19 @@ class WatchDogAgentApp(ttk.Frame):
         if self.setup_running:
             return
 
-        if sys.version_info[:2] < SUPPORTED_PYTHON:
-            required = ".".join(map(str, SUPPORTED_PYTHON))
+        if not (SUPPORTED_PYTHON <= sys.version_info[:2] < MAX_SUPPORTED_PYTHON):
+            min_required = ".".join(map(str, SUPPORTED_PYTHON))
+            max_supported = ".".join(map(str, MAX_SUPPORTED_PYTHON))
             current = f"{sys.version_info.major}.{sys.version_info.minor}"
 
             messagebox.showerror(
                 "Unsupported Python Version",
                 (
-                    f"WatchDog Agent currently requries Python {required}.x.\n\n"
+                    f"WatchDog Agent currently requries Python {min_required}.x.\n\n"
+                    f"up to (but not including) {max_supported}.x.\n\n"
                     f"This GUI was launched with Python {current}.\n\n"
-                    "Install Python 3.12 or newer and relaunch setup.bat."
+                    f"Install a supported Python {min_required}.x - {max_supported}.x "
+                    "release and relaunch setup.bat."
                 )
             )
             return
@@ -637,7 +641,7 @@ class WatchDogAgentApp(ttk.Frame):
                 self.emit("indeterminate", False)
 
             self._raise_if_cancelled()
-            self.emit("status", "Applying Python 3.12 DeepSORT compatibility patch...")
+            self.emit("status", "Applying DeepSORT compatibility patch...")
             self.emit("progress", 45)
 
             self.patch_deep_sort(venv_python)
@@ -808,7 +812,7 @@ class WatchDogAgentApp(ttk.Frame):
 
         if result.returncode != 0:
             raise RuntimeError(
-                "Could not locate deep_sort_realtime for the Python 3.12"
+                "Could not locate deep_sort_realtime for the DeepSORT "
                 f"compatibility patch:\n{result.stderr.strip()}"
             )
 
@@ -867,7 +871,7 @@ class WatchDogAgentApp(ttk.Frame):
 
 
         patch_file.write_text(patched, encoding="utf-8")
-        self.emit("log", "Applied DeepSORT Python 3.12 compatibility patch.")
+        self.emit("log", "Applied DeepSORT compatibility patch.")
 
 
 
@@ -1271,8 +1275,9 @@ class WatchDogAgentApp(ttk.Frame):
 
 # Main needs to be removed later so that this page cannot be run directly. It should only be run through the main.py file.
 def main() -> None:
-    if sys.version_info[:2] < SUPPORTED_PYTHON:
-        required = ".".join(map(str, SUPPORTED_PYTHON))
+    if not (SUPPORTED_PYTHON <= sys.version_info[:2] < MAX_SUPPORTED_PYTHON):
+        min_required = ".".join(map(str, SUPPORTED_PYTHON))
+        max_supported = ".".join(map(str, MAX_SUPPORTED_PYTHON))
         current = f"{sys.version_info.major}.{sys.version_info.minor}"
 
         root = Tk()
@@ -1281,10 +1286,12 @@ def main() -> None:
         messagebox.showerror(
             "Unsupported Python Version",
             (
-                f"WatchDog Agent requires Python {required}.x.\n\n"
-                f"Current Python: {current}\n\n"
-                "Install Python 3.12 or newer and launch the application again."
-            ),
+                f"WatchDog Agent currently requries Python {min_required}.x.\n\n"
+                f"up to (but not including) {max_supported}.x.\n\n"
+                f"This GUI was launched with Python {current}.\n\n"
+                f"Install a supported Python {min_required}.x - {max_supported}.x "
+                "release and relaunch setup.bat."
+            )
         )
 
         root.destroy()
