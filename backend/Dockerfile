@@ -4,10 +4,12 @@ FROM python:3.11-slim AS builder
 WORKDIR /app
 
 RUN find /etc/apt -type f \( -name "*.list" -o -name "*.sources" \) \
-    -exec sed -i \
-      -e 's|http://deb.debian.org|https://deb.debian.org|g' \
-      -e 's|http://security.debian.org|https://security.debian.org|g' \
-      {} + \
+    -exec sed -Ei \
+      -e 's|^(URIs:[[:space:]]+)[^[:space:]]*deb\.debian\.org|\1https://deb.debian.org|g' \
+      -e 's|^(URIs:[[:space:]]+)[^[:space:]]*security\.debian\.org|\1https://security.debian.org|g' \
+      -e 's|^(deb[[:space:]]+)[^[:space:]]*deb\.debian\.org|\1https://deb.debian.org|g' \
+      -e 's|^(deb[[:space:]]+)[^[:space:]]*security\.debian\.org|\1https://security.debian.org|g' \
+      {} + \ 
     && apt-get update \
     && apt-get install -y --no-install-recommends gcc \
     && rm -rf /var/lib/apt/lists/*
@@ -24,10 +26,12 @@ FROM python:3.11-slim AS development
 WORKDIR /app
 
 RUN find /etc/apt -type f \( -name "*.list" -o -name "*.sources" \) \
-    -exec sed -i \
-      -e 's|http://deb.debian.org|https://deb.debian.org|g' \
-      -e 's|http://security.debian.org|https://security.debian.org|g' \
-      {} + \
+    -exec sed -Ei \
+      -e 's|^(URIs:[[:space:]]+)[^[:space:]]*deb\.debian\.org|\1https://deb.debian.org|g' \
+      -e 's|^(URIs:[[:space:]]+)[^[:space:]]*security\.debian\.org|\1https://security.debian.org|g' \
+      -e 's|^(deb[[:space:]]+)[^[:space:]]*deb\.debian\.org|\1https://deb.debian.org|g' \
+      -e 's|^(deb[[:space:]]+)[^[:space:]]*security\.debian\.org|\1https://security.debian.org|g' \
+      {} + \ 
     && apt-get update \
     && apt-get install -y --no-install-recommends gcc \
     && rm -rf /var/lib/apt/lists/*
@@ -44,9 +48,11 @@ FROM python:3.11-slim AS production
 WORKDIR /app
 
 RUN find /etc/apt -type f \( -name "*.list" -o -name "*.sources" \) \
-    -exec sed -i \
-      -e 's|http://deb.debian.org|https://deb.debian.org|g' \
-      -e 's|http://security.debian.org|https://security.debian.org|g' \
+    -exec sed -Ei \
+      -e 's|^(URIs:[[:space:]]+)[^[:space:]]*deb\.debian\.org|\1https://deb.debian.org|g' \
+      -e 's|^(URIs:[[:space:]]+)[^[:space:]]*security\.debian\.org|\1https://security.debian.org|g' \
+      -e 's|^(deb[[:space:]]+)[^[:space:]]*deb\.debian\.org|\1https://deb.debian.org|g' \
+      -e 's|^(deb[[:space:]]+)[^[:space:]]*security\.debian\.org|\1https://security.debian.org|g' \
       {} + \
     && apt-get update \
     && apt-get install -y --no-install-recommends gcc \

@@ -11,8 +11,12 @@ RUN find /etc/apt -type f \( -name "*.list" -o -name "*.sources" \) \
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.lock .
+RUN pip install \
+    --no-cache-dir \
+    --only-binary=:all: \
+    --require-hashes \
+    -r requirements.lock
 
 COPY controller.py .
 

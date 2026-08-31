@@ -1,13 +1,11 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Any
 from urllib.parse import quote
 
 import asyncio
 import logging
 import os
 import signal
-import subprocess
 import httpx
 
 
@@ -61,7 +59,7 @@ class Runtime:
     backup_started_at: float | None = None
     go2rtc_stream_name: str | None = None
     backup_source_id: str | None = None
-    ffmpeg_process: subprocess.Popen[bytes] | None = None
+    ffmpeg_process: asyncio.subprocess.Process | None = None
 
 
 class FailoverController:
@@ -207,7 +205,7 @@ class FailoverController:
 
 
 
-            if runtime.ffmpeg_process is None or runtime.ffmpeg_process.poll() is not None:
+            if (runtime.ffmpeg_process is None or runtime.ffmpeg_process.returncode is not None):
                 logger.warning("Backup publisher exited for camera %s", runtime.camera.id)
 
 
@@ -219,8 +217,6 @@ class FailoverController:
 
                 return
 
-            #  keep the backup active for a minimum period to avoid rapid source flapping. No AI process is started here.
-            return
 
     async def start_backup(self, runtime: Runtime) -> None:
         camera = runtime.camera
@@ -273,14 +269,13 @@ class FailoverController:
         logger.info("Starting Go2RTC backup for camera %s", camera.id)
 
         
-        runtime.ffmpeg_process = subprocess.Popen(
-            command,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+        runtime.ffmpeg_process = await asyncio.create_subprocess_exec(
+            *command,
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
             start_new_session=True
         )
-
 
         runtime.go2rtc_stream_name = stream_name
         runtime.backup_started_at = asyncio.get_running_loop().time()
@@ -292,32 +287,38 @@ class FailoverController:
     async def stop_backup(self, runtime: Runtime, *, next_state: str) -> None:
         process = runtime.ffmpeg_process
 
-        if process is not None and process.poll() is None:
-            logger.info("Stopping backup publisher for camera %s", runtime.camera.id)
-            try:
-                os.killpg(process.pid, signal.SIGTERM)
-                process.wait(timeout=8)
-            except (ProcessLookupError, subprocess.TimeoutExpired):
+        if process is not None:
+            if process.returncode is None:
+
+                logger.info("Stopping backup publisher for camera %s", runtime.camera.id)
+
+
                 try:
-                    os.killpg(process.pid, signal.SIGKILL)
+                    os.killpg(process.pid, signal.SIGTERM)
+                    await asyncio.wait_for(process.wait(), timeout=8)
                 except ProcessLookupError:
                     pass
+                except asyncio.TimeoutError:
 
-        runtime.ffmpeg_process = None
-        if runtime.go2rtc_stream_name:
-            await self.delete_go2rtc_stream(runtime.go2rtc_stream_name)
-        runtime.go2rtc_stream_name = None
-        runtime.backup_started_at = None
-        runtime.backup_source_id = None
-        runtime.failure_probes = 0
-        runtime.state = next_state
+                    logger.warning("FFmpeg did not stop gracefully for camera %s; killing it", runtime.camera.id)
 
 
-        logger.info("Camera %s is now %s", runtime.camera.id, next_state)
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+
+                    try:
+                        await asyncio.wait_for(process.wait(), timeout=2)
+                    except asyncio.TimeoutError:
+
+                        logger.error("FFmpeg process did not exit after SIGKILL for camera %s", runtime.camera.id)
+            else:
+                await process.wait()
 
     async def stop_all_backups(self) -> None:
 
-        for runtime in list(self.runtimes.values()):
+        for runtime in self.runtimes.values():
             if runtime.state == "BACKUP_ACTIVE":
                 await self.stop_backup(runtime, next_state="EDGE_ACTIVE")
 
