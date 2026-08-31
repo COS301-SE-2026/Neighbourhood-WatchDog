@@ -179,27 +179,26 @@ class FailoverController:
 
     async def reconcile_camera(self, runtime: Runtime, path: PathStatus) -> None:
         if runtime.state == "EDGE_ACTIVE":
-            if path.online:
+            edge_agent_alive = self.edge_agent_is_alive(runtime.camera)
+
+            #  A live MediaMTX path is a safety guard. Even if the heartbeat is stale, do not override an active publisher.
+            if edge_agent_alive or path.online:
                 runtime.failure_probes = 0
 
                 return
 
             runtime.failure_probes += 1
 
-
             logger.warning(
-                "Camera %s has no live MediaMTX publisher (%s/%s failed probes)",
+                "Camera %s has no recent Edge Agent heartbeat and no live MediaMTX publisher "
+                "(%s/%s failed probes)",
                 runtime.camera.id,
                 runtime.failure_probes,
                 FAILURE_PROBES
             )
 
-
             if runtime.failure_probes >= FAILURE_PROBES:
                 await self.start_backup(runtime)
-
-
-
 
             return
 
