@@ -22,6 +22,7 @@ logger = logging.getLogger("watchdog.failover")
 #requests contain the camera RTSP URL, which may contain credentials.
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
+#it prevents the logs from exposing rtsp urls and passwords
 
 
 
@@ -322,7 +323,7 @@ class FailoverController:
 
     async def configure_go2rtc_stream(self, name: str, source_url: str) -> None:
 
-        response = await self.client.put(
+        response = await self.client.patch(
 
             f"{GO2RTC_URL}/api/streams",
             params={"name": name, "src": source_url},
@@ -341,9 +342,14 @@ class FailoverController:
         )
 
 
-        if response.status_code not in {200, 204, 404}:
-            response.raise_for_status()
+        if response.status_code in {200, 204, 404}:
+            return
 
+        if response.status_code == 400:
+            logger.info("Go2RTC stream %s removed from memory; config file is read-only", name)
+            return
+
+        response.raise_for_status() 
 
     def authenticated_mediamtx_publish_url(self, camera: Camera) -> str:
 
