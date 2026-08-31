@@ -104,12 +104,25 @@
 
         await redirectToFirstProperty();
     } catch (err) {
-        const errorMessage =
+        const rawMessage =
             err instanceof Error
                 ? err.message
                 : "Invalid email or password. Please try again.";
 
-        setError(errorMessage);
+        const isUnconfirmedUser =
+            rawMessage.toLowerCase().includes("user is not confirmed") ||
+            rawMessage.includes("UserNotConfirmedException");
+
+        if (isUnconfirmedUser) {
+            setNeedsConfirmation(true);
+            setError(
+                "Your account has not been confirmed yet. Please confirm your email before logging in."
+            );
+        } else {
+            setNeedsConfirmation(false);
+            setError(rawMessage);
+        }
+
         console.error("Login error:", err);
     } finally {
         setIsLoading(false);
