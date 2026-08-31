@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import importlib
-import time
+import json
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Callable
 
-from services.dependency_service import AI_DIR, PERSON_MODEL_PATH
+from services.dependency_service import AI_DIR, PERSON_MODEL_PATH, get_venv_python
 
 ASSETS_DIR = AI_DIR / "assets"
 BENCHMARK_VIDEO_PATH = ASSETS_DIR / "clear-presence.mp4"
+RUNNER_SCRIPT_PATH = Path(__file__).resolve().parent / "benchmark_runner.py"
 
 #30 frames run through the detector first without tiuming 
 #to allow loading the model and starting up the GPU
@@ -58,56 +59,19 @@ class BenchmarkService:
             *,
             video_path: Path | None = None,
             person_model_path: Path | None = None,
+            venv_python: Path | None = None,
             warmup_frames: int = WARMUP_FRAMES,
             duration: float = BENCHMARK_DURATION,
             ) -> None:
         self.video_path = video_path or BENCHMARK_VIDEO_PATH
         self.person_model_path = person_model_path or PERSON_MODEL_PATH
+        self.venv_python = venv_python or get_venv_python()
         self.warmup_frames = warmup_frames
         self.duration = duration
-
-        self._cv2: Any= None
-        self._psutil_process: Any = None
-        self._torch: Any = None
-        self._detector_cls: Any = None
-
-    def _ensure_dependencies_loaded(self) -> None:
-        """Imports cv2, psutl, torch, Detector on first use only"""
-        if self._cv2 is None:
-            self._cv2 = importlib.import_module("cv2")
-
-        if self._psutil_process is None:
-            psutil_module = importlib.import_module("psutil")
-            self._psutil_process = psutil_module.Process()
-
-        if self._detector_cls is None:
-            tracker_module = importlib.import_module(
-                "pipeline.processing.tracker"
-            )
-            self._detector_cls = tracker_module.Detector
-
-        if self._torch is None:
-            try:
-                self._torch = importlib.import_module("torch")
-            except ImportError:
-                self._torch = False
 
     def video_is_available(self) -> bool:
         """Checks whether test clip exists"""
         return self.video_path.is_file()
-
-    def _detect_gpu(self) -> tuple[bool, str | None]:
-        """Checks whether torch can see a usable CUDA device"""
-        if self._torch is None:
-            return False, None
-
-        try:
-            if self._torch.cuda.is_available():
-                return True, self._torch.cuda.get_device_name(0)
-        except Exception:
-            pass
-
-        return False, None
 
     @staticmethod
     def _rate_fps(avg_fps: float) -> str:
@@ -118,108 +82,23 @@ class BenchmarkService:
             return RATING_LIMITED
         return RATING_INSUFFICIENT
 
-    def _run_warmup(self, detector: Any, capture: Any) -> None:
+    def _parse_progress_line(self, line: str) -> tuple[str, float] | None:
+        """Parses a 'PROGRESS:<message>|<fraction>' line from the runner"""
+        _, _, rest = line.partition(":")
+        message, sep, fraction = rest.rpartition("|")
+
+        if not sep:
+            return None
+
+        try:
+            return message, float(fraction)
+        except ValueError:
+            return None
+
+    def run(self, progress_callback: ProgressCallback | None = None) -> BenchmarkResult:#NOSONAR
         """
-        Feeds first few frames through pipeline without timing them
-        so that loading the model and starting GPU doesn't skew the results
-        """
-        for _ in range(self.warmup_frames):
-            ok, frame = capture.read()
-            if not ok:
-                break
-
-            detector.process_frame(frame)
-
-    def _run_measured(
-            self,
-            detector: Any,
-            capture: Any,
-            report: Callable[[str, float], None]
-    ) -> tuple[list[float], float, float, float]:
-        """
-        Runs detector against clip and records per-frame timings
-        and peak CPU, memory and VRAM usage along the way
-        """
-        frame_times: list[float] = []
-        peak_memory = 0.0
-        peak_cpu_percent = 0.0
-        peak_gpu_memory = 0.0
-
-        self._psutil_process.cpu_percent(interval=None)
-
-        start_time = time.monotonic()
-
-        while (time.monotonic() - start_time) < self.duration:
-            ok, frame = capture.read()
-
-            if not ok:
-                capture.set(self._cv2.CAP_PROP_POS_FRAMES, 0)
-                continue
-
-            frame_start = time.perf_counter()
-            detector.process_frame(frame)
-            frame_times.append(time.perf_counter() - frame_start)
-
-            peak_memory = max(
-                peak_memory,
-                self._psutil_process.memory_info.rss() / (1024 * 1024),
-            )
-
-            peak_cpu_percent = max(
-                peak_cpu_percent,
-                self._psutil_process.cpu_percent(interval=None),
-            )
-
-            if self._torch is not None and self._torch.cuda.is_available():
-                peak_gpu_memory = max(
-                    peak_gpu_memory,
-                    self._torch.cuda.max_memory_allocated() / (1024 * 1024),
-                )
-
-            elapsed_fraction = ((time.monotonic() - start_time) / self.duration)
-
-            report(
-                "Measuring performance...",
-                min(0.2 + elapsed_fraction * 0.8, 0.99),
-            )
-
-        return frame_times, peak_memory, peak_cpu_percent, peak_gpu_memory
-
-    def _build_result(
-            self,
-            *,
-            frame_times: list[float],
-            peak_memory: float,
-            peak_cpu_percent: float,
-            gpu_available: bool,
-            gpu_name: str | None,
-            peak_gpu_memory: float,
-    ) -> BenchmarkResult:
-        """Turns per-frame timings into summarised result"""
-        frames_processed = len(frame_times)
-        duration = sum(frame_times)
-        avg_fps = frames_processed / duration if duration > 0 else 0.0
-        sorted_times = sorted(frame_times)
-        p95_index = min(int(len(sorted_times) * 0.95), len(sorted_times) - 1)
-        p95_frame_time = sorted_times[p95_index] * 1000 #milliseconds
-
-        return BenchmarkResult(
-            frames_processed=frames_processed,
-            duration=duration,
-            avg_fps=avg_fps,
-            p95_frame_time=p95_frame_time,
-            peak_memory=peak_memory,
-            peak_cpu_percent=peak_cpu_percent,
-            gpu_available=gpu_available,
-            gpu_name=gpu_name,
-            peak_gpu_memory=peak_gpu_memory,
-            rating=self._rate_fps(avg_fps),
-        )
-
-    def run(self, progress_callback: ProgressCallback | None = None) -> BenchmarkResult:
-        """
-        Runs a warmup pass then a measured pass of the detector over the test clip
-        and returns benchmark results.
+        Launches the benchmark runner script under the venv Python interpreter,
+        streams its progress back through progress_callback and returns BenchmarkResult
 
         progress_callback receives message and fraction 
         and is used to update gui status label and progress bar during run
@@ -234,47 +113,77 @@ class BenchmarkService:
                 error=f"Benchmark clip not found: {self.video_path}"
             )
         
-        try:
-            report("Loading detection model...", 0.0)
-            self._ensure_dependencies_loaded()
-            detector = self._detector_cls(str(self.person_model_path))
-        except Exception as error:
-            return BenchmarkResult(error=f"Could not load model: {error}")
-
-        gpu_available, gpu_name = self._detect_gpu()
-
-        capture = self._cv2.VideoCapture(str(self.video_path))
-        if not capture.isOpened():
+        if not self.venv_python.is_file():
             return BenchmarkResult(
-                error=f"Could not open benchmark clip: {self.video_path}"
+                error=(
+                    "WatchDog's Python environment could not be found. "
+                    "Please complete the dependency setup first."
+                )
             )
+
+        command = [
+            str(self.venv_python),
+            str(RUNNER_SCRIPT_PATH),
+            "--video", str(self.video_path),
+            "--model", str(self.person_model_path),
+            "--warmup-frames", str(self.warmup_frames),
+            "--duration", str(self.duration),
+        ]
 
         try:
-            report("Warming up...", 0.05)
-            self._run_warmup(detector, capture)
-
-            report("Measuring performance...", 0.2)
-            frame_times, peak_memory, peak_cpu_percent, peak_gpu_memory = (
-                self._run_measured(detector, capture, report)
+            process = subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1,
             )
-        finally:
-            capture.release()
-
-        if not frame_times:
+        except OSError as error:
             return BenchmarkResult(
-                error="Benchmark clip ended before any frames could be measured."
+                error=f"Could not start benchmark process: {error}"
             )
 
-        result = self._build_result(
-            frame_times=frame_times,
-            peak_memory=peak_memory,
-            peak_cpu_percent=peak_cpu_percent,
-            gpu_available=gpu_available,
-            gpu_name=gpu_name,
-            peak_gpu_memory=peak_gpu_memory,
+        payload: dict | None = None
+
+        assert process.stdout is not None
+        for raw_line in process.stdout:
+            line = raw_line.strip()
+            if not line:
+                continue
+
+            if line.startswith("PROGRESS:"):
+                parsed = self._parse_progress_line(line)
+                if parsed is not None:
+                    report(*parsed)
+            elif line.startswith("RESULT:"):
+                _, _, raw_json = line.partition(":")
+                try:
+                    payload = json.loads(raw_json)
+                except ValueError:
+                    payload = {"error": "Could not parse benchmark results."}
+
+        stderr_output = process.stderr.read() if process.stderr else ""
+        process.wait()
+
+        if payload is None:
+            detail = stderr_output.strip() or f"exit code {process.returncode}"
+            return BenchmarkResult(error=f"Benchmark process failed: {detail}")
+
+        if payload.get("error"):
+            return BenchmarkResult(error=str(payload["error"]))
+
+        result = BenchmarkResult(
+            frames_processed=payload.get("frames_processed", 0),
+            duration=payload.get("duration", 0.0),
+            avg_fps=payload.get("avg_fps", 0.0),
+            p95_frame_time=payload.get("p95_frame_time", 0.0),
+            peak_memory=payload.get("peak_memory", 0.0),
+            peak_cpu_percent=payload.get("peak_cpu_percent", 0.0),
+            gpu_available=payload.get("gpu_available", False),
+            gpu_name=payload.get("gpu_name"),
+            peak_gpu_memory=payload.get("peak_gpu_memory", 0.0),
         )
-
-        report("Benchmark complete", 1.0)
+        result.rating = self._rate_fps(result.avg_fps)
         return result
 
 def estimate_max_cameras(
