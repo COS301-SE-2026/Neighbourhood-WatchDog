@@ -27,14 +27,25 @@ from app.schemas.alert import (
     CreateInternalAlertRequest,
     InternalAlertCreateRes,
     UpdateAlertClipRequest,
-    AlertRes
+    AlertRes, 
+    AlertCreate, 
+    AlertMetricItem,
+    AlertMetricsRes, 
+    TimeIntervalsEnum, 
+    TimePeriod, 
+    AlertFrequencyMetricsRes, 
+    NumberInPeriod, 
+    TrendGroupBy, 
+    TrendDirection, 
+    TrendBucket, 
+    TrendData, 
+    AlertResponse
 )
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction, TargetEntity
 from app.models.alert import Alert, DetectionType
 
 from app.models.neighbourhood import Neighbourhood
-from app.schemas.alert import AlertCreate, AlertMetricItem, AlertMetricsRes, TimeIntervalsEnum, TimePeriod, AlertFrequencyMetricsRes, NumberInPeriod, TrendGroupBy, TrendDirection, TrendBucket, TrendData, AlertResponse
 from app.services.notification_service import _format_whatsapp_message, _notify_users
 from app.models.user import User
 
@@ -46,10 +57,12 @@ MAX_PAGE_SIZE = 100
 NO_DATABASE_SESSION = "No database session"
 NOT_AUTHORISED = "Not authorised for this neighbourhood"
 NOT_AUTHENTICATED = "Not authenticated"
+ALERT_ID_INVALID = "alert_id is not a valid UUID"
 ALERT_NOT_FOUND = "Alert not found"
 CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "")
 AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
+
 
 
 def _s3_client():
@@ -880,7 +893,7 @@ async def update_alert_clip_for_agent_handler(alert_id: str, body: UpdateAlertCl
         alert_uuid = UUID(alert_id)
     except ValueError:
         logger.warning("internal update_clip: malformed alert_id=%s", alert_id)
-        raise HTTPException(status_code=400, detail="alert_id is not a valid UUID")
+        raise HTTPException(status_code=400, detail=ALERT_ID_INVALID)
 
     try:
         clip_expires_at = datetime.fromisoformat(body.clip_expires_at)
@@ -940,7 +953,7 @@ async def upload_alert_clip_for_agent_handler(
     try:
         alert_uuid = UUID(alert_id)
     except ValueError as error:
-        raise HTTPException(status_code=400, detail="alert_id is not a valid UUID") from error
+        raise HTTPException(status_code=400, detail=ALERT_ID_INVALID) from error
 
     stmt = (
         select(Alert)
@@ -1015,7 +1028,7 @@ async def get_alert_for_agent(
     try:
         alert_uuid = UUID(alert_id)
     except ValueError as error:
-        raise HTTPException(status_code=400, detail="alert_id is not a valid UUID") from error
+        raise HTTPException(status_code=400, detail=ALERT_ID_INVALID) from error
 
     stmt = (
         select(Alert)
