@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert"; 
-import { Loader2 } from "lucide-react"; 
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useState } from "react";
 
 type LoginCardProps = {
   className?: string;
@@ -28,6 +29,8 @@ type LoginCardProps = {
   
   isLoading?: boolean; //loading state
   error?: string | null;
+
+  onConfirm?: () => void;
 };
 
 export function LoginCard({
