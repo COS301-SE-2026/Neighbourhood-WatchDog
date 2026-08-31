@@ -19,6 +19,7 @@ THREAT_MODEL_PATH = WEIGHTS_DIR / "best.pt"
 PERSON_MODEL_PATH = WEIGHTS_DIR / "yolov8n.pt"
 
 SUPPORTED_PYTHON = (3, 12)
+MAX_SUPPORTED_PYTHON = (3, 14)
 INSTALL_SCHEMA_VERSION = 1
 
 #Measured dependency disk size by installing dependencies on windows and linux
@@ -206,6 +207,7 @@ class DependencyService:
             person_model: Path | None = None,
             requirements_file : Path | None = None,
             supported_python: tuple[int, int] = SUPPORTED_PYTHON,
+            max_supported_python: tuple[int, int] = MAX_SUPPORTED_PYTHON,
             install_schema_version: int = INSTALL_SCHEMA_VERSION,
             ) -> None:
         self.venv_python = venv_python or get_venv_python()
@@ -214,6 +216,7 @@ class DependencyService:
         self.person_model = person_model or PERSON_MODEL
         self.requirements_file = requirements_file or REQUIREMENTS_FILE
         self.supported_python = supported_python
+        self.max_supported_python = max_supported_python
         self.install_schema_version = install_schema_version
 
     def check(self) -> DependencyReport:
@@ -257,7 +260,8 @@ class DependencyService:
         except ValueError:
             problems.append("install_python_version_unknown")
         else:
-            if (installed_major, installed_minor) < self.supported_python:
+            installed_version_tuple = (installed_major, installed_minor)
+            if not (self.supported_python <= installed_version_tuple < self.max_supported_python):
                 problems.append("install_python_version_unsupported")
 
         return DependencyReport(problems=problems)
