@@ -76,9 +76,23 @@ export function LoginCard({
       <CardContent>
         <div className="flex flex-col gap-6">
           {error && (
-            <Alert variant="destructive" className="mb-2">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+            <div className="space-y-2">
+              <Alert variant="destructive" className="mb-2">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+
+              {onConfirm && (
+                <Button
+                  type="button"
+                  variant="link"
+                  onClick={onConfirm}
+                  disabled={isLoading}
+                  className="h-auto px-0 text-primary hover:text-primary/80"
+                >
+                  Confirm your account
+                </Button>
+              )}
+            </div>
           )}
 
           <div className="grid gap-2">
