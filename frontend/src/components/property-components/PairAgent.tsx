@@ -3,19 +3,10 @@
 import { useState } from "react";
 import { Check, Copy, KeyRound, Loader2, RefreshCw} from "lucide-react";
 
-import {
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
 
 import { getPairingToken } from "@/lib/api/pairAgent";
 import { Button } from "@/components/ui/button";
-import {
-  CardDescription,
-} from "@/components/ui/card";
+
 
 interface PairAgentProps {
   propertyId: string;
@@ -68,22 +59,20 @@ export default function PairAgent({ propertyId, propertyAddress}: Readonly<PairA
   };
 
   return (
-    <DialogContent className="mx-auto my-8 w-full max-w-md border-border bg-card">
-      <DialogHeader>
+      <div className="w-full">
         <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
           <KeyRound className="h-5 w-5 text-primary" />
         </div>
-        <DialogTitle className="text-card-foreground mt-4">Pair security agent</DialogTitle>
+        <h2 className="text-card-foreground mt-4">Pair security agent</h2>
 
-        <DialogDescription className="mt-4">
+        <p className="mt-4">
           Property:
           <span className="mt-1 block font-medium text-foreground">{propertyAddress}</span>
-        </DialogDescription>
+        </p>
 
-        <CardDescription className="leading-relaxed text-muted-foreground mt-4">
+        <p className="leading-relaxed text-muted-foreground mt-4">
           Generate a one-time token to securely connect a WatchDog edge agent to the selected property.
-        </CardDescription>
-      </DialogHeader>
+        </p>
 
       <div className="space-y-4">
         {error && (
@@ -125,7 +114,7 @@ export default function PairAgent({ propertyId, propertyAddress}: Readonly<PairA
         )}
       </div>
 
-      <DialogFooter>
+      <div>
         <Button
           type="button"
           onClick={getToken}
@@ -149,7 +138,7 @@ export default function PairAgent({ propertyId, propertyAddress}: Readonly<PairA
             </>
           )}
         </Button>
-      </DialogFooter>
-    </DialogContent>
+      </div>
+    </div>
   );
 }

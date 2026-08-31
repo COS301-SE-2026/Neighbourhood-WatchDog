@@ -2,7 +2,7 @@
 #uses API for auth
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from app.auth.dependencies import get_authenticated_edge_agent
 from app.core.database import DbSession
@@ -16,6 +16,7 @@ from app.schemas.alert import (
 from app.services.alert_service import (
     create_alert_for_agent_handler,
     update_alert_clip_for_agent_handler,
+    upload_alert_clip_for_agent_handler,
 )
 
 router = APIRouter(prefix="/internal", tags=["internal"])
@@ -69,5 +70,35 @@ async def update_clip(
         body=body, 
         credential=credential, 
         db=db
+    )
+
+
+@router.post(
+    "/alerts/{alert_id}/clip",
+    responses={
+        400: {"description": "Empty or invalid clip upload"},
+        401: {"description": "Invalid or revoked edge agent credential"},
+        404: {"description": "Alert not found for this edge agent property"},
+        413: {"description": "Clip exceeds the upload limit"},
+        503: {"description": "Clip storage is unavailable"},
+    },
+)
+async def upload_clip(
+    alert_id: str,
+    db: DbSession,
+    credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)],
+    clip: Annotated[UploadFile, File(...)]
+) -> AlertClipUpdateRes:
+    """Receive an H.264 MP4 from an authenticated Edge Agent and store it in S3."""
+    if clip.content_type not in {"video/mp4", "application/octet-stream"}:
+        raise HTTPException(status_code=400, detail="Clip upload must use video/mp4 content type")
+
+    clip_bytes = await clip.read()
+    return await upload_alert_clip_for_agent_handler(
+        alert_id=alert_id,
+        clip_bytes=clip_bytes,
+        content_type=clip.content_type,
+        credential=credential,
+        db=db,
     )
     

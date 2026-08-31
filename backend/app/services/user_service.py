@@ -6,8 +6,12 @@ from sqlalchemy.exc import IntegrityError
 from uuid import UUID
 
 from app.core.database import DbSession
+from app.models.neighbourhood import Neighbourhood
+from app.models.neighbourhood_user import NeighbourhoodUser
+from app.models.property import Property
+from app.models.property_user import PropertyUser
 from app.models.user import User, UserRole
-from app.schemas.user import GetUserResSchema
+from app.schemas.user import CurrentUserContextRes, CurrentUserNeighbourhood, CurrentUserProperty, CurrentUserSummary, GetUserResSchema
 
 logger = logging.getLogger(__name__)
 
@@ -126,4 +130,62 @@ async def get_user_by_id_handler(
         cognito_sub=user.cognito_sub,
         role=user.system_role.value if hasattr(user.system_role, "value") else str(user.system_role),
         created_at=user.created_at,
+    )
+
+async def get_current_user_context_handler(claims: dict, db: DbSession) -> CurrentUserContextRes:
+    """Retrieves the context of a user"""
+    user_id = UUID(claims["id"])
+
+    user_result = await db.execute(
+        select(User).where(User.id == user_id)
+    )
+
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Authenticated user not found in databse")
+
+    user_summary = CurrentUserSummary(
+        id=user_id,
+        name=user.first_name + " " + user.last_name,
+        system_role=user.system_role
+    )
+
+    neighbourhoods_result = await db.execute(
+        select(NeighbourhoodUser, Neighbourhood.name)
+        .join(Neighbourhood, Neighbourhood.id == NeighbourhoodUser.neighbourhood_id)
+        .where(NeighbourhoodUser.user_id == user_id)
+    )
+
+    neighbourhood_lookup: dict[UUID, CurrentUserNeighbourhood] = {
+        membership.neighbourhood_id: CurrentUserNeighbourhood(
+            id=membership.neighbourhood_id,
+            name=name,
+            role=membership.role,
+        )
+        for membership, name in neighbourhoods_result.all()
+    }
+
+    properties_result = await db.execute(
+        select(PropertyUser, Property)
+        .join(Property, Property.id == PropertyUser.property_id)
+        .where(PropertyUser.user_id == user_id)
+    )
+
+
+    current_properties = [
+        CurrentUserProperty(
+            id=prop_user.property_id,
+            address=property.address,
+            neighbourhood=neighbourhood_lookup.get(property.neighbourhood_id),
+            is_admin=prop_user.is_admin,
+        )
+        for prop_user, property in properties_result.all()
+    ]
+
+    
+
+    return CurrentUserContextRes(
+        user=user_summary,
+        properties=current_properties
     )

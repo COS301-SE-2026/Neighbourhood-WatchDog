@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { CheckCheck, XCircle, Clock, Loader2, User } from "lucide-react";
+import { Check, Clock, Loader2, User, X} from "lucide-react";
 
 export type JoinRequestStatus = "PENDING" | "APPROVED" | "DENIED";
 
@@ -18,66 +16,50 @@ export interface JoinRequest {
 }
 
 export function joinRequestInitials(name: string): string {
-  return name
+return name
     .split(" ")
+    .filter(Boolean)
     .slice(0, 2)
-    .map((w) => w[0])
+    .map((word) => word[0])
     .join("")
     .toUpperCase();
 }
 
 export function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const secs = Math.floor(diff / 1000);
-  if (secs < 60) return `${secs}s ago`;
-  const mins = Math.floor(secs / 60);
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return new Intl.DateTimeFormat("en-ZA", { dateStyle: "medium" }).format(
-    new Date(iso),
-  );
+    const difference = Date.now() - new Date(iso).getTime();
+    const seconds = Math.floor(difference / 1000);
+
+    if (seconds < 60) return `${seconds}s ago`;
+
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+
+    return new Intl.DateTimeFormat("en-ZA", {
+        dateStyle: "medium",
+    }).format(new Date(iso));
 }
 
 const STATUS_CONFIG: Record<
   JoinRequestStatus,
-  { badge: string; label: string; icon: ReactNode }
+  { label: string; className: string; icon: ReactNode }
 > = {
   PENDING: {
-    badge: "bg-blue/20 border border-blue/40 text-sky",
     label: "Pending",
-    icon: <Clock className="h-2.5 w-2.5" />,
+    className: "text-amber-300",
+    icon: <Clock className="size-3.5" />,
   },
   APPROVED: {
-    badge: "bg-safe/15 border border-safe/30 text-safe",
     label: "Approved",
-    icon: <CheckCheck className="h-2.5 w-2.5" />,
+    className: "text-emerald-400",
+    icon: <Check className="size-3.5" />,
   },
   DENIED: {
-    badge: "bg-threat/12 border border-threat/25 text-threat",
     label: "Denied",
-    icon: <XCircle className="h-2.5 w-2.5" />,
-  },
-};
-
-const AVATAR_CONFIG: Record<
-  JoinRequestStatus,
-  { bg: string; border: string; text: string }
-> = {
-  PENDING: {
-    bg: "bg-blue/20",
-    border: "border-blue/30",
-    text: "text-sky",
-  },
-  APPROVED: {
-    bg: "bg-safe/15",
-    border: "border-safe/25",
-    text: "text-safe",
-  },
-  DENIED: {
-    bg: "bg-threat/12",
-    border: "border-threat/20",
-    text: "text-threat",
+    className: "text-red-300",
+    icon: <X className="size-3.5" />,
   },
 };
 
@@ -88,126 +70,110 @@ export interface RequestCardProps {
 }
 
 export function RequestCard({ request, onApprove, onDeny }: RequestCardProps) {
-  const [approvingId, setApprovingId] = useState(false);
-  const [denyingId, setDenyingId] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const [isDenying, setIsDenying] = useState(false);
 
   const isPending = request.status === "PENDING";
-  const isLoading = approvingId || denyingId;
-
-  const statusCfg = STATUS_CONFIG[request.status];
-  const avatarCfg = AVATAR_CONFIG[request.status];
+  const isLoading = isApproving || isDenying;
+  const status = STATUS_CONFIG[request.status];
 
   async function handleApprove() {
-    setApprovingId(true);
-    try {
-      await onApprove(request.id);
-    } finally {
-      setApprovingId(false);
-    }
+      setIsApproving(true);
+
+      try {
+          await onApprove(request.id);
+      } finally {
+          setIsApproving(false);
+      }
   }
 
   async function handleDeny() {
-    setDenyingId(true);
-    try {
-      await onDeny(request.id);
-    } finally {
-      setDenyingId(false);
-    }
+      setIsDenying(true);
+
+      try {
+          await onDeny(request.id);
+      } finally {
+          setIsDenying(false);
+      }
   }
 
   return (
-    <Card
-      className={[
-        "flex flex-col items-center gap-3 px-4 py-4 rounded-xl border transition-all duration-150",
-        "bg-steel border-steel",
-        isPending ? "hover:border-blue/50" : "opacity-70 hover:opacity-90",
-      ]
-        .filter(Boolean)
-        .join(" ")}
-      role="article"
-      aria-label={`Join request from ${request.user_name}`}
-    >
-      {/* Avatar */}
-      <div
+    <article
         className={[
-          "h-10 w-10 rounded-full border flex items-center justify-center shrink-0",
-          "text-sm font-semibold tracking-wide",
-          avatarCfg.bg,
-          avatarCfg.border,
-          avatarCfg.text,
+            "flex flex-col gap-4 border border-white/10 bg-zinc-950 px-4 py-4",
+            "sm:flex-row sm:items-center sm:justify-between",
+            isPending
+                ? "transition-colors hover:border-white/20"
+                : "opacity-65",
         ].join(" ")}
-        aria-hidden="true"
-      >
-        {request.user_name ? (
-          joinRequestInitials(request.user_name)
-        ) : (
-          <User className="h-4 w-4" />
-        )}
-      </div>
+        aria-label={`Join request from ${request.user_name}`}
+    >
+        <div className="flex min-w-0 items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-xs font-medium text-white/70">
+                {request.user_name ? (
+                    joinRequestInitials(request.user_name)
+                ) : (
+                    <User className="size-4" />
+                )}
+            </div>
 
-      {/* Info */}
-      <div className="flex-1 min-w-0 text-center">
-        <p className="text-sm font-semibold text-white truncate leading-snug">
-          {request.user_name}
-        </p>
-        <div className="flex flex-wrap items-center gap-3 mt-0.5">
-          <span className="flex items-center gap-1 text-xs text-mist/60 font-mono">
-            <Clock className="h-2.5 w-2.5" />
-            {timeAgo(request.created_at)}
-          </span>
-          <span className="text-xs text-mist/40 font-mono truncate hidden sm:inline">
-            {request.id}
-          </span>
-        </div>
-      </div>
+            <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-white">
+                    {request.user_name || "Unknown resident"}
+                </p>
 
-      {/* Status badge */}
-      <span
-        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-widest shrink-0 ${statusCfg.badge}`}
-        aria-label={`Status: ${statusCfg.label}`}
-      >
-        {statusCfg.icon}
-        {statusCfg.label}
-      </span>
+                  <p className="mt-1 flex items-center gap-1.5 text-xs text-white/45">
+                      <Clock className="size-3" />
+                      Requested {timeAgo(request.created_at)}
+                  </p>
+              </div>
+          </div>
 
-      {/* Actions (only for pending) */}
-      {isPending && (
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            size="sm"
-            disabled={isLoading}
-            onClick={handleApprove}
-            aria-label="Approve join request"
-            className="bg-safe/15 hover:bg-safe/30 text-safe border border-safe/30 text-xs font-semibold transition-colors duration-100 h-7 px-3"
-          >
-            {approvingId ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <>
-                <CheckCheck className="h-3 w-3 mr-1" />
-                Approve
-              </>
-            )}
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={isLoading}
-            onClick={handleDeny}
-            aria-label="Deny join request"
-            className="bg-threat/10 hover:bg-threat/20 text-threat border border-threat/25 text-xs font-semibold transition-colors duration-100 h-7 px-3"
-          >
-            {denyingId ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <>
-                <XCircle className="h-3 w-3 mr-1" />
-                Deny
-              </>
-            )}
-          </Button>
-        </div>
-      )}
-    </Card>
+          <div className="flex items-center justify-between gap-4 sm:justify-end">
+              <span
+                  className={`inline-flex items-center gap-1.5 text-xs font-medium ${status.className}`}
+                  aria-label={`Status: ${status.label}`}
+              >
+                  {status.icon}
+                  {status.label}
+              </span>
+
+              {isPending && (
+                  <div className="flex items-center gap-2">
+                      <button
+                          type="button"
+                          disabled={isLoading}
+                          onClick={handleDeny}
+                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-white/10 px-3 text-xs font-medium text-white/60 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                          {isDenying ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                              <>
+                                  <X className="size-3.5" />
+                                  Deny
+                              </>
+                          )}
+                      </button>
+
+                      <button
+                          type="button"
+                          disabled={isLoading}
+                          onClick={handleApprove}
+                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-emerald-500 px-3 text-xs font-medium text-black transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/30 disabled:text-black/50"
+                      >
+                          {isApproving ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                              <>
+                                  <Check className="size-3.5" />
+                                  Approve
+                              </>
+                          )}
+                      </button>
+                  </div>
+              )}
+          </div>
+      </article>
   );
 }

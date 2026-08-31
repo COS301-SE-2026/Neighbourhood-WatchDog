@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from app.models.audit_log import AuditAction, TargetEntity
 from app.schemas.camera import (
     EnabledCamerasRes,
@@ -73,7 +73,6 @@ async def register_camera_handler(req, db, claims):
         new_camera = Camera(
             property_id=req.property_id,
             name=req.name,
-            neighbourhood_id=property_obj.neighbourhood_id,
             rtsp_url=ciphertext_rtsp_url,
             visibility=req.visibility,
             location=req.location,
@@ -98,7 +97,6 @@ async def register_camera_handler(req, db, claims):
             new_values={
                 "property_id": str(new_camera.property_id),
                 "name": new_camera.name,
-                "neighbourhood_id": str(new_camera.neighbourhood_id),
                 "visibility": new_camera.visibility,
                 "location": new_camera.location,
             },
@@ -111,7 +109,7 @@ async def register_camera_handler(req, db, claims):
             id=new_camera.id,
             name=new_camera.name,
             property_id=new_camera.property_id,
-            neighbourhood_id=new_camera.neighbourhood_id,
+            neighbourhood_id=property_obj.neighbourhood_id,
             rtsp_url=new_camera.rtsp_url,
             visibility=new_camera.visibility,
             location=new_camera.location,
@@ -327,11 +325,15 @@ async def list_cameras_handler(property_id, db, claims):
 async def list_enabled_cameras_for_agent_handler(property_id: UUID, db:AsyncSession) -> ListEnabledCameras:
     """Returns enabled cameras available to an authenticated AI worker."""
 
-    stmt = select(Camera).where(
-        Camera.property_id == property_id,
-        Camera.enabled.is_(True)
-    ).order_by(Camera.created_at.asc())
-
+    stmt = (
+    select(Camera)
+        .options(joinedload(Camera.property), selectinload(Camera.detection_zones))
+        .where(
+            Camera.property_id == property_id,
+            Camera.enabled.is_(True)
+        )
+        .order_by(Camera.created_at.asc())
+    )
     result = await db.execute(stmt)
     cameras = result.scalars().all()
 
@@ -348,8 +350,9 @@ async def list_enabled_cameras_for_agent_handler(property_id: UUID, db:AsyncSess
                 id=camera.id,
                 rtsp_url=decrypt_rtsp_url(camera.rtsp_url),
                 enabled=camera.enabled,
-                neighbourhood_id=camera.neighbourhood_id,
+                neighbourhood_id=camera.property.neighbourhood_id,
                 confidence_threshold=camera.confidence_threshold,
+                zones=[zone.polygon for zone in camera.detection_zones],
                 publish_username=publish_username,
                 publish_password=publish_password,
             )

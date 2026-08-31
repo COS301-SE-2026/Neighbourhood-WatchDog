@@ -369,6 +369,10 @@ export function AppSidebar() {
   };
 
   const handleLogout = async () => {
+
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("idToken");
+
     logout();
     router.push("/auth/login");
   };
