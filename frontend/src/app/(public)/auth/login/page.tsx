@@ -20,6 +20,7 @@
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
     const [showMfa, setShowMfa] = useState(false);
     const [mfaSession, setMfaSession] = useState("");
@@ -70,6 +71,7 @@
 
     const handleLogin = async () => {
     setError(null);
+    setNeedsConfirmation(false);
 
     if (!email.trim() || !password.trim()) {
         setError("Please enter both email and password");
