@@ -50,6 +50,9 @@ class BenchmarkPage(ttk.Frame):
         self.continue_button = None
         self.results_frame = None
 
+        self.after(100, self.process_ui_events)
+        self.show_benchmark_screen()
+
     def clear_screen(self) -> None:
         for child in self.winfo_children():
             child.destroy() 
@@ -287,3 +290,7 @@ class BenchmarkPage(ttk.Frame):
             return
 
         print("Continue clicked -> would advance past the benchmark page")
+
+    def skip_benchmark(self) -> None:
+        "Lets user bypass the check entirely"
+        self.go_next()
