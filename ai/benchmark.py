@@ -211,3 +211,10 @@ class BenchmarkPage(ttk.Frame):
 
         if self.continue_button is not None:
             self.continue_button.configure(state="normal")
+
+    def _clear_results(self) -> None:
+        if self.results_frame is None:
+            return
+
+        for child in self.results_frame.winfo_children():
+            child.destroy()
