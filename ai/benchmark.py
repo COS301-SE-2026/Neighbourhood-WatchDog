@@ -164,3 +164,16 @@ class BenchmarkPage(ttk.Frame):
             daemon=True,
         )
         worker.start()
+
+    def run_benchmark_worker(self) -> None:
+        """Runs on background thread, puts events on the queue"""
+        def on_progress(message: str, fraction: float) -> None:
+            self.emit("status", message)
+            self.emit("progress", fraction * 100)
+
+        result = self.benchmark_service.run(progress_callback=on_progress)
+        self.emit("result", result)
+
+    def emit(self, event_type: str, payload: object) -> None:
+        """Queues event for TKinter mian thread to pick up"""
+        self.events.put((event_type, payload))
