@@ -11,7 +11,7 @@ from app.models.neighbourhood_user import NeighbourhoodUser
 from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.user import User, UserRole
-from app.schemas.user import CurrentUserContextRes, CurrentUserNeighbourhood, CurrentUserProperty, CurrentUserSummary, GetUserResSchema
+from app.schemas.user import CurrentUserContextRes, CurrentUserNeighbourhood, CurrentUserProperty, CurrentUserSummary, GetUserResSchema, UserSettingsResSchema
 
 logger = logging.getLogger(__name__)
 
@@ -191,7 +191,26 @@ async def get_current_user_context_handler(claims: dict, db: DbSession) -> Curre
     )
 
 async def get_current_user_settings_handler(claims: dict, db: DbSession) -> CurrentUserContextRes:
-    pass
+    """Retrieves the settings for the authenticated user."""
+
+    user_id = UUID(claims["id"])
+
+    user_result = await db.execute(
+        select(User).where(User.id == user_id)
+    )
+
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Authenticated user not found in databse")
+
+    return UserSettingsResSchema(
+        first_name=user.first_name,
+        last_name=user.last_name,
+        email=user.email,
+        phone_number=user.phone_number,
+        system_role=user.system_role
+    )
 
 
 async def update_current_user_settings_handler(claims: dict, db: DbSession) -> CurrentUserContextRes:
