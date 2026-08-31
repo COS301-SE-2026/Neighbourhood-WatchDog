@@ -8,7 +8,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 from datetime import datetime, timezone, timedelta, date as date_cls
 from dateutil.relativedelta import relativedelta
 
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 from uuid import UUID
 
 from sqlalchemy import select, func
@@ -62,6 +62,7 @@ ALERT_NOT_FOUND = "Alert not found"
 CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "")
 AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
+CHUNK_SIZE = 256 * 1024
 
 
 
@@ -1040,3 +1041,24 @@ async def get_alert_for_agent(
     )
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
+
+async def _read_clip_with_limit(
+    clip: UploadFile, 
+    max_bytes: int
+) -> bytes:
+    """Reads the uploaded clip in chunks and aborts as soon as the size limit is exceeded"""
+
+    chunks = []
+    total = 0
+
+    while True:
+        chunk = await clip.read(CHUNK_SIZE)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > max_bytes:
+            raise HTTPException(413, detail="Clip exceeds 5MB upload limit")
+        chunks.append(chunk)
+
+    return b"".join(chunks)
+
