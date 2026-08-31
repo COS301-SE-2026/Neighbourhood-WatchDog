@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from typing import Any
 from urllib.parse import quote
 
 import asyncio
@@ -242,12 +243,6 @@ class FailoverController:
 
                 await self.stop_backup(runtime)
                 runtime.state = "EDGE_ACTIVE"
-
-                runtime.failure_probes = FAILURE_PROBES
-
-
-
-                return
 
 
     async def start_backup(self, runtime: Runtime) -> None:
