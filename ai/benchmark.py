@@ -259,3 +259,23 @@ class BenchmarkPage(ttk.Frame):
             sticky="w",
             pady=(12, 0),
         )
+
+    def process_ui_events(self) -> None:
+        """Polls queue on Tkinter main thread and uses handlers"""
+        handlers = {
+            "status": self._handle_status,
+            "progress": self._handle_progress,
+            "result": self._handle_result,
+        }
+
+        try:
+            while True:
+                event_type, payload = self.events.get_nowait()
+
+                handler = handlers.get(event_type)
+                if handler is not None:
+                    handler(payload)
+        except queue.Empty:
+            pass
+
+        self.after(100, self.process_ui_events)
