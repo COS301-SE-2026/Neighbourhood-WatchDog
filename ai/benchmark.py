@@ -218,3 +218,44 @@ class BenchmarkPage(ttk.Frame):
 
         for child in self.results_frame.winfo_children():
             child.destroy()
+
+    def _render_results(self, result: BenchmarkResult) -> None:
+        """Lays out measured metrics"""
+        self._clear_results()
+
+        max_cameras = estimate_max_cameras(result.avg_fps)
+
+        rows = [
+            ("Average FPS:", f"{result.avg_fps:.1f}"),
+            ("Frame time (p95):", f"{result.p95_frame_time:.0f}"),
+            ("Peak memory used:", f"{result.peak_memory:.0f} MB"),
+            ("Peak CPU usage:", f"{result.peak_cpu_percent:.0f} %"),
+            ("GPU:", result.gpu_name if result.gpu_available else "Not detected (running on CPU)"),
+            ("Estimated camera capacity:", f"~{max_cameras} camera(s)"),
+        ]
+
+        for row_index, (label_text, value_text) in enumerate(rows):
+            ttk.Label(
+                self.results_frame,
+                text=label_text,
+                style=MUTED_TLABEL,
+            ).grid(row=row_index, column=0, sticky="w", padx=(0, 20), pady=2)
+
+            ttk.Label(
+                self.results_frame,
+                text=value_text,
+            ).grid(row=row_index, column=1, sticky="w", pady=2)
+
+        ttk.Label(
+            self.results_frame,
+            text=RATING_LABELS.get(result.rating, result.rating),
+            font=(SEGOE_FONT, 10, "bold"),
+            wraplength=650,
+            justify="left",
+        ).grid(
+            row=len(rows),
+            column=0,
+            columnspan=2,
+            sticky="w",
+            pady=(12, 0),
+        )
