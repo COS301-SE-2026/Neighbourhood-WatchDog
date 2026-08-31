@@ -891,3 +891,14 @@ class TestGetAlertForAgent:
         assert result.camera_id == self.camera_id
         assert self.mock_result.scalar_one_or_none.call_count == 1
         assert self.mock_db.execute.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_invalid_alert_id(self):
+        with pytest.raises(HTTPException) as exc:
+            _ = await get_alert_for_agent(
+            "12",
+            self.mock_credential,
+            self.mock_db
+        )
+
+        assert exc.value.status_code == 400 
