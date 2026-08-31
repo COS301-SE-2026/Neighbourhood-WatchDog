@@ -175,6 +175,15 @@
                 onKeyDown={handleKeyDown}
                 isLoading={isLoading}
                 error={error}
+                onConfirm={
+                    needsConfirmation
+                        ? () => {
+                            router.push(
+                                `/auth/confirm?email=${encodeURIComponent(email.trim())}`
+                            );
+                        }
+                        : undefined
+                }
             />
         ) : (
             <MfaCard
