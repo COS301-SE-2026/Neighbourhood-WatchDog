@@ -12,6 +12,7 @@ from services.agent_service import AgentService
 from startup import StartupDestination, StartupResolver
 from watchdog_gui import WatchDogAgentApp
 from welcome_page import WelcomePage
+from benchmark import BenchmarkPage
 from ui.theme import configure_theme
 
 logger = logging.getLogger("watchdog.desktop.main")
@@ -85,6 +86,10 @@ class WatchDogDesktopApp:
 
     def advance_past_dependencies(self) -> None:
         """Called by installer's next button to skip dependencies if already done"""
+        self.show_benchmark()
+
+    def advance_past_benchmark(self) -> None:
+        """Called by benchmark page's continue/skip button to move on to authentication"""
         decision = self.startup_resolver.resolve_authentication()
         self._apply_startup_decision(decision)
 
@@ -165,6 +170,9 @@ class WatchDogDesktopApp:
 
     def show_installer(self) -> None:
         self.show_page(WatchDogAgentApp)
+
+    def show_benchmark(self) -> None:
+        self.show_page(BenchmarkPage)
 
     def show_pairing(self) -> None:
         self.show_page(WatchDogPinPage)
