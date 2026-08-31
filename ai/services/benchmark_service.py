@@ -1,20 +1,12 @@
 from __future__ import annotations
 
+import importlib
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
-
-import cv2
-import psutil
+from typing import Any, Callable
 
 from services.dependency_service import AI_DIR, PERSON_MODEL_PATH
-from pipeline.processing.tracker import Detector
-
-try:
-    import torch
-except ImportError:
-    torch = None
 
 ASSETS_DIR = AI_DIR / "assets"
 BENCHMARK_VIDEO_PATH = ASSETS_DIR / "clear-presence.mp4"
@@ -73,7 +65,32 @@ class BenchmarkService:
         self.person_model_path = person_model_path or PERSON_MODEL_PATH
         self.warmup_frames = warmup_frames
         self.duration = duration
-        self._process = psutil.Process()
+
+        self._cv2: Any= None
+        self._psutil_process: Any = None
+        self._torch: Any = None
+        self._detector_cls: Any = None
+
+    def _ensure_dependencies_loaded(self) -> None:
+        """Imports cv2, psutl, torch, Detector on first use only"""
+        if self._cv2 is None:
+            self._cv2 = importlib.import_module("cv2")
+
+        if self._psutil_process is None:
+            psutil_module = importlib.import_module("psutil")
+            self._psutil_process = psutil_module.Process()
+
+        if self._detector_cls is None:
+            tracker_module = importlib.import_module(
+                "pipeline.processing.tracker"
+            )
+            self._detector_cls = tracker_module.Detector
+
+        if self._torch is None:
+            try:
+                self._torch = importlib.import_module("torch")
+            except ImportError:
+                self._torch = False
 
     def video_is_available(self) -> bool:
         """Checks whether test clip exists"""
@@ -81,12 +98,12 @@ class BenchmarkService:
 
     def _detect_gpu(self) -> tuple[bool, str | None]:
         """Checks whether torch can see a usable CUDA device"""
-        if torch is None:
+        if self._torch is None:
             return False, None
 
         try:
-            if torch.cuda.is_available():
-                return True, torch.cuda.get_device_name(0)
+            if self._torch.cuda.is_available():
+                return True, self._torch.cuda.get_device_name(0)
         except Exception:
             pass
 
@@ -101,7 +118,7 @@ class BenchmarkService:
             return RATING_LIMITED
         return RATING_INSUFFICIENT
 
-    def _run_warmup(self, detector: Detector, capture: cv2.VideoCapture) -> None:
+    def _run_warmup(self, detector: Any, capture: Any) -> None:
         """
         Feeds first few frames through pipeline without timing them
         so that loading the model and starting GPU doesn't skew the results
@@ -115,8 +132,8 @@ class BenchmarkService:
 
     def _run_measured(
             self,
-            detector: Detector,
-            capture: cv2.VideoCapture,
+            detector: Any,
+            capture: Any,
             report: Callable[[str, float], None]
     ) -> tuple[list[float], float, float, float]:
         """
@@ -128,7 +145,7 @@ class BenchmarkService:
         peak_cpu_percent = 0.0
         peak_gpu_memory = 0.0
 
-        self._process.cpu_percent(interval=None)
+        self._psutil_process.cpu_percent(interval=None)
 
         start_time = time.monotonic()
 
@@ -136,7 +153,7 @@ class BenchmarkService:
             ok, frame = capture.read()
 
             if not ok:
-                capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                capture.set(self._cv2.CAP_PROP_POS_FRAMES, 0)
                 continue
 
             frame_start = time.perf_counter()
@@ -145,28 +162,28 @@ class BenchmarkService:
 
             peak_memory = max(
                 peak_memory,
-                self._process.memory_info.rss / (1024 * 1024),
+                self._psutil_process.memory_info.rss() / (1024 * 1024),
             )
 
             peak_cpu_percent = max(
                 peak_cpu_percent,
-                self._process.cpu_percent(interval=None),
+                self._psutil_process.cpu_percent(interval=None),
             )
 
-            if torch is not None and torch.cuda.is_available():
+            if self._torch is not None and self._torch.cuda.is_available():
                 peak_gpu_memory = max(
                     peak_gpu_memory,
-                    torch.cuda.max_memory_allocated() / (1024 * 1024),
+                    self._torch.cuda.max_memory_allocated() / (1024 * 1024),
                 )
 
-            elapsed_fraction = (time.monotonic() - start_time / self.duration)
+            elapsed_fraction = ((time.monotonic() - start_time) / self.duration)
 
             report(
                 "Measuring performance...",
                 min(0.2 + elapsed_fraction * 0.8, 0.99),
             )
 
-            return frame_times, peak_memory, peak_cpu_percent, peak_gpu_memory
+        return frame_times, peak_memory, peak_cpu_percent, peak_gpu_memory
 
     def _build_result(
             self,
@@ -219,13 +236,14 @@ class BenchmarkService:
         
         try:
             report("Loading detection model...", 0.0)
-            detector = Detector(str(self.person_model_path))
+            self._ensure_dependencies_loaded()
+            detector = self._detector_cls(str(self.person_model_path))
         except Exception as error:
             return BenchmarkResult(error=f"Could not load model: {error}")
 
         gpu_available, gpu_name = self._detect_gpu()
 
-        capture = cv2.VideoCapture(str(self.video_path))
+        capture = self._cv2.VideoCapture(str(self.video_path))
         if not capture.isOpened():
             return BenchmarkResult(
                 error=f"Could not open benchmark clip: {self.video_path}"
