@@ -279,3 +279,11 @@ class BenchmarkPage(ttk.Frame):
             pass
 
         self.after(100, self.process_ui_events)
+
+    def go_next(self) -> None:
+        """Hands off to controller to decide next step"""
+        if self.controller is not None and hasattr(self.controller, "advance_past_benchmark"):
+            self.controller.advance_past_benchmark()
+            return
+
+        print("Continue clicked -> would advance past the benchmark page")
