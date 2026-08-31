@@ -177,3 +177,7 @@ class BenchmarkPage(ttk.Frame):
     def emit(self, event_type: str, payload: object) -> None:
         """Queues event for TKinter mian thread to pick up"""
         self.events.put((event_type, payload))
+
+    def _handle_status(self, payload) -> None:
+        if self.status_var is not None:
+            self.status_var.set(str(payload))
