@@ -217,6 +217,18 @@ class FailoverController:
 
                 return
 
+            
+            edge_agent_alive = self.edge_agent_is_alive(runtime.camera)
+
+            if (edge_agent_alive and path.online and (runtime.backup_source_id is None or path.source_id != runtime.backup_source_id)):
+                logger.info(
+                    "Edge Agent heartbeat and publisher recovered for camera %s; stopping backup", runtime.camera.id)
+
+                await self.stop_backup(runtime)
+                runtime.state = "EDGE_ACTIVE"
+                return
+
+            
             if runtime.backup_source_id is None and path.online and path.source_id:
                 runtime.backup_source_id = path.source_id
 
