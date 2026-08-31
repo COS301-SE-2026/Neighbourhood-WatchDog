@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import queue
 import threading
-
+import tkinter as tk
 from tkinter import ttk, DoubleVar, StringVar
 
 from services.benchmark_service import(
@@ -13,7 +13,7 @@ from services.benchmark_service import(
     RATING_INSUFFICIENT,
     estimate_max_cameras,
 )
-from ui.theme import configure_log_text_widget
+from ui.theme import configure_theme
 
 SEGOE_FONT = "Segoe UI"
 APP_TFRAME = "App.TFrame"
@@ -158,7 +158,7 @@ class BenchmarkPage(ttk.Frame):
             self.skip_button.configure(state="disabled")
 
         self.progress_var.set(0)
-        self.clear_results()
+        self._clear_results()
         self.status_var.set("Starting performance check...")
 
         worker = threading.Thread(
@@ -294,3 +294,17 @@ class BenchmarkPage(ttk.Frame):
     def skip_benchmark(self) -> None:
         "Lets user bypass the check entirely"
         self.go_next()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    root.title("WatchDog Agent Setup")
+    root.geometry("800x650")
+
+    configure_theme(root) #ONLY FOR DEVELOPMENT TESTING. REMOVE LATER. This should only be called once in main.py when the app starts.
+
+    class _DummyController:
+        def advance_past_benchmark(self):
+            print("Continue/Skip clicked -> would move to pairing page")
+
+    BenchmarkPage(root, controller=_DummyController()).pack(fill="both", expand=True)
+    root.mainloop()
