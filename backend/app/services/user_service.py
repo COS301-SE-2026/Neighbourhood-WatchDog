@@ -189,3 +189,10 @@ async def get_current_user_context_handler(claims: dict, db: DbSession) -> Curre
         user=user_summary,
         properties=current_properties
     )
+
+async def get_current_user_settings_handler(claims: dict, db: DbSession) -> CurrentUserContextRes:
+    pass
+
+
+async def update_current_user_settings_handler(claims: dict, db: DbSession) -> CurrentUserContextRes:
+    pass
