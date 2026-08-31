@@ -7,6 +7,7 @@ import logging
 import os
 import signal
 import httpx
+from datetime import datetime, timezone
 
 
 logging.basicConfig(
@@ -23,7 +24,7 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 #it prevents the logs from exposing rtsp urls and passwords
 
 
-
+EDGE_AGENT_TIMEOUT_SECONDS = float(os.getenv("FAILOVER_AGENT_TIMEOUT_SECONDS", "30"))
 BACKEND_URL = os.environ["BACKEND_URL"].rstrip("/")
 FAILOVER_CONTROLLER_TOKEN = os.environ["FAILOVER_CONTROLLER_TOKEN"]
 GO2RTC_URL = os.getenv("GO2RTC_URL", "http://go2rtc:1984").rstrip("/")
@@ -37,13 +38,29 @@ FAILURE_PROBES = int(os.getenv("FAILOVER_FAILURE_PROBES", "3"))
 BACKUP_HOLD_SECONDS = float(os.getenv("FAILOVER_BACKUP_HOLD_SECONDS", "30"))
 
 
+def parse_heartbeat_timestamp(value: Any) -> datetime | None:
+    if not value:
+        return None
+
+    try:
+        timestamp = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        logger.warning("Ignoring invalid Edge Agent heartbeat timestamp")
+        return None
+
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+
+    return timestamp
+
+
 @dataclass(frozen=True)
 class Camera:
     id: str
     rtsp_url: str
     publish_username: str
     publish_password: str
-
+    edge_agent_last_seen_at: datetime | None = None
 
 @dataclass(frozen=True)
 class PathStatus:
@@ -125,7 +142,8 @@ class FailoverController:
                 id=str(item["id"]),
                 rtsp_url=str(item["rtsp_url"]),
                 publish_username=str(item["publish_username"]),
-                publish_password=str(item["publish_password"])
+                publish_password=str(item["publish_password"]),
+                edge_agent_last_seen_at=parse_heartbeat_timestamp(item.get("edge_agent_last_seen_at"))
             )
 
             for item in payload.get("data", [])
@@ -376,6 +394,17 @@ class FailoverController:
 
         
         return f"{scheme}://{username}:{password}@{authority}/cameras/{camera.id}"
+
+    @staticmethod
+    def edge_agent_is_alive(camera: Camera) -> bool:
+        last_seen = camera.edge_agent_last_seen_at
+
+        if last_seen is None:
+            return False
+
+        age_seconds = (datetime.now(timezone.utc) - last_seen).total_seconds()
+
+        return age_seconds <= EDGE_AGENT_TIMEOUT_SECONDS
 
 
 def main() -> None:

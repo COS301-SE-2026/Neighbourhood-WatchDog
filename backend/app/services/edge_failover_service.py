@@ -13,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.camera import Camera
 from app.schemas.edge_failover import FailoverCameraRes, FailoverCamerasRes
 from app.services.rtsp_encryption import decrypt_rtsp_url
+from sqlalchemy import func, select
+from app.models.edge_agent_credentials import EdgeAgentCredential
 
 
 
@@ -59,6 +61,36 @@ async def list_failover_cameras(db: AsyncSession) -> FailoverCamerasRes:
     result = await db.execute(statement)
     cameras = result.scalars().all()
 
+
+    property_ids = {
+        camera.property_id
+        for camera in cameras
+    }
+
+    last_seen_by_property = {}
+
+    if property_ids:
+        heartbeat_statement = (
+            select(
+                EdgeAgentCredential.property_id,
+                func.max(EdgeAgentCredential.last_seen_at).label("last_seen_at")
+            )
+            .where(
+                EdgeAgentCredential.property_id.in_(property_ids),
+                EdgeAgentCredential.revoked_at.is_(None)
+            )
+            .group_by(EdgeAgentCredential.property_id)
+        )
+
+        heartbeat_result = await db.execute(heartbeat_statement)
+
+        last_seen_by_property = {
+            property_id: last_seen
+            for property_id, last_seen in heartbeat_result.all()
+        }
+
+        
+
     data: list[FailoverCameraRes] = []
 
 
@@ -72,7 +104,8 @@ async def list_failover_cameras(db: AsyncSession) -> FailoverCamerasRes:
                 enabled=camera.enabled,
                 rtsp_url=decrypt_rtsp_url(camera.rtsp_url),
                 publish_username=username,
-                publish_password=password
+                publish_password=password,
+                edge_agent_last_seen_at=last_seen_by_property.get(camera.property_id)
             )
         )
 
