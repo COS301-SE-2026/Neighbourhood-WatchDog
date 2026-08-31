@@ -136,3 +136,31 @@ class BenchmarkPage(ttk.Frame):
             state="disabled",
         )
         self.continue_button.grid(row=0, column=2, sticky="e")
+
+    def start_benchmark(self) -> None:
+        """Starts the benchmark on background thread"""
+        if self.benchmark_running:
+            return
+
+        if not self.benchmark_service.video_is_available():
+            self.status_var.set("Benchmark clip is missing - skipping performance check.")
+            return
+        
+        self.benchmark_running = True
+
+        if self.run_button is not None:
+            self.run_button.configure(state="disabled")
+
+        if self.skip_button is not None:
+            self.skip_button.configure(state="disabled")
+
+        self.progress_var.set(0)
+        self.clear_results()
+        self.status_var.set("Starting performance check...")
+
+        worker = threading.Thread(
+            target=self.run_benchmark_worker,
+            name="watchdog-benchmark-worker",
+            daemon=True,
+        )
+        worker.start()
