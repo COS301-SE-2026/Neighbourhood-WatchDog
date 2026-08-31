@@ -19,6 +19,7 @@ from app.services.alert_service import (
     create_alert_for_agent_handler,
     update_alert_clip_for_agent_handler,
     get_alert_for_agent,
+    _read_clip_with_limit,
 )
 from app.tasks.clip_tasks import MAX_CLIP_SIZE_BYTES, upload_alert_clip_task
 
@@ -97,13 +98,11 @@ async def upload_clip(
     if clip.content_type not in {"video/mp4", "application/octet-stream"}:
         raise HTTPException(status_code=400, detail="Clip upload must use video/mp4 content type")
 
-    clip_bytes = await clip.read()
+    clip_bytes = await _read_clip_with_limit(clip, MAX_CLIP_SIZE_BYTES)
 
     if not clip_bytes:
         raise HTTPException(status_code=400, detail= "The uploaded clip is empty")
-    if len(clip_bytes) > MAX_CLIP_SIZE_BYTES:
-        raise HTTPException(status_code=413, detail="Clip exceeds the 5MB upload limit")
-
+   
     alert = await get_alert_for_agent(alert_id, credential, db)
     if alert is None:
         raise HTTPException(status_code=404, detail="Alert not found")
