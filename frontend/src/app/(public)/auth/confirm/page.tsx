@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { confirmSignUp, isAuthenticated, resendConfirmationCode } from "@/lib/auth/cognito";
 import { ConfirmCard } from "@/components/auth-components/confirm-card";
 
 export default function ConfirmPage() {
   const router = useRouter();
+
+  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -15,6 +17,15 @@ export default function ConfirmPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+
+  // fill email automatically if inside query params
+  useEffect(() => {
+    const emailFromLogin = searchParams.get("email");
+
+    if (emailFromLogin) {
+      setEmail(emailFromLogin);
+    }
+  }, [searchParams]);
 
   //already authenticated
   useEffect(() => {
