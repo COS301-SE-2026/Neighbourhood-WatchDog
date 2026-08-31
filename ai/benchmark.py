@@ -185,3 +185,29 @@ class BenchmarkPage(ttk.Frame):
     def _handle_progress(self, payload) -> None:
         if self.progress_var is not None:
             self.progress_var.set(float(payload))
+
+    def _handle_result(self, payload: BenchmarkResult) -> None:
+        self.benchmark_running = False
+
+        if self.run_button is not None:
+            self.run_button.configure(state="normal")
+
+        if self.skip_button is not None:
+            self.skip_button.configure(state="normal")
+
+        if not payload.is_valid:
+            self.status_var.set("Performance check failed.")
+            ttk.Label(
+                self.results_frame,
+                text=payload.error,
+                style=MUTED_TLABEL,
+                wraplength=650,
+                justify="left",
+            ).grid(row=0, column=0, columnspan=2, sticky="w")
+            return
+
+        self.status_var.set("Performance check complete.")
+        self._render_results(payload)
+
+        if self.continue_button is not None:
+            self.continue_button.configure(state="normal")
