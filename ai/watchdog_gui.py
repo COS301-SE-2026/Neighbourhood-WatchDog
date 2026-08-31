@@ -1092,7 +1092,7 @@ class WatchDogAgentApp(ttk.Frame):
         self.transitioning = True
 
         self.winfo_toplevel().after_idle(
-            self.controller.show_pairing
+            self.controller.advance_past_dependencies
         )
 
 
