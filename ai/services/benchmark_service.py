@@ -8,7 +8,7 @@ from typing import Callable
 import cv2
 import psutil
 
-from dependency_service import AI_DIR, PERSON_MODEL_PATH
+from services.dependency_service import AI_DIR, PERSON_MODEL_PATH
 from pipeline.processing.tracker import Detector
 
 try:
