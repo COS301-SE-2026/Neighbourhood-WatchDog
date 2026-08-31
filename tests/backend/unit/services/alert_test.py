@@ -1,17 +1,26 @@
+import hashlib
 import uuid
-from uuid import UUID
+from uuid import UUID, uuid4
 from datetime import datetime, timezone
-from unittest.mock import ANY, AsyncMock, Mock, patch
+from unittest.mock import ANY, AsyncMock, Mock, patch, MagicMock
 
 import pytest
 from fastapi import HTTPException
 
-from app.models.alert import Alert
+from app.models.alert import Alert, DetectionType
 from app.models.audit_log import AuditAction, TargetEntity
 from app.models.camera import Camera
 from app.models.user import User
+from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.schemas.alert import TimeIntervalsEnum, TimePeriod
-from app.services.alert_service import acknowledge_alert_handler, broadcast_neighbourhood_alert_service, list_alerts_handler, get_response_metrics_handler, get_alert_frequency_metrics_handler
+from app.services.alert_service import (
+    acknowledge_alert_handler, 
+    broadcast_neighbourhood_alert_service, 
+    list_alerts_handler, 
+    get_response_metrics_handler, 
+    get_alert_frequency_metrics_handler,
+    get_alert_for_agent,
+)
 
 class TestAcknowledgeAlert:
     def setup_method(self):
@@ -838,3 +847,47 @@ class TestBroadcastNeighbourhoodAlert:
         assert mock_notify.call_args.args[2] == []
         # create_audit_log_item commits, then the broadcast service commits.
         assert self.mock_db.commit.await_count == 2
+
+class TestGetAlertForAgent:
+    def setup_method(self):
+        self.mock_db = AsyncMock()
+        self.mock_db.execute = AsyncMock()
+
+        self.mock_result = MagicMock()
+
+        self.alert_id = str(uuid4())
+        self.camera_id = uuid4()
+
+        self.mock_result.scalar_one_or_none.return_value = Alert(
+            id=self.alert_id,
+            camera_id=self.camera_id,
+            frame_timestamp=datetime.now(),
+            detection_type=DetectionType.HUMAN_PRESENCE,
+            confidence_score=0.60,
+            thumbnail_url="fake_url",
+            processed=False,
+            status="OPEN",
+        )
+
+        self.mock_db.execute.return_value = self.mock_result
+
+        key = "1234567890"
+        self.mock_credential = EdgeAgentCredential(
+            id=uuid4(),
+            property_id=uuid4(),
+            key_hash=hashlib.sha256(key.encode('utf-8')).hexdigest(),
+            created_at=datetime.now(),
+        )
+        
+    @pytest.mark.asyncio
+    async def test_happy_path(self):
+        result = await get_alert_for_agent(
+            self.alert_id,
+            self.mock_credential,
+            self.mock_db
+        )
+
+        assert result.id == self.alert_id
+        assert result.camera_id == self.camera_id
+        assert self.mock_result.scalar_one_or_none.call_count == 1
+        assert self.mock_db.execute.call_count == 1
