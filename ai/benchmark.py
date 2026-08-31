@@ -181,3 +181,7 @@ class BenchmarkPage(ttk.Frame):
     def _handle_status(self, payload) -> None:
         if self.status_var is not None:
             self.status_var.set(str(payload))
+
+    def _handle_progress(self, payload) -> None:
+        if self.progress_var is not None:
+            self.progress_var.set(float(payload))
