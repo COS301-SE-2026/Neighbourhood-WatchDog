@@ -1,0 +1,14 @@
+backend/recreate_db.py
+  h_cf6208e37032c0 4-7,11,14-18,21-27,29-32,36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "35e454c3f9277e5dc0d13bb76c0d24ddab3c744a",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
