@@ -8,7 +8,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 from sqlalchemy import select
 
 from app.core.celery_app import celery
-from app.core.database import SessionLocal, engine
+from app.core.database import SessionLocal
 from app.models.alert import Alert
 from app.services.alert_service import CLIP_RETENTION_DAYS, S3_BUCKET_NAME, _clip_s3_key, _s3_client
 
