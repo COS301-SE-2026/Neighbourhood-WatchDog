@@ -1,7 +1,7 @@
 from app.core.database import DbSession
 from app.models.property import Property
 from app.models.camera import Camera
-from app.schemas.camera import CameraRes
+from app.schemas.camera import CameraListItemRes
 from app.models.pairing_token import PairingToken
 from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.models.user import User
@@ -161,9 +161,8 @@ async def pair_agent_handler(
         cameras = result.scalars().all()
 
         cameras_data = [
-            CameraRes(
+            CameraListItemRes(
                 id=c.id,
-                name=c.name,
                 property_id=c.property_id,
                 neighbourhood_id=property_record.neighbourhood_id,
                 rtsp_url=c.rtsp_url,

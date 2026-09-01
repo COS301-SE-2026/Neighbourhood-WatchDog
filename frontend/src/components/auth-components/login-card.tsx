@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert"; 
-import { Loader2 } from "lucide-react"; 
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useState } from "react";
 
 type LoginCardProps = {
   className?: string;
@@ -28,6 +29,8 @@ type LoginCardProps = {
   
   isLoading?: boolean; //loading state
   error?: string | null;
+
+  onConfirm?: () => void;
 };
 
 export function LoginCard({
@@ -40,7 +43,9 @@ export function LoginCard({
   onKeyDown,
   isLoading = false,
   error = null,
+  onConfirm,
 }: LoginCardProps) {
+  const [showPassword, setShowPassword] = useState(false);
   return (
     <Card
       className={cn(
@@ -71,9 +76,23 @@ export function LoginCard({
       <CardContent>
         <div className="flex flex-col gap-6">
           {error && (
-            <Alert variant="destructive" className="mb-2">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+            <div className="space-y-2">
+              <Alert variant="destructive" className="mb-2">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+
+              {onConfirm && (
+                <Button
+                  type="button"
+                  variant="link"
+                  onClick={onConfirm}
+                  disabled={isLoading}
+                  className="h-auto px-0 text-primary hover:text-primary/80"
+                >
+                  Confirm your account
+                </Button>
+              )}
+            </div>
           )}
 
           <div className="grid gap-2">
@@ -99,16 +118,32 @@ export function LoginCard({
               Password
             </Label>
 
+            <div className="relative">
             <Input
               id="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={onKeyDown}
               disabled={isLoading}
               required
-              className="border-border bg-background text-foreground placeholder:text-muted-foreground"
+              className="border-border bg-background pr-10 text-foreground placeholder:text-muted-foreground"
             />
+
+            <button
+              type="button"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword((visible) => !visible)}
+              disabled={isLoading}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
           </div>
         </div>
       </CardContent>

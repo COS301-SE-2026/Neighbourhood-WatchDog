@@ -32,13 +32,15 @@ export default function PaginationControls({
       <div className="flex justify-around pt-5"><p>Page {page}</p></div>
       <div className="flex justify-around p-2">
         <button 
-          className="bg-navy text-white rounded-lg w-25 p-2 disabled:bg-muted"
+          className="rounded-md border border-white/10 bg-zinc-950 px-4 py-2 text-sm text-white transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+
           disabled={previousDisabled || loading}
           onClick={() => onPageChange(page - 1)}>
           Previous
         </button>
         <button 
-          className="bg-navy text-white rounded-lg w-25 p-2 disabled:bg-muted"
+          className="rounded-md border border-white/10 bg-zinc-950 px-4 py-2 text-sm text-white transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+
           disabled={nextDisabled || loading}
           onClick={() => onPageChange(page + 1)}
           >Next
@@ -94,13 +96,13 @@ export function AuditLogTable() {
 
   function renderAuditLogCard(rowData: AuditLog): React.ReactNode {
   return (
-    <Card>
+    <Card className="border-white/10 bg-zinc-950 text-white">
       <CardHeader>
-        <CardTitle>
+        <CardTitle className="text-white">
           {rowData.action} on {rowData.target_entity_type}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="text-white/60">
         {rowData.id.slice(0, 12) + "..."} at {formatTimestamp(rowData.timestamp)}
         <button className="rounded-lg bg-navy text-white p-2" onClick={() => setSelectedRow(rowData)}>
           View More
@@ -114,28 +116,65 @@ export function AuditLogTable() {
   const columns: ColumnDef<AuditLog>[] = [
     {
       accessorKey: "id",
-      header: "Record ID",
-      cell: ({row}) => {
-        {return row.original.id.slice(0, 8) + "..."}
-      }
+      header: () => (
+        <span className="!text-white">
+          Record ID
+        </span>
+      ),
+      cell: ({ row }) => (
+        <span className="!text-white">
+          {row.original.id.slice(0, 8) + "..."}
+        </span>
+      ),
     },
     {
       accessorKey: "action",
-      header: "Action",
+      header: () => (
+        <span className="!text-white">
+          Action
+        </span>
+      ),
+      cell: ({ row }) => (
+        <span className="!text-white">
+          {row.original.action}
+        </span>
+      ),
     },
     {
       accessorKey: "target_entity_type",
-      header: "Target Entity Type",
+      header: () => (
+        <span className="!text-white">
+          Target Entity Type
+        </span>
+      ),
+      cell: ({ row }) => (
+        <span className="!text-white">
+          {row.original.target_entity_type}
+        </span>
+      ),
     },
     {
       accessorKey: "timestamp",
-      header: "Timestamp",
+      header: () => (
+        <span className="!text-white">
+          Timestamp
+        </span>
+      ),
       cell: ({ row }) => {
-        return formatTimestamp(row.original.timestamp)
+        return (
+          <span className="!text-white">
+            {formatTimestamp(row.original.timestamp)}
+          </span>
+        )
       }
     },
     {
       id: "actions", // this is for the btn
+      header: () => (
+        <span className="!text-white">
+          Actions
+        </span>
+      ),
       cell: ({ row }) => {
         return (
         <button className="rounded-lg bg-navy text-white p-2" onClick={() => setSelectedRow(row.original)}>
@@ -146,26 +185,92 @@ export function AuditLogTable() {
     },
   ]
 
+
   return (
-    <div className="bg-background rounded-radius-sm p-20 w-full max-w-full overflow-x-auto">
-      { loading && <p>Loading...</p>}
+    <div className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+      {loading && (
+          <div className="flex min-h-40 items-center justify-center">
+              <p className="text-sm text-white/45">Loading audit logs...</p>
+          </div>
+      )}
+
       <Dialog open={!!selectedRow} onOpenChange={() => setSelectedRow(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl border-white/10 bg-zinc-950 text-white">
           {selectedRow && (
-            <div>
-              <DialogTitle className="font-bold">Record Details</DialogTitle>
-              <ul>
-                <li>User ID: {selectedRow.user_id}</li>
-                <li>Target Entity ID: {selectedRow.target_entity_id}</li>
-                <li>Old values: <pre> {selectedRow.old_values ? JSON.stringify(selectedRow.old_values, null, 4) : "No old values"} </pre> </li>
-                <li>New values: <pre> {selectedRow.new_values ? JSON.stringify(selectedRow.new_values, null, 4) : "No new values"} </pre> </li>
-              </ul>
+            <div className="space-y-6">
+              <div>
+                <DialogTitle className="text-lg font-semibold text-white">
+                  Record details
+                </DialogTitle>
+                <p className="mt-1 text-sm text-white/45">
+                  {selectedRow.action} on {selectedRow.target_entity_type}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-white/40">
+                    User ID
+                  </p>
+                  <p className="mt-1 break-all text-sm text-white/75">
+                    {selectedRow.user_id}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-white/40">
+                    Target entity ID
+                  </p>
+                  <p className="mt-1 break-all text-sm text-white/75">
+                    {selectedRow.target_entity_id ?? "No target entity"}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-white/40">
+                  Previous values
+                </p>
+                <pre className="max-h-60 overflow-auto rounded-md border border-white/10 bg-black p-4 text-xs leading-relaxed text-white/70">
+                  {selectedRow.old_values
+                    ? JSON.stringify(selectedRow.old_values, null, 2)
+                    : "No previous values"}
+                </pre>
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-white/40">
+                  New values
+                </p>
+                <pre className="max-h-60 overflow-auto rounded-md border border-white/10 bg-black p-4 text-xs leading-relaxed text-white/70">
+                  {selectedRow.new_values
+                    ? JSON.stringify(selectedRow.new_values, null, 2)
+                    : "No new values"}
+                </pre>
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
-      {/* <AuditFilters filters={filters} onChange={(filters: AuditLogsFilters) => {setLoading(true); setFilters(filters)}}/> */}
-      <h1 className="mb-6 text-4xl font-bold tracking-tight">Neighbourhood Audit Logs</h1>
+      <header className="border-b border-white/10 pb-7">
+          <p className="text-sm text-emerald-400">System</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+              Neighbourhood audit logs
+          </h1>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/50">
+              Review activity recorded across the neighbourhood system.
+          </p>
+      </header>
+
+      <AuditFilters
+          filters={filters}
+          onChange={(newFilters: AuditLogsFilters) => {
+              setLoading(true);
+              setPage(1);
+              setFilters(newFilters);
+          }}
+      />
+
       <DataTable columns={columns} data={data} renderMobileCard={renderAuditLogCard}/>
       <PaginationControls 
         previousDisabled={page==1}

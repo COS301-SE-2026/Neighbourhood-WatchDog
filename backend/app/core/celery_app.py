@@ -1,8 +1,13 @@
-from datetime import timedelta
 import os
-
+from datetime import timedelta
 from celery import Celery
+from celery.signals import worker_process_init
 
+from app.core.database import engine
+
+@worker_process_init.connect
+def reset_engine_after_fork(**kwargs):
+    engine.sync_engine.dispose(close=False)
 
 celery = Celery(
     __name__,
