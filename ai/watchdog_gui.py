@@ -15,6 +15,7 @@ import threading
 import traceback
 import time
 from ui.theme import configure_log_text_widget
+from runtime.paths import is_packaged
 
 from services.dependency_service import (
     AI_DIR,
@@ -490,7 +491,17 @@ class WatchDogAgentApp(ttk.Frame):
     #setup lifecycle
     def start_setup(self) -> None:
         #start the installation without blocking the tkninter thread
-
+        
+        if is_packaged():
+            messagebox.showerror(
+                "Repair WatchDog",
+                (
+                    "This installation cannot install Python packages. "
+                    "Please reinstall WatchDog to restore missing files."
+                ),
+            )
+            return
+        
         if self.setup_running:
             return
 
