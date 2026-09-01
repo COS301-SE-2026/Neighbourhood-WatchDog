@@ -19,6 +19,22 @@ class CurrentUserSummary(BaseModel):
     name: str | None = None
     system_role: UserRole
 
+class UserSettingsResSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    first_name: str | None = None
+    last_name: str | None = None
+    email: str
+    phone_number: str | None = None
+    system_role: UserRole
+
+
+class UpdateUserSettingsReq(BaseModel):
+    first_name: str
+    last_name: str
+    phone_number: str | None = None
+
+
 
 class CurrentUserNeighbourhood(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
