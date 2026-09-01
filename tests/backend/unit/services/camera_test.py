@@ -273,10 +273,9 @@ class TestDeregisterCamera:
         wrong_prop_user.user_id = uuid4()
         wrong_prop_user.user =  wrong_user
 
-        self.mock_user.cognito_sub = "different-user-sub"
         self.reset_side_effects(
             camera=self.mock_camera,
-            prop_user=self.mock_prop_user,
+            prop_user=wrong_prop_user,
         )
 
         with pytest.raises(HTTPException) as exc:
