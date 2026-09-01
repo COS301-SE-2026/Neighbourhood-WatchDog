@@ -2,7 +2,8 @@ import pytest
 from fastapi import HTTPException
 from unittest.mock import Mock, patch, AsyncMock
 from app.models.user import UserRole
-from app.services.user_service import create_user, get_current_user_settings_handler
+from app.schemas.user import UpdateUserSettingsReq
+from app.services.user_service import create_user, get_current_user_settings_handler, update_current_user_settings_handler
 
 class TestCreateUser:
     def setup_method(self):
@@ -193,3 +194,81 @@ class TestUserSettings:
             )
 
         assert exception.value.status_code == 401
+
+
+    @pytest.mark.asyncio
+    async def test_update_user_settings(self):
+        data = UpdateUserSettingsReq(
+            first_name="Jane",
+            last_name="Smith",
+            phone_number="+27820000000",
+        )
+
+        settings = await update_current_user_settings_handler(
+            data=data,
+            claims=self.claims,
+            db=self.mock_db,
+        )
+
+        assert self.mock_user.first_name == "Jane"
+        assert self.mock_user.last_name == "Smith"
+        assert self.mock_user.phone_number == "+27820000000"
+
+        assert settings.first_name == "Jane"
+        assert settings.last_name == "Smith"
+        assert settings.phone_number == "+27820000000"
+
+        assert self.mock_db.commit.call_count == 1
+        assert self.mock_db.refresh.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_update_user_settings_with_empty_phone_number(self):
+        data = UpdateUserSettingsReq(
+            first_name="John",
+            last_name="Doe",
+            phone_number=" ",
+        )
+
+        await update_current_user_settings_handler(
+            data=data,
+            claims=self.claims,
+            db=self.mock_db,
+        )
+
+        assert self.mock_user.phone_number is None
+
+    @pytest.mark.asyncio
+    async def test_update_user_settings_with_empty_first_name(self):
+        data = UpdateUserSettingsReq(
+            first_name=" ",
+            last_name="Doe",
+            phone_number=None,
+        )
+
+        with pytest.raises(HTTPException) as exception:
+            await update_current_user_settings_handler(
+                data=data,
+                claims=self.claims,
+                db=self.mock_db,
+            )
+
+        assert exception.value.status_code == 400
+        assert self.mock_db.commit.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_update_user_settings_with_empty_last_name(self):
+        data = UpdateUserSettingsReq(
+            first_name="John",
+            last_name=" ",
+            phone_number=None,
+        )
+
+        with pytest.raises(HTTPException) as exception:
+            await update_current_user_settings_handler(
+                data=data,
+                claims=self.claims,
+                db=self.mock_db,
+            )
+
+        assert exception.value.status_code == 400
+        assert self.mock_db.commit.call_count == 0
