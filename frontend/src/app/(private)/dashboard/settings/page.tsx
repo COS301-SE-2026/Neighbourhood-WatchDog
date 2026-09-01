@@ -125,6 +125,16 @@ export default function SettingsPage() {
                     </div>
                 </section>
 
+                <section className="pt-6">
+                    <div className="flex justify-end">
+                        <button
+                            type="button"
+                            className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-emerald-500 px-3.5 text-sm font-medium text-black transition-colors hover:bg-emerald-400"
+                        >
+                            Save changes
+                        </button>
+                    </div>
+                </section>
 
             </div>
         </main>
