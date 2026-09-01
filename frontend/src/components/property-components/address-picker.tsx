@@ -137,12 +137,12 @@ export function AddressPicker({
             <div>
                 <label
                     htmlFor="property-address"
-                    className="text-sm font-medium text-foreground"
+                    className="text-sm font-medium text-white"
                 >
                     Property address
                 </label>
 
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-xs text-white/45">
                     Search for your address and select the correct result.
                 </p>
             </div>
@@ -160,6 +160,7 @@ export function AddressPicker({
                     aria-describedby={
                         error ? "property-address-error" : undefined
                     }
+                    className="border-white/10 bg-white/[0.04] text-white placeholder:text-white/30 focus-visible:ring-emerald-500/50"
                 />
 
                 {isSearching && (
@@ -168,13 +169,13 @@ export function AddressPicker({
             </div>
 
             {results.length > 0 && (
-                <div className="overflow-hidden rounded-md border border-border bg-background">
+                <div className="overflow-hidden rounded-md border border-white/10 bg-zinc-900">
                     {results.map((result) => (
                         <button
                             key={result.place_id}
                             type="button"
                             onClick={() => handleSelect(result)}
-                            className="block w-full border-b border-border px-3 py-2 text-left text-sm last:border-b-0 hover:bg-muted"
+                            className="block w-full border-b border-white/10 px-3 py-2.5 text-left text-sm text-white/80 last:border-b-0 hover:bg-white/[0.06] hover:text-white"
                         >
                             {result.display_name}
                         </button>
@@ -201,7 +202,7 @@ export function AddressPicker({
                 <AddressMap latitude={value.latitude} longitude={value.longitude}/>
             )}
 
-            <p className="text-[11px] text-muted-foreground">
+            <p className="mt-2 text-[11px] text-white/35">
                 Address search provided by OpenStreetMap Nominatim.
             </p>
         </div>

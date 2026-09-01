@@ -34,12 +34,12 @@ export function AddressMap({
     const position: [number, number] = [latitude, longitude];
 
     return (
-        <div className="overflow-hidden rounded-md border border-border">
+        <div className="mt-4 overflow-hidden rounded-lg border border-white/10">
             <MapContainer
                 center={position}
                 zoom={16}
                 scrollWheelZoom={false}
-                className="h-48 w-full"
+                className="h-56 w-full"
             >
                 <RecenterMap
                     latitude={latitude}
@@ -47,9 +47,11 @@ export function AddressMap({
                 />
 
                 <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; CARTO'
+                    url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                 />
+
+
 
                 <CircleMarker
                     center={position}

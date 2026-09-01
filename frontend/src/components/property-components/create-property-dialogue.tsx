@@ -98,18 +98,18 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="border-white/10 bg-zinc-950 text-white sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">
+          <DialogTitle className="text-xl font-semibold tracking-tight text-white">
             {loading ? "Creating..." : "Create Property"}
           </DialogTitle>
-          <DialogDescription >
+          <DialogDescription className="text-white/50">
             Search for and select the address of your property.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           {errors.submit && (
-            <p className="text-sm text-threat mb-4">{errors.submit}</p>
+            <p className="mb-4 text-sm text-threat">{errors.submit}</p>
           )}
           
           <AddressPicker
@@ -129,11 +129,11 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
           />
 
 
-          <DialogFooter>
+          <DialogFooter className="mt-6 border-t border-white/10 bg-zinc-950 pt-4">
             <DialogClose asChild>
-              <Button variant="outline" type="button" disabled={loading}>Cancel</Button>
+              <Button variant="outline" type="button" disabled={loading} className="border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08] hover:text-white">Cancel</Button>
             </DialogClose>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="bg-emerald-500 text-black hover:bg-emerald-400">
               {loading && <Spinner className="mr-2 size-4 animate-spin" /> }
               {loading ? "Creating..." : "Create Property"}
             </Button>

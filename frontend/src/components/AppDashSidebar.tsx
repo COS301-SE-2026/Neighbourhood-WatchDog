@@ -267,6 +267,13 @@ const AppDashSidebar = () => {
             },
         ];
 
+    const footerContextLabel = activeContext
+        ? activeContext.neighbourhoodId === null
+            ? "Standalone property"
+            : activeContext.role ?? "Resident"
+        : "No property yet";
+
+
     
     return (
         <>
@@ -453,7 +460,7 @@ const AppDashSidebar = () => {
                 </SidebarContent>
                 <SidebarFooter className="border-t border-white/10 px-5 py-4 group-data-[collapsible=icon]:px-2">
                     <div
-                        title={`${authUser?.fullname ?? ""} - ${activeContext?.role ?? "No property yet"}`}
+                        title={`${authUser?.fullname ?? ""}`}
                         className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center"
                     >
                         <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10">
@@ -463,9 +470,12 @@ const AppDashSidebar = () => {
                             <p className="truncate text-sm font-medium text-white">
                                 {authUser?.fullname}
                             </p>
-                            <p className="mt-0.5 truncate text-xs text-white/50">
-                                {activeContext?.role ?? "No property yet"}
+
+
+                            <p className="truncate text-[11px] text-white/35">
+                                {footerContextLabel}
                             </p>
+
                         </div>
                     </div>
                 </SidebarFooter>
