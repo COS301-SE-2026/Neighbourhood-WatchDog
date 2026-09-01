@@ -1,0 +1,20 @@
+backend/app/tasks/clip_tasks.py
+  h_cf6208e37032c0 11,44
+backend/app/core/database.py
+  h_cf6208e37032c0 5,16,23-32
+backend/app/tasks/risk_score_tasks.py
+  h_cf6208e37032c0 8,22,36
+backend/app/core/celery_app.py
+  h_cf6208e37032c0 6,10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "ef53b41415c01478943b67b8168b37a8a2eca1e9",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
