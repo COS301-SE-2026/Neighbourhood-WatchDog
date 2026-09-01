@@ -8,9 +8,7 @@ import { ConfirmCard } from "@/components/auth-components/confirm-card";
 function ConfirmPageContent() {
   const router = useRouter();
 
-  const searchParams = useSearchParams();
 
-  const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -19,13 +17,11 @@ function ConfirmPageContent() {
   const [resendSuccess, setResendSuccess] = useState(false);
 
   // fill email automatically if inside query params
-  useEffect(() => {
-    const emailFromLogin = searchParams.get("email");
+  const searchParams = useSearchParams();
 
-    if (emailFromLogin) {
-      setEmail(emailFromLogin);
-    }
-  }, [searchParams]);
+  const [email, setEmail] = useState(
+    () => searchParams.get("email") ?? ""
+  );
 
   //already authenticated
   useEffect(() => {
