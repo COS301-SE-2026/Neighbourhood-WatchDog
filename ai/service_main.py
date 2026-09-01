@@ -1,13 +1,19 @@
 from __future__ import annotations
 
-import logging
+import sys
 
-import uvicorn
 
-from app import app
+def main() -> int:
+    if "--benchmark" in sys.argv:
+        from services.benchmark_runner import main as benchmark_main
 
-#Start uvicorn for fastAPI app
-if __name__ == "__main__":
+        return benchmark_main()
+
+    import logging
+    import uvicorn
+
+    from app import app
+
     logging.basicConfig(level=logging.INFO)
 
     uvicorn.run(
@@ -16,3 +22,9 @@ if __name__ == "__main__":
         port=8001,
         access_log=False,
     )
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
