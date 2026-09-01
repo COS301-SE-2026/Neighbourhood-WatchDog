@@ -48,14 +48,7 @@ export function AddressPicker({
     useEffect(() => {
         const searchTerm = query.trim();
 
-        if (searchTerm.length < 3) {
-            setResults([]);
-            setSearchError(null);
-            return;
-        }
-
-        if (value?.displayName === searchTerm) {
-            setResults([]);
+        if (searchTerm.length < 3 || value?.displayName === searchTerm) {
             return;
         }
 

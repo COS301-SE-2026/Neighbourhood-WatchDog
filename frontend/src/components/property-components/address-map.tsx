@@ -21,7 +21,7 @@ function RecenterMap({
     const position: [number, number] = [latitude, longitude];
 
     useEffect(() => {
-        map.setView(position, 16);
+        map.setView([latitude, longitude], 16);
     }, [latitude, longitude, map]);
 
     return null;
