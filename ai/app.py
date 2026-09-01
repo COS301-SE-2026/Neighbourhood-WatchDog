@@ -22,12 +22,31 @@ import httpx
 import logging
 import keyring
 import boto3
+from runtime.paths import get_resource_dir
+
+RESOURCE_DIR = get_resource_dir()
 
 logger = logging.getLogger("watchdog.ai")
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = ("rtsp_transport;tcp|fflags;nobuffer|flags;low_delay")
 
-threat_model = YOLO("pipeline/models/weights/best.pt")
-person_model = YOLO("pipeline/models/weights/yolov8n.pt")
+THREAT_MODEL_PATH = (
+    RESOURCE_DIR
+    / "pipeline"
+    / "models"
+    / "weights"
+    / "best.pt"
+)
+
+PERSON_MODEL_PATH = (
+    RESOURCE_DIR
+    / "pipeline"
+    / "models"
+    / "weights"
+    / "yolov8n.pt"
+)
+
+threat_model = YOLO(str(THREAT_MODEL_PATH))
+person_model = YOLO(str(PERSON_MODEL_PATH))
 
 
 
@@ -39,8 +58,7 @@ person_model = YOLO("pipeline/models/weights/yolov8n.pt")
 # _settings_lock = threading.Lock()
 
 
-load_dotenv(Path(__file__).resolve().parent / ".env")
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+load_dotenv(RESOURCE_DIR / ".env")
 
 
 
