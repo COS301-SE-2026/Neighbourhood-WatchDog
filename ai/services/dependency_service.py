@@ -311,4 +311,13 @@ class DependencyService:
         if not model_is_valid(self.person_model):
             problems.append("person_model_invalid")
 
+        benchmark_video = (
+            get_resource_dir()
+            / "assets"
+            / "clear-presence.mp4"
+        )
+
+        if not benchmark_video.is_file():
+            problems.append("benchmark_video_missing")
+
         return DependencyReport(problems=problems)
