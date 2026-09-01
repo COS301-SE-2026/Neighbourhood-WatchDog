@@ -1,9 +1,20 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Spinner } from "../ui/spinner";
+
+const AddressMap = dynamic(
+    () => 
+        import("./address-map").then(
+            (module) => module.AddressMap
+        ),
+    {
+        ssr: false
+    }
+)
 
 export type SelectedAddress = {
     displayName: string;
@@ -184,6 +195,10 @@ export function AddressPicker({
                 >
                     {error}
                 </p>
+            )}
+
+            {value && (
+                <AddressMap latitude={value.latitude} longitude={value.longitude}/>
             )}
 
             <p className="text-[11px] text-muted-foreground">
