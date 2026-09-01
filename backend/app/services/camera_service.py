@@ -140,19 +140,18 @@ async def deregister_camera_handler(camera_id, db, claims):
         
         prop_user_result = await db.execute(
             select(PropertyUser)
-            .options(joinedload(PropertyUser.user))
-            .where(PropertyUser.property_id == camera_obj.property_id)
+            .join(PropertyUser.user)
+            .where(PropertyUser.property_id == camera_obj.property_id, User.cognito_sub == claims.get("sub"))
         )
         prop_user = prop_user_result.scalar_one_or_none()
 
-        if not prop_user or prop_user.user.cognito_sub != claims["sub"]:
+        if prop_user is None:
             raise HTTPException(status_code=403, detail="Forbidden")
 
         
         old_values = {
             "property_id": str(camera_obj.property_id),
             "name": camera_obj.name,
-            "neighbourhood_id": str(camera_obj.neighbourhood_id),
             "visibility": camera_obj.visibility,
             "location": camera_obj.location,
         }
