@@ -7,7 +7,13 @@ def main() -> int:
     if "--benchmark" in sys.argv:
         from services.benchmark_runner import main as benchmark_main
 
-        return benchmark_main()
+        benchmark_args = [
+            argument
+            for argument in sys.argv[1:]
+            if argument != "--benchmark"
+        ]
+
+        return benchmark_main(benchmark_args)
 
     import logging
     import uvicorn

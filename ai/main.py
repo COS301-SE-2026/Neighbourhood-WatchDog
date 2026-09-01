@@ -73,6 +73,8 @@ class WatchDogDesktopApp:
             self.show_pairing()
         elif decision.destination == StartupDestination.INSTALLER:
             self.show_installer()
+        elif decision.destination == StartupDestination.BENCHMARK:
+            self.show_benchmark()
         else:
             logger.error(
                 "Unhandled startup detination: %s (reason=%s)",

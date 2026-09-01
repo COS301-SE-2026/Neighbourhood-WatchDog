@@ -6,11 +6,15 @@ from services.config_service import ConfigService
 from services.keyring_service import KeyringService
 from services.authentication_service import AuthenticationService, CredentialStatus
 from services.dependency_service import DependencyService
+from services.benchmark_state_service import (
+    BenchmarkStateService,
+)
 
 class StartupDestination(str, Enum):
     INSTALLER = "installer"
-    MAIN_APPLICATION = "main_application"
+    BENCHMARK = "benchmark"
     AUTHENTICATION = "authentication"
+    MAIN_APPLICATION = "main_application"
 
 
 @dataclass
@@ -33,17 +37,26 @@ class StartupResolver:
         config_service: ConfigService | None = None,
         keyring_service: KeyringService | None = None,
         dependency_service: DependencyService | None = None,
+        benchmark_state_service: BenchmarkStateService | None = None,
         authentication_service: AuthenticationService | None = None,
     ) -> None:
         self.config_service = config_service or ConfigService()
         self.keyring_service = keyring_service or KeyringService()
         self.dependency_service = dependency_service or DependencyService()
+        self.benchmark_state_service = benchmark_state_service or BenchmarkStateService()
         self.authentication_service = authentication_service or AuthenticationService()
 
     def resolve(self) -> StartupDecision:
         dependency_decision = self._resolve_dependencies()
+
         if dependency_decision is not None:
             return dependency_decision
+
+        if not self.benchmark_state_service.has_accepted_result():
+            return StartupDecision(
+                destination=StartupDestination.BENCHMARK,
+                reason="benchmark_required",
+            )
 
         return self.resolve_authentication()
 
