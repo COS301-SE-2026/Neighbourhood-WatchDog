@@ -221,6 +221,15 @@ class BenchmarkPage(ttk.Frame):
                 self.continue_button.configure(state="disabled")
 
             return
+
+        if (
+            self.controller is not None
+            and hasattr(
+                self.controller,
+                "handle_benchmark_success",
+            )
+        ):
+            self.controller.handle_benchmark_success(payload)
         
         if self.continue_button is not None:
             self.continue_button.configure(state="normal")

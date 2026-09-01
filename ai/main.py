@@ -14,6 +14,8 @@ from watchdog_gui import WatchDogAgentApp
 from welcome_page import WelcomePage
 from benchmark import BenchmarkPage
 from ui.theme import configure_theme
+from services.benchmark_service import BenchmarkResult
+from services.benchmark_state_service import BenchmarkStateService
 
 logger = logging.getLogger("watchdog.desktop.main")
 
@@ -33,6 +35,7 @@ class WatchDogDesktopApp:
         self.state = AppState()
         self.startup_resolver = StartupResolver()
         self.onboarding_service = OnboardingService()
+        self.benchmark_state_service = BenchmarkStateService()
 
         self.agent_events: queue.Queue[AgentEvent] = queue.Queue()
         self.exit_requested = False
@@ -187,6 +190,17 @@ class WatchDogDesktopApp:
             state=self.state,
             agent_service=self.agent_service,
         )
+
+    def handle_benchmark_success(
+        self,
+        result: BenchmarkResult,
+    ) -> None:
+        """
+        Save an accepted benchmark result.
+
+        This method is called by BenchmarkPage.
+        """
+        self.benchmark_state_service.save(result)
 
     def quit_application(self) -> None:
         """
