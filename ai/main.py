@@ -93,7 +93,7 @@ class WatchDogDesktopApp:
         # self._apply_startup_decision(decision)
 
     def advance_past_benchmark(self) -> None:
-        """Called by benchmark page's continue/skip button to move on to authentication"""
+        """Called after the required benchmark completes."""
         decision = self.startup_resolver.resolve_authentication()
         self._apply_startup_decision(decision)
 

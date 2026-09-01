@@ -6,7 +6,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from services.dependency_service import AI_DIR, PERSON_MODEL_PATH, get_venv_python
+from services.dependency_service import (
+    PERSON_MODEL_PATH,
+    get_venv_python,
+)
 from runtime.paths import get_resource_dir, get_service_executable, is_packaged
 
 BENCHMARK_VIDEO_PATH = (
@@ -14,9 +17,7 @@ BENCHMARK_VIDEO_PATH = (
     / "assets"
     / "clear-presence.mp4"
 )
-ASSETS_DIR = AI_DIR / "assets"
 RUNNER_SCRIPT_PATH = Path(__file__).resolve().parent / "benchmark_runner.py"
-# BENCHMARK_VIDEO_PATH = ASSETS_DIR / "clear-presence.mp4"
 
 #30 frames run through the detector first without tiuming 
 #to allow loading the model and starting up the GPU
