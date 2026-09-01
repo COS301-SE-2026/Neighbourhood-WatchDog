@@ -13,7 +13,6 @@ import {
   Legend,
   type Chart,
   type ChartOptions,
-  type Plugin,
   type TooltipItem,
 } from "chart.js";
 

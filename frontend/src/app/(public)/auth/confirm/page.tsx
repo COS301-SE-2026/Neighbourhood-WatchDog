@@ -1,20 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { confirmSignUp, isAuthenticated, resendConfirmationCode } from "@/lib/auth/cognito";
 import { ConfirmCard } from "@/components/auth-components/confirm-card";
 
-export default function ConfirmPage() {
+function ConfirmPageContent() {
   const router = useRouter();
 
-  const [email, setEmail] = useState("");
+
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+
+  // fill email automatically if inside query params
+  const searchParams = useSearchParams();
+
+  const [email, setEmail] = useState(
+    () => searchParams.get("email") ?? ""
+  );
 
   //already authenticated
   useEffect(() => {
@@ -171,5 +178,13 @@ export default function ConfirmPage() {
       success={success}
       resendSuccess={resendSuccess}
     />
+  );
+}
+
+export default function ConfirmPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ConfirmPageContent />
+    </Suspense>
   );
 }

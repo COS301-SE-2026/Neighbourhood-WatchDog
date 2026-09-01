@@ -330,13 +330,12 @@ class TestCreateNeighbourhood:
             self.mock_property_user,
             None, # creator lookup returns nothing
         ]
-        property_id = uuid4()
 
         with pytest.raises(HTTPException) as exception:
             await create_neighbourhood_handler(
                 name="Name",
                 location="Location",
-                property_id=property_id,
+                property_id=uuid4(),
                 db=self.mock_db,
                 claims=self.claims,
             )

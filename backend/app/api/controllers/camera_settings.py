@@ -105,5 +105,5 @@ async def delete_zone(
     claims: Claims,
 ):
     """Removing a detection zone from a camera"""
-    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
+    require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN")
     return await delete_zone_handler(camera_id, zone_id, db, claims)

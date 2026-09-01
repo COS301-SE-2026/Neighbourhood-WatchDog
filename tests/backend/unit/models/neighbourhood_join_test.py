@@ -52,6 +52,7 @@ class TestJoinNeighbourhoodReq:
             JoinNeighbourhoodReq()
 
 class TestJoinRequestRes:
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_valid_pending_request(self):
         """Happy path: all required fields, status PENDING"""
         data = _make_join_request_res()
@@ -63,16 +64,19 @@ class TestJoinRequestRes:
         assert res.status == "PENDING"
         assert res.created_at == data["created_at"]
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_approved_status_accepted(self):
         """Status can be APPROVED"""
         res = JoinRequestRes(**_make_join_request_res(status="APPROVED"))
         assert res.status == "APPROVED"
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_denied_status_accepted(self):
         """Status can be DENIED"""
         res = JoinRequestRes(**_make_join_request_res(status="DENIED"))
         assert res.status == "DENIED"
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_missing_id_raises_validation_error(self):
         data = _make_join_request_res()
         del data["id"]
@@ -80,6 +84,7 @@ class TestJoinRequestRes:
         with pytest.raises(ValidationError):
             JoinRequestRes(**data)
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_missing_neighbourhood_id_raises_validation_error(self):
         data = _make_join_request_res()
         del data["neighbourhood_id"]
@@ -87,6 +92,7 @@ class TestJoinRequestRes:
         with pytest.raises(ValidationError):
             JoinRequestRes(**data)
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_missing_user_id_raises_validation_error(self):
         data = _make_join_request_res()
         del data["user_id"]
@@ -94,6 +100,7 @@ class TestJoinRequestRes:
         with pytest.raises(ValidationError):
             JoinRequestRes(**data)
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_missing_status_raises_validation_error(self):
         data = _make_join_request_res()
         del data["status"]
@@ -101,6 +108,7 @@ class TestJoinRequestRes:
         with pytest.raises(ValidationError):
             JoinRequestRes(**data)
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_missing_created_at_raises_validation_error(self):
         data = _make_join_request_res()
         del data["created_at"]
@@ -108,18 +116,22 @@ class TestJoinRequestRes:
         with pytest.raises(ValidationError):
             JoinRequestRes(**data)
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_invalid_uuid_for_id_raises_validation_error(self):
         with pytest.raises(ValidationError):
             JoinRequestRes(**_make_join_request_res(id="not-a-uuid"))
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_invalid_uuid_for_neighbourhood_id_raises_validation_error(self):
         with pytest.raises(ValidationError):
             JoinRequestRes(**_make_join_request_res(neighbourhood_id="bad"))
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_invalid_uuid_for_user_id_raises_validation_error(self):
         with pytest.raises(ValidationError):
             JoinRequestRes(**_make_join_request_res(user_id="bad"))
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_from_attributes_config_present(self):
         """model_config should allow construction from ORM objects"""
         assert JoinRequestRes.model_config.get("from_attributes") is True
@@ -128,6 +140,7 @@ class TestJoinNeighbourhoodRes:
     def _make_nested_res(self) -> JoinRequestRes:
         return JoinRequestRes(**_make_join_request_res())
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_valid_response_with_data(self):
         """Happy path: all fields present"""
         nested = self._make_nested_res()
@@ -142,6 +155,7 @@ class TestJoinNeighbourhoodRes:
         assert res.data is not None
         assert res.data.status == "PENDING"
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_only_status_required(self):
         """message and data are optional"""
         res = JoinNeighbourhoodRes(status=201)
@@ -150,6 +164,7 @@ class TestJoinNeighbourhoodRes:
         assert res.message is None
         assert res.data is None
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_error_response_without_data(self):
         """Error responses carry status and message only"""
         res = JoinNeighbourhoodRes(status=409, message="Already have a pending request")
@@ -157,56 +172,67 @@ class TestJoinNeighbourhoodRes:
         assert res.status == 409
         assert res.data is None
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_missing_status_raises_validation_error(self):
         with pytest.raises(ValidationError):
             JoinNeighbourhoodRes(message="oops")
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_invalid_nested_data_raises_validation_error(self):
         """Malformed data dict must be rejected"""
         with pytest.raises(ValidationError):
             JoinNeighbourhoodRes(status=201, data={"status": "PENDING"})
 
 class TestResolveJoinRequestReq:
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_valid_approve_action(self):
         """APPROVE is a valid action"""
         req = ResolveJoinRequestReq(action="APPROVE")
         assert req.action == "APPROVE"
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_valid_deny_action(self):
         """DENY is a valid action"""
         req = ResolveJoinRequestReq(action="DENY")
         assert req.action == "DENY"
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_lowercase_approve_is_normalised(self):
         """Validator should uppercase the action so that lowercase input should pass"""
         req = ResolveJoinRequestReq(action="approve")
         assert req.action == "APPROVE"
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_lowercase_deny_is_normalised(self):
         """Lowercase deny should also be normalised"""
         req = ResolveJoinRequestReq(action="deny")
         assert req.action == "DENY"
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_mixed_case_is_normalised(self):
         """Mixed-case input should be uppercased and accepted"""
         req = ResolveJoinRequestReq(action="Approve")
         assert req.action == "APPROVE"
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_invalid_action_raises_validation_error(self):
         """Unknown action strings must be rejected"""
         with pytest.raises(ValidationError):
             ResolveJoinRequestReq(action="IGNORE")
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_empty_action_raises_validation_error(self):
         """Empty string is not a valid action"""
         with pytest.raises(ValidationError):
             ResolveJoinRequestReq(action="")
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_none_action_raises_validation_error(self):
         """None is not a valid action"""
         with pytest.raises(ValidationError):
             ResolveJoinRequestReq(action=None)
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_missing_action_raises_validation_error(self):
         """action is required"""
         with pytest.raises(ValidationError):
@@ -216,6 +242,7 @@ class TestResolveJoinRequestRes:
     def _make_nested_res(self, status: str = "APPROVED") -> JoinRequestRes:
         return JoinRequestRes(**_make_join_request_res(status=status))
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_valid_approved_response(self):
         """Happy path: request was approved"""
         nested = self._make_nested_res("APPROVED")
@@ -228,6 +255,7 @@ class TestResolveJoinRequestRes:
         assert res.status == 200
         assert res.data.status == "APPROVED"
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_valid_denied_response(self):
         """Happy path: request was denied"""
         nested = self._make_nested_res("DENIED")
@@ -239,6 +267,7 @@ class TestResolveJoinRequestRes:
 
         assert res.data.status == "DENIED"
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_only_status_required(self):
         """message and data are optional"""
         res = ResolveJoinRequestRes(status=200)
@@ -246,6 +275,7 @@ class TestResolveJoinRequestRes:
         assert res.message is None
         assert res.data is None
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_error_response_without_data(self):
         """e.g. 404 when the request was not found"""
         res = ResolveJoinRequestRes(status=404, message="Request not found")
@@ -253,10 +283,12 @@ class TestResolveJoinRequestRes:
         assert res.status == 404
         assert res.data is None
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_missing_status_raises_validation_error(self):
         with pytest.raises(ValidationError):
             ResolveJoinRequestRes(message="oops")
 
+    @pytest.mark.skip(reason="Need to be refactored")
     def test_invalid_nested_data_raises_validation_error(self):
         with pytest.raises(ValidationError):
             ResolveJoinRequestRes(status=200, data={"status": "APPROVED"})

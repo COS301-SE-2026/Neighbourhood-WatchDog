@@ -1,0 +1,87 @@
+{
+  "dataset": "watchdog-real-footage-baseline-v1",
+  "evaluation_date": "2026-08-09T16:54:13.195725+00:00",
+  "evaluation_item_count": 24,
+  "manifest": "evaluation/dataset_manifest.csv",
+  "iou_match_threshold": 0.5,
+  "person_model": {
+    "path": "pipeline/models/weights/yolov8n.pt",
+    "sha256": "f59b3d833e2ff32e194b5bb8e08d211dc7c5bdf144b90d2c8412c47ccfc83b36",
+    "confidence_threshold": 0.25,
+    "imgsz": 640
+  },
+  "threat_model": {
+    "path": "pipeline/models/weights/best.pt",
+    "sha256": "86c43444ae8319d2276dd300edc3e7f7a1137fe7566737f994ca579ad770f6ce",
+    "confidence_threshold": 0.5,
+    "imgsz": 512
+  },
+  "classes": {
+    "person": {
+      "tp": 29,
+      "fp": 1,
+      "fn": 1,
+      "ground_truth_count": 30,
+      "prediction_count": 30,
+      "precision": 0.966667,
+      "recall": 0.966667,
+      "f1": 0.966667,
+      "status": "measurable"
+    },
+    "Gun": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "ground_truth_count": 0,
+      "prediction_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "status": "not_measurable_no_ground_truth_positive"
+    },
+    "explosion": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "ground_truth_count": 0,
+      "prediction_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "status": "not_measurable_no_ground_truth_positive"
+    },
+    "grenade": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "ground_truth_count": 0,
+      "prediction_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "status": "not_measurable_no_ground_truth_positive"
+    },
+    "knife": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "ground_truth_count": 0,
+      "prediction_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "status": "not_measurable_no_ground_truth_positive"
+    },
+    "weapon": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "ground_truth_count": 0,
+      "prediction_count": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "status": "not_measurable_no_ground_truth_positive"
+    }
+  }
+}

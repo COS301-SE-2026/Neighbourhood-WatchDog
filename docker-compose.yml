@@ -51,10 +51,12 @@ services:
       target: development
     environment:
       APP_ENV: development
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
       AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       COGNITO_REGION: ${COGNITO_REGION}
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
       COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
@@ -73,10 +75,12 @@ services:
       target: development
     environment:
       APP_ENV: development
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
       AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       COGNITO_REGION: ${COGNITO_REGION}
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
       COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
@@ -99,7 +103,7 @@ services:
       APP_ENV: development
       DEBUG: "true"
       TESTING: "false"
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
 
@@ -122,6 +126,7 @@ services:
       SKIP_DB_INIT: "true"
       MEDIAMTX_PUBLISH_MASTER_KEY: ${MEDIAMTX_PUBLISH_MASTER_KEY}
       INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
+      FAILOVER_CONTROLLER_TOKEN: ${FAILOVER_CONTROLLER_TOKEN}
     volumes:
       - ./backend:/app
     depends_on:
@@ -174,13 +179,14 @@ services:
       MTX_WEBRTCENCRYPTION: "yes"
       MTX_WEBRTCSERVERCERT: /certs/fullchain.pem
       MTX_WEBRTCSERVERKEY: /certs/privkey.pem
+    expose:
+      - "9997"
     build:
       context: ./mediamtx
     ports:
       - "8554:8554"    # RTSP
       - "8889:8889"    # WebRTC
       - "8189:8189/udp"
-      - "9997:9997"    # API
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx/mediamtx.yml
       - /opt/mediamtx-certs:/certs:ro

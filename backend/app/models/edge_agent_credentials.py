@@ -12,6 +12,7 @@ class EdgeAgentCredential(Base):
     key_hash = Column(String, nullable=False, unique=True, index=True) #hashed api key value
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
     revoked_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    last_seen_at = Column(TIMESTAMP(timezone=True), nullable=True)
 
 
     property = relationship("Property", back_populates="edge_agent_credentials")

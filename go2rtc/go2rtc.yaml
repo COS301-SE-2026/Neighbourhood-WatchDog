@@ -1,0 +1,12 @@
+api:
+  listen: ":1984"
+  username: "${GO2RTC_API_USERNAME}"
+  password: "${GO2RTC_API_PASSWORD}"
+
+rtsp:
+  listen: ":8554"
+
+webrtc:
+  listen: ""
+
+streams: {}

@@ -27,6 +27,8 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME}
       AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       COGNITO_REGION: ${COGNITO_REGION}
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
       COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
@@ -40,6 +42,7 @@ services:
       RTSP_ENCRYPTION_KEY: ${RTSP_ENCRYPTION_KEY}
       MEDIAMTX_PUBLISH_MASTER_KEY: ${MEDIAMTX_PUBLISH_MASTER_KEY}
       INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
+      FAILOVER_CONTROLLER_TOKEN: ${FAILOVER_CONTROLLER_TOKEN}
     restart: always
     # volumes:
     #   - ./backend:/app
@@ -71,13 +74,14 @@ services:
       MTX_WEBRTCADDITIONALHOSTS: ${MTX_WEBRTCADDITIONALHOSTS}
       MTX_WEBRTCALLOWORIGIN: ${MTX_WEBRTCALLOWORIGIN}
       MTX_AUTHHTTPADDRESS: ${MTX_AUTHHTTPADDRESS}
+    expose:
+      - "9997"
     build:
       context: ./mediamtx
     ports:
       - "8554:8554" # RTSP
       - "8889:8889" # WebRTC
       - "8189:8189/udp"
-      - "9997:9997" # API
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx/mediamtx.yml
       - /opt/mediamtx-certs:/certs:ro
