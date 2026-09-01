@@ -195,16 +195,59 @@ export function AuditLogTable() {
       )}
 
       <Dialog open={!!selectedRow} onOpenChange={() => setSelectedRow(null)}>
-        <DialogContent className="border-white/10 bg-zinc-950 text-white">
+        <DialogContent className="max-w-2xl border-white/10 bg-zinc-950 text-white">
           {selectedRow && (
-            <div>
-              <DialogTitle className="font-bold text-white">Record Details</DialogTitle>
-              <ul>
-                <li>User ID: {selectedRow.user_id}</li>
-                <li>Target Entity ID: {selectedRow.target_entity_id}</li>
-                <li>Old values: <pre> {selectedRow.old_values ? JSON.stringify(selectedRow.old_values, null, 4) : "No old values"} </pre> </li>
-                <li>New values: <pre> {selectedRow.new_values ? JSON.stringify(selectedRow.new_values, null, 4) : "No new values"} </pre> </li>
-              </ul>
+            <div className="space-y-6">
+              <div>
+                <DialogTitle className="text-lg font-semibold text-white">
+                  Record details
+                </DialogTitle>
+                <p className="mt-1 text-sm text-white/45">
+                  {selectedRow.action} on {selectedRow.target_entity_type}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-white/40">
+                    User ID
+                  </p>
+                  <p className="mt-1 break-all text-sm text-white/75">
+                    {selectedRow.user_id}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-white/40">
+                    Target entity ID
+                  </p>
+                  <p className="mt-1 break-all text-sm text-white/75">
+                    {selectedRow.target_entity_id ?? "No target entity"}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-white/40">
+                  Previous values
+                </p>
+                <pre className="max-h-60 overflow-auto rounded-md border border-white/10 bg-black p-4 text-xs leading-relaxed text-white/70">
+                  {selectedRow.old_values
+                    ? JSON.stringify(selectedRow.old_values, null, 2)
+                    : "No previous values"}
+                </pre>
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-white/40">
+                  New values
+                </p>
+                <pre className="max-h-60 overflow-auto rounded-md border border-white/10 bg-black p-4 text-xs leading-relaxed text-white/70">
+                  {selectedRow.new_values
+                    ? JSON.stringify(selectedRow.new_values, null, 2)
+                    : "No new values"}
+                </pre>
+              </div>
             </div>
           )}
         </DialogContent>
