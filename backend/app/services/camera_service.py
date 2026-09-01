@@ -1,4 +1,4 @@
-from app.schemas.camera import CameraRes, CameraListItemRes, CamerasRes, CameraEditReq
+from app.schemas.camera import AgentCameraSummary, AgentCameraSummaryList, CameraRes, CameraListItemRes, CamerasRes, CameraEditReq
 from app.models.camera import Camera
 from app.models.property import Property
 from app.models.property_user import PropertyUser
@@ -312,7 +312,6 @@ async def list_cameras_handler(property_id, db, claims):
                 name=c.name,
                 property_id=c.property_id,
                 neighbourhood_id=property_obj.neighbourhood_id,
-                rtsp_url=decrypt_rtsp_url(c.rtsp_url),
                 visibility=c.visibility,
                 location=c.location,
                 enabled=c.enabled,
@@ -404,3 +403,25 @@ async def authorize_mediamtx_for_agent_handler(request: MediaMtxAuthRequest, db:
 
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+async def list_camera_summaries_for_agent_handler(property_id: UUID, db: AsyncSession ) -> AgentCameraSummaryList:
+    statement = (
+        select(Camera)
+        .where(Camera.property_id == property_id)
+        .order_by(Camera.name)
+    )
+
+    result = await db.execute(statement)
+    cameras = result.scalars().all()
+
+    return AgentCameraSummaryList(
+        data=[
+            AgentCameraSummary(
+                id=camera.id,
+                name=camera.name,
+                location=camera.location,
+                enabled=camera.enabled,
+            )
+            for camera in cameras
+        ]
+    )
