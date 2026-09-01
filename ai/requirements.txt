@@ -1,5 +1,4 @@
 # ── AI / ML Pipeline ──────────────────────────────────────────────
-setuptools<82
 ultralytics==8.4.45
 ultralytics-thop==2.0.19
 torch==2.7.0
