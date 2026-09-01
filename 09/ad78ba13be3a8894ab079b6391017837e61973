@@ -1,0 +1,14 @@
+backend/app/tasks/clip_tasks.py
+  h_cf6208e37032c0 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "09ad78ba13be3a8894ab079b6391017837e61973",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
