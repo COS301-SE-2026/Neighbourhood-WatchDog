@@ -791,12 +791,3 @@ app.include_router(stream_router)
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "ai"}
-
-@app.get("/internal/camera-status")
-def camera_status():
-    supervisor = getattr(app.state, "camera_supervisor", None)
-
-    if supervisor is None:
-        return {"cameras": []}
-
-    return {"cameras": supervisor.get_status_snapshot()}
