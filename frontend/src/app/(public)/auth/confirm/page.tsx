@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { confirmSignUp, isAuthenticated, resendConfirmationCode } from "@/lib/auth/cognito";
 import { ConfirmCard } from "@/components/auth-components/confirm-card";
 
-export default function ConfirmPage() {
+function ConfirmPageContent() {
   const router = useRouter();
 
   const searchParams = useSearchParams();
@@ -182,5 +182,13 @@ export default function ConfirmPage() {
       success={success}
       resendSuccess={resendSuccess}
     />
+  );
+}
+
+export default function ConfirmPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ConfirmPageContent />
+    </Suspense>
   );
 }
