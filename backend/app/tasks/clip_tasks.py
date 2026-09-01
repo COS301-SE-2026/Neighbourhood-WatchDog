@@ -30,8 +30,6 @@ def upload_alert_clip_task(self, alert_id: str, clip_b64: str, content_type: str
     except Exception:
         logger.exception("Permanent failure uploading clip for alert %s", alert_id)
         raise
-    finally:
-        asyncio.run(engine.dispose(close=False))
 
 async def _upload_and_link(alert_id: str, clip_b64: str, content_type: str) -> None:
     clip_bytes = base64.b64decode(clip_b64)
