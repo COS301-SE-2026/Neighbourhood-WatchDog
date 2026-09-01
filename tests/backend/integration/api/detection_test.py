@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 
-from app import app
 from app.core.celery_app import celery
 
 @pytest.mark.asyncio
