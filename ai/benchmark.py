@@ -46,7 +46,7 @@ class BenchmarkPage(ttk.Frame):
         self.progress_var = None
         self.progress_bar = None
         self.run_button = None
-        self.skip_button = None
+        # self.skip_button = None
         self.continue_button = None
         self.results_frame = None
 
@@ -121,14 +121,14 @@ class BenchmarkPage(ttk.Frame):
         )
         self.run_button.grid(row=0, column=0, sticky="w")
 
-        self.skip_button = ttk.Button(
-            button_frame,
-            text="Skip",
-            command=self.skip_benchmark,
-            style=SECONDARY_TBUTTON,
-            width=12,
-        )
-        self.skip_button.grid(row=0, column=1)
+        # self.skip_button = ttk.Button(
+        #     button_frame,
+        #     text="Skip",
+        #     command=self.skip_benchmark,
+        #     style=SECONDARY_TBUTTON,
+        #     width=12,
+        # )
+        # self.skip_button.grid(row=0, column=1)
 
         self.continue_button = ttk.Button(
             button_frame,
@@ -146,7 +146,7 @@ class BenchmarkPage(ttk.Frame):
             return
 
         if not self.benchmark_service.video_is_available():
-            self.status_var.set("Benchmark clip is missing - skipping performance check.")
+            self.status_var.set("Required performance-check video is missing. Please reinstall WatchDog.")
             return
         
         self.benchmark_running = True
@@ -154,8 +154,8 @@ class BenchmarkPage(ttk.Frame):
         if self.run_button is not None:
             self.run_button.configure(state="disabled")
 
-        if self.skip_button is not None:
-            self.skip_button.configure(state="disabled")
+        # if self.skip_button is not None:
+        #     self.skip_button.configure(state="disabled")
 
         self.progress_var.set(0)
         self._clear_results()
@@ -195,8 +195,8 @@ class BenchmarkPage(ttk.Frame):
         if self.run_button is not None:
             self.run_button.configure(state="normal")
 
-        if self.skip_button is not None:
-            self.skip_button.configure(state="normal")
+        # if self.skip_button is not None:
+        #     self.skip_button.configure(state="normal")
 
         if not payload.is_valid:
             self.status_var.set("Performance check failed.")
@@ -212,6 +212,16 @@ class BenchmarkPage(ttk.Frame):
         self.status_var.set("Performance check complete.")
         self._render_results(payload)
 
+        if payload.rating == RATING_INSUFFICIENT:# IF the rating is insufficient then we do not allow them to proceed
+            self.status_var.set(
+                "This computer may not be able to run WatchDog reliably."
+            )
+
+            if self.continue_button is not None:
+                self.continue_button.configure(state="disabled")
+
+            return
+        
         if self.continue_button is not None:
             self.continue_button.configure(state="normal")
 
@@ -293,7 +303,7 @@ class BenchmarkPage(ttk.Frame):
 
     def skip_benchmark(self) -> None:
         "Lets user bypass the check entirely"
-        self.go_next()
+        # self.go_next()
 
 if __name__ == "__main__":
     root = tk.Tk()
