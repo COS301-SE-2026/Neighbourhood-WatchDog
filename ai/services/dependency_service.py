@@ -9,12 +9,24 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from runtime.paths import (
+    get_resource_dir,
+    get_service_executable,
+    get_venv_python,
+    is_packaged,
+)
+
 AI_DIR = Path(__file__).resolve().parent.parent
 RUNTIME_DIR = AI_DIR / ".watchdog-agent"
 VENV_DIR = RUNTIME_DIR / "venv"
 STATE_FILE = RUNTIME_DIR / "install-state.json"
 
-WEIGHTS_DIR = AI_DIR / "pipeline" / "models" / "weights"
+WEIGHTS_DIR = (
+    get_resource_dir()
+    / "pipeline"
+    / "models"
+    / "weights"
+)
 THREAT_MODEL_PATH = WEIGHTS_DIR / "best.pt"
 PERSON_MODEL_PATH = WEIGHTS_DIR / "yolov8n.pt"
 
@@ -221,6 +233,10 @@ class DependencyService:
 
     def check(self) -> DependencyReport:
         """Runs all dependency checks and returns list of problems found"""
+
+        if is_packaged():
+            return self._check_packaged()
+        
         problems: list[str] = []
 
         if not self.venv_python.is_file():
@@ -271,3 +287,28 @@ class DependencyService:
 
     def get_problems(self) -> list[str]:
         return self.check().problems
+
+    def _check_packaged(self) -> DependencyReport:
+        """
+        Validate resources required by a packaged installation.
+
+        Packaged mode must not require a venv or pip-installed packages.
+        """
+
+        problems: list[str] = []
+
+        if not is_packaged():
+            return DependencyReport(problems=problems)
+
+        service_executable = get_service_executable()
+
+        if not service_executable.is_file():
+            problems.append("bundled_service_missing")
+
+        if not model_is_valid(self.threat_model):
+            problems.append("threat_model_invalid")
+
+        if not model_is_valid(self.person_model):
+            problems.append("person_model_invalid")
+
+        return DependencyReport(problems=problems)
