@@ -201,8 +201,16 @@ class AgentRuntime:
         environment["PYTHONUNBUFFERED"] = "1"
         environment["MKL_THREADING_LAYER"] = "GNU"
 
+        working_directory = self.ai_directory
+
+        if is_packaged():
+            working_directory = (
+                self.service_executable
+                or get_service_executable()
+            ).parent
+
         popen_options = {
-            "cwd": self.ai_directory,
+            "cwd": working_directory,
             "stdout": subprocess.PIPE,
             "stderr": subprocess.STDOUT,
             "text": True,

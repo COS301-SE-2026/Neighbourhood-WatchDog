@@ -7,7 +7,7 @@ from pathlib import Path
 # Source/development directory.
 # This is the ai/ directory when running normally from Python.
 SOURCE_DIR = Path(__file__).resolve().parent.parent
-
+AI_DIR = SOURCE_DIR
 
 def is_packaged() -> bool:
     """
