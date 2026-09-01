@@ -3,11 +3,11 @@ from datetime import timedelta
 from celery import Celery
 from celery.signals import worker_process_init
 
-from app.core.database import engine
+from app.core.database import worker_engine
 
 @worker_process_init.connect
 def reset_engine_after_fork(**kwargs):
-    engine.sync_engine.dispose(close=False)
+    worker_engine.sync_engine.dispose(close=False)
 
 celery = Celery(
     __name__,

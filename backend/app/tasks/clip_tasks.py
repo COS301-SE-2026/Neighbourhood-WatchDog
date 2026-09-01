@@ -8,7 +8,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 from sqlalchemy import select
 
 from app.core.celery_app import celery
-from app.core.database import SessionLocal
+from app.core.database import WorkerSessionLocal
 from app.models.alert import Alert
 from app.services.alert_service import CLIP_RETENTION_DAYS, S3_BUCKET_NAME, _clip_s3_key, _s3_client
 
@@ -41,7 +41,7 @@ async def _upload_and_link(alert_id: str, clip_b64: str, content_type: str) -> N
         )
         return
 
-    async  with SessionLocal() as db:
+    async with WorkerSessionLocal() as db:
         alert_uuid = UUID(alert_id)
         stmt = select(Alert).where(Alert.id == alert_uuid)
         result = await db.execute(stmt)
