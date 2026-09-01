@@ -34,6 +34,7 @@ import {
     House,
     KeyRound,
     Plus,
+    Settings,
     SlidersHorizontal,
     User,
     UserPlus,
@@ -129,6 +130,7 @@ function getSidebarGroups(
             });
         }
 
+        addAccountGroup(groups);
         return addSystemAdminGroup(groups, systemRole);
     }
 
@@ -174,6 +176,7 @@ function getSidebarGroups(
         });
     }
 
+    addAccountGroup(groups);
     return addSystemAdminGroup(groups, systemRole);
 }
 
@@ -190,6 +193,21 @@ function addSystemAdminGroup(groups: SidebarGroupData[], systemRole: string | nu
             ],
         });
     }
+    return groups;
+}
+
+function addAccountGroup(groups: SidebarGroupData[]) {
+    groups.push({
+        label: "ACCOUNT",
+        items: [
+            {
+                title: "Settings",
+                url: "/dashboard/settings",
+                icon: Settings,
+            },
+        ],
+    });
+
     return groups;
 }
 

@@ -337,7 +337,7 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
         return str(alert_id)
 
     except httpx.HTTPStatusError as error:
-        logger.error(
+        logger.exception(
             "Weapon alert API rejected request: status=%s, body=%s",
             error.response.status_code,
             error.response.text,
@@ -345,7 +345,7 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
         return None
 
     except httpx.RequestError as error:
-        logger.error(
+        logger.exception(
             "Could not reach weapon alert API at %s: %s",
             BACKEND_URL,
             error,

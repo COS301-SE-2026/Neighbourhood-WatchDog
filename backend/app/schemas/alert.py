@@ -156,3 +156,10 @@ class AlertClipUpdateRes(BaseModel):
     alert_id: UUID
     clip_s3_key: str
     clip_expires_at: datetime
+
+
+class ClipUploadAcceptedRes(BaseModel):
+	"""Response when the clip has been accepted but not necessarily uploaded yet"""
+
+	alert_id: UUID
+	status: str
