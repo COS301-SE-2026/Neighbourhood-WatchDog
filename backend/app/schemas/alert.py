@@ -2,7 +2,7 @@ from enum import Enum
 from datetime import datetime
 from uuid import UUID
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class AlertCreate(BaseModel):
@@ -21,7 +21,7 @@ class AlertResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        from_attributes = True
+        model_config = ConfigDict(from_attributes=True)
 
 class AlertRes(BaseModel):
     id: UUID

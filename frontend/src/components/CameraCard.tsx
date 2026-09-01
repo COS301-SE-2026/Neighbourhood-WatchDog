@@ -13,6 +13,7 @@ interface CameraCardProps {
     readonly visibility: "PUBLIC" | "PRIVATE" | "NEIGHBOURHOOD";
     readonly enabled: boolean;
     readonly userRole?: string;
+    readonly onDeleted: (cameraId: string) => void;
 }
 
 function getStatusLabel(enabled: boolean, streamState: CameraStreamState): string {
@@ -37,7 +38,7 @@ function getStatusDotClass(enabled: boolean, streamState: CameraStreamState): st
     return "bg-emerald-400";
 }
 
-export default function CameraCard({ id, name, location, visibility, enabled, userRole = "RESIDENT" }: CameraCardProps) {
+export default function CameraCard({ id, name, location, visibility, enabled, userRole = "RESIDENT", onDeleted }: CameraCardProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [open, setOpen] = useState(false);
     const [streamState, setStreamState] = useState<CameraStreamState>("idle");
@@ -90,6 +91,7 @@ export default function CameraCard({ id, name, location, visibility, enabled, us
                             camera_location={location}
                             camera_visibility={visibility}
                             camera_enabled={enabled}
+                            onDeleted={onDeleted}
                         />
                     </div>
 

@@ -2,6 +2,7 @@ from typing import Annotated, AsyncGenerator
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import declarative_base
+from sqlalchemy.pool import NullPool
 import os
 from dotenv import load_dotenv
 
@@ -12,10 +13,21 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL not set in .env")
 
+# API engine
 engine = create_async_engine(
     DATABASE_URL,
     pool_size=10,
     max_overflow=10
+)
+
+#  Worker engine
+worker_engine = create_async_engine(DATABASE_URL, poolclass=NullPool)
+WorkerSessionLocal = async_sessionmaker(
+    worker_engine, 
+    class_=AsyncSession, 
+    autocommit=False,
+    autoflush=False,
+    expire_on_commit=False
 )
 
 SessionLocal = async_sessionmaker(

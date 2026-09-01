@@ -88,7 +88,7 @@ async def register_camera_handler(req, db, claims):
         # Get ID before commit
         await db.flush()
 
-        create_audit_log_item(
+        await create_audit_log_item(
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.CREATE,
@@ -141,25 +141,25 @@ async def deregister_camera_handler(camera_id, db, claims):
         prop_user_result = await db.execute(
             select(PropertyUser)
             .options(joinedload(PropertyUser.user))
-            .where(PropertyUser.property_id == camera_obj.property_id)
+            .join(PropertyUser.user)
+            .where(PropertyUser.property_id == camera_obj.property_id, User.cognito_sub == claims.get("sub"))
         )
         prop_user = prop_user_result.scalar_one_or_none()
 
-        if not prop_user or prop_user.user.cognito_sub != claims["sub"]:
+        if prop_user is None or getattr(getattr(prop_user, "user", None), "cognito_sub", None) != claims.get("sub"):
             raise HTTPException(status_code=403, detail="Forbidden")
 
         
         old_values = {
             "property_id": str(camera_obj.property_id),
             "name": camera_obj.name,
-            "neighbourhood_id": str(camera_obj.neighbourhood_id),
             "visibility": camera_obj.visibility,
             "location": camera_obj.location,
         }
 
         await db.delete(camera_obj)
 
-        create_audit_log_item(
+        await create_audit_log_item(
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.DELETE,

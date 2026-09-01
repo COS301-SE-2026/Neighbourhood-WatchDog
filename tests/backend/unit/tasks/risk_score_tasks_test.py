@@ -34,7 +34,7 @@ class TestRecalculateAllRiskScores:
         self.mock_db.execute = make_execute_mock(neighbourhood_ids)
 
         with patch(
-            'app.tasks.risk_score_tasks.SessionLocal', 
+            'app.tasks.risk_score_tasks.WorkerSessionLocal', 
             return_value=FakeAsyncSessionContext(self.mock_db)
         ), patch('app.tasks.risk_score_tasks.calculate_risk_score_task') as mock_task:
 
@@ -49,7 +49,7 @@ class TestRecalculateAllRiskScores:
         neighbourhood_ids = []
         self.mock_db.execute = make_execute_mock(neighbourhood_ids)
         with patch(
-            'app.tasks.risk_score_tasks.SessionLocal', 
+            'app.tasks.risk_score_tasks.WorkerSessionLocal', 
             return_value=FakeAsyncSessionContext(self.mock_db)
         ), patch('app.tasks.risk_score_tasks.calculate_risk_score_task') as mock_task:
 
@@ -67,7 +67,7 @@ class TestCalculateRiskScoreTask:
 
     def test_calculate_risk_score(self):
         with patch(
-            'app.tasks.risk_score_tasks.SessionLocal', 
+            'app.tasks.risk_score_tasks.WorkerSessionLocal', 
             return_value = FakeAsyncSessionContext(self.mock_db)
         ), patch('app.tasks.risk_score_tasks.calculate_risk_score_handler') as mock_handler:
 
@@ -81,7 +81,7 @@ class TestCalculateRiskScoreTask:
 
     def test_exception_roll_back(self):
         with patch(
-            'app.tasks.risk_score_tasks.SessionLocal', 
+            'app.tasks.risk_score_tasks.WorkerSessionLocal', 
             return_value=FakeAsyncSessionContext(self.mock_db)
         ), patch('app.tasks.risk_score_tasks.calculate_risk_score_handler', side_effect=Exception("fail")):
 
