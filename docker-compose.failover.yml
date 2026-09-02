@@ -43,7 +43,6 @@ services:
       FAILOVER_FAILURE_PROBES: ${FAILOVER_FAILURE_PROBES:-3}
       FAILOVER_AGENT_TIMEOUT_SECONDS: ${FAILOVER_AGENT_TIMEOUT_SECONDS:-30}
     depends_on:
-      - backend
       - go2rtc
       - mediamtx
     networks:
