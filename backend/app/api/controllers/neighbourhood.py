@@ -37,7 +37,7 @@ router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
 async def create_neighbourhood(
     req: CreateNeighbourhoodReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(Claims)],
+    claims: Claims,
 ):
     """Create neighbourhood and return the neighbourhood that was created"""
     await is_property_admin(req.property_id, claims, db)
@@ -60,7 +60,7 @@ async def create_neighbourhood(
         403: {"description": "Insufficient permissions to access property"},
     },
 )
-async def get_neighbourhood_properties(db: DbSession, claims: Annotated[dict, Depends(Claims)] ):
+async def get_neighbourhood_properties(db: DbSession, claims: Claims ):
     """Get properties of all users with neighbour details"""
 
     
@@ -81,7 +81,7 @@ async def get_neighbourhood_properties(db: DbSession, claims: Annotated[dict, De
 async def get_neighbourhood_members(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(NeighbourhoodAdminClaims)],
+    claims: NeighbourhoodAdminClaims,
 ):
     """Get all members and their current roles for a neighbourhood."""
 
@@ -117,7 +117,7 @@ async def update_neighbourhood_member_role(
     member_user_id: UUID,
     req: UpdateMemberRoleReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(NeighbourhoodAdminClaims)],
+    claims: NeighbourhoodAdminClaims,
 ):
     """Change a member's role in a neighbourhood."""
 

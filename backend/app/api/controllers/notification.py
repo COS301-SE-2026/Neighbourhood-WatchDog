@@ -24,7 +24,7 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 async def list_notifications_for_alert(
     alert_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(Claims)],
+    claims: Claims,
 ):
     role = claims.get("custom:role")
     if role not in ("NEIGHBOURHOOD_ADMIN", "SYSTEM_ADMIN", "SECURITY_OFFICER"):

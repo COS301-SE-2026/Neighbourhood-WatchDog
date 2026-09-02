@@ -27,7 +27,7 @@ router = APIRouter(prefix="/camera", tags=["cameras"])
 async def register_camera(
     req: RegisterCameraReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(Claims)],
+    claims: Claims,
 ) -> RegisterCameraRes:
     """Creates a new camera and links it to the property of the user."""
     await is_property_admin(req.property_id, claims, db)
@@ -52,7 +52,7 @@ async def register_camera(
 )
 async def deregister_camera(camera_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(CameraAdminClaims)],
+    claims: CameraAdminClaims,
 ):
     """Permanently remove a camera from a users property and the system."""
     
@@ -72,7 +72,7 @@ async def deregister_camera(camera_id: UUID,
 async def get_property_cameras(
     property_id: str,
     db: DbSession,
-    claims: Annotated[dict, Depends(PropertyMemberClaims)],
+    claims: PropertyMemberClaims,
 ) -> CamerasRes:
     
     return await list_cameras_handler(property_id, db, claims)
@@ -93,7 +93,7 @@ async def edit_camera(
     camera_id: UUID, 
     req: CameraEditReq,
     db: DbSession, 
-    claims: Annotated[dict, Depends(CameraAdminClaims)]
+    claims: CameraAdminClaims
 ) -> EditCameraRes:
     """Edit a camera"""
 

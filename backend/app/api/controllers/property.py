@@ -22,7 +22,7 @@ router = APIRouter(prefix="/properties", tags=["properties"])
 async def create_property(
     req: CreatePropertyReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(PropertyAdminClaims)],
+    claims: PropertyAdminClaims,
 ):
     """Create property endpoint returns the property object that was created"""
     
@@ -59,7 +59,7 @@ async def create_property(
 )
 async def get_user_properties(
     db: DbSession, 
-    claims: Annotated[dict, Depends(PropertyAdminClaims)],
+    claims: PropertyAdminClaims,
 ) -> List[PropertyRes]:
     """Fetch all properties for the current user"""
     
@@ -80,7 +80,7 @@ async def get_user_properties(
 async def get_property_details(
     property_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(PropertyMemberClaims)],
+    claims: PropertyMemberClaims,
 ):
     """Fetch property details including users, neighbourhood, and cameras"""
     return await get_property_details_handler(property_id, db)

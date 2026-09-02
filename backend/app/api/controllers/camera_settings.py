@@ -38,7 +38,7 @@ router = APIRouter(prefix="/cameras", tags=["camera-settings"])
         500: {"description": "Failed to retrieve camera settings"},
     },
 )
-async def get_settings(camera_id: UUID, db: DbSession, claims: Annotated[dict, Depends(CameraAdminClaims)]):
+async def get_settings(camera_id: UUID, db: DbSession, claims: CameraAdminClaims):
     """Getting the confidence threshold and detection zones for a camera"""
     return await get_camera_settings_handler(camera_id, db, claims)
 
@@ -58,7 +58,7 @@ async def update_settings(
     camera_id: UUID,
     payload: UpdateCameraSettingsRequest,
     db: DbSession,
-    claims: Annotated[dict, Depends(CameraAdminClaims)],
+    claims: CameraAdminClaims,
 ):
     """Updating the confidence threshold for a camera"""
 
@@ -80,7 +80,7 @@ async def create_zone(
     camera_id: UUID,
     payload: CreateZoneRequest,
     db: DbSession,
-    claims: Annotated[dict, Depends(CameraAdminClaims)],
+    claims: CameraAdminClaims,
 ):
     """Adding a detection zone polygon to a camera"""
     return await create_zone_handler(camera_id, payload.name, payload.polygon, db, claims)
@@ -100,7 +100,7 @@ async def delete_zone(
     camera_id: UUID,
     zone_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(CameraAdminClaims)],
+    claims: CameraAdminClaims,
 ):
     """Removing a detection zone from a camera"""
     return await delete_zone_handler(camera_id, zone_id, db, claims)

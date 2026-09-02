@@ -42,7 +42,7 @@ async def join_neighbourhood(
     property_id: UUID,
     body: JoinNeighbourhoodReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(Claims)],
+    claims: Claims,
 ):
     result = await request_to_join_handler(property_id, body.join_code, db, claims)
     return JoinNeighbourhoodRes(status=201, message="Join request submitted", data=result)
@@ -61,7 +61,7 @@ async def join_neighbourhood(
 async def list_join_requests(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(NeighbourhoodAdminClaims)],
+    claims: NeighbourhoodAdminClaims,
 ):
     return await list_join_requests_handler(neighbourhood_id, db, claims)
 
@@ -91,7 +91,7 @@ async def resolve_join_request(
     request_id: UUID,
     body: ResolveJoinRequestReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(Claims)],
+    claims: Claims,
 ):
     result = await resolve_join_request_handler(request_id, body.action, db, claims)
     return ResolveJoinRequestRes(status=200, message="Join request updated", data=result)
@@ -103,7 +103,7 @@ async def resolve_join_request(
 async def regenerate_join_code(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(NeighbourhoodAdminClaims)]
+    claims: NeighbourhoodAdminClaims
 ):
     return await regenerate_join_code_handler(
         neighbourhood_id,
@@ -118,7 +118,7 @@ async def regenerate_join_code(
 async def get_join_code(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(NeighbourhoodAdminClaims)]
+    claims: NeighbourhoodAdminClaims
 ):
     return await get_join_code_handler(
         neighbourhood_id,

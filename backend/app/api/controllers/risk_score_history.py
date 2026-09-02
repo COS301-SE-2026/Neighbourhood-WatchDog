@@ -22,7 +22,7 @@ router = APIRouter(prefix="/risk-score", tags=["risk-score"])
         404: {"description": "No risk score calculated for this neighbourhood"},
     },
 )
-async def get_neighbourhood_score(neighbourhood_id: UUID, db: DbSession, claims: Annotated[dict, Depends(NeighbourhoodMemberClaims)]):
+async def get_neighbourhood_score(neighbourhood_id: UUID, db: DbSession, claims: NeighbourhoodMemberClaims):
     """Get Risk Score for a Neighbourhood"""
 
 
@@ -45,7 +45,7 @@ async def get_neighbourhood_score(neighbourhood_id: UUID, db: DbSession, claims:
         404: {"description": "Neighbourhood does not have risk score history"},
     },
 )
-async def get_neighbourhood_score_history(neighbourhood_id: UUID, granularity: str,db: DbSession, claims: Annotated[dict, Depends(NeighbourhoodMemberClaims)], start: datetime | None = None, end: datetime | None = None,):
+async def get_neighbourhood_score_history(neighbourhood_id: UUID, granularity: str,db: DbSession, claims: NeighbourhoodMemberClaims, start: datetime | None = None, end: datetime | None = None,):
     """Get Risk Score History of a Neighbourhood"""
 
 

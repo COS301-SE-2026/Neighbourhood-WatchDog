@@ -123,7 +123,7 @@ async def _check_rbac(claims: dict, camera: Camera, property_obj: Property, db: 
 async def get_clip_url(
     alert_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(Claims)],
+    claims: Claims,
 ):
     """
     return a pre signed s3 url for the requested clip
