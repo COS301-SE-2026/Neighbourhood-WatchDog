@@ -46,7 +46,7 @@ class BenchmarkPage(ttk.Frame):
         self.progress_var = None
         self.progress_bar = None
         self.run_button = None
-        # self.skip_button = None
+        self.skip_button = None
         self.continue_button = None
         self.results_frame = None
 
@@ -121,14 +121,14 @@ class BenchmarkPage(ttk.Frame):
         )
         self.run_button.grid(row=0, column=0, sticky="w")
 
-        # self.skip_button = ttk.Button(
-        #     button_frame,
-        #     text="Skip",
-        #     command=self.skip_benchmark,
-        #     style=SECONDARY_TBUTTON,
-        #     width=12,
-        # )
-        # self.skip_button.grid(row=0, column=1)
+        self.skip_button = ttk.Button(
+            button_frame,
+            text="Skip",
+            command=self.skip_benchmark,
+            style=SECONDARY_TBUTTON,
+            width=12,
+        )
+        self.skip_button.grid(row=0, column=1)
 
         self.continue_button = ttk.Button(
             button_frame,
@@ -154,8 +154,8 @@ class BenchmarkPage(ttk.Frame):
         if self.run_button is not None:
             self.run_button.configure(state="disabled")
 
-        # if self.skip_button is not None:
-        #     self.skip_button.configure(state="disabled")
+        if self.skip_button is not None:
+            self.skip_button.configure(state="disabled")
 
         self.progress_var.set(0)
         self._clear_results()
@@ -195,8 +195,8 @@ class BenchmarkPage(ttk.Frame):
         if self.run_button is not None:
             self.run_button.configure(state="normal")
 
-        # if self.skip_button is not None:
-        #     self.skip_button.configure(state="normal")
+        if self.skip_button is not None:
+            self.skip_button.configure(state="normal")
 
         if not payload.is_valid:
             self.status_var.set("Performance check failed.")
@@ -312,7 +312,7 @@ class BenchmarkPage(ttk.Frame):
 
     def skip_benchmark(self) -> None:
         "Lets user bypass the check entirely"
-        # self.go_next()
+        self.go_next()
 
 if __name__ == "__main__":
     root = tk.Tk()
