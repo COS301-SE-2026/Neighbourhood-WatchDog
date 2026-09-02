@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-
+import math
 import boto3
 from botocore.config import Config as BotoConfig
 from botocore.exceptions import BotoCoreError, ClientError
@@ -223,12 +223,30 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
         )
 
 
+def _safe_optional_coordinate(value: object) -> float | None:
+    """Return a finite coordinate or None for missing/test-double values."""
+    if isinstance(value, bool):
+        return None
+
+    try:
+        coordinate = float(value)
+    except (TypeError, ValueError):
+        return None
+
+    return coordinate if math.isfinite(coordinate) else None
 
 def _build_alert_res(alert: Alert) -> AlertRes:
-    """Convert an Alert database model into an AlertRes response object, including its property location."""
+    """Convert an Alert into a safe response, including its property location."""
 
     camera = getattr(alert, "camera", None)
     property_obj = getattr(camera, "property", None)
+
+    property_address = getattr(property_obj, "address", None)
+    if not isinstance(property_address, str):
+        property_address = None
+
+    property_latitude = _safe_optional_coordinate(getattr(property_obj, "latitude", None))
+    property_longitude = _safe_optional_coordinate(getattr(property_obj, "longitude", None))
 
     return AlertRes(
         id=alert.id,
@@ -248,9 +266,10 @@ def _build_alert_res(alert: Alert) -> AlertRes:
         resolved_by=alert.resolved_by,
         resolved_at=alert.resolved_at,
         created_at=alert.created_at,
-        property_address=getattr(property_obj, "address", None), 
-        property_latitude=getattr(property_obj, "latitude", None), 
-        property_longitude=getattr(property_obj, "longitude", None)
+        property_address=property_address,
+        property_latitude=property_latitude,
+        property_longitude=property_longitude 
+
     )
 
 async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) -> AlertRes:
