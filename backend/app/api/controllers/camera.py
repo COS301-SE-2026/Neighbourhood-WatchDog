@@ -25,7 +25,7 @@ router = APIRouter(prefix="/camera", tags=["cameras"])
 )
 async def register_camera(req: RegisterCameraReq,
     db: DbSession,
-    claims: Annotated[dict, require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")]
+    claims: Annotated[dict, Depends(require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN"))]
 ) -> RegisterCameraRes:
     """Creates a new camera and links it to the property of the user."""
     
@@ -50,7 +50,7 @@ async def register_camera(req: RegisterCameraReq,
 )
 async def deregister_camera(camera_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")]
+    claims: Annotated[dict, Depends(require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN"))]
 ):
     """Permanently remove a camera from a users property and the system."""
     
@@ -70,7 +70,7 @@ async def deregister_camera(camera_id: UUID,
 async def get_property_cameras(
     property_id: str,
     db: DbSession,
-    claims: Annotated[dict, require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")],
+    claims: Annotated[dict, Depends(require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN"))],
 ) -> CamerasRes:
     
     return await list_cameras_handler(property_id, db, claims)
@@ -91,7 +91,7 @@ async def edit_camera(
     camera_id: UUID, 
     req: CameraEditReq,
     db: DbSession, 
-    claims: Annotated[dict, require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")]
+    claims: Annotated[dict, Depends(require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN"))]
 ) -> EditCameraRes:
     """Edit a camera"""
 
