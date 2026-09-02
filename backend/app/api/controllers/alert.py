@@ -18,6 +18,7 @@ from app.services.alert_service import (
     broadcast_neighbourhood_alert_service,
     MAX_PAGE_SIZE,
     DEFAULT_PAGE_SIZE,
+    list_property_alerts_handler,
 )
 from app.services import alert_service
 from app.schemas.alert import (
@@ -150,6 +151,48 @@ async def get_alert_trends(
 
     )
     return TrendResponse(status=200, data=data, message="Alert trends recieved successfully")
+
+
+@router.get(
+    "/property/{property_id}",
+    response_model=ListAlertsRes,
+    summary="List alerts for a property",
+)
+async def list_property_alerts(
+    property_id: UUID,
+    db: DbSession,
+    claims: Annotated[dict, Depends(get_current_user)],
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
+    camera_id: Annotated[UUID | None, Query()] = None,
+    detection_type: Annotated[str | None, Query()] = None,
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
+    offset: Annotated[int, Query(ge=0)] = 0,
+):
+    results, total = await list_property_alerts_handler(
+        property_id=property_id,
+        db=db,
+        claims=claims,
+        status_filter=status_filter,
+        camera_id=camera_id,
+        detection_type=detection_type,
+        start_date=start_date,
+        end_date=end_date,
+        limit=limit,
+        offset=offset,
+    )
+
+    return ListAlertsRes(
+        status=200,
+        data=results,
+        pagination=Pagination(
+            total=total,
+            limit=limit,
+            offset=offset,
+            has_more=(offset + limit) < total,
+        ),
+    )
 
 
 @router.get(

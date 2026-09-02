@@ -22,6 +22,7 @@ from app.models.neighbourhood_user import (
 from app.models.property import Property
 from app.models.camera import Camera
 from app.models.edge_agent_credentials import EdgeAgentCredential
+from app.models.property_user import PropertyUser
 from app.schemas.alert import (
     AlertClipUpdateRes,
     CreateInternalAlertRequest,
@@ -93,6 +94,16 @@ def _neighbourhood_alert_stmt(neighbourhood_id: UUID):
         .join(Property, Camera.property_id == Property.id)
         .where(Property.neighbourhood_id == neighbourhood_id)
     )
+
+def _property_alert_stmt(property_id: UUID):
+    """Build the base alert query scoped to one property."""
+
+    return (
+        select(Alert)
+        .join(Camera, Alert.camera_id == Camera.id)
+        .where(Camera.property_id == property_id)
+    )
+
 
 async def _require_neighbourhood_membership(
     db: AsyncSession,
@@ -354,6 +365,67 @@ def _validate_db_and_claims(db: AsyncSession, claims: dict):
     if not claims:
         logger.warning("acknowledge_alert_handler: no claims entered")
         raise HTTPException(401, NOT_AUTHENTICATED)
+
+async def list_property_alerts_handler(
+    property_id,
+    db: AsyncSession,
+    claims: dict,
+    status_filter: str | None = None,
+    camera_id: UUID | None = None,
+    detection_type: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+    limit: int = DEFAULT_PAGE_SIZE,
+    offset: int = 0,
+) -> tuple[list[AlertRes], int]:
+    """Return paginated alerts for a property the user can access."""
+
+    if not property_id:
+        raise HTTPException(status_code=400, detail="Property id is required")
+
+    _validate_db_and_claims(db, claims)
+
+    try:
+        property_uuid = UUID(str(property_id))
+        current_user_id = UUID(str(claims["id"]))
+    except (KeyError, TypeError, ValueError) as error:
+        raise HTTPException(
+            status_code=401,
+            detail=NOT_AUTHENTICATED,
+        ) from error
+
+    if start_date and end_date and start_date > end_date:
+        raise HTTPException(status_code=400, detail="start_date must be less than end_date")
+
+    try:
+        property_result = await db.execute(
+            select(Property).where(Property.id == property_uuid)
+        )
+        property_obj = property_result.scalar_one_or_none()
+
+        if property_obj is None:
+            raise HTTPException(status_code=404, detail="Property not found")
+
+        membership_result = await db.execute(
+            select(PropertyUser).where(
+                PropertyUser.property_id == property_uuid,
+                PropertyUser.user_id == current_user_id,
+            )
+        )
+        membership = membership_result.scalar_one_or_none()
+
+        if membership is None:
+            raise HTTPException(status_code=403, detail="You do not have access to this property")
+
+    except HTTPException:
+        raise
+
+    except IntegrityError:
+        await db.rollback()
+
+        logger.error("list_property_alerts: database error for property_id=%s", property_uuid)
+
+        raise HTTPException(status_code=500, detail="Failed to list property alerts")
 
 async def list_alerts_handler(
     neighbourhood_id,
