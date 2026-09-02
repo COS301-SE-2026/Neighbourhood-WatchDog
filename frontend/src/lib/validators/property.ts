@@ -10,8 +10,8 @@ export const CreatePropertyReqSchema = z.object({
     .string({ message: "Address is required" })
     .nonempty("Address cannot be empty"),
   property_type: PropertyTypeEnum,
-  latitude: z.number().finite().min(-90).max(90).nullable().optional(), 
-  longitude: z.number().finite().min(180).max(180).nullable().optional()
+  latitude: z.number().finite().min(-90).max(90).nullable(), 
+  longitude: z.number().finite().min(180).max(180).nullable()
 });
 
 export const PropertyResSchema = z.object({
