@@ -1,3 +1,4 @@
+from http.client import HTTPException
 from typing import Annotated
 from uuid import UUID
 
@@ -8,7 +9,7 @@ from app.services.camera_service import register_camera_handler, list_cameras_ha
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
 from app.auth.dependencies import require_role
-from app.auth.authorization import Claims, CameraAdminClaims, PropertyMemberClaims
+from app.auth.authorization import Claims, CameraAdminClaims, PropertyMemberClaims, is_property_admin
 
 router = APIRouter(prefix="/camera", tags=["cameras"])
 
@@ -30,7 +31,9 @@ async def register_camera(
     claims: Claims,
 ) -> RegisterCameraRes:
     """Creates a new camera and links it to the property of the user."""
-    await is_property_admin(req.property_id, claims, db)
+    allowed =await is_property_admin(req.property_id, claims, db)
+    if not allowed:
+        raise HTTPException(status_code=403, detail="You do not have permission to add a camera to this property")
     
     new_camera = await register_camera_handler(req, db, claims)
 

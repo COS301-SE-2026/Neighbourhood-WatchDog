@@ -1,3 +1,4 @@
+from http.client import HTTPException
 from typing import Annotated, List
 from uuid import UUID
 
@@ -10,7 +11,7 @@ from app.schemas.neighbourhood import (
     UpdateMemberRoleReq,
     UpdateMemberRoleRes
 )
-from app.auth.authorization import Claims, NeighbourhoodAdminClaims
+from app.auth.authorization import Claims, NeighbourhoodAdminClaims, is_property_admin
 from app.core.database import DbSession
 from app.auth.dependencies import get_current_user
 from app.auth.dependencies import require_role
@@ -40,7 +41,9 @@ async def create_neighbourhood(
     claims: Claims,
 ):
     """Create neighbourhood and return the neighbourhood that was created"""
-    await is_property_admin(req.property_id, claims, db)
+    allowed = await is_property_admin(req.property_id, claims, db)
+    if not allowed:
+        raise HTTPException(status_code=403, detail="You do not have permission to create a neighbourhood for this property")
 
     new_neighbourhood = await create_neighbourhood_handler(name=req.name, location=req.location, property_id=req.property_id, db = db, claims = claims)
 
