@@ -37,6 +37,9 @@ class AlertRes(BaseModel):
     resolved_by: UUID | None = None
     resolved_at: datetime | None = None
     created_at: datetime
+    property_address: str | None = None
+    property_latitude: float | None = None
+    property_longitude: float | None = None
 
     model_config = {"from_attributes": True}
 
