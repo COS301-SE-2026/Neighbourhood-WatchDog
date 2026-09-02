@@ -471,3 +471,32 @@ class TestGetNeighbourhoodMembers:
         assert result[0].role == NeighbourhoodRole.RESIDENT
 
         assert mock_db.execute.await_count == 3
+
+    @pytest.mark.asyncio
+    async def test_non_admin_cannot_view_neighbourhood_members(self):
+        mock_db = AsyncMock()
+
+        neighbourhood_id = uuid4()
+        user_id = uuid4()
+
+        neighbourhood = Mock()
+        neighbourhood.id = neighbourhood_id
+
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_scalar_result(neighbourhood),
+                make_scalar_result(None),
+            ]
+        )
+
+        with pytest.raises(HTTPException) as exception:
+            await get_neighbourhood_members_handler(
+                neighbourhood_id=neighbourhood_id,
+                db=mock_db,
+                claims={"id": str(user_id)},
+            )
+
+        assert exception.value.status_code == 403
+        assert (
+            exception.value.detail == "Only neighbourhood admins can view members"
+        )
