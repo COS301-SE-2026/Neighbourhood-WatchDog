@@ -2,7 +2,7 @@ name: Deploy to Production AWS
 
 on:
   push:
-    branches: [ "main", "fix/celery_secrets" ]
+    branches: [ "main" ]
 
 concurrency:
   group: production-deploy
