@@ -2,7 +2,7 @@ name: Deploy to Production AWS
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "fix/celery_secrets" ]
 
 concurrency:
   group: production-deploy
@@ -52,8 +52,10 @@ jobs:
             }'
       
       - name: Build, tag, and push image to ECR
+        env: 
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+          aws ecr get-login-password --region ${AWS_REGION} \
             | docker login --username AWS --password-stdin 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
           IMAGE_TAG="${{ github.sha }}"
@@ -64,11 +66,13 @@ jobs:
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
       - name: Register new task definition with SHA-tagged image
+        env: 
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           aws ecs describe-task-definition \
             --task-definition watchdog-backend-task \
             --query 'taskDefinition' \
-            --region ${{ secrets.AWS_REGION }} > task-def.json
+            --region ${AWS_REGION} > task-def.json
 
             NEW_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:${{ env.IMAGE_TAG }}" \
               '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
@@ -78,7 +82,7 @@ jobs:
 
             NEW_REVISION=$(aws ecs register-task-definition \
               --cli-input-json file://new-task-def.json \
-              --region ${{ secrets.AWS_REGION }} \
+              --region ${AWS_REGION} \
               --query 'taskDefinition.revision' \
               --output text)
             
@@ -86,11 +90,13 @@ jobs:
             echo "Registered task definition revision: $NEW_REVISION"
 
       - name: Register Celery worker task definition with SHA-tagged image
+        env: 
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           aws ecs describe-task-definition \
             --task-definition watchdog-celery-worker-task \
             --query 'taskDefinition' \
-            --region ${{ secrets.AWS_REGION }} > worker-task-def.json
+            --region ${AWS_REGION} > worker-task-def.json
 
           NEW_WORKER_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:${{ env.IMAGE_TAG }}" \
             '.containerDefinitions[0].image = $IMAGE 
@@ -106,20 +112,23 @@ jobs:
 
           NEW_WORKER_REVISION=$(aws ecs register-task-definition \
             --cli-input-json file://new-worker-task-def.json \
-            --region ${{ secrets.AWS_REGION }} \
+            --region ${AWS_REGION} \
             --query 'taskDefinition.revision' \
             --output text)
 
           echo "NEW_WORKER_REVISION=$NEW_WORKER_REVISION" >> $GITHUB_ENV
 
       - name: Register Celery beat task definition with SHA-tagged image
+        env: 
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: |
           aws ecs describe-task-definition \
             --task-definition watchdog-celery-beat-task \
             --query 'taskDefinition' \
-            --region ${{ secrets.AWS_REGION }} > beat-task-def.json
+            --region ${AWS_REGION} > beat-task-def.json
 
-          NEW_BEAT_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:${{ env.IMAGE_TAG }}" \
+          NEW_BEAT_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
             '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
             beat-task-def.json)
 
@@ -127,7 +136,7 @@ jobs:
 
           NEW_BEAT_REVISION=$(aws ecs register-task-definition \
             --cli-input-json file://new-beat-task-def.json \
-            --region ${{ secrets.AWS_REGION }} \
+            --region ${AWS_REGION} \
             --query 'taskDefinition.revision' \
             --output text)
 
