@@ -26,7 +26,7 @@ jobs:
           host: ${{ secrets.MEDIAMTX_HOST }}
           username: ${{ secrets.MEDIAMTX_USER }}
           key: ${{ secrets.MEDIAMTX_SSH_KEY }}
-          source: "mediamtx,docker-compose.yml,docker-compose.prod.yml,docker-compose.failover.yml"
+          source: "mediamtx,go2rtc,failover-controller,docker-compose.yml,docker-compose.prod.yml,docker-compose.failover.yml"
           target: "/home/ubuntu/app"
 
       - name: Redeploy mediamtx

@@ -5,7 +5,7 @@ services:
     profiles:
       - edge-ai
 
-  go2rtc: 
+  go2rtc:
     image: alexxit/go2rtc:1.9.14 
     restart: unless-stopped
     environment:
