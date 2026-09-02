@@ -6,7 +6,6 @@ import time
 import threading
 import tempfile
 import subprocess
-from pathlib import Path
 from dotenv import load_dotenv
 from collections import deque
 from contextlib import asynccontextmanager

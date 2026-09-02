@@ -5,7 +5,6 @@ import shutil
 import platform
 import subprocess
 import json
-import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -61,18 +60,6 @@ def resolve_requirements_file() -> Path:
     return AI_DIR / "requirements.txt"
 
 REQUIREMENTS_FILE = resolve_requirements_file()
-
-def get_venv_python() -> Path:
-    """
-    returning the file location of the python executable from the venv
-    different os store the venv differently
-    """
-    #windows dir
-    if sys.platform == "win32":
-        return VENV_DIR / "Scripts" / "python.exe"
-
-    #linux dir
-    return VENV_DIR / "bin" / "python"
 
 def get_dependency_bytes() -> int:
     """Returns measured dependency disk-space requirement for OS"""
