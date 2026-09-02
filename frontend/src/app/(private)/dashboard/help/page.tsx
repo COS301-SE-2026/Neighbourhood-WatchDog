@@ -78,9 +78,9 @@ const faqs = [
 
 function SectionHeading({eyebrow, title, description}: {
 
-    eyebrow: string;
-    title: string;
-    description: string;
+    readonly eyebrow: string;
+    readonly title: string;
+    readonly description: string;
 }) {
     return (
         <div className="mb-5">
@@ -98,11 +98,11 @@ function SectionHeading({eyebrow, title, description}: {
 }
 
 function TutorialCard({id, icon: Icon, title, summary, steps}: {
-    id: string;
-    icon: LucideIcon;
-    title: string;
-    summary: string;
-    steps: string[];
+    readonly id: string;
+    readonly icon: LucideIcon;
+    readonly title: string;
+    readonly summary: string;
+    readonly steps: string[];
 
 }) {
     return (
