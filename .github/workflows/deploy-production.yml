@@ -80,7 +80,17 @@ jobs:
             --region ${AWS_REGION} > task-def.json
 
             NEW_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:${{ env.IMAGE_TAG }}" \
-              '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
+              '.containerDefinitions[0].image = $IMAGE 
+              | .containerDefinitions[0].secrets = (
+                (.containerDefinitions[0].secrets // [])
+                | map(select(.name != "FAILOVER_CONTROLLER_TOKEN" and .name != "GO2RTC_API_USERNAME" and .name != "GO2RTC_API_PASSWORD"))
+                + [
+                    {"name": "FAILOVER_CONTROLLER_TOKEN", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:FAILOVER_CONTROLLER_TOKEN::"},
+                    {"name": "GO2RTC_API_USERNAME", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:GO2RTC_API_USERNAME::"},
+                    {"name": "GO2RTC_API_PASSWORD", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:GO2RTC_API_PASSWORD::"}
+                  ]
+              )
+              | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
               task-def.json)
 
             echo "$NEW_TASK_DEF" > new-task-def.json
