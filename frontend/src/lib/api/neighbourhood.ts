@@ -1,5 +1,5 @@
 import { apiCall } from './client'
-import { CreateNeighbourhoodReq, NeighbourhoodRes, CreateNeighbourhoodRes, NeighbourPropertiesRes } from '../validators/neighbourhood'
+import { CreateNeighbourhoodReq, NeighbourhoodRes, CreateNeighbourhoodRes, NeighbourPropertiesRes, UpdateMemberRoleReq, NeighbourhoodMemberRes, UpdateMemberRoleRes, NeighbourhoodMembersRes } from '../validators/neighbourhood'
 
 export async function addNeighbourhood(data: CreateNeighbourhoodReq): Promise<NeighbourhoodRes> {
   const result = await apiCall<CreateNeighbourhoodRes>('/neighbourhood/create-neighbourhood', {
@@ -34,4 +34,37 @@ export async function getNeighbourhoodPropertyDetails(): Promise<NeighbourProper
     `/neighbourhood/properties`, 
     {method: 'GET'},
   )
+}
+
+
+export async function getNeighbourhoodMembers(
+  neighbourhoodId: string,
+): Promise<NeighbourhoodMembersRes> {
+  return apiCall<NeighbourhoodMemberRes[]>(
+    `/neighbourhood/${neighbourhoodId}/members`,
+    {
+      method: "GET",
+    },
+  );
+}
+
+
+export async function updateNeighbourhoodMemberRole(
+  neighbourhoodId: string,
+  memberUserId: string,
+  data: UpdateMemberRoleReq,
+): Promise<NeighbourhoodMemberRes> {
+  const result = await apiCall<UpdateMemberRoleRes>(
+    `/neighbourhood/${neighbourhoodId}/members/${memberUserId}/role`,
+    {
+      method: "PATCH",
+      body: data,
+    },
+  );
+
+  if (!result.data) {
+    throw new Error(result.message || "No member data returned");
+  }
+
+  return result.data;
 }
