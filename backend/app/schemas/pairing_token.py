@@ -1,4 +1,4 @@
-from app.schemas.camera import CameraListItemRes
+from app.schemas.camera import CameraRes
 
 from pydantic import BaseModel
 from datetime import datetime
@@ -17,7 +17,7 @@ class EdgeAgentsCredentialsSchema(BaseModel):
     property_id: UUID
     address: str # the street address of the property so the user can know that they are connected to the right address
     api_key: str
-    cameras: list[CameraListItemRes]
+    cameras: list[CameraRes]
     created_at: datetime
 
 class EdgeAgentsCredentialsRes(BaseModel):

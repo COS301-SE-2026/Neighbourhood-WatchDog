@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
 import { Providers } from "./providers";
 import "./globals.css";
+import "leaflet/dist/leaflet.css"
 
 const inter = Inter({
   variable: "--font-inter",

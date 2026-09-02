@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from tkinter import Tk, messagebox, scrolledtext, StringVar, DoubleVar
 from tkinter import ttk
+import platform
+
 
 import json
 import os
@@ -13,72 +15,151 @@ import subprocess
 import sys
 import threading
 import traceback
+import urllib.error
+import urllib.request
 import time
-from ui.theme import configure_log_text_widget
+import signal
 
-from services.dependency_service import (
-    AI_DIR,
-    DependencyService,
-    INSTALL_SCHEMA_VERSION,
-    PERSON_MODEL,
-    PERSON_MODEL_PATH,
-    REQUIREMENTS_FILE,
-    RUNTIME_DIR,
-    STATE_FILE,
-    SUPPORTED_PYTHON,
-    MAX_SUPPORTED_PYTHON,
-    THREAT_MODEL,
-    THREAT_MODEL_PATH,
-    VENV_DIR,
-    WEIGHTS_DIR,
-    format_bytes,
-    get_venv_python,
-    model_is_valid,
-    get_disk_space_report,
-    has_enough_disk_space,
-)
+def _resolve_requirements_file() -> Path:#Determine what OS user is using, windows -> requirements.txt | WSL/Linux -> requirements-linux.txt
+    if platform.system() == "Linux":
+        candidate = Path(__file__).parent / "requirements-linux.txt"
+        if candidate.is_file():
+            return candidate
+    return Path(__file__).parent / "requirements.txt"
 
 # CONSTANTS
 SEGOE_FONT = "Segoe UI"
 PARTITION_LINE = "============================"
 ICON_CODE = "&#9679;"
-APP_TFRAME = "App.TFrame"
-MUTED_TLABEL = "Muted.TLabel"
-REPAIR_INSTALLATION = "Repair Installation"
-SECONDARY_TBUTTON = "Secondary.TButton"
-SETUP_CANCELLED_BY_USER = "Setup cancelled by user."
+
+#APPLICATION PATHS
+
+AI_DIR = Path(__file__).resolve().parent
+RUNTIME_DIR = AI_DIR / ".watchdog-agent"
+VENV_DIR = RUNTIME_DIR / "venv"
+STATE_FILE = RUNTIME_DIR / "install-state.json"
+REQUIREMENTS_FILE = _resolve_requirements_file()
+
+WEIGHTS_DIR = AI_DIR / "pipeline" / "models" / "weights"
+THREAT_MODEL_PATH = WEIGHTS_DIR / "best.pt"
+PERSON_MODEL_PATH = WEIGHTS_DIR / "yolov8n.pt"
+
+SUPPORTED_PYTHON = (3, 12)
+INSTALL_SCHEMA_VERSION = 1
+
+
+
+THREAT_MODEL = {
+    "name": "Threat-detection model (best.pt)", 
+    "path": THREAT_MODEL_PATH,
+    "url": ("https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/releases/download/weights-v1/best.pt"), 
+    "expected_bytes": 6251747 
+
+}
+
+PERSON_MODEL = {
+    "name": "Human-detection model (yolov8n.pt)", 
+    "path": PERSON_MODEL_PATH, 
+    "url": ("https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/releases/download/weights-v1/yolov8n.pt"), 
+    "expected_bytes": 6549796 
+
+}
+
+
+
+def get_venv_python() -> Path:
+    #returning the file location of the python executable from the venv
+    #different os store the venv differently
+
+
+    #windows dir
+    if sys.platform == "win32":
+        return VENV_DIR / "Scripts" / "python.exe"
+
+    #linux dir
+    return VENV_DIR / "bin" / "python"
+
+
+def format_bytes(value: int) -> str:
+    #format bytes for readability in UI
+
+    size = float(value)
+    units = ["B", "KB", "MB", "GB"]
+
+    for unit in units:
+        if size < 1024 or unit == units[-1]:
+            return f"{size:.1f} {unit}"
+        
+        size /= 1024
+
+    return f"{value} B"
+
+
+def model_is_valid(model: dict) -> bool:
+    #checks if model is valid via path dir and file size
+
+    model_path: Path = model["path"]
+
+    return (model_path.is_file() and model_path.stat().st_size == model["expected_bytes"])
+
+
+def is_installation_valid() -> bool:
+
+    vevn_python = get_venv_python()
+    if not vevn_python.is_file():
+        return False
+
+    if not model_is_valid(THREAT_MODEL):
+        return False
+
+    if not model_is_valid(PERSON_MODEL):
+        return False
+
+    if not STATE_FILE.is_file():
+        return False
+
+    try:
+        state = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+
+
+    return (state.get("schema_version") == INSTALL_SCHEMA_VERSION and state.get("python_version", "").startswith("3.12"))
+
+
+
+
 class WatchDogAgentApp(ttk.Frame):
 
-    def __init__(self, parent, controller=None) -> None:
-        super().__init__(
-            parent,
-            padding=20,
-            style=APP_TFRAME,
-        )
+    def __init__(self, parent, controller) -> None:
+        super().__init__(parent, padding=20)
 
         self.controller = controller
         self.root = parent
-        self.dependency_service = DependencyService()
+        # self.root.title("Neighbourhood WatchDog Agent")
+        # self.root.geometry("760x560")
+        # self.root.minsize(700, 500)
 
         self.events: queue.Queue[tuple[str, object]] = queue.Queue()
         self.setup_running = False
 
+        self.agent_process = None
+        self.agent_status = "stopped"
+        self.agent_stop_requested = False
+        self.health_check_in_progress = False
+        self.exit_after_stop = False
+
+        self.agent_status_var = None
+        self.agent_status_label = None
+        self.agent_log_box = None
+        self.start_agent_button = None
+        self.stop_agent_button = None
+
         self.status_var = None
         self.progress_var = None
-        self.disk_status_var = None
         self.progress_bar = None
         self.setup_button = None
-        self.repair_button = None
-        self.cancel_button = None
-        self.refresh_disk_button = None
         self.log_box = None
-
-        self.cancel_event = threading.Event()
-        self.active_process: subprocess.Popen | None = None
-        self._process_lock = threading.Lock()
-
-        self.transitioning = False
-        
 
         self.winfo_toplevel().protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -86,7 +167,7 @@ class WatchDogAgentApp(ttk.Frame):
         #polling messages from background
         self.after(100, self.process_ui_events)
 
-        if self.dependency_service.is_valid():
+        if is_installation_valid():
             self.show_run_screen()
         else:
             self.show_setup_screen()
@@ -98,395 +179,233 @@ class WatchDogAgentApp(ttk.Frame):
             child.destroy()
 
 
-    def show_setup_screen(self, reason: str = "") -> None:
+    def show_setup_screen(self, reason: str="") -> None:
+
         self.clear_screen()
 
-        outer = ttk.Frame(
-            self,
-            padding=24,
-            style=APP_TFRAME,
-        )
+        outer = ttk.Frame(self, padding=24)
         outer.pack(fill="both", expand=True)
 
-        outer.columnconfigure(0, weight=1)
-        outer.rowconfigure(10, weight=1)
+        ttk.Label(
+            outer, 
+            text="WatchDog Agent Setup", 
+            font=(SEGOE_FONT, 20, "bold") 
+        ).pack(anchor="w")
+
 
         ttk.Label(
-            outer,
-            text="WatchDog Agent Setup",
-            style="Title.TLabel",
-        ).grid(
-            row=0,
-            column=0,
-            sticky="w",
-        )
-
-        ttk.Label(
-            outer,
+            outer, 
             text=(
-                "WatchDog needs to prepare this computer before it can "
-                "run local AI camera processing."
+                "This one-time setup creates an isolated AI environment, "
+                "installs dependencies, and downloads the detection models."
             ),
-            style="Subtitle.TLabel",
-            wraplength=700,
-            justify="left",
-        ).grid(
-            row=1,
-            column=0,
-            sticky="w",
-            pady=(10, 14),
-        )
+            wraplength=680,
+            justify="left"
+        ).pack(anchor="w", pady=(8, 12))
+
 
         python_text = (
             f"Detected Python: {sys.version.split()[0]} "
             f"({sys.executable})"
-        )
+        )   
 
-        ttk.Label(
-            outer,
-            text=python_text,
-            style=MUTED_TLABEL,
-        ).grid(
-            row=2,
-            column=0,
-            sticky="w",
-        )
+        ttk.Label(outer, text=python_text).pack(anchor="w")
+
 
         if reason:
             ttk.Label(
-                outer,
+                outer, 
                 text=reason,
-                style=MUTED_TLABEL,
-                wraplength=700,
-                justify="left",
-            ).grid(
-                row=3,
-                column=0,
-                sticky="w",
-                pady=(8, 0),
-            )
+                foreground="#b45309", 
+                wraplength=680, 
+                justify="left"
+            ).pack(anchor="w", pady=(10, 0))
 
-        disk_report = get_disk_space_report()
-        required_bytes = int(disk_report["required_bytes"])
-        available_bytes = int(disk_report["available_bytes"])
 
-        disk_frame = ttk.Frame(
-            outer,
-            padding=14,
-            style=APP_TFRAME,
-            relief="groove",
-        )
-
-        disk_frame.grid(
-            row=4,
-            column=0,
-            sticky="ew",
-            pady=(18,8),
-        )
-
-        disk_frame.columnconfigure(1, weight=1)
-
+        self.status_var = StringVar(value="Ready to set up the WatchDog Agent.")
         ttk.Label(
-            disk_frame,
-            text="Disk Space",
-            font=(SEGOE_FONT, 10, "bold"),
-        ).grid(
-            row=0,
-            column=0,
-            columnspan=2,
-            sticky="w",
-            pady=(0, 8),
-        )
+            outer, 
+            textvariable=self.status_var, 
+            font=(SEGOE_FONT, 10, "bold")
+        ).pack(anchor="w", pady=(18, 6))
 
-        ttk.Label(
-            disk_frame,
-            text="Required:",
-            style=MUTED_TLABEL,
-        ).grid(
-            row=1,
-            column=0,
-            sticky="w",
-            padx=(0, 20),
-        )
-
-        ttk.Label(
-            disk_frame,
-            text=format_bytes(required_bytes),
-        ).grid(
-            row=1,
-            column=1,
-            sticky="w",
-        )
-
-        ttk.Label(
-            disk_frame,
-            text="Available:",
-            style=MUTED_TLABEL,
-        ).grid(
-            row=2,
-            column=0,
-            sticky="w",
-            padx=(0, 20),
-        )
-
-        ttk.Label(
-            disk_frame,
-            text=format_bytes(available_bytes),
-        ).grid(
-            row=2,
-            column=1,
-            sticky="w",
-        )
-
-        self.disk_status_var = StringVar()
-        self._set_disk_status(disk_report)
-
-        ttk.Label(
-            disk_frame,
-            textvariable=self.disk_status_var,
-            wraplength=650,
-            justify="left",
-        ).grid(
-            row=3,
-            column=0,
-            columnspan=2,
-            sticky="w",
-            pady=(8, 0),
-        )
-
-        self.refresh_disk_button = ttk.Button(
-            outer,
-            text="Refresh Disk Space",
-            command=self.refresh_disk_space,
-            style=SECONDARY_TBUTTON,
-            width=19,
-        )
-        self.refresh_disk_button.grid(
-            row=5,
-            column=0,
-            columnspan=5,
-            pady=(0, 10),
-        )
-
-        self.status_var = StringVar(
-            value="Ready to prepare this computer."
-        )
-
-        ttk.Label(
-            outer,
-            textvariable=self.status_var,
-            font=(SEGOE_FONT, 10, "bold"),
-        ).grid(
-            row=6,
-            column=0,
-            sticky="w",
-            pady=(18, 8),
-        )
-
-        ttk.Label(
-            outer,
-            text="Installation Progress",
-            font=(SEGOE_FONT, 10, "bold"),
-        ).grid(
-            row=7,
-            column=0,
-            sticky="w",
-        )
 
         self.progress_var = DoubleVar(value=0)
-
         self.progress_bar = ttk.Progressbar(
-            outer,
-            variable=self.progress_var,
-            maximum=100,
-            mode="determinate",
-        )
-        self.progress_bar.grid(
-            row=8,
-            column=0,
-            sticky="ew",
-            pady=(5, 15),
+            outer, 
+            variable=self.progress_var, 
+            maximum=100, 
+            mode="determinate"
         )
 
-        ttk.Label(
-            outer,
-            text="Installation Log",
-            font=(SEGOE_FONT, 10, "bold"),
-        ).grid(
-            row=9,
-            column=0,
-            sticky="w",
-        )
 
-        log_frame = ttk.Frame(
-            outer,
-            style=APP_TFRAME,
-        )
-        log_frame.grid(
-            row=10,
-            column=0,
-            sticky="nsew",
-            pady=(6, 0),
-        )
+        self.progress_bar.pack(fill="x", pady=(0, 12))
 
         self.log_box = scrolledtext.ScrolledText(
-            log_frame,
-            height=10,
+            outer, 
+            height=18, 
             wrap="word",
-            state="disabled",
-            font=("Consolas", 10),
+            state="disabled", 
+            font=("Consolas", 9)
         )
-        configure_log_text_widget(self.log_box)
-        self.log_box.pack(
-            fill="both",
-            expand=True,
-        )
+        self.log_box.pack(fill="both", expand=True, pady=(0, 14))
 
-        button_frame = ttk.Frame(
-            outer,
-            style=APP_TFRAME,
-        )
-        button_frame.grid(
-            row=11,
-            column=0,
-            sticky="ew",
-            pady=(20, 0),
-        )
+        controls = ttk.Frame(outer)
+        controls.pack(fill="x")
 
-        button_frame.columnconfigure(0, weight=1)
-        button_frame.columnconfigure(1, weight=1)
-        button_frame.columnconfigure(2, weight=1)
-        button_frame.columnconfigure(3, weight=1)
 
         self.setup_button = ttk.Button(
-            button_frame,
+            controls, 
             text="Set Up Agent",
-            command=self.start_setup,
-            style="Primary.TButton",
-            width=18,
+            command=self.start_setup
         )
-        self.setup_button.grid(
-            row=0,
-            column=0,
-            sticky="w",
-        )
+        self.setup_button.pack(side="left")
 
-        self.repair_button = ttk.Button(
-            button_frame,
-            text=REPAIR_INSTALLATION,
-            command=self.repair_installation,
-            style=SECONDARY_TBUTTON,
-            width=19,
-        )
-
-        self.repair_button.grid(
-            row=0,
-            column=1,
-            sticky="e",
-            padx=(8, 8),
-        )
-
-        self.cancel_button = ttk.Button(
-            button_frame,
-            text="Cancel",
-            command=self.cancel_setup,
-            style=SECONDARY_TBUTTON,
-            width=12,
-            state="disabled",
-        )
-
-        self.cancel_button.grid(
-            row=0,
-            column=2,
-            sticky="e",
-            padx=(8, 8),
-        )
 
         ttk.Button(
-            button_frame,
-            text="Exit",
-            command=self.on_close,
-            style=SECONDARY_TBUTTON,
-            width=12,
-        ).grid(
-            row=0,
-            column=3,
-            sticky="e",
-        )
+            controls, 
+            text="Exit", 
+            command=self.on_close 
+        ).pack(side="right")
 
 
     def show_run_screen(self) -> None:
+
         self.clear_screen()
 
-        outer = ttk.Frame(self, 
-                padding=24,
-                style=APP_TFRAME,)
+        outer = ttk.Frame(self, padding=24)
         outer.pack(fill="both", expand=True)
 
-        outer.columnconfigure(0, weight=1)
 
         ttk.Label(
-             outer, 
-             text="WatchDog Agent Setup", 
-             style="Title.TLabel"
-         ).grid(row=0, column=0, sticky="w")
+            outer, 
+            text="WatchDog Agent", 
+            font=("Segou UI", 20, "bold")
+        ).pack(anchor="w")
+
 
         ttk.Label(
             outer, 
             text="Setup complete: agent environment is ready.",
-            style="Subtitle.TLabel",
-        ).grid(row=1, column=0, sticky="w", pady=(10, 4))
+            foreground="#15803d",
+            font=(SEGOE_FONT, 11, "bold")
+        ).pack(anchor="w", pady=(10, 4))
+
 
         ttk.Label(
             outer, 
             text=(
-                "This computer is ready to connect to your WatchDog account. "
-                "Click Next to continue."
-                ),
-                style=MUTED_TLABEL,
-                wraplength=700,
+                "Start the local AI service to run detection and send"
+                " annotaion data to the backend"
+                ), 
+                wraplength=680,
                 justify="left" 
-        ).grid(row=2, column=0, sticky="w", pady=(0, 16))
+        ).pack(anchor="w", pady=(0, 16))
+
+
+        #service status row
+        status_row = ttk.Frame(outer)
+        status_row.pack(fill="x", pady=(0, 12))
+
+
+        self.agent_status_var = StringVar(value="&#9679;" "Stopped")
+        self.agent_status_label = ttk.Label(
+            status_row, 
+            textvariable=self.agent_status_var, 
+            foreground="#b91c1c", 
+            font=(SEGOE_FONT, 11, "bold")
+
+        )
+        self.agent_status_label.pack(side="left")
+
+
+        #start stop controls
+        action_row = ttk.Frame(outer)
+        action_row.pack(fill="x", pady=(0, 16))
+
+        self.start_agent_button = ttk.Button(
+            action_row, 
+            text="Start Agent", 
+            command=self.start_agent 
+
+        )
+        self.start_agent_button.pack(side="left")
+
+
+        self.stop_agent_button = ttk.Button(
+            action_row, 
+            text="Stop Agent", 
+            command=self.stop_agent, 
+            state="disabled" 
+
+        )
+        self.stop_agent_button.pack(side="left", padx=(10, 0))
+
+
+
+        self.pair_button = ttk.Button(
+            action_row,
+            text="Pair Agent",
+            command=self.controller.show_pairing,
+        )
+        self.pair_button.pack(side="left", padx=5)
+
+
+        #live service log
+        ttk.Label(
+            outer, 
+            text="Agent Log", 
+            font=(SEGOE_FONT, 10, "bold") 
+        ).pack(anchor="w")
+
+        self.agent_log_box = scrolledtext.ScrolledText(
+            outer, 
+            height=16, 
+            wrap="word", 
+            state="disabled", 
+            font=("Consolas", 9) 
+        )
+        self.agent_log_box.pack(fill="both", expand=True, pady=(6, 12))
+
+
 
         details = (
             f"Python environment: {get_venv_python()}\n"
-            f"Threat model: {THREAT_MODEL_PATH.name} "
+            f"Threat model: {THREAT_MODEL_PATH.name}"
             f"({format_bytes(THREAT_MODEL_PATH.stat().st_size)})\n"
-            f"Person model: {PERSON_MODEL_PATH.name} "
+            f"Person model: {PERSON_MODEL_PATH.name}"
             f"({format_bytes(PERSON_MODEL_PATH.stat().st_size)})\n"
         )
 
+
         ttk.Label(
-             outer,
-             text=details,
-             style=MUTED_TLABEL,
-             justify="left",
-        ).grid(row=3, column=0, sticky="w", pady=(0, 12))
+            outer, 
+            text=details, 
+            justify="left"
+        ).pack(anchor="w", pady=(0, 12))
 
-        button_frame = ttk.Frame(outer, style=APP_TFRAME)
-        button_frame.grid(row=4, column=0, sticky="ew", pady=(20, 0))
 
-        button_frame.columnconfigure(0, weight=1)
-        button_frame.columnconfigure(1, weight=1)
+        controls = ttk.Frame(outer)
+        controls.pack(fill="x", side="bottom", pady=(8, 0))
 
-        self.repair_button = ttk.Button(
-            button_frame,
-            text=REPAIR_INSTALLATION,
-            command=self.repair_installation,
-            style=SECONDARY_TBUTTON,
-            width=19
-        )
-        self.repair_button.grid(row=0, column=0, sticky="w")
 
-        self.next_button = ttk.Button(
-            button_frame,
-            text="Next >",
-            command=self.go_next,
-            style="Primary.TButton",
-            width=12,
-        )
-        self.next_button.grid(row=0, column=1, sticky="e")
-    
+        ttk.Button(
+            controls, 
+            text="Repair Installation", 
+            command=self.repair_installation
+        ).pack(side="left")
+
+
+        ttk.Button(
+            controls, 
+            text="Exit", 
+            command=self.on_close
+        ).pack(side="right")
+
+        self.set_agent_ui_state("stopped", "Stopped")
+
+
+
     #setup lifecycle
     def start_setup(self) -> None:
         #start the installation without blocking the tkninter thread
@@ -494,19 +413,16 @@ class WatchDogAgentApp(ttk.Frame):
         if self.setup_running:
             return
 
-        if not (SUPPORTED_PYTHON <= sys.version_info[:2] < MAX_SUPPORTED_PYTHON):
-            min_required = ".".join(map(str, SUPPORTED_PYTHON))
-            max_supported = ".".join(map(str, MAX_SUPPORTED_PYTHON))
+        if sys.version_info[:2] != SUPPORTED_PYTHON:
+            required = ".".join(map(str, SUPPORTED_PYTHON))
             current = f"{sys.version_info.major}.{sys.version_info.minor}"
 
             messagebox.showerror(
                 "Unsupported Python Version",
                 (
-                    f"WatchDog Agent currently requries Python {min_required}.x.\n\n"
-                    f"up to (but not including) {max_supported}.x.\n\n"
+                    f"WatchDog Agent currently requries Python {required}.x.\n\n"
                     f"This GUI was launched with Python {current}.\n\n"
-                    f"Install a supported Python {min_required}.x - {max_supported}.x "
-                    "release and relaunch setup.bat."
+                    "Install Python 3.12 and relaunch setup.bat."
                 )
             )
             return
@@ -519,41 +435,8 @@ class WatchDogAgentApp(ttk.Frame):
             )
             return
 
-        disk_report = get_disk_space_report()
-        if not has_enough_disk_space(int(disk_report["required_bytes"]), AI_DIR):
-            required_bytes = int(disk_report["required_bytes"])
-            available_bytes = int(disk_report["available_bytes"])
-            shortage_bytes = int(disk_report["shortage_bytes"])
-
-            self._set_disk_status(disk_report)
-            messagebox.showerror(
-                "Insufficient Disk Space",
-                (
-                    "WatchDog cannot start the installation because there is "
-                    "not enough disk space.\n\n"
-                    f"Required: {format_bytes(required_bytes)}\n"
-                    f"Available: {format_bytes(available_bytes)}\n"
-                    f"Additional space needed: {format_bytes(shortage_bytes)}"
-                ),
-            )
-            return
-
-        self.cancel_event.clear()
-
         self.setup_running = True
-
-        if self.setup_button is not None:
-            self.setup_button.configure(state="disabled")
-
-        if self.repair_button is not None:
-            self.repair_button.configure(state="disabled")
-
-        if self.refresh_disk_button is not None:
-            self.refresh_disk_button.configure(state="disabled")
-
-        if self.cancel_button is not None:
-            self.cancel_button.configure(state="normal")
-
+        self.setup_button.configure(state="disabled")
         self.progress_var.set(0)
 
         self.append_log("Starting WatchDog Agent setup...")
@@ -571,7 +454,6 @@ class WatchDogAgentApp(ttk.Frame):
 
     def run_setup_worker(self) -> None:
         try:
-            self._raise_if_cancelled()
             self.emit("status", "Preparing local folders...")
             self.emit("progress", 3)
 
@@ -599,7 +481,7 @@ class WatchDogAgentApp(ttk.Frame):
                     "Python interpreter could not be found."
                 )
 
-            self._raise_if_cancelled()
+
             self.emit("status", "Upgrading pip...")
             self.emit("progress", 15)
             self.run_command_stream(
@@ -615,7 +497,7 @@ class WatchDogAgentApp(ttk.Frame):
                 "Pip upgrade"
             )
 
-            self._raise_if_cancelled()
+
             self.emit("status", "Installing AI dependencies - this can take SEVERAL MINUTES...")
             self.emit("log", "")
             self.emit("log", "Installing requirements.")
@@ -640,27 +522,25 @@ class WatchDogAgentApp(ttk.Frame):
             finally:
                 self.emit("indeterminate", False)
 
-            self._raise_if_cancelled()
-            self.emit("status", "Applying DeepSORT compatibility patch...")
+
+            self.emit("status", "Applying Python 3.12 DeepSORT compatibility patch...")
             self.emit("progress", 45)
 
             self.patch_deep_sort(venv_python)
 
-            self._raise_if_cancelled()
             self.download_model(
                 model=THREAT_MODEL,
                 progress_start=50, 
                 progress_span=23
             )
 
-            self._raise_if_cancelled()
+
             self.download_model(
                 model=PERSON_MODEL,
                 progress_start=73, 
                 progress_span=22
             )
 
-            self._raise_if_cancelled()
             self.emit("status", "Validating installations...")
             self.emit("progress", 97)
 
@@ -683,11 +563,6 @@ class WatchDogAgentApp(ttk.Frame):
 
         except Exception as error:
             self.emit("indeterminate", False)
-
-            if self.cancel_event.is_set():
-                self.emit("cancelled", None)
-                return
-            
             self.emit("error", str(error))
             self.emit("log", "")
             self.emit("log", "=== Detailed setup error ===")
@@ -695,40 +570,7 @@ class WatchDogAgentApp(ttk.Frame):
             self.emit("log", PARTITION_LINE)
 
 
-    def _raise_if_cancelled(self) -> None:
-        if self.cancel_event.is_set():
-            raise RuntimeError(SETUP_CANCELLED_BY_USER)
 
-    def _set_disk_status(self, report: dict[str, int | bool]) -> None:
-        """Updates the setup screen with current disk space status"""
-        if self.status_var is None:
-            return
-
-        shortage_bytes = int(report["shortage_bytes"])
-        enough_space = bool(report["enough_space"])
-
-        if enough_space:
-            self.disk_status_var.set(
-                "Enough disk space is available."
-            )
-        else:
-            self.disk_status_var.set(
-                f"Insufficient disk space. You need {format_bytes(shortage_bytes)} more before installation can begin."
-            )
-
-    def refresh_disk_space(self) -> None:
-        """Refreshes disk space information"""
-        if self.setup_running:
-            return
-
-        report = get_disk_space_report()
-        self._set_disk_status(report)
-
-        if self.setup_button is not None:
-            self.setup_button.configure(
-                state="normal" if bool(report["enough_space"]) else "disabled"
-            )
-        
     def run_command_stream(self, command: list[str], description: str) -> None:
         #running a command and streams the output lines to the gui log
 
@@ -753,25 +595,16 @@ class WatchDogAgentApp(ttk.Frame):
 
         )
 
-        with self._process_lock:
-            self.active_process = process
 
-        try: 
-            assert process.stdout is not None
+        assert process.stdout is not None
 
-            for line in process.stdout:
-                cleaned = line.rstrip()
-                if cleaned:
-                    self.emit("log", cleaned)
 
-            return_code = process.wait()
-        finally:
-            with self._process_lock:
-                if self.active_process is process:
-                    self.active_process = None
+        for line in process.stdout:
+            cleaned = line.rstrip()
+            if cleaned:
+                self.emit("log", cleaned)
 
-        if self.cancel_event.is_set():
-            raise RuntimeError(SETUP_CANCELLED_BY_USER)
+        return_code = process.wait()
 
 
         if return_code != 0:
@@ -812,7 +645,7 @@ class WatchDogAgentApp(ttk.Frame):
 
         if result.returncode != 0:
             raise RuntimeError(
-                "Could not locate deep_sort_realtime for the DeepSORT "
+                "Could not locate deep_sort_realtime for the Python 3.12"
                 f"compatibility patch:\n{result.stderr.strip()}"
             )
 
@@ -871,7 +704,7 @@ class WatchDogAgentApp(ttk.Frame):
 
 
         patch_file.write_text(patched, encoding="utf-8")
-        self.emit("log", "Applied DeepSORT compatibility patch.")
+        self.emit("log", "Applied DeepSORT Python 3.12 compatibility patch.")
 
 
 
@@ -937,41 +770,29 @@ class WatchDogAgentApp(ttk.Frame):
             errors="replace",
         )
 
-        with self._process_lock:
-            self.active_process = process
+        # Poll the growing .part file to provide byte-level progress to Tkinter.
+        while process.poll() is None:
+            if temporary_path.exists():
+                downloaded = temporary_path.stat().st_size
+                ratio = min(downloaded / expected_bytes, 1.0)
 
-        try:
-            # Poll the growing .part file to provide byte-level progress to Tkinter.
-            while process.poll() is None:
-                if temporary_path.exists():
-                    downloaded = temporary_path.stat().st_size
-                    ratio = min(downloaded / expected_bytes, 1.0)
+                self.emit(
+                    "progress",
+                    progress_start + (progress_span * ratio),
+                )
+                self.emit(
+                    "status",
+                    (
+                        f"Downloading {model_path.name}: "
+                        f"{format_bytes(downloaded)} / "
+                        f"{format_bytes(expected_bytes)}"
+                    ),
+                )
 
-                    self.emit(
-                        "progress",
-                        progress_start + (progress_span * ratio),
-                    )
-                    self.emit(
-                        "status",
-                        (
-                            f"Downloading {model_path.name}: "
-                            f"{format_bytes(downloaded)} / "
-                            f"{format_bytes(expected_bytes)}"
-                        ),
-                    )
+            time.sleep(0.2)
 
-                time.sleep(0.2)
+        _, stderr_output = process.communicate()
 
-            _, stderr_output = process.communicate()
-        finally:
-            with self._process_lock:
-                if self.active_process is process:
-                    self.active_process = None
-
-        if self.cancel_event.is_set():
-            temporary_path.unlink(missing_ok=True)
-            raise RuntimeError(SETUP_CANCELLED_BY_USER)
-        
         if process.returncode != 0:
             temporary_path.unlink(missing_ok=True)
 
@@ -1045,10 +866,9 @@ class WatchDogAgentApp(ttk.Frame):
             "indeterminate": self._handle_indeterminate,
             "complete": self._handle_complete,
             "error": self._handle_error,
-            "cancelled": self._handle_cancelled,
-            # "agent_log": self._handle_agent_log,
-            # "agent_health": self._handle_agent_health,
-            # "agent_stop_error": self._handle_agent_stop_error
+            "agent_log": self._handle_agent_log,
+            "agent_health": self._handle_agent_health,
+            "agent_stop_error": self._handle_agent_stop_error
         }
 
         try:
@@ -1063,8 +883,7 @@ class WatchDogAgentApp(ttk.Frame):
             pass
 
 
-        if not self.transitioning:
-            self.after(100, self.process_ui_events)
+        self.after(100, self.process_ui_events)
 
 
     def _handle_log(self, payload) -> None:
@@ -1092,12 +911,7 @@ class WatchDogAgentApp(ttk.Frame):
 
     def _handle_complete(self, _payload: object) -> None:
         self.setup_running = False
-        self.stop_indeterminate_progress()
-        self.transitioning = True
-
-        self.winfo_toplevel().after_idle(
-            self.controller.advance_past_dependencies
-        )
+        self.show_run_screen()
 
 
     def _handle_error(self, payload) -> None:
@@ -1113,9 +927,6 @@ class WatchDogAgentApp(ttk.Frame):
         if self.setup_button is not None:
             self.setup_button.configure(state="normal")
 
-        if self.repair_button is not None:
-            self.repair_button.configure(state="normal")
-
         messagebox.showerror(
             "WatchDog Agent Setup Failed",
             (
@@ -1125,27 +936,27 @@ class WatchDogAgentApp(ttk.Frame):
             )
         )
 
-    def _handle_cancelled(self, _payload: object) -> None:
-        self.setup_running = False
-        self.stop_indeterminate_progress()
 
-        if self.status_var is not None:
-            self.status_var.set("Setup cancelld.")
+    def _handle_agent_log(self, payload) -> None:
+        self.append_agent_log(str(payload))
 
-        self.append_log("")
-        self.append_log("Setup was cancelled.")
 
-        if self.setup_button is not None:
-            self.setup_button.configure(state="normal")
+    def _handle_agent_health(self, payload) -> None:
+        self.health_check_in_progress = False
 
-        if self.repair_button is not None:
-            self.repair_button.configure(state="normal")
+        is_running = (bool(payload) and self.agent_process is not None and self.agent_process.poll() is None)
 
-        if self.cancel_button is not None:
-            self.cancel_button.configure(state="disabled")
+        if is_running and self.agent_status != "running":
+            self.set_agent_ui_state("running", "Running: local AI service is healthy")
 
-        if self.refresh_disk_button is not None:
-            self.refresh_disk_button.configure(state="normal")
+
+    def _handle_agent_stop_error(self, payload) -> None:
+        self.exit_after_stop = False
+        self.set_agent_ui_state("error", "Could not stop service")
+
+        self.append_agent_log(f"ERROR: {payload}")
+
+        messagebox.showerror("Agent Stop Failed", str(payload))
 
     def start_indeterminate_progress(self) -> None:
         if self.progress_bar is None:
@@ -1177,23 +988,332 @@ class WatchDogAgentApp(ttk.Frame):
             #the screen may have changed while queued events were draining.
             pass
 
-    def go_next(self) -> None:
-        """Hands off to controller to decide next step"""
-        if self.controller is not None and hasattr(self.controller, "advance_past_dependencies"):
-            self.controller.advance_past_dependencies()
+
+    def set_agent_ui_state(self, state: str, message: str) -> None:
+        #update run screen status and its button availabilitty
+        self.agent_status = state
+
+        colours = {
+            "stopped": "#b91c1c", 
+            "starting": "#b45309", 
+            "running": "#15803d", 
+            "stopping": "#b45309", 
+            "error": "#b91c1c"
+        }
+
+        status_icons = {
+            "stopped": ICON_CODE, 
+            "starting": ICON_CODE, 
+            "running": ICON_CODE, 
+            "stopping": ICON_CODE, 
+            "error": ICON_CODE
+        }
+
+        if self.agent_status_var is not None:
+            self.agent_status_var.set(f"{status_icons[state]} {message}")
+
+        if self.agent_status_label is not None:
+            self.agent_status_label.configure(foreground=colours.get(state, "#111827"))
+
+        if self.start_agent_button is not None:
+            self.start_agent_button.configure(
+                state=(
+                    "normal"
+                    if state in {"stopped", "error"}
+                    else "disabled"
+                )
+            )
+
+
+        if self.stop_agent_button is not None:
+            self.stop_agent_button.configure(
+                state=(
+                    "normal"
+                    if state in {"starting", "running"}
+                    else "disabled"
+                )
+            )
+
+
+    def append_agent_log(self, message: str) -> None:
+        #appends the ai service line to the run screen live log
+
+        if self.agent_log_box is None:
             return
 
-        print("Next clicked -> would advance past dependencies page")
+        try:
+            self.agent_log_box.configure(state="normal")
+            self.agent_log_box.insert("end", f"{message}\n")
+            self.agent_log_box.see("end")
+            self.agent_log_box.configure(state="disabled")
+        except Exception:
+            pass
+
+
+
+    def start_agent(self) -> None:
+        #launches the ai/app.py through uvicorn
+
+        if not is_installation_valid():
+            messagebox.showerror(
+                "Installation needs repair", 
+                (
+                    "The WatchDog Agent environment is incomplete. "
+                    "Use Repair Installation before starting the service."
+                )
+            )
+            return
+
+        if self.agent_process is not None and self.agent_process.poll() is None:
+            return
+
+
+        venv_python = get_venv_python()
+
+        if not venv_python.is_file():
+            messagebox.showerror(
+                "Missing Python Environment. "
+                f"Could not find the agent interpreter:\n{venv_python}"
+            )
+            return
+        
+
+        command = [
+            str(venv_python), 
+            "-u", 
+            "-m", 
+            "uvicorn", 
+            "app:app", 
+            "--host", 
+            "0.0.0.0", 
+            "--port", 
+            "8001", 
+            "--no-access-log"
+        ]
+
+
+        environment = os.environ.copy()
+        environment["PYTHONUNBUFFERED"] = "1"
+        environment["MKL_THREADING_LAYER"] = "GNU"
+
+
+        popen_options = {
+            "cwd": AI_DIR, 
+            "stdout": subprocess.PIPE, 
+            "stderr": subprocess.STDOUT, 
+            "text": True, 
+            "encoding": "utf-8", 
+            "errors": "replace", 
+            "bufsize": 1, 
+            "env": environment
+
+        }
+
+        if sys.platform == "win32":
+            popen_options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+        else:
+            popen_options["start_new_session"] = True
+
+
+        try:
+            self.agent_process = subprocess.Popen(command, **popen_options)
+        except OSError as error:
+            self.agent_process = None
+            self.set_agent_ui_state("error", "Could not start agent")
+            messagebox.showerror(
+                "Agent Start Failed",
+                f"Could not start the local AI service:\n{error}"
+            )
+            return
+
+        self.agent_stop_requested = False
+        self.health_check_in_progress = False
+
+        self.append_agent_log("")
+        self.append_agent_log(PARTITION_LINE)
+        self.append_agent_log("Starting WatchDog AI Service...")
+        self.append_agent_log(f"$ {' '.join(command)}")
+        self.append_agent_log(PARTITION_LINE)
+
+
+        self.set_agent_ui_state("starting", "Starting local AI service...")
+
+        threading.Thread(
+            target=self.read_agent_output, 
+            args=(self.agent_process,), 
+            name="watchdog-agent-log-reader", 
+            daemon=True
+
+        ).start()
+
+
+        self.after(300, self.monitor_agent_process)
+
+
+    def read_agent_output(self, process) -> None:
+        #continuously reads the stdout and forwards to tkinter
+
+        if process.stdout is None:
+            return
+
+
+        for line in process.stdout:
+            cleaned = line.rstrip()
+
+
+            if cleaned:
+                self.emit("agent_log", cleaned)
+
+
+    
+
+    def monitor_agent_process(self) -> None:
+        #tracks the actual process state --- like a health check
+
+        process = self.agent_process
+
+        if process is None:
+            return
+
+        
+        exit_code = process.poll()
+
+
+        if exit_code is not None:
+            was_requested_stop = self.agent_stop_requested
+
+
+            self.agent_process = None
+            self.health_check_in_progress = False
+
+            if self.exit_after_stop:
+                self.winfo_toplevel().destroy()
+                return
+
+            if was_requested_stop:
+                self.set_agent_ui_state(
+                    "stopped",
+                    f"Stopped (exit code {exit_code})"
+                )
+                self.append_agent_log("WatchDog AI service stopped.")
+            else:
+                self.set_agent_ui_state(
+                    "error", 
+                    f"Stopped unexpectedly (exit code {exit_code})"
+                )
+
+                self.append_agent_log(
+                    "ERROR: WatchDog AI service exited unexpectedly. "
+                    "Review the log above."
+                )
+
+
+            return
+
+
+        if (self.agent_status == "starting" and not self.health_check_in_progress):
+            self.health_check_in_progress = True
+
+            threading.Thread(
+                target=self.check_agent_health, 
+                name="watchdog-agent-health-check", 
+                daemon=True 
+            ).start()
+
+
+            self.after(500, self.monitor_agent_process)
+
+
+    def check_agent_health(self) -> None:
+        #runs in another worker thread for health check
+
+        healthy = False
+
+        try:
+            with urllib.request.urlopen(
+                "http://127.0.0.1:8001/health", 
+                timeout=1.0
+
+            ) as response:
+                healthy = response.status == 200
+        except (urllib.error.URLError):
+            healthy = False
+
+
+        self.emit("agent_health", healthy)
+
+
+    def stop_agent(self) -> None:
+        #stops the agent and any future child processes from the video-push thread issue
+
+        process = self.agent_process
+
+        if process is None or process.poll() is not None:
+            self.agent_process = None
+            self.set_agent_ui_state("stopped", "Stopped")
+            return
+
+
+        self.agent_stop_requested = True
+        self.set_agent_ui_state("stopping", "Stopping local AI service...")
+        self.append_agent_log("Stopping WatchDog AI service...")
+
+        threading.Thread(
+            target=self.terminate_agent_process_tree, 
+            args=(process,), 
+            name="watchdog-agent-stop-worker", 
+            daemon=True
+            
+        ).start()
+
+
+    def terminate_agent_process_tree(self, process) -> None:
+        #terminate the ai service, and force-kill only if needed
+
+
+        try:
+            if sys.platform == "win32":
+                process.send_signal(signal.CTRL_BREAK_EVENT)
+            else:
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                self.emit("agent_log", "Stop timed out. Force-stopping remaining processes.")
+
+                if sys.platform == "win32":
+                    subprocess.run(
+                        [
+                            "taskkill", 
+                            "/PID", 
+                            str(process.pid), 
+                            "/T", 
+                            "/F", 
+                        
+                        ], 
+                        capture_output=True, 
+                        text=True,
+                        check=False
+                    )
+                else:
+                    os.kill(os.getpgid(process.pid), signal.SIGKILL)
+
+                process.wait(timeout=5)
+
+
+        except (OSError, subprocess.SubprocessError) as error:
+            self.emit("agent_stop_error", f"Could not stop the WatchDog AI service:\n{error}")
+
+
 
     def repair_installation(self) -> None:
     
         #remove only the venv and installation marker.
         #model files are intentionally retained because they are large and may still be valid. Re-running setup validates them before reuse.
-        if self.setup_running:
-            return
 
         confirmed = messagebox.askyesno(
-            REPAIR_INSTALLATION,
+            "Repair Installation",
             (
                 "This removes the local Python environment and setup marker, "
                 "then returns to Setup.\n\n"
@@ -1234,50 +1354,33 @@ class WatchDogAgentApp(ttk.Frame):
                 ),
             )
             return
+
+        agent_is_running = (self.agent_process is not None and self.agent_process.poll() is None)
+
+        if agent_is_running:
+            should_stop = messagebox.askyesno(
+                "Stop WatchDog Agent?", 
+                (
+                    "The local WatchDog AI service is still running.\n\n"
+                    "Stop the service and exit?\n\n"
+                    "Choosing No keeps the GUI open."
+                )
+            )
+
+            if not should_stop:
+                return
+
+            self.exit_after_stop = True
+            self.stop_agent()
+            return
+
         
-        if self.controller is not None:
-            self.controller.quit_application()
-        else:
-            self.winfo_toplevel().destroy()
 
-    def cancel_setup(self) -> None:
-        """Cancels installation"""
-        if not self.setup_running:
-            return
+        self.winfo_toplevel().destroy()
 
-        confirmed = messagebox.askyesno(
-            "Cancel Setup",
-            (
-                "Stop the current installation?\n\n"
-                "You can restart it later by clicking Set Up Agent again."
-            ),
-        )
-
-        if not confirmed:
-            return
-
-        if self.cancel_button is not None:
-            self.cancel_button.configure(state="disabled")
-
-        self.append_log("")
-        self.append_log("cancelling setup...")
-
-        self.cancel_event.set()
-
-        with self._process_lock:
-            process = self.active_process
-
-        if process is not None and process.poll() is None:
-            try:
-                process.terminate()
-            except OSError:
-                pass
-
-# Main needs to be removed later so that this page cannot be run directly. It should only be run through the main.py file.
 def main() -> None:
-    if not (SUPPORTED_PYTHON <= sys.version_info[:2] < MAX_SUPPORTED_PYTHON):
-        min_required = ".".join(map(str, SUPPORTED_PYTHON))
-        max_supported = ".".join(map(str, MAX_SUPPORTED_PYTHON))
+    if sys.version_info[:2] != SUPPORTED_PYTHON:
+        required = ".".join(map(str, SUPPORTED_PYTHON))
         current = f"{sys.version_info.major}.{sys.version_info.minor}"
 
         root = Tk()
@@ -1286,20 +1389,17 @@ def main() -> None:
         messagebox.showerror(
             "Unsupported Python Version",
             (
-                f"WatchDog Agent currently requries Python {min_required}.x.\n\n"
-                f"up to (but not including) {max_supported}.x.\n\n"
-                f"This GUI was launched with Python {current}.\n\n"
-                f"Install a supported Python {min_required}.x - {max_supported}.x "
-                "release and relaunch setup.bat."
-            )
+                f"WatchDog Agent requires Python {required}.x.\n\n"
+                f"Current Python: {current}\n\n"
+                "Install Python 3.12 and launch the application again."
+            ),
         )
 
         root.destroy()
         raise SystemExit(1)
 
     root = Tk()
-    root.geometry("900x900")
-    root.minsize(850, 800)
+
   
     style = ttk.Style(root)
     available_themes = style.theme_names()
@@ -1309,19 +1409,9 @@ def main() -> None:
     elif "clam" in available_themes:
         style.theme_use("clam")
 
-    class _DummyController:
-        def advance_past_dependencies(self):
-            print("Next clicked -> would advance past dependencies")
-
-        def quit_application(self):
-            root.destroy()
-
-    WatchDogAgentApp(root, controller=_DummyController()).pack(
-        fill="both",
-        expand=True,
-    )
+    WatchDogAgentApp(root)
     root.mainloop()
 
-#This should also be removed later so that this page cannot be run directly. It should only be run through the main.py file.
+
 if __name__ == "__main__":
     main()
