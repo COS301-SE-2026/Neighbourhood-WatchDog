@@ -1,0 +1,351 @@
+ai/camera_runtime.py
+  h_cf6208e37032c0 335,350-356
+  h_cf6208e37032c0 28,131-134,229,231-232
+.env.example
+  h_cf6208e37032c0 45-54
+.github/workflows/ci.yml
+  h_cf6208e37032c0 17,19,36,92,171
+.github/workflows/deploy-mediamtx-prod.yml
+  h_cf6208e37032c0 5
+.github/workflows/deploy-production.yml
+  h_cf6208e37032c0 20,55-56,58,60-61,63-196,203
+.github/workflows/deploy-staging.yml
+  h_cf6208e37032c0 42-46,75-79,99-132
+.github/workflows/zap-baseline.yml
+  h_cf6208e37032c0 1-61
+.gitignore
+  h_cf6208e37032c0 51-57
+Caddyfile
+  h_cf6208e37032c0 14-17
+ai/.gitignore
+  h_cf6208e37032c0 7-14
+ai/Dockerfile
+  h_cf6208e37032c0 31-36
+ai/app.py
+  h_cf6208e37032c0 13,21-22,53-57,81,83,86-90,117-124,129-130,152-153,161-163,191,307-382,392,400-412,416,428-436,438-441,449-450,471-472,486,504,512,537-544,547,552-553,568,592,617-624,677
+ai/authenticator.py
+  h_cf6208e37032c0 1-2,5-6,8,14-52,54-56,58-127,129-131,138,150,159,178,180,190,192,202,208,215,222,229,232,246,248,250-253,257,265,267,272,274,281-282
+ai/evaluation/annotation_classes.txt
+  h_cf6208e37032c0 1-5
+ai/evaluation/classes.yaml
+  h_cf6208e37032c0 1-6
+ai/evaluation/dataset_manifest.csv
+  h_cf6208e37032c0 1-25
+ai/evaluation/extract_eval_frames.py
+  h_cf6208e37032c0 1-178
+ai/evaluation/metrics.py
+  h_cf6208e37032c0 1-91
+ai/evaluation/prelabel_persons.py
+  h_cf6208e37032c0 1-97
+ai/evaluation/reports/baseline-v1/baseline.md
+  h_cf6208e37032c0 1-23
+ai/evaluation/reports/baseline-v1/metrics.csv
+  h_cf6208e37032c0 1-7
+ai/evaluation/reports/baseline-v1/metrics.json
+  h_cf6208e37032c0 1-87
+ai/evaluation/reports/tuning-v1/tuning_results.csv
+  h_cf6208e37032c0 1-50
+ai/evaluation/reports/tuning-v1/tuning_summary.json
+  h_cf6208e37032c0 1-25
+ai/evaluation/reports/weapon-baseline-v1/baseline.md
+  h_cf6208e37032c0 1-19
+ai/evaluation/reports/weapon-baseline-v1/metrics.json
+  h_cf6208e37032c0 1-43,45-51
+ai/evaluation/reports/weapon-baseline-v1/per_image_results.csv
+  h_cf6208e37032c0 1-90
+ai/evaluation/reports/weapon-candidate-40epoch-v1/baseline.md
+  h_cf6208e37032c0 1-19
+ai/evaluation/reports/weapon-candidate-40epoch-v1/metrics.json
+  h_cf6208e37032c0 1-50
+ai/evaluation/reports/weapon-candidate-40epoch-v1/per_image_results.csv
+  h_cf6208e37032c0 1-90
+ai/evaluation/reports/weapon-candidate-smoke-v1/baseline.md
+  h_cf6208e37032c0 1-19
+ai/evaluation/reports/weapon-candidate-smoke-v1/metrics.json
+  h_cf6208e37032c0 1-50
+ai/evaluation/reports/weapon-candidate-smoke-v1/per_image_results.csv
+  h_cf6208e37032c0 1-90
+ai/evaluation/run_baseline.py
+  h_cf6208e37032c0 1-293
+ai/evaluation/tune_person_detector.py
+  h_cf6208e37032c0 1-171
+ai/pipeline/processing/alert_confirmation.py
+  h_cf6208e37032c0 1-22
+ai/tests/test_alert_confirmation.py
+  h_cf6208e37032c0 1-32
+ai/tests/test_camera_runtime.py
+  h_cf6208e37032c0 1-65
+ai/tests/test_evaluation_metrics.py
+  h_cf6208e37032c0 1-37
+ai/tests/test_zone_config.py
+  h_cf6208e37032c0 1-56
+ai/tools/build_gun_knife_dataset.py
+  h_cf6208e37032c0 1-226
+ai/tools/evaluate_weapon_baseline.py
+  h_cf6208e37032c0 1-240
+ai/tools/evaluate_weapon_candidate.py
+  h_cf6208e37032c0 1-239
+ai/tools/integrate_hard_negatives.py
+  h_cf6208e37032c0 1-121
+ai/tools/prepare_gun_audit.py
+  h_cf6208e37032c0 1-192
+ai/tools/prepare_hard_negative_audit.py
+  h_cf6208e37032c0 1-169
+ai/tools/security.py
+  h_cf6208e37032c0 1-23
+ai/tools/smoke_weapon_clip.py
+  h_cf6208e37032c0 1-197
+backend/.dockerignore
+  h_cf6208e37032c0 1-36
+backend/.env.example
+  h_cf6208e37032c0 24-33
+backend/Dockerfile
+  h_cf6208e37032c0 6-15,28-37,50-59,72
+backend/alembic/versions/a7f3c9d1e2b4_add_last_seen_at_to_edge_agent_credential.py
+  h_cf6208e37032c0 1-41
+backend/alembic/versions/d1650db93f25_add_neighbourhooduser_target_entity.py
+  h_cf6208e37032c0 1-28
+backend/alembic/versions/f29ba2d230ef_add_property_id_to_neighbourhood_join_.py
+  h_cf6208e37032c0 1-37
+backend/app/api/controllers/camera_settings.py
+  h_cf6208e37032c0 108
+backend/app/api/controllers/clips.py
+  h_cf6208e37032c0 27,38-39,55-56,66,68,70,78,80-81,84-95,97,102-103,111,114-116,118,120
+backend/app/api/controllers/detection.py
+  h_cf6208e37032c0 4,7,9,48
+backend/app/api/controllers/internal.py
+  h_cf6208e37032c0 3,6,13,21-22,24,78-113
+backend/app/api/controllers/internal_cameras.py
+  h_cf6208e37032c0 6,8-9,25-33,36
+backend/app/api/controllers/internal_failover.py
+  h_cf6208e37032c0 1-22
+backend/app/api/controllers/neighbourhood.py
+  h_cf6208e37032c0 2,5-12,16-21,69-139
+backend/app/api/controllers/neighbourhood_join.py
+  h_cf6208e37032c0 9,13,18,20,28,41,46,93,96-127
+backend/app/api/controllers/users.py
+  h_cf6208e37032c0 8-9,34-83
+backend/app/core/celery_app.py
+  h_cf6208e37032c0 2,4-6,8-10,14
+backend/app/core/database.py
+  h_cf6208e37032c0 5,16,23-32
+backend/app/models/audit_log.py
+  h_cf6208e37032c0 22
+backend/app/models/edge_agent_credentials.py
+  h_cf6208e37032c0 15
+backend/app/models/neighbourhood_join_request.py
+  h_cf6208e37032c0 18,25,30,40-45
+backend/app/schemas/alert.py
+  h_cf6208e37032c0 5,24,158-165
+backend/app/schemas/camera.py
+  h_cf6208e37032c0 1,67
+backend/app/schemas/camera_settings.py
+  h_cf6208e37032c0 2-3,6-8,13-15,20-22
+backend/app/schemas/edge_failover.py
+  h_cf6208e37032c0 1-17
+backend/app/schemas/neighbourhood.py
+  h_cf6208e37032c0 6-7,32-50
+backend/app/schemas/neighbourhood_join.py
+  h_cf6208e37032c0 15,22-27
+backend/app/schemas/pairing_token.py
+  h_cf6208e37032c0 1,20
+backend/app/schemas/user.py
+  h_cf6208e37032c0 1,5,13-58
+backend/app/services/alert_service.py
+  h_cf6208e37032c0 1,3,5-7,11,30-42,60,62-86,201-208,897,934-1064
+backend/app/services/camera_service.py
+  h_cf6208e37032c0 1,16,91,112,144-145,149,162,315,328-336,353,355,406
+backend/app/services/edge_agent_heartbeat.py
+  h_cf6208e37032c0 1-24
+backend/app/services/edge_failover_service.py
+  h_cf6208e37032c0 1-114
+backend/app/services/neighbourhood_join_service.py
+  h_cf6208e37032c0 2-3,10,20,22,56-62,66-75,80,91,107,124-238,282,310,328,334-335,349,361,386
+backend/app/services/neighbourhood_service.py
+  h_cf6208e37032c0 6,21-22,42,161,190-410
+backend/app/services/pairing_token.py
+  h_cf6208e37032c0 4,164,167-169
+backend/app/services/risk_score_history_service.py
+  h_cf6208e37032c0 140
+backend/app/services/risk_score_service.py
+  h_cf6208e37032c0 63
+backend/app/services/user_service.py
+  h_cf6208e37032c0 9-12,14,133-253
+backend/app/tasks/clip_tasks.py
+  h_cf6208e37032c0 1-71
+backend/app/tasks/risk_score_tasks.py
+  h_cf6208e37032c0 8,22,36
+backend/main.py
+  h_cf6208e37032c0 23,25,37,79,82
+backend/recreate_db.py
+  h_cf6208e37032c0 4-7,11,14-18,21-27,29-32,36
+backend/requirements.txt
+  h_cf6208e37032c0 4
+backend/seed.py
+  h_cf6208e37032c0 6,25,35-36,216-242,391-392
+docker-compose.failover.yml
+  h_cf6208e37032c0 1-50
+docker-compose.local-failover.yml
+  h_cf6208e37032c0 1-8
+docker-compose.prod.yml
+  h_cf6208e37032c0 30-31,45,77-78
+docker-compose.yml
+  h_cf6208e37032c0 54,57,59-60,79,83-84,107,130,183-184
+docs/srs.md
+  h_cf6208e37032c0 677-678,718-724
+docs/user_manual.md
+  h_cf6208e37032c0 3,5,7-25,27,29,31,33-38,42,44-129,131,133-143,147-408,410,412,414,416,418,420,422,424,426-431,433,435,437,439,441,443-449,451,453,455,457,459,461-467,469,471,473,475,477,479,481-493,495,497,499,501-509,511
+failover-controller/Dockerfile
+  h_cf6208e37032c0 1-27
+failover-controller/controller.py
+  h_cf6208e37032c0 1-431
+failover-controller/requirements.in
+  h_cf6208e37032c0 1
+failover-controller/requirements.lock
+  h_cf6208e37032c0 1-38
+failover-controller/requirements.txt
+  h_cf6208e37032c0 1
+frontend/package.json
+  h_cf6208e37032c0 22,30,42,67-77
+frontend/pnpm-lock.yaml
+  h_cf6208e37032c0 44-46,68-70,99-101,1665-1671,1870-1872,1897-1899,2793,3675-3677,4243-4249,6749-6754,6943-6944,6974-6977,9121-9122,9698-9704
+frontend/src/app/(private)/dashboard/layout.tsx
+  h_cf6208e37032c0 1-26
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/alerts/AlertsPage.tsx
+  h_cf6208e37032c0 52-53,58,61-63,70,72,74,79,88,99,104,112,115-116,122-123,127,131,133-134,149,156,162,166-167,170,174,177,187,189-190,192,196,199,202,214,216,225,231-232,240,248,251,256,263,267,272,276-278,283,285,290,298,301,304,309-310,316,322,329-330,334,339,348-350,354,361-362,364,366,368,370,378,387,396-397,402,405,408,414,424
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/alerts/page.tsx
+  h_cf6208e37032c0 1-2,4,7-8
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/analytics/page.tsx
+  h_cf6208e37032c0 3-4,20,22,38-39,46-47,56-57,67,69,73-75,77-83,90,93,98-100,104-109
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/join-requests/page.tsx
+  h_cf6208e37032c0 4-9,11-18,20-22,24,26-30,32,34-38,41-44,49-109,113-114,116-117,119-124,126,128-138,140-144,146-154,156-161,165-372,375-556
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/members/page.tsx
+  h_cf6208e37032c0 1-267
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/risk-threshold/page.tsx
+  h_cf6208e37032c0 1-225
+frontend/src/app/(private)/dashboard/page.tsx
+  h_cf6208e37032c0 1,3-4,6-7,9-11,13-15,17-19,22-31,34-37,39-41,43-55
+frontend/src/app/(private)/dashboard/properties/[propertyId]/agent/page.tsx
+  h_cf6208e37032c0 1-60
+frontend/src/app/(private)/dashboard/properties/[propertyId]/cameras/page.tsx
+  h_cf6208e37032c0 1-15,26-27,29-31,33,35,42,46,48-54,56-57,59-61,63-64,66-69,72,78-101,103-105,107,109-119,121-122,124-127,129-148,150-167,169-223,228,231-233
+frontend/src/app/(private)/dashboard/properties/[propertyId]/neighbourhood/join/page.tsx
+  h_cf6208e37032c0 5-10,12-16,20-23,26-28,30-32,34-58,62-86,88-124,128-130,132-134,136,138-139,141-150,152-232,236-271,273-361
+frontend/src/app/(private)/dashboard/properties/[propertyId]/neighbourhood/setup/page.tsx
+  h_cf6208e37032c0 1-231
+frontend/src/app/(private)/dashboard/settings/page.tsx
+  h_cf6208e37032c0 1-250
+frontend/src/app/(public)/auth/confirm/page.tsx
+  h_cf6208e37032c0 3-4,8,11,19-25,182-189
+frontend/src/app/(public)/auth/login/page.tsx
+  h_cf6208e37032c0 1-68,70,72,74,77-78,81,84,86-87,89-91,93-95,97-101,103,105,107-126,128,130,132,137-141,143,145,147,149-152,154,156,158,160,162,164,166,168-200,202-203
+frontend/src/app/layout.tsx
+  h_cf6208e37032c0 5,7,32-39
+frontend/src/app/providers.tsx
+  h_cf6208e37032c0 1,3-5,7-8,11-13
+frontend/src/components/AppDashSidebar.tsx
+  h_cf6208e37032c0 1-499
+frontend/src/components/CameraCard.tsx
+  h_cf6208e37032c0 5,16,19-20,22,24,26,28,30,34-38,41,46,49,56-85,87-108,110-113,115,117-118,122,124-125,129,131-132,136,139,141,144-147,150,152-154,157,159,163-164
+frontend/src/components/CameraFeed.tsx
+  h_cf6208e37032c0 84-86,90-106,108-151,155-159,162,164-170,172-177,179,181-183,186-217,219,224,226-227,231-233,239-242,247,249,251-253,257,259-260,264,267,275-276,278-279,281
+frontend/src/components/CameraSettingsPanel.tsx
+  h_cf6208e37032c0 20,38,56-57,62,76,87,90,98,109,116,119,147
+frontend/src/components/Navbar.tsx
+  h_cf6208e37032c0 1-101
+frontend/src/components/app-sidebar.tsx
+  h_cf6208e37032c0 372-375
+frontend/src/components/audit-components/audit-filters.tsx
+  h_cf6208e37032c0 25,27,32,34,37,45,48,53,56,61,64,73
+frontend/src/components/audit-components/audit-log-table.tsx
+  h_cf6208e37032c0 35-36,42-43,99,101,105,119-128,132-141,145-154,158-162,164-168,173-177,188,190-196,198,200-250,255-273
+frontend/src/components/auth-components/login-card.tsx
+  h_cf6208e37032c0 15-16,32-33,46,48,79-95,121,124,130,132-146
+frontend/src/components/camera-dropdown.tsx
+  h_cf6208e37032c0 23,25,64
+frontend/src/components/hide-sidebar.tsx
+  h_cf6208e37032c0 6
+frontend/src/components/property-components/PairAgent.tsx
+  h_cf6208e37032c0 9,62,66,68,71,73,75,117,141-142
+frontend/src/components/property-components/address-map.tsx
+  h_cf6208e37032c0 1-68
+frontend/src/components/property-components/address-picker.tsx
+  h_cf6208e37032c0 3,6-22,25-30,32-35,38-46,49,51-52,55,57-126,129,131-136,138-140,143-157,159-161,164-168,170-171,173-177,179-188,190-191,193-200,203
+frontend/src/components/property-components/create-property-dialogue.tsx
+  h_cf6208e37032c0 17-18,31-94,96,101,103,106-107,112,114-132,134,136-137
+frontend/src/components/shared/AlertCard.tsx
+  h_cf6208e37032c0 69,71,76,81,86,92,94-95,100-101,106-107,194,204,211,222-224,236,270,274,309,355,357,360,378,383,387,401,418,447
+frontend/src/components/shared/RequestCard.tsx
+  h_cf6208e37032c0 4,19,21,23,29-42,47,51-52,56-57,61-62,73-74,77-78,81-87,91-97,101,103-107,109-177,179
+frontend/src/components/ui/avatar.tsx
+  h_cf6208e37032c0 1-112
+frontend/src/components/ui/sidebar.tsx
+  h_cf6208e37032c0 424,469,473,475,511,556,592,667,669
+frontend/src/hooks/use-property-context.ts
+  h_cf6208e37032c0 1-88
+frontend/src/hooks/use-user-context.ts
+  h_cf6208e37032c0 1-12
+frontend/src/lib/api/alert.ts
+  h_cf6208e37032c0 33-36
+frontend/src/lib/api/neighbourhood.ts
+  h_cf6208e37032c0 2,37-69
+frontend/src/lib/api/neighbourhoodJoin.ts
+  h_cf6208e37032c0 6-7,71,74,101,104,184-197
+frontend/src/lib/api/riskThreshold.ts
+  h_cf6208e37032c0 1-27
+frontend/src/lib/api/user-context.ts
+  h_cf6208e37032c0 1-7
+frontend/src/lib/api/userSettings.ts
+  h_cf6208e37032c0 1-25
+frontend/src/lib/auth/auth-context.tsx
+  h_cf6208e37032c0 1-41
+frontend/src/lib/auth/cognito.ts
+  h_cf6208e37032c0 62-68,248-262
+frontend/src/lib/validators/neighbourhood.ts
+  h_cf6208e37032c0 33-60,65-68
+frontend/src/lib/validators/neighbourhoodJoin.ts
+  h_cf6208e37032c0 1-7
+frontend/src/lib/validators/riskThreshold.ts
+  h_cf6208e37032c0 1-32
+frontend/src/lib/validators/user.ts
+  h_cf6208e37032c0 1-56
+go2rtc/go2rtc.yaml
+  h_cf6208e37032c0 1-12
+runs/detect/data/curated/weapons-gun-knife-v1/training-runs/weapons-gun-knife-smoke-v1/args.yaml
+  h_cf6208e37032c0 1-110
+tests/backend/integration/api/camera_settings_test.py
+  h_cf6208e37032c0 115-150
+tests/backend/integration/api/detection_test.py
+  h_cf6208e37032c0 4-5,23-36
+tests/backend/unit/models/camera_settings_test.py
+  h_cf6208e37032c0 2,4-11,24-29,31-32,34-35,37-38,40,42,44,47,49-56,58-59,61,63
+tests/backend/unit/models/neighbourhood_join_test.py
+  h_cf6208e37032c0 55,67,73,79,87,95,103,111,119,124,129,134,143,158,167,175,180,187,193,199,205,211,217,223,229,235,245,258,270,278,286,291
+tests/backend/unit/services/alert_test.py
+  h_cf6208e37032c0 1,3,5,10,14,16-23,849-904
+tests/backend/unit/services/camera_test.py
+  h_cf6208e37032c0 4,40,60,278,491-520,522-540
+tests/backend/unit/services/neighbourhood_join_test.py
+  h_cf6208e37032c0 89,97,105,113,124,139,165,230,244,252,260,270,298,314,357,422-423
+tests/backend/unit/services/neighbourhood_test.py
+  h_cf6208e37032c0 4-5,34-45,351,417-626
+tests/backend/unit/services/risk_score_history_test.py
+  h_cf6208e37032c0 242
+tests/backend/unit/services/users_test.py
+  h_cf6208e37032c0 4-6,141-273
+tests/backend/unit/tasks/risk_score_tasks_test.py
+  h_cf6208e37032c0 37,52,70,84
+tests/non-functional/load-testing/locust.py
+  h_cf6208e37032c0 1-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "c26430f95764ee99a36d3f05ca088850f4a0fd97",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
