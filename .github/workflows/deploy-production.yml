@@ -167,7 +167,7 @@ jobs:
             --cluster watchdog-prod-cluster \
             --task-definition watchdog-backend-task \
             --launch-type EC2 \
-            --overrides '{"containerOverrides":[{"name":"backend","command":["alembic","upgrade","head"]}]}')
+            --overrides '{"containerOverrides":[{"name":"backend","memory":256,"command":["alembic","upgrade","head"]}]}')
 
           TASK_ARN=$(echo "$RESULT" | jq -r '.tasks[0].taskArn // empty')
 
