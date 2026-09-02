@@ -335,5 +335,74 @@ async def update_neighbourhood_member_role_handler(
                 detail="Member already has this role"
             )
 
+        is_removing_own_admin_role = (
+                    current_user_id == member_user_id
+                    and old_role == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+                    and new_role != NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+                )
+        
+        if is_removing_own_admin_role:
+            other_admin_result = await db.execute(
+                select(NeighbourhoodUser).where(
+                    NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+                    NeighbourhoodUser.user_id != current_user_id,
+                    NeighbourhoodUser.role == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+                )
+            )
+            other_admin = other_admin_result.scalar_one_or_none()
+
+            if not other_admin:
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "You must transfer admin rights to another member "
+                        "before removing your own admin role"
+                    )
+                )
+
+        member_membership.role = new_role
+
+        await create_audit_log_item(
+            db=db,
+            user_id=current_user_id,
+            action=AuditAction.UPDATE,
+            target_entity_type=TargetEntity.USER,
+            target_entity_id=member_user_id,
+            old_values={
+                "neighbourhood_id": str(neighbourhood_id),
+                "role": old_role.value,
+            },
+            new_values={
+                "neighbourhood_id": str(neighbourhood_id),
+                "role": new_role.value,
+            }
+        )
+
+        await db.commit()
+        await db.refresh(member_membership)
+
+        return NeighbourhoodMemberRes(
+            user_id=member_user.id,
+            first_name=member_user.first_name,
+            last_name=member_user.last_name,
+            email=member_user.email,
+            role=member_membership.role,
+        )
+
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update member role"
+        )
+
+    except HTTPException:
+        await db.rollback()
+        raise
+
     except Exception:
-        pass
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update member role",
+        )
