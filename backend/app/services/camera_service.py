@@ -42,8 +42,7 @@ def _edge_agent_is_available(last_seen_at: datetime | None) -> bool | None:
     if last_seen_at.tzinfo is None:
         last_seen_at = last_seen_at.replace(tzinfo=timezone.utc)
 
-        age_seconds = (datetime.now(timezone.utc) - last_seen_at).total_seconds()
-
+    age_seconds = (datetime.now(timezone.utc) - last_seen_at).total_seconds()
 
     return age_seconds <= EDGE_AGENT_TIMEOUT_SECONDS
 
