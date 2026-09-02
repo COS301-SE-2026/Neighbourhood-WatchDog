@@ -265,38 +265,81 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
 
     try:
         result = await db.execute(
-            select(Alert).where(Alert.id == alert_id)
+            select(Alert, Camera, Property)
+            .join(Camera, Camera.id == Alert.camera_id)
+            .join(Property, Property.id == Camera.property_id)
+            .where(Alert.id == alert_id)
         )
-        alert = result.scalar_one_or_none()
+        row = result.one_or_none()
 
-        if not alert:
+        if not row:
             logger.warning("acknowledge_alert: alert not found with alert_id=%s", alert_id)
             raise HTTPException(404, ALERT_NOT_FOUND)
+
+        alert, camera, property_obj = row
 
         if alert.status != "OPEN":
             logger.warning("acknowledge_alert: alert not open with alert_id=%s", alert_id)
             raise HTTPException(409, "Alert is already acknowledged or resolved")
 
-        neighbourhood_result = await db.execute(
-            select(Property.neighbourhood_id)
-            .join(Camera, Camera.property_id == Property.id)
-            .where(Camera.id == alert.camera_id)
-        )
-        neighbourhood_id = neighbourhood_result.scalar_one_or_none()
+        resolver_id = UUID(claims["id"])
 
-        if neighbourhood_id is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Camera property is not assigned to a neighbourhood",
+        property_membership_result = await db.execute(
+            select(PropertyUser).where(
+                PropertyUser.property_id == property_obj.id,
+                PropertyUser.user_id == resolver_id,
+            )
+        )
+        property_membership = property_membership_result.scalar_one_or_none()
+
+        neighbourhood_membership = None
+
+        if property_obj.neighbourhood_id is not None:
+            neighbourhood_membership_result = await db.execute(
+                select(NeighbourhoodUser).where(
+                    NeighbourhoodUser.neighbourhood_id == property_obj.neighbourhood_id,
+                    NeighbourhoodUser.user_id == resolver_id,
+                )
+            )
+            neighbourhood_membership = (
+                neighbourhood_membership_result.scalar_one_or_none()
             )
 
-        await _require_neighbourhood_membership(
-            db,
-            claims,
-            neighbourhood_id,
+        is_critical = alert.detection_type in {
+            DetectionType.WEAPON_DETECTED,
+            DetectionType.FALL_DETECTED,
+        }
+
+        is_neighbourhood_admin = (
+            neighbourhood_membership is not None
+            and neighbourhood_membership.role
+            == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
         )
 
-        resolver_id = UUID(claims["id"])
+        is_security_officer = (
+            neighbourhood_membership is not None
+            and neighbourhood_membership.role
+            == NeighbourhoodRole.SECURITY_OFFICER
+        )
+
+        is_property_admin = (
+            property_membership is not None
+            and property_membership.is_admin
+        )
+
+        can_acknowledge = (
+            is_neighbourhood_admin
+            or (is_security_officer and is_critical)
+            or (is_property_admin and not is_critical)
+        )
+
+        if not can_acknowledge:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to acknowledge this alert",
+            )
+
+        neighbourhood_id = property_obj.neighbourhood_id
 
         old_values = {
             "status": alert.status,
@@ -305,7 +348,6 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
                 alert.resolved_at.isoformat() if alert.resolved_at else None
             ),
         }
-
 
         alert.status = "ACKNOWLEDGED"
         alert.resolved_at = datetime.now(timezone.utc)
