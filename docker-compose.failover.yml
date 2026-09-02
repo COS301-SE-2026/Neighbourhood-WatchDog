@@ -6,7 +6,7 @@ services:
       - edge-ai
 
   go2rtc:
-    image: alexxit/go2rtc:1.9.14
+    image: alexxit/go2rtc:1.9.14 
     restart: unless-stopped
     environment:
       GO2RTC_API_USERNAME: ${GO2RTC_API_USERNAME}
