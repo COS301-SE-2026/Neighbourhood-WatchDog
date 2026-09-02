@@ -48,6 +48,40 @@ async def is_property_admin(
 
     return result.scalar_one_or_none() is not None
 
+async def is_property_member(
+    property_id: UUID,
+    claims: dict,
+    db: AsyncSession,
+) -> bool:
+    """
+    Check whether the authenticated user belongs to the specified property.
+
+    Use this for property-scoped read operations where normal property
+    members are allowed to view the resource.
+
+    This function returns False when the user is not a member.
+    It does not raise an HTTP exception by itself.
+    """
+
+    if not claims:
+        return False
+
+    user_sub = claims.get("sub")
+
+    if not user_sub:
+        return False
+
+    result = await db.execute(
+        select(PropertyUser)
+        .join(PropertyUser.user)
+        .where(
+            PropertyUser.property_id == property_id,
+            User.cognito_sub == user_sub,
+        )
+    )
+
+    return result.scalar_one_or_none() is not None
+
 
 async def is_neighbourhood_admin(
     neighbourhood_id: UUID | None,
@@ -66,6 +100,48 @@ async def is_neighbourhood_admin(
             NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
             NeighbourhoodUser.role
             == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
+            User.cognito_sub == user_sub,
+        )
+    )
+
+    return result.scalar_one_or_none() is not None
+
+async def is_neighbourhood_member(
+    neighbourhood_id: UUID,
+    claims: dict,
+    db: AsyncSession,
+) -> bool:
+    """
+    Check whether the authenticated user belongs to the specified
+    neighbourhood.
+
+    This checks for any NeighbourhoodUser membership record.
+    The user's neighbourhood role may be:
+
+        - RESIDENT
+        - NEIGHBOURHOOD_ADMIN
+        - SECURITY_OFFICER
+
+    Use this for neighbourhood-scoped read operations where all members
+    are allowed to view the resource.
+
+    This function returns False when the user is not a member.
+    It does not raise an HTTP exception by itself.
+    """
+
+    if not claims:
+        return False
+
+    user_sub = claims.get("sub")
+
+    if not user_sub or neighbourhood_id is None:
+        return False
+
+    result = await db.execute(
+        select(NeighbourhoodUser)
+        .join(NeighbourhoodUser.user)
+        .where(
+            NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
             User.cognito_sub == user_sub,
         )
     )
