@@ -5,8 +5,15 @@ import { AlertCircle, Loader2, Users } from "lucide-react";
 import { useParams } from "next/navigation";
 
 import { useUserContext } from "@/hooks/use-user-context";
-import { getNeighbourhoodMembers } from "@/lib/api/neighbourhood";
+import { getNeighbourhoodMembers, updateNeighbourhoodMemberRole } from "@/lib/api/neighbourhood";
 import type { NeighbourhoodMemberRes } from "@/lib/validators/neighbourhood";
+
+
+const MEMBER_ROLES: NeighbourhoodMemberRes["role"][] = [
+    "RESIDENT",
+    "SECURITY_OFFICER",
+    "NEIGHBOURHOOD_ADMIN"
+];
 
 function formatRole(role: NeighbourhoodMemberRes["role"]) {
     return role
@@ -16,9 +23,7 @@ function formatRole(role: NeighbourhoodMemberRes["role"]) {
 }
 
 export default function MembersPage() {
-    const { neighbourhoodId } = useParams<{
-        neighbourhoodId: string;
-    }>();
+    const { neighbourhoodId } = useParams<{neighbourhoodId: string}>();
 
     const {
         data: userContext,
@@ -36,6 +41,43 @@ export default function MembersPage() {
     const [members, setMembers] = useState<NeighbourhoodMemberRes[]>([]);
     const [membersLoading, setMembersLoading] = useState(true);
     const [membersError, setMembersError] = useState<string | null>(null);
+
+    const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null);
+    const [roleError, setRoleError] = useState<string | null>(null);
+
+
+    const handleRoleChange = async (
+        memberUserId: string,
+        role: NeighbourhoodMemberRes["role"],
+    ) => {
+        setRoleError(null);
+        setUpdatingMemberId(memberUserId);
+
+        try {
+            const updatedMember = await updateNeighbourhoodMemberRole(
+                neighbourhoodId,
+                memberUserId,
+                { role },
+            );
+
+            setMembers((currentMembers) =>
+                currentMembers.map((member) =>
+                    member.user_id === updatedMember.user_id
+                        ? updatedMember
+                        : member,
+                ),
+            );
+        } catch (error: unknown) {
+            setRoleError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to update member role.",
+            );
+        } finally {
+            setUpdatingMemberId(null);
+        }
+    };
+
 
     useEffect(() => {
         if (userContextLoading || !isNeighbourhoodAdmin) {
@@ -131,6 +173,18 @@ export default function MembersPage() {
                         </div>
                     </div>
 
+                    {roleError && (
+                        <div
+                            role="alert"
+                            className="mt-4 flex items-start gap-3 border border-red-500/25 bg-red-500/[0.08] px-4 py-3 text-sm text-red-200"
+                        >
+                            <AlertCircle className="mt-0.5 size-4 shrink-0 text-red-400" />
+
+                            <p>{roleError}</p>
+                        </div>
+                    )}
+
+
                     {membersLoading ? (
                         <div className="flex items-center justify-center py-20">
                             <Loader2 className="size-5 animate-spin text-emerald-400" />
@@ -163,8 +217,7 @@ export default function MembersPage() {
                                 >
                                     <div className="min-w-0">
                                         <p className="truncate text-sm font-medium text-white">
-                                            {member.first_name}{" "}
-                                            {member.last_name}
+                                            {member.first_name} {member.last_name}
                                         </p>
 
                                         <p className="mt-1 truncate text-sm text-white/45">
@@ -172,9 +225,34 @@ export default function MembersPage() {
                                         </p>
                                     </div>
 
-                                    <span className="shrink-0 rounded-md bg-white/5 px-2.5 py-1 text-xs text-white/60">
-                                        {formatRole(member.role)}
-                                    </span>
+                                    <div className="flex shrink-0 items-center gap-2">
+                                        {updatingMemberId === member.user_id && (
+                                            <Loader2 className="size-4 animate-spin text-emerald-400" />
+                                        )}
+
+                                        <select
+                                            value={member.role}
+                                            onChange={(event) =>
+                                                handleRoleChange(
+                                                    member.user_id,
+                                                    event.target.value as NeighbourhoodMemberRes["role"],
+                                                )
+                                            }
+                                            disabled={updatingMemberId === member.user_id}
+                                            aria-label={`Role for ${member.first_name} ${member.last_name}`}
+                                            className="h-9 rounded-md border border-white/10 bg-white/[0.04] px-3 text-xs text-white outline-none transition-colors focus:border-emerald-400/60 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            {MEMBER_ROLES.map((role) => (
+                                                <option
+                                                    key={role}
+                                                    value={role}
+                                                    className="bg-zinc-950 text-white"
+                                                >
+                                                    {formatRole(role)}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
                             ))}
                         </div>
