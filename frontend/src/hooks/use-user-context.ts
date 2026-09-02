@@ -7,6 +7,8 @@ export function useUserContext() {
     return useQuery<CurrentUserContextRes>({
         queryKey: ["userContext"],
         queryFn: fetchMyContext,
-        staleTime: 60_000,
+        staleTime: 5 * 60 * 1000,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: true
     });
 }
