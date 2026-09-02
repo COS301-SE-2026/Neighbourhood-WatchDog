@@ -3,7 +3,7 @@ from typing import List
 from fastapi import HTTPException
 from app.core.database import DbSession
 from uuid import UUID
-from app.schemas.neighbourhood import NeighbourhoodPropertyRes, NeighbourhoodRes
+from app.schemas.neighbourhood import NeighbourhoodPropertyRes, NeighbourhoodRes, NeighbourhoodMemberRes
 from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property
 from app.models.property_user import PropertyUser
@@ -190,8 +190,72 @@ async def get_neighbourhood_members_handler(
     neighbourhood_id: UUID, 
     db: DbSession, 
     claims: dict
-):
-    pass
+) -> List[NeighbourhoodMemberRes]:
+    
+    if not claims:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated"
+        )
+
+    current_user_id = UUID(claims["id"])
+
+
+    neighbourhood_result = await db.execute(
+        select(Neighbourhood).where(
+            Neighbourhood.id == neighbourhood_id
+        )
+    )
+    neighbourhood = neighbourhood_result.scalar_one_or_none()
+
+    if not neighbourhood:
+        raise HTTPException(
+            status_code=404,
+            detail="Neighbourhood not found"
+        )
+
+    admin_result = await db.execute(
+        select(NeighbourhoodUser).where(
+            NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+            NeighbourhoodUser.user_id == current_user_id,
+            NeighbourhoodUser.role == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+        )
+    )
+    admin_membership = admin_result.scalar_one_or_none()
+
+    if not admin_membership:
+        raise HTTPException(
+            status_code=403,
+            detail="Only neighbourhood admins can view members"
+        )
+
+    members_result = await db.execute(
+        select(NeighbourhoodUser, User)
+        .join(
+            User,
+            User.id == NeighbourhoodUser.user_id
+        )
+        .where(
+            NeighbourhoodUser.neighbourhood_id == neighbourhood_id
+        )
+        .order_by(
+            User.first_name,
+            User.last_name
+        )
+    )
+
+    members = members_result.all()
+
+    return [
+        NeighbourhoodMemberRes(
+            user_id=user.id,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            email=user.email,
+            role=membership.role
+        )
+        for membership, user in members
+    ]
 
 
 async def update_neighbourhood_member_role_handler(
