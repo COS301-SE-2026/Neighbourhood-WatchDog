@@ -51,6 +51,8 @@ export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: Cr
               CreatePropertyReqSchema.safeParse({
                   address: selectedAddress.displayName,
                   property_type: "PRIVATE",
+                  latitude: selectedAddress.latitude, 
+                  longitude: selectedAddress.longitude
               });
 
           if (!validatedCreateProp.success) {
