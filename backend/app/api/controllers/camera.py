@@ -8,6 +8,7 @@ from app.services.camera_service import register_camera_handler, list_cameras_ha
 from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
 from app.auth.dependencies import require_role
+from app.auth.authorization import Claims, CameraAdminClaims, PropertyMemberClaims
 
 router = APIRouter(prefix="/camera", tags=["cameras"])
 
@@ -23,12 +24,13 @@ router = APIRouter(prefix="/camera", tags=["cameras"])
         500: {"description": "Could not register camera"},
     },
 )
-async def register_camera(req: RegisterCameraReq,
+async def register_camera(
+    req: RegisterCameraReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN"))]
+    claims: Annotated[dict, Depends(Claims)],
 ) -> RegisterCameraRes:
     """Creates a new camera and links it to the property of the user."""
-    
+    await is_property_admin(req.property_id, claims, db)
     
     new_camera = await register_camera_handler(req, db, claims)
 
@@ -50,7 +52,7 @@ async def register_camera(req: RegisterCameraReq,
 )
 async def deregister_camera(camera_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN"))]
+    claims: Annotated[dict, Depends(CameraAdminClaims)],
 ):
     """Permanently remove a camera from a users property and the system."""
     
@@ -70,7 +72,7 @@ async def deregister_camera(camera_id: UUID,
 async def get_property_cameras(
     property_id: str,
     db: DbSession,
-    claims: Annotated[dict, Depends(require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN"))],
+    claims: Annotated[dict, Depends(PropertyMemberClaims)],
 ) -> CamerasRes:
     
     return await list_cameras_handler(property_id, db, claims)
@@ -91,7 +93,7 @@ async def edit_camera(
     camera_id: UUID, 
     req: CameraEditReq,
     db: DbSession, 
-    claims: Annotated[dict, Depends(require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN"))]
+    claims: Annotated[dict, Depends(CameraAdminClaims)]
 ) -> EditCameraRes:
     """Edit a camera"""
 

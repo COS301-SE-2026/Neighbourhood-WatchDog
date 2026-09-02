@@ -29,6 +29,7 @@ from app.schemas.alert import (
     TrendGroupBy,
 )
 from app.models.edge_agent_credentials import EdgeAgentCredential
+from app.auth.authorization import Claims, NeighbourhoodMemberClaims, NeighbourhoodAdminClaims
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -80,20 +81,18 @@ Claims = Annotated[dict, Depends(get_current_user)]
 async def get_alert_metrics(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: Claims,
+    claims: Annotated[dict, Depends(NeighbourhoodMemberClaims)],
     camera_id: UUID | None = None,
-    officer_id: UUID | None = None
-
+    officer_id: UUID | None = None,
 ):
     """This will rep the time metrics for the alerts in the neighbourhood; can be filtered by camera and officer"""
-
     return await get_response_metrics_handler(neighbourhood_id, db, claims, camera_id, officer_id)
 
 @router.get("/frequency-metrics", response_model=AlertFrequencyMetricsRes)
 async def get_alert_frequency_metrics(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: Claims,
+    claims: Annotated[dict, Depends(NeighbourhoodMemberClaims)],
     time_interval: TimeIntervalsEnum = TimeIntervalsEnum.DAILY,
     time_period: TimePeriod = TimePeriod.WEEK
 ):
@@ -131,7 +130,7 @@ async def dev_broadcast_alert(data: dict):
 async def get_alert_trends(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: dict,
+    claims: Annotated[dict, Depends(NeighbourhoodMemberClaims)],
     group_by: TrendGroupBy=TrendGroupBy.DAY,
     time_period: TimePeriod=TimePeriod.MONTH, 
     incident_type: str | None=None, 
@@ -160,7 +159,7 @@ async def get_alert_trends(
 async def list_alerts(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Annotated[dict, Depends(NeighbourhoodMemberClaims)],
     status_filter: Annotated[str | None, Query(alias="status")] = None,
     camera_id: Annotated[UUID | None, Query()] = None,
     detection_type: Annotated[str | None, Query()] = None,
@@ -195,7 +194,7 @@ async def list_alerts(
 async def acknowledge_alert(
     alert_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Annotated[dict, Depends(Claims)],
 ):
     result = await acknowledge_alert_handler(alert_id, db, claims)
     return AcknowledgeAlertRes(status=200, data=result)
@@ -205,7 +204,7 @@ async def acknowledge_alert(
 async def alert_websocket(
     neighbourhood_id: UUID,
     websocket: WebSocket,
-    claims: Annotated[dict, Depends(get_current_user)]
+    claims: Annotated[dict, Depends(Claims)]
 ):
    
     user_id = claims["id"]
@@ -228,7 +227,7 @@ async def alert_websocket(
 async def broadcast_neighbourhood_alert(
     req: BroadcastAlertReq,
     db: DbSession, 
-    claims: Annotated[dict, Depends(require_role("NEIGHBOURHOOD_ADMIN", "RESIDENT"))]
+    claims: Annotated[dict, Depends(Claims)]
     ):
 
     

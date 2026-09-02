@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.auth.dependencies import get_current_user
 from app.auth.dependencies import require_role
 from app.core.database import DbSession
-
+from app.auth.authorization import require_camera_authorization
+from app.auth.authorization import Claims, CameraAdminClaims
 from app.schemas.camera_settings import (
     CameraSettingsResponse,
     CreateZoneRequest,
@@ -24,7 +25,7 @@ from app.services.camera_settings_service import (
 router = APIRouter(prefix="/cameras", tags=["camera-settings"])
 
 
-Claims = Annotated[dict, Depends(get_current_user)]
+# Claims = Annotated[dict, Depends(get_current_user)]
 
 
 @router.get(
@@ -37,9 +38,9 @@ Claims = Annotated[dict, Depends(get_current_user)]
         500: {"description": "Failed to retrieve camera settings"},
     },
 )
-async def get_settings(camera_id: UUID, db: DbSession, claims: Annotated[dict, Depends(require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN"))]):
+async def get_settings(camera_id: UUID, db: DbSession, claims: Annotated[dict, Depends(CameraAdminClaims)]):
     """Getting the confidence threshold and detection zones for a camera"""
-    return await get_camera_settings_handler(camera_id, db)
+    return await get_camera_settings_handler(camera_id, db, claims)
 
 
 @router.patch(
@@ -57,7 +58,7 @@ async def update_settings(
     camera_id: UUID,
     payload: UpdateCameraSettingsRequest,
     db: DbSession,
-    claims: Annotated[dict, Depends(require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN"))],
+    claims: Annotated[dict, Depends(CameraAdminClaims)],
 ):
     """Updating the confidence threshold for a camera"""
 
@@ -79,7 +80,7 @@ async def create_zone(
     camera_id: UUID,
     payload: CreateZoneRequest,
     db: DbSession,
-    claims: Annotated[dict, Depends(require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN"))],
+    claims: Annotated[dict, Depends(CameraAdminClaims)],
 ):
     """Adding a detection zone polygon to a camera"""
     return await create_zone_handler(camera_id, payload.name, payload.polygon, db, claims)
@@ -99,7 +100,7 @@ async def delete_zone(
     camera_id: UUID,
     zone_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN"))],
+    claims: Annotated[dict, Depends(CameraAdminClaims)],
 ):
     """Removing a detection zone from a camera"""
     return await delete_zone_handler(camera_id, zone_id, db, claims)

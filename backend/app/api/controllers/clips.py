@@ -26,7 +26,7 @@ from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
 from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.user import User, UserRole
-
+from app.auth.authorization import Claims
 router = APIRouter(prefix="/api/clips", tags=["clips"])
 
 #presigned url valid for 5 minutes
@@ -123,7 +123,7 @@ async def _check_rbac(claims: dict, camera: Camera, property_obj: Property, db: 
 async def get_clip_url(
     alert_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Annotated[dict, Depends(Claims)],
 ):
     """
     return a pre signed s3 url for the requested clip

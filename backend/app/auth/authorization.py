@@ -422,7 +422,7 @@ def require_neighbourhood_authorization(
     return checker
 
 #These Aliases will make it easier to read the code in the controllers
-Claims = Annotated[dict, Depends(get_current_user)]
+Claims = Annotated[dict, Depends(get_current_user)]#Use this role if you need an endpoint to be accessible by any authenticated user, regardless of their role.
 PropertyAdminClaims = Annotated[dict, Depends(require_property_authorization("PROPERTY_ADMIN", "SYSTEM_ADMIN"))]
 PropertyMemberClaims = Annotated[dict, Depends(require_property_member())]
 CameraAdminClaims = Annotated[dict, Depends(require_camera_authorization("PROPERTY_ADMIN", "SYSTEM_ADMIN"))]

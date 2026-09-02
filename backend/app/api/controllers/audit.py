@@ -7,7 +7,7 @@ from app.auth.dependencies import get_current_user
 from app.auth.dependencies import require_role
 from app.schemas.audit_log import AuditAction, GetAuditLogsRes
 from app.services.audit_service import get_audit_logs_handler
-
+from app.auth.authorization import Claims, SystemAdminClaims
 PAGE = 1
 SIZE = 30
 
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/audit", tags=["properties"])
 )
 async def get_audit_logs(
     db: DbSession,
-    claims: Annotated[dict, Depends(require_role('SYSTEM_ADMIN', 'RESIDENT', 'NEIGHBOURHOOD_WATCHDOG'))],
+    claims: Annotated[dict, Depends(SystemAdminClaims)],
     page: Annotated[int, Query(ge=1, description="Page number")] = PAGE,
     size: Annotated[int, Query(ge=1, le=100, description="Items per page")] = SIZE, 
     search_term: Annotated[Optional[str], Query(description="Free-text search")] = None, 

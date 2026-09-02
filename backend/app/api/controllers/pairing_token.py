@@ -8,7 +8,7 @@ from app.auth.rate_limiter import limiter
 from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends, Request
-
+from app.auth.authorization import Claims, PropertyAdminClaims
 
 router = APIRouter(prefix="/pairing-token", tags=["pairing-token"])
 
@@ -29,7 +29,7 @@ async def get_pairing_token(
     request: Request,
     property_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN'))],
+    claims: Annotated[dict, Depends(PropertyAdminClaims)],
 ) -> LinkPropertyTokenRes:
     """Creates a pairing token and returns it to the user for the user to link their always on device."""
     return await get_pairing_token_handler(property_id, db, claims)

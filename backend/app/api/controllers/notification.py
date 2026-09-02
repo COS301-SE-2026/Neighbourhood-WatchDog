@@ -9,7 +9,7 @@ from app.models.alert import Alert
 from app.models.camera import Camera
 from app.models.notification import Notification
 from app.schemas.notification import NotificationRes, ListNotificationRes
-
+from app.auth.authorization import Claims
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 @router.get(
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 async def list_notifications_for_alert(
     alert_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Annotated[dict, Depends(Claims)],
 ):
     role = claims.get("custom:role")
     if role not in ("NEIGHBOURHOOD_ADMIN", "SYSTEM_ADMIN", "SECURITY_OFFICER"):

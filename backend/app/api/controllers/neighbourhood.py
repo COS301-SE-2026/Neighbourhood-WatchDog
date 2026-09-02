@@ -10,6 +10,7 @@ from app.schemas.neighbourhood import (
     UpdateMemberRoleReq,
     UpdateMemberRoleRes
 )
+from app.auth.authorization import Claims, NeighbourhoodAdminClaims
 from app.core.database import DbSession
 from app.auth.dependencies import get_current_user
 from app.auth.dependencies import require_role
@@ -36,10 +37,10 @@ router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
 async def create_neighbourhood(
     req: CreateNeighbourhoodReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN'))],
+    claims: Annotated[dict, Depends(Claims)],
 ):
     """Create neighbourhood and return the neighbourhood that was created"""
-    
+    await is_property_admin(req.property_id, claims, db)
 
     new_neighbourhood = await create_neighbourhood_handler(name=req.name, location=req.location, property_id=req.property_id, db = db, claims = claims)
 
@@ -59,7 +60,7 @@ async def create_neighbourhood(
         403: {"description": "Insufficient permissions to access property"},
     },
 )
-async def get_neighbourhood_properties(db: DbSession, claims: Annotated[dict, Depends(require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN"))] ):
+async def get_neighbourhood_properties(db: DbSession, claims: Annotated[dict, Depends(Claims)] ):
     """Get properties of all users with neighbour details"""
 
     
@@ -80,7 +81,7 @@ async def get_neighbourhood_properties(db: DbSession, claims: Annotated[dict, De
 async def get_neighbourhood_members(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(require_role("NEIGHBOURHOOD_ADMIN"))],
+    claims: Annotated[dict, Depends(NeighbourhoodAdminClaims)],
 ):
     """Get all members and their current roles for a neighbourhood."""
 
@@ -116,7 +117,7 @@ async def update_neighbourhood_member_role(
     member_user_id: UUID,
     req: UpdateMemberRoleReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(require_role("NEIGHBOURHOOD_ADMIN"))],
+    claims: Annotated[dict, Depends(NeighbourhoodAdminClaims)],
 ):
     """Change a member's role in a neighbourhood."""
 
