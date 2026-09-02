@@ -1,4 +1,10 @@
 /__pycache__
+venv/
+.venv/
+.packaging-venv/
+packaging-venv/
+build/
+dist/
 ai/evaluation/frames
 ai/evaluation/labels
 
