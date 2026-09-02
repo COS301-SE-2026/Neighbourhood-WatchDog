@@ -1,4 +1,4 @@
-from app.schemas.camera import AgentCameraSummary, AgentCameraSummaryList, CameraRes, CameraListItemRes, CamerasRes, CameraEditReq
+from app.schemas.camera import CameraRes, CameraListItemRes, CamerasRes, CameraEditReq
 from app.models.camera import Camera
 from app.models.property import Property
 from app.models.property_user import PropertyUser
@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from app.models.audit_log import AuditAction, TargetEntity
 from app.schemas.camera import (
     EnabledCamerasRes,
@@ -73,7 +73,6 @@ async def register_camera_handler(req, db, claims):
         new_camera = Camera(
             property_id=req.property_id,
             name=req.name,
-            neighbourhood_id=property_obj.neighbourhood_id,
             rtsp_url=ciphertext_rtsp_url,
             visibility=req.visibility,
             location=req.location,
@@ -89,7 +88,7 @@ async def register_camera_handler(req, db, claims):
         # Get ID before commit
         await db.flush()
 
-        create_audit_log_item(
+        await create_audit_log_item(
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.CREATE,
@@ -98,7 +97,6 @@ async def register_camera_handler(req, db, claims):
             new_values={
                 "property_id": str(new_camera.property_id),
                 "name": new_camera.name,
-                "neighbourhood_id": str(new_camera.neighbourhood_id),
                 "visibility": new_camera.visibility,
                 "location": new_camera.location,
             },
@@ -111,7 +109,7 @@ async def register_camera_handler(req, db, claims):
             id=new_camera.id,
             name=new_camera.name,
             property_id=new_camera.property_id,
-            neighbourhood_id=new_camera.neighbourhood_id,
+            neighbourhood_id=property_obj.neighbourhood_id,
             rtsp_url=new_camera.rtsp_url,
             visibility=new_camera.visibility,
             location=new_camera.location,
@@ -143,25 +141,25 @@ async def deregister_camera_handler(camera_id, db, claims):
         prop_user_result = await db.execute(
             select(PropertyUser)
             .options(joinedload(PropertyUser.user))
-            .where(PropertyUser.property_id == camera_obj.property_id)
+            .join(PropertyUser.user)
+            .where(PropertyUser.property_id == camera_obj.property_id, User.cognito_sub == claims.get("sub"))
         )
         prop_user = prop_user_result.scalar_one_or_none()
 
-        if not prop_user or prop_user.user.cognito_sub != claims["sub"]:
+        if prop_user is None or getattr(getattr(prop_user, "user", None), "cognito_sub", None) != claims.get("sub"):
             raise HTTPException(status_code=403, detail="Forbidden")
 
         
         old_values = {
             "property_id": str(camera_obj.property_id),
             "name": camera_obj.name,
-            "neighbourhood_id": str(camera_obj.neighbourhood_id),
             "visibility": camera_obj.visibility,
             "location": camera_obj.location,
         }
 
         await db.delete(camera_obj)
 
-        create_audit_log_item(
+        await create_audit_log_item(
             db=db,
             user_id=UUID(claims["id"]),
             action=AuditAction.DELETE,
@@ -314,6 +312,7 @@ async def list_cameras_handler(property_id, db, claims):
                 name=c.name,
                 property_id=c.property_id,
                 neighbourhood_id=property_obj.neighbourhood_id,
+                rtsp_url=decrypt_rtsp_url(c.rtsp_url),
                 visibility=c.visibility,
                 location=c.location,
                 enabled=c.enabled,
@@ -326,11 +325,15 @@ async def list_cameras_handler(property_id, db, claims):
 async def list_enabled_cameras_for_agent_handler(property_id: UUID, db:AsyncSession) -> ListEnabledCameras:
     """Returns enabled cameras available to an authenticated AI worker."""
 
-    stmt = select(Camera).where(
-        Camera.property_id == property_id,
-        Camera.enabled.is_(True)
-    ).order_by(Camera.created_at.asc())
-
+    stmt = (
+    select(Camera)
+        .options(joinedload(Camera.property), selectinload(Camera.detection_zones))
+        .where(
+            Camera.property_id == property_id,
+            Camera.enabled.is_(True)
+        )
+        .order_by(Camera.created_at.asc())
+    )
     result = await db.execute(stmt)
     cameras = result.scalars().all()
 
@@ -347,8 +350,9 @@ async def list_enabled_cameras_for_agent_handler(property_id: UUID, db:AsyncSess
                 id=camera.id,
                 rtsp_url=decrypt_rtsp_url(camera.rtsp_url),
                 enabled=camera.enabled,
-                neighbourhood_id=camera.neighbourhood_id,
+                neighbourhood_id=camera.property.neighbourhood_id,
                 confidence_threshold=camera.confidence_threshold,
+                zones=[zone.polygon for zone in camera.detection_zones],
                 publish_username=publish_username,
                 publish_password=publish_password,
             )
@@ -400,25 +404,3 @@ async def authorize_mediamtx_for_agent_handler(request: MediaMtxAuthRequest, db:
 
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-async def list_camera_summaries_for_agent_handler(property_id: UUID, db: AsyncSession ) -> AgentCameraSummaryList:
-    statement = (
-        select(Camera)
-        .where(Camera.property_id == property_id)
-        .order_by(Camera.name)
-    )
-
-    result = await db.execute(statement)
-    cameras = result.scalars().all()
-
-    return AgentCameraSummaryList(
-        data=[
-            AgentCameraSummary(
-                id=camera.id,
-                name=camera.name,
-                location=camera.location,
-                enabled=camera.enabled,
-            )
-            for camera in cameras
-        ]
-    )

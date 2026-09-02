@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from app.schemas.property import NonEmptyString
 from app.models.camera import CameraVisibilityEnum
 from uuid import UUID
@@ -64,6 +64,7 @@ class EnabledCamerasRes(BaseModel):
     enabled: bool
     neighbourhood_id: UUID | None = None
     confidence_threshold: float
+    zones: list[list[list[float]]] = Field(default_factory=list)
     publish_username: NonEmptyString
     publish_password: NonEmptyString
 
@@ -80,14 +81,3 @@ class MediaMtxAuthRequest(BaseModel):
     id: str = ""
     query: str = ""
 
-class AgentCameraSummary(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: UUID
-    name: NonEmptyString
-    location: NonEmptyString
-    enabled: bool
-
-
-class AgentCameraSummaryList(BaseModel):
-    data: list[AgentCameraSummary] = []

@@ -51,11 +51,6 @@ async def register_user(payload, db):
                 "first_name": new_user.first_name,
                 "last_name": new_user.last_name,
                 "role": new_user.system_role.value,
-                "neighbourhood_id": (
-                    str(new_user.neighbourhood_id)
-                    if new_user.neighbourhood_id
-                    else None
-                ),
             },
         )
         await db.commit()

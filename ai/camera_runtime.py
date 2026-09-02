@@ -25,6 +25,7 @@ class CameraSpec:
     publish_password: str
     neighbourhood_id: str | None = None
     confidence_threshold: float = 0.5
+    zones: tuple[tuple[tuple[float, float], ...], ...] = ()
 
 
 @dataclass
@@ -95,9 +96,6 @@ class CameraSupervisor:
 
     def _fetch_enabled_cameras(self) -> dict[str, CameraSpec]:
         print("Fetching cameras from: ", self.backend_url)
-        logger.debug(
-            "Fetching enabled camera runtime configuration."
-        )
 
         api_key = keyring.get_password("WatchDog", "api_key")
 
@@ -130,6 +128,10 @@ class CameraSupervisor:
                 confidence_threshold=float(
                     camera.get("confidence_threshold", 0.5)
                 ),
+                zones=tuple(
+                    tuple((float(x), float(y)) for x, y in polygon)
+                    for polygon in camera.get("zones", [])
+                )
             )
 
         return result
@@ -224,11 +226,10 @@ class CameraSupervisor:
                 command,
                 **popen_options,
             )
+            runtime.consecutive_failures += 1
 
-            # FFmpeg started successfully, so previous retry failures no
-            # longer apply to this camera.
-            runtime.consecutive_failures = 0
-            runtime.next_restart_at = 0.0
+            delay = min(2 ** runtime.consecutive_failures, 30)
+            runtime.next_restart_at = time.monotonic() + delay
 
             logger.info(
                 "Started FFmpeg publisher for camera %s → %s",
@@ -331,6 +332,7 @@ class CameraSupervisor:
             runtimes = list(self._runtimes.values())
 
         snapshot = []
+
         for runtime in runtimes:
             process = runtime.ffmpeg_process
             publishing = process is not None and process.poll() is None
@@ -345,14 +347,12 @@ class CameraSupervisor:
             else:
                 status = "checking"
 
-            snapshot.append(
-                {
-                    "id": runtime.spec.id,
-                    "status": status,
-                    "publishing": publishing,
-                    "detecting": detecting,
-                    "consecutive_failures": runtime.consecutive_failures,
-                }
-            )
+            snapshot.append({
+                "id": runtime.spec.id,
+                "status": status,
+                "publishing": publishing,
+                "detecting": detecting,
+                "consecutive_failures": runtime.consecutive_failures,
+            })
 
         return snapshot

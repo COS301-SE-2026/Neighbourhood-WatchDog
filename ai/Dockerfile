@@ -28,7 +28,12 @@ COPY requirements.txt /app/
 RUN pip install -r requirements.txt \
     && addgroup --system usergroup && adduser --system --no-create-home --ingroup usergroup appuser
 
-COPY . .
+COPY app.py app_config.py authenticator.py bootstrap.py camera_runtime.py main.py watchdog_gui.py ./
+COPY pipeline/ ./pipeline/
+COPY runtime/ ./runtime/
+COPY services/ ./services/
+COPY ui/ ./ui/
+# Add any other files that get created here explicitly
 
 RUN chown -R appuser:usergroup /app
 USER appuser

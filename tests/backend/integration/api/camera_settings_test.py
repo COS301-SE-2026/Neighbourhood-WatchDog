@@ -112,6 +112,42 @@ async def test_create_zone_ok(async_client, admin_headers):
     assert body["name"] == TEST_ZONE_NAME
     assert body["camera_id"] == CAMERA_ID
 
+
+@pytest.mark.asyncio
+async def test_create_zone_rejects_polygon_with_too_few_points(async_client, admin_headers):
+
+    r = await async_client.post(
+        f"/cameras/{CAMERA_ID}/zones",
+        json={
+            "name": "Invalid Zone",
+            "polygon": [[0.1, 0.1], [0.5, 0.5]]
+        },
+        headers=admin_headers
+    )
+
+    assert r.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_create_zone_rejects_coordinates_outside_normalized_range(async_client, admin_headers):
+
+    r = await async_client.post(
+        f"/cameras/{CAMERA_ID}/zones",
+        json={
+            "name": "Invalid Zone",
+            "polygon": [
+                [0.0, 0.0],
+                [1.2, 0.0],
+                [0.5, 1.0]
+            ]
+        },
+        headers=admin_headers
+    )
+
+    assert r.status_code == 422
+
+    
+
 @pytest.mark.skip(reason="Needs to be refacored")
 @pytest.mark.asyncio
 async def test_create_zone_resident_forbidden(async_client, auth_headers):

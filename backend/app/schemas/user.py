@@ -1,7 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from datetime import datetime
 
+from app.models.neighbourhood_user import NeighbourhoodRole
 from app.models.user import UserRole
 
 class GetUserResSchema(BaseModel):
@@ -10,3 +11,48 @@ class GetUserResSchema(BaseModel):
     cognito_sub: str
     role: UserRole
     created_at: datetime
+
+class CurrentUserSummary(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: UUID
+    name: str | None = None
+    system_role: UserRole
+
+class UserSettingsResSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    first_name: str | None = None
+    last_name: str | None = None
+    email: str
+    phone_number: str | None = None
+    system_role: UserRole
+
+
+class UpdateUserSettingsReq(BaseModel):
+    first_name: str
+    last_name: str
+    phone_number: str | None = None
+
+
+
+class CurrentUserNeighbourhood(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: UUID
+    name: str
+    role: NeighbourhoodRole
+
+
+class CurrentUserProperty(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: UUID
+    address: str
+    neighbourhood: CurrentUserNeighbourhood | None = None
+    is_admin: bool
+
+
+class CurrentUserContextRes(BaseModel):
+    user: CurrentUserSummary
+    properties: list[CurrentUserProperty]

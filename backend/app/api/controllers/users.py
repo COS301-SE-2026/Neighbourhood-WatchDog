@@ -5,8 +5,8 @@ from typing import Annotated
 
 from app.core.database import DbSession
 from app.auth.dependencies import get_current_user
-from app.services.user_service import get_user_by_id_handler
-from app.schemas.user import GetUserResSchema
+from app.services.user_service import get_current_user_context_handler, get_current_user_settings_handler, get_user_by_id_handler, update_current_user_settings_handler
+from app.schemas.user import CurrentUserContextRes, GetUserResSchema, UpdateUserSettingsReq, UserSettingsResSchema
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -31,3 +31,53 @@ async def get_user_by_id(
         db,
         claims,
     )
+
+
+@router.get(
+    "/me/context",
+    response_model=CurrentUserContextRes,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        404: {"description": "User not found"},
+        500: {"description": "No database session"},
+    },
+)
+async def get_my_context(
+    claims: Annotated[dict, Depends(get_current_user)],
+    db: DbSession,
+):
+    """Returns the context of a user, for the properties and neighbourhoods"""
+    return await get_current_user_context_handler(claims, db)
+
+
+@router.get(
+    "/me/settings",
+    response_model=UserSettingsResSchema,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        404: {"description": "User not found"},
+        500: {"description": "No database session"},
+    },
+)
+async def get_my_settings(
+    claims: Annotated[dict, Depends(get_current_user)],
+    db: DbSession,
+):
+    return await get_current_user_settings_handler(claims, db)
+
+
+@router.patch(
+    "/me/settings",
+    response_model=UserSettingsResSchema,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        404: {"description": "User not found"},
+        500: {"description": "No database session"},
+    },
+)
+async def update_my_settings(
+    data: UpdateUserSettingsReq,
+    claims: Annotated[dict, Depends(get_current_user)],
+    db: DbSession,
+):
+    return await update_current_user_settings_handler(data, claims, db)

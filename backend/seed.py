@@ -3,6 +3,7 @@
 
 import secrets
 import asyncio
+import hashlib
 import sys
 import random
 from datetime import datetime, timedelta, timezone
@@ -21,6 +22,7 @@ from app.models.retention_policy import RetentionPolicy
 from app.models.alert import Alert, AlertStatus, DetectionType
 from app.models.audit_log import AuditLog, AuditAction
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
+from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.services.rtsp_encryption import encrypt_rtsp_url
 
 # Fixed UUIDs for testing
@@ -30,6 +32,8 @@ PROPERTY_ID = UUID("30000000-0000-0000-0000-000000000001")
 CAMERA_ID = UUID("40000000-0000-0000-0000-000000000001")
 ZONE_ID = UUID("50000000-0000-0000-0000-000000000001")
 AUDIT_LOG_ID = UUID("60000000-0000-0000-0000-000000000001")
+EDGE_AGENT_CREDENTIAL_ID = UUID("70000000-0000-0000-0000-000000000001")
+TEST_ALERT_ID = UUID("80000000-0000-0000-0000-000000000001")
 
 # Entity types + the real IDs we have on hand for each, so target_entity_id
 # points at something that actually exists (in case there's ever an FK added).
@@ -209,6 +213,33 @@ async def seed_database(bulk_audit_count: int = 500):
         await db.flush()
         print("Created retention policy")
 
+        #create test edge agent
+        test_edge_agent_credential = EdgeAgentCredential(
+            id=EDGE_AGENT_CREDENTIAL_ID,
+            property_id=PROPERTY_ID,
+            key_hash=hashlib.sha256(b"dev-token").hexdigest(),
+            created_at=datetime.now(timezone.utc),
+            revoked_at=None,
+        )
+        db.add(test_edge_agent_credential)
+        await db.flush()
+        print("Created test edge agent credential (token: dev-token)")
+
+        #dedicated fixed-id alert for clip upload testing
+        test_clip_alert = Alert(
+            id=TEST_ALERT_ID,
+            camera_id=CAMERA_ID,
+            frame_timestamp=datetime.now(timezone.utc),
+            detection_type=DetectionType.WEAPON_DETECTED,
+            confidence_score=0.9,
+            thumbnail_url=None,
+            processed=False,
+            status=AlertStatus.OPEN.value,
+        )
+        db.add(test_clip_alert)
+        await db.flush()
+        print("Created test alert for clip upload testing")
+
         #create test zone
         test_zone = GeospatialZone(
             id=ZONE_ID,
@@ -357,6 +388,8 @@ async def seed_database(bulk_audit_count: int = 500):
         print("Neighbourhood: Test Neighbourhood")
         print("Property Address: 123 Test Street")
         print(f"Alerts seeded: {alerts_created}")
+        print("Edge agent test token: dev-token")
+        print(f"Test alert ID for clip upload: {TEST_ALERT_ID}")
 
     except Exception as e:
         await db.rollback()

@@ -10,7 +10,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from collections import deque
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from fastapi import APIRouter, FastAPI, Query
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +18,8 @@ from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
 from pipeline.utils.zone_config import filter_detections_by_zones
+from pipeline.processing.alert_confirmation import is_track_ready_to_alert
+
 import httpx
 import logging
 import keyring
@@ -48,6 +50,11 @@ PERSON_MODEL_PATH = (
 threat_model = YOLO(str(THREAT_MODEL_PATH))
 person_model = YOLO(str(PERSON_MODEL_PATH))
 
+PERSON_CONFIDENCE_THRESHOLD = float(os.getenv("PERSON_CONFIDENCE_THRESHOLD", "0.25"))
+PERSON_NMS_IOU_THRESHOLD = float(os.getenv("PERSON_NMS_IOU_THRESHOLD", "0.70"))
+WEAPON_CONFIDENCE_THRESHOLD = float(os.getenv("WEAPON_CONFIDENCE_THRESHOLD", "0.50"))
+WEAPON_NMS_IOU_THRESHOLD = float(os.getenv("WEAPON_NMS_IOU_THRESHOLD", "0.50"))
+TEMPORAL_CONFIRMATION_FRAMES = int(os.getenv("TEMPORAL_CONFIRMATION_FRAMES", "3"))
 
 
 # #cache for the camera settings, refresh every 30 seconds ---- still need to test
@@ -71,10 +78,15 @@ _model_lock = threading.Lock()
 
 #clip recording settings
 WEAPON_CLASSES = {"gun", "knife", "grenade", "explosion"}
-CLIP_COOLDOWN_SECS = 30
+CLIP_COOLDOWN_SECS = 0
 CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
-S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "")
+S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME") or os.getenv("AWS_BUCKET_NAME", "")
 AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")
+
+def _s3_client(): 
+    return boto3.client("s3", region_name=AWS_REGION)
+
+
 
 
 #cooldown tracker per weapon class
@@ -102,12 +114,20 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
         logger.warning("Could not push annotations for camera %s: %s", camera_id, error)
 
 
-def _extract_detections(frame, confidence_threshold: float, zones: list | None = None) -> tuple[list, list]:
-    """Convert YOLO results to DeepSort detection format."""
+def _extract_detections(frame, zones: list | tuple | None = None, confidence_threshold: float | None = None) -> tuple[list, list]:
+    """Convert YOLO results to DeepSort detection format.
+    
+    runs both models and retains their detection inside the configured camera zones
+    
+    no zones = all detection are retained
+    configured zones = detections are retained only when the centre of the boundary box falls inside at least one polygon
+    """
 
     zones = zones or []
 
 
+    person_confidence = (PERSON_CONFIDENCE_THRESHOLD if confidence_threshold is None else confidence_threshold)
+    weapon_confidence = WEAPON_CONFIDENCE_THRESHOLD
 
     # #running yolo on frame, applying the confidendce threshold and zone filters
     # with _settings_lock:
@@ -129,7 +149,8 @@ def _extract_detections(frame, confidence_threshold: float, zones: list | None =
         threat_results = threat_model.predict(
             frame,
             imgsz=512,
-            conf=confidence_threshold,
+            conf=weapon_confidence,
+            iou=WEAPON_NMS_IOU_THRESHOLD,
             verbose=False
         )
 
@@ -137,8 +158,9 @@ def _extract_detections(frame, confidence_threshold: float, zones: list | None =
         #person detection
         person_results = person_model.predict(
             frame,
-            imgsz=512,
-            conf=confidence_threshold,
+            imgsz=640,
+            conf=person_confidence,
+            iou=PERSON_NMS_IOU_THRESHOLD,
             classes=[0],
             verbose=False
             )
@@ -151,16 +173,6 @@ def _extract_detections(frame, confidence_threshold: float, zones: list | None =
 
         weapon_detections.append(([x1, y1, x2 - x1, y2 - y1], confidence, label))
 
-
-
-    #person detection
-    person_results = person_model.predict(
-        frame,
-        imgsz=640,
-        conf=0.25,
-        classes=[0],
-        verbose=False
-        )
 
     for box in person_results[0].boxes:
         x1, y1, x2, y2 = box.xyxy[0].tolist()
@@ -176,7 +188,7 @@ def _extract_detections(frame, confidence_threshold: float, zones: list | None =
 
 
 
-    logger.debug("Threat boxes: %s, Person boxes: %s", len(weapon_detections), len(person_detections))
+    logger.debug("Filtered detections: persons=%s, threats=%s, zones=%s, threshold=%.2f", len(person_detections), len(weapon_detections), len(zones), confidence_threshold if confidence_threshold is not None else person_confidence)
 
 
     return person_detections, weapon_detections
@@ -292,15 +304,82 @@ class LatestFrameReader:
             if cap is not None:
                 cap.release()
 
-def _schedule_weapon_clip(
-    camera: CameraSpec,
-    rtsp_url: str,
-    pre_frames: list,
-    weapon_label: str,
-    confidence: float,
-    stop_event: threading.Event,
-) -> None:
-    """Start a background clip job unless this camera/weapon is in cooldown."""
+def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: float) -> str | None:
+    """Create a weapon alert immediately, independently of S3 footage."""
+
+    api_key = keyring.get_password("WatchDog", "api_key") or INTERNAL_API_TOKEN
+
+    payload = {
+        "camera_id": camera.id,
+        "detection_type": "WEAPON_DETECTED",
+        "confidence_score": confidence,
+        "frame_timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+    logger.info(
+        "Creating weapon alert: camera=%s, label=%s, confidence=%.3f, backend=%s",
+        camera.id,
+        weapon_label,
+        confidence,
+        BACKEND_URL,
+    )
+
+    try:
+        response = httpx.post(
+            f"{BACKEND_URL}/internal/alerts",
+            headers={"X-Internal-Token": api_key},
+            json=payload,
+            timeout=10.0,
+        )
+
+        logger.info("Weapon alert API response: status=%s, body=%s", response.status_code, response.text)
+
+        response.raise_for_status()
+
+        alert_id = response.json().get("alert_id")
+        if not alert_id:
+            raise RuntimeError(
+                "Weapon alert API returned 2xx but no alert_id: "
+                f"{response.text}"
+            )
+
+        logger.info(
+            "Created weapon alert %s for camera %s (%s, %.2f)",
+            alert_id,
+            camera.id,
+            weapon_label,
+            confidence,
+        )
+
+
+        return str(alert_id)
+
+    except httpx.HTTPStatusError as error:
+        logger.exception(
+            "Weapon alert API rejected request: status=%s, body=%s",
+            error.response.status_code,
+            error.response.text,
+        )
+        return None
+
+    except httpx.RequestError as error:
+        logger.exception(
+            "Could not reach weapon alert API at %s: %s",
+            BACKEND_URL,
+            error,
+        )
+        return None
+
+    except Exception:
+        logger.exception(
+            "Unexpected weapon-alert creation failure for camera %s (%s)",
+            camera.id,
+            weapon_label,
+        )
+        return None
+
+def _schedule_weapon_clip(camera: CameraSpec, rtsp_url: str, pre_frames: list, weapon_label: str, confidence: float, stop_event: threading.Event) -> None:
+    
     label = weapon_label.lower()
     cooldown_key = (camera.id, label)
     now = time.monotonic()
@@ -310,7 +389,7 @@ def _schedule_weapon_clip(
 
         if previous is not None and now - previous < CLIP_COOLDOWN_SECS:
             logger.info(
-                "Clip cooldown active for camera %s / %s",
+                "Weapon alert cooldown active for camera %s / %s",
                 camera.id,
                 label,
             )
@@ -318,9 +397,23 @@ def _schedule_weapon_clip(
 
         _clips_cooldowns[cooldown_key] = now
 
+    alert_id = _create_weapon_alert(
+        camera=camera,
+        weapon_label=label,
+        confidence=confidence,
+    )
+
+    if alert_id is None:
+        with _cooldown_lock:
+            if _clips_cooldowns.get(cooldown_key) == now:
+                _clips_cooldowns.pop(cooldown_key, None)
+
+        return
+
     threading.Thread(
         target=_save_weapon_clip,
         args=(
+            alert_id,
             camera,
             rtsp_url,
             pre_frames,
@@ -332,67 +425,29 @@ def _schedule_weapon_clip(
         daemon=True,
     ).start()
 
-    logger.info("Scheduling weapon clip for camera %s: label=%s, confidence=%.2f, pre_frames=%s",
-                camera.id, label, confidence, len(pre_frames))
+    logger.info(
+        "Scheduled footage capture for weapon alert %s on camera %s: "
+        "label=%s, confidence=%.2f, pre_frames=%s",
+        alert_id,
+        camera.id,
+        label,
+        confidence,
+        len(pre_frames),
+    )
 
-def _save_weapon_clip(
-    camera: CameraSpec,
-    rtsp_url: str,
-    pre_frames: list,
-    weapon_label: str,
-    confidence: float,
-    stop_event: threading.Event,
-) -> None:
-    """
-    Capture a short pre/post-detection clip, convert it to browser-compatible
-    H.264 MP4, upload it to S3, then link it to the DetectionEvent.
-    """
-    if not S3_BUCKET_NAME:
-        logger.warning(
-            "S3_BUCKET_NAME is not configured; skipping clip for camera %s",
-            camera.id,
-        )
-        return
+def _save_weapon_clip(alert_id: str, camera: CameraSpec, rtsp_url: str, pre_frames: list, weapon_label: str, confidence: float, stop_event: threading.Event) -> None:
+    
+    api_key = keyring.get_password("WatchDog", "api_key") or INTERNAL_API_TOKEN
+    headers = {"X-Internal-Token": api_key}
 
-    # The old implementation created the event first, then wrote its S3 key
-    # after the upload completes.
-    api_key = keyring.get_password("WatchDog", "api_key")
-    headers = {"X-Internal-Token": api_key} if api_key else {}
-
-    try:
-        event_response = httpx.post(
-            f"{BACKEND_URL}/internal/detections",
-            headers=headers,
-            json={
-                "camera_id": camera.id,
-                "detection_type": "WEAPON_DETECTED",
-                "confidence_score": confidence,
-                "frame_timestamp": datetime.now(timezone.utc).isoformat(),
-            },
-            timeout=3.0,
-        )
-        event_response.raise_for_status()
-        alert_id = event_response.json().get("alert_id")
-
-        if not alert_id:
-            logger.info("Detection for camera %s did not meet the configured threshold; no alert or clip will be created.", camera.id)
-            return
-
-    except Exception:
-        logger.exception(
-            "Could not create detection event for camera %s",
-            camera.id,
-        )
-        return
-
-    # Capture approximately three seconds after the detection.
     post_frames = []
     capture = _open_stream(rtsp_url)
 
     try:
         if capture is None:
             logger.warning(
-                "Could not capture post-event footage for camera %s",
+                "Could not capture post-event footage for alert %s / camera %s",
+                alert_id,
                 camera.id,
             )
         else:
@@ -413,14 +468,14 @@ def _save_weapon_clip(
 
     if not all_frames:
         logger.warning(
-            "No frames available for weapon clip on camera %s",
+            "No frames available for footage of alert %s / camera %s",
+            alert_id,
             camera.id,
         )
         return
 
     height, width = all_frames[0].shape[:2]
 
-    # A resolution change must not corrupt the MP4 writer.
     all_frames = [
         frame
         for frame in all_frames
@@ -428,18 +483,8 @@ def _save_weapon_clip(
     ]
 
     if not all_frames:
-        logger.warning(
-            "No consistently sized frames available for camera %s",
-            camera.id,
-        )
+        logger.warning("No consistently sized frames available for alert %s / camera %s", alert_id, camera.id)
         return
-
-    timestamp = datetime.now(timezone.utc)
-
-    s3_key = (
-        f"clips/{camera.id}/{timestamp.strftime('%Y/%m/%d')}"
-        f"/{weapon_label}_{timestamp.strftime('%Y%m%dT%H%M%SZ')}.mp4"
-    )
 
     raw_fd, raw_path = tempfile.mkstemp(suffix=".mp4")
     h264_fd, h264_path = tempfile.mkstemp(suffix=".mp4")
@@ -448,7 +493,6 @@ def _save_weapon_clip(
     os.close(h264_fd)
 
     try:
-        # First encode frames into a temporary MP4.
         writer = cv2.VideoWriter(
             raw_path,
             cv2.VideoWriter_fourcc(*"mp4v"),
@@ -457,9 +501,7 @@ def _save_weapon_clip(
         )
 
         if not writer.isOpened():
-            raise RuntimeError(
-                "OpenCV could not initialise the temporary clip writer"
-            )
+            raise RuntimeError("OpenCV could not initialise the temporary clip writer")
 
         try:
             for frame in all_frames:
@@ -467,7 +509,7 @@ def _save_weapon_clip(
         finally:
             writer.release()
 
-        # Convert to browser-compatible H.264 MP4.
+
         subprocess.run(
             [
                 "ffmpeg",
@@ -492,39 +534,23 @@ def _save_weapon_clip(
             text=True,
         )
 
-        boto3.client("s3", region_name=AWS_REGION).upload_file(
-            h264_path,
-            S3_BUCKET_NAME,
-            s3_key,
-            ExtraArgs={"ContentType": "video/mp4"},
-        )
-
-        expires_at = timestamp + timedelta(days=CLIP_RETENTION_DAYS)
-
-        update_response = httpx.patch(
-            f"{BACKEND_URL}/internal/alerts/"
-            f"{alert_id}/clip",
-            headers=headers,
-            json={
-                "clip_s3_key": s3_key,
-                "clip_expires_at": expires_at.isoformat(),
-            },
-            timeout=3.0,
-        )
-        update_response.raise_for_status()
+        with open(h264_path, "rb") as clip_file:
+            upload_response = httpx.post(
+                f"{BACKEND_URL}/internal/alerts/{alert_id}/clip",
+                headers=headers,
+                files={"clip": ("weapon-alert.mp4", clip_file, "video/mp4")},
+                timeout=30.0,
+            )
+        upload_response.raise_for_status()
 
         logger.info(
-            "Clip uploaded: s3://%s/%s -> event %s",
-            S3_BUCKET_NAME,
-            s3_key,
+            "Clip uploaded through backend and linked to alert %s",
             alert_id,
         )
 
     except Exception:
-        logger.exception(
-            "Clip capture/upload failed for camera %s",
-            camera.id,
-        )
+        logger.exception("Footage capture/backend upload failed for alert %s / camera %s", alert_id, camera.id)
+
     finally:
         for clip_path in (raw_path, h264_path):
             if os.path.exists(clip_path):
@@ -539,7 +565,7 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
 
     tracker = DeepSort(
         max_age=10,
-        n_init=3,
+        n_init=TEMPORAL_CONFIRMATION_FRAMES,
         max_iou_distance=0.5,  #for stricter matching and less duplicate boxes
         embedder="mobilenet",
         embedder_gpu=False,
@@ -563,7 +589,7 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
 
             pre_event_frames.append(frame.copy())
 
-            person_detections, weapon_detections = _extract_detections(frame, camera.confidence_threshold)
+            person_detections, weapon_detections = _extract_detections(frame, zones=camera.zones, confidence_threshold=camera.confidence_threshold)
 
             #only tracking humans through deepsort
             tracks = tracker.update_tracks(person_detections, frame=frame)
@@ -588,6 +614,14 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
 
 
                 if label.lower() in WEAPON_CLASSES:
+
+                    logger.info(
+                        "Weapon detection observed: camera=%s, label=%s, confidence=%.3f",
+                        camera.id,
+                        label,
+                        confidence,
+                    )
+                    
                     _schedule_weapon_clip(
                         camera=camera,
                         rtsp_url=rtsp_url,
@@ -640,7 +674,7 @@ def _collect_tracks(tracks, alerted_ids: set, camera: CameraSpec) -> list:
         track_data = _build_track_payload(track)
         payload.append(track_data)
 
-        if track_id not in alerted_ids and track.det_conf is not None:
+        if (track.det_conf is not None and is_track_ready_to_alert(track, alerted_ids, TEMPORAL_CONFIRMATION_FRAMES)):
             alerted_ids.add(track_id)
 
             detection_type = track.get_det_class() or "UNKNOWN"

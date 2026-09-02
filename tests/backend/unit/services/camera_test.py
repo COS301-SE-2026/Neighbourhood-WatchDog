@@ -1,7 +1,7 @@
 import pytest
 from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
-from app.services.camera_service import register_camera_handler, deregister_camera_handler, edit_camera_handler
+from app.services.camera_service import register_camera_handler, deregister_camera_handler, edit_camera_handler, list_enabled_cameras_for_agent_handler
 from app.services.camera_service import CameraEditReq
 from app.schemas.camera import RegisterCameraReq
 from app.models.camera import CameraVisibilityEnum
@@ -37,6 +37,7 @@ class TestRegisterCamera:
         self.mock_db, self.mock_result = make_mock_db()
 
         self.mock_property = Mock()
+        self.mock_property.neighbourhood_id = uuid4()
         self.property_id = uuid4()
 
         self.mock_property_user = Mock()
@@ -56,7 +57,7 @@ class TestRegisterCamera:
         self.mock_camera.visibility=CameraVisibilityEnum.PRIVATE
         self.mock_camera.property_id=uuid4()
         self.mock_camera.enabled = True
-        self.mock_camera.neighbourhood_id = uuid4()
+        self.mock_camera.neighbourhood_id = self.mock_property.neighbourhood_id
         self.mock_camera.created_at = datetime.now()
         
         self.mock_req = RegisterCameraReq(
@@ -272,10 +273,9 @@ class TestDeregisterCamera:
         wrong_prop_user.user_id = uuid4()
         wrong_prop_user.user =  wrong_user
 
-        self.mock_user.cognito_sub = "different-user-sub"
         self.reset_side_effects(
             camera=self.mock_camera,
-            prop_user=self.mock_prop_user,
+            prop_user=wrong_prop_user,
         )
 
         with pytest.raises(HTTPException) as exc:
@@ -488,4 +488,53 @@ class TestEditCamera:
         self.mock_db.refresh.assert_called_once_with(self.mock_camera)
 
 
+    @pytest.mark.asyncio
+    async def test_enabled_camera_payload_includes_detection_zone_polygons(self):
 
+        property_id = uuid4()
+        neighbourhood_id = uuid4()
+
+        camera = MagicMock()
+        camera.id = uuid4()
+        camera.rtsp_url = "encrypted-value"
+        camera.enabled = True
+        camera.confidence_threshold = 0.70
+        camera.property = MagicMock(neighbourhood_id=neighbourhood_id)
+        camera.detection_zones = [
+            MagicMock(
+                polygon=[
+                    [0.1, 0.1],
+                    [0.5, 0.1],
+                    [0.5, 0.5],
+                    [0.1, 0.5]
+                ]
+            )
+        ]
+
+        result = MagicMock()
+
+        result.scalars.return_value.all.return_value = [camera]
+
+        db = MagicMock()
+
+        db.execute = AsyncMock(return_value=result)
+
+        with patch(
+            "app.services.camera_service.decrypt_rtsp_url",
+            return_value="rtsp://example.test/camera"
+        ), patch(
+            "app.services.camera_service._camera_publish_credentials",
+            return_value=("camera-user", "camera-password")
+        ):
+            payload = await list_enabled_cameras_for_agent_handler(property_id, db)
+
+        assert len(payload.data) == 1
+        assert payload.data[0].confidence_threshold == 0.70
+        assert payload.data[0].zones == [
+            [
+                [0.1, 0.1],
+                [0.5, 0.1],
+                [0.5, 0.5],
+                [0.1, 0.5]
+            ]
+        ]
