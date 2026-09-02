@@ -1,7 +1,7 @@
 import pytest
 from fastapi import HTTPException
 from unittest.mock import MagicMock, Mock, AsyncMock, patch
-from app.services.neighbourhood_service import create_neighbourhood_handler
+from app.services.neighbourhood_service import create_neighbourhood_handler, get_neighbourhood_members_handler
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from uuid import uuid4
 from datetime import datetime
@@ -29,6 +29,18 @@ def make_mock_db():
     mock_db.rollback = AsyncMock()
     mock_db.refresh = AsyncMock()
     return mock_db, mock_result
+
+def make_scalar_result(value):
+    result = MagicMock()
+    result.scalar_one_or_none.return_value = value
+    return result
+
+
+def make_rows_result(rows):
+    result = MagicMock()
+    result.all.return_value = rows
+    return result
+
 
 class TestCreateNeighbourhood:
     def setup_method(self):
@@ -402,3 +414,60 @@ class TestCreateNeighbourhood:
         )
  
         assert nb1.join_code != nb2.join_code
+
+
+class TestGetNeighbourhoodMembers:
+
+    @pytest.mark.asyncio
+    async def test_admin_can_view_neighbourhood_members(self):
+        mock_db = AsyncMock()
+
+        neighbourhood_id = uuid4()
+        admin_id = uuid4()
+        member_id = uuid4()
+
+        neighbourhood = Mock()
+        neighbourhood.id = neighbourhood_id
+
+        admin_membership = Mock()
+        admin_membership.user_id = admin_id
+        admin_membership.neighbourhood_id = neighbourhood_id
+        admin_membership.role = (
+            NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+        )
+
+        member_membership = Mock()
+        member_membership.user_id = member_id
+        member_membership.neighbourhood_id = neighbourhood_id
+        member_membership.role = NeighbourhoodRole.RESIDENT
+
+        member_user = Mock()
+        member_user.id = member_id
+        member_user.first_name = "Test"
+        member_user.last_name = "Resident"
+        member_user.email = "resident@example.com"
+
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_scalar_result(neighbourhood),
+                make_scalar_result(admin_membership),
+                make_rows_result(
+                    [(member_membership, member_user)]
+                )
+            ]
+        )
+
+        result = await get_neighbourhood_members_handler(
+            neighbourhood_id=neighbourhood_id,
+            db=mock_db,
+            claims={"id": str(admin_id)}
+        )
+
+        assert len(result) == 1
+        assert result[0].user_id == member_id
+        assert result[0].first_name == "Test"
+        assert result[0].last_name == "Resident"
+        assert result[0].email == "resident@example.com"
+        assert result[0].role == NeighbourhoodRole.RESIDENT
+
+        assert mock_db.execute.await_count == 3
