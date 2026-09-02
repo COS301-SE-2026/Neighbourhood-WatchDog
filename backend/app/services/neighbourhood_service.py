@@ -18,7 +18,7 @@ import string
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction
 
-NOT_AUTHENTICATED_MESSAGE = "Not Authenticated"
+NOT_AUTHENTICATED_MESSAGE = "Not authenticated"
 
 async def create_neighbourhood_handler(name: str, location: str, property_id: UUID, db: DbSession, claims: dict):
     """Creates the neighbourhood
