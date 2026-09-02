@@ -1,12 +1,24 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { AlertCircle, Loader2, Users } from "lucide-react";
 import { useParams } from "next/navigation";
-import { Loader2, Users } from "lucide-react";
 
 import { useUserContext } from "@/hooks/use-user-context";
+import { getNeighbourhoodMembers } from "@/lib/api/neighbourhood";
+import type { NeighbourhoodMemberRes } from "@/lib/validators/neighbourhood";
+
+function formatRole(role: NeighbourhoodMemberRes["role"]) {
+    return role
+        .toLowerCase()
+        .replaceAll("_", " ")
+        .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
 
 export default function MembersPage() {
-    const { neighbourhoodId } = useParams<{neighbourhoodId: string}>();
+    const { neighbourhoodId } = useParams<{
+        neighbourhoodId: string;
+    }>();
 
     const {
         data: userContext,
@@ -20,6 +32,48 @@ export default function MembersPage() {
                 property.neighbourhood?.role === "NEIGHBOURHOOD_ADMIN",
         ),
     );
+
+    const [members, setMembers] = useState<NeighbourhoodMemberRes[]>([]);
+    const [membersLoading, setMembersLoading] = useState(true);
+    const [membersError, setMembersError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (userContextLoading || !isNeighbourhoodAdmin) {
+            return;
+        }
+
+        let cancelled = false;
+
+        getNeighbourhoodMembers(neighbourhoodId)
+            .then((data) => {
+                if (cancelled) return;
+
+                setMembers(data);
+                setMembersError(null);
+            })
+            .catch((error: unknown) => {
+                if (cancelled) return;
+
+                setMembersError(
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to load neighbourhood members.",
+                );
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setMembersLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        neighbourhoodId,
+        userContextLoading,
+        isNeighbourhoodAdmin,
+    ]);
 
     if (userContextLoading) {
         return (
@@ -56,7 +110,8 @@ export default function MembersPage() {
                     </h1>
 
                     <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/50">
-                        View members of this neighbourhood and manage their roles.
+                        View members of this neighbourhood and manage their
+                        roles.
                     </p>
                 </header>
 
@@ -70,10 +125,60 @@ export default function MembersPage() {
                             </h2>
 
                             <p className="mt-1 text-sm text-white/40">
-                                Members and their current roles will appear here.
+                                {members.length} member
+                                {members.length === 1 ? "" : "s"}
                             </p>
                         </div>
                     </div>
+
+                    {membersLoading ? (
+                        <div className="flex items-center justify-center py-20">
+                            <Loader2 className="size-5 animate-spin text-emerald-400" />
+                        </div>
+                    ) : membersError ? (
+                        <div
+                            role="alert"
+                            className="mt-4 flex items-start gap-3 border border-red-500/25 bg-red-500/[0.08] px-4 py-3 text-sm text-red-200"
+                        >
+                            <AlertCircle className="mt-0.5 size-4 shrink-0 text-red-400" />
+                            <p>{membersError}</p>
+                        </div>
+                    ) : members.length === 0 ? (
+                        <div className="border-b border-white/10 py-16 text-center">
+                            <p className="text-sm font-medium text-white/65">
+                                No members found
+                            </p>
+
+                            <p className="mt-2 text-sm text-white/40">
+                                Members will appear here once they join the
+                                neighbourhood.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-white/10">
+                            {members.map((member) => (
+                                <div
+                                    key={member.user_id}
+                                    className="flex items-center justify-between gap-4 py-4"
+                                >
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-medium text-white">
+                                            {member.first_name}{" "}
+                                            {member.last_name}
+                                        </p>
+
+                                        <p className="mt-1 truncate text-sm text-white/45">
+                                            {member.email}
+                                        </p>
+                                    </div>
+
+                                    <span className="shrink-0 rounded-md bg-white/5 px-2.5 py-1 text-xs text-white/60">
+                                        {formatRole(member.role)}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </section>
             </div>
         </main>
