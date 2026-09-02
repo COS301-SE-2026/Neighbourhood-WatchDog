@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SlidersHorizontal, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import { useUserContext } from "@/hooks/use-user-context";
 import {
   fetchAlerts,
   acknowledgeAlert,
@@ -113,6 +114,30 @@ interface Props {
 }
 
 export default function AlertsPage({ neighbourhoodId }: Props) {
+
+  const {
+    data: userContext,
+    isLoading: userContextLoading,
+  } = useUserContext();
+
+  const neighbourhoodRole = useMemo(
+    () =>
+      userContext?.properties.find(
+        (property) =>
+          property.neighbourhood?.id === neighbourhoodId,
+      )?.neighbourhood?.role ?? null,
+    [userContext, neighbourhoodId],
+  );
+
+  const isNeighbourhoodAdmin =
+    neighbourhoodRole === "NEIGHBOURHOOD_ADMIN";
+
+  const isSecurityOfficer =
+    neighbourhoodRole === "SECURITY_OFFICER";
+
+  const canViewAlerts =
+    isNeighbourhoodAdmin || isSecurityOfficer;
+
   const [{ alerts, loading, error }, dispatch] = useReducer(fetchReducer, initialFetchState);
 
   const [actionError, setActionError] = useState<string | null>(null);
@@ -150,6 +175,10 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
   }, []);
 
   useEffect(() => {
+    if (userContextLoading || !canViewAlerts) {
+      return;
+    }
+
     const controller = new AbortController();
     const filters: AlertFilters =
       activeTab === "current"
@@ -168,10 +197,10 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
       });
 
     return () => controller.abort();
-  }, [neighbourhoodId, fetchTick, alertFilters, activeTab]);
+  }, [neighbourhoodId, fetchTick, alertFilters, activeTab, userContextLoading, canViewAlerts]);
 
   useEffect(() => {
-    if (activeTab !== "current") return;
+    if (activeTab !== "current" || userContextLoading || !canViewAlerts) return;
 
     const token = getAuthToken();
     const url = `${WS_BASE}/alerts/${neighbourhoodId}/ws${token ? `?token=${token}` : ""}`;
@@ -196,6 +225,15 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
           const message = JSON.parse(event.data as string) as { event: string; payload?: Record<string, unknown> };
           if (message.event === "ping") return;
           if (message.event === "alert.new" && message.payload) {
+            const incomingAlert = normaliseAlert(message.payload);
+
+            if (
+              isSecurityOfficer &&
+              getSeverity(incomingAlert.detection_type) !== "CRITICAL"
+            ) {
+              return;
+            }
+
             dispatch({ type: "PREPEND_ALERT", payload: normaliseAlert(message.payload) });
           }
           if (message.event === "alert.acknowledged" && message.payload) {
@@ -215,7 +253,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
       const ws = wsRef.current;
       if (ws) { ws.onclose = null; ws.close(); }
     };
-  }, [neighbourhoodId, activeTab]);
+  }, [neighbourhoodId, activeTab, userContextLoading, canViewAlerts, isSecurityOfficer]);
 
   async function handleAcknowledge(id: string) {
     const original = alerts.find((alert) => alert.id === id);
@@ -267,17 +305,47 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
     (alert) => getSeverity(alert.detection_type) === "CRITICAL" && alert.status === "NEW",
   ).length;
 
+  if (userContextLoading) {
+    return (
+      <main className="min-h-full bg-black px-6 py-8 text-white md:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-center py-20">
+          <RefreshCw className="size-5 animate-spin text-emerald-400" />
+        </div>
+      </main>
+    );
+  }
+
+  if (!canViewAlerts) {
+    return (
+      <main className="min-h-full bg-black px-6 py-8 text-white md:px-8">
+        <div className="mx-auto max-w-6xl">
+          <p className="text-sm text-white/60">
+            You do not have access to these alerts.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+
   return (
     <TooltipProvider>
-      <div className="w-full flex flex-col items-center px-8 py-10 bg-black min-h-full font-sans">
-        <div className="w-full max-w-2xl">
-          <header className="mb-6 text-center">
-            <div className="flex items-center justify-center gap-2">
-              <h1 className="text-[2rem] font-bold leading-[2.5rem] text-white">Alerts</h1>
+      <main className="min-h-full bg-black px-6 py-8 text-white md:px-8">
+        <div className="w-full max-w-6xl">
+          <header className="mb-7 border-b border-white/10 pb-6">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-semibold tracking-tight text-white">{isNeighbourhoodAdmin ? "Live alerts" : "Critical alerts"}</h1>
               <span title={wsConnected ? "Live updates connected" : "Live updates disconnected"} aria-label={wsConnected ? "Live" : "Offline"}>
                 {wsConnected ? <Wifi className="h-4 w-4 text-emerald-400 mt-1" /> : <WifiOff className="h-4 w-4 text-white/30 mt-1" />}
               </span>
             </div>
+
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/50">
+              {isNeighbourhoodAdmin
+                ? "Monitor alerts across your neighbourhood and broadcast incidents when needed."
+                : "Review critical events that require a security response."}
+            </p>
+
 
             {(newCount > 0 || criticalCount > 0) && (
               <div className="mt-3 flex flex-wrap justify-center gap-2" aria-live="polite">
@@ -297,7 +365,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
 
           {actionError && <ActionErrorBanner message={actionError} onDismiss={() => setActionError(null)} />}
 
-          <div className="mb-4 flex justify-center gap-2" role="tablist">
+          <div className="mb-5 flex gap-2" role="tablist">
             <Button role="tab" aria-selected={activeTab === "current"} size="sm" variant={activeTab === "current" ? "default" : "outline"} onClick={() => setActiveTab("current")} className={activeTab === "current" ? "bg-emerald-500 text-black hover:bg-emerald-400 text-xs font-medium" : "border-white/10 bg-transparent text-white/70 hover:bg-white/5 hover:text-white text-xs font-medium"}>
               Current
             </Button>
@@ -306,7 +374,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
             </Button>
           </div>
 
-          <Card className="bg-[#101011] border-white/10 rounded-xl">
+          <Card className="overflow-hidden rounded-lg border border-white/10 bg-[#101011]">
             <div className="flex items-center justify-between gap-3 rounded-t-xl border-b border-white/10 px-5 py-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -399,7 +467,12 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
               </Button>
             </div>
 
-            <section aria-label="Alert list" aria-live="polite" className="rounded-b-xl p-4">
+            <section
+              aria-label="Alert list"
+              aria-live="polite"
+              className="rounded-b-lg p-5 md:p-6"
+            >
+
               {loading && alerts.length === 0 ? (
                 <div className="flex items-center justify-center py-20">
                   <RefreshCw className="h-5 w-5 animate-spin text-emerald-400" />
@@ -411,14 +484,14 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
               ) : (
                 <div className="space-y-3">
                   {filtered.map((alert) => (
-                    <AlertCard key={alert.id} alert={alert} onAcknowledge={handleAcknowledge} onBroadcast={handleBroadcast} broadcasting={broadcastingAlertId === alert.id} />
+                    <AlertCard key={alert.id} alert={alert} onAcknowledge={handleAcknowledge} onBroadcast={isNeighbourhoodAdmin ? handleBroadcast : undefined} broadcasting={broadcastingAlertId === alert.id} />
                   ))}
                 </div>
               )}
             </section>
           </Card>
         </div>
-      </div>
+      </main>
     </TooltipProvider>
   );
 }

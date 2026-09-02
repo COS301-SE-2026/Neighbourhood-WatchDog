@@ -321,7 +321,7 @@ function MetaRow({
 export interface AlertCardProps {
   readonly alert: Alert;
   readonly onAcknowledge: (id: string) => Promise<void>;
-  readonly onBroadcast: (id: string) => Promise<void>;
+  readonly onBroadcast?: (id: string) => Promise<void>;
   readonly broadcasting: boolean;
 }
 
@@ -344,6 +344,10 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
   }
 
   async function handleBroadcast() {
+    if (!onBroadcast) {
+      return;
+    }
+
     await onBroadcast(alert.id);
   }
 
@@ -409,7 +413,7 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
             <TooltipContent side="top">View full alert details</TooltipContent>
           </Tooltip>
 
-          {isNew && (
+          {onBroadcast && isNew && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
