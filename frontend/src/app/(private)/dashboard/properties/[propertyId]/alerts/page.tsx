@@ -1,11 +1,57 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
+
+import {
+    AlertCard,
+    type Alert,
+} from "@/components/shared/AlertCard";
+import { fetchPropertyAlerts } from "@/lib/api/alert";
 
 export default function PropertyAlertsPage() {
     const { propertyId } = useParams<{
         propertyId: string;
     }>();
+
+    const [alerts, setAlerts] = useState<Alert[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const controller = new AbortController();
+
+        fetchPropertyAlerts(
+            propertyId,
+            undefined,
+            controller.signal,
+        )
+            .then((result) => {
+                setAlerts(result.alerts);
+            })
+            .catch((error: unknown) => {
+                if (
+                    error instanceof DOMException &&
+                    error.name === "AbortError"
+                ) {
+                    return;
+                }
+
+                console.error(
+                    "Failed to load property alerts:",
+                    error,
+                );
+            })
+            .finally(() => {
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
+            });
+
+        return () => {
+            controller.abort();
+        };
+    }, [propertyId]);
 
     return (
         <main className="min-h-full bg-black px-6 py-8 text-white md:px-8">
@@ -25,10 +71,26 @@ export default function PropertyAlertsPage() {
                     </p>
                 </header>
 
-                <section className="pt-7">
-                    <p className="text-sm text-white/45">
-                        Property: {propertyId}
-                    </p>
+                <section
+                    aria-label="Property alerts"
+                    aria-live="polite"
+                    className="pt-7"
+                >
+                    {loading ? (
+                        <div className="flex items-center justify-center py-20">
+                            <Loader2 className="size-5 animate-spin text-emerald-400" />
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {alerts.map((alert) => (
+                                <AlertCard
+                                    key={alert.id}
+                                    alert={alert}
+                                    broadcasting={false}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </section>
             </div>
         </main>
