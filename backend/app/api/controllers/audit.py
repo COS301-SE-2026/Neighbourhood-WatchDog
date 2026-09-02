@@ -26,7 +26,7 @@ router = APIRouter(prefix="/audit", tags=["properties"])
 )
 async def get_audit_logs(
     db: DbSession,
-    claims: Annotated[dict, require_role('SYSTEM_ADMIN', 'RESIDENT', 'NEIGHBOURHOOD_WATCHDOG')],
+    claims: Annotated[dict, Depends(require_role('SYSTEM_ADMIN', 'RESIDENT', 'NEIGHBOURHOOD_WATCHDOG'))],
     page: Annotated[int, Query(ge=1, description="Page number")] = PAGE,
     size: Annotated[int, Query(ge=1, le=100, description="Items per page")] = SIZE, 
     search_term: Annotated[Optional[str], Query(description="Free-text search")] = None, 

@@ -37,9 +37,8 @@ Claims = Annotated[dict, Depends(get_current_user)]
         500: {"description": "Failed to retrieve camera settings"},
     },
 )
-async def get_settings(camera_id: UUID, db: DbSession, claims: Claims):
+async def get_settings(camera_id: UUID, db: DbSession, claims: Annotated[dict, Depends(require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN"))]):
     """Getting the confidence threshold and detection zones for a camera"""
-    require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN")
     return await get_camera_settings_handler(camera_id, db)
 
 
@@ -58,10 +57,9 @@ async def update_settings(
     camera_id: UUID,
     payload: UpdateCameraSettingsRequest,
     db: DbSession,
-    claims: Claims,
+    claims: Annotated[dict, Depends(require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN"))],
 ):
     """Updating the confidence threshold for a camera"""
-    require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN")
 
     if payload.confidence_threshold is None:
         raise HTTPException(400, "confidence_threshold is required")
@@ -81,10 +79,9 @@ async def create_zone(
     camera_id: UUID,
     payload: CreateZoneRequest,
     db: DbSession,
-    claims: Claims,
+    claims: Annotated[dict, Depends(require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN"))],
 ):
     """Adding a detection zone polygon to a camera"""
-    require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN")
     return await create_zone_handler(camera_id, payload.name, payload.polygon, db, claims)
 
 
@@ -102,8 +99,7 @@ async def delete_zone(
     camera_id: UUID,
     zone_id: UUID,
     db: DbSession,
-    claims: Claims,
+    claims: Annotated[dict, Depends(require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN"))],
 ):
     """Removing a detection zone from a camera"""
-    require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN")
     return await delete_zone_handler(camera_id, zone_id, db, claims)

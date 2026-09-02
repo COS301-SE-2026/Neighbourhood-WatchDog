@@ -228,7 +228,7 @@ async def alert_websocket(
 async def broadcast_neighbourhood_alert(
     req: BroadcastAlertReq,
     db: DbSession, 
-    claims: Annotated[dict, require_role("NEIGHBOURHOOD_ADMIN", "RESIDENT")]
+    claims: Annotated[dict, Depends(require_role("NEIGHBOURHOOD_ADMIN", "RESIDENT"))]
     ):
 
     
