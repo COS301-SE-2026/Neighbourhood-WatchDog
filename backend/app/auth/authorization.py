@@ -211,3 +211,52 @@ def require_camera_authorization(
         return claims
 
     return checker
+
+def require_neighbourhood_authorization(
+    *required_permissions: AdminPermission,
+):
+    async def checker(
+        neighbourhood_id: UUID,
+        db: DbSession,
+        claims: Annotated[
+            dict,
+            Depends(get_current_user),
+        ],
+    ) -> dict:
+        current_role = claims.get(CUSTOM_ROLE_CLAIM)
+
+        if (
+            "SYSTEM_ADMIN" in required_permissions
+            and current_role == "SYSTEM_ADMIN"
+        ):
+            return claims
+
+        allowed = False
+
+        if "NEIGHBOURHOOD_ADMIN" in required_permissions:
+            result = await db.execute(
+                select(NeighbourhoodUser)
+                .join(NeighbourhoodUser.user)
+                .where(
+                    NeighbourhoodUser.neighbourhood_id
+                    == neighbourhood_id,
+                    NeighbourhoodUser.role
+                    == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
+                    User.cognito_sub == claims.get("sub"),
+                )
+            )
+
+            allowed = result.scalar_one_or_none() is not None
+
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "You do not have permission "
+                    "to manage this neighbourhood"
+                ),
+            )
+
+        return claims
+
+    return checker
