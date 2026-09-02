@@ -1,0 +1,14 @@
+docker-compose.prod.yml
+  h_cf6208e37032c0 82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "1fbf9634cc7ae76b227932586df1cfaf80a746fe",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
