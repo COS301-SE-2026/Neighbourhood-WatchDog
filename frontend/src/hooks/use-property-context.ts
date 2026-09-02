@@ -20,7 +20,10 @@ export type PropertyContext = {
 }
 function deriveContextRole(property: CurrentUserProperty): ContextRole {
     if (property.neighbourhood === null) return null;
-    return property.is_admin ? "Neighbourhood Admin" : "Resident";
+    return property.neighbourhood.role === "NEIGHBOURHOOD_ADMIN"
+    ? "Neighbourhood Admin"
+    : "Resident";
+
 }
 
 function buildPropertyContexts(
