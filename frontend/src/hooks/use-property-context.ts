@@ -6,7 +6,7 @@ import { Building2, House, type LucideIcon } from "lucide-react";
 import { useUserContext } from "./use-user-context";
 import type { CurrentUserContextRes, CurrentUserProperty } from "@/lib/validators/user";
 
-export type ContextRole = "Resident" | "Neighbourhood Admin" | null;
+export type ContextRole = "Resident" | "Neighbourhood Admin" | "Security Officer" |null;
 
 export type PropertyContext = {
     id: string;
@@ -18,12 +18,23 @@ export type PropertyContext = {
     icon: LucideIcon;
     canRequestNeighbourhoodJoin: boolean;
 }
-function deriveContextRole(property: CurrentUserProperty): ContextRole {
-    if (property.neighbourhood === null) return null;
-    return property.neighbourhood.role === "NEIGHBOURHOOD_ADMIN"
-    ? "Neighbourhood Admin"
-    : "Resident";
+function deriveContextRole(
+    property: CurrentUserProperty,
+): ContextRole {
+    if (property.neighbourhood === null) {
+        return null;
+    }
 
+    switch (property.neighbourhood.role) {
+        case "NEIGHBOURHOOD_ADMIN":
+            return "Neighbourhood Admin";
+
+        case "SECURITY_OFFICER":
+            return "Security Officer";
+
+        default:
+            return "Resident";
+    }
 }
 
 function buildPropertyContexts(

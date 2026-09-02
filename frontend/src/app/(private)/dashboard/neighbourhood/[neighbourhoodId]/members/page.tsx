@@ -15,12 +15,15 @@ const MEMBER_ROLES: NeighbourhoodMemberRes["role"][] = [
     "NEIGHBOURHOOD_ADMIN"
 ];
 
-function formatRole(role: NeighbourhoodMemberRes["role"]) {
-    return role
-        .toLowerCase()
-        .replaceAll("_", " ")
-        .replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
+const ROLE_LABELS: Record<
+    NeighbourhoodMemberRes["role"],
+    string
+> = {
+    RESIDENT: "Resident",
+    SECURITY_OFFICER: "Security officer",
+    NEIGHBOURHOOD_ADMIN: "Neighbourhood admin",
+};
+
 
 export default function MembersPage() {
     const { neighbourhoodId } = useParams<{neighbourhoodId: string}>();
@@ -248,7 +251,7 @@ export default function MembersPage() {
                                                     value={role}
                                                     className="bg-zinc-950 text-white"
                                                 >
-                                                    {formatRole(role)}
+                                                    {ROLE_LABELS[role]}
                                                 </option>
                                             ))}
                                         </select>
