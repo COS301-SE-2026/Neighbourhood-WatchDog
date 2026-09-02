@@ -185,3 +185,20 @@ async def get_neighbourhood_properties_service(db: DbSession, claims: dict) -> L
         for property_obj, neighbourhood in properties
     ]
     
+
+async def get_neighbourhood_members_handler(
+    neighbourhood_id: UUID, 
+    db: DbSession, 
+    claims: dict
+):
+    pass
+
+
+async def update_neighbourhood_member_role_handler(
+    neighbourhood_id: UUID, 
+    member_user_id: UUID, 
+    new_role: NeighbourhoodRole, 
+    db: DbSession, 
+    claims: dict
+):
+    pass
