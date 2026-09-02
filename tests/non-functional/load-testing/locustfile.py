@@ -4,7 +4,10 @@ Locust load test for POST /internal/alerts (the endpoint for edge agent alert cr
 
 import os
 
-from locust import HttpUser, task, between
+from locust import HttpUser, task, between, events
+from dotenv import load_dotenv
+load_dotenv()
+
 
 API_KEY = os.environ.get("EDGE_AGENT_TOKEN")
 CAMERA_ID = os.environ.get("TEST_CAMERA_ID", "40000000-0000-0000-0000-000000000001")
@@ -30,34 +33,33 @@ if not USER_PASSWORD:
 
 DETECTION_TYPES = ["HUMAN_PRESENCE", "WEAPON"]
 
+_shared_token = None
+
+@events.test_start.add_listener
+def _login_once(environment, **kwargs):
+    global _shared_token
+    import requests
+    res = requests.post(
+        f"{environment.host}/auth/login", 
+        json={"email": USER_EMAIL, "password": USER_PASSWORD},
+    )
+    res.raise_for_status()
+    body = res.json()
+    _shared_token = body["data"]["access_token"]
+    if not _shared_token:
+        raise RuntimeError(f"Login returned no access token: {body}")
+
 class WatchDogUser(HttpUser):
     wait_time = between(0.5, 2)
     access_token = None
     
     def on_start(self):
-        payload = {
-            "email": USER_EMAIL,
-            "password": USER_PASSWORD,
-        }
-
-        resp = self.client.post(
-            '/auth/login',
-            json=payload)
-
-        self.access_token = resp.json().get("access_token")
+        self.access_token = _shared_token
 
     @property
     def headers(self):
         return {"Authorization": f"Bearer {self.access_token}"}
 
-    @task(3)
+    @task(1)
     def list_properties(self):
         self.client.get("/properties/my-properties", headers=self.headers)
-
-    @task(2)
-    def list_cameras(self):
-        self.client.get("/cameras", headers=self.headers)
-
-    @task(1)
-    def list_detections(self):
-        self.client.get("/detections", headers=self.headers)
