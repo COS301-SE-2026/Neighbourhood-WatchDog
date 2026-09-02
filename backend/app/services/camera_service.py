@@ -45,7 +45,7 @@ def _edge_agent_is_available(last_seen_at: datetime | None) -> bool | None:
         age_seconds = (datetime.now(timezone.utc) - last_seen_at).total_seconds()
 
 
-        return age_seconds <= EDGE_AGENT_TIMEOUT_SECONDS
+    return age_seconds <= EDGE_AGENT_TIMEOUT_SECONDS
 
 
 _CAMERA_PATH_PATTERN = re.compile(r"^cameras/([0-9a-fA-F-]{36})$")
