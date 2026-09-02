@@ -82,6 +82,47 @@ async def is_property_member(
 
     return result.scalar_one_or_none() is not None
 
+def require_property_member():
+    """
+    Create a FastAPI dependency for endpoints that contain
+    a property_id and require property membership.
+
+    Use this for property-scoped read operations where any member
+    of the property may access the resource.
+    """
+
+    async def checker(
+        property_id: UUID,
+        db: DbSession,
+        claims: Annotated[
+            dict,
+            Depends(get_current_user),
+        ],
+    ) -> dict:
+        current_role = claims.get(CUSTOM_ROLE_CLAIM)
+
+        if current_role == "SYSTEM_ADMIN":
+            return claims
+
+        allowed = await is_property_member(
+            property_id,
+            claims,
+            db,
+        )
+
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "You do not have access "
+                    "to this property"
+                ),
+            )
+
+        return claims
+
+    return checker
+
 
 async def is_neighbourhood_admin(
     neighbourhood_id: UUID | None,
@@ -147,6 +188,47 @@ async def is_neighbourhood_member(
     )
 
     return result.scalar_one_or_none() is not None
+
+def require_neighbourhood_member():
+    """
+    Create a FastAPI dependency for endpoints that contain
+    a neighbourhood_id and require neighbourhood membership.
+
+    Use this for neighbourhood-scoped read operations where any
+    neighbourhood member may access the resource.
+    """
+
+    async def checker(
+        neighbourhood_id: UUID,
+        db: DbSession,
+        claims: Annotated[
+            dict,
+            Depends(get_current_user),
+        ],
+    ) -> dict:
+        current_role = claims.get(CUSTOM_ROLE_CLAIM)
+
+        if current_role == "SYSTEM_ADMIN":
+            return claims
+
+        allowed = await is_neighbourhood_member(
+            neighbourhood_id,
+            claims,
+            db,
+        )
+
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "You do not have access "
+                    "to this neighbourhood"
+                ),
+            )
+
+        return claims
+
+    return checker
 
 async def _has_required_permission(
     required_permissions: tuple[AdminPermission, ...],
