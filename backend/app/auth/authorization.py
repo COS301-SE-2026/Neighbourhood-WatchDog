@@ -1,5 +1,7 @@
 from typing import Annotated, Literal
 from uuid import UUID
+from app.auth.dependencies import require_role
+
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
@@ -418,3 +420,14 @@ def require_neighbourhood_authorization(
         return claims
 
     return checker
+
+#These Aliases will make it easier to read the code in the controllers
+Claims = Annotated[dict, Depends(get_current_user)]
+PropertyAdminClaims = Annotated[dict, Depends(require_property_authorization("PROPERTY_ADMIN", "SYSTEM_ADMIN"))]
+PropertyMemberClaims = Annotated[dict, Depends(require_property_member())]
+CameraAdminClaims = Annotated[dict, Depends(require_camera_authorization("PROPERTY_ADMIN", "SYSTEM_ADMIN"))]
+CameraAdminAndNeighbourhoodAdminClaims = Annotated[dict, Depends(require_camera_authorization("PROPERTY_ADMIN", "NEIGHBOURHOOD_ADMIN", "SYSTEM_ADMIN"))]
+NeighbourhoodMemberClaims = Annotated[dict, Depends(require_neighbourhood_member())]
+NeighbourhoodAdminClaims = Annotated[dict, Depends(require_neighbourhood_authorization("NEIGHBOURHOOD_ADMIN", "SYSTEM_ADMIN"))]
+SystemAdminClaims = Annotated[dict, Depends(require_role("SYSTEM_ADMIN"))]
+# EdgeAgentClaims = Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)]
