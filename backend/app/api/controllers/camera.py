@@ -25,11 +25,11 @@ router = APIRouter(prefix="/camera", tags=["cameras"])
 )
 async def register_camera(req: RegisterCameraReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)]
+    claims: Annotated[dict, require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")]
 ) -> RegisterCameraRes:
     """Creates a new camera and links it to the property of the user."""
     
-    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
+    
     new_camera = await register_camera_handler(req, db, claims)
 
     return RegisterCameraRes(
@@ -50,10 +50,10 @@ async def register_camera(req: RegisterCameraReq,
 )
 async def deregister_camera(camera_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)]
+    claims: Annotated[dict, require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")]
 ):
     """Permanently remove a camera from a users property and the system."""
-    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
+    
     
     await deregister_camera_handler(camera_id, db, claims)
 
@@ -70,9 +70,9 @@ async def deregister_camera(camera_id: UUID,
 async def get_property_cameras(
     property_id: str,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Annotated[dict, require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")],
 ) -> CamerasRes:
-    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
+    
     return await list_cameras_handler(property_id, db, claims)
 
 @router.patch(
@@ -91,10 +91,9 @@ async def edit_camera(
     camera_id: UUID, 
     req: CameraEditReq,
     db: DbSession, 
-    claims: Annotated[dict, Depends(get_current_user)]
+    claims: Annotated[dict, require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")]
 ) -> EditCameraRes:
     """Edit a camera"""
-    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
 
     updated = await edit_camera_handler(camera_id, req, db, claims)
 
