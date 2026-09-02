@@ -18,6 +18,8 @@ import string
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction
 
+NOT_AUTHENTICATED_MESSAGE = "Not Authenticated"
+
 async def create_neighbourhood_handler(name: str, location: str, property_id: UUID, db: DbSession, claims: dict):
     """Creates the neighbourhood
         Makes the user who called the function the neighbourhood admin
@@ -37,7 +39,7 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
         raise HTTPException(500, "No database session")
 
     if not claims:
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED_MESSAGE)
 
     try:
         creator_id = UUID(claims["id"])
@@ -156,7 +158,7 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
 async def get_neighbourhood_properties_service(db: DbSession, claims: dict) -> List[NeighbourhoodPropertyRes]:
 
     if not claims:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(status_code=401, detail=NOT_AUTHENTICATED_MESSAGE)
 
     user_id = UUID(claims["id"])
 
@@ -195,7 +197,7 @@ async def get_neighbourhood_members_handler(
     if not claims:
         raise HTTPException(
             status_code=401,
-            detail="Not authenticated"
+            detail=NOT_AUTHENTICATED_MESSAGE
         )
 
     current_user_id = UUID(claims["id"])
@@ -268,7 +270,7 @@ async def update_neighbourhood_member_role_handler(
     if not claims:
         raise HTTPException(
             status_code=401,
-            detail="Not authenticated"
+            detail=NOT_AUTHENTICATED_MESSAGE
         )
 
     current_user_id = UUID(claims["id"])
