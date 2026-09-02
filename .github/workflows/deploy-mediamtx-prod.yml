@@ -2,11 +2,14 @@ name: Deploy mediamtx to Production
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "feature/setup-go2rtc" ]
     paths:
       - 'mediamtx/**'
+      - 'go2rtc/**'
+      - 'failover-controller/**'
       - 'docker-compose.yml'
       - 'docker-compose.prod.yml'
+      - 'docker-compose.failover.yml'
 
 jobs:
   deploy:
@@ -34,5 +37,5 @@ jobs:
           key: ${{ secrets.MEDIAMTX_SSH_KEY }}
           script: |
             cd /home/ubuntu/app
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build mediamtx
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml logs mediamtx --tail 30
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.failover.yml up -d --build mediamtx
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.failover.yml logs mediamtx --tail 30
