@@ -29,6 +29,7 @@ import {
     ChartNoAxesCombined,
     Check,
     ChevronDown,
+    CircleHelp, 
     ClipboardList,
     FileText,
     House,
@@ -38,6 +39,7 @@ import {
     SlidersHorizontal,
     User,
     UserPlus,
+    Users,
     type LucideIcon,
 } from "lucide-react";
 
@@ -138,6 +140,11 @@ function getSidebarGroups(
         label: "NEIGHBOURHOOD",
         items: [
             {
+                title: "Members",
+                url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/members`,
+                icon: Users,
+            },
+            {
                 title: "Live alerts",
                 url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/alerts`,
                 icon: BellRing,
@@ -147,7 +154,7 @@ function getSidebarGroups(
                 title: "Analytics",
                 url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/analytics`,
                 icon: ChartNoAxesCombined,
-            },
+            }
             // "Neighbourhood updates" — no /updates route exists yet, add back once it's built:
             // {
             //     title: "Neighbourhood updates",
@@ -200,6 +207,11 @@ function addAccountGroup(groups: SidebarGroupData[]) {
     groups.push({
         label: "ACCOUNT",
         items: [
+            {
+                title: "Help",
+                url: "/dashboard/help",
+                icon: CircleHelp,
+            },
             {
                 title: "Settings",
                 url: "/dashboard/settings",
