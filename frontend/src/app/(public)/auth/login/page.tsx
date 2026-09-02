@@ -20,6 +20,7 @@
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
     const [showMfa, setShowMfa] = useState(false);
     const [mfaSession, setMfaSession] = useState("");
@@ -70,6 +71,7 @@
 
     const handleLogin = async () => {
     setError(null);
+    setNeedsConfirmation(false);
 
     if (!email.trim() || !password.trim()) {
         setError("Please enter both email and password");
@@ -102,12 +104,25 @@
 
         await redirectToFirstProperty();
     } catch (err) {
-        const errorMessage =
+        const rawMessage =
             err instanceof Error
                 ? err.message
                 : "Invalid email or password. Please try again.";
 
-        setError(errorMessage);
+        const isUnconfirmedUser =
+            rawMessage.toLowerCase().includes("user is not confirmed") ||
+            rawMessage.includes("UserNotConfirmedException");
+
+        if (isUnconfirmedUser) {
+            setNeedsConfirmation(true);
+            setError(
+                "Your account has not been confirmed yet. Please confirm your email before logging in."
+            );
+        } else {
+            setNeedsConfirmation(false);
+            setError(rawMessage);
+        }
+
         console.error("Login error:", err);
     } finally {
         setIsLoading(false);
@@ -160,6 +175,15 @@
                 onKeyDown={handleKeyDown}
                 isLoading={isLoading}
                 error={error}
+                onConfirm={
+                    needsConfirmation
+                        ? () => {
+                            router.push(
+                                `/auth/confirm?email=${encodeURIComponent(email.trim())}`
+                            );
+                        }
+                        : undefined
+                }
             />
         ) : (
             <MfaCard

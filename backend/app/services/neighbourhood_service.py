@@ -3,7 +3,7 @@ from typing import List
 from fastapi import HTTPException
 from app.core.database import DbSession
 from uuid import UUID
-from app.schemas.neighbourhood import NeighbourhoodPropertyRes, NeighbourhoodRes
+from app.schemas.neighbourhood import NeighbourhoodPropertyRes, NeighbourhoodRes, NeighbourhoodMemberRes
 from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property
 from app.models.property_user import PropertyUser
@@ -17,6 +17,8 @@ import string
 
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction
+
+NOT_AUTHENTICATED_MESSAGE = "Not authenticated"
 
 async def create_neighbourhood_handler(name: str, location: str, property_id: UUID, db: DbSession, claims: dict):
     """Creates the neighbourhood
@@ -37,7 +39,7 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
         raise HTTPException(500, "No database session")
 
     if not claims:
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED_MESSAGE)
 
     try:
         creator_id = UUID(claims["id"])
@@ -156,7 +158,7 @@ async def create_neighbourhood_handler(name: str, location: str, property_id: UU
 async def get_neighbourhood_properties_service(db: DbSession, claims: dict) -> List[NeighbourhoodPropertyRes]:
 
     if not claims:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(status_code=401, detail=NOT_AUTHENTICATED_MESSAGE)
 
     user_id = UUID(claims["id"])
 
@@ -185,3 +187,224 @@ async def get_neighbourhood_properties_service(db: DbSession, claims: dict) -> L
         for property_obj, neighbourhood in properties
     ]
     
+
+async def get_neighbourhood_members_handler(
+    neighbourhood_id: UUID, 
+    db: DbSession, 
+    claims: dict
+) -> List[NeighbourhoodMemberRes]:
+    
+    if not claims:
+        raise HTTPException(
+            status_code=401,
+            detail=NOT_AUTHENTICATED_MESSAGE
+        )
+
+    current_user_id = UUID(claims["id"])
+
+
+    neighbourhood_result = await db.execute(
+        select(Neighbourhood).where(
+            Neighbourhood.id == neighbourhood_id
+        )
+    )
+    neighbourhood = neighbourhood_result.scalar_one_or_none()
+
+    if not neighbourhood:
+        raise HTTPException(
+            status_code=404,
+            detail="Neighbourhood not found"
+        )
+
+    admin_result = await db.execute(
+        select(NeighbourhoodUser).where(
+            NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+            NeighbourhoodUser.user_id == current_user_id,
+            NeighbourhoodUser.role == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+        )
+    )
+    admin_membership = admin_result.scalar_one_or_none()
+
+    if not admin_membership:
+        raise HTTPException(
+            status_code=403,
+            detail="Only neighbourhood admins can view members"
+        )
+
+    members_result = await db.execute(
+        select(NeighbourhoodUser, User)
+        .join(
+            User,
+            User.id == NeighbourhoodUser.user_id
+        )
+        .where(
+            NeighbourhoodUser.neighbourhood_id == neighbourhood_id
+        )
+        .order_by(
+            User.first_name,
+            User.last_name
+        )
+    )
+
+    members = members_result.all()
+
+    return [
+        NeighbourhoodMemberRes(
+            user_id=user.id,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            email=user.email,
+            role=membership.role
+        )
+        for membership, user in members
+    ]
+
+
+async def update_neighbourhood_member_role_handler(
+    neighbourhood_id: UUID, 
+    member_user_id: UUID, 
+    new_role: NeighbourhoodRole, 
+    db: DbSession, 
+    claims: dict
+):
+    if not claims:
+        raise HTTPException(
+            status_code=401,
+            detail=NOT_AUTHENTICATED_MESSAGE
+        )
+
+    current_user_id = UUID(claims["id"])
+
+    try:
+        neighbourhood_result = await db.execute(
+            select(Neighbourhood).where(
+                Neighbourhood.id == neighbourhood_id
+            )
+        )
+        neighbourhood = neighbourhood_result.scalar_one_or_none()
+
+        if not neighbourhood:
+            raise HTTPException(
+                status_code=404,
+                detail="Neighbourhood not found",
+            )
+
+        current_admin_result = await db.execute(
+            select(NeighbourhoodUser).where(
+                NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+                NeighbourhoodUser.user_id == current_user_id,
+                NeighbourhoodUser.role == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+            )
+        )
+        current_admin = current_admin_result.scalar_one_or_none()
+
+        if not current_admin:
+            raise HTTPException(
+                status_code=403,
+                detail="Only neighbourhood admins can change member roles"
+            )
+
+        member_result = await db.execute(
+            select(NeighbourhoodUser).where(
+                NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+                NeighbourhoodUser.user_id == member_user_id
+            )
+        )
+        member_membership = member_result.scalar_one_or_none()
+
+        if not member_membership:
+            raise HTTPException(
+                status_code=404,
+                detail="Neighbourhood member not found"
+            )
+
+        member_user_result = await db.execute(
+            select(User).where(User.id == member_user_id)
+        )
+        member_user = member_user_result.scalar_one_or_none()
+
+        if not member_user:
+            raise HTTPException(
+                status_code=404,
+                detail="Member user not found"
+            )
+
+        old_role = member_membership.role
+
+        if old_role == new_role:
+            raise HTTPException(
+                status_code=400,
+                detail="Member already has this role"
+            )
+
+        is_removing_own_admin_role = (
+                    current_user_id == member_user_id
+                    and old_role == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+                    and new_role != NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+                )
+        
+        if is_removing_own_admin_role:
+            other_admin_result = await db.execute(
+                select(NeighbourhoodUser).where(
+                    NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+                    NeighbourhoodUser.user_id != current_user_id,
+                    NeighbourhoodUser.role == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+                )
+            )
+            other_admin = other_admin_result.scalar_one_or_none()
+
+            if not other_admin:
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "You must transfer admin rights to another member "
+                        "before removing your own admin role"
+                    )
+                )
+
+        member_membership.role = new_role
+
+        await create_audit_log_item(
+            db=db,
+            user_id=current_user_id,
+            action=AuditAction.UPDATE,
+            target_entity_type=TargetEntity.NEIGHBOURHOODUSER,
+            target_entity_id=member_user_id,
+            old_values={
+                "neighbourhood_id": str(neighbourhood_id),
+                "role": old_role.value,
+            },
+            new_values={
+                "neighbourhood_id": str(neighbourhood_id),
+                "role": new_role.value,
+            }
+        )
+
+        await db.commit()
+        await db.refresh(member_membership)
+
+        return NeighbourhoodMemberRes(
+            user_id=member_user.id,
+            first_name=member_user.first_name,
+            last_name=member_user.last_name,
+            email=member_user.email,
+            role=member_membership.role,
+        )
+
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update member role"
+        )
+
+    except HTTPException:
+        await db.rollback()
+        raise
+
+    except Exception:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update member role",
+        )

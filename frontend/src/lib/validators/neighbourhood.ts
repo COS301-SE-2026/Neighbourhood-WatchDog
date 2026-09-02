@@ -30,7 +30,39 @@ export const NeighbourPropertychema = z.object({
 
 export const NeighbourPropertiesResSchema = z.array(NeighbourPropertychema)
 
+export const NeighbourhoodMemberResSchema = z.object({
+  user_id: z.string().uuid(),
+  first_name: z.string(),
+  last_name: z.string(),
+  email: z.string().email(),
+  role: z.enum([
+    "RESIDENT",
+    "SECURITY_OFFICER",
+    "NEIGHBOURHOOD_ADMIN"
+  ])
+});
+
+export const NeighbourhoodMembersResSchema = z.array(NeighbourhoodMemberResSchema);
+
+export const UpdateMemberRoleReqSchema = z.object({
+  role: z.enum([
+    "RESIDENT",
+    "SECURITY_OFFICER",
+    "NEIGHBOURHOOD_ADMIN"
+  ])
+});
+
+export const UpdateMemberRoleResSchema = z.object({
+  status: z.number().int(),
+  message: z.string(),
+  data: NeighbourhoodMemberResSchema
+});
+
 export type CreateNeighbourhoodReq = z.infer<typeof CreateNeighbourhoodReqSchema>;
 export type NeighbourhoodRes = z.infer<typeof NeighbourhoodResSchema>;
 export type CreateNeighbourhoodRes = z.infer<typeof CreateNeighbourhoodResSchema>;
 export type NeighbourPropertiesRes = z.infer<typeof NeighbourPropertiesResSchema>;
+export type NeighbourhoodMemberRes = z.infer<typeof NeighbourhoodMemberResSchema>;
+export type NeighbourhoodMembersRes = z.infer<typeof NeighbourhoodMembersResSchema>;
+export type UpdateMemberRoleReq = z.infer<typeof UpdateMemberRoleReqSchema>;
+export type UpdateMemberRoleRes = z.infer<typeof UpdateMemberRoleResSchema>;

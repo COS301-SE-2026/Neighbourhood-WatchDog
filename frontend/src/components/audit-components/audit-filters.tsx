@@ -22,19 +22,19 @@ export function AuditFilters({
     }, [debouncedSearch])
 
     return (
-        <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 mb-4">
+        <div className="mb-6 flex flex-col gap-5 border-b border-white/10 py-6">
             <input
-                className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:border-transparent placeholder:text-muted-foreground"
+                className="h-10 w-full rounded-md border border-white/10 bg-zinc-950 px-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-emerald-500/60"
                 type="text"
                 onChange={(e) => setRawSearch(e.target.value)} 
                 placeholder="Search by ID, Action, Target Entity Type or Target Entity ID field..."
             />
-            <div className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-wrap items-end gap-5">
                 <div className="flex flex-col gap-1">
-                    <label className="text-xs font-medium text-muted-foreground">Action</label>
+                    <label className="text-sm font-medium text-white">Action</label>
                     <select
                         name="actions"
-                        className="rounded-md border border-border bg-input px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                        className="h-10 rounded-md border border-white/10 bg-zinc-950 px-3 text-sm text-white outline-none [color-scheme:dark] focus:border-emerald-500/60"
                         onChange={(e) => onChange({...filters, action: e.target.value as AuditLogsFilters['action']})}>
                         <option value="UPDATE">UPDATE</option>
                         <option value="CREATE">CREATE</option>
@@ -42,26 +42,26 @@ export function AuditFilters({
                     </select>
                 </div>
                 <div className="flex flex-col gap-1">
-                    <label className="text-xs font-medium text-muted-foreground">From</label>
+                    <label className="text-sm font-medium text-white">From</label>
                     <input  
                         type="datetime-local"
-                        className="rounded-md border border-border bg-input px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                        className="h-10 rounded-md border border-white/10 bg-zinc-950 px-3 text-sm text-white outline-none [color-scheme:dark] focus:border-emerald-500/60"
                         onChange={(e) => onChange({...filters, startDate: e.target.value})}
                     />
                 </div>
                 <div className="flex flex-col gap-1">
-                    <label className="text-xs font-medium text-muted-foreground">Up to</label>
+                    <label className="text-sm font-medium text-white">Up to</label>
                     <input
                         type="datetime-local"
-                        className="rounded-md border border-border bg-input px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                        className="h-10 rounded-md border border-white/10 bg-zinc-950 px-3 text-sm text-white outline-none [color-scheme:dark] focus:border-emerald-500/60"
                         onChange={(e) => onChange({...filters, endDate: e.target.value})}
                     />
                 </div>
                 <div className="flex flex-col gap-1">
-                    <label className="text-xs font-medium text-muted-foreground">Sort</label>
+                    <label className="text-sm font-medium text-white">Sort</label>
                     <select
                         name="sortOrder"
-                        className="rounded-md border border-border bg-input px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                        className="h-10 rounded-md border border-white/10 bg-zinc-950 px-3 text-sm text-white outline-none [color-scheme:dark] focus:border-emerald-500/60"
                         onChange={(e) => onChange({...filters, sortOrder: e.target.value as AuditLogsFilters['sortOrder']})}>  
                         <option value="ASC">Oldest to newest</option>
                         <option value="DESC">Newest to oldest</option>  

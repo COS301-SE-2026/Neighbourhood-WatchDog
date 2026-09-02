@@ -135,7 +135,6 @@ class TestIngestDetection:
         assert exc.value.status_code == 400
         assert exc.value.detail == "Invalid detection type"
 
-    @pytest.mark.asyncio
     def test_confidence_above_one_is_rejected_by_request_schema(self):
         with pytest.raises(ValidationError) as exc:
             self.make_request(confidence=1.10)

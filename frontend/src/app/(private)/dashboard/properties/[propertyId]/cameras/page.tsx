@@ -135,7 +135,7 @@ export default function PropertyCamerasPage() {
                 <header className="mb-7 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <p className="text-sm text-white/45">
-                            {activeContext.name} - {activeContext.address}
+                            {activeContext.address}
                         </p>
                         <h1 className="mt-1 text-2xl font-semibold tracking-tight">
                             Cameras
@@ -208,6 +208,13 @@ export default function PropertyCamerasPage() {
                                     visibility={camera.visibility}
                                     enabled={camera.enabled}
                                     userRole={activeContext.role === "Neighbourhood Admin" ? "NEIGHBOURHOOD_ADMIN" : "RESIDENT"}
+                                    onDeleted={(deletedCameraId) => {
+                                        setCameras((currentCameras) =>
+                                            currentCameras.filter(
+                                                (currentCamera) => currentCamera.id !== deletedCameraId
+                                            )
+                                        );
+                                    }}
                                 />
                             ))}
                         </div>

@@ -11,7 +11,7 @@ from app.models.neighbourhood_user import NeighbourhoodUser
 from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.user import User, UserRole
-from app.schemas.user import CurrentUserContextRes, CurrentUserNeighbourhood, CurrentUserProperty, CurrentUserSummary, GetUserResSchema
+from app.schemas.user import CurrentUserContextRes, CurrentUserNeighbourhood, CurrentUserProperty, CurrentUserSummary, GetUserResSchema, UpdateUserSettingsReq, UserSettingsResSchema
 
 logger = logging.getLogger(__name__)
 
@@ -188,4 +188,66 @@ async def get_current_user_context_handler(claims: dict, db: DbSession) -> Curre
     return CurrentUserContextRes(
         user=user_summary,
         properties=current_properties
+    )
+
+async def get_current_user_settings_handler(claims: dict, db: DbSession) -> UserSettingsResSchema:
+    """Retrieves the settings for the authenticated user."""
+
+    user_id = UUID(claims["id"])
+
+    user_result = await db.execute(
+        select(User).where(User.id == user_id)
+    )
+
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Authenticated user not found in databse")
+
+    return UserSettingsResSchema(
+        first_name=user.first_name,
+        last_name=user.last_name,
+        email=user.email,
+        phone_number=user.phone_number,
+        system_role=user.system_role
+    )
+
+
+async def update_current_user_settings_handler(data: UpdateUserSettingsReq, claims: dict, db: DbSession) -> UserSettingsResSchema:
+    """Updates the settings for the authenticated user"""
+
+    user_id = UUID(claims["id"])
+
+    user_result = await db.execute(
+        select(User).where(User.id == user_id)
+    )
+
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Authenticated user not found in database")
+
+    if not data.first_name.strip():
+        raise HTTPException(status_code=400, detail="First name is required")
+
+    if not data.last_name.strip():
+        raise HTTPException(status_code=400, detail="Last name is required")
+
+    user.first_name = data.first_name.strip()
+    user.last_name = data.last_name.strip()
+    user.phone_number = (
+        data.phone_number.strip()
+        if data.phone_number and data.phone_number.strip()
+        else None
+    )
+
+    await db.commit()
+    await db.refresh(user)
+
+    return UserSettingsResSchema(
+        first_name=user.first_name,
+        last_name=user.last_name,
+        email=user.email,
+        phone_number=user.phone_number,
+        system_role=user.system_role,
     )

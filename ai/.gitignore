@@ -1,6 +1,14 @@
 /__pycache__
+venv/
+.venv/
+.packaging-venv/
+packaging-venv/
+build/
+dist/
 ai/evaluation/frames
 ai/evaluation/labels
 
 data/external/
 data/curated/
+
+./watchdog-agent/connection-settings.json
