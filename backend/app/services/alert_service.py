@@ -89,6 +89,7 @@ def _neighbourhood_alert_stmt(neighbourhood_id: UUID):
     """Build the base alert query scoped through Camera → Property."""
     return (
         select(Alert)
+        .options(joinedload(Alert.camera).joinedload(Camera.property))
         .join(Camera, Alert.camera_id == Camera.id)
         .join(Property, Camera.property_id == Property.id)
         .where(Property.neighbourhood_id == neighbourhood_id)
@@ -224,7 +225,11 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
 
 
 def _build_alert_res(alert: Alert) -> AlertRes:
-    """Convert an Alert database model into an AlertRes response object."""
+    """Convert an Alert database model into an AlertRes response object, including its property location."""
+
+    camera = getattr(alert, "camera", None)
+    property_obj = getattr(camera, "property", None)
+
     return AlertRes(
         id=alert.id,
         camera_id=alert.camera_id,
@@ -243,6 +248,9 @@ def _build_alert_res(alert: Alert) -> AlertRes:
         resolved_by=alert.resolved_by,
         resolved_at=alert.resolved_at,
         created_at=alert.created_at,
+        property_address=getattr(property_obj, "address", None), 
+        property_latitude=getattr(property_obj, "latitude", None), 
+        property_longitude=getattr(property_obj, "longitude", None)
     )
 
 async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) -> AlertRes:
@@ -254,7 +262,9 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
 
     try:
         result = await db.execute(
-            select(Alert).where(Alert.id == alert_id)
+            select(Alert)
+            .options(joinedload(Alert.camera).joinedload(Camera.property))
+            .where(Alert.id == alert_id)
         )
         alert = result.scalar_one_or_none()
 
