@@ -2,7 +2,7 @@ name: Deploy to Production AWS
 
 on:
   push:
-    branches: [ "main", "fix/celery_secrets" ]
+    branches: [ "main" ]
 
 concurrency:
   group: production-deploy
@@ -92,13 +92,14 @@ jobs:
       - name: Register Celery worker task definition with SHA-tagged image
         env: 
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: |
           aws ecs describe-task-definition \
             --task-definition watchdog-celery-worker-task \
             --query 'taskDefinition' \
             --region ${AWS_REGION} > worker-task-def.json
 
-          NEW_WORKER_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:${{ env.IMAGE_TAG }}" \
+          NEW_WORKER_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
             '.containerDefinitions[0].image = $IMAGE 
             | .containerDefinitions[0].secrets = (
                 (.containerDefinitions[0].secrets // [])
