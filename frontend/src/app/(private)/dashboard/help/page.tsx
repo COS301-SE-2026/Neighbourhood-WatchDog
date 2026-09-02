@@ -189,7 +189,7 @@ export default function HelpPage() {
                         <ol className="space-y-4 text-sm text-white/70">
                             <li><strong className="text-white">1. Create and confirm your account.</strong> Use your email address and enter the confirmation code sent to you.</li>
                             <li><strong className="text-white">2. Create a property.</strong> Search for and select the correct property address.</li>
-                            <li><strong className="text-white">3. Create or join a neighbourhood.</strong> Administrators create a neighbourhood; residents submit a join request with the administrato's join code.</li>
+                            <li><strong className="text-white">3. Create or join a neighbourhood.</strong> Administrators create a neighbourhood; residents submit a join request with the administrator&apos;s join code.</li>
                             <li><strong className="text-white">4. Add cameras.</strong> Register the camera name, physical location, and connection information supplied by the deployment operator.</li>
                             <li><strong className="text-white">5. Connect the Agent.</strong> Generate a one-time pairing token and provide it only to the authorised Agent operator.</li>
                         </ol>
