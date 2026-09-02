@@ -366,7 +366,7 @@ async def update_neighbourhood_member_role_handler(
             db=db,
             user_id=current_user_id,
             action=AuditAction.UPDATE,
-            target_entity_type=TargetEntity.USER,
+            target_entity_type=TargetEntity.NEIGHBOURHOODUSER,
             target_entity_id=member_user_id,
             old_values={
                 "neighbourhood_id": str(neighbourhood_id),

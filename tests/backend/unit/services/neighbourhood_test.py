@@ -1,7 +1,8 @@
 import pytest
 from fastapi import HTTPException
 from unittest.mock import MagicMock, Mock, AsyncMock, patch
-from app.services.neighbourhood_service import create_neighbourhood_handler, get_neighbourhood_members_handler
+from app.models.audit_log import TargetEntity
+from app.services.neighbourhood_service import create_neighbourhood_handler, get_neighbourhood_members_handler, update_neighbourhood_member_role_handler
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from uuid import uuid4
 from datetime import datetime
@@ -500,3 +501,126 @@ class TestGetNeighbourhoodMembers:
         assert (
             exception.value.detail == "Only neighbourhood admins can view members"
         )
+
+
+class TestUpdateNeighbourhoodMemberRole:
+
+    @pytest.mark.asyncio
+    async def test_admin_can_update_member_role_and_create_audit_log(self):
+        mock_db = AsyncMock()
+
+        neighbourhood_id = uuid4()
+        admin_id = uuid4()
+        member_id = uuid4()
+
+        neighbourhood = Mock()
+        neighbourhood.id = neighbourhood_id
+
+        admin_membership = Mock()
+        admin_membership.user_id = admin_id
+        admin_membership.neighbourhood_id = neighbourhood_id
+        admin_membership.role = NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+
+        member_membership = Mock()
+        member_membership.user_id = member_id
+        member_membership.neighbourhood_id = neighbourhood_id
+        member_membership.role = NeighbourhoodRole.RESIDENT
+
+        member_user = Mock()
+        member_user.id = member_id
+        member_user.first_name = "Test"
+        member_user.last_name = "Member"
+        member_user.email = "member@example.com"
+
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_scalar_result(neighbourhood),
+                make_scalar_result(admin_membership),
+                make_scalar_result(member_membership),
+                make_scalar_result(member_user)
+            ]
+        )
+        mock_db.commit = AsyncMock()
+        mock_db.refresh = AsyncMock()
+
+        new_role = NeighbourhoodRole.SECURITY_OFFICER
+
+        with patch(
+            AUDIT_PATCH,
+            new_callable=AsyncMock,
+        ) as audit_mock:
+            result = await update_neighbourhood_member_role_handler(
+                neighbourhood_id=neighbourhood_id,
+                member_user_id=member_id,
+                new_role=new_role,
+                db=mock_db,
+                claims={"id": str(admin_id)},
+            )
+
+        assert member_membership.role == new_role
+        assert result.user_id == member_id
+        assert result.role == new_role
+        mock_db.commit.assert_awaited_once()
+        audit_mock.assert_awaited_once()
+
+        audit_kwargs = audit_mock.await_args.kwargs
+
+        assert (
+            audit_kwargs["target_entity_type"] == TargetEntity.NEIGHBOURHOODUSER
+        )
+        assert audit_kwargs["target_entity_id"] == member_id
+        assert (
+            audit_kwargs["old_values"]["role"] == NeighbourhoodRole.RESIDENT.value
+        )
+        assert (
+            audit_kwargs["new_values"]["role"] == NeighbourhoodRole.SECURITY_OFFICER.value
+        )
+
+    @pytest.mark.asyncio
+    async def test_only_admin_cannot_demote_themselves(self):
+        mock_db = AsyncMock()
+
+        neighbourhood_id = uuid4()
+        admin_id = uuid4()
+
+        neighbourhood = Mock()
+        neighbourhood.id = neighbourhood_id
+
+        admin_membership = Mock()
+        admin_membership.user_id = admin_id
+        admin_membership.neighbourhood_id = neighbourhood_id
+        admin_membership.role = NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+
+        admin_user = Mock()
+        admin_user.id = admin_id
+        admin_user.first_name = "Admin"
+        admin_user.last_name = "User"
+        admin_user.email = "admin@example.com"
+
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_scalar_result(neighbourhood),
+                make_scalar_result(admin_membership),
+                make_scalar_result(admin_membership),
+                make_scalar_result(admin_user),
+                make_scalar_result(None),
+            ]
+        )
+        mock_db.rollback = AsyncMock()
+
+        with pytest.raises(HTTPException) as exception:
+            await update_neighbourhood_member_role_handler(
+                neighbourhood_id=neighbourhood_id,
+                member_user_id=admin_id,
+                new_role=NeighbourhoodRole.RESIDENT,
+                db=mock_db,
+                claims={"id": str(admin_id)},
+            )
+
+        assert exception.value.status_code == 409
+        assert (
+            "transfer admin rights"
+            in exception.value.detail
+        )
+        mock_db.commit.assert_not_awaited()
+        mock_db.rollback.assert_awaited_once()
