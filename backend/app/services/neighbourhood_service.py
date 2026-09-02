@@ -265,4 +265,75 @@ async def update_neighbourhood_member_role_handler(
     db: DbSession, 
     claims: dict
 ):
-    pass
+    if not claims:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated"
+        )
+
+    current_user_id = UUID(claims["id"])
+
+    try:
+        neighbourhood_result = await db.execute(
+            select(Neighbourhood).where(
+                Neighbourhood.id == neighbourhood_id
+            )
+        )
+        neighbourhood = neighbourhood_result.scalar_one_or_none()
+
+        if not neighbourhood:
+            raise HTTPException(
+                status_code=404,
+                detail="Neighbourhood not found",
+            )
+
+        current_admin_result = await db.execute(
+            select(NeighbourhoodUser).where(
+                NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+                NeighbourhoodUser.user_id == current_user_id,
+                NeighbourhoodUser.role == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+            )
+        )
+        current_admin = current_admin_result.scalar_one_or_none()
+
+        if not current_admin:
+            raise HTTPException(
+                status_code=403,
+                detail="Only neighbourhood admins can change member roles"
+            )
+
+        member_result = await db.execute(
+            select(NeighbourhoodUser).where(
+                NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+                NeighbourhoodUser.user_id == member_user_id
+            )
+        )
+        member_membership = member_result.scalar_one_or_none()
+
+        if not member_membership:
+            raise HTTPException(
+                status_code=404,
+                detail="Neighbourhood member not found"
+            )
+
+        member_user_result = await db.execute(
+            select(User).where(User.id == member_user_id)
+        )
+        member_user = member_user_result.scalar_one_or_none()
+
+        if not member_user:
+            raise HTTPException(
+                status_code=404,
+                detail="Member user not found"
+            )
+
+        old_role = member_membership.role
+
+        if old_role == new_role:
+            raise HTTPException(
+                status_code=400,
+                detail="Member already has this role"
+            )
+
+    except Exception:
+        pass
