@@ -495,7 +495,7 @@ async def list_alerts_handler(
 
     neighbourhood_uuid = UUID(str(neighbourhood_id))
 
-    await _require_neighbourhood_membership(
+    membership = await _require_neighbourhood_membership(
         db,
         claims,
         neighbourhood_uuid,
@@ -503,6 +503,27 @@ async def list_alerts_handler(
 
     try:
         base_stmt = _neighbourhood_alert_stmt(neighbourhood_uuid)
+
+        current_user_id = UUID(str(claims["id"]))
+
+        if membership.role == NeighbourhoodRole.SECURITY_OFFICER:
+            base_stmt = base_stmt.where(
+                Alert.detection_type.in_(
+                    {
+                        "WEAPON_DETECTED",
+                        "FALL_DETECTED",
+                    }
+                )
+            )
+
+        elif membership.role == NeighbourhoodRole.RESIDENT:
+            base_stmt = base_stmt.join(
+                PropertyUser,
+                PropertyUser.property_id == Property.id,
+            ).where(
+                PropertyUser.user_id == current_user_id,
+            )
+
 
         if status_filter:
             base_stmt = base_stmt.where(Alert.status == status_filter)
