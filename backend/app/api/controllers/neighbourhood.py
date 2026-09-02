@@ -36,10 +36,10 @@ router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
 async def create_neighbourhood(
     req: CreateNeighbourhoodReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Annotated[dict, Depends(require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN'))],
 ):
     """Create neighbourhood and return the neighbourhood that was created"""
-    require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN')
+    
 
     new_neighbourhood = await create_neighbourhood_handler(name=req.name, location=req.location, property_id=req.property_id, db = db, claims = claims)
 
@@ -59,10 +59,9 @@ async def create_neighbourhood(
         403: {"description": "Insufficient permissions to access property"},
     },
 )
-async def get_neighbourhood_properties(db: DbSession, claims: Annotated[dict, Depends(get_current_user)] ):
+async def get_neighbourhood_properties(db: DbSession, claims: Annotated[dict, Depends(require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN"))] ):
     """Get properties of all users with neighbour details"""
 
-    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
     
     properties = await get_neighbourhood_properties_service(db = db, claims = claims)
 
@@ -81,11 +80,10 @@ async def get_neighbourhood_properties(db: DbSession, claims: Annotated[dict, De
 async def get_neighbourhood_members(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Annotated[dict, Depends(require_role("NEIGHBOURHOOD_ADMIN"))],
 ):
     """Get all members and their current roles for a neighbourhood."""
 
-    require_role("NEIGHBOURHOOD_ADMIN")
 
     members = await get_neighbourhood_members_handler(
         neighbourhood_id=neighbourhood_id,
@@ -118,11 +116,10 @@ async def update_neighbourhood_member_role(
     member_user_id: UUID,
     req: UpdateMemberRoleReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Annotated[dict, Depends(require_role("NEIGHBOURHOOD_ADMIN"))],
 ):
     """Change a member's role in a neighbourhood."""
 
-    require_role("NEIGHBOURHOOD_ADMIN")
 
     updated_member = await update_neighbourhood_member_role_handler(
         neighbourhood_id=neighbourhood_id,
