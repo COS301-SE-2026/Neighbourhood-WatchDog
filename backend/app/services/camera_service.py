@@ -324,7 +324,7 @@ async def list_cameras_handler(property_id, db, claims):
             EdgeAgentCredential.property_id, func.max(EdgeAgentCredential.last_seen_at).label("last_seen_at")
         )
         .where(
-            EdgeAgentCredential.property_id == prop_uuid, EdgeAgentCredential.revoked_at_is_(None)
+            EdgeAgentCredential.property_id == prop_uuid, EdgeAgentCredential.revoked_at.is_(None)
         )
         .group_by(EdgeAgentCredential.property_id)
     )
