@@ -417,6 +417,46 @@ async def list_property_alerts_handler(
         if membership is None:
             raise HTTPException(status_code=403, detail="You do not have access to this property")
 
+        base_stmt = _property_alert_stmt(property_uuid)
+        
+        if status_filter:
+            base_stmt = base_stmt.where(
+                Alert.status == status_filter
+            )
+
+        if camera_id:
+            base_stmt = base_stmt.where(Alert.camera_id == camera_id)
+
+        if detection_type:
+            base_stmt = base_stmt.where(Alert.detection_type == DetectionType(detection_type))
+
+        if start_date:
+            base_stmt = base_stmt.where(Alert.frame_timestamp >= start_date)
+
+        if end_date:
+            base_stmt = base_stmt.where(Alert.frame_timestamp <= end_date)
+
+        count_result = await db.execute(
+            select(func.count()).select_from(base_stmt.subquery())
+        )
+        total = count_result.scalar_one()
+
+        stmt = (
+            base_stmt
+            .order_by(Alert.frame_timestamp.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+
+        result = await db.execute(stmt)
+        alerts = result.scalars().all()
+
+        return [
+            _build_alert_res(alert)
+            for alert in alerts
+        ], total
+        
+
     except HTTPException:
         raise
 
