@@ -16,7 +16,7 @@ services:
       - -config
       - /config/go2rtc.yaml
     volumes:
-      - ./go2rtc/go2rtc.yaml:/config/go2rtc.yaml:ro
+      - ./go2rtc/go2rtc.yaml:/config/go2rtc.yaml
     expose:
       - "1984"
       - "8554"
@@ -28,7 +28,7 @@ services:
       context: ./failover-controller
     restart: unless-stopped
     environment:
-      BACKEND_URL: http://backend:8000
+      BACKEND_URL: ${BACKEND_URL}
       FAILOVER_CONTROLLER_TOKEN: ${FAILOVER_CONTROLLER_TOKEN}
 
       GO2RTC_URL: http://go2rtc:1984
