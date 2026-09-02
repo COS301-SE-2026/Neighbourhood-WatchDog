@@ -46,8 +46,6 @@ export default function PropertyAlertsPage() {
     useEffect(() => {
         const controller = new AbortController();
 
-        setLoading(true);
-        setError(null);
 
         fetchPropertyAlerts(
             propertyId,
