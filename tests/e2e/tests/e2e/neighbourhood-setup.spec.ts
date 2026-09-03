@@ -47,4 +47,24 @@ test.describe("Create a neighbourhood", () => {
 
     await page.waitForURL("**/dashboard/properies/${FREE_PROPERTY_ID/cameras");
   });
+
+  test("a property already in a neighbourhood cannot create another", async ({
+    page,
+  }) => {
+    await page.setExtraHTTPHeaders(mockAuthHeaders(MEMBER_USER_ID));
+    await page.goto(
+      "/dashboard/properies/${MEMBER_PROPERTY_ID/neighbourhood/setup",
+    );
+
+    await page.locator("#neighbourhood-name").fill("Duplicate Neighbourhood");
+    await page.locator("#neighbourhood-location").fill("Pretoria");
+
+    await page.getByRole("button", { name: /create neighbourhood/i }).click();
+
+    await expect(
+      page.getByText(/already part of another neighbourhood/i),
+    ).toBeVisible();
+
+    await expect(page).toHaveURL(/\/neighbourhood\/setup$/);
+  });
 });
