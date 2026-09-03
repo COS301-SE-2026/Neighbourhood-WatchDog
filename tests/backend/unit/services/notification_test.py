@@ -14,6 +14,9 @@ from app.services.notification_service import(
     should_notify,
     send_alert_email,
     _notify_users,
+    build_alert_email, 
+    send_alert_email_bcc, 
+    _notify_users_by_bcc_email
 )
 from app.models.notification import NotificationChannel, NotificationStatus
 
@@ -198,6 +201,193 @@ class TestSendAlertEmail:
 
         assert success is False
         assert error == "smtp connection refused"
+
+
+
+class TestBuildAlertEmail:
+    def test_escapes_dynamic_content_and_dashboard_url(self):
+        body = build_alert_email(
+            "<script>alert(1)</script>",
+            "CAM <03>",
+            "Front & <Gate>",
+            'high"priority',
+            'https://dashboard.example/alerts?id="quoted"',
+        )
+
+        assert "<script>alert(1)</script>" not in body
+        assert "&lt;script&gt;alert(1)&lt;/script&gt;" in body.lower()
+        assert "CAM &lt;03&gt;" in body
+        assert "Front &amp; &lt;Gate&gt;" in body
+        assert "HIGH&quot;PRIORITY" in body
+        assert "&quot;quoted&quot;" in body
+
+    def test_critical_without_dashboard_uses_critical_colour_and_no_cta(self):
+        body = build_alert_email(
+            "WEAPON_DETECTED",
+            "CAM 03",
+            "Front Gate",
+            "CRITICAL",
+            dashboard_url=None,
+        )
+
+        assert "background-color: #EF4444" in body
+        assert "View alert details" not in body
+
+    def test_unknown_risk_level_uses_safe_fallback_colour(self):
+        body = build_alert_email(
+            "LOITERING",
+            "CAM 03",
+            "Front Gate",
+            "UNKNOWN",
+        )
+
+        assert "background-color: #F59E0B" in body
+        assert "UNKNOWN priority" in body
+
+
+class TestSendAlertEmailBcc:
+    def test_empty_recipient_list_returns_failure(self):
+        success, error = send_alert_email_bcc(
+            [], "WEAPON_DETECTED", "CAM 03", "Front Gate", "CRITICAL"
+        )
+
+        assert success is False
+        assert error == "No email recipients provided"
+
+    @patch("app.services.notification_service.SENDER_EMAIL", None)
+    @patch("app.services.notification_service.SENDER_PASSWORD", None)
+    def test_missing_smtp_credentials_returns_failure(self):
+        success, error = send_alert_email_bcc(
+            ["resident@example.com"],
+            "WEAPON_DETECTED",
+            "CAM 03",
+            "Front Gate",
+            "CRITICAL",
+        )
+
+        assert success is False
+        assert error == "SMTP credentials not configured"
+
+    @patch("app.services.notification_service.SENDER_EMAIL", "bot@watchdog.com")
+    @patch("app.services.notification_service.SENDER_PASSWORD", "pw")
+    @patch("app.services.notification_service.smtplib.SMTP")
+    def test_smtp_exception_returns_failure(self, mock_smtp_cls):
+        mock_server = Mock()
+        mock_server.sendmail.side_effect = Exception("smtp connection refused")
+        mock_smtp_cls.return_value = mock_server
+
+        success, error = send_alert_email_bcc(
+            ["resident@example.com"],
+            "WEAPON_DETECTED",
+            "CAM 03",
+            "Front Gate",
+            "CRITICAL",
+        )
+
+        assert success is False
+        assert error == "smtp connection refused"
+
+
+class TestNotifyUsersBcc:
+    def setup_method(self):
+        self.mock_db = Mock()
+        self.alert_id = uuid.uuid4()
+        self.camera = Mock()
+        self.camera.name = "CAM 03"
+        self.camera.location = "Front Gate"
+
+    def _make_user(self, email):
+        user = Mock()
+        user.id = uuid.uuid4()
+        user.email = email
+        user.phone_number = None
+        return user
+
+    @pytest.mark.asyncio
+    @patch("app.services.notification_service._log_notification")
+    @patch(
+        "app.services.notification_service.send_alert_email_bcc",
+        side_effect=[(True, None), (False, "smtp error")],
+    )
+    async def test_bcc_batches_and_logs_each_user_result(self, mock_bcc, mock_log):
+        users = [
+            self._make_user("one@example.com"),
+            self._make_user("two@example.com"),
+            self._make_user("three@example.com"),
+            self._make_user(None),
+        ]
+
+        with patch("app.services.notification_service.MAX_EMAIL_BATCH_SIZE", 2):
+            await _notify_users_by_bcc_email(
+                self.mock_db,
+                self.alert_id,
+                users,
+                "WEAPON_DETECTED",
+                self.camera,
+                "CRITICAL",
+            )
+
+        assert mock_bcc.call_count == 2
+        assert mock_bcc.call_args_list[0].args[0] == [
+            "one@example.com",
+            "two@example.com",
+        ]
+        assert mock_bcc.call_args_list[1].args[0] == ["three@example.com"]
+
+        assert mock_log.call_count == 3
+        assert mock_log.call_args_list[0].args[3] == NotificationChannel.EMAIL
+        assert mock_log.call_args_list[0].args[4] is True
+        assert mock_log.call_args_list[1].args[4] is True
+        assert mock_log.call_args_list[2].args[4] is False
+        assert mock_log.call_args_list[2].args[5] == "smtp error"
+
+    @pytest.mark.asyncio
+    @patch("app.services.notification_service._log_notification")
+    @patch("app.services.notification_service.send_alert_email_bcc")
+    async def test_bcc_skips_users_without_email(self, mock_bcc, mock_log):
+        await _notify_users_by_bcc_email(
+            self.mock_db,
+            self.alert_id,
+            [self._make_user(None)],
+            "WEAPON_DETECTED",
+            self.camera,
+            "CRITICAL",
+        )
+
+        mock_bcc.assert_not_called()
+        mock_log.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("app.services.notification_service._notify_users_by_bcc_email", new_callable=AsyncMock)
+    @patch("app.services.notification_service._notify_users_by_whatsapp", new_callable=AsyncMock)
+    async def test_notify_users_routes_to_bcc_branch(self, mock_whatsapp, mock_bcc):
+        user = self._make_user("resident@example.com")
+
+        await _notify_users(
+            self.mock_db,
+            self.alert_id,
+            [user],
+            "message",
+            "WEAPON_DETECTED",
+            self.camera,
+            "CRITICAL",
+            email_bcc=True,
+        )
+
+        mock_whatsapp.assert_awaited_once_with(
+            self.mock_db,
+            self.alert_id,
+            [user],
+            "message",
+        )
+        mock_bcc.assert_awaited_once_with(
+            self.mock_db,
+            self.alert_id,
+            [user],
+            "WEAPON_DETECTED",
+            self.camera,
+            "CRITICAL",
+        )
 
 class TestLogNotification:
     def setup_method(self):

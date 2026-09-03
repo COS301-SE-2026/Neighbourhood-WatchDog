@@ -22,6 +22,7 @@ from app.services.alert_service import (
     get_alert_frequency_metrics_handler,
     get_alert_for_agent,
 )
+from app.services.notification_service import send_alert_email_bcc
 
 class TestAcknowledgeAlert:
     def setup_method(self):
@@ -891,7 +892,6 @@ class TestBroadcastNeighbourhoodAlert:
             )
 
         assert exc.value.status_code == 403
- 
     @pytest.mark.asyncio
     async def test_neighbourhood_not_found_raises_404(self):
         alert = self._make_alert()
@@ -946,7 +946,7 @@ class TestBroadcastNeighbourhoodAlert:
  
         mock_format.assert_called_once_with("CRITICAL", alert.detection_type, camera.name, ANY)
         mock_notify.assert_called_once_with(
-            self.mock_db, alert.id, [resident], "msg", alert.detection_type, camera, "CRITICAL"
+            self.mock_db, alert.id, [resident], "msg", alert.detection_type, camera, "CRITICAL", email_bcc=True
         )
  
         self.mock_db.add.assert_called_once()
@@ -1052,3 +1052,35 @@ class TestGetAlertForAgent:
         )
 
         assert exc.value.status_code == 400 
+
+class TestSendAlertEmailBcc:
+    @patch("app.services.notification_service.SENDER_EMAIL", "bot@watchdog.com")
+    @patch("app.services.notification_service.SENDER_PASSWORD", "pw")
+    @patch("app.services.notification_service.smtplib.SMTP")
+    def test_successful_bcc_send(self, mock_smtp_cls):
+        mock_server = Mock()
+        mock_smtp_cls.return_value = mock_server
+
+        success, error = send_alert_email_bcc(
+            [
+                "resident1@gmail.com",
+                "resident2@gmail.com"
+            ],
+            "WEAPON_DETECTED",
+            "CAM 03",
+            "Front Gate",
+            "CRITICAL"
+        )
+
+        assert success is True
+        assert error is None
+        mock_server.sendmail.assert_called_once()
+        mock_server.quit.assert_called_once()
+
+        sendmail_args = mock_server.sendmail.call_args.args
+
+        assert sendmail_args[0] == "bot@watchdog.com"
+        assert sendmail_args[1] == [
+            "resident1@gmail.com",
+            "resident2@gmail.com"
+        ]
