@@ -1,0 +1,24 @@
+backend/app/core/config.py
+  h_cf6208e37032c0 10
+backend/app/services/camera_settings_service.py
+  h_cf6208e37032c0 10,85,151,193-195,208-209
+backend/app/services/camera_service.py
+  h_cf6208e37032c0 7,48,124,170,190,266
+backend/app/api/controllers/internal_cameras.py
+  h_cf6208e37032c0 4,10,16,38-39,42-45
+  h_cf6208e37032c0 40-41
+backend/app/api/controllers/camera.py
+  h_cf6208e37032c0 8,10,16,79-81,83
+  h_cf6208e37032c0 82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "a4e859d7546b12a1a12e73e2a0e23320e9d1511f",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
