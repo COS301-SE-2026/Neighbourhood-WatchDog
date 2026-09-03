@@ -32,14 +32,14 @@ export default function PaginationControls({
       <div className="flex justify-around pt-5"><p>Page {page}</p></div>
       <div className="flex justify-around p-2">
         <button 
-          className="rounded-md border border-white/10 bg-zinc-950 px-4 py-2 text-sm text-white transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-md border border-border bg-brand-abyss px-4 py-2 text-sm text-brand-frost transition-colors hover:bg-brand-slate disabled:cursor-not-allowed disabled:opacity-40"
 
           disabled={previousDisabled || loading}
           onClick={() => onPageChange(page - 1)}>
           Previous
         </button>
         <button 
-          className="rounded-md border border-white/10 bg-zinc-950 px-4 py-2 text-sm text-white transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-md border border-border bg-brand-abyss px-4 py-2 text-sm text-brand-frost transition-colors hover:bg-brand-slate disabled:cursor-not-allowed disabled:opacity-40"
 
           disabled={nextDisabled || loading}
           onClick={() => onPageChange(page + 1)}
@@ -96,15 +96,15 @@ export function AuditLogTable() {
 
   function renderAuditLogCard(rowData: AuditLog): React.ReactNode {
   return (
-    <Card className="border-white/10 bg-zinc-950 text-white">
+    <Card className="border-border bg-brand-abyss text-brand-frost">
       <CardHeader>
-        <CardTitle className="text-white">
+        <CardTitle className="text-brand-frost">
           {rowData.action} on {rowData.target_entity_type}
         </CardTitle>
       </CardHeader>
-      <CardContent className="text-white/60">
+      <CardContent className="text-brand-ash">
         {rowData.id.slice(0, 12) + "..."} at {formatTimestamp(rowData.timestamp)}
-        <button className="rounded-lg bg-navy text-white p-2" onClick={() => setSelectedRow(rowData)}>
+        <button className="rounded-lg bg-brand-abyss text-brand-frost p-2" onClick={() => setSelectedRow(rowData)}>
           View More
         </button>
       </CardContent>
@@ -117,12 +117,12 @@ export function AuditLogTable() {
     {
       accessorKey: "id",
       header: () => (
-        <span className="!text-white">
+        <span className="!text-brand-frost">
           Record ID
         </span>
       ),
       cell: ({ row }) => (
-        <span className="!text-white">
+        <span className="!text-brand-frost">
           {row.original.id.slice(0, 8) + "..."}
         </span>
       ),
@@ -130,12 +130,12 @@ export function AuditLogTable() {
     {
       accessorKey: "action",
       header: () => (
-        <span className="!text-white">
+        <span className="!text-brand-frost">
           Action
         </span>
       ),
       cell: ({ row }) => (
-        <span className="!text-white">
+        <span className="!text-brand-frost">
           {row.original.action}
         </span>
       ),
@@ -143,12 +143,12 @@ export function AuditLogTable() {
     {
       accessorKey: "target_entity_type",
       header: () => (
-        <span className="!text-white">
+        <span className="!text-brand-frost">
           Target Entity Type
         </span>
       ),
       cell: ({ row }) => (
-        <span className="!text-white">
+        <span className="!text-brand-frost">
           {row.original.target_entity_type}
         </span>
       ),
@@ -156,13 +156,13 @@ export function AuditLogTable() {
     {
       accessorKey: "timestamp",
       header: () => (
-        <span className="!text-white">
+        <span className="!text-brand-frost">
           Timestamp
         </span>
       ),
       cell: ({ row }) => {
         return (
-          <span className="!text-white">
+          <span className="!text-brand-frost">
             {formatTimestamp(row.original.timestamp)}
           </span>
         )
@@ -171,13 +171,13 @@ export function AuditLogTable() {
     {
       id: "actions", // this is for the btn
       header: () => (
-        <span className="!text-white">
+        <span className="!text-brand-frost">
           Actions
         </span>
       ),
       cell: ({ row }) => {
         return (
-        <button className="rounded-lg bg-navy text-white p-2" onClick={() => setSelectedRow(row.original)}>
+        <button className="rounded-lg bg-brand-abyss text-brand-frost p-2" onClick={() => setSelectedRow(row.original)}>
           View More
         </button>
         )
@@ -187,51 +187,51 @@ export function AuditLogTable() {
 
 
   return (
-    <div className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+    <div className="min-h-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
       {loading && (
           <div className="flex min-h-40 items-center justify-center">
-              <p className="text-sm text-white/45">Loading audit logs...</p>
+              <p className="text-sm text-brand-ash">Loading audit logs...</p>
           </div>
       )}
 
       <Dialog open={!!selectedRow} onOpenChange={() => setSelectedRow(null)}>
-        <DialogContent className="max-w-2xl border-white/10 bg-zinc-950 text-white">
+        <DialogContent className="max-w-2xl border-border bg-brand-abyss text-brand-frost">
           {selectedRow && (
             <div className="space-y-6">
               <div>
-                <DialogTitle className="text-lg font-semibold text-white">
+                <DialogTitle className="text-lg font-semibold text-brand-frost">
                   Record details
                 </DialogTitle>
-                <p className="mt-1 text-sm text-white/45">
+                <p className="mt-1 text-sm text-brand-ash">
                   {selectedRow.action} on {selectedRow.target_entity_type}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wider text-white/40">
+                  <p className="text-xs font-medium uppercase tracking-wider text-brand-ash/70">
                     User ID
                   </p>
-                  <p className="mt-1 break-all text-sm text-white/75">
+                  <p className="mt-1 break-all text-sm text-brand-ash">
                     {selectedRow.user_id}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wider text-white/40">
+                  <p className="text-xs font-medium uppercase tracking-wider text-brand-ash/70">
                     Target entity ID
                   </p>
-                  <p className="mt-1 break-all text-sm text-white/75">
+                  <p className="mt-1 break-all text-sm text-brand-ash">
                     {selectedRow.target_entity_id ?? "No target entity"}
                   </p>
                 </div>
               </div>
 
               <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-white/40">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-brand-ash/70">
                   Previous values
                 </p>
-                <pre className="max-h-60 overflow-auto rounded-md border border-white/10 bg-black p-4 text-xs leading-relaxed text-white/70">
+                <pre className="max-h-60 overflow-auto rounded-md border border-border bg-brand-void p-4 text-xs leading-relaxed text-brand-ash">
                   {selectedRow.old_values
                     ? JSON.stringify(selectedRow.old_values, null, 2)
                     : "No previous values"}
@@ -239,10 +239,10 @@ export function AuditLogTable() {
               </div>
 
               <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-white/40">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-brand-ash/70">
                   New values
                 </p>
-                <pre className="max-h-60 overflow-auto rounded-md border border-white/10 bg-black p-4 text-xs leading-relaxed text-white/70">
+                <pre className="max-h-60 overflow-auto rounded-md border border-border bg-brand-void p-4 text-xs leading-relaxed text-brand-ash">
                   {selectedRow.new_values
                     ? JSON.stringify(selectedRow.new_values, null, 2)
                     : "No new values"}
@@ -252,12 +252,12 @@ export function AuditLogTable() {
           )}
         </DialogContent>
       </Dialog>
-      <header className="border-b border-white/10 pb-7">
-          <p className="text-sm text-emerald-400">System</p>
+      <header className="border-b border-border pb-7">
+          <p className="text-sm text-brand-green">System</p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight">
               Neighbourhood audit logs
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/50">
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-brand-ash">
               Review activity recorded across the neighbourhood system.
           </p>
       </header>

@@ -59,20 +59,20 @@ export default function Hero() {
                 <Pointer name="Zizou" color="emerald"/>
             </motion.div>
             <div className="flex justify-center">
-                <div className="inline-flex py-1 px-3 bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full text-black font-semibold text-sm">
+                <div className="inline-flex py-1 px-3 bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full text-brand-void font-semibold text-sm">
                     Powered by Computer Vision AI
                 </div>
             </div>
             <h1 className="text-4xl md:text-6xl sm:text-5xl lg:text-8xl font-medium text-center mt-6 text-balance">
                 Your Neighbourhood, <br/>Watched.
             </h1>
-            <p className="text-center text-xl text-white/50 mt-8 max-w-2xl mx-auto">
+            <p className="text-center text-xl text-brand-ash mt-8 max-w-2xl mx-auto">
                 From live camera feeds to instant alerts, 
                 Neighbourhood WatchDog gives your community 
                 real-time visibility and peace of mind, 
                 powered by AI that never sleeps.
             </p>
-            <form className="flex border border-white/15 rounded-full p-2 mt-8 max-w-lg mx-auto">
+            <form className="flex border border-brand-gunmetal/20 rounded-full p-2 mt-8 max-w-lg mx-auto">
                 <input 
                     type="email" 
                     placeholder="Enter your email" 

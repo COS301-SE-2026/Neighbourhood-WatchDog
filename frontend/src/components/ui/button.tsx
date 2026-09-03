@@ -15,7 +15,7 @@ const buttonVariants = cva(
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         inverse:
-          "border-white text-white bg-transparent hover:bg-white/10 aria-expanded:bg-white/10",
+          "border-brand-gunmetal text-brand-frost bg-transparent hover:bg-brand-slate aria-expanded:bg-brand-slate",
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:

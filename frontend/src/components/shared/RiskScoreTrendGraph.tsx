@@ -73,16 +73,16 @@ const DEFAULT_HISTORY: RiskScorePoint[] = [
 
 function useChartTheme(): ChartTheme {
   const [theme, setTheme] = useState({
-    blue: "#3B5EDE",
-    navy: "#1D2A5E",
-    mist: "#D0D7E8",
-    body: "#2E3A5C",
-    border: "#D0D7E8",
-    card: "#FFFFFF",
+    blue: "#2D7EFF",
+    navy: "#0D0D0D",
+    mist: "#8A8A8A",
+    body: "#F5F5F5",
+    border: "rgb(138 138 138 / 12%)",
+    card: "#141414",
     font: "Inter, system-ui, sans-serif",
-    safe: "#3DD68C",
-    caution: "#F5A623",
-    threat: "#F04444",
+    safe: "#10B981",
+    caution: "#F59E0B",
+    threat: "#EF4444",
   });
 
   useEffect(() => {
@@ -92,16 +92,16 @@ function useChartTheme(): ChartTheme {
 
     const animationFrameId = window.requestAnimationFrame(() => {
       setTheme({
-        blue: read("--color-blue", "#3B5EDE"),
-        navy: read("--color-navy", "#1D2A5E"),
-        mist: read("--color-mist", "#D0D7E8"),
-        body: read("--color-body", "#2E3A5C"),
-        border: read("--border", "#D0D7E8"),
-        card: read("--card", "#FFFFFF"),
+        blue: read("--color-pulse", "#2D7EFF"),
+        navy: read("--color-frost", "#F5F5F5"),
+        mist: read("--color-gunmetal", "#8A8A8A"),
+        body: read("--color-ash", "#A3A3A3"),
+        border: read("--border-subtle", "rgb(138 138 138 / 12%)"),
+        card: read("--card", "#141414"),
         font: read("--font-sans", "Inter, system-ui, sans-serif"),
-        safe: read("--color-safe", "#3DD68C"),
-        caution: read("--color-caution", "#F5A623"),
-        threat: read("--color-threat", "#F04444"),
+        safe: read("--color-safe", "#10B981"),
+        caution: read("--color-caution", "#F59E0B"),
+        threat: read("--color-threat", "#EF4444"),
       });
     });
 

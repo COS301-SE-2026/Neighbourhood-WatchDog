@@ -30,18 +30,18 @@ export default function Introduction() {
           <div className="mt-10 text-center text-2xl font-medium md:text-5xl lg:text-7xl">
             <span>Your neighbourhood deserves better security.</span>{" "}
 
-            <span className="text-white/15">
+            <span className="text-brand-frost/15">
               {words.map((word, index) => (
                 <span
                   key={`${word}-${index}`}
-                  className={twMerge("transition duration-500 text-white/15", index < currentWord && "text-white")}
+                  className={twMerge("transition duration-500 text-brand-frost/15", index < currentWord && "text-brand-frost")}
                 >
                   {word}{" "}
                 </span>
               ))}
             </span>
 
-            <span className="block text-emerald-400">
+            <span className="block text-brand-green">
               That&apos;s why we built Neighbourhood WatchDog.
             </span>
           </div>

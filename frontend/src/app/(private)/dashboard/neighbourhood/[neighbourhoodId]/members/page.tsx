@@ -122,9 +122,9 @@ export default function MembersPage() {
 
     if (userContextLoading) {
         return (
-            <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+            <main className="min-h-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
                 <div className="mx-auto flex max-w-5xl items-center justify-center py-20">
-                    <Loader2 className="size-5 animate-spin text-emerald-400" />
+                    <Loader2 className="size-5 animate-spin text-brand-green" />
                 </div>
             </main>
         );
@@ -132,9 +132,9 @@ export default function MembersPage() {
 
     if (!isNeighbourhoodAdmin) {
         return (
-            <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+            <main className="min-h-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
                 <div className="mx-auto max-w-5xl">
-                    <p className="text-sm text-white/60">
+                    <p className="text-sm text-brand-ash">
                         You don&apos;t have admin access to this neighbourhood.
                     </p>
                 </div>
@@ -143,10 +143,10 @@ export default function MembersPage() {
     }
 
     return (
-        <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+        <main className="min-h-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
             <div className="mx-auto max-w-5xl">
-                <header className="border-b border-white/10 pb-7">
-                    <p className="text-sm text-emerald-400">
+                <header className="border-b border-border pb-7">
+                    <p className="text-sm text-brand-green">
                         Neighbourhood management
                     </p>
 
@@ -154,22 +154,22 @@ export default function MembersPage() {
                         Members
                     </h1>
 
-                    <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/50">
+                    <p className="mt-2 max-w-xl text-sm leading-relaxed text-brand-ash">
                         View members of this neighbourhood and manage their
                         roles.
                     </p>
                 </header>
 
                 <section className="pt-7">
-                    <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-                        <Users className="size-4 text-emerald-400" />
+                    <div className="flex items-center gap-3 border-b border-border pb-4">
+                        <Users className="size-4 text-brand-green" />
 
                         <div>
-                            <h2 className="text-sm font-medium text-white">
+                            <h2 className="text-sm font-medium text-brand-frost">
                                 Neighbourhood members
                             </h2>
 
-                            <p className="mt-1 text-sm text-white/40">
+                            <p className="mt-1 text-sm text-brand-ash/70">
                                 {members.length} member
                                 {members.length === 1 ? "" : "s"}
                             </p>
@@ -179,9 +179,9 @@ export default function MembersPage() {
                     {roleError && (
                         <div
                             role="alert"
-                            className="mt-4 flex items-start gap-3 border border-red-500/25 bg-red-500/[0.08] px-4 py-3 text-sm text-red-200"
+                            className="mt-4 flex items-start gap-3 border border-brand-threat/25 bg-brand-threat/10 px-4 py-3 text-sm text-brand-threat"
                         >
-                            <AlertCircle className="mt-0.5 size-4 shrink-0 text-red-400" />
+                            <AlertCircle className="mt-0.5 size-4 shrink-0 text-brand-threat" />
 
                             <p>{roleError}</p>
                         </div>
@@ -190,23 +190,23 @@ export default function MembersPage() {
 
                     {membersLoading ? (
                         <div className="flex items-center justify-center py-20">
-                            <Loader2 className="size-5 animate-spin text-emerald-400" />
+                            <Loader2 className="size-5 animate-spin text-brand-green" />
                         </div>
                     ) : membersError ? (
                         <div
                             role="alert"
-                            className="mt-4 flex items-start gap-3 border border-red-500/25 bg-red-500/[0.08] px-4 py-3 text-sm text-red-200"
+                            className="mt-4 flex items-start gap-3 border border-brand-threat/25 bg-brand-threat/10 px-4 py-3 text-sm text-brand-threat"
                         >
-                            <AlertCircle className="mt-0.5 size-4 shrink-0 text-red-400" />
+                            <AlertCircle className="mt-0.5 size-4 shrink-0 text-brand-threat" />
                             <p>{membersError}</p>
                         </div>
                     ) : members.length === 0 ? (
-                        <div className="border-b border-white/10 py-16 text-center">
-                            <p className="text-sm font-medium text-white/65">
+                        <div className="border-b border-border py-16 text-center">
+                            <p className="text-sm font-medium text-brand-ash">
                                 No members found
                             </p>
 
-                            <p className="mt-2 text-sm text-white/40">
+                            <p className="mt-2 text-sm text-brand-ash/70">
                                 Members will appear here once they join the
                                 neighbourhood.
                             </p>
@@ -219,18 +219,18 @@ export default function MembersPage() {
                                     className="flex items-center justify-between gap-4 py-4"
                                 >
                                     <div className="min-w-0">
-                                        <p className="truncate text-sm font-medium text-white">
+                                        <p className="truncate text-sm font-medium text-brand-frost">
                                             {member.first_name} {member.last_name}
                                         </p>
 
-                                        <p className="mt-1 truncate text-sm text-white/45">
+                                        <p className="mt-1 truncate text-sm text-brand-ash">
                                             {member.email}
                                         </p>
                                     </div>
 
                                     <div className="flex shrink-0 items-center gap-2">
                                         {updatingMemberId === member.user_id && (
-                                            <Loader2 className="size-4 animate-spin text-emerald-400" />
+                                            <Loader2 className="size-4 animate-spin text-brand-green" />
                                         )}
 
                                         <select
@@ -243,13 +243,13 @@ export default function MembersPage() {
                                             }
                                             disabled={updatingMemberId === member.user_id}
                                             aria-label={`Role for ${member.first_name} ${member.last_name}`}
-                                            className="h-9 rounded-md border border-white/10 bg-white/[0.04] px-3 text-xs text-white outline-none transition-colors focus:border-emerald-400/60 disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="h-9 rounded-md border border-border bg-brand-slate px-3 text-xs text-brand-frost outline-none transition-colors focus:border-brand-green/60 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
                                             {MEMBER_ROLES.map((role) => (
                                                 <option
                                                     key={role}
                                                     value={role}
-                                                    className="bg-zinc-950 text-white"
+                                                    className="bg-brand-abyss text-brand-frost"
                                                 >
                                                     {ROLE_LABELS[role]}
                                                 </option>

@@ -19,7 +19,7 @@ export default function Footer() {
                     <div>
                         <nav className='flex flex-wrap justify-center gap-4 sm:gap-6'>
                             {footLinks.map((link) => (
-                                <a key={link.label} href={link.href} className='text-white/50 text-sm'>
+                                <a key={link.label} href={link.href} className='text-brand-ash text-sm'>
                                     {link.label}
                                 </a>
                             ))}

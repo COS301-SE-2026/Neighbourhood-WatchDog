@@ -37,7 +37,7 @@ const Navbar = () => {
     };
 
     return (
-        <nav className="p-4 flex items-center text-white justify-between">
+        <nav className="p-4 flex items-center text-brand-frost justify-between">
             <SidebarTrigger />
 
             <div className="flex items-center gap-4">
