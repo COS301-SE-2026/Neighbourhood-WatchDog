@@ -1,3 +1,6 @@
+"use client";
+
+import { usePropertyContext } from "@/hooks/use-property-context";
 import Link from "next/link";
 import {
     ArrowRight,
@@ -136,6 +139,10 @@ function TutorialCard({id, icon: Icon, title, summary, steps}: {
 }
 
 export default function HelpPage() {
+    const { activeContext } = usePropertyContext();
+
+    const dashboardHref = activeContext ? `/dashboard/properties/${activeContext.propertyId}/cameras` : "/dashboard";
+
     return (
         <main className="min-h-full w-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
             <div className="mx-auto max-w-5xl">
@@ -292,7 +299,7 @@ export default function HelpPage() {
                             </div>
                         </div>
                         <Link
-                            href="/dashboard"
+                            href={dashboardHref}
                             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-brand-gunmetal/20 px-3.5 py-2 text-sm font-medium text-brand-ash transition-colors hover:bg-brand-slate hover:text-brand-frost"
                         >
                             Back to dashboard
