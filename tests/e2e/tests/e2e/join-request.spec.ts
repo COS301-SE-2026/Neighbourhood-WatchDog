@@ -75,4 +75,21 @@ test.describe("Join Requests", () => {
       page.getByText("You don't have admin access to this neighbourhood."),
     ).toBeVisible();
   });
+
+  test("regenerating the join code changes displayed code", async ({
+    page,
+  }) => {
+    await page.setExtraHTTPHeaders(mockAuthHeaders(ADMIN_USER_ID));
+    await page.goto(
+      "//dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/join-requests",
+    );
+
+    const codeEl = page.locator("code");
+    await expect(codeEl).not.toHaveText("Unavailable");
+    const originalCode = await codeEl.textContent();
+
+    await page.getByTitle("regenrates join code").click();
+
+    await expect(codeEl).not.toHaveText(originalCode ?? "");
+  });
 });
