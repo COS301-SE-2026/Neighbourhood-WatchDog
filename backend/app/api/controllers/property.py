@@ -5,7 +5,7 @@ from fastapi import APIRouter
 
 from app.auth.authorization import Claims, PropertyAdminClaims, PropertyMemberClaims
 from app.core.database import DbSession
-from app.schemas.property import CreatePropertyReq, CreatePropertyRes, InvitePropertyReq, PropertyMembers, PropertyRes
+from app.schemas.property import CreatePropertyReq, CreatePropertyRes, InvitePropertyReq, InvitePropertyRes, PropertyMembers, PropertyRes
 from app.services.property_service import (
     create_property_handler,
     get_property_details_handler,
@@ -98,18 +98,18 @@ async def get_property_details(
     """Fetch property details including users, neighbourhood, and cameras"""
     return await get_property_details_handler(property_id, db, claims)
 
-@router.get("/{property_id}/members")
+@router.get("/{property_id}/members", response_model=PropertyMembers)
 async def get_property_members(
     property_id: UUID,
     db: DbSession,
     claims: PropertyMemberClaims
-) -> PropertyMembers:
+):
     """Fetch property members"""
 
     return await get_property_members_handler(property_id, db, claims)
 
 
-@router.post("/{property_id}/member")
+@router.post("/{property_id}/member", response_model=InvitePropertyRes)
 async def invite_property_member(
     req: InvitePropertyReq,
     property_id: UUID,

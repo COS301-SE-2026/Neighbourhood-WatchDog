@@ -34,6 +34,10 @@ class PropertyMembers(BaseModel):
 class InvitePropertyReq(BaseModel):
     email: str
 
+class InvitePropertyRes(BaseModel):
+    message: str
+    email_sent: bool
+
 class CreatePropertyRes(BaseModel):
     status: int
     message: str | None = None

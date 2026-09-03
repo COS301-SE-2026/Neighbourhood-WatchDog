@@ -1,4 +1,4 @@
-import { CreatePropertyReq, CreatePropertyRes, PropertyRes } from '@/lib/validators/property'
+import { CreatePropertyReq, CreatePropertyRes, InvitePropertyMemberInput, InvitePropertyMemberResponse, PropertyMembers, PropertyRes } from '@/lib/validators/property'
 import { PropertyDetailedRes } from '@/lib/validators/property'
 import { apiCall } from './client'
 
@@ -17,4 +17,32 @@ export async function getPropertyDetails(propertyId: string): Promise<PropertyDe
     `/properties/${propertyId}`, 
     {method: 'GET'},
   )
+}
+
+export async function getPropertyMembers(propertyId: string):Promise<PropertyMembers> {
+  return apiCall<PropertyMembers>(`/properties/${propertyId}/members`, {
+    method: "GET"
+  })
+}
+
+export async function invitePropertyMember(
+  propertyId: string, data: InvitePropertyMemberInput
+): Promise<InvitePropertyMemberResponse> {
+  return apiCall<InvitePropertyMemberResponse>(
+    `/properties/${propertyId}/member`,
+    {
+      method: "POST",
+      body: data
+    }
+  );
+}
+
+export async function removePropertyMember(
+  propertyId: string,
+  userId: string
+): Promise<void> {
+  await apiCall<void>(`/properties/${propertyId}/members/${userId}`, {
+    method: "DELETE"
+  });
+  
 }
