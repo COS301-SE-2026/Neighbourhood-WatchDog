@@ -342,7 +342,7 @@ def send_alert_email_bcc(
         msg.attach(MIMEText(plain_body, 'plain'))
         msg.attach(MIMEText(build_alert_email(alert_type, camera_name, location, risk_level, dashboard_url), 'html'))
 
-        refused_recipients = server.sendmail(
+        server.sendmail(
             SENDER_EMAIL,
             recipient_emails,
             msg.as_string()
@@ -350,8 +350,6 @@ def send_alert_email_bcc(
 
         server.quit()
 
-        if refused_recipients:
-            return(False, f"Some email recipients were rejected: {refused_recipients}")
         
         logger.info("Alert email BCC sent to %s recipient(s)", len(recipient_emails))
 
@@ -489,15 +487,11 @@ async def dispatch_notifications(
         )
 
 
-async def _notify_users(
+async def _notify_users_by_whatsapp(
     db: DbSession,
     alert_id: UUID,
     users: list[User],
-    whatsapp_message: str,
-    detection_type: str,
-    camera: Camera,
-    severity: str,
-    email_bcc: bool = False
+    whatsapp_message: str
 ) -> None:
     for user in users:
         if user.phone_number:
@@ -510,48 +504,102 @@ async def _notify_users(
         else:
             logger.info(f"User {user.id} has no phone_number, skipping")
 
-    if email_bcc:
-        email_users = [
-            user
-            for user in users
+
+async def _notify_users_by_bcc_email(
+    db: DbSession,
+    alert_id: UUID,
+    users: list[User],
+    detection_type: str,
+    camera: Camera,
+    severity: str
+) -> None:
+    email_users = [
+        user
+        for user in users
+        if user.email
+    ]
+
+    for index in range(0, len(email_users), MAX_EMAIL_BATCH_SIZE):
+        batch_users = email_users[index:index + MAX_EMAIL_BATCH_SIZE]
+
+        recipient_emails = [
+            user.email
+            for user in batch_users
             if user.email
         ]
 
-        for index in range(0, len(email_users), MAX_EMAIL_BATCH_SIZE):
-            batch_users = email_users[index:index + MAX_EMAIL_BATCH_SIZE]
 
-            recipient_emails = [
-                user.email
-                for user in batch_users
-                if user.email
-            ]
+        success, error = await asyncio.to_thread(
+            send_alert_email_bcc,
+            recipient_emails,
+            detection_type,
+            camera.name,
+            camera.location,
+            severity
+        )
 
+        for user in batch_users:
+            _log_notification(db, alert_id, user.id, NotificationChannel.EMAIL, success, error)
 
-            success, error = await asyncio.to_thread(
-                send_alert_email_bcc,
-                recipient_emails,
-                detection_type,
-                camera.name,
-                camera.location,
-                severity
-            )
-
-            for user in batch_users:
-                _log_notification(db, alert_id, user.id, NotificationChannel.EMAIL, success, error)
-
-                if success:
-                    logger.info("BCC email sent successfully to user %s", user.id)
-                else:
-                    logger.warning("BCC email failed for user %s: %s", user.id, error)
-
-    else:
-        for user in users:                
-            if user.email:
-                success, error = await asyncio.to_thread(send_alert_email, user.email, detection_type, camera.name, camera.location, severity)
-                _log_notification(db, alert_id, user.id, NotificationChannel.EMAIL, success, error)
-                if success:
-                    logger.info(f"Email sent successfully to user {user.id}")
-                else:
-                    logger.warning(f"Email failed for user {user.id}: {error}")
+            if success:
+                logger.info("BCC email sent successfully to user %s", user.id)
             else:
-                logger.info(f"User {user.id} has no email, skipping")
+                logger.warning("BCC email failed for user %s: %s", user.id, error)
+
+
+async def _notify_users_by_individual_email(
+    db: DbSession,
+    alert_id: UUID,
+    users: list[User],
+    detection_type: str,
+    camera: Camera,
+    severity: str
+) -> None:
+    for user in users:                
+        if user.email:
+            success, error = await asyncio.to_thread(send_alert_email, user.email, detection_type, camera.name, camera.location, severity)
+            _log_notification(db, alert_id, user.id, NotificationChannel.EMAIL, success, error)
+            if success:
+                logger.info(f"Email sent successfully to user {user.id}")
+            else:
+                logger.warning(f"Email failed for user {user.id}: {error}")
+        else:
+            logger.info(f"User {user.id} has no email, skipping")
+async def _notify_users(
+    db: DbSession,
+    alert_id: UUID,
+    users: list[User],
+    whatsapp_message: str,
+    detection_type: str,
+    camera: Camera,
+    severity: str,
+    email_bcc: bool = False
+) -> None:
+    
+    await _notify_users_by_whatsapp(
+        db,
+        alert_id,
+        users,
+        whatsapp_message,
+    )
+
+    if email_bcc:
+        await _notify_users_by_bcc_email(
+            db,
+            alert_id,
+            users,
+            detection_type,
+            camera,
+            severity,
+        )
+    else:
+        await _notify_users_by_individual_email(
+            db,
+            alert_id,
+            users,
+            detection_type,
+            camera,
+            severity,
+        )
+
+        
