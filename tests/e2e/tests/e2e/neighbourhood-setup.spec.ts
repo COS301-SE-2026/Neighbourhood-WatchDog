@@ -1,23 +1,17 @@
-import { test, expect } from "@playwright/test";
-
-const MEMBER_PROPERTY_ID = "30000000-0000-0000-0000-000000000001";
-const MEMBER_USER_ID = "20000000-0000-0000-0000-000000000001";
-
-const FREE_PROPERTY_ID = "30000000-0000-0000-0000-000000000003";
-const FREE_USER_ID = "20000000-0000-0000-0000-000000000003";
-
-function mockAuthHeaders(userId: string) {
-  return {
-    Authorization: "Bearer mocktake",
-    "X-Mock-User-Id": userId,
-  };
-}
+import {
+  test,
+  expect,
+  CREATE_PROPERTY_ID,
+  CREATE_USER_ID,
+  MEMBER_PROPERTY_ID,
+  MEMBER_USER_ID,
+} from "./fixtures";
 
 test.describe("Create a neighbourhood", () => {
   test("submit is disabled until fields are filled", async ({ page }) => {
-    await page.setExtraHTTPHeaders(mockAuthHeaders(MEMBER_USER_ID));
+    await page.setExtraHTTPHeaders({ "X-Mock-User-Id": MEMBER_USER_ID });
     await page.goto(
-      "/dashboard/properies/${MEMBER_PROPERTY_ID/neighbourhood/setup",
+      `/dashboard/properies/${MEMBER_PROPERTY_ID}/neighbourhood/setup`,
     );
 
     const submit = page.getByRole("button", {
@@ -35,25 +29,33 @@ test.describe("Create a neighbourhood", () => {
   test("creating neighbourhood redirects to property camera page", async ({
     page,
   }) => {
-    await page.setExtraHTTPHeaders(mockAuthHeaders(FREE_USER_ID));
+    await page.setExtraHTTPHeaders({ "X-Mock-User-Id": CREATE_USER_ID });
     await page.goto(
-      "/dashboard/properies/${FREE_PROPERTY_ID/neighbourhood/setup",
+      `/dashboard/properies/${CREATE_PROPERTY_ID}/neighbourhood/setup`,
     );
 
-    await page.locator("nieghbourhood-name").fill("E2E New Neighbourhood");
+    await page.locator("neighbourhood-name").fill("E2E New Neighbourhood");
     await page.locator("#neighbourhood-location").fill("Centurion");
 
     await page.getByRole("button", { name: /create neighbourhood/i }).click();
 
-    await page.waitForURL("**/dashboard/properies/${FREE_PROPERTY_ID/cameras");
+    await page.waitForURL(
+      "**/dashboard/properies/${CREATE_PROPERTY_ID}/cameras",
+    );
+    expect(page.url()).toContain(
+      `/dashboard/properies/${CREATE_PROPERTY_ID}/cameras`,
+    );
+    await expect(
+      page.getByRole("heading", { name: "Cameras" }).first(),
+    ).toBeVisible();
   });
 
   test("a property already in a neighbourhood cannot create another", async ({
     page,
   }) => {
-    await page.setExtraHTTPHeaders(mockAuthHeaders(MEMBER_USER_ID));
+    await page.setExtraHTTPHeaders({ "X-Mock-User-Id": MEMBER_USER_ID });
     await page.goto(
-      "/dashboard/properies/${MEMBER_PROPERTY_ID/neighbourhood/setup",
+      `/dashboard/properies/${MEMBER_PROPERTY_ID}/neighbourhood/setup`,
     );
 
     await page.locator("#neighbourhood-name").fill("Duplicate Neighbourhood");
