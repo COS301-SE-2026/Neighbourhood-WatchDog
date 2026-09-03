@@ -8,8 +8,8 @@ from fastapi import HTTPException, Request
 from app.core.config import config
 from app.core.logging import logging
 
-JWKS_URL = (f"https://cognito-idp.{config.aws_region}.amazonaws.com/{config.cognito_user_pool_id}/.well-known/jwks.json") #get public keys from AWS to verify
-ISSUER = (f"https://cognito-idp.{config.aws_region}.amazonaws.com/{config.cognito_user_pool_id}") #did this JWT come from our user pool
+JWKS_URL = (f"https://cognito-idp.{config.cognito_region}.amazonaws.com/{config.cognito_user_pool_id}/.well-known/jwks.json") #get public keys from AWS to verify
+ISSUER = (f"https://cognito-idp.{config.cognito_region}.amazonaws.com/{config.cognito_user_pool_id}") #did this JWT come from our user pool
 
 # JWKS = requests.get(JWKS_URL, timeout= 7).json()["keys"] #public keys for user pool
 #Can possibly cache this data so that we do not have to make a req every time
