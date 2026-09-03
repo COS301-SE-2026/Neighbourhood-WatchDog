@@ -1,21 +1,21 @@
+import logging
 from uuid import UUID
+
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.audit_log import AuditAction, TargetEntity
 from app.models.camera import Camera
 from app.models.camera_detection_zone import CameraDetectionZone
-
-import logging
-
 from app.services.audit_service import create_audit_log_item
 from app.services.camera_cache import invalidate_camera_caches
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.audit_log import AuditAction, TargetEntity
 
 CAMERA_NOT_FOUND = "Camera not found"
 
 logger = logging.getLogger(__name__)
 
-async def get_camera_settings_handler(camera_id: UUID, db: AsyncSession) -> dict:
+async def get_camera_settings_handler(camera_id: UUID, db: AsyncSession, claims: dict) -> dict:
     """Gets and returns the settings of the camera with the camera_id passed into the function. Returns the camera_id, confidence_threshold, and a list of camera zones in a dictionary"""
     camera_result = await db.execute(
         select(Camera).where(Camera.id == camera_id)

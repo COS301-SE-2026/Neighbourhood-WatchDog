@@ -1,12 +1,16 @@
-from app.schemas.property import CreatePropertyReq, CreatePropertyRes, PropertyRes
-from app.services.property_service import create_property_handler, get_user_properties_handler, get_property_details_handler
-from app.core.database import DbSession
-from app.auth.dependencies import require_role
-
-from typing import List, Annotated
+from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends
 
+from fastapi import APIRouter
+
+from app.auth.authorization import Claims, PropertyMemberClaims
+from app.core.database import DbSession
+from app.schemas.property import CreatePropertyReq, CreatePropertyRes, PropertyRes
+from app.services.property_service import (
+    create_property_handler,
+    get_property_details_handler,
+    get_user_properties_handler,
+)
 
 router = APIRouter(prefix="/properties", tags=["properties"])
 
@@ -22,7 +26,7 @@ router = APIRouter(prefix="/properties", tags=["properties"])
 async def create_property(
     req: CreatePropertyReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN'))],
+    claims: Claims,
 ):
     """Create property endpoint returns the property object that was created"""
     
@@ -63,7 +67,7 @@ async def create_property(
 )
 async def get_user_properties(
     db: DbSession, 
-    claims: Annotated[dict, Depends(require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN'))],
+    claims: Claims,
 ) -> List[PropertyRes]:
     """Fetch all properties for the current user"""
     
@@ -86,7 +90,7 @@ async def get_user_properties(
 async def get_property_details(
     property_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN'))],
+    claims: PropertyMemberClaims,
 ):
     """Fetch property details including users, neighbourhood, and cameras"""
-    return await get_property_details_handler(property_id, db)
+    return await get_property_details_handler(property_id, db, claims)
