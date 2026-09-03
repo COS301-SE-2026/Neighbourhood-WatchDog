@@ -284,9 +284,9 @@ No credentials are committed to the GitHub repository. Staging generates it .env
 
 ### Deployment Diagram
 
-![Prod Deployment Diagram](/docs/images/Prod%20Deployment%20Diagramv1.drawio.svg)
+![Prod Deployment Diagram](/docs/images/Production%20Deployment%20Diagramv2.svg)
 
-![Staging Deployment Diagram](/docs/images/Prod%20Deployment%20Diagramv1.drawio.svg)
+![Staging Deployment Diagram](/docs/images/Staging%20Deployment%20Diagramv2.svg)
 
 ### CI/CD Pipeline Diagram
 
