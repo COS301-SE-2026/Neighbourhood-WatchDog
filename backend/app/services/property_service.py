@@ -272,6 +272,76 @@ async def get_property_members_handler(property_id: UUID, db: DbSession, claims:
 
 async def invite_property_member_handler(req: InvitePropertyReq, property_id: UUID, db: DbSession, claims: dict):
     """Invite a user to this property"""
-    pass
+    if not claims:
+        raise HTTPException(401, "Not authenticated")
 
-        
+    try:
+        inviter_result =  await db.execute(
+            select(User).where(User.cognito_sub == claims["sub"])
+        )
+        inviter = inviter_result.scalar_one_or_none()
+
+        if not inviter:
+            raise HTTPException(404, "Inviting user not found")
+
+        property_result = await db.execute(
+            select(Property).where(Property.id == property_id)
+        )
+        property_obj = property_result.scalar_one_or_none()
+
+        if not property_obj:
+            raise HTTPException(404, "Property not found")
+
+        user_result = await db.execute(
+            select(User).where(User.email == req.email)
+        )
+        invited_user = user_result.scalar_one_or_none()
+
+        if not invited_user:
+            raise HTTPException(404, "User with that email does not exist")
+
+        existing_result = await db.execute(
+            select(PropertyUser).where(
+                PropertyUser.property_id == property_id,
+                PropertyUser.user_id == invited_user.id
+            )
+        )
+        existing_member = existing_result.scalar_one_or_none()
+
+        if existing_member:
+            raise HTTPException(409, "User is already a property member")
+
+        db.add(
+            PropertyUser(
+                property_id=property_id,
+                user_id=invited_user.id,
+                is_admin=False
+            )
+        )
+
+        await db.commit()
+
+        inviter_name = f"{inviter.first_name or ''} {inviter.last_name or ''}"
+        if not inviter_name:
+            inviter_name = inviter.email
+
+        success, error = await asyncio.to_thread(
+            send_property_invite_email,
+            invited_user.email,
+            property_obj.address,
+            inviter_name
+        )
+
+        if not success:
+            logger.warning("Property invite email failed: %s", error)
+
+        return {
+            "message": "Property member invited successfully",
+            "email_sent": success
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(500, f"Failed to invite property member: {str(e)}")
