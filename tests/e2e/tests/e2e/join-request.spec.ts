@@ -1,23 +1,10 @@
-import { test, expect } from "@playwright/test";
-
-const NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001";
-
-const ADMIN_USER_ID = "20000000-0000-0000-0000-000000000001";
-
-const NON_ADMIN_USER_ID = "20000000-0000-0000-0000-000000000002";
-
-function mockAuthHeaders(userId: string) {
-  return {
-    Authorization: "Bearer mocktake",
-    "X-Mock-User-Id": userId,
-  };
-}
+import { test, expect, NEIGHBOURHOOD_ID, ADMIN_USER_ID } from "./fixtures";
 
 test.describe("Join Requests", () => {
   test("lists the pending requests", async ({ page }) => {
-    await page.setExtraHTTPHeaders(mockAuthHeaders(ADMIN_USER_ID));
+    await page.setExtraHTTPHeaders({ "X-Mock-User-Id": ADMIN_USER_ID });
     await page.goto(
-      "/dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/join-requests",
+      `/dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/join-requests`,
     );
 
     await page.waitForSelector('[role="article"]', { timeout: 30000 });
@@ -28,9 +15,9 @@ test.describe("Join Requests", () => {
   });
 
   test("approving request moves it out of pending tab", async ({ page }) => {
-    await page.setExtraHTTPHeaders(mockAuthHeaders(ADMIN_USER_ID));
+    await page.setExtraHTTPHeaders({ "X-Mock-User-Id": ADMIN_USER_ID });
     await page.goto(
-      "//dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/join-requests",
+      `/dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/join-requests`,
     );
 
     const card = page.getByRole("article", {
@@ -48,9 +35,9 @@ test.describe("Join Requests", () => {
   });
 
   test("denying a request moves it out of pending tab", async ({ page }) => {
-    await page.setExtraHTTPHeaders(mockAuthHeaders(ADMIN_USER_ID));
+    await page.setExtraHTTPHeaders({ "X-Mock-User-Id": ADMIN_USER_ID });
     await page.goto(
-      "//dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/join-requests",
+      `/dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/join-requests`,
     );
 
     const card = page.getByRole("article", {
@@ -66,9 +53,9 @@ test.describe("Join Requests", () => {
   });
 
   test("non admin cannot view join-requests page", async ({ page }) => {
-    await page.setExtraHTTPHeaders(mockAuthHeaders(NON_ADMIN_USER_ID));
+    await page.setExtraHTTPHeaders({ "X-Mock-User-Id": RESIDENT_USER_ID });
     await page.goto(
-      "//dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/join-requests",
+      `/dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/join-requests`,
     );
 
     await expect(
@@ -79,9 +66,9 @@ test.describe("Join Requests", () => {
   test("regenerating the join code changes displayed code", async ({
     page,
   }) => {
-    await page.setExtraHTTPHeaders(mockAuthHeaders(ADMIN_USER_ID));
+    await page.setExtraHTTPHeaders({ "X-Mock-User-Id": ADMIN_USER_ID });
     await page.goto(
-      "//dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/join-requests",
+      `/dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/join-requests`,
     );
 
     const codeEl = page.locator("code");
