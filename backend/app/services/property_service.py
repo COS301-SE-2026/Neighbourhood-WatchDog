@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from typing import List
 from uuid import UUID
 
@@ -15,8 +16,9 @@ from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property, PropertyTypeEnum
 from app.models.property_user import PropertyUser
 from app.models.user import User
-from app.schemas.property import PropertyMembers
+from app.schemas.property import InvitePropertyReq, PropertyMembers
 from app.services.audit_service import create_audit_log_item
+from app.services.notification_service import send_property_invite_email
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +247,7 @@ async def get_property_members_handler(property_id: UUID, db: DbSession, claims:
             .join(PropertyUser, PropertyUser.user_id == User.id)
             .where(PropertyUser.property_id == property_id)
         )
-        
+
         result = await db.execute(stmt_prop)
         users = result.all()
 
@@ -266,4 +268,10 @@ async def get_property_members_handler(property_id: UUID, db: DbSession, claims:
         raise
     except Exception as e:
         raise HTTPException(500, f"Failed to fetch members: {str(e)}")
+
+
+async def invite_property_member_handler(req: InvitePropertyReq, property_id: UUID, db: DbSession, claims: dict):
+    """Invite a user to this property"""
+    pass
+
         

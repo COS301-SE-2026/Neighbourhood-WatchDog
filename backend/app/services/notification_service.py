@@ -30,6 +30,8 @@ SENDER_PASSWORD = os.getenv('SMTP_APP_PASSWORD')
 MAX_EMAIL_BATCH_SIZE = int(
     os.getenv("MAX_EMAIL_BATCH_SIZE", "50")
 )
+SMTP_ERROR = "SMTP credentials not configured"
+SMTP_NOT_CONFIGURED = "SMTP_SENDER_EMAIL or SMTP_APP_PASSWORD not configured"
 
 CRITICAL_TYPES = {"WEAPON_DETECTED", "FALL_DETECTED"}
 
@@ -95,6 +97,82 @@ def _send_whatsapp(to_phone: str, message: str) -> tuple[bool, str | None]:
     except Exception as e:
         logger.exception(f"WhatsApp send failed to {to_phone}")
         return False, str(e)
+
+
+def send_property_invite_email(
+    recipient_email: str,
+    property_address: str,
+    inviter_name: str,
+    dashboard_url: str = "https://neighbourhood-watch-dog.vercel.app/auth/login"
+) -> tuple[bool, str | None]:
+    if not SENDER_EMAIL or not SENDER_PASSWORD:
+        logger.error(SMTP_NOT_CONFIGURED)
+        return False, SMTP_ERROR
+
+    try:
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+
+        subject = "You have been added to a Neighbourhood WatchDog property"
+
+        plain_body = (
+            f"{inviter_name} added you to a property on Neighbourhood WatchDog. \n\n"
+            f"Property: {property_address}\n\n"
+            f"Open the dashboard to view it: {dashboard_url}"
+        )
+
+        html_body = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; background: #0A0A0A; color: #F5F5F5; padding: 32px;">
+                <div style="max-width: 560px; margin: 0 auto; background: #141414; border: 1px solid #272727; border-radius: 12px; padding: 32px;">
+                    <p style="color: #10B981; font-size: 13px; font-weight: bold; letter-spacing: 1px;">
+                        NEIGHBOURHOOD WATCHDOG
+                    </p>
+
+                    <h1 style="font-size: 24px; margin-bottom: 12px;">
+                        You have been added to a property
+                    </h1>
+
+                    <p style="color: #A3A3A3; line-height: 1.6;">
+                        {html.escape(inviter_name)} added you to a property on Neighbourhood WatchDog.
+                    </p>
+
+                    <div style="background: #0D0D0D; border: 1px solid #272727; border-radius: 8px; padding: 16px; margin: 24px 0;">
+                        <div style="color: #8A8A8A; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">
+                            Property
+                        </div>
+                        <div style="font-size: 15px; margin-top: 6px;">
+                            {html.escape(property_address)}
+                        </div>
+                    </div>
+
+                    <a href="{html.escape(dashboard_url, quote=True)}"
+                    style="display: inline-block; background: #10B981; color: #07130F; padding: 14px 22px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+                        Open dashboard
+                    </a>
+                </div>
+            </body>
+            </html>
+            """
+
+        msg = MIMEMultipart("alternative")
+        msg["From"] = f"Neighbourhood WatchDog <{SENDER_EMAIL}>"
+        msg["To"] = recipient_email
+        msg["Subject"] = subject
+
+        msg.attach(MIMEText(plain_body, "plain"))
+        msg.attach(MIMEText(html_body, "html"))
+
+        server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
+        server.quit()
+
+        return True, None
+
+    except Exception as e:
+        logger.exception("Error sending property invite email to %s", recipient_email)
+        return False, str(e)
+
 
 def build_alert_email(alert_type: str, camera_name: str, location: str,
                     risk_level: str = "HIGH", dashboard_url: str | None = "https://neighbourhood-watch-dog.vercel.app/auth/login") -> str:
@@ -272,8 +350,8 @@ def send_alert_email(recipient_email: str, alert_type: str, camera_name: str, lo
                     risk_level: str = "HIGH", dashboard_url: str | None = "https://neighbourhood-watch-dog.vercel.app/auth/login/")-> tuple[bool, str | None]:
 
     if not SENDER_EMAIL or not SENDER_PASSWORD:
-        logger.error("SMTP_SENDER_EMAIL or SMTP_APP_PASSWORD not configured")
-        return False, "SMTP credentials not configured"
+        logger.error(SMTP_NOT_CONFIGURED)
+        return False, SMTP_ERROR
 
     try:
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
@@ -317,8 +395,8 @@ def send_alert_email_bcc(
         return False, "No email recipients provided"
 
     if not SENDER_EMAIL or not SENDER_PASSWORD:
-        logger.error("SMTP_SENDER_EMAIL or SMTP_APP_PASSWORD not configured")
-        return False, "SMTP credentials not configured"
+        logger.error(SMTP_NOT_CONFIGURED)
+        return False, SMTP_ERROR
 
     try:
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)

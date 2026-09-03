@@ -31,6 +31,9 @@ class PropertyMember(BaseModel):
 class PropertyMembers(BaseModel):
     members: list[PropertyMember] = Field(default_factory=list)
 
+class InvitePropertyReq(BaseModel):
+    email: str
+
 class CreatePropertyRes(BaseModel):
     status: int
     message: str | None = None

@@ -3,14 +3,15 @@ from uuid import UUID
 
 from fastapi import APIRouter
 
-from app.auth.authorization import Claims, PropertyMemberClaims
+from app.auth.authorization import Claims, PropertyAdminClaims, PropertyMemberClaims
 from app.core.database import DbSession
-from app.schemas.property import CreatePropertyReq, CreatePropertyRes, PropertyRes
+from app.schemas.property import CreatePropertyReq, CreatePropertyRes, InvitePropertyReq, PropertyMembers, PropertyRes
 from app.services.property_service import (
     create_property_handler,
     get_property_details_handler,
     get_property_members_handler,
     get_user_properties_handler,
+    invite_property_member_handler,
 )
 
 router = APIRouter(prefix="/properties", tags=["properties"])
@@ -101,7 +102,19 @@ async def get_property_members(
     property_id: UUID,
     db: DbSession,
     claims: PropertyMemberClaims
-):
+) -> PropertyMembers:
     """Fetch property members"""
 
     return await get_property_members_handler(property_id, db, claims)
+
+
+@router.post("/{property_id}/member")
+async def invite_property_member(
+    req: InvitePropertyReq,
+    property_id: UUID,
+    db: DbSession,
+    claims: PropertyAdminClaims
+):
+    """Sen an invite for user to join current property"""
+
+    return await invite_property_member_handler(req, property_id, db, claims)
