@@ -225,14 +225,11 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
 
 def _safe_optional_coordinate(value: object) -> float | None:
     """Return a finite coordinate or None for missing/test-double values."""
-    if isinstance(value, bool):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
 
-    try:
-        coordinate = float(value)
-    except (TypeError, ValueError):
-        return None
-
+    coordinate = float(value)
+    
     return coordinate if math.isfinite(coordinate) else None
 
 def _build_alert_res(alert: Alert) -> AlertRes:
