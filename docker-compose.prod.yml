@@ -74,13 +74,12 @@ services:
       MTX_WEBRTCADDITIONALHOSTS: ${MTX_WEBRTCADDITIONALHOSTS}
       MTX_WEBRTCALLOWORIGIN: ${MTX_WEBRTCALLOWORIGIN}
       MTX_AUTHHTTPADDRESS: ${MTX_AUTHHTTPADDRESS}
-    expose:
-      - "9997"
     build:
       context: ./mediamtx
     ports:
       - "8554:8554" # RTSP
       - "8889:8889" # WebRTC
+      - "127.0.0.1:9997:9997"
       - "8189:8189/udp"
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx/mediamtx.yml

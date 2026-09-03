@@ -42,8 +42,7 @@ def _edge_agent_is_available(last_seen_at: datetime | None) -> bool | None:
     if last_seen_at.tzinfo is None:
         last_seen_at = last_seen_at.replace(tzinfo=timezone.utc)
 
-        age_seconds = (datetime.now(timezone.utc) - last_seen_at).total_seconds()
-
+    age_seconds = (datetime.now(timezone.utc) - last_seen_at).total_seconds()
 
     return age_seconds <= EDGE_AGENT_TIMEOUT_SECONDS
 
@@ -324,7 +323,7 @@ async def list_cameras_handler(property_id, db, claims):
             EdgeAgentCredential.property_id, func.max(EdgeAgentCredential.last_seen_at).label("last_seen_at")
         )
         .where(
-            EdgeAgentCredential.property_id == prop_uuid, EdgeAgentCredential.revoked_at_is_(None)
+            EdgeAgentCredential.property_id == prop_uuid, EdgeAgentCredential.revoked_at.is_(None)
         )
         .group_by(EdgeAgentCredential.property_id)
     )
