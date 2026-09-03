@@ -21,7 +21,7 @@ interface CameraProp {
     enabled: boolean
     location: string
     rtspUrl?: string;
-    edgeAgentAvailable?: boolean | null;
+
 }
 
 export default function PropertyCamerasPage() {
@@ -55,7 +55,6 @@ export default function PropertyCamerasPage() {
                         location: camera.location, 
                         visibility: camera.visibility, 
                         enabled: camera.enabled, 
-                        edgeAgentAvailable: camera.edge_agent_available
                     }))
                 );
                 setResolvedPropertyId(propertyId);
@@ -75,14 +74,11 @@ export default function PropertyCamerasPage() {
         };
 
         void loadCameras();
-        const refreshTimer = window.setInterval(() => {
-            void loadCameras();
-        }, 10000);
+
 
         return () => {
             cancelled = true;
 
-            window.clearInterval(refreshTimer);
         }
 
     }, [propertyId]);
@@ -108,7 +104,6 @@ export default function PropertyCamerasPage() {
                     location: newCamera.location,
                     visibility: newCamera.visibility,
                     enabled: newCamera.enabled,
-                    edgeAgentAvailable: null
                 }
             ]);
             setShowCard(false);
@@ -133,7 +128,7 @@ export default function PropertyCamerasPage() {
         return (
             <main className="min-h-full w-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
                 <div className="flex min-h-64 flex-col items-center justify-center text-center">
-                    <CameraOff className="mb-4 size-8 text-brand-ash/60" />
+                    <CameraOff className="mb-4 size-8 text-brand-ash" />
                     <h2 className="text-lg font-semibold">
                         No property selected
                     </h2>
@@ -226,7 +221,6 @@ export default function PropertyCamerasPage() {
                                     location={camera.location}
                                     visibility={camera.visibility}
                                     enabled={camera.enabled}
-                                    edgeAgentAvailable={camera.edgeAgentAvailable}
                                     userRole={activeContext.role === "Neighbourhood Admin" ? "NEIGHBOURHOOD_ADMIN" : "RESIDENT"}
                                     onDeleted={(deletedCameraId) => {
                                         setCameras((currentCameras) =>

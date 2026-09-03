@@ -3,13 +3,16 @@ from uuid import UUID
 
 from fastapi import APIRouter
 
-from app.auth.authorization import Claims, PropertyMemberClaims
+from app.auth.authorization import Claims, PropertyAdminClaims, PropertyMemberClaims
 from app.core.database import DbSession
-from app.schemas.property import CreatePropertyReq, CreatePropertyRes, PropertyRes
+from app.schemas.property import CreatePropertyReq, CreatePropertyRes, InvitePropertyReq, InvitePropertyRes, PropertyMembers, PropertyRes
 from app.services.property_service import (
     create_property_handler,
     get_property_details_handler,
+    get_property_members_handler,
     get_user_properties_handler,
+    invite_property_member_handler,
+    remove_property_member_handler,
 )
 
 router = APIRouter(prefix="/properties", tags=["properties"])
@@ -94,3 +97,41 @@ async def get_property_details(
 ):
     """Fetch property details including users, neighbourhood, and cameras"""
     return await get_property_details_handler(property_id, db, claims)
+
+@router.get("/{property_id}/members", response_model=PropertyMembers)
+async def get_property_members(
+    property_id: UUID,
+    db: DbSession,
+    claims: PropertyMemberClaims
+):
+    """Fetch property members"""
+
+    return await get_property_members_handler(property_id, db, claims)
+
+
+@router.post("/{property_id}/member", response_model=InvitePropertyRes)
+async def invite_property_member(
+    req: InvitePropertyReq,
+    property_id: UUID,
+    db: DbSession,
+    claims: PropertyAdminClaims
+):
+    """Sen an invite for user to join current property"""
+
+    return await invite_property_member_handler(req, property_id, db, claims)
+
+@router.delete("/{property_id}/members/{user_id}", status_code=204)
+async def remove_property_member(
+    property_id: UUID,
+    user_id: UUID,
+    db: DbSession,
+    claims: PropertyAdminClaims
+):
+    """Remove a non-admin member from a property."""
+
+    await remove_property_member_handler(
+        property_id=property_id,
+        user_id=user_id,
+        db=db,
+        claims=claims
+    )

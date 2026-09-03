@@ -101,6 +101,7 @@ def _property_alert_stmt(property_id: UUID):
 
     return (
         select(Alert)
+        .options(joinedload(Alert.camera).joinedload(Camera.property))
         .join(Camera, Alert.camera_id == Camera.id)
         .where(Camera.property_id == property_id)
     )
