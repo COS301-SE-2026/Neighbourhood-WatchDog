@@ -37,15 +37,6 @@ from app.services.alert_service import (
     list_alerts_handler,
     list_property_alerts_handler,
 )
-from app.services import alert_service
-from app.schemas.alert import (
-    AlertMetricsRes,
-    AlertFrequencyMetricsRes,
-    TimeIntervalsEnum,
-    TimePeriod,
-    TrendResponse,
-    TrendGroupBy,
-)
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 

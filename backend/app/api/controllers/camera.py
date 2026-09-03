@@ -11,22 +11,8 @@ from app.auth.authorization import (
 from app.schemas.camera import RegisterCameraReq, RegisterCameraRes, CamerasRes, CameraEditReq, EditCameraRes
 from app.services.camera_service import register_camera_handler, list_cameras_handler, deregister_camera_handler, edit_camera_handler
 from app.services.camera_cache import camera_property_cache_key
-from app.auth.dependencies import get_current_user
 from app.core.cache import cache_get_or_set
 from app.core.database import DbSession
-from app.schemas.camera import (
-    CameraEditReq,
-    CamerasRes,
-    EditCameraRes,
-    RegisterCameraReq,
-    RegisterCameraRes,
-)
-from app.services.camera_service import (
-    deregister_camera_handler,
-    edit_camera_handler,
-    list_cameras_handler,
-    register_camera_handler,
-)
 
 router = APIRouter(prefix="/camera", tags=["cameras"])
 
@@ -95,7 +81,6 @@ async def get_property_cameras(
     db: DbSession,
     claims: PropertyMemberClaims,
 ) -> CamerasRes:
-    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
     async def fetch():
         cameras = await list_cameras_handler(property_id, db, claims)
         return (cameras.model_dump(mode="json"))
