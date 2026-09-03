@@ -11,7 +11,7 @@ import {
   Users,
 } from "lucide-react";
 
-import { getPropertyMembers } from "@/lib/api/property";
+import { getPropertyMembers, invitePropertyMember } from "@/lib/api/property";
 import type { PropertyMembers } from "@/lib/validators/property";
 
 export default function PropertyMembers() {
@@ -25,6 +25,10 @@ export default function PropertyMembers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 	const [inviteEmail, setInviteEmail] = useState("");
+
+	const [inviteLoading, setInviteLoading] = useState(false);
+	const [inviteError, setInviteError] = useState<string | null>(null);
+	const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,6 +62,45 @@ export default function PropertyMembers() {
       cancelled = true;
     };
   }, [propertyId]);
+
+	async function handleInviteSubmit(
+		event: React.FormEvent<HTMLFormElement>,
+	) {
+		event.preventDefault();
+
+		const email = inviteEmail.trim().toLowerCase();
+
+		if (!email) {
+			return;
+		}
+
+		setInviteLoading(true);
+		setInviteError(null);
+		setInviteSuccess(null);
+
+		try {
+			await invitePropertyMember(propertyId, {
+				email,
+			});
+
+			const result = await getPropertyMembers(propertyId);
+
+			setMembers(result.members);
+			setInviteEmail("");
+			setInviteSuccess(
+				`Invitation sent to ${email}.`,
+			);
+		} catch (requestError: unknown) {
+			setInviteError(
+				requestError instanceof Error
+					? requestError.message
+					: "Failed to invite property member.",
+			);
+		} finally {
+			setInviteLoading(false);
+		}
+	}
+
 
   return (
     <main className="min-h-full bg-background px-6 py-8 text-foreground md:px-8">
@@ -103,9 +146,7 @@ export default function PropertyMembers() {
 						</div>
 
 						<form
-							onSubmit={(event) => {
-								event.preventDefault();
-							}}
+							onSubmit={handleInviteSubmit}
 							className="mt-5 flex flex-col gap-3 sm:flex-row"
 						>
 							<div className="relative flex-1">
@@ -123,12 +164,35 @@ export default function PropertyMembers() {
 
 							<button
 								type="submit"
-								disabled={!inviteEmail.trim()}
+								disabled={inviteLoading || !inviteEmail.trim()}
 								className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
 							>
-								Send invitation
+								{inviteLoading ? (
+										<>
+											<Loader2 className="mr-2 size-4 animate-spin" />
+											Sending...
+										</>
+									) : (
+										"Send invitation"
+									)}
 							</button>
 						</form>
+
+						{inviteSuccess && (
+							<p className="mt-3 text-sm text-primary">
+								{inviteSuccess}
+							</p>
+						)}
+
+						{inviteError && (
+							<p
+								role="alert"
+								className="mt-3 text-sm text-destructive"
+							>
+								{inviteError}
+							</p>
+						)}
+
 					</div>
 				</section>
 
