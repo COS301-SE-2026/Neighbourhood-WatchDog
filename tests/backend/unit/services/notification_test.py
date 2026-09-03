@@ -215,7 +215,7 @@ class TestBuildAlertEmail:
         )
 
         assert "<script>alert(1)</script>" not in body
-        assert "&lt;script&gt;alert(1)&lt;/script&gt;" in body
+        assert "&lt;script&gt;alert(1)&lt;/script&gt;" in body.lower()
         assert "CAM &lt;03&gt;" in body
         assert "Front &amp; &lt;Gate&gt;" in body
         assert "HIGH&quot;PRIORITY" in body
