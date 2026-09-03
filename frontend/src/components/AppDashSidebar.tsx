@@ -340,7 +340,7 @@ const AppDashSidebar = () => {
                                     className="mt-3 flex w-full items-start gap-2.5 rounded-lg border border-border bg-brand-depth p-3 text-left transition-colors hover:bg-white/[0.06] group-data-[collapsible=icon]:hidden"
                                 >
                                     <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-brand-green/10">
-                                        <ActiveContextIcon className="size-3.5 text-brand-green-400" />
+                                        <ActiveContextIcon className="size-3.5 text-brand-green" />
                                     </div>
 
                                     <div className="min-w-0 flex-1">
@@ -399,7 +399,7 @@ const AppDashSidebar = () => {
                                                 <ContextIcon
                                                     className={`size-3.5 ${
                                                         isActive
-                                                            ? "text-brand-green-400"
+                                                            ? "text-brand-green"
                                                             : "text-brand-frost/60"
                                                     }`}
                                                 />
@@ -416,7 +416,7 @@ const AppDashSidebar = () => {
                                             </div>
 
                                             {isActive && (
-                                                <Check className="mt-1 size-4 shrink-0 text-brand-green-400" />
+                                                <Check className="mt-1 size-4 shrink-0 text-brand-green" />
                                             )}
                                         </DropdownMenuItem>
                                     );
@@ -426,7 +426,7 @@ const AppDashSidebar = () => {
 
                                 <DropdownMenuItem
                                     onSelect={() => setDialogOpen(true)}
-                                    className="cursor-pointer gap-2 rounded-md px-2 py-2.5 text-brand-green-400 focus:bg-brand-green/10 focus:text-brand-green-300"
+                                    className="cursor-pointer gap-2 rounded-md px-2 py-2.5 text-brand-green focus:bg-brand-green/10 focus:text-brand-green"
                                 >
                                     <Plus className="size-4" />
                                     Add property
@@ -489,7 +489,7 @@ const AppDashSidebar = () => {
                         className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center"
                     >
                         <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-brand-green/10">
-                            <User className="size-4 text-brand-green-400" />
+                            <User className="size-4 text-brand-green" />
                         </div>
                         <div className="min-w-0 group-data-[collapsible=icon]:hidden">
                             <p className="truncate text-sm font-medium text-brand-frost">
