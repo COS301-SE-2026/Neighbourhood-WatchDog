@@ -220,7 +220,6 @@ async def seed_test_database() -> None:
 			"E2E",
 			"Officer",
 			"e2e-officer-cognito-sub",
-			UserRole.SECURITY_OFFICER,
 		)
 		deny_flow_user = _user(
 			FOURTH_USER_ID,
