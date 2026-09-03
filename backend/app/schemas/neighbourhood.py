@@ -3,6 +3,8 @@ from typing import Annotated, Literal
 from uuid import UUID
 from datetime import datetime
 
+from app.models.neighbourhood_user import NeighbourhoodRole
+
 NonEmptyString = Annotated[str, StringConstraints(min_length=1, strip_whitespace=True)]
 
 class CreateNeighbourhoodReq(BaseModel):
@@ -28,3 +30,21 @@ class NeighbourhoodPropertyRes(BaseModel):
     property_type: Literal["PRIVATE", "PUBLIC"]
     neighbourhood_id: UUID | None = None
     neighbourhood_name: str | None = None
+
+
+class UpdateMemberRoleReq(BaseModel):
+    role: NeighbourhoodRole
+
+
+class NeighbourhoodMemberRes(BaseModel):
+    user_id: UUID
+    first_name: str
+    last_name: str
+    email: str
+    role: NeighbourhoodRole
+
+
+class UpdateMemberRoleRes(BaseModel):
+    status: int
+    message: str
+    data: NeighbourhoodMemberRes

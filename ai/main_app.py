@@ -7,6 +7,7 @@ from tkinter import ttk, scrolledtext
 from app_state import AppState
 from services.camera_service import CameraService, CameraSummary
 from runtime.agent_runtime import AgentEvent
+
 from ui.theme import (
     ASH,
     CAUTION,
@@ -20,7 +21,6 @@ from ui.theme import (
 logger = logging.getLogger("watchdog.desktop.main_app")
 
 SEGOE_FONT = "Segoe UI"
-
 
 CARDBODY_TLABEL = "CardBody.TLabel"
 CARD_TLABEL_FRAME = "Card.TLabelframe"

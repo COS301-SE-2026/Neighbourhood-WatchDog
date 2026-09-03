@@ -4,7 +4,12 @@ from collections.abc import Callable
 from pathlib import Path
 
 from runtime.agent_runtime import AgentEvent, AgentRuntime
-from runtime.paths import AI_DIR, get_venv_python
+from runtime.paths import (
+    AI_DIR,
+    get_service_executable,
+    get_venv_python,
+    is_packaged,
+)
 
 
 class AgentService:
@@ -21,11 +26,20 @@ class AgentService:
         *,
         ai_directory: Path | None = None,
         python_executable: Path | None = None,
+        service_executable: Path | None = None,
     ) -> None:
         self.runtime = AgentRuntime(
             ai_directory=ai_directory or AI_DIR,
             python_executable=(
                 python_executable or get_venv_python()
+            ),
+            service_executable=(
+                service_executable
+                or (
+                    get_service_executable()
+                    if is_packaged()
+                    else None
+                )
             ),
             event_callback=event_callback,
         )

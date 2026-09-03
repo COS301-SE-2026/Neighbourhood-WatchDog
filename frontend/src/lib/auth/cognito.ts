@@ -212,6 +212,12 @@ export const setSession = (tokens: {
   
 };
 
+export const updateStoredFullName = (fullname: string) => {
+  if (typeof window === "undefined") return;
+
+  localStorage.setItem("fullname", fullname);
+  window.dispatchEvent(new Event(AUTH_EVENT));
+}
 // Get token
 export const getAccessToken = (): string | null => {
   if (typeof globalThis.window === 'undefined') return null;

@@ -167,6 +167,31 @@ export async function fetchAlerts(
   };
 }
 
+
+export async function fetchPropertyAlerts(
+  propertyId: string,
+  filters?: AlertFilters,
+  signal?: AbortSignal,
+): Promise<PaginatedAlerts> {
+  const query = buildAlerts(filters);
+
+  const res = await apiFetch<ListAlertsRes>(
+    `/alerts/property/${propertyId}${query}`,
+    { signal },
+  );
+
+  return {
+    alerts: (res.data ?? []).map(normaliseAlert),
+    pagination: {
+      total: res.pagination?.total ?? 0,
+      limit: res.pagination?.limit ?? 25,
+      offset: res.pagination?.offset ?? 0,
+      has_more: res.pagination?.has_more ?? false,
+    },
+  };
+}
+
+
 export async function acknowledgeAlert(alertId: string): Promise<void> {
   await apiFetch(`/alerts/${alertId}/acknowledge`, { method: "PATCH" });
 }

@@ -66,13 +66,13 @@ docker compose version
 
 ## 4. Infrastructure — AWS Setup
 ### EC2 Instance
-The system runs in `eu-north-1 (Stockholm)`.
+The system runs in `af-south-1 (Cape Town)`.
 
 ### Security Group Rules
 Open ports: 22, 80, 443, 8554, 8889, 8189 and internal ports 9997 and 5432.
 
 ### AWS Cognito
-- Create a User Pool in `eu-north-1`.
+- Create a User Pool in `af-south-1`.
 - Enable MFA (TOTP).
 - Configure App Client.
 - Create the required user groups.

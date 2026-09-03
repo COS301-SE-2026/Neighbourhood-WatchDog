@@ -12,6 +12,11 @@ from collections.abc import Callable
 from pathlib import Path
 import logging
 
+from runtime.paths import (
+    get_service_executable,
+    is_packaged,
+)
+
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -38,10 +43,12 @@ class AgentRuntime:
         ai_directory: Path,
         python_executable: Path,
         event_callback: Callable[[AgentEvent], None],
+        service_executable: Path | None = None,
         health_url: str = "http://127.0.0.1:8001/health",
     ) -> None:
         self.ai_directory = ai_directory
         self.python_executable = python_executable
+        self.service_executable = service_executable
         self.event_callback = event_callback
         self.health_url = health_url
 
@@ -138,36 +145,72 @@ class AgentRuntime:
                 )
                 return False
 
-        if not self.python_executable.is_file():
-            self._set_status(
-                "error",
-                "Could not find the local AI runtime.",
+        if is_packaged():
+            service_executable = (
+                self.service_executable
+                or get_service_executable()
             )
-            self._emit(
-                event_type="error",
-                message=f"Missing Python executable: {self.python_executable}",
-            )
-            return False
 
-        command = [
-            str(self.python_executable),
-            "-u",
-            "-m",
-            "uvicorn",
-            "app:app",
-            "--host",
-            "0.0.0.0",
-            "--port",
-            "8001",
-            "--no-access-log",
-        ]
+            if not service_executable.is_file():
+                self._set_status(
+                    "error",
+                    "Could not find the bundled AI service.",
+                )
+                self._emit(
+                    event_type="error",
+                    message=(
+                        "The bundled WatchDog AI service could not be found. "
+                        "Please reinstall WatchDog."
+                    ),
+                )
+                return False
+
+            command = [
+                str(service_executable),
+            ]
+
+        else:
+            if not self.python_executable.is_file():
+                self._set_status(
+                    "error",
+                    "Could not find the local AI runtime.",
+                )
+                self._emit(
+                    event_type="error",
+                    message=(
+                        f"Missing development Python executable: "
+                        f"{self.python_executable}"
+                    ),
+                )
+                return False
+
+            command = [
+                str(self.python_executable),
+                "-u",
+                "-m",
+                "uvicorn",
+                "app:app",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                "8001",
+                "--no-access-log",
+            ]
 
         environment = os.environ.copy()
         environment["PYTHONUNBUFFERED"] = "1"
         environment["MKL_THREADING_LAYER"] = "GNU"
 
+        working_directory = self.ai_directory
+
+        if is_packaged():
+            working_directory = (
+                self.service_executable
+                or get_service_executable()
+            ).parent
+
         popen_options = {
-            "cwd": self.ai_directory,
+            "cwd": working_directory,
             "stdout": subprocess.PIPE,
             "stderr": subprocess.STDOUT,
             "text": True,

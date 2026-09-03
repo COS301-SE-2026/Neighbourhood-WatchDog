@@ -48,12 +48,19 @@ jobs:
               "POSTGRES_USER": "${{ secrets.POSTGRES_USER }}",
               "POSTGRES_DB": "${{ secrets.POSTGRES_DB }}",
               "FRONTEND_URL": "${{ secrets.FRONTEND_URL }}",
-              "DETECTION_CONFIDENCE_THRESHOLD": "${{ secrets.DETECTION_CONFIDENCE_THRESHOLD }}"
+              "DETECTION_CONFIDENCE_THRESHOLD": "${{ secrets.DETECTION_CONFIDENCE_THRESHOLD }}",
+              "FAILOVER_CONTROLLER_TOKEN": "${{ secrets.FAILOVER_CONTROLLER_TOKEN }}",
+              "GO2RTC_API_USERNAME": "${{ secrets.GO2RTC_API_USERNAME }}",
+              "GO2RTC_API_PASSWORD": "${{ secrets.GO2RTC_API_PASSWORD }}",
+              "FAILOVER_POLL_SECONDS": "${{ secrets.FAILOVER_POLL_SECONDS }}",
+              "FAILOVER_FAILURE_PROBES:" "${{ secrets.FAILOVER_FAILURE_PROBES }}"
             }'
       
       - name: Build, tag, and push image to ECR
+        env: 
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+          aws ecr get-login-password --region ${AWS_REGION} \
             | docker login --username AWS --password-stdin 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
           IMAGE_TAG="${{ github.sha }}"
@@ -64,11 +71,13 @@ jobs:
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
       - name: Register new task definition with SHA-tagged image
+        env: 
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           aws ecs describe-task-definition \
             --task-definition watchdog-backend-task \
             --query 'taskDefinition' \
-            --region ${{ secrets.AWS_REGION }} > task-def.json
+            --region ${AWS_REGION} > task-def.json
 
             NEW_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:${{ env.IMAGE_TAG }}" \
               '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
@@ -78,12 +87,84 @@ jobs:
 
             NEW_REVISION=$(aws ecs register-task-definition \
               --cli-input-json file://new-task-def.json \
-              --region ${{ secrets.AWS_REGION }} \
+              --region ${AWS_REGION} \
               --query 'taskDefinition.revision' \
               --output text)
             
             echo "NEW_REVISION=$NEW_REVISION" >> $GITHUB_ENV
             echo "Registered task definition revision: $NEW_REVISION"
+
+      - name: Register Celery worker task definition with SHA-tagged image
+        env: 
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition watchdog-celery-worker-task \
+            --query 'taskDefinition' \
+            --region ${AWS_REGION} > worker-task-def.json
+
+          NEW_WORKER_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
+            '.containerDefinitions[0].image = $IMAGE 
+            | .containerDefinitions[0].secrets = (
+                (.containerDefinitions[0].secrets // [])
+                | map(select(.name != "S3_BUCKET_NAME"))
+                + [{"name": "S3_BUCKET_NAME", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:S3_BUCKET_NAME::"}]
+              )
+            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
+            worker-task-def.json)
+
+          echo "$NEW_WORKER_TASK_DEF" > new-worker-task-def.json
+
+          NEW_WORKER_REVISION=$(aws ecs register-task-definition \
+            --cli-input-json file://new-worker-task-def.json \
+            --region ${AWS_REGION} \
+            --query 'taskDefinition.revision' \
+            --output text)
+
+          echo "NEW_WORKER_REVISION=$NEW_WORKER_REVISION" >> $GITHUB_ENV
+
+      - name: Register Celery beat task definition with SHA-tagged image
+        env: 
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition watchdog-celery-beat-task \
+            --query 'taskDefinition' \
+            --region ${AWS_REGION} > beat-task-def.json
+
+          NEW_BEAT_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
+            '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
+            beat-task-def.json)
+
+          echo "$NEW_BEAT_TASK_DEF" > new-beat-task-def.json
+
+          NEW_BEAT_REVISION=$(aws ecs register-task-definition \
+            --cli-input-json file://new-beat-task-def.json \
+            --region ${AWS_REGION} \
+            --query 'taskDefinition.revision' \
+            --output text)
+
+          echo "NEW_BEAT_REVISION=$NEW_BEAT_REVISION" >> $GITHUB_ENV
+
+      - name: Deploy Celery worker and beat
+        run: |
+          aws ecs update-service \
+            --cluster watchdog-prod-cluster \
+            --service watchdog-celery-worker-service \
+            --task-definition watchdog-celery-worker-task:${{ env.NEW_WORKER_REVISION }} \
+            --force-new-deployment
+
+          aws ecs update-service \
+            --cluster watchdog-prod-cluster \
+            --service watchdog-celery-beat-service \
+            --task-definition watchdog-celery-beat-task:${{ env.NEW_BEAT_REVISION }} \
+            --force-new-deployment
+
+          aws ecs wait services-stable \
+            --cluster watchdog-prod-cluster \
+            --services watchdog-celery-worker-service watchdog-celery-beat-service
 
       - name: Run database migrations
         run: |
@@ -91,7 +172,7 @@ jobs:
             --cluster watchdog-prod-cluster \
             --task-definition watchdog-backend-task \
             --launch-type EC2 \
-            --overrides '{"containerOverrides":[{"name":"backend","command":["alembic","upgrade","head"]}]}')
+            --overrides '{"containerOverrides":[{"name":"backend","memory":256,"command":["alembic","upgrade","head"]}]}')
 
           TASK_ARN=$(echo "$RESULT" | jq -r '.tasks[0].taskArn // empty')
 

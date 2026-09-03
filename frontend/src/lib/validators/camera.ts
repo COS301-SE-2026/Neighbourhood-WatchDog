@@ -21,6 +21,7 @@ export const cameraSchema = z.object({
   location: z.string(),
   enabled: z.boolean(),
   created_at: z.iso.datetime(),
+  edge_agent_available: z.boolean().nullable().optional()
 })
 
 export const cameraEditSchema = z.object({

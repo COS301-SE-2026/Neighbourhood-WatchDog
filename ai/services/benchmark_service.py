@@ -6,10 +6,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from services.dependency_service import AI_DIR, PERSON_MODEL_PATH, get_venv_python
+from services.dependency_service import (
+    PERSON_MODEL_PATH,
+    get_venv_python,
+)
+from runtime.paths import get_resource_dir, get_service_executable, is_packaged
 
-ASSETS_DIR = AI_DIR / "assets"
-BENCHMARK_VIDEO_PATH = ASSETS_DIR / "clear-presence.mp4"
+BENCHMARK_VIDEO_PATH = (
+    get_resource_dir()
+    / "assets"
+    / "clear-presence.mp4"
+)
 RUNNER_SCRIPT_PATH = Path(__file__).resolve().parent / "benchmark_runner.py"
 
 #30 frames run through the detector first without tiuming 
@@ -112,23 +119,52 @@ class BenchmarkService:
             return BenchmarkResult(
                 error=f"Benchmark clip not found: {self.video_path}"
             )
-        
-        if not self.venv_python.is_file():
-            return BenchmarkResult(
-                error=(
-                    "WatchDog's Python environment could not be found. "
-                    "Please complete the dependency setup first."
-                )
-            )
 
-        command = [
-            str(self.venv_python),
-            str(RUNNER_SCRIPT_PATH),
-            "--video", str(self.video_path),
-            "--model", str(self.person_model_path),
-            "--warmup-frames", str(self.warmup_frames),
-            "--duration", str(self.duration),
-        ]
+        if is_packaged():
+            service_executable = get_service_executable()
+
+            if not service_executable.is_file():
+                return BenchmarkResult(
+                    error=(
+                        "The packaged WatchDog AI service could not be found. "
+                        "Please reinstall WatchDog."
+                    )
+                )
+
+            command = [
+                str(service_executable),
+                "--benchmark",
+                "--video",
+                str(self.video_path),
+                "--model",
+                str(self.person_model_path),
+                "--warmup-frames",
+                str(self.warmup_frames),
+                "--duration",
+                str(self.duration),
+            ]
+
+        else:
+            if not self.venv_python.is_file():
+                return BenchmarkResult(
+                    error=(
+                        "WatchDog's Python environment could not be found. "
+                        "Please complete the dependency setup first."
+                    )
+                )
+
+            command = [
+                str(self.venv_python),
+                str(RUNNER_SCRIPT_PATH),
+                "--video",
+                str(self.video_path),
+                "--model",
+                str(self.person_model_path),
+                "--warmup-frames",
+                str(self.warmup_frames),
+                "--duration",
+                str(self.duration),
+            ]
 
         try:
             process = subprocess.Popen(

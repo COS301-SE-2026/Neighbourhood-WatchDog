@@ -146,7 +146,7 @@ class BenchmarkPage(ttk.Frame):
             return
 
         if not self.benchmark_service.video_is_available():
-            self.status_var.set("Benchmark clip is missing - skipping performance check.")
+            self.status_var.set("Required performance-check video is missing. Please reinstall WatchDog.")
             return
         
         self.benchmark_running = True
@@ -212,6 +212,25 @@ class BenchmarkPage(ttk.Frame):
         self.status_var.set("Performance check complete.")
         self._render_results(payload)
 
+        if payload.rating == RATING_INSUFFICIENT:# IF the rating is insufficient then we do not allow them to proceed
+            self.status_var.set(
+                "This computer may not be able to run WatchDog reliably."
+            )
+
+            if self.continue_button is not None:
+                self.continue_button.configure(state="disabled")
+
+            return
+
+        if (
+            self.controller is not None
+            and hasattr(
+                self.controller,
+                "handle_benchmark_success",
+            )
+        ):
+            self.controller.handle_benchmark_success(payload)
+        
         if self.continue_button is not None:
             self.continue_button.configure(state="normal")
 

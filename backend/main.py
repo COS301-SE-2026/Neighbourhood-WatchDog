@@ -35,8 +35,8 @@ configure_logging(config.debug and "DEBUG" or "INFO")
 app = FastAPI(
     title=config.app_name,
     openapi_url="/openapi.json", # if config.debug else None, TODO consider uncommenting
-    docs_url="/docs" if config.debug else None,
-    redoc_url="/redoc" if config.debug else None,
+    docs_url="/docs", # if config.debug else None,
+    redoc_url="/redoc", # if config.debug else None,
 )
 
 if config.testing: #Disable the limiter during testing, preventing exception 429

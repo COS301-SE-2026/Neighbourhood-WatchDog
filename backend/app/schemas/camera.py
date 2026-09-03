@@ -22,6 +22,7 @@ class CameraListItemRes(BaseModel):
     location: NonEmptyString
     enabled: bool
     created_at: datetime
+    edge_agent_available: bool | None = None
 
 
 class CameraRes(BaseModel):
@@ -81,14 +82,3 @@ class MediaMtxAuthRequest(BaseModel):
     id: str = ""
     query: str = ""
 
-class AgentCameraSummary(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: UUID
-    name: NonEmptyString
-    location: NonEmptyString
-    enabled: bool
-
-
-class AgentCameraSummaryList(BaseModel):
-    data: list[AgentCameraSummary] = []

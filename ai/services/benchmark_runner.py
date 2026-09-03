@@ -14,13 +14,13 @@ if str(PROJECT_ROOT) not in sys.path:
 def report(message: str, fraction: float) -> None:
     print(f"PROGRESS:{message}|{fraction}", flush=True)
 
-def main() -> int:#NOSONAR
+def main(argv: list[str] | None = None) -> int:#NOSONAR
     parser = argparse.ArgumentParser()
     parser.add_argument("--video", required=True)
     parser.add_argument("--model", required=True)
     parser.add_argument("--warmup-frames", type=int, required=True)
     parser.add_argument("--duration", type=float, required=True)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     result: dict = {}
     frame_times: list[float] = []

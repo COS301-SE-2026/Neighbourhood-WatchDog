@@ -60,7 +60,7 @@ async def calculate_risk_score_handler(neighbourhood_id: UUID, db: DbSession):
     threshold = threshold_result.scalar_one_or_none()
 
     if not threshold:
-        logger.info("calculate_risk_score: no threshold config for neighbourhood_id=$s falling back to default", neighbourhood_id)
+        logger.info("calculate_risk_score: no threshold config for neighbourhood_id=%s falling back to default", neighbourhood_id)
         default_stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id.is_(None))
         default_result = await db.execute(default_stmt)
         threshold = default_result.scalar_one()

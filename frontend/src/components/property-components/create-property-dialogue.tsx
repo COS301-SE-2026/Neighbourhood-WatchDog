@@ -14,10 +14,8 @@ import {
 } from "@/components/ui/dialog"
 
 import { useState } from "react"
-import { Field, FieldGroup } from "../ui/field"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { AddressSchema, CreatePropertyReqSchema, PropertyRes } from "@/lib/validators/property"
+import { CreatePropertyReqSchema, PropertyRes } from "@/lib/validators/property"
+import { AddressPicker, type SelectedAddress } from "./address-picker"
 import { addProperty } from "@/lib/api/property"
 
 
@@ -30,160 +28,115 @@ interface CreatePropertyDialogAttributes {
 export function CreatePropertyDialog({ open, onOpenChange, onPropertyAdded }: CreatePropertyDialogAttributes) {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
+  const [selectedAddress, setSelectedAddress] = useState<SelectedAddress | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setErrors({})
-    setLoading(true)
+  const handleSubmit = async (
+      e: React.FormEvent<HTMLFormElement>,
+  ) => {
+      e.preventDefault();
+      setErrors({});
+      setLoading(true);
 
-    const formData = new FormData(e.currentTarget)
+      const form = e.currentTarget;
 
-    const address = {
-      "address-line-1": formData.get("address-line-1") as string,
-      "address-line-2": formData.get("address-line-2") as string,
-      city: formData.get("city") as string,
-      province: formData.get("province") as string,
-      "postal-code": formData.get("postal-code") as string
-    }
+      try {
+          if (!selectedAddress) {
+              setErrors({
+                  address: "Please search for and select an address.",
+              });
+              return;
+          }
 
+          const validatedCreateProp =
+              CreatePropertyReqSchema.safeParse({
+                  address: selectedAddress.displayName,
+                  property_type: "PRIVATE",
+                  latitude: selectedAddress.latitude, 
+                  longitude: selectedAddress.longitude
+              });
 
-    const property = "PRIVATE" 
-    //TODO: consider whether to change hthis in the future. 
-    // client said that we don't need to worry about public properties for now
+          if (!validatedCreateProp.success) {
+              setErrors({
+                  address:
+                      validatedCreateProp.error.issues[0]?.message ??
+                      "Please select a valid address.",
+              });
+              return;
+          }
 
-    try {
+          const createdProperty = await addProperty(
+              validatedCreateProp.data,
+          );
 
-      const validatedAddr = AddressSchema.parse(address)
-      
+          onPropertyAdded(createdProperty);
+          form.reset();
+          setSelectedAddress(null);
+          onOpenChange(false);
+      } catch (error) {
+          console.error("Failed to create property:", error);
 
-      const addrValues = Object.values(validatedAddr).filter(value => value !== "")
-      const singleLineAdd = addrValues.join("\n")
-      
-      console.log(singleLineAdd)
-      
-      const validatedCreateProp = CreatePropertyReqSchema.safeParse({
-        address: singleLineAdd,
-        property_type: property
-      })
+          if (error instanceof z.ZodError) {
+              const fieldErrors: Record<string, string> = {};
 
-      if (!validatedCreateProp.success){
-        alert("FLOPPED"); // this should never appear coz the other validations should pass before this one
-        return;
+              error.issues.forEach((issue) => {
+                  const path = issue.path.join(".");
+                  fieldErrors[path] = issue.message;
+              });
+
+              setErrors(fieldErrors);
+          } else {
+              setErrors({
+                  submit:
+                      error instanceof Error
+                          ? error.message
+                          : "Failed to create property",
+              });
+          }
+      } finally {
+          setLoading(false);
       }
+  };
 
-      const createdProperty = await addProperty(validatedCreateProp.data)
-      onPropertyAdded(createdProperty)
-      onOpenChange(false)
-      e.currentTarget?.reset()
-
-    } catch (error) {
-
-      if (error instanceof z.ZodError) {
-        console.log("zod error", error)
-
-        const fieldErrors: Record<string, string> = {}
-        error.issues.forEach((err) => {
-          const path = err.path.join(".")
-          fieldErrors[path] = err.message
-        })
-
-        setErrors(fieldErrors)
-
-      } else {
-
-        console.error("Failed to create property:", error)
-        setErrors({ submit: error instanceof Error ? error.message : "Failed to create property" })
-      
-      }
-
-    } finally {
-      setLoading(false)
-    }   
-
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm font-mono">
+      <DialogContent className="border-white/10 bg-zinc-950 text-white sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">
-            {loading && <Spinner className="mr-2 h-4 w-4 animate-spin" />}
+          <DialogTitle className="text-xl font-semibold tracking-tight text-white">
             {loading ? "Creating..." : "Create Property"}
           </DialogTitle>
-          <DialogDescription >
-            Enter the details of your property
+          <DialogDescription className="text-white/50">
+            Search for and select the address of your property.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           {errors.submit && (
-            <p className="text-sm text-threat mb-4">{errors.submit}</p>
+            <p className="mb-4 text-sm text-threat">{errors.submit}</p>
           )}
-          <FieldGroup>
-            <Field>
-              <Label htmlFor="add-line-1">Address Line 1 (Street address)</Label>
-              <Input id="add-line-1" name="address-line-1" defaultValue="" />
-              {errors["address-line-1"] && (
-                <p className="text-sm text-threat text-xs mt-0.5">{errors["address-line-1"]}</p>
-              )}
-            </Field>
+          
+          <AddressPicker
+              value={selectedAddress}
+              onSelect={(address) => {
+                  setSelectedAddress(address);
 
-            <Field>
-              <Label htmlFor="add-line-2">Address Line 2 (Apartment, suite, unit, building etc.)</Label>
-              <Input id="add-line-2" name="address-line-2" defaultValue="" />
-              {errors["address-line-2"] && (
-                <p className="text-sm text-threat text-xs mt-0.5">{errors["address-line-2"]}</p>
-              )}
-            </Field>
+                  if (address) {
+                      setErrors((currentErrors) => {
+                          const nextErrors = { ...currentErrors };
+                          delete nextErrors.address;
+                          return nextErrors;
+                      });
+                  }
+              }}
+              error={errors.address}
+          />
 
-            <Field>
-              <Label htmlFor="city-1">City</Label>
-              <Input id="city-1" name="city" defaultValue="" />
-              {errors["city"] && (
-                <p className="text-sm text-threat text-xs mt-0.5">{errors["city"]}</p>
-              )}
-            </Field>
 
-            <Field>
-              <Label htmlFor="province-1">Province</Label>
-              <select
-                id="province-1"
-                name="province"
-                defaultValue="Gauteng"
-                className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="">Select a province</option>
-                <option value="Eastern Cape">Eastern Cape</option>
-                <option value="Free State">Free State</option>
-                <option value="Gauteng">Gauteng</option>
-                <option value="KwaZulu-Natal">KwaZulu-Natal</option>
-                <option value="Limpopo">Limpopo</option>
-                <option value="Mpumalanga">Mpumalanga</option>
-                <option value="Northern Cape">Northern Cape</option>
-                <option value="North West">North West</option>
-                <option value="Western Cape">Western Cape</option>
-              </select>
-              {errors["province"] && (
-                <p className="text-sm text-threat text-xs mt-0.5">{errors["province"]}</p>
-              )}
-            </Field>
-
-            <Field>
-              <Label htmlFor="postal-code-1">Postal Code</Label>
-              <Input id="postal-code-1" name="postal-code" defaultValue="" />
-              {errors["postal-code"] && (
-                <p className="text-sm text-threat text-xs mt-0.5">{errors["postal-code"]}</p>
-              )}
-            </Field>
-            
-
-          </FieldGroup>
-
-          <DialogFooter>
+          <DialogFooter className="mt-6 border-t border-white/10 bg-zinc-950 pt-4">
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline" type="button" disabled={loading} className="border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08] hover:text-white">Cancel</Button>
             </DialogClose>
-            <Button type="submit" disabled={loading}>
-              {loading && <Spinner className="mr-2 h-4 w-4 animate-spin" /> }
+            <Button type="submit" disabled={loading} className="bg-emerald-500 text-black hover:bg-emerald-400">
+              {loading && <Spinner className="mr-2 size-4 animate-spin" /> }
               {loading ? "Creating..." : "Create Property"}
             </Button>
           </DialogFooter>

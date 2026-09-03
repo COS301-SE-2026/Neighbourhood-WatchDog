@@ -14,6 +14,8 @@ from watchdog_gui import WatchDogAgentApp
 from welcome_page import WelcomePage
 from benchmark import BenchmarkPage
 from ui.theme import configure_theme
+from services.benchmark_service import BenchmarkResult
+from services.benchmark_state_service import BenchmarkStateService
 
 logger = logging.getLogger("watchdog.desktop.main")
 
@@ -33,6 +35,7 @@ class WatchDogDesktopApp:
         self.state = AppState()
         self.startup_resolver = StartupResolver()
         self.onboarding_service = OnboardingService()
+        self.benchmark_state_service = BenchmarkStateService()
 
         self.agent_events: queue.Queue[AgentEvent] = queue.Queue()
         self.exit_requested = False
@@ -70,6 +73,8 @@ class WatchDogDesktopApp:
             self.show_pairing()
         elif decision.destination == StartupDestination.INSTALLER:
             self.show_installer()
+        elif decision.destination == StartupDestination.BENCHMARK:
+            self.show_benchmark()
         else:
             logger.error(
                 "Unhandled startup detination: %s (reason=%s)",
@@ -85,11 +90,15 @@ class WatchDogDesktopApp:
         self._apply_startup_decision(decision)
 
     def advance_past_dependencies(self) -> None:
-        """Called by installer's next button to skip dependencies if already done"""
+        """
+        Show benchmark page (previously used to skip benchmark).
+        """
         self.show_benchmark()
+        # decision = self.startup_resolver.resolve_authentication()
+        # self._apply_startup_decision(decision)
 
     def advance_past_benchmark(self) -> None:
-        """Called by benchmark page's continue/skip button to move on to authentication"""
+        """Called after the required benchmark completes."""
         decision = self.startup_resolver.resolve_authentication()
         self._apply_startup_decision(decision)
 
@@ -183,6 +192,17 @@ class WatchDogDesktopApp:
             state=self.state,
             agent_service=self.agent_service,
         )
+
+    def handle_benchmark_success(
+        self,
+        result: BenchmarkResult,
+    ) -> None:
+        """
+        Save an accepted benchmark result.
+
+        This method is called by BenchmarkPage.
+        """
+        self.benchmark_state_service.save(result)
 
     def quit_application(self) -> None:
         """
