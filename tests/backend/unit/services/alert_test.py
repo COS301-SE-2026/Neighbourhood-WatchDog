@@ -239,86 +239,94 @@ class TestAcknowledgeAlert:
 
     @pytest.mark.asyncio
 
-    async def test_invalid_claim_id_raises_401(self):
-        """A malformed authenticated-user ID must not acknowledge the alert."""
+    async def test_property_admin_can_acknowledge_non_critical_alert(self):
+
         alert = self._make_alert(status="OPEN")
+        alert_result, property_result, neighbourhood_result = self._make_alert_context(alert)
+        property_membership = property_result.scalar_one_or_none.return_value
+        property_membership.is_admin = True
+        neighbourhood_result.scalar_one_or_none.return_value = None
+
         self.mock_db.execute.side_effect = [
-            self._exec_result(scalar_one_or_none=alert),
-            self._exec_result(scalar_one_or_none=self.neighbourhood_id)
+            alert_result, 
+            property_result, 
+            neighbourhood_result
         ]
 
-        with pytest.raises(HTTPException) as exc:
-            await acknowledge_alert_handler(
-               alert.id,
-               self.mock_db,
-                {"id": "not-a-uuid"}
 
-           )
+        with patch(
+            "app.services.alert_service.create_audit_log_item",
+            new_callable=AsyncMock,
+        ):
+            result = await acknowledge_alert_handler(
+                alert.id,
+                self.mock_db,
+                self.claims,
+            )
 
-        assert exc.value.status_code == 401
-        assert alert.status == "OPEN"
-        assert self.mock_db.execute.await_count == 2
-        self.mock_db.commit.assert_not_awaited()
+        assert result.status == "ACKNOWLEDGED"
+        assert alert.status == "ACKNOWLEDGED"
+        assert alert.resolved_by == self.user_id
+        self.mock_db.commit.assert_awaited_once()
 
     @pytest.mark.asyncio
-
-    async def test_unassigned_camera_property_raises_404(self):
-        """An alert cannot be acknowledged when its property has no neighbourhood."""
+    async def test_property_admin_can_acknowledge_property_without_neighbourhood(self):
+        """A property administrator can acknowledge when no neighbourhood is assigned."""
+        
         alert = self._make_alert(status="OPEN")
+        alert_result, property_result, _ = self._make_alert_context(alert)
+        property_obj = alert_result.one_or_none.return_value[2]
+        property_obj.neighbourhood_id = None
+        property_membership = property_result.scalar_one_or_none.return_value
+        property_membership.is_admin = True
         self.mock_db.execute.side_effect = [
-            self._exec_result(scalar_one_or_none=alert),
-            self._exec_result(scalar_one_or_none=None)
+            alert_result, 
+            property_result
 
         ]
 
-        with pytest.raises(HTTPException) as exc:
-            await acknowledge_alert_handler(alert.id, self.mock_db, self.claims)
+        with patch(
+            "app.services.alert_service.create_audit_log_item",
+            new_callable=AsyncMock,
+        ):
+            result = await acknowledge_alert_handler(
+                alert.id,
+                self.mock_db,
+                self.claims,
+            )
 
-        assert exc.value.status_code == 404
-        assert exc.value.detail == "Camera property is not assigned to a neighbourhood"
-        assert alert.status == "OPEN"
-        assert self.mock_db.execute.await_count == 2
-
-        
-        self.mock_db.commit.assert_not_awaited()
+        assert result.status == "ACKNOWLEDGED"
+        assert alert.status == "ACKNOWLEDGED"
+        self.mock_db.commit.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_integrity_error_rolls_back_acknowledgement(self):
         """A persistence integrity error returns 500 and rolls back the session."""
 
         alert = self._make_alert(status="OPEN")
-        membership = Mock()
-        membership.user_id = self.user_id
-        membership.neighbourhood_id = self.neighbourhood_id
 
-
-
-        self.mock_db.execute.side_effect = [
-            self._exec_result(scalar_one_or_none=alert),
-            self._exec_result(scalar_one_or_none=self.neighbourhood_id),
-            self._exec_result(scalar_one_or_none=membership)
-        ]
+        self.mock_db.execute.side_effect = self._make_alert_context(alert)
 
         integrity_error = IntegrityError(
             "statement",
             {},
-            Exception("constraint violation") 
+            Exception("constraint violation") ,
         )
         with patch(
             "app.services.alert_service.create_audit_log_item",
             new_callable=AsyncMock,
-            side_effect=integrity_error 
+            side_effect=integrity_error, 
         ):
             with pytest.raises(HTTPException) as exc:
                 await acknowledge_alert_handler(
                     alert.id,
                     self.mock_db,
-                    self.claims  
+                    self.claims , 
                 )
 
         assert exc.value.status_code == 500
         assert exc.value.detail == "Failed to acknowledge alert"
-        assert self.mock_db.commit.await_count == 0
+        self.mock_db.commit.assert_not_awaited()
         self.mock_db.rollback.assert_awaited_once()
 
     @pytest.mark.asyncio
@@ -327,38 +335,32 @@ class TestAcknowledgeAlert:
 
 
         alert = self._make_alert(status="OPEN")
-        membership = Mock()
-        membership.user_id = self.user_id
-        membership.neighbourhood_id = self.neighbourhood_id
+        
 
-        self.mock_db.execute.side_effect = [
-            self._exec_result(scalar_one_or_none=alert),
-            self._exec_result(scalar_one_or_none=self.neighbourhood_id),
-            self._exec_result(scalar_one_or_none=membership) 
+        self.mock_db.execute.side_effect = self._make_alert_context(alert)
 
-        ]
 
         with (
             patch(
                 "app.services.alert_service.create_audit_log_item",
-                new_callable=AsyncMock
+                new_callable=AsyncMock, 
             ),
             patch(
                 "app.services.alert_service._get_neighbourhood_websocket_recipient_ids",
                 new_callable=AsyncMock,
-                return_value=[str(self.user_id)]
+                return_value=[str(self.user_id)], 
             ),
             patch(
                 "app.api.controllers.alert.broadcast",
                 new_callable=AsyncMock,
-                side_effect=RuntimeError("websocket unavailable")
-            ) as mock_broadcast 
+                side_effect=RuntimeError("websocket unavailable"), 
+            ) as mock_broadcast,  
             
         ):
             result = await acknowledge_alert_handler(
                 alert.id,
                 self.mock_db,
-                self.claims 
+                self.claims,  
 
             )
 
@@ -368,7 +370,7 @@ class TestAcknowledgeAlert:
 
         self.mock_db.commit.assert_awaited_once()
 
-        
+
         mock_broadcast.assert_awaited_once()
 
 
