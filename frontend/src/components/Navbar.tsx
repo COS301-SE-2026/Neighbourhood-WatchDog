@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, LogOut, Monitor, Moon, User, UserRound } from "lucide-react";
+import { Bell, LogOut, Monitor, User, UserRound } from "lucide-react";
 import Link from "next/link";
 import { AvatarFallback, Avatar } from "@/components/ui/avatar";
 import {
@@ -43,14 +43,20 @@ const Navbar = () => {
             <div className="flex items-center gap-4">
                 <Link href="">Dashboard</Link>
 
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Avatar>
+                <DropdownMenuTrigger asChild>
+                    <button
+                        type="button"
+                        aria-label="Open account menu"
+                        title="Open account menu"
+                        className="rounded-full"
+                    >
+                        <Avatar aria-hidden="true">
                             <AvatarFallback className="bg-muted text-muted-foreground">
-                                <User className="size-4" />
+                                <User aria-hidden="true" className="size-4" />
                             </AvatarFallback>
                         </Avatar>
-                    </DropdownMenuTrigger>
+                    </button>
+                </DropdownMenuTrigger>
 
                     <DropdownMenuContent align="end" className="w-56">
                         <DropdownMenuLabel>
