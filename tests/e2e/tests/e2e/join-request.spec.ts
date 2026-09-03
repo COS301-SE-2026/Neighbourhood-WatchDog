@@ -27,7 +27,7 @@ test.describe("Join Requests", () => {
     ).toBeVisible();
   });
 
-  test("approving request moves it to pending tab", async ({ page }) => {
+  test("approving request moves it out of pending tab", async ({ page }) => {
     await page.setExtraHTTPHeaders(mockAuthHeaders(ADMIN_USER_ID));
     await page.goto(
       "//dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/join-requests",
@@ -45,5 +45,23 @@ test.describe("Join Requests", () => {
     await expect(
       page.getByRole("article", { name: /join request from resident/i }),
     ).toContainText("Approved");
+  });
+
+  test("denying a request moves it out of pending tab", async ({ page }) => {
+    await page.setExtraHTTPHeaders(mockAuthHeaders(ADMIN_USER_ID));
+    await page.goto(
+      "//dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/join-requests",
+    );
+
+    const card = page.getByRole("article", {
+      name: /join request from denyflow/i,
+    });
+    await card.getByRole("button", { name: /deny/i }).click();
+
+    await page.getByRole("tab", { name: /^denied/i }).click();
+
+    await expect(
+      page.getByRole("article", { name: /join request from denyflow/i }),
+    ).toContainText("Denied");
   });
 });
