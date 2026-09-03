@@ -23,7 +23,9 @@ async def create_property_handler(
     addr: str, 
     prop_type: PropertyTypeEnum, 
     claims: dict, 
-    db: DbSession
+    db: DbSession, 
+    latitude: float | None = None,
+    longitude: float | None = None
 ) -> Property:
     """Creates a new property. Takes in the address, property type (PUBLIC or PRIVATE), 
     claims and the DbSession, creates the property and returns the created property"""
@@ -42,6 +44,8 @@ async def create_property_handler(
 
     new_property = Property(
         address = addr,
+        latitude = latitude,
+        longitude = longitude, 
         property_type = prop_type
     )
 
@@ -77,7 +81,9 @@ async def create_property_handler(
             target_entity_id=new_property.id,
             new_values={
                 "address": new_property.address,
-                "property_type": new_property.property_type.value,
+                "property_type": new_property.property_type.value, 
+                "latitude": new_property.latitude, 
+                "longitude": new_property.longitude
             },
         )
 
@@ -200,7 +206,9 @@ async def get_property_details_handler(property_id: UUID, db: DbSession, claims:
         return {
             "property_id": property_obj.id,
             "address": property_obj.address,
-            "property_type": property_obj.property_type.value,
+            "property_type": property_obj.property_type.value, 
+            "latitude": property_obj.latitude, 
+            "longitude": property_obj.longitude, 
             "created_at": property_obj.created_at,
             "users": users,
             "neighbourhood": neighbourhood,

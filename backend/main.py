@@ -1,4 +1,12 @@
 from app import models  # noqa: F401  (imported for side effects: model registration)
+from fastapi import FastAPI
+from fastapi.openapi.utils import get_openapi
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.app_logging import configure_logging
+from app.core.config import config
+from app.auth.middleware import AuthMiddleware
+from app.api.controllers.auth import router as auth_router
+from app.api.controllers.neighbourhood_join import router as neighbourhood_join_router
 from app.api.controllers.alert import router as alert_router
 from app.api.controllers.audit import router as audit_router
 from app.api.controllers.auth import router as auth_router

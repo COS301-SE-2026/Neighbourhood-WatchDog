@@ -4,6 +4,7 @@ from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.user import User
 from app.services.rtsp_encryption import encrypt_rtsp_url, decrypt_rtsp_url
+from app.services.camera_cache import invalidate_camera_caches
 from app.models.edge_agent_credentials import EdgeAgentCredential
 from datetime import datetime, timezone
 from app.services.audit_service import create_audit_log_item
@@ -42,7 +43,7 @@ def _edge_agent_is_available(last_seen_at: datetime | None) -> bool | None:
     if last_seen_at.tzinfo is None:
         last_seen_at = last_seen_at.replace(tzinfo=timezone.utc)
 
-        age_seconds = (datetime.now(timezone.utc) - last_seen_at).total_seconds()
+    age_seconds = (datetime.now(timezone.utc) - last_seen_at).total_seconds()
 
 
     return age_seconds <= EDGE_AGENT_TIMEOUT_SECONDS
@@ -120,6 +121,7 @@ async def register_camera_handler(req, db, claims):
 
         await db.commit()
         await db.refresh(new_camera)
+        await invalidate_camera_caches(new_camera.property_id)
 
         return CameraRes(
             id=new_camera.id,
@@ -165,7 +167,7 @@ async def deregister_camera_handler(camera_id, db, claims):
         if prop_user is None or getattr(getattr(prop_user, "user", None), "cognito_sub", None) != claims.get("sub"):
             raise HTTPException(status_code=403, detail="Forbidden")
 
-        
+        property_id = camera_obj.property_id
         old_values = {
             "property_id": str(camera_obj.property_id),
             "name": camera_obj.name,
@@ -185,6 +187,7 @@ async def deregister_camera_handler(camera_id, db, claims):
         )
 
         await db.commit()
+        await invalidate_camera_caches(property_id)
         
     except HTTPException as he:
         await db.rollback()
@@ -196,7 +199,7 @@ async def deregister_camera_handler(camera_id, db, claims):
         await db.rollback()
         raise HTTPException(500, "Failed to delete camera")
     
-async def edit_camera_handler(
+async def edit_camera_handler( 
     camera_id: UUID, 
     req: CameraEditReq,
     db: AsyncSession, 
@@ -260,6 +263,7 @@ async def edit_camera_handler(
 
         await db.commit()
         await db.refresh(camera_obj)
+        await invalidate_camera_caches(camera_obj.property_id)
 
         return CameraRes(
             id=camera_obj.id,
@@ -324,7 +328,7 @@ async def list_cameras_handler(property_id, db, claims):
             EdgeAgentCredential.property_id, func.max(EdgeAgentCredential.last_seen_at).label("last_seen_at")
         )
         .where(
-            EdgeAgentCredential.property_id == prop_uuid, EdgeAgentCredential.revoked_at_is_(None)
+            EdgeAgentCredential.property_id == prop_uuid, EdgeAgentCredential.revoked_at.is_(None)
         )
         .group_by(EdgeAgentCredential.property_id)
     )
