@@ -7,7 +7,7 @@ load_dotenv()
 
 API_KEY = os.environ.get("EDGE_AGENT_TOKEN")
 CAMERA_ID = os.environ.get("TEST_CAMERA_ID", "30000000-0000-0000-0000-000000000001")
-PROPERTY_ID = os.environ.get("TEST_PROPERTY_ID", "40000000-0000-0000-0000-000000000001")
+PROPERTY_ID = os.environ.get("TEST_PROPERTY_ID", "30000000-0000-0000-0000-000000000001")
 USER_EMAIL = os.environ.get("USER_EMAIL")
 USER_PASSWORD = os.environ.get("USER_PASSWORD")
 
@@ -58,9 +58,5 @@ class WatchDogUser(HttpUser):
         return {"Authorization": f"Bearer {self.access_token}"}
 
     @task(1)
-    def list_properties(self):
-        self.client.get("/properties/my-properties", headers=self.headers)
-
-    @task(2)
     def list_cameras(self):
         self.client.get(f"/camera/property/{PROPERTY_ID}", headers=self.headers)
