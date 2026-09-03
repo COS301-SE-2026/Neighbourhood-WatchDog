@@ -19,7 +19,7 @@ test.describe("Neighbourhood members", () => {
   test("admin sees the members and their roles", async ({ page }) => {
     await page.setExtraHTTPHeaders(mockAuthHeaders(ADMIN_USER_ID));
     await page.goto(
-      "/dashboard/properies/${NEIGHBOURHOOD_ID/neighbourhood/members",
+      "/dashboard/properies/${NEIGHBOURHOOD_ID}/neighbourhood/members",
     );
 
     await expect(page.getByLabel("Role for test user")).toHaveValue(
@@ -29,5 +29,16 @@ test.describe("Neighbourhood members", () => {
     await expect(page.getByLabel("Role for E2E officer")).toHaveValue(
       "SECURITY_OFFICER",
     );
+  });
+
+  test("non-admin cannot see the members page", async ({ page }) => {
+    await page.setExtraHTTPHeaders(mockAuthHeaders(OFFICER_USER_ID));
+    await page.goto(
+      "/dashboard/properies/${NEIGHBOURHOOD_ID}/neighbourhood/members",
+    );
+
+    await expect(
+      page.getByText("You do not have admin access to this neighbourhood."),
+    ).toBeVisible();
   });
 });
