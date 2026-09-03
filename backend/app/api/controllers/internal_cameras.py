@@ -1,15 +1,19 @@
 
 from fastapi import APIRouter, Depends, Response, status
 from typing import Annotated
+from app.core.cache import cache_get_or_set
 from app.core.database import DbSession
 from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.schemas.camera import ListEnabledCameras, MediaMtxAuthRequest, AgentCameraSummaryList
 from app.auth.dependencies import get_authenticated_edge_agent
 from app.services.camera_service import list_enabled_cameras_for_agent_handler, authorize_mediamtx_for_agent_handler, list_camera_summaries_for_agent_handler
+from app.services.camera_cache import camera_internal_cache_key
 from app.services.edge_agent_heartbeat import record_edge_agent_heartbeat
 
 
 router = APIRouter(prefix="/internal", tags=["internal"])
+
+CAMERAS_ENABLED_TTL = 5 # TTL of the enabled cameras endpoint cache items
 
 @router.get(
     "/cameras/summary",
@@ -52,10 +56,14 @@ async def list_enabled_cameras(db: DbSession, credential: Annotated[EdgeAgentCre
         db=db
     )
 
-    return await list_enabled_cameras_for_agent_handler(
-        property_id=property_id,
-        db=db
-    )
+    async def fetch():
+        cameras = await list_enabled_cameras_for_agent_handler(
+            property_id=property_id,
+            db=db
+        )
+        return (cameras.model_dump(mode="json"))
+
+    return await cache_get_or_set(camera_internal_cache_key(credential.property_id), CAMERAS_ENABLED_TTL, fetch)
 
 @router.post(
     "/mediamtx/auth",

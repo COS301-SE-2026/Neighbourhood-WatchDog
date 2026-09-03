@@ -1,17 +1,13 @@
 from app.schemas.property import CreatePropertyReq, CreatePropertyRes, PropertyRes
 from app.services.property_service import create_property_handler, get_user_properties_handler, get_property_details_handler
-from app.core.cache import cache_get_or_set
 from app.core.database import DbSession
 from app.auth.dependencies import require_role
-
 from typing import List, Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends
 
 
 router = APIRouter(prefix="/properties", tags=["properties"])
-
-PROPERTIES_TTL = 30# how long a property should live in the cache
 
 @router.post(
     "/create-property",
@@ -65,21 +61,18 @@ async def get_user_properties(
     claims: Annotated[dict, Depends(require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN'))],
 ) -> List[PropertyRes]:
     """Fetch all properties for the current user"""
-    async def fetch():
-        properties = await get_user_properties_handler(claims, db)
-        return [
-            PropertyRes(
-                property_id=prop.id,
-                neighbourhood_id=prop.neighbourhood_id,
-                address=prop.address,
-                property_type=prop.property_type,
-                created_at=prop.created_at
-            )
-            .model_dump(mode="json")
-            for prop in properties
-        ]
 
-    return await cache_get_or_set(f"cache:properties:user_sub:{claims['sub']}", PROPERTIES_TTL, fetch)
+    properties = await get_user_properties_handler(claims, db)
+    return [
+        PropertyRes(
+            property_id=prop.id,
+            neighbourhood_id=prop.neighbourhood_id,
+            address=prop.address,
+            property_type=prop.property_type,
+            created_at=prop.created_at
+        )
+        for prop in properties
+    ]
 
 @router.get("/{property_id}")
 async def get_property_details(

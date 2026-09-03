@@ -5,12 +5,15 @@ from fastapi import APIRouter, Depends, status
 
 from app.schemas.camera import RegisterCameraReq, RegisterCameraRes, CamerasRes, CameraEditReq, EditCameraRes
 from app.services.camera_service import register_camera_handler, list_cameras_handler, deregister_camera_handler, edit_camera_handler
+from app.services.camera_cache import camera_property_cache_key
 from app.auth.dependencies import get_current_user
+from app.core.cache import cache_get_or_set
 from app.core.database import DbSession
 from app.auth.dependencies import require_role
 
 router = APIRouter(prefix="/camera", tags=["cameras"])
 
+CAMERAS_BY_PROPERTY_TTL = 30 # TTL for the cam by property endpoint
 
 @router.post(
     "/register-camera",
@@ -73,7 +76,11 @@ async def get_property_cameras(
     claims: Annotated[dict, Depends(get_current_user)],
 ) -> CamerasRes:
     require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
-    return await list_cameras_handler(property_id, db, claims)
+    async def fetch():
+        cameras = await list_cameras_handler(property_id, db, claims)
+        return (cameras.model_dump(mode="json"))
+
+    return await cache_get_or_set(camera_property_cache_key(property_id), CAMERAS_BY_PROPERTY_TTL, fetch)
 
 @router.patch(
     "/{camera_id}",

@@ -4,7 +4,7 @@ from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.user import User
 from app.services.rtsp_encryption import encrypt_rtsp_url, decrypt_rtsp_url
-
+from app.services.camera_cache import invalidate_camera_caches
 from app.services.audit_service import create_audit_log_item
 
 from fastapi import Response, status
@@ -104,6 +104,7 @@ async def register_camera_handler(req, db, claims):
 
         await db.commit()
         await db.refresh(new_camera)
+        await invalidate_camera_caches(new_camera.property_id)
 
         return CameraRes(
             id=new_camera.id,
@@ -149,7 +150,7 @@ async def deregister_camera_handler(camera_id, db, claims):
         if prop_user is None or getattr(getattr(prop_user, "user", None), "cognito_sub", None) != claims.get("sub"):
             raise HTTPException(status_code=403, detail="Forbidden")
 
-        
+        property_id = camera_obj.property_id
         old_values = {
             "property_id": str(camera_obj.property_id),
             "name": camera_obj.name,
@@ -169,6 +170,7 @@ async def deregister_camera_handler(camera_id, db, claims):
         )
 
         await db.commit()
+        await invalidate_camera_caches(property_id)
         
     except HTTPException as he:
         await db.rollback()
@@ -244,6 +246,7 @@ async def edit_camera_handler(
 
         await db.commit()
         await db.refresh(camera_obj)
+        await invalidate_camera_caches(camera_obj.property_id)
 
         return CameraRes(
             id=camera_obj.id,
