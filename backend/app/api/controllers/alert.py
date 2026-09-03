@@ -91,7 +91,6 @@ async def broadcast(user_ids: list[str], message: dict) -> None:
             connections.discard(ws)
 
 
-# Claims = Annotated[dict, Depends(get_current_user)]
 
 @router.get("/metrics", response_model=AlertMetricsRes)
 async def get_alert_metrics(
