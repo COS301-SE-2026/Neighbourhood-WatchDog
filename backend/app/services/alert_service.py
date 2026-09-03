@@ -309,7 +309,7 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
             logger.warning("acknowledge_alert: alert not found with alert_id=%s", alert_id)
             raise HTTPException(404, ALERT_NOT_FOUND)
 
-        alert, camera, property_obj = row
+        alert, _ , property_obj = row
 
         if alert.status != "OPEN":
             logger.warning("acknowledge_alert: alert not open with alert_id=%s", alert_id)
