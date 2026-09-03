@@ -1,3 +1,4 @@
+import { elements } from "chart.js";
 import { z } from "zod"
 
 export const PropertyTypeEnum = z.enum([
@@ -118,6 +119,27 @@ export const PropertyDetailedResSchema = z.object({
   cameras: z.array(CameraSummarySchema),
 });
 
+export const propertyMemberSchema = z.object({
+  user_id: z.uuid(),
+  first_name: z.string().nullable(),
+  last_name: z.string().nullable(),
+  email: z.email(),
+  is_admin: z.boolean()
+});
+
+export const propertyMembersSchema = z.object({
+  members: z.array(propertyMemberSchema).default([])
+});
+
+export const invitePropertyMemberSchema = z.object({
+  email: z.email("Enter a valid email address")
+});
+
+export const invitePropertyMemberResponseSchema = z.object({
+  message: z.string(),
+  email_sent: z.boolean()
+});
+
 export type Address = z.infer<typeof AddressSchema>;
 
 export type CreatePropertyReq = z.infer<typeof CreatePropertyReqSchema>;
@@ -128,3 +150,7 @@ export type UserSummary = z.infer<typeof UserSummarySchema>;
 export type CameraSummary = z.infer<typeof CameraSummarySchema>;
 export type NeighbourhoodSummary = z.infer<typeof NeighbourhoodSummarySchema>;
 export type PropertyDetailedRes = z.infer<typeof PropertyDetailedResSchema>;
+export type PropertyMember = z.infer<typeof propertyMemberSchema>;
+export type PropertyMembers = z.infer<typeof propertyMembersSchema>;
+export type InvitePropertyMemberInput = z.infer<typeof invitePropertyMemberSchema>;
+export type InvitePropertyMemberResponse = z.infer<typeof invitePropertyMemberResponseSchema>;
