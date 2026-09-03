@@ -7,7 +7,7 @@ class Config(BaseSettings):
     app_name: str = "NeighbourhoodWatchDog"
     debug: bool = False
     database_url: str
-    redis_url: str = "redis://localhost:6379"
+    redis_url: str
     secret_key: str 
 
     aws_region: str

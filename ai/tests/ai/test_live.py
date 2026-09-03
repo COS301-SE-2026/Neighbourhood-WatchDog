@@ -1,18 +1,29 @@
 import os
+
+from dotenv import load_dotenv
+
 os.environ["MKL_THREADING_LAYER"] = "GNU"
 
 
-import cv2 # noqa: E402
-
-from ultralytics import YOLO # noqa: E402
+import cv2  # noqa: E402
+from ultralytics import YOLO  # noqa: E402
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 AI_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../../"))
 
+load_dotenv(os.path.join(AI_DIR, ".env"))
+load_dotenv(os.path.join(AI_DIR, "..", ".env"))
+
 threat_model = YOLO(os.path.join(AI_DIR, "pipeline/models/weights/best.pt"))
 person_model = YOLO(os.path.join(AI_DIR, "pipeline/models/weights/yolov8n.pt"))
 
-RTSP_URL = "rtsp://Intrepid:password1234@192.168.3.68:554/stream2"
+RTSP_URL = os.getenv("WATCHDOG_TEST_RTSP_URL")
+
+if not RTSP_URL:
+    raise RuntimeError(
+        "WATCHDOG_TEST_RTSP_URL is not configured. "
+        "Add it to ai/.env before running this test."
+    )
 
 print("Models loaded: ", threat_model.names, person_model.names.get(0))
 print("Connecting to camera ... (Ctrl+C to stop)")

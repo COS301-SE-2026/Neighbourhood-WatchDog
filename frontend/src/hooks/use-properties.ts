@@ -7,6 +7,8 @@ export interface Property {
   address: string
   neighbourhood_id: string | null
   property_type: string
+  latitude: number | null
+  longitude: number | null
   created_at: string
 }
 

@@ -6,10 +6,11 @@ from unittest.mock import ANY, AsyncMock, Mock, patch, MagicMock
 
 import pytest
 from fastapi import HTTPException
-
+from sqlalchemy.exc import IntegrityError
 from app.models.alert import Alert, DetectionType
 from app.models.audit_log import AuditAction, TargetEntity
 from app.models.camera import Camera
+from app.models.neighbourhood_user import NeighbourhoodRole
 from app.models.user import User
 from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.schemas.alert import TimeIntervalsEnum, TimePeriod
@@ -45,6 +46,29 @@ class TestAcknowledgeAlert:
         self.alert_patcher.start()
         self.camera_patcher.start()
 
+    def _make_alert_context(self, alert):
+        camera = Mock()
+
+        property_obj = Mock()
+        property_obj.id = uuid.uuid4()
+        property_obj.neighbourhood_id = self.neighbourhood_id
+
+        neighbourhood_membership = Mock()
+        neighbourhood_membership.user_id = self.user_id
+        neighbourhood_membership.neighbourhood_id = self.neighbourhood_id
+        neighbourhood_membership.role = NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+
+        property_membership = Mock()
+        property_membership.property_id = property_obj.id
+        property_membership.user_id = self.user_id
+        property_membership.is_admin = False
+
+        return (
+            self._exec_result(one_or_none=(alert, camera, property_obj)),
+            self._exec_result(scalar_one_or_none=property_membership),
+            self._exec_result(scalar_one_or_none=neighbourhood_membership)
+        )
+
     def teardown_method(self):
         self.alert_patcher.stop()
         self.camera_patcher.stop()
@@ -66,9 +90,10 @@ class TestAcknowledgeAlert:
         alert.created_at = datetime.now(timezone.utc)
         return alert
 
-    def _exec_result(self, scalar_one_or_none=None):
+    def _exec_result(self, scalar_one_or_none=None, one_or_none=None):
         result = Mock()
         result.scalar_one_or_none.return_value = scalar_one_or_none
+        result.one_or_none.return_value = one_or_none
         return result
 
     @pytest.mark.asyncio
@@ -96,9 +121,15 @@ class TestAcknowledgeAlert:
     async def test_non_member_raises_403(self):
         alert = self._make_alert(status="OPEN")
 
+        camera = Mock()
+
+        property_obj = Mock()
+        property_obj.id = uuid.uuid4()
+        property_obj.neighbourhood_id = self.neighbourhood_id
+
         self.mock_db.execute.side_effect = [
-            self._exec_result(scalar_one_or_none=alert),
-            self._exec_result(scalar_one_or_none=self.neighbourhood_id),
+            self._exec_result(one_or_none=(alert, camera, property_obj)),
+            self._exec_result(scalar_one_or_none=None),
             self._exec_result(scalar_one_or_none=None),
         ]
 
@@ -116,7 +147,7 @@ class TestAcknowledgeAlert:
     @pytest.mark.asyncio
     async def test_alert_not_found_raises_404(self):
         self.mock_db.execute.return_value = self._exec_result(
-            scalar_one_or_none=None
+            one_or_none=None
         )
 
         with pytest.raises(HTTPException) as exc:
@@ -127,8 +158,14 @@ class TestAcknowledgeAlert:
     @pytest.mark.asyncio
     async def test_already_acknowledged_raises_409(self):
         alert = self._make_alert(status="ACKNOWLEDGED")
+        
+        camera = Mock()
+
+        property_obj = Mock()
+        property_obj.id = uuid.uuid4()
+        property_obj.neighbourhood_id = self.neighbourhood_id
         self.mock_db.execute.return_value = self._exec_result(
-            scalar_one_or_none=alert
+            one_or_none=(alert, camera, property_obj)
         )
 
         with pytest.raises(HTTPException) as exc:
@@ -139,23 +176,8 @@ class TestAcknowledgeAlert:
     @pytest.mark.asyncio
     async def test_happy_path_acknowledges_alert(self):
         alert = self._make_alert(status="OPEN")
-        neighbourhood_result = self._exec_result(
-            scalar_one_or_none=self.neighbourhood_id,
-            )
 
-        membership = Mock()
-        membership.user_id = self.user_id
-        membership.neighbourhood_id = self.neighbourhood_id
-
-        membership_result = self._exec_result(
-            scalar_one_or_none=membership,
-        )
-
-        self.mock_db.execute.side_effect = [
-            self._exec_result(scalar_one_or_none=alert),
-            neighbourhood_result,
-            membership_result,
-        ]
+        self.mock_db.execute.side_effect = self._make_alert_context(alert)
 
         with (patch(
             "app.services.alert_service.create_audit_log_item",
@@ -190,17 +212,8 @@ class TestAcknowledgeAlert:
     async def test_acknowledge_records_timestamps(self):
         """Acknowledging an alert sets resolved_at and resolved_by."""
         alert = self._make_alert(status="OPEN")
-        neighbourhood_id = uuid.uuid4()
 
-        membership = Mock()
-        membership.user_id = self.user_id
-        membership.neighbourhood_id = neighbourhood_id
-
-        self.mock_db.execute.side_effect = [
-            self._exec_result(scalar_one_or_none=alert),
-            self._exec_result(scalar_one_or_none=neighbourhood_id),
-            self._exec_result(scalar_one_or_none=membership),
-        ]
+        self.mock_db.execute.side_effect = self._make_alert_context(alert)
 
         with (
             patch(
@@ -222,6 +235,143 @@ class TestAcknowledgeAlert:
         assert alert.status == "ACKNOWLEDGED"
         assert alert.resolved_at is not None
         assert alert.resolved_by == self.user_id
+
+
+    @pytest.mark.asyncio
+
+    async def test_property_admin_can_acknowledge_non_critical_alert(self):
+
+        alert = self._make_alert(status="OPEN")
+        alert_result, property_result, neighbourhood_result = self._make_alert_context(alert)
+        property_membership = property_result.scalar_one_or_none.return_value
+        property_membership.is_admin = True
+        neighbourhood_result.scalar_one_or_none.return_value = None
+
+        self.mock_db.execute.side_effect = [
+            alert_result, 
+            property_result, 
+            neighbourhood_result
+        ]
+
+
+        with patch(
+            "app.services.alert_service.create_audit_log_item",
+            new_callable=AsyncMock,
+        ):
+            result = await acknowledge_alert_handler(
+                alert.id,
+                self.mock_db,
+                self.claims,
+            )
+
+        assert result.status == "ACKNOWLEDGED"
+        assert alert.status == "ACKNOWLEDGED"
+        assert alert.resolved_by == self.user_id
+        self.mock_db.commit.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_property_admin_can_acknowledge_property_without_neighbourhood(self):
+        """A property administrator can acknowledge when no neighbourhood is assigned."""
+        
+        alert = self._make_alert(status="OPEN")
+        alert_result, property_result, _ = self._make_alert_context(alert)
+        property_obj = alert_result.one_or_none.return_value[2]
+        property_obj.neighbourhood_id = None
+        property_membership = property_result.scalar_one_or_none.return_value
+        property_membership.is_admin = True
+        self.mock_db.execute.side_effect = [
+            alert_result, 
+            property_result
+
+        ]
+
+        with patch(
+            "app.services.alert_service.create_audit_log_item",
+            new_callable=AsyncMock,
+        ):
+            result = await acknowledge_alert_handler(
+                alert.id,
+                self.mock_db,
+                self.claims,
+            )
+
+        assert result.status == "ACKNOWLEDGED"
+        assert alert.status == "ACKNOWLEDGED"
+        self.mock_db.commit.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_integrity_error_rolls_back_acknowledgement(self):
+        """A persistence integrity error returns 500 and rolls back the session."""
+
+        alert = self._make_alert(status="OPEN")
+
+        self.mock_db.execute.side_effect = self._make_alert_context(alert)
+
+        integrity_error = IntegrityError(
+            "statement",
+            {},
+            Exception("constraint violation") ,
+        )
+        with patch(
+            "app.services.alert_service.create_audit_log_item",
+            new_callable=AsyncMock,
+            side_effect=integrity_error, 
+        ):
+            with pytest.raises(HTTPException) as exc:
+                await acknowledge_alert_handler(
+                    alert.id,
+                    self.mock_db,
+                    self.claims , 
+                )
+
+        assert exc.value.status_code == 500
+        assert exc.value.detail == "Failed to acknowledge alert"
+        self.mock_db.commit.assert_not_awaited()
+        self.mock_db.rollback.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_broadcast_failure_does_not_undo_acknowledgement(self):
+        """A WebSocket failure is best-effort and must not undo the database update."""
+
+
+        alert = self._make_alert(status="OPEN")
+        
+
+        self.mock_db.execute.side_effect = self._make_alert_context(alert)
+
+
+        with (
+            patch(
+                "app.services.alert_service.create_audit_log_item",
+                new_callable=AsyncMock, 
+            ),
+            patch(
+                "app.services.alert_service._get_neighbourhood_websocket_recipient_ids",
+                new_callable=AsyncMock,
+                return_value=[str(self.user_id)], 
+            ),
+            patch(
+                "app.api.controllers.alert.broadcast",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("websocket unavailable"), 
+            ) as mock_broadcast,  
+            
+        ):
+            result = await acknowledge_alert_handler(
+                alert.id,
+                self.mock_db,
+                self.claims,  
+
+            )
+
+        assert result.status == "ACKNOWLEDGED"
+        assert alert.status == "ACKNOWLEDGED"
+        assert alert.resolved_by == self.user_id
+
+        self.mock_db.commit.assert_awaited_once()
+
+
+        mock_broadcast.assert_awaited_once()
 
 
 

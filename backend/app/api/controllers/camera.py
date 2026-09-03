@@ -1,16 +1,22 @@
-from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, HTTPException, status
 
+from app.auth.authorization import (
+    CameraAdminClaims,
+    Claims,
+    PropertyMemberClaims,
+    is_property_admin,
+)
 from app.schemas.camera import RegisterCameraReq, RegisterCameraRes, CamerasRes, CameraEditReq, EditCameraRes
 from app.services.camera_service import register_camera_handler, list_cameras_handler, deregister_camera_handler, edit_camera_handler
-from app.auth.dependencies import get_current_user
+from app.services.camera_cache import camera_property_cache_key
+from app.core.cache import cache_get_or_set
 from app.core.database import DbSession
-from app.auth.dependencies import require_role
 
 router = APIRouter(prefix="/camera", tags=["cameras"])
 
+CAMERAS_BY_PROPERTY_TTL = 30 # TTL for the cam by property endpoint
 
 @router.post(
     "/register-camera",
@@ -23,13 +29,16 @@ router = APIRouter(prefix="/camera", tags=["cameras"])
         500: {"description": "Could not register camera"},
     },
 )
-async def register_camera(req: RegisterCameraReq,
+async def register_camera(
+    req: RegisterCameraReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)]
+    claims: Claims,
 ) -> RegisterCameraRes:
     """Creates a new camera and links it to the property of the user."""
+    allowed =await is_property_admin(req.property_id, claims, db)
+    if not allowed:
+        raise HTTPException(status_code=403, detail="You do not have permission to add a camera to this property")
     
-    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
     new_camera = await register_camera_handler(req, db, claims)
 
     return RegisterCameraRes(
@@ -50,10 +59,10 @@ async def register_camera(req: RegisterCameraReq,
 )
 async def deregister_camera(camera_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)]
+    claims: CameraAdminClaims,
 ):
     """Permanently remove a camera from a users property and the system."""
-    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
+    
     
     await deregister_camera_handler(camera_id, db, claims)
 
@@ -70,10 +79,13 @@ async def deregister_camera(camera_id: UUID,
 async def get_property_cameras(
     property_id: str,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: PropertyMemberClaims,
 ) -> CamerasRes:
-    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
-    return await list_cameras_handler(property_id, db, claims)
+    async def fetch():
+        cameras = await list_cameras_handler(property_id, db, claims)
+        return (cameras.model_dump(mode="json"))
+
+    return await cache_get_or_set(camera_property_cache_key(property_id), CAMERAS_BY_PROPERTY_TTL, fetch)
 
 @router.patch(
     "/{camera_id}",
@@ -91,14 +103,13 @@ async def edit_camera(
     camera_id: UUID, 
     req: CameraEditReq,
     db: DbSession, 
-    claims: Annotated[dict, Depends(get_current_user)]
+    claims: CameraAdminClaims
 ) -> EditCameraRes:
     """Edit a camera"""
-    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
 
     updated = await edit_camera_handler(camera_id, req, db, claims)
 
-    return await EditCameraRes(
+    return EditCameraRes(
         status=200,
         message="Camera updated successfully",
         data=updated

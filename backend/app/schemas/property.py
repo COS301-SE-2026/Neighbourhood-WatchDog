@@ -1,4 +1,4 @@
-from pydantic import BaseModel, StringConstraints
+from pydantic import BaseModel, StringConstraints, Field
 from typing import Annotated
 from app.models.property import PropertyTypeEnum
 from uuid import UUID
@@ -9,12 +9,16 @@ NonEmptyString = Annotated[str, StringConstraints(min_length=1, strip_whitespace
 class CreatePropertyReq(BaseModel):
     address: NonEmptyString
     property_type: PropertyTypeEnum
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
 
 class PropertyRes(BaseModel):
     property_id: UUID
     neighbourhood_id: UUID | None
     address: NonEmptyString
     property_type: PropertyTypeEnum
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
     created_at: datetime
 
 class CreatePropertyRes(BaseModel):
@@ -45,6 +49,8 @@ class PropertyDetailedRes(BaseModel):
     property_id: UUID
     address: str
     property_type: PropertyTypeEnum
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
     created_at: datetime
     users: list[UserSummary]
     neighbourhood: NeighbourhoodSummary | None = None

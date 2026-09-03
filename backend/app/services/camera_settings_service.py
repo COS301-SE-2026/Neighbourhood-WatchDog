@@ -1,20 +1,21 @@
+import logging
 from uuid import UUID
+
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.audit_log import AuditAction, TargetEntity
 from app.models.camera import Camera
 from app.models.camera_detection_zone import CameraDetectionZone
-
-import logging
-
 from app.services.audit_service import create_audit_log_item
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.audit_log import AuditAction, TargetEntity
+from app.services.camera_cache import invalidate_camera_caches
 
 CAMERA_NOT_FOUND = "Camera not found"
 
 logger = logging.getLogger(__name__)
 
-async def get_camera_settings_handler(camera_id: UUID, db: AsyncSession) -> dict:
+async def get_camera_settings_handler(camera_id: UUID, db: AsyncSession, claims: dict) -> dict:
     """Gets and returns the settings of the camera with the camera_id passed into the function. Returns the camera_id, confidence_threshold, and a list of camera zones in a dictionary"""
     camera_result = await db.execute(
         select(Camera).where(Camera.id == camera_id)
@@ -81,6 +82,7 @@ async def update_camera_settings_handler(camera_id: UUID, confidence_threshold: 
 
         await db.commit()
         await db.refresh(camera)
+        await invalidate_camera_caches(camera.property_id)
 
         logger.info("update_camera_settings: successfully updated settings of camera with id=%s", camera_id)
         return {
@@ -146,6 +148,7 @@ async def create_zone_handler(camera_id: UUID, name: str, polygon: list, db: Asy
 
         await db.commit()
         await db.refresh(zone)
+        await invalidate_camera_caches(camera.property_id)
 
         return zone
 
@@ -187,6 +190,9 @@ async def delete_zone_handler(camera_id: UUID,zone_id: UUID,db: AsyncSession,cla
 
         zone_id = zone.id
 
+        property_id = await db.scalar(
+            select(Camera.property_id).where(Camera.id == camera_id)
+        )
         await db.delete(zone)
 
         await create_audit_log_item(
@@ -199,6 +205,8 @@ async def delete_zone_handler(camera_id: UUID,zone_id: UUID,db: AsyncSession,cla
         )
 
         await db.commit()
+        if property_id is not None:
+            await invalidate_camera_caches(property_id)
 
     except HTTPException as he:
         await db.rollback()

@@ -1,10 +1,25 @@
-import cv2
 import os
+from pathlib import Path
+
+import cv2
+from dotenv import load_dotenv
+
 from ai.pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
 
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
-url = "rtsp://Intrepid:password@192.168.3.68:554/stream2"
+AI_DIR = Path(__file__).resolve().parents[1]
 
+load_dotenv(AI_DIR / ".env")
+load_dotenv(AI_DIR.parent / ".env")
+
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
+
+url = os.getenv("WATCHDOG_TEST_RTSP_URL")
+
+if not url:
+    raise RuntimeError(
+        "WATCHDOG_TEST_RTSP_URL is not configured. "
+        "Add it to ai/.env before running this test."
+    )
 
 cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
 if not cap.isOpened():

@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -33,6 +34,30 @@ import {
 
 import { AlertFootagePlayer } from "@/components/shared/AlertFootagePlayer";
 
+
+type AlertLocationMapProps = {
+  readonly latitude: number;
+  readonly longitude: number;
+
+};
+
+
+const AlertLocationMap = dynamic<AlertLocationMapProps>(
+  () =>
+    import("@/components/shared/AlertLocationMap").then(
+      (module) => module.AlertLocationMap
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-48 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-xs text-white/40">
+        Loading map…
+      </div>
+    )
+  }
+);
+
+
 export type AlertSeverity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 export type AlertStatus = "NEW" | "ACKNOWLEDGED" | "RESOLVED";
 
@@ -48,6 +73,9 @@ export interface Alert {
   resolved_by?: string | null;
   resolved_at?: string | null;
   created_at: string;
+  property_address?: string | null;
+  property_latitude?: number | null;
+  property_longitude?: number | null;
 
 }
 
@@ -173,7 +201,7 @@ interface AlertDetailSheetProps {
   alert: Alert;
   open: boolean;
   onClose: () => void;
-  onAcknowledge: (id: string) => Promise<void>;
+  onAcknowledge?: (id: string) => Promise<void>;
   acknowledging: boolean;
 }
 
@@ -235,6 +263,43 @@ function AlertDetailSheet({
 
           <Separator className="bg-white/10" />
 
+          <section aria-labelledby="alert-location-heading" className="space-y-3">
+            <div>
+              <h3 id="alert-location-heading" className="text-sm font-semibold text-white">
+                Event location
+              </h3>
+              <p className="mt-1 text-xs text-white/45">
+                Location inherited from the property connected to this camera.
+              </p>
+            </div>
+
+            {alert.property_address ? (
+              <p className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
+                {alert.property_address}
+              </p>
+            ) : (
+              <p className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/45">
+                Property address is unavailable.
+              </p>
+            )}
+
+            {typeof alert.property_latitude === "number" && Number.isFinite(alert.property_latitude) && typeof alert.property_longitude === "number" && Number.isFinite(alert.property_longitude) ? (
+              <AlertLocationMap
+                latitude={alert.property_latitude}
+                longitude={alert.property_longitude}
+              />
+            ) : (
+              <p
+                role="status"
+                className="rounded-md border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-xs text-amber-200"
+              >
+                Map unavailable because this property has no saved coordinates. The property address remains available above.
+              </p>
+            )}
+          </section>
+
+          <Separator className="bg-white/10" />
+
           <div className="space-y-3">
             <MetaRow label="Alert ID" value={alert.id} mono />
             <MetaRow label="Camera ID" value={alert.camera_id} mono />
@@ -269,7 +334,7 @@ function AlertDetailSheet({
 
           <Separator className="bg-white/10" />
 
-          {isNew && (
+          {onAcknowledge && isNew && (
             <Button
               className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
               onClick={() => onAcknowledge(alert.id)}
@@ -320,8 +385,8 @@ function MetaRow({
 
 export interface AlertCardProps {
   readonly alert: Alert;
-  readonly onAcknowledge: (id: string) => Promise<void>;
-  readonly onBroadcast: (id: string) => Promise<void>;
+  readonly onAcknowledge?: (id: string) => Promise<void>;
+  readonly onBroadcast?: (id: string) => Promise<void>;
   readonly broadcasting: boolean;
 }
 
@@ -334,6 +399,9 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
   const isCritical = severity === "CRITICAL";
 
   async function handleAcknowledge(id: string) {
+    if (!onAcknowledge) {
+      return;
+    }
     setAcknowledging(true);
     try {
       await onAcknowledge(id);
@@ -344,6 +412,10 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
   }
 
   async function handleBroadcast() {
+    if (!onBroadcast) {
+      return;
+    }
+
     await onBroadcast(alert.id);
   }
 
@@ -409,7 +481,7 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
             <TooltipContent side="top">View full alert details</TooltipContent>
           </Tooltip>
 
-          {isNew && (
+          {onBroadcast && isNew && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -439,7 +511,7 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
             </Tooltip>
           )}
 
-          {isNew && (
+          {onAcknowledge && isNew && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
