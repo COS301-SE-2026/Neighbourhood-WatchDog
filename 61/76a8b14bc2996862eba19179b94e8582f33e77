@@ -1,0 +1,28 @@
+backend/app/auth/jwt.py
+  h_cf6208e37032c0 9
+backend/main.py
+  h_cf6208e37032c0 4
+backend/app/core/app_logging.py
+  s_9f797cfcffaae5::t_9c82896cc94836 1-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "6176a8b14bc2996862eba19179b94e8582f33e77",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_9f797cfcffaae5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9be3b8d4-424b-4171-a77d-6af3f15a1ae9",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
