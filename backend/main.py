@@ -29,7 +29,7 @@ from app.api.controllers.users import router as users_router
 from app.auth.middleware import AuthMiddleware
 from app.auth.rate_limiter import limiter
 from app.core.config import config
-from app.core.logging import configure_logging
+from app.core.app_logging import configure_logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi

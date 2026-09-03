@@ -175,7 +175,7 @@ async def get_alert_trends(
 async def list_property_alerts(
     property_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Claims,
     status_filter: Annotated[str | None, Query(alias="status")] = None,
     camera_id: Annotated[UUID | None, Query()] = None,
     detection_type: Annotated[str | None, Query()] = None,
