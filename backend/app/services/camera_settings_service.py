@@ -14,7 +14,7 @@ CAMERA_NOT_FOUND = "Camera not found"
 
 logger = logging.getLogger(__name__)
 
-async def get_camera_settings_handler(camera_id: UUID, db: AsyncSession) -> dict:
+async def get_camera_settings_handler(camera_id: UUID, db: AsyncSession, claims: dict) -> dict:
     """Gets and returns the settings of the camera with the camera_id passed into the function. Returns the camera_id, confidence_threshold, and a list of camera zones in a dictionary"""
     camera_result = await db.execute(
         select(Camera).where(Camera.id == camera_id)
