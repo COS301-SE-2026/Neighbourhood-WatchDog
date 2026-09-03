@@ -64,4 +64,15 @@ test.describe("Join Requests", () => {
       page.getByRole("article", { name: /join request from denyflow/i }),
     ).toContainText("Denied");
   });
+
+  test("non admin cannot view join-requests page", async ({ page }) => {
+    await page.setExtraHTTPHeaders(mockAuthHeaders(NON_ADMIN_USER_ID));
+    await page.goto(
+      "//dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/join-requests",
+    );
+
+    await expect(
+      page.getByText("You don't have admin access to this neighbourhood."),
+    ).toBeVisible();
+  });
 });
