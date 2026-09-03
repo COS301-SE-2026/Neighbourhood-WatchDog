@@ -1,4 +1,3 @@
-import asyncio
 import base64
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -6,7 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-from botocore.exceptions import BotoCoreError, ClientError
+from botocore.exceptions import BotoCoreError
 
 from app.tasks import clip_tasks as service
 
