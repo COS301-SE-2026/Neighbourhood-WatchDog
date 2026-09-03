@@ -29,6 +29,7 @@ import {
     ChartNoAxesCombined,
     Check,
     ChevronDown,
+    CircleHelp, 
     ClipboardList,
     FileText,
     House,
@@ -219,6 +220,11 @@ function addAccountGroup(groups: SidebarGroupData[]) {
     groups.push({
         label: "ACCOUNT",
         items: [
+            {
+                title: "Help",
+                url: "/dashboard/help",
+                icon: CircleHelp,
+            },
             {
                 title: "Settings",
                 url: "/dashboard/settings",

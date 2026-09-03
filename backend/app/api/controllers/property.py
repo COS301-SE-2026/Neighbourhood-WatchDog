@@ -30,7 +30,9 @@ async def create_property(
         req.address, 
         req.property_type, 
         claims, 
-        db
+        db, 
+        latitude=req.latitude, 
+        longitude=req.longitude
     )
 
     property_res = PropertyRes(
@@ -38,6 +40,8 @@ async def create_property(
         neighbourhood_id=new_property.neighbourhood_id,
         address=new_property.address,
         property_type=new_property.property_type,
+        latitude=new_property.latitude, 
+        longitude=new_property.longitude, 
         created_at=new_property.created_at
     )
 
@@ -71,6 +75,8 @@ async def get_user_properties(
             neighbourhood_id=prop.neighbourhood_id,
             address=prop.address,
             property_type=prop.property_type,
+            latitude=prop.latitude, 
+            longitude=prop.longitude, 
             created_at=prop.created_at
         )
         for prop in properties

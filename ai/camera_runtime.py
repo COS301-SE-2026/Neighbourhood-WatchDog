@@ -326,3 +326,33 @@ class CameraSupervisor:
         public_url = self._published_rtsp_url(camera.id)
 
         return public_url.replace("rtsp://", f"rtsp://{username}:{password}@", 1)
+
+    def get_status_snapshot(self) -> list[dict]:
+        with self._lock:
+            runtimes = list(self._runtimes.values())
+
+        snapshot = []
+
+        for runtime in runtimes:
+            process = runtime.ffmpeg_process
+            publishing = process is not None and process.poll() is None
+
+            thread = runtime.detection_thread
+            detecting = thread is not None and thread.is_alive()
+
+            if publishing and detecting:
+                status = "connected"
+            elif runtime.consecutive_failures > 0 and not publishing:
+                status = "disconnected"
+            else:
+                status = "checking"
+
+            snapshot.append({
+                "id": runtime.spec.id,
+                "status": status,
+                "publishing": publishing,
+                "detecting": detecting,
+                "consecutive_failures": runtime.consecutive_failures,
+            })
+
+        return snapshot

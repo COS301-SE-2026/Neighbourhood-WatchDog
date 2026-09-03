@@ -6,7 +6,6 @@ import time
 import threading
 import tempfile
 import subprocess
-from pathlib import Path
 from dotenv import load_dotenv
 from collections import deque
 from contextlib import asynccontextmanager
@@ -24,12 +23,31 @@ import httpx
 import logging
 import keyring
 import boto3
+from runtime.paths import get_resource_dir
+
+RESOURCE_DIR = get_resource_dir()
 
 logger = logging.getLogger("watchdog.ai")
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = ("rtsp_transport;tcp|fflags;nobuffer|flags;low_delay")
 
-threat_model = YOLO("pipeline/models/weights/best.pt")
-person_model = YOLO("pipeline/models/weights/yolov8n.pt")
+THREAT_MODEL_PATH = (
+    RESOURCE_DIR
+    / "pipeline"
+    / "models"
+    / "weights"
+    / "best.pt"
+)
+
+PERSON_MODEL_PATH = (
+    RESOURCE_DIR
+    / "pipeline"
+    / "models"
+    / "weights"
+    / "yolov8n.pt"
+)
+
+threat_model = YOLO(str(THREAT_MODEL_PATH))
+person_model = YOLO(str(PERSON_MODEL_PATH))
 
 PERSON_CONFIDENCE_THRESHOLD = float(os.getenv("PERSON_CONFIDENCE_THRESHOLD", "0.25"))
 PERSON_NMS_IOU_THRESHOLD = float(os.getenv("PERSON_NMS_IOU_THRESHOLD", "0.70"))
@@ -46,8 +64,7 @@ TEMPORAL_CONFIRMATION_FRAMES = int(os.getenv("TEMPORAL_CONFIRMATION_FRAMES", "3"
 # _settings_lock = threading.Lock()
 
 
-load_dotenv(Path(__file__).resolve().parent / ".env")
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+load_dotenv(RESOURCE_DIR / ".env")
 
 
 
@@ -791,3 +808,12 @@ app.include_router(stream_router)
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "ai"}
+
+@app.get("/internal/camera-status")
+def camera_status():
+    supervisor = getattr(app.state, "camera_supervisor", None)
+
+    if supervisor is None:
+        return {"cameras": []}
+
+    return {"cameras": supervisor.get_status_snapshot()}

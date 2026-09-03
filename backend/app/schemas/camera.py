@@ -22,6 +22,7 @@ class CameraListItemRes(BaseModel):
     location: NonEmptyString
     enabled: bool
     created_at: datetime
+    edge_agent_available: bool | None = None
 
 
 class CameraRes(BaseModel):

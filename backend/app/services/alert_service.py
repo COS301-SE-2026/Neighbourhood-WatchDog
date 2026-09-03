@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-
+import math
 import boto3
 from botocore.config import Config as BotoConfig
 from botocore.exceptions import BotoCoreError, ClientError
@@ -90,6 +90,7 @@ def _neighbourhood_alert_stmt(neighbourhood_id: UUID):
     """Build the base alert query scoped through Camera → Property."""
     return (
         select(Alert)
+        .options(joinedload(Alert.camera).joinedload(Camera.property))
         .join(Camera, Alert.camera_id == Camera.id)
         .join(Property, Camera.property_id == Property.id)
         .where(Property.neighbourhood_id == neighbourhood_id)
@@ -233,9 +234,28 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
         )
 
 
+def _safe_optional_coordinate(value: object) -> float | None:
+    """Return a finite coordinate or None for missing/test-double values."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+
+    coordinate = float(value)
+    
+    return coordinate if math.isfinite(coordinate) else None
 
 def _build_alert_res(alert: Alert) -> AlertRes:
-    """Convert an Alert database model into an AlertRes response object."""
+    """Convert an Alert into a safe response, including its property location."""
+
+    camera = getattr(alert, "camera", None)
+    property_obj = getattr(camera, "property", None)
+
+    property_address = getattr(property_obj, "address", None)
+    if not isinstance(property_address, str):
+        property_address = None
+
+    property_latitude = _safe_optional_coordinate(getattr(property_obj, "latitude", None))
+    property_longitude = _safe_optional_coordinate(getattr(property_obj, "longitude", None))
+
     return AlertRes(
         id=alert.id,
         camera_id=alert.camera_id,
@@ -254,6 +274,10 @@ def _build_alert_res(alert: Alert) -> AlertRes:
         resolved_by=alert.resolved_by,
         resolved_at=alert.resolved_at,
         created_at=alert.created_at,
+        property_address=property_address,
+        property_latitude=property_latitude,
+        property_longitude=property_longitude 
+
     )
 
 def _is_critical_alert(alert: Alert) -> bool:
@@ -298,9 +322,8 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
 
     try:
         result = await db.execute(
-            select(Alert, Camera, Property)
-            .join(Camera, Camera.id == Alert.camera_id)
-            .join(Property, Property.id == Camera.property_id)
+            select(Alert)
+            .options(joinedload(Alert.camera).joinedload(Camera.property))
             .where(Alert.id == alert_id)
         )
         row = result.one_or_none()
