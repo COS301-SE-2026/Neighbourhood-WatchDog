@@ -26,6 +26,9 @@ SMTP_SERVER = 'smtp.gmail.com'
 SMTP_PORT = 587
 SENDER_EMAIL = os.getenv('SMTP_SENDER_EMAIL')
 SENDER_PASSWORD = os.getenv('SMTP_APP_PASSWORD')
+MAX_EMAIL_BATCH_SIZE = int(
+    os.getenv("MAX_EMAIL_BATCH_SIZE", "50")
+)
 
 CRITICAL_TYPES = {"WEAPON_DETECTED", "FALL_DETECTED"}
 
@@ -272,6 +275,52 @@ def send_alert_email(recipient_email: str, alert_type: str, camera_name: str, lo
     except Exception as e:
         logger.exception(f"Error sending alert email to {recipient_email}")
         return False, str(e)
+
+
+def send_alert_email_bcc(
+    recipient_emails: list[str],
+    alert_type: str,
+    camera_name: str,
+    location: str,
+    risk_level: str = "HIGH",
+    dashboard_url: str | None = "https://neighbourhood-watch-dog.vercel.app/auth/login"
+) -> tuple[bool, str | None]:
+    if not recipient_emails:
+        return False, "No email recipients provided"
+
+    if not SENDER_EMAIL or not SENDER_PASSWORD:
+        logger.error("SMTP_SENDER_EMAIL or SMTP_APP_PASSWORD not configured")
+        return False, "SMTP credentials not configured"
+
+    try:
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+
+        subject = f"{risk_level} severity alert: {alert_type} at {location}"
+
+        plain_body = (
+            f"{alert_type} detected at {camera_name} ({location}).\n"
+            f"Risk level: {risk_level}\n"
+            f"Please review footage"
+        ) 
+
+        msg = MIMEMultipart('alternative')
+        msg['From'] = f"Neighbourhood WatchDog <{SENDER_EMAIL}>"
+        msg['To'] = f"WatchDog Alerts <{SENDER_EMAIL}>"
+        msg["Bcc"] = ", ".join(recipient_emails)
+        msg['Subject'] = subject
+
+        msg.attach(MIMEText(plain_body, 'plain'))
+        msg.attach(MIMEText(build_alert_email(alert_type, camera_name, location, risk_level, dashboard_url), 'html'))
+
+        logger.info("Alert email BCC sent to %s recipient(s)", len(recipient_emails))
+
+        return True, None
+
+    except Exception as error:
+        logger.exception("Error sending BCC alert email")
+        return False, str(error)
 
 def _log_notification(
     db: DbSession,
