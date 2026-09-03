@@ -116,7 +116,7 @@ async def invite_property_member(
     db: DbSession,
     claims: PropertyAdminClaims
 ):
-    """Send an invite for user to join current property"""
+    """Sen an invite for user to join current property"""
 
     return await invite_property_member_handler(req, property_id, db, claims)
 

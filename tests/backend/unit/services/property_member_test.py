@@ -426,7 +426,7 @@ class TestRemovePropertyMember:
 
         assert response is None
         assert self.db.execute.await_count == 3
-        self.db.commit.assert_awaited_once()
+        self.db.commit.assert_awaited_once() 
 
     @pytest.mark.asyncio
     async def test_removes_non_admin_member_without_counting_admins(self):
@@ -442,8 +442,9 @@ class TestRemovePropertyMember:
             self.db,
             CLAIMS
 
-            
+
         )
 
         assert self.db.execute.await_count == 2
+        
         self.db.commit.assert_awaited_once()
