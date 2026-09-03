@@ -1,0 +1,36 @@
+backend/app/api/controllers/camera.py
+  h_cf6208e37032c0 8,10,16,79-83
+backend/app/services/camera_settings_service.py
+  h_cf6208e37032c0 10,85,151,193-195,208-209
+.github/workflows/deploy-production.yml
+  h_cf6208e37032c0 5
+backend/app/services/camera_cache.py
+  h_cf6208e37032c0 1-34
+backend/app/auth/jwt.py
+  h_cf6208e37032c0 9
+backend/main.py
+  h_cf6208e37032c0 4
+tests/non-functional/load-testing/locustfile.py
+  h_cf6208e37032c0 13-14,67-70
+  h_cf6208e37032c0 66
+backend/app/api/controllers/internal_cameras.py
+  h_cf6208e37032c0 4,10,16,59-60,64-66
+  h_cf6208e37032c0 17,61-63
+backend/app/services/camera_service.py
+  h_cf6208e37032c0 7,107,153,173,249
+backend/app/api/controllers/property.py
+  h_cf6208e37032c0 65-75
+"docs/Demo 3/srs.md"
+  h_cf6208e37032c0 1-895
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "15f9d0baa309ec1a50c4b7fc9ac68c2a8bb4b1fe",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
