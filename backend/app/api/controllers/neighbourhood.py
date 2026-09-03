@@ -1,8 +1,7 @@
-from http.client import HTTPException
 from typing import Annotated, List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from app.schemas.neighbourhood import (
     CreateNeighbourhoodReq,
     CreateNeighbourhoodRes,

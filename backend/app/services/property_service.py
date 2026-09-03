@@ -15,6 +15,7 @@ from app.models.camera import Camera
 from app.models.neighbourhood import Neighbourhood
 from app.core.database import DbSession
 from app.models.audit_log import TargetEntity
+from app.auth.authorization import is_property_member
 
 logger = logging.getLogger(__name__)
 
@@ -126,11 +127,12 @@ async def get_user_properties_handler(
     except Exception as e:
         raise HTTPException(500, f"Failed to fetch properties: {str(e)}")
     
-async def get_property_details_handler(
-    property_id: UUID,
-    db: DbSession
-) -> dict:
+async def get_property_details_handler(property_id: UUID, db: DbSession, claims: dict) -> dict:
+
     """Gets all the details for the property page"""
+    allowed = claims.get("custom:role") == "SYSTEM_ADMIN" or await is_property_member(property_id, claims, db)
+    if not allowed:
+        raise HTTPException(403, "You do not have permission to view this property.")
 
     if not property_id:
         logger.warning("get_property_details: no property id provided")
