@@ -51,6 +51,9 @@ REJECTED_REQUEST_ID = UUID("90000000-0000-0000-0000-000000000003")
 FOURTH_USER_ID = UUID("20000000-0000-0000-0000-000000000004")
 FOURTH_PROPERTY_ID = UUID("30000000-0000-0000-0000-000000000004")
 DENY_TEST_REQUEST_ID = UUID("90000000-0000-0000-0000-000000000004")
+
+FIFTH_USER_ID = UUID("20000000-0000-0000-0000-000000000005")
+FIFTH_PROPERTY_ID = UUID("30000000-0000-0000-0000-000000000005")
 RISK_HISTORY_IDS = [
 	UUID("a0000000-0000-0000-0000-000000000001"),
 	UUID("a0000000-0000-0000-0000-000000000002"),
@@ -126,6 +129,79 @@ async def seed_test_database() -> None:
 	async with SessionLocal() as db:
 		existing = await db.scalar(select(Neighbourhood.id).where(Neighbourhood.id == NEIGHBOURHOOD_ID))
 		if existing is not None:
+			primary_user = await db.scalar(select(User).where(User.id == USER_ID))
+			if primary_user is not None:
+				primary_user.first_name = "Test"
+				primary_user.last_name = "User"
+				primary_user.phone_number = "+27 82 000 0000"
+
+			member_rows = (
+				await db.scalars(
+					select(NeighbourhoodUser).where(
+						NeighbourhoodUser.neighbourhood_id == NEIGHBOURHOOD_ID,
+					)
+				)
+			).all()
+			for member in member_rows:
+				member.role = (
+					NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+					if member.user_id == USER_ID
+					else NeighbourhoodRole.SECURITY_OFFICER
+				)
+
+			request_rows = (
+				await db.scalars(
+					select(NeighbourhoodJoinRequest).where(
+						NeighbourhoodJoinRequest.id.in_(
+							[
+								JOIN_REQUEST_ID,
+								APPROVED_REQUEST_ID,
+								REJECTED_REQUEST_ID,
+								DENY_TEST_REQUEST_ID,
+							]
+						)
+					)
+				)
+			).all()
+			request_statuses = {
+				JOIN_REQUEST_ID: JoinRequestStatus.PENDING,
+				APPROVED_REQUEST_ID: JoinRequestStatus.APPROVED,
+				REJECTED_REQUEST_ID: JoinRequestStatus.REJECTED,
+				DENY_TEST_REQUEST_ID: JoinRequestStatus.PENDING,
+			}
+			for request in request_rows:
+				request.status = request_statuses[request.id]
+				request.resolved_at = None if request.status == JoinRequestStatus.PENDING else request.resolved_at
+
+			alert_rows = (
+				await db.scalars(
+					select(Alert).where(
+						Alert.id.in_(
+							[
+								TEST_ALERT_ID,
+								UUID("80000000-0000-0000-0000-000000000002"),
+								UUID("80000000-0000-0000-0000-000000000004"),
+							]
+						)
+					)
+				)
+			).all()
+			for alert in alert_rows:
+				if alert.id == TEST_ALERT_ID:
+					alert.status = AlertStatus.OPEN.value
+				elif alert.id == UUID("80000000-0000-0000-0000-000000000002"):
+					alert.status = AlertStatus.ACKNOWLEDGED.value
+				else:
+					alert.status = AlertStatus.OPEN.value
+
+			pairing_token = await db.scalar(
+				select(PairingToken).where(PairingToken.id == PAIRING_TOKEN_ID)
+			)
+			if pairing_token is not None:
+				pairing_token.used_at = None
+				pairing_token.expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+
+			await db.commit()
 			print("E2E test data already exists")
 			return
 
@@ -136,6 +212,7 @@ async def seed_test_database() -> None:
 			join_code=JOIN_CODE,
 		)
 		primary_user = _user(USER_ID, "testuser@example.com", "Test", "User", PRIMARY_COGNITO_SUB)
+		primary_user.phone_number = "+27 82 000 0000"
 		resident_user = _user(SECOND_USER_ID, "e2e.resident@example.com", "E2E", "Resident", "e2e-resident-cognito-sub")
 		officer_user = _user(
 			OFFICER_USER_ID,
@@ -152,7 +229,23 @@ async def seed_test_database() -> None:
 			"DenyFlow",
 			"e2e-deny-flow-cognito-sub",
 		)
-		db.add_all([neighbourhood, primary_user, resident_user, officer_user, deny_flow_user])
+		create_neighbourhood_user = _user(
+			FIFTH_USER_ID,
+			"e2e.create-neighbourhood@example.com",
+			"E2E",
+			"CreateNeighbourhood",
+			"e2e-create-neighbourhood-cognito-sub",
+		)
+		db.add_all(
+			[
+				neighbourhood,
+				primary_user,
+				resident_user,
+				officer_user,
+				deny_flow_user,
+				create_neighbourhood_user,
+			]
+		)
 		await db.flush()
 
 		db.add_all(
@@ -181,10 +274,17 @@ async def seed_test_database() -> None:
 					address="89 Deny Flow Close\nPretoria\nGauteng\n0004",
 					property_type=PropertyTypeEnum.PRIVATE,
 				),
+				Property(
+					id=FIFTH_PROPERTY_ID,
+					neighbourhood_id=None,
+					address="12 New Neighbourhood Drive\nPretoria\nGauteng\n0005",
+					property_type=PropertyTypeEnum.PRIVATE,
+				),
 				PropertyUser(user_id=USER_ID, property_id=PROPERTY_ID, is_admin=True),
 				PropertyUser(user_id=SECOND_USER_ID, property_id=SECOND_PROPERTY_ID, is_admin=True),
 				PropertyUser(user_id=OFFICER_USER_ID, property_id=OFFICER_PROPERTY_ID, is_admin=True),
 				PropertyUser(user_id=FOURTH_USER_ID, property_id=FOURTH_PROPERTY_ID, is_admin=True),
+				PropertyUser(user_id=FIFTH_USER_ID, property_id=FIFTH_PROPERTY_ID, is_admin=True),
 				NeighbourhoodUser(
 					user_id=USER_ID,
 					neighbourhood_id=NEIGHBOURHOOD_ID,
