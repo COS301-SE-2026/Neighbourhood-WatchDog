@@ -105,7 +105,7 @@ export function MfaCard({
   return (
     <Card
       className={cn(
-        "w-full max-w-lg sm:max-w-2xl rounded-xl border border-navy/12 bg-white/95 shadow-lg backdrop-blur",
+        "w-full max-w-lg sm:max-w-2xl rounded-xl border border-brand-gunmetal/20 bg-brand-depth shadow-lg backdrop-blur",
         className
       )}
     >
@@ -116,15 +116,15 @@ export function MfaCard({
           text-[2rem]
           font-semibold
           tracking-tight
-          text-navy
+          text-brand-frost
         ">
           Verify your email
         </CardTitle>
 
 
-        <CardDescription className="text-base text-body">
+        <CardDescription className="text-base text-brand-ash">
           Enter the 6-digit code sent to{" "}
-          <span className="font-medium text-navy">
+          <span className="font-medium text-brand-frost">
             {destination}
           </span>
         </CardDescription>
@@ -215,9 +215,9 @@ export function MfaCard({
 
           className="
             w-full
-            bg-navy
-            text-white
-            hover:bg-steel
+            bg-brand-abyss
+            text-brand-frost
+            hover:bg-brand-slate
           "
         >
 
@@ -253,7 +253,7 @@ export function MfaCard({
             variant="ghost"
             onClick={onBack}
             disabled={isLoading}
-            className="text-body"
+            className="text-brand-ash"
           >
 
             <ArrowLeft className="mr-2 h-4 w-4"/>

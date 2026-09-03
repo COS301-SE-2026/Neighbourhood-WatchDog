@@ -76,7 +76,7 @@ export default function PairAgent({ propertyId, propertyAddress}: Readonly<PairA
 
       <div className="space-y-4">
         {error && (
-          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-red-300">
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-brand-threat">
             {error}
           </div>
         )}

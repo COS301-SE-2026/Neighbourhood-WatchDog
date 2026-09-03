@@ -109,7 +109,7 @@ export function IncidentTrends({ neighbourhoodId }: IncidentTrendProps) {
         <p className="text-xs text-destructive">{error}</p>
       ) : loading ? (
         <div className="flex justify-center py-8">
-          <RefreshCw className="h-5 w-5 animate-spin text-sky" />
+          <RefreshCw className="h-5 w-5 animate-spin text-brand-pulse" />
         </div>
       ) : data?.buckets.length === 0 ? (
         <p className="text-xs text-muted-foreground text-center py-8">

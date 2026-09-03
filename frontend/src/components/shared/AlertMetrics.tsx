@@ -28,14 +28,14 @@ function formatSeconds(seconds: number | null): string {
 
 function StatusBadge({ status }: { status: string }) {
   const colours: Record<string, string> = {
-    PENDING: "bg-yellow-500/15 text-yellow-700",
-    ACKNOWLEDGED: "bg-green-500/15 text-green-700",
-    RESOLVED: "bg-blue-500/15 text-blue-600",
+    PENDING: "bg-brand-caution/15 text-brand-caution",
+    ACKNOWLEDGED: "bg-brand-green/15 text-brand-green",
+    RESOLVED: "bg-brand-pulse/15 text-brand-pulse",
   };
 
   return (
     <span
-      className={`px-2 py-0.5 rounded text-xs font-medium ${colours[status] ?? "bg-gray-500/15 text-gray-600"}`}
+      className={`px-2 py-0.5 rounded text-xs font-medium ${colours[status] ?? "bg-brand-slate/15 text-brand-ash"}`}
     >
       {status}
     </span>
@@ -64,7 +64,7 @@ export function AlertMetrics({
           <p className="text-xs text-muted-foreground mb-1">
             Average Response Time
           </p>
-          <p className="text-2xl font-bold --color-navy">
+          <p className="text-2xl font-bold text-brand-frost">
             {loading
               ? "-"
               : formatSeconds(metrics?.average_response_seconds ?? null)}
@@ -72,13 +72,13 @@ export function AlertMetrics({
         </Card>
         <Card className="p-4 bg-card border">
           <p className="text-xs text-muted-foreground mb-1">Pending</p>
-          <p className="text-2xl font-bold --color-caution">
+          <p className="text-2xl font-bold text-brand-caution">
             {loading ? "—" : (metrics?.pending_count ?? 0)}
           </p>
         </Card>
         <Card className="p-4 bg-card border">
           <p className="text-xs text-muted-foreground mb-1">Acknowledged</p>
-          <p className="text-2xl font-bold --color-safe">
+          <p className="text-2xl font-bold text-brand-green">
             {loading ? "—" : (metrics?.acknowledged_count ?? 0)}
           </p>
         </Card>

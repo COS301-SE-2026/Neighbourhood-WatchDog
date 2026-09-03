@@ -48,9 +48,12 @@ export function ZoneEditor({ videoRef, onSave, onCancel }: ZoneEditorProps) {
 
     } else {
 
-      ctx.fillStyle = "#1a1a2e";
+      const styles = getComputedStyle(document.documentElement);
+      ctx.fillStyle =
+        styles.getPropertyValue("--color-abyss").trim() || "#0D0D0D";
       ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = "#888";
+      ctx.fillStyle =
+        styles.getPropertyValue("--color-ash").trim() || "#A3A3A3";
       ctx.font = "14px Arial";
       ctx.fillText("No video signal - drawing on blank frame", 20, h / 2);
       setHasFrame(true);
@@ -85,8 +88,14 @@ export function ZoneEditor({ videoRef, onSave, onCancel }: ZoneEditorProps) {
     const h = canvas.height;
 
     //semi-transparent overlay outside polygon
+    const styles = getComputedStyle(document.documentElement);
+    const cautionColour =
+      styles.getPropertyValue("--color-caution").trim() || "#F59E0B";
+    const frostColour =
+      styles.getPropertyValue("--color-frost").trim() || "#F5F5F5";
+
     ctx.beginPath();
-    ctx.strokeStyle = "#facc15";
+    ctx.strokeStyle = cautionColour;
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 3]);
     ctx.moveTo(points[0].x * w, points[0].y * h);
@@ -103,14 +112,14 @@ export function ZoneEditor({ videoRef, onSave, onCancel }: ZoneEditorProps) {
     for (const p of points) {
 
       ctx.beginPath();
-      ctx.fillStyle = "#facc15";
+      ctx.fillStyle = cautionColour;
       ctx.arc(p.x * w, p.y * h, 5, 0, Math.PI * 2);
       ctx.fill();
     }
 
     //first point =  close target
     ctx.beginPath();
-    ctx.strokeStyle = "#fff";
+    ctx.strokeStyle = frostColour;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([]);
     ctx.arc(points[0].x * w, points[0].y * h, 10, 0, Math.PI * 2);

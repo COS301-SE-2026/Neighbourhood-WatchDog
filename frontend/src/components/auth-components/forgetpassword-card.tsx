@@ -19,22 +19,22 @@ type ForgotPasswordCardProps = {
 export function ForgotPasswordCard({ className }: ForgotPasswordCardProps) {
   return (
     <Card className={cn(
-      "w-full max-w-md sm:max-w-xl rounded-xl border border-navy/12 bg-white/95 shadow-lg backdrop-blur",
+      "w-full max-w-md sm:max-w-xl rounded-xl border border-brand-gunmetal/20 bg-brand-depth shadow-lg backdrop-blur",
       className
     )}>
       <CardHeader>
-        <CardTitle className="text-[2rem] sm:text-[2rem] font-semibold tracking-tight text-navy">
+        <CardTitle className="text-[2rem] sm:text-[2rem] font-semibold tracking-tight text-brand-frost">
           Forgot your password?
         </CardTitle>
 
-        <CardDescription className="text-base text-body">
+        <CardDescription className="text-base text-brand-ash">
           Enter your email below and we will send a message to reset your password
         </CardDescription>
 
         <CardAction>
           <Button
             variant="link"
-            className="text-sky hover:text-blue"
+            className="text-brand-pulse hover:text-brand-ice"
           >
             Login
           </Button>
@@ -45,7 +45,7 @@ export function ForgotPasswordCard({ className }: ForgotPasswordCardProps) {
         <form>
           <div className="flex flex-col gap-6">
             <div className="grid gap-2">
-              <Label htmlFor="email" className="font-medium text-body">
+              <Label htmlFor="email" className="font-medium text-brand-ash">
                 Email
               </Label>
               <Input
@@ -62,7 +62,7 @@ export function ForgotPasswordCard({ className }: ForgotPasswordCardProps) {
       <CardFooter className="flex-col gap-2">
         <Button
           type="submit"
-          className="w-full bg-navy text-white hover:bg-steel"
+          className="w-full bg-brand-abyss text-brand-frost hover:bg-brand-slate"
         >
           Send reset link
         </Button>

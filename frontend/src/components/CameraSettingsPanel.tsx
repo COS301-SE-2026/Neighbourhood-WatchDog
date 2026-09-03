@@ -35,7 +35,7 @@ export function CameraSettingsPanel({
 
     if (loading) {
 
-        return <p className="text-xs text-white/45">
+        return <p className="text-xs text-brand-ash">
             Loading settings...
         </p>
 
@@ -53,13 +53,13 @@ export function CameraSettingsPanel({
 
 
     return (
-        <div className="space-y-5 p-4 border border-white/10 rounded-lg">
-            <h3 className="font-semibold text-sm text-white">Camera Detection Settings</h3>
+        <div className="space-y-5 p-4 border border-border rounded-lg">
+            <h3 className="font-semibold text-sm text-brand-frost">Camera Detection Settings</h3>
 
             {/*confidence threshold*/}
 
             <div>
-                <label className="text-xs text-white/45">
+                <label className="text-xs text-brand-ash">
                     Confidence threshold: {Math.round(currentThreshold * 100)}%
                 </label>
 
@@ -73,7 +73,7 @@ export function CameraSettingsPanel({
                     onValueCommit={handleThresholdCommit}
                 />
                 
-                <p className="text-xs text-white/45 mt-1">
+                <p className="text-xs text-brand-ash mt-1">
                     Detection below this confidence will not trigger alerts.
                 </p>
 
@@ -84,10 +84,10 @@ export function CameraSettingsPanel({
             <div>
                 <div className="flex items-center justify-between mb-2">
 
-                <span className="text-xs font-medium text-white">Detection zones</span>
+                <span className="text-xs font-medium text-brand-frost">Detection zones</span>
 
                 {!drawingZone && (
-                    <Button size="sm" variant="outline" onClick={() => setDrawingZone(true)} className="border-white/10 bg-transparent text-white/80 hover:bg-white/5 hover:text-white">
+                    <Button size="sm" variant="outline" onClick={() => setDrawingZone(true)} className="border-border bg-transparent text-brand-frost hover:bg-brand-slate hover:text-brand-frost">
                     <PlusCircle className="w-3 h-3 mr-1" /> Add zone
                     </Button>
                 )}
@@ -95,7 +95,7 @@ export function CameraSettingsPanel({
                 </div>
 
                 {settings.zones.length === 0 && !drawingZone && (
-                <p className="text-xs text-white/45">
+                <p className="text-xs text-brand-ash">
                     No zones configured. All detections trigger alerts.
                 </p>
                 )}
@@ -106,17 +106,17 @@ export function CameraSettingsPanel({
                 {/*existing zones list */}
                 <ul className="space-y-1">
                 {settings.zones.map(zone => (
-                    <li key={zone.id} className="flex items-center justify-between text-xs bg-white/5 text-white/70 rounded px-2 py-1">
+                    <li key={zone.id} className="flex items-center justify-between text-xs bg-brand-slate text-brand-ash rounded px-2 py-1">
 
                     <span>{zone.name} ({zone.polygon.length} pts)</span>
 
                     <Button
                         size="icon"
                         variant="ghost"
-                        className="h-5 w-5 hover:bg-white/10"
+                        className="h-5 w-5 hover:bg-brand-slate"
                         onClick={() => deleteZone(zone.id)}
                     >
-                        <Trash2 className="w-3 h-3 text-red-400" />
+                        <Trash2 className="w-3 h-3 text-brand-threat" />
 
                     </Button>
                     </li>

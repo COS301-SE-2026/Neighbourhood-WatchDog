@@ -2,243 +2,227 @@
 
 @custom-variant dark (&:is(.dark *));
 
+
 @theme inline {
+  /* shadcn semantic aliases */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-jetbrains-mono);
-  --font-heading: var(--font-inter);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Use as bg-brand-void, text-brand-frost, border-brand-gunmetal, etc. */
+  --color-brand-void: var(--color-void);
+  --color-brand-abyss: var(--color-abyss);
+  --color-brand-depth: var(--color-depth);
+  --color-brand-slate: var(--color-slate);
+  --color-brand-gunmetal: var(--color-gunmetal);
+  --color-brand-ash: var(--color-ash);
+  --color-brand-frost: var(--color-frost);
+  --color-brand-green: var(--color-green);
+  --color-brand-pulse: var(--color-pulse);
+  --color-brand-ice: var(--color-ice);
+  --color-brand-threat: var(--color-threat);
+  --color-brand-caution: var(--color-caution);
+  --color-brand-safe: var(--color-safe);
+  --color-brand-info: var(--color-info);
+
+  /* Fonts provided by next/font in app/layout.tsx */
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), Consolas, monospace;
+  --font-heading: var(--font-inter), system-ui, sans-serif;
+
+  /* Type scale */
+  --text-display: 3rem/3.5rem var(--font-sans);
+  --text-h1: 2rem/2.5rem var(--font-sans);
+  --text-h2: 1.5rem/2rem var(--font-sans);
+  --text-h3: 1.25rem/1.75rem var(--font-sans);
+  --text-body-lg: 1.125rem/1.75rem var(--font-sans);
+  --text-body: 1rem/1.5rem var(--font-sans);
+  --text-sm: 0.875rem/1.25rem var(--font-sans);
+  --text-label: 0.875rem/1.25rem var(--font-sans);
+  --text-caption: 0.75rem/1rem var(--font-sans);
+  --text-code: 0.875rem/1.25rem var(--font-mono);
+
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-full: 9999px;
-  --color-navy: #064E3B;
-  --color-blue: #14A472;
-  --color-sky: #34D399;
-  --color-steel: #047857;
-  --color-fog: #F4F6FA;
-  --color-mist: #D0D7E8;
-  --color-ink: #1A1A2E;
-  --color-body: #2E3A5C;
-  --color-threat: #DC2626;
-  --color-caution: #D97706;
-  --color-safe: #16A34A;
-  --color-info: #0284C7;
 }
 
 :root {
-  /* shadcn mapped to WatchDog Design System */
-  --background: #FFFFFF;           /* White */
-  --foreground: #1A1A2E;           /* Ink */
-  --card: #FFFFFF;                 /* White */
-  --card-foreground: #1A1A2E;      /* Ink */
-  --popover: #FFFFFF;              /* White */
-  --popover-foreground: #1A1A2E;   /* Ink */
-  --primary: #047857;              /* Emerald - primary interactive */
-  --primary-foreground: #FFFFFF;   /* White on emerald */
-  --secondary: #F4F6FA;            /* Fog */
-  --secondary-foreground: #047857; /* Steel (emerald) */
-  --muted: #F4F6FA;                /* Fog */
-  --muted-foreground: #2E3A5C;     /* Body */
-  --accent: #F4F6FA;               /* Fog */
-  --accent-foreground: #064E3B;    /* Navy (emerald) */
-  --destructive: #DC2626;          /* Threat Red */
-  --border: #D0D7E8;               /* Mist */
-  --input: #F4F6FA;                /* Fog - input backgrounds */
-  --ring: #059669;                 /* Emerald - focus rings */
-  --chart-1: #059669;              /* Emerald */
-  --chart-2: #34D399;              /* Sky Emerald */
-  --chart-3: #064E3B;              /* Navy (emerald) */
-  --chart-4: #047857;              /* Steel (emerald) */
-  --chart-5: #D0D7E8;              /* Mist */
-  --sidebar: #064E3B;              /* Navy (emerald) */
-  --sidebar-foreground: #FFFFFF;   /* White on navy */
-  --sidebar-primary: #059669;      /* Emerald */
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #047857;       /* Steel (emerald) - hover on navy */
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: #047857;       /* Steel (emerald) */
-  --sidebar-ring: #14A472;         /* Emerald */
+  color-scheme: dark;
 
-  /* WatchDog Design System Tokens */
-  /* Colour - Brand */
-  --color-navy: #064E3B;
-  --color-blue: #14A472;
-  --color-sky: #34D399;
-  --color-steel: #047857;
+  /* Brand neutrals */
+  --color-void: #0A0A0A;
+  --color-abyss: #0D0D0D;
+  --color-depth: #141414;
+  --color-slate: #1E1E1E;
+  --color-gunmetal: #8A8A8A;
+  --color-ash: #A3A3A3;
+  --color-frost: #F5F5F5;
+
+  /* Accents and semantic colours */
+  --color-green: #10B981;
+  --color-pulse: #2D7EFF;
+  --color-ice: #6AB0FF;
+  --color-threat: #EF4444;
+  --color-caution: #F59E0B;
+  --color-safe: var(--color-green);
+  --color-info: var(--color-pulse);
+
+  /* Surface and border aliases */
+  --border-subtle: rgb(138 138 138 / 12%);
+  --border-default: rgb(138 138 138 / 20%);
+  --surface-hover: var(--color-slate);
+  --surface-input: var(--color-slate);
+  --surface-overlay: rgb(10 10 10 / 85%);
+
+  /* shadcn semantic tokens */
+  --background: var(--color-void);
+  --foreground: var(--color-frost);
+  --card: var(--color-depth);
+  --card-foreground: var(--color-frost);
+  --popover: var(--color-depth);
+  --popover-foreground: var(--color-frost);
+  --primary: var(--color-green);
+  --primary-foreground: var(--color-void);
+  --secondary: var(--color-slate);
+  --secondary-foreground: var(--color-frost);
+  --muted: var(--color-slate);
+  --muted-foreground: var(--color-ash);
+  --accent: var(--color-slate);
+  --accent-foreground: var(--color-frost);
+  --destructive: var(--color-threat);
+  --border: var(--border-subtle);
+  --input: var(--surface-input);
+  --ring: var(--color-green);
+
+  /* Charts */
+  --chart-1: var(--color-green);
+  --chart-2: var(--color-pulse);
+  --chart-3: var(--color-ice);
+  --chart-4: var(--color-frost);
+  --chart-5: var(--color-gunmetal);
 
   /* Sidebar */
-  --sidebar:                      #0D0D0D;   /* Abyss */
-  --sidebar-foreground:           #F5F5F5;   /* Frost */
-  --sidebar-primary:              #10B981;   /* Emerald */
-  --sidebar-primary-foreground:   #0A0A0A;
-  --sidebar-accent:               #1E1E1E;   /* Slate — hover */
-  --sidebar-accent-foreground:    #F5F5F5;
-  --sidebar-border:               rgba(138, 138, 138, 0.12);
-  --sidebar-ring:                 #10B981;
-
-  /* ── WatchDog raw tokens (use these directly in components) ── */
-  --color-void:       #0A0A0A;
-  --color-abyss:      #0D0D0D;
-  --color-depth:      #141414;
-  --color-slate:      #1E1E1E;
-  --color-pulse:      #2D7EFF;
-  --color-green:      #10B981;
-  --color-ice:        #6AB0FF;
-  --color-gunmetal:   #8A8A8A;
-  --color-frost:      #F5F5F5;
-  --color-ash:        #A3A3A3;
-  --color-steel-text: #6B6B6B;
-  --color-threat:     #EF4444;
-  --color-caution:    #F59E0B;
-  --color-safe:       #10B981;
-  --color-info:       #2D7EFF;
-
-  /* Typography */
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', Consolas, monospace;
-  --text-display:  3rem/3.5rem var(--font-sans);
-  --text-h1:       2rem/2.5rem var(--font-sans);
-  --text-h2:       1.5rem/2rem var(--font-sans);
-  --text-h3:       1.25rem/1.75rem var(--font-sans);
-  --text-body-lg:  1.125rem/1.75rem var(--font-sans);
-  --text-body:     1rem/1.5rem var(--font-sans);
-  --text-sm:       0.875rem/1.25rem var(--font-sans);
-  --text-label:    0.875rem/1.25rem var(--font-sans);
-  --text-caption:  0.75rem/1rem var(--font-sans);
-  --text-code:     0.875rem/1.25rem var(--font-mono);
+  --sidebar: var(--color-abyss);
+  --sidebar-foreground: var(--color-frost);
+  --sidebar-primary: var(--color-green);
+  --sidebar-primary-foreground: var(--color-void);
+  --sidebar-accent: var(--color-slate);
+  --sidebar-accent-foreground: var(--color-frost);
+  --sidebar-border: var(--border-subtle);
+  --sidebar-ring: var(--color-green);
 
   /* Spacing */
-  --space-1: 4px;   --space-2: 8px;   --space-3: 12px;
-  --space-4: 16px;  --space-5: 24px;  --space-6: 32px;
-  --space-8: 48px;  --space-10: 64px; --space-12: 96px;
-
-  /* Border Radius */
-  --radius-sm:   4px;
-  --radius-md:   8px;
-  --radius-lg:   12px;
-  --radius-xl:   16px;
-  --radius-full: 9999px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-8: 48px;
+  --space-10: 64px;
+  --space-12: 96px;
 
   /* Motion */
-  --motion-instant:      0ms;
-  --motion-fast:         100ms ease-out;
-  --motion-normal:       200ms ease-in-out;
-  --motion-slow:         350ms ease-in-out;
-  --motion-alert-pulse:  1200ms ease-in-out infinite;
+  --duration-fast: 100ms;
+  --duration-normal: 200ms;
+  --duration-slow: 350ms;
+  --motion-instant: 0ms;
+  --motion-fast: var(--duration-fast) ease-out;
+  --motion-normal: 200ms ease-in-out;
+  --motion-slow: 350ms ease-in-out;
+  --motion-alert-pulse: 1200ms ease-in-out infinite;
 
   /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(6, 78, 59, 0.08);
-  --shadow-md: 0 4px 12px rgba(6, 78, 59, 0.12);
-  --shadow-lg: 0 8px 24px rgba(6, 78, 59, 0.16);
-  --shadow-alert: 0 0 0 3px rgba(220, 38, 38, 0.30);
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 30%);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 40%);
+  --shadow-lg: 0 8px 24px rgb(0 0 0 / 50%);
+  --shadow-alert: 0 0 0 3px rgb(239 68 68 / 30%);
 
-  /* Toast */
-  --toast-bg:     #141414;   /* Depth */
-  --toast-text:   #F5F5F5;   /* Frost */
-  --toast-border: rgba(138, 138, 138, 0.15);
-
-  --toast-success:      #10B981;
-  --toast-success-text: #0A0A0A;   /* Dark text on emerald */
-  --toast-warning:      #F59E0B;
-  --toast-warning-text: #0A0A0A;
-  --toast-error:        #EF4444;
-  --toast-error-text:   #FFFFFF;
-  --toast-info:         #2D7EFF;
-  --toast-info-text:    #FFFFFF;
+  /* Toasts */
+  --toast-bg: var(--color-depth);
+  --toast-text: var(--color-frost);
+  --toast-border: var(--border-default);
+  --toast-success: var(--color-safe);
+  --toast-success-text: var(--color-void);
+  --toast-warning: var(--color-caution);
+  --toast-warning-text: var(--color-void);
+  --toast-error: var(--color-threat);
+  --toast-error-text: var(--color-frost);
+  --toast-info: var(--color-info);
+  --toast-info-text: var(--color-frost);
 }
 
 .dark {
-  --background: #09090B;                   /* Ink */
-  --foreground: #FAFAFA;                   /* Fog */
-  --card: #121212;                         /* Steel */
-  --card-foreground: #F4F6FA;              /* Fog */
-  --popover: #047857;                      /* Steel (emerald) */
-  --popover-foreground: #F4F6FA;           /* Fog */
-  --primary: #047857;                      /* Sky Emerald (lighter for dark bg) */
-  --primary-foreground: #FFFFFF;
-  --secondary: #064E3B;                    /* Navy (emerald) */
-  --secondary-foreground: #F4F6FA;         /* Fog */
-  --muted: #064E3B;                        /* Navy (emerald) */
-  --muted-foreground: #D0D7E8;             /* Mist */
-  --accent: #064E3B;                       /* Navy (emerald) */
-  --accent-foreground: #F4F6FA;            /* Fog */
-  --destructive: #DC2626;                  /* Threat Red */
-  --border: #262626;     /* Mist at 15% */
-  --input: rgba(208, 215, 232, 0.15);      /* Mist at 15% */
-  --ring: #34D399;                         /* Sky Emerald */
-  --chart-1: #34D399;                      /* Sky Emerald */
-  --chart-2: #14A472;                      /* Emerald */
-  --chart-3: #D0D7E8;                      /* Mist */
-  --chart-4: #F4F6FA;                      /* Fog */
-  --chart-5: #047857;                      /* Steel (emerald) */
-  --sidebar: #050505;                      /* Ink */
-  --sidebar-foreground: #FFFFFF;
-  --sidebar-primary: #34D399;              /* Sky Emerald */
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #047857;              /* Steel (emerald) */
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: rgba(208, 215, 232, 0.15);
-  --sidebar-ring: #34D399;
-
-  --toast-bg: #1A1A2E;            /* Ink */
-  --toast-text: #F4F6FA;          /* Fog */
-  --toast-border: #047857;        /* Steel (emerald) */
-
-  --toast-success: #16A34A;       /* Safe Green */
-  --toast-success-text: #FFFFFF;
-
-  --toast-warning: #D97706;       /* Caution Amber */
-  --toast-warning-text: #FFFFFF;
-
-  --toast-error: #DC2626;         /* Threat Red */
-  --toast-error-text: #FFFFFF;
-
-  --toast-info: #38BDF8;          /* Info Blue (kept distinct from brand) */
-  --toast-info-text: #FFFFFF;
+  color-scheme: dark;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground font-sans;
-  }
+
   html {
     @apply font-sans;
+    background: var(--color-void);
   }
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-sans;
+
+  body {
+    @apply min-h-screen bg-background text-foreground font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-green);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: var(--motion-instant) !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: var(--motion-instant) !important;
   }
 }

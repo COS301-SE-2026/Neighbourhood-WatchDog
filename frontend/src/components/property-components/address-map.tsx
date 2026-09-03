@@ -34,7 +34,7 @@ export function AddressMap({
     const position: [number, number] = [latitude, longitude];
 
     return (
-        <div className="mt-4 overflow-hidden rounded-lg border border-white/10">
+        <div className="mt-4 overflow-hidden rounded-lg border border-border">
             <MapContainer
                 center={position}
                 zoom={16}
@@ -57,8 +57,8 @@ export function AddressMap({
                     center={position}
                     radius={8}
                     pathOptions={{
-                        color: "#10b981",
-                        fillColor: "#10b981",
+                        color: "var(--color-green)",
+                        fillColor: "var(--color-green)",
                         fillOpacity: 0.8,
                     }}
                 />

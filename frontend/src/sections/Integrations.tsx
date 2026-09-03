@@ -27,9 +27,9 @@ export default function Integrations() {
                     <div>
                         <Tag>Cameras</Tag>
                         <h2 className="text-6xl font-medium mt-6">
-                            Works with different <span className="text-emerald-400">cameras</span>
+                            Works with different <span className="text-brand-green">cameras</span>
                         </h2>
-                        <p className="text-white/50 mt-4 text-lg">
+                        <p className="text-brand-ash mt-4 text-lg">
                             seamlessly connect with different cameras,
                             we&apos;ve made it easy, connect your camera 
                             and your stream is up and running.

@@ -48,17 +48,17 @@ const STATUS_CONFIG: Record<
 > = {
   PENDING: {
     label: "Pending",
-    className: "text-amber-300",
+    className: "text-brand-caution",
     icon: <Clock className="size-3.5" />,
   },
   APPROVED: {
     label: "Approved",
-    className: "text-emerald-400",
+    className: "text-brand-green",
     icon: <Check className="size-3.5" />,
   },
   DENIED: {
     label: "Denied",
-    className: "text-red-300",
+    className: "text-brand-threat",
     icon: <X className="size-3.5" />,
   },
 };
@@ -100,16 +100,16 @@ export function RequestCard({ request, onApprove, onDeny }: RequestCardProps) {
   return (
     <article
         className={[
-            "flex flex-col gap-4 border border-white/10 bg-zinc-950 px-4 py-4",
+            "flex flex-col gap-4 border border-border bg-brand-abyss px-4 py-4",
             "sm:flex-row sm:items-center sm:justify-between",
             isPending
-                ? "transition-colors hover:border-white/20"
+                ? "transition-colors hover:border-brand-gunmetal/30"
                 : "opacity-65",
         ].join(" ")}
         aria-label={`Join request from ${request.user_name}`}
     >
         <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-xs font-medium text-white/70">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-brand-slate text-xs font-medium text-brand-ash">
                 {request.user_name ? (
                     joinRequestInitials(request.user_name)
                 ) : (
@@ -118,11 +118,11 @@ export function RequestCard({ request, onApprove, onDeny }: RequestCardProps) {
             </div>
 
             <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-white">
+                <p className="truncate text-sm font-medium text-brand-frost">
                     {request.user_name || "Unknown resident"}
                 </p>
 
-                  <p className="mt-1 flex items-center gap-1.5 text-xs text-white/45">
+                  <p className="mt-1 flex items-center gap-1.5 text-xs text-brand-ash">
                       <Clock className="size-3" />
                       Requested {timeAgo(request.created_at)}
                   </p>
@@ -144,7 +144,7 @@ export function RequestCard({ request, onApprove, onDeny }: RequestCardProps) {
                           type="button"
                           disabled={isLoading}
                           onClick={handleDeny}
-                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-white/10 px-3 text-xs font-medium text-white/60 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium text-brand-ash transition-colors hover:border-brand-threat/30 hover:bg-brand-threat/10 hover:text-brand-threat disabled:cursor-not-allowed disabled:opacity-50"
                       >
                           {isDenying ? (
                               <Loader2 className="size-3.5 animate-spin" />
@@ -160,7 +160,7 @@ export function RequestCard({ request, onApprove, onDeny }: RequestCardProps) {
                           type="button"
                           disabled={isLoading}
                           onClick={handleApprove}
-                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-emerald-500 px-3 text-xs font-medium text-black transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/30 disabled:text-black/50"
+                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-brand-green px-3 text-xs font-medium text-brand-void transition-colors hover:bg-brand-green disabled:cursor-not-allowed disabled:bg-brand-green/30 disabled:text-brand-void/50"
                       >
                           {isApproving ? (
                               <Loader2 className="size-3.5 animate-spin" />
