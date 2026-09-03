@@ -1,6 +1,10 @@
 import {setSession, getAccessToken, logout, login, signUp, confirmSignUp, resendConfirmationCode, verifyMfa} from "../../../frontend/src/lib/auth/cognito";
 import {getAuthHeaders, getAuthToken,} from "../../../frontend/src/lib/api/auth";
-
+import {
+  getStoredUser,
+  isAuthenticated,
+  updateStoredFullName,
+} from "../../../frontend/src/lib/auth/cognito";
 jest.mock("amazon-cognito-identity-js", () => require("../../../frontend/__mocks__/amazon-cognito-identity-js.js"));
 
 const TEST_ID_TOKEN =
@@ -290,4 +294,65 @@ test("verify MFA throws backend error message", async () => {
       "123456"
     )
   ).rejects.toThrow("Invalid verification code");
+});
+
+test("isAuthenticated returns false without an access token", () => {
+  localStorage.clear();
+
+  expect(isAuthenticated()).toBe(false);
+});
+
+test("isAuthenticated returns true with a valid access token", () => {
+  localStorage.setItem("accessToken", "valid-token");
+
+  expect(isAuthenticated()).toBe(true);
+});
+
+test("getAccessToken logs out when the token is expired", () => {
+  localStorage.setItem("accessToken", "expired-token");
+  localStorage.setItem(
+    "tokenExpiry",
+    String(Date.now() - 1000)
+  );
+
+  expect(getAccessToken()).toBeNull();
+  expect(localStorage.getItem("accessToken")).toBeNull();
+});
+
+test("getStoredUser returns the stored user", () => {
+  localStorage.setItem("accessToken", "valid-token");
+  localStorage.setItem("userSub", "user-123");
+  localStorage.setItem("fullname", "Test User");
+  localStorage.setItem("email", "test@example.com");
+  localStorage.setItem("address", "123 Main Street");
+
+  expect(getStoredUser()).toEqual({
+    sub: "user-123",
+    fullname: "Test User",
+    email: "test@example.com",
+    address: "123 Main Street",
+  });
+});
+
+test("getStoredUser returns null without a user sub", () => {
+  localStorage.setItem("accessToken", "valid-token");
+
+  expect(getStoredUser()).toBeNull();
+});
+
+test("updateStoredFullName updates localStorage", () => {
+  updateStoredFullName("Updated User");
+
+  expect(localStorage.getItem("fullname")).toBe(
+    "Updated User"
+  );
+});
+
+test("setSession rejects missing access token", () => {
+  expect(() =>
+    setSession({
+      accessToken: "",
+      idToken: "some-id-token",
+    })
+  ).toThrow("Cannot store empty auth tokens");
 });
