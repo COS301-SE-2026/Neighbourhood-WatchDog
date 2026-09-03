@@ -31,8 +31,14 @@ export function CameraDropdown({camera_id, camera_name, camera_location, camera_
         <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                        <MoreVertical/> 
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 p-0"
+                        aria-label={`Actions for camera ${camera_name}`}
+                        title={`Actions for camera ${camera_name}`}
+                    >
+                        <MoreVertical aria-hidden="true" />
                     </Button>
                 </DropdownMenuTrigger>
 
@@ -44,7 +50,7 @@ export function CameraDropdown({camera_id, camera_name, camera_location, camera_
                         }}>
                         <Edit className="mr-2 h-4 w-4" /> Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive cursor-pointer" onSelect={(e) => {
+                    <DropdownMenuItem className="text-destructive cursor-pointer" onSelect={() => {
                             setDelete(true)
                         }}>
                         <Trash className="mr-2 h-4 w-4" /> Delete

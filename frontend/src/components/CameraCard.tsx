@@ -82,8 +82,8 @@ export default function CameraCard({ id, name, location, visibility, enabled, us
                 <div className="border-t border-border p-4">
                     <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                            <h3 className="truncate text-sm font-semibold text-brand-ash">{name}</h3>
-                            <p className="mt-1 truncate text-xs text-brand-ash/45">{location}</p>
+                            <h3 className="truncate text-sm font-semibold text-brand-frost">{name}</h3>
+                            <p className="mt-1 truncate text-xs text-brand-ash">{location}</p>
                         </div>
 
                         <CameraDropdown
@@ -97,8 +97,8 @@ export default function CameraCard({ id, name, location, visibility, enabled, us
                     </div>
 
                     <div className="mt-4 border-t border-border pt-3">
-                        <p className="text-xs text-brand-ash/45">
-                            Visibility: <span className="text-brand-ash/65">{visibility}</span>
+                        <p className="text-xs text-brand-ash">
+                            Visibility: <span className="text-brand-frost">{visibility}</span>
                         </p>
 
                         
@@ -111,7 +111,7 @@ export default function CameraCard({ id, name, location, visibility, enabled, us
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-brand-ash">
                         {name}
-                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-ash/70">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-frost">
                             <span className={`size-1.5 rounded-full ${statusDotClass}`} />
                             {statusLabel}
                         </span>
@@ -121,21 +121,21 @@ export default function CameraCard({ id, name, location, visibility, enabled, us
                 
 
                 {!enabled && (
-                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-brand-slate text-brand-ash/45">
+                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-brand-slate text-brand-ash">
                         <CameraOff className="h-10 w-10" />
                         <p className="text-sm">This camera is currently disabled.</p>
                     </div>
                 )}
 
                 {enabled && streamState === "connecting" && (
-                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-brand-slate text-brand-ash/45">
+                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-brand-slate text-brand-ash">
                         <LoaderCircle className="h-8 w-8 animate-spin" />
                         <p className="text-sm">Connecting to live stream…</p>
                     </div>
                 )}
 
                 {enabled && streamState === "unavailable" && (
-                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-brand-slate text-brand-ash/45">
+                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-brand-slate text-brand-ash">
                         <CameraOff className="h-10 w-10" />
                         <p className="text-sm">Live stream is currently unavailable.</p>
                         <p className="text-xs">
@@ -156,7 +156,7 @@ export default function CameraCard({ id, name, location, visibility, enabled, us
                 )}
 
                 {enabled && streamState === "live" && (
-                    <div className="flex items-center gap-2 text-xs text-brand-ash/45">
+                    <div className="flex items-center gap-2 text-xs text-brand-ash">
                         <Radio className="h-3 w-3 text-brand-green" />
                         Live via MediaMTX WebRTC
                     </div>

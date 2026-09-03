@@ -1,24 +1,24 @@
-"use client"
+"use client";
 
-import { Bell, LogOut, Monitor, Moon, User, UserRound } from "lucide-react";
+import { Bell, LogOut, Monitor, User, UserRound } from "lucide-react";
 import Link from "next/link";
-import { AvatarFallback, Avatar } from "@/components/ui/avatar";
+import { useRouter } from "next/navigation";
+import React from "react";
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
-    DropdownMenuTrigger
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SidebarTrigger } from "./ui/sidebar";
-import { useRouter } from "next/navigation";
-import React from "react";
 import { logout } from "@/lib/auth/cognito";
+import { SidebarTrigger } from "./ui/sidebar";
 
 const Navbar = () => {
     const router = useRouter();
-
     const [username, setUsername] = React.useState("");
 
     React.useEffect(() => {
@@ -32,12 +32,11 @@ const Navbar = () => {
         localStorage.removeItem("fullname");
 
         logout();
-
         router.push("/auth/login");
     };
 
     return (
-        <nav className="p-4 flex items-center text-brand-frost justify-between">
+        <nav className="flex items-center justify-between p-4 text-brand-frost">
             <SidebarTrigger />
 
             <div className="flex items-center gap-4">
@@ -46,11 +45,21 @@ const Navbar = () => {
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Avatar>
-                            <AvatarFallback className="bg-muted text-muted-foreground">
-                                <User className="size-4" />
-                            </AvatarFallback>
-                        </Avatar>
+                        <button
+                            type="button"
+                            aria-label="Open account menu"
+                            title="Open account menu"
+                            className="rounded-full"
+                        >
+                            <Avatar aria-hidden="true">
+                                <AvatarFallback className="bg-muted text-muted-foreground">
+                                    <User
+                                        aria-hidden="true"
+                                        className="size-4"
+                                    />
+                                </AvatarFallback>
+                            </Avatar>
+                        </button>
                     </DropdownMenuTrigger>
 
                     <DropdownMenuContent align="end" className="w-56">
@@ -69,17 +78,26 @@ const Navbar = () => {
                         <DropdownMenuSeparator />
 
                         <DropdownMenuItem>
-                            <UserRound className="mr-2 size-4" />
+                            <UserRound
+                                aria-hidden="true"
+                                className="mr-2 size-4"
+                            />
                             My profile
                         </DropdownMenuItem>
 
                         <DropdownMenuItem>
-                            <Bell className="mr-2 size-4" />
+                            <Bell
+                                aria-hidden="true"
+                                className="mr-2 size-4"
+                            />
                             Notifications
                         </DropdownMenuItem>
 
                         <DropdownMenuItem>
-                            <Monitor className="mr-2 size-4" />
+                            <Monitor
+                                aria-hidden="true"
+                                className="mr-2 size-4"
+                            />
                             Appearance
                         </DropdownMenuItem>
 
@@ -89,7 +107,10 @@ const Navbar = () => {
                             onClick={handleLogout}
                             className="text-destructive focus:text-destructive"
                         >
-                            <LogOut className="mr-2 size-4" />
+                            <LogOut
+                                aria-hidden="true"
+                                className="mr-2 size-4"
+                            />
                             Sign out
                         </DropdownMenuItem>
                     </DropdownMenuContent>

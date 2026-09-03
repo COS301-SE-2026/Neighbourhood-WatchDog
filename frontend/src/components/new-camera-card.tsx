@@ -37,10 +37,13 @@ export function NewCameraCard({ onClose, onAcknowledge }: NewCameraCardProps) {
       <Card className="w-full max-w-md bg-brand-depth rounded-xl shadow-xl">
         <CardHeader className="relative flex items-center justify-center pb-2">
           <button
-            onClick={onClose}
-            className="absolute left-4 top-4 text-brand-ash hover:text-ink transition-colors"
+              type="button"
+              onClick={onClose}
+              aria-label="Close new camera form"
+              title="Close new camera form"
+              className="absolute left-4 top-4 text-brand-ash transition-colors hover:text-brand-frost"
           >
-            <X size={20} />
+              <X size={20} aria-hidden="true" />
           </button>
           <CardTitle className="text-xl font-bold text-center">
             New Camera
