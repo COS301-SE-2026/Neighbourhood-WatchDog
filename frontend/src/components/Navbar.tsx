@@ -1,24 +1,24 @@
-"use client"
+"use client";
 
 import { Bell, LogOut, Monitor, User, UserRound } from "lucide-react";
 import Link from "next/link";
-import { AvatarFallback, Avatar } from "@/components/ui/avatar";
+import { useRouter } from "next/navigation";
+import React from "react";
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
-    DropdownMenuTrigger
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SidebarTrigger } from "./ui/sidebar";
-import { useRouter } from "next/navigation";
-import React from "react";
 import { logout } from "@/lib/auth/cognito";
+import { SidebarTrigger } from "./ui/sidebar";
 
 const Navbar = () => {
     const router = useRouter();
-
     const [username, setUsername] = React.useState("");
 
     React.useEffect(() => {
@@ -32,16 +32,15 @@ const Navbar = () => {
         localStorage.removeItem("fullname");
 
         logout();
-
         router.push("/auth/login");
     };
 
     return (
-        <nav className="p-4 flex items-center text-brand-frost justify-between">
+        <nav className="flex items-center justify-between p-4 text-brand-frost">
             <SidebarTrigger />
 
             <div className="flex items-center gap-4">
-                <Link href="">Dashboard</Link>
+                <Link href="/dashboard">Dashboard</Link>
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -53,7 +52,10 @@ const Navbar = () => {
                         >
                             <Avatar aria-hidden="true">
                                 <AvatarFallback className="bg-muted text-muted-foreground">
-                                    <User aria-hidden="true" className="size-4" />
+                                    <User
+                                        aria-hidden="true"
+                                        className="size-4"
+                                    />
                                 </AvatarFallback>
                             </Avatar>
                         </button>
@@ -75,17 +77,26 @@ const Navbar = () => {
                         <DropdownMenuSeparator />
 
                         <DropdownMenuItem>
-                            <UserRound className="mr-2 size-4" />
+                            <UserRound
+                                aria-hidden="true"
+                                className="mr-2 size-4"
+                            />
                             My profile
                         </DropdownMenuItem>
 
                         <DropdownMenuItem>
-                            <Bell className="mr-2 size-4" />
+                            <Bell
+                                aria-hidden="true"
+                                className="mr-2 size-4"
+                            />
                             Notifications
                         </DropdownMenuItem>
 
                         <DropdownMenuItem>
-                            <Monitor className="mr-2 size-4" />
+                            <Monitor
+                                aria-hidden="true"
+                                className="mr-2 size-4"
+                            />
                             Appearance
                         </DropdownMenuItem>
 
@@ -95,11 +106,13 @@ const Navbar = () => {
                             onClick={handleLogout}
                             className="text-destructive focus:text-destructive"
                         >
-                            <LogOut className="mr-2 size-4" />
+                            <LogOut
+                                aria-hidden="true"
+                                className="mr-2 size-4"
+                            />
                             Sign out
                         </DropdownMenuItem>
                     </DropdownMenuContent>
-                </DropdownMenu>
                 </DropdownMenu>
             </div>
         </nav>
