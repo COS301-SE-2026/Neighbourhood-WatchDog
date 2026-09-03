@@ -1,8 +1,8 @@
-import { test, expect, PROPERT_ID } from "./fixtures";
+import { test, expect, PROPERTY_ID } from "./fixtures";
 
 test.describe("Alerts", () => {
   test("lists alerts and acknowledges alert", async ({ page }) => {
-    await page.goto(`/dashboard.properties/${PROPERTY_ID}/alerts`);
+    await page.goto(`/dashboard/properties/${PROPERTY_ID}/alerts`);
 
     await expect(
       page.getByRole("heading", { name: "Property alerts" }),
