@@ -93,7 +93,7 @@ export function SignupCard({
       <CardContent className="space-y-6">
         {/* Error display */}
         {error && (
-          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-red-300">
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-brand-threat">
             {error}
           </div>
         )}

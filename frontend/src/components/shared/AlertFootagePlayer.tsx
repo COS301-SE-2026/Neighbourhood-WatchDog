@@ -45,7 +45,7 @@ export function AlertFootagePlayer({ alertId, timestamp }: AlertFootagePlayerPro
     //         <Button
     //             variant="outline"
     //             size="sm"
-    //             className="w-full border-sky/40 text-sky hover:bg-sky/10 hover:text-white font-mono text-xs gap-2"
+    //             className="w-full border-brand-pulse/40 text-brand-pulse hover:bg-sky/10 hover:text-brand-frost font-mono text-xs gap-2"
     //             onClick={loadClip}
     //             aria-label="View footage for this alert"
 
@@ -61,7 +61,7 @@ export function AlertFootagePlayer({ alertId, timestamp }: AlertFootagePlayerPro
     // if (status === "loading") {
     //     return (
     //         <div className="flex items-center gap-2 text-xs text-mist/70 font-mono py-2">
-    //             <Loader2 className="h-3.5 w-3.5 animate-spin text-sky" />
+    //             <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-pulse" />
     //             Loading clip…
     //         </div>
     //     );
@@ -70,7 +70,7 @@ export function AlertFootagePlayer({ alertId, timestamp }: AlertFootagePlayerPro
     if (status === "idle" || status === "loading" || status === "processing") {
         return (
             <div className="flex items-center gap-2 py-2 text-xs font-mono text-mist/70">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-sky" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-pulse" />
                 {
                     status === "processing" ? "Footage is being prepared..." : "Loading footage..."
                 }
@@ -112,9 +112,9 @@ export function AlertFootagePlayer({ alertId, timestamp }: AlertFootagePlayerPro
 
     //ready = inline player
     return (
-        <div className="rounded-lg overflow-hidden border border-steel">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-black/40 border-b border-steel">
-                <Film className="h-3 w-3 text-sky shrink-0" />
+        <div className="rounded-lg overflow-hidden border border-brand-gunmetal">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-void/40 border-b border-brand-gunmetal">
+                <Film className="h-3 w-3 text-brand-pulse shrink-0" />
                 <span className="text-xs font-mono text-mist/70 truncate">
                     {formattedTs}
                 </span>
@@ -127,7 +127,7 @@ export function AlertFootagePlayer({ alertId, timestamp }: AlertFootagePlayerPro
                 autoPlay
                 muted
                 playsInline
-                className="w-full max-h-56 bg-black"
+                className="w-full max-h-56 bg-brand-void"
                 aria-label={`Detection footage at ${formattedTs}`}
             />
 

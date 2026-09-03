@@ -995,7 +995,7 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
 
     timestamp_str = alert.frame_timestamp.strftime("%d %b %Y, %H:%M:%S")
     whatsapp_message = _format_whatsapp_message("CRITICAL", detection_type, camera.name, timestamp_str)
-    await _notify_users(db, alert.id, residents, whatsapp_message, detection_type, camera, "CRITICAL") #imma need to store val to know if failed or not
+    await _notify_users(db, alert.id, residents, whatsapp_message, detection_type, camera, "CRITICAL", email_bcc=True) #imma need to store val to know if failed or not
 
     admin_user_id = UUID(claims["id"])
     

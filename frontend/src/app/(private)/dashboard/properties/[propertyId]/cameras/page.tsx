@@ -121,9 +121,9 @@ export default function PropertyCamerasPage() {
 
     if (isLoadingProperty) {
         return (
-            <main className="min-h-full w-full bg-black px-6 py-7 text-white md:px-8">
+            <main className="min-h-full w-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
                 <div className="flex min-h-64 items-center justify-center">
-                    <LoaderCircle className="size-6 animate-spin text-white/60" />
+                    <LoaderCircle className="size-6 animate-spin text-brand-ash" />
                 </div>
             </main>
         )
@@ -131,13 +131,13 @@ export default function PropertyCamerasPage() {
 
     if (!activeContext) {
         return (
-            <main className="min-h-full w-full bg-black px-6 py-7 text-white md:px-8">
+            <main className="min-h-full w-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
                 <div className="flex min-h-64 flex-col items-center justify-center text-center">
-                    <CameraOff className="mb-4 size-8 text-white/30" />
+                    <CameraOff className="mb-4 size-8 text-brand-ash/60" />
                     <h2 className="text-lg font-semibold">
                         No property selected
                     </h2>
-                    <p className="mt-2 text-sm text-white/45">
+                    <p className="mt-2 text-sm text-brand-ash">
                         Select a property to view its cameras.
                     </p>
                 </div>
@@ -149,11 +149,11 @@ export default function PropertyCamerasPage() {
     const disabledCameraCount = cameras.filter((camera) => !camera.enabled).length;
 
     return (
-        <main className="min-h-full w-full bg-black px-6 py-7 text-white md:px-8">
+        <main className="min-h-full w-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
             <div className="max-w-full">
                 <header className="mb-7 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <p className="text-sm text-white/45">
+                        <p className="text-sm text-brand-ash">
                             {activeContext.address}
                         </p>
                         <h1 className="mt-1 text-2xl font-semibold tracking-tight">
@@ -164,23 +164,23 @@ export default function PropertyCamerasPage() {
                     <button
                         type="button"
                         onClick={() => setShowCard(true)}
-                        className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-emerald-500 px-3.5 text-sm font-medium text-black transition-colors hover:bg-emerald-400"
+                        className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-brand-green px-3.5 text-sm font-medium text-brand-void transition-colors hover:bg-brand-green"
                     >
                         <Plus className="size-4" />
                         Add camera
                     </button>
                 </header>
 
-                <div className="mb-8 flex flex-wrap items-center gap-x-5 gap-y-2 border-y border-white/10 py-3 text-sm">
-                    <span className="text-white/55">
-                        <span className="font-medium text-white">{enabledCameraCount}</span>{" "}
+                <div className="mb-8 flex flex-wrap items-center gap-x-5 gap-y-2 border-y border-border py-3 text-sm">
+                    <span className="text-brand-ash">
+                        <span className="font-medium text-brand-frost">{enabledCameraCount}</span>{" "}
                         enabled
                     </span>
 
-                    <span className="flex items-center gap-2 text-white/55">
-                        <span className="size-1.5 rounded-full bg-emerald-400" />
+                    <span className="flex items-center gap-2 text-brand-ash">
+                        <span className="size-1.5 rounded-full bg-brand-green" />
                         <span>
-                            <span className="font-medium text-white">{disabledCameraCount}</span>{" "}
+                            <span className="font-medium text-brand-frost">{disabledCameraCount}</span>{" "}
                             disabled
                         </span>
                     </span>
@@ -191,26 +191,26 @@ export default function PropertyCamerasPage() {
                         <h2 id="camera-feeds-heading" className="text-base font-semibold">
                             Cameras
                         </h2>
-                        <p className="mt-1 text-sm text-white/45">
+                        <p className="mt-1 text-sm text-brand-ash">
                             Cameras configured for this property.
                         </p>
                     </div>
 
                     {isLoadingCameras ? (
-                        <div className="flex min-h-64 items-center justify-center rounded-lg border border-white/10 bg-[#101011]">
-                            <LoaderCircle className="size-6 animate-spin text-white/50" />
+                        <div className="flex min-h-64 items-center justify-center rounded-lg border border-border bg-brand-depth">
+                            <LoaderCircle className="size-6 animate-spin text-brand-ash" />
                         </div>
                     ) : cameras.length === 0 ? (
-                        <div className="flex min-h-72 flex-col items-center justify-center rounded-lg border border-dashed border-white/10 bg-[#101011] px-6 py-12 text-center">
-                            <CameraOff className="mb-4 size-8 text-white/30" />
+                        <div className="flex min-h-72 flex-col items-center justify-center rounded-lg border border-dashed border-border bg-brand-depth px-6 py-12 text-center">
+                            <CameraOff className="mb-4 size-8 text-brand-ash/60" />
                             <h2 className="text-base font-semibold">No cameras added yet</h2>
-                            <p className="mt-2 max-w-sm text-sm text-white/45">
+                            <p className="mt-2 max-w-sm text-sm text-brand-ash">
                                 Add a camera to this property to start monitoring it.
                             </p>
                             <button
                                 type="button"
                                 onClick={() => setShowCard(true)}
-                                className="mt-6 inline-flex h-9 items-center justify-center gap-2 rounded-md bg-emerald-500 px-3.5 text-sm font-medium text-black transition-colors hover:bg-emerald-400"
+                                className="mt-6 inline-flex h-9 items-center justify-center gap-2 rounded-md bg-brand-green px-3.5 text-sm font-medium text-brand-void transition-colors hover:bg-brand-green"
                             >
                                 <Plus className="size-4" />
                                 Add your first camera

@@ -14,27 +14,12 @@ const config = {
         mono: "var(--font-jetbrains-mono, 'JetBrains Mono', Consolas, monospace)",
       },
       colors: {
-        // Brand colors
-        navy: "var(--color-navy)",
-        blue: "var(--color-blue)",
-        sky: "var(--color-sky)",
-        steel: "var(--color-steel)",
-
-        // Neutral colors
-        white: "var(--color-white)",
-        fog: "var(--color-fog)",
-        mist: "var(--color-mist)",
-        ink: "var(--color-ink)",
-        body: "var(--color-body)",
-
-        // Semantic colors
-        threat: "var(--color-threat)",
-        caution: "var(--color-caution)",
-        safe: "var(--color-safe)",
-        info: "var(--color-info)",
-
-        sidebar: "var(--color-navy)",
-        "sidebar-foreground": "var(--color-white)"
+        brand: {
+          void: "var(--color-void)", abyss: "var(--color-abyss)", depth: "var(--color-depth)", slate: "var(--color-slate)",
+          gunmetal: "var(--color-gunmetal)", ash: "var(--color-ash)", frost: "var(--color-frost)", green: "var(--color-green)",
+          pulse: "var(--color-pulse)", ice: "var(--color-ice)", threat: "var(--color-threat)", caution: "var(--color-caution)",
+          safe: "var(--color-safe)", info: "var(--color-info)",
+        },
       },
       spacing: {
         "1": "var(--space-1)",
@@ -61,9 +46,9 @@ const config = {
         alert: "var(--shadow-alert)",
       },
       transitionDuration: {
-        fast: "var(--motion-fast)",
-        normal: "var(--motion-normal)",
-        slow: "var(--motion-slow)",
+        fast: "var(--duration-fast)",
+        normal: "var(--duration-normal)",
+        slow: "var(--duration-slow)",
       },
     },
   },

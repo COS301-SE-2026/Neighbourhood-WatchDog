@@ -119,9 +119,9 @@ function ErrorBanner({
     return (
         <div
             role="alert"
-            className="mb-5 flex items-start gap-3 border border-red-500/25 bg-red-500/[0.08] px-4 py-3 text-sm text-red-200"
+            className="mb-5 flex items-start gap-3 border border-brand-threat/25 bg-brand-threat/10 px-4 py-3 text-sm text-brand-threat"
         >
-            <AlertCircle className="mt-0.5 size-4 shrink-0 text-red-400" />
+            <AlertCircle className="mt-0.5 size-4 shrink-0 text-brand-threat" />
 
             <p className="flex-1 leading-relaxed">{message}</p>
 
@@ -129,7 +129,7 @@ function ErrorBanner({
                 type="button"
                 onClick={onDismiss}
                 aria-label="Dismiss error"
-                className="text-red-300/60 transition-colors hover:text-red-200"
+                className="text-brand-threat/60 transition-colors hover:text-brand-threat"
             >
                 ×
             </button>
@@ -145,15 +145,15 @@ function EmptyState({ filter }: { filter: FilterValue }) {
 
     return (
         <div
-            className="border-t border-white/10 py-16 text-center"
+            className="border-t border-border py-16 text-center"
             role="status"
             aria-live="polite"
         >
-            <p className="text-sm font-medium text-white/65">
+            <p className="text-sm font-medium text-brand-ash">
                 {filterLabel}
             </p>
 
-            <p className="mt-2 text-sm text-white/40">
+            <p className="mt-2 text-sm text-brand-ash/70">
                 New requests will appear here when residents ask to join this
                 neighbourhood.
             </p>
@@ -362,9 +362,9 @@ export default function JoinRequestsPage() {
 
     if (!userContextLoading && !adminProperty) {
         return (
-            <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+            <main className="min-h-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
                 <div className="mx-auto max-w-5xl">
-                    <p className="text-sm text-white/60">
+                    <p className="text-sm text-brand-ash">
                         You don&apos;t have admin access to this neighbourhood.
                     </p>
                 </div>
@@ -373,11 +373,11 @@ export default function JoinRequestsPage() {
     }
 
     return (
-        <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+        <main className="min-h-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
             <div className="mx-auto max-w-5xl">
-                <header className="flex flex-col gap-5 border-b border-white/10 pb-7 sm:flex-row sm:items-end sm:justify-between">
+                <header className="flex flex-col gap-5 border-b border-border pb-7 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <p className="text-sm text-emerald-400">
+                        <p className="text-sm text-brand-green">
                             Neighbourhood management
                         </p>
 
@@ -385,7 +385,7 @@ export default function JoinRequestsPage() {
                             Join requests
                         </h1>
 
-                        <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/50">
+                        <p className="mt-2 max-w-xl text-sm leading-relaxed text-brand-ash">
                             Review requests from property owners who want to
                             join this neighbourhood.
                         </p>
@@ -393,16 +393,16 @@ export default function JoinRequestsPage() {
                     
                     <div className="flex items-center gap-8">
                         <div>
-                            <p className="text-xs uppercase tracking-wider text-white/35">
+                            <p className="text-xs uppercase tracking-wider text-brand-ash/60">
                                 Join code
                             </p>
 
                             <div className="mt-1 flex items-center gap-2">
                                 {joinCodeLoading ? (
-                                    <Loader2 className="size-4 animate-spin text-emerald-400" />
+                                    <Loader2 className="size-4 animate-spin text-brand-green" />
                                 ) : (
                                     <>
-                                        <code className="rounded-md bg-white/5 px-2.5 py-1 font-mono text-sm font-medium tracking-widest text-white">
+                                        <code className="rounded-md bg-brand-slate px-2.5 py-1 font-mono text-sm font-medium tracking-widest text-brand-frost">
                                             {joinCodeState.code ?? "Unavailable"}
                                         </code>
 
@@ -412,7 +412,7 @@ export default function JoinRequestsPage() {
                                             disabled={
                                                 regeneratingJoinCode || !joinCodeState.code
                                             }
-                                            className="inline-flex size-7 items-center justify-center rounded-md text-white/40 transition-colors hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                                            className="inline-flex size-7 items-center justify-center rounded-md text-brand-ash/70 transition-colors hover:bg-brand-slate hover:text-brand-frost disabled:cursor-not-allowed disabled:opacity-40"
                                             title="Regenerate join code"
                                         >
                                             {regeneratingJoinCode ? (
@@ -426,8 +426,8 @@ export default function JoinRequestsPage() {
                             </div>
                         </div>
 
-                        <div className="text-sm text-white/45">
-                            <span className="font-medium text-white">
+                        <div className="text-sm text-brand-ash">
+                            <span className="font-medium text-brand-frost">
                                 {pendingCount}
                             </span>{" "}
                             pending
@@ -452,7 +452,7 @@ export default function JoinRequestsPage() {
                         />
                     )}
 
-                    <div className="flex flex-col gap-4 border-b border-white/10 pb-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="flex flex-col gap-4 border-b border-border pb-3 sm:flex-row sm:items-end sm:justify-between">
                         <div
                             className="flex items-center gap-5"
                             role="tablist"
@@ -489,18 +489,18 @@ export default function JoinRequestsPage() {
                                         className={[
                                             "relative pb-3 text-sm transition-colors",
                                             isActive
-                                                ? "font-medium text-white"
-                                                : "text-white/45 hover:text-white/75",
+                                                ? "font-medium text-brand-frost"
+                                                : "text-brand-ash hover:text-brand-ash",
                                         ].join(" ")}
                                     >
                                         {STATUS_LABELS[filter]}
 
-                                        <span className="ml-1.5 text-xs text-white/35">
+                                        <span className="ml-1.5 text-xs text-brand-ash/60">
                                             {count}
                                         </span>
 
                                         {isActive && (
-                                            <span className="absolute inset-x-0 bottom-0 h-px bg-emerald-400" />
+                                            <span className="absolute inset-x-0 bottom-0 h-px bg-brand-green" />
                                         )}
                                     </button>
                                 );
@@ -513,7 +513,7 @@ export default function JoinRequestsPage() {
                                 setFetchTick((current) => current + 1)
                             }
                             disabled={loading}
-                            className="inline-flex h-8 items-center gap-2 self-start rounded-md px-2 text-sm text-white/50 transition-colors hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto"
+                            className="inline-flex h-8 items-center gap-2 self-start rounded-md px-2 text-sm text-brand-ash transition-colors hover:bg-brand-slate hover:text-brand-frost disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto"
                         >
                             {loading ? (
                                 <Loader2 className="size-3.5 animate-spin" />
@@ -532,7 +532,7 @@ export default function JoinRequestsPage() {
                     >
                         {loading ? (
                             <div className="flex items-center justify-center py-20">
-                                <Loader2 className="size-5 animate-spin text-emerald-400" />
+                                <Loader2 className="size-5 animate-spin text-brand-green" />
                             </div>
                         ) : filteredRequests.length === 0 ? (
                             <EmptyState filter={activeFilter} />

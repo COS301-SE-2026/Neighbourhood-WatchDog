@@ -312,7 +312,12 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
         track.detection_type &&
         track.detection_type.toLowerCase() !== "person";
 
-      const colour = isWeapon ? "#ff0000" : "#00ff00";
+      const styles = getComputedStyle(document.documentElement);
+      const threatColour =
+        styles.getPropertyValue("--color-threat").trim() || "#EF4444";
+      const safeColour =
+        styles.getPropertyValue("--color-green").trim() || "#10B981";
+      const colour = isWeapon ? threatColour : safeColour;
 
       ctx.strokeStyle = colour;
       ctx.lineWidth = 2;
@@ -328,8 +333,11 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
 
       const labelY = top > 24 ? top - 6 : bottom + 18;
 
-      ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+      ctx.fillStyle =
+        styles.getPropertyValue("--color-void").trim() || "#0A0A0A";
+      ctx.globalAlpha = 0.55;
       ctx.fillRect(left, labelY - 14, textWidth + 8, 18);
+      ctx.globalAlpha = 1;
 
       ctx.fillStyle = colour;
       ctx.fillText(label, left + 4, labelY);
@@ -354,7 +362,7 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
 
       <div
         className={`absolute top-2 right-2 w-2 h-2 rounded-full ${
-          connected ? "bg-green-400" : "bg-red-500"
+          connected ? "bg-brand-green" : "bg-brand-threat"
         }`}
         title={connected ? "Annotations live" : "Annotations disconnected"}
       />

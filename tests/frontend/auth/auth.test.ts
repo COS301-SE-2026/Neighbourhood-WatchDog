@@ -1,4 +1,4 @@
-import {setSession, getAccessToken, logout, login, signUp, confirmSignUp, resendConfirmationCode, verifyMfa} from "../../../frontend/src/lib/auth/cognito";
+import {AUTH_EVENT, setSession, getAccessToken, logout, login, signUp, confirmSignUp, resendConfirmationCode, updateStoredFullName, verifyMfa} from "../../../frontend/src/lib/auth/cognito";
 import {getAuthHeaders, getAuthToken,} from "../../../frontend/src/lib/api/auth";
 import {
   getStoredUser,
@@ -39,6 +39,17 @@ test("clears localStorage", () => {
 
   expect(localStorage.getItem("accessToken")).toBeNull();
   expect(localStorage.getItem("idToken")).toBeNull();
+});
+
+test("updates the stored fullname and emits an auth event", () => {
+  const listener = jest.fn();
+  window.addEventListener(AUTH_EVENT, listener);
+
+  updateStoredFullName("Updated User");
+
+  expect(localStorage.getItem("fullname")).toBe("Updated User");
+  expect(listener).toHaveBeenCalledTimes(1);
+  window.removeEventListener(AUTH_EVENT, listener);
 });
 //LOGIN//////////////////////////////////////////////////////
 test("login returns access and id tokens", async () => {

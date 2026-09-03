@@ -33,13 +33,13 @@ interface AlertFrequencyMetricsProps {
 }
 
 const DEFAULT_CHART_THEME = {
-  blue: "#3B5EDE",
-  sky: "#5B8DEF",
-  navy: "#1D2A5E",
-  mist: "#D0D7E8",
-  body: "#2E3A5C",
-  card: "#FFFFFF",
-  border: "#D0D7E8",
+  blue: "#2D7EFF",
+  sky: "#6AB0FF",
+  navy: "#F5F5F5",
+  mist: "#8A8A8A",
+  body: "#A3A3A3",
+  card: "#141414",
+  border: "rgb(138 138 138 / 12%)",
   font: "Inter, system-ui, sans-serif",
 };
 
@@ -54,13 +54,13 @@ function readChartTheme() {
     styles.getPropertyValue(name).trim() || fallback;
 
   return {
-    blue: read("--color-blue", DEFAULT_CHART_THEME.blue),
-    sky: read("--color-sky", DEFAULT_CHART_THEME.sky),
-    navy: read("--color-navy", DEFAULT_CHART_THEME.navy),
-    mist: read("--color-mist", DEFAULT_CHART_THEME.mist),
-    body: read("--color-body", DEFAULT_CHART_THEME.body),
+    blue: read("--color-pulse", DEFAULT_CHART_THEME.blue),
+    sky: read("--color-ice", DEFAULT_CHART_THEME.sky),
+    navy: read("--color-frost", DEFAULT_CHART_THEME.navy),
+    mist: read("--color-gunmetal", DEFAULT_CHART_THEME.mist),
+    body: read("--color-ash", DEFAULT_CHART_THEME.body),
     card: read("--card", DEFAULT_CHART_THEME.card),
-    border: read("--border", DEFAULT_CHART_THEME.border),
+    border: read("--border-subtle", DEFAULT_CHART_THEME.border),
     font: read("--font-sans", DEFAULT_CHART_THEME.font),
   };
 }
@@ -133,7 +133,7 @@ export function AlertFrequencyGraph({
           pointRadius: 3,
           pointHoverRadius: 5,
           pointBackgroundColor: theme.blue,
-          pointBorderColor: "#FFFFFF",
+          pointBorderColor: theme.navy,
           pointBorderWidth: 1.5,
         },
       ],
@@ -156,7 +156,7 @@ export function AlertFrequencyGraph({
           padding: { bottom: 16 },
         },
         tooltip: {
-          backgroundColor: "#FFFFFF",
+          backgroundColor: theme.card,
           titleColor: theme.navy,
           bodyColor: theme.body,
           borderColor: theme.border,

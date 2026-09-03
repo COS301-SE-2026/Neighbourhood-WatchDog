@@ -130,12 +130,12 @@ export function AddressPicker({
             <div>
                 <label
                     htmlFor="property-address"
-                    className="text-sm font-medium text-white"
+                    className="text-sm font-medium text-brand-frost"
                 >
                     Property address
                 </label>
 
-                <p className="mt-1 text-xs text-white/45">
+                <p className="mt-1 text-xs text-brand-ash">
                     Search for your address and select the correct result.
                 </p>
             </div>
@@ -153,7 +153,7 @@ export function AddressPicker({
                     aria-describedby={
                         error ? "property-address-error" : undefined
                     }
-                    className="border-white/10 bg-white/[0.04] text-white placeholder:text-white/30 focus-visible:ring-emerald-500/50"
+                    className="border-border bg-brand-slate text-brand-frost placeholder:text-brand-ash/60 focus-visible:ring-brand-green/50"
                 />
 
                 {isSearching && (
@@ -162,13 +162,13 @@ export function AddressPicker({
             </div>
 
             {results.length > 0 && (
-                <div className="overflow-hidden rounded-md border border-white/10 bg-zinc-900">
+                <div className="overflow-hidden rounded-md border border-border bg-brand-depth">
                     {results.map((result) => (
                         <button
                             key={result.place_id}
                             type="button"
                             onClick={() => handleSelect(result)}
-                            className="block w-full border-b border-white/10 px-3 py-2.5 text-left text-sm text-white/80 last:border-b-0 hover:bg-white/[0.06] hover:text-white"
+                            className="block w-full border-b border-border px-3 py-2.5 text-left text-sm text-brand-frost last:border-b-0 hover:bg-brand-slate hover:text-brand-frost"
                         >
                             {result.display_name}
                         </button>
@@ -195,7 +195,7 @@ export function AddressPicker({
                 <AddressMap latitude={value.latitude} longitude={value.longitude}/>
             )}
 
-            <p className="mt-2 text-[11px] text-white/35">
+            <p className="mt-2 text-[11px] text-brand-ash/60">
                 Address search provided by OpenStreetMap Nominatim.
             </p>
         </div>

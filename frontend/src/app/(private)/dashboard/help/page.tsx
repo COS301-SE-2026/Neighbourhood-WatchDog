@@ -84,13 +84,13 @@ function SectionHeading({eyebrow, title, description}: {
 }) {
     return (
         <div className="mb-5">
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-emerald-400">
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-brand-green">
                 {eyebrow}
             </p>
-            <h2 className="mt-2 text-xl font-semibold tracking-tight text-white">
+            <h2 className="mt-2 text-xl font-semibold tracking-tight text-brand-frost">
                 {title}
             </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/50">
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-brand-ash">
                 {description}
             </p>
         </div>
@@ -108,21 +108,21 @@ function TutorialCard({id, icon: Icon, title, summary, steps}: {
     return (
         <article
             id={id}
-            className="scroll-mt-8 rounded-xl border border-white/10 bg-zinc-950 p-5"
+            className="scroll-mt-8 rounded-xl border border-border bg-brand-abyss p-5"
         >
             <div className="flex items-start gap-3">
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10">
-                    <Icon className="size-4 text-emerald-400" />
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-green/10">
+                    <Icon className="size-4 text-brand-green" />
                 </div>
                 <div>
-                    <h3 className="text-base font-semibold text-white">{title}</h3>
-                    <p className="mt-1 text-sm leading-relaxed text-white/50">{summary}</p>
+                    <h3 className="text-base font-semibold text-brand-frost">{title}</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-brand-ash">{summary}</p>
                 </div>
             </div>
-            <ol className="mt-5 space-y-3 border-l border-white/10 pl-5 text-sm text-white/70">
+            <ol className="mt-5 space-y-3 border-l border-border pl-5 text-sm text-brand-ash">
                 {steps.map((step, index) => (
                     <li key={step} className="relative leading-relaxed">
-                        <span className="absolute -left-[2rem] flex size-5 items-center justify-center rounded-full border border-emerald-500/40 bg-zinc-950 text-[10px] font-semibold text-emerald-400">
+                        <span className="absolute -left-[2rem] flex size-5 items-center justify-center rounded-full border border-brand-green/40 bg-brand-abyss text-[10px] font-semibold text-brand-green">
                             {index + 1}
                         </span>
                         {step}
@@ -137,19 +137,19 @@ function TutorialCard({id, icon: Icon, title, summary, steps}: {
 
 export default function HelpPage() {
     return (
-        <main className="min-h-full w-full bg-black px-6 py-7 text-white md:px-8">
+        <main className="min-h-full w-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
             <div className="mx-auto max-w-5xl">
-                <header className="border-b border-white/10 pb-7">
+                <header className="border-b border-border pb-7">
                     <div className="flex items-start gap-4">
-                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
-                            <CircleHelp className="size-6 text-emerald-400" />
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-green/10">
+                            <CircleHelp className="size-6 text-brand-green" />
                         </div>
                         <div>
-                            <p className="text-sm text-emerald-400">WatchDog support</p>
+                            <p className="text-sm text-brand-green">WatchDog support</p>
                             <h1 className="mt-1 text-2xl font-semibold tracking-tight">
                                 Help centre
                             </h1>
-                            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/50">
+                            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-brand-ash">
                                 Learn how to set up your property, monitor cameras, and respond to alerts. Select a topic below or browse the frequently asked questions.
                             </p>
                         </div>
@@ -158,20 +158,20 @@ export default function HelpPage() {
 
                 <nav
                     aria-label="Help centre sections"
-                    className="grid gap-3 border-b border-white/10 py-7 sm:grid-cols-2 xl:grid-cols-4"
+                    className="grid gap-3 border-b border-border py-7 sm:grid-cols-2 xl:grid-cols-4"
                 >
                     {quickLinks.map(({ title, description, href, icon: Icon }) => (
                         <a
                             key={href}
                             href={href}
-                            className="group rounded-xl border border-white/10 bg-white/[0.03] p-4 transition-colors hover:border-emerald-500/40 hover:bg-emerald-500/[0.06]"
+                            className="group rounded-xl border border-border bg-brand-depth p-4 transition-colors hover:border-brand-green/40 hover:bg-brand-green/10"
                         >
-                            <Icon className="size-4 text-emerald-400" />
-                            <p className="mt-3 text-sm font-semibold text-white">{title}</p>
-                            <p className="mt-1 text-xs leading-relaxed text-white/45">
+                            <Icon className="size-4 text-brand-green" />
+                            <p className="mt-3 text-sm font-semibold text-brand-frost">{title}</p>
+                            <p className="mt-1 text-xs leading-relaxed text-brand-ash">
                                 {description}
                             </p>
-                            <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-emerald-400">
+                            <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brand-green">
                                 Read guide
                                 <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
                             </span>
@@ -179,24 +179,24 @@ export default function HelpPage() {
                     ))}
                 </nav>
 
-                <section id="getting-started" className="scroll-mt-8 border-b border-white/10 py-8">
+                <section id="getting-started" className="scroll-mt-8 border-b border-border py-8">
                     <SectionHeading
                         eyebrow="Start here"
                         title="Getting started"
                         description="Complete these steps in order before expecting camera detections and neighbourhood alerts."
                     />
-                    <div className="rounded-xl border border-white/10 bg-zinc-950 p-5">
-                        <ol className="space-y-4 text-sm text-white/70">
-                            <li><strong className="text-white">1. Create and confirm your account.</strong> Use your email address and enter the confirmation code sent to you.</li>
-                            <li><strong className="text-white">2. Create a property.</strong> Search for and select the correct property address.</li>
-                            <li><strong className="text-white">3. Create or join a neighbourhood.</strong> Administrators create a neighbourhood; residents submit a join request with the administrator&apos;s join code.</li>
-                            <li><strong className="text-white">4. Add cameras.</strong> Register the camera name, physical location, and connection information supplied by the deployment operator.</li>
-                            <li><strong className="text-white">5. Connect the Agent.</strong> Generate a one-time pairing token and provide it only to the authorised Agent operator.</li>
+                    <div className="rounded-xl border border-border bg-brand-abyss p-5">
+                        <ol className="space-y-4 text-sm text-brand-ash">
+                            <li><strong className="text-brand-frost">1. Create and confirm your account.</strong> Use your email address and enter the confirmation code sent to you.</li>
+                            <li><strong className="text-brand-frost">2. Create a property.</strong> Search for and select the correct property address.</li>
+                            <li><strong className="text-brand-frost">3. Create or join a neighbourhood.</strong> Administrators create a neighbourhood; residents submit a join request with the administrator&apos;s join code.</li>
+                            <li><strong className="text-brand-frost">4. Add cameras.</strong> Register the camera name, physical location, and connection information supplied by the deployment operator.</li>
+                            <li><strong className="text-brand-frost">5. Connect the Agent.</strong> Generate a one-time pairing token and provide it only to the authorised Agent operator.</li>
                         </ol>
                     </div>
                 </section>
 
-                <section id="tutorials" className="scroll-mt-8 border-b border-white/10 py-8">
+                <section id="tutorials" className="scroll-mt-8 border-b border-border py-8">
                     <SectionHeading
                         eyebrow="Step-by-step tutorials"
                         title="Use WatchDog confidently"
@@ -259,7 +259,7 @@ export default function HelpPage() {
                     </div>
                 </section>
 
-                <section id="faqs" className="scroll-mt-8 border-b border-white/10 py-8">
+                <section id="faqs" className="scroll-mt-8 border-b border-border py-8">
                     <SectionHeading
                         eyebrow="Frequently asked questions"
                         title="Find a quick answer"
@@ -267,12 +267,12 @@ export default function HelpPage() {
                     />
                     <div className="space-y-3">
                         {faqs.map(({ question, answer }) => (
-                            <details key={question} className="group rounded-xl border border-white/10 bg-zinc-950">
-                                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-medium text-white [&::-webkit-details-marker]:hidden">
+                            <details key={question} className="group rounded-xl border border-border bg-brand-abyss">
+                                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-medium text-brand-frost [&::-webkit-details-marker]:hidden">
                                     {question}
-                                    <span className="text-xl font-light text-emerald-400 transition-transform group-open:rotate-45">+</span>
+                                    <span className="text-xl font-light text-brand-green transition-transform group-open:rotate-45">+</span>
                                 </summary>
-                                <p className="border-t border-white/10 px-5 py-4 text-sm leading-relaxed text-white/50">
+                                <p className="border-t border-border px-5 py-4 text-sm leading-relaxed text-brand-ash">
                                     {answer}
                                 </p>
                             </details>
@@ -281,19 +281,19 @@ export default function HelpPage() {
                 </section>
 
                 <section id="contact-support" className="scroll-mt-8 py-8">
-                    <div className="flex flex-col gap-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] p-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-4 rounded-xl border border-brand-green/20 bg-brand-green/10 p-5 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-start gap-3">
-                            <LifeBuoy className="mt-0.5 size-5 shrink-0 text-emerald-400" />
+                            <LifeBuoy className="mt-0.5 size-5 shrink-0 text-brand-green" />
                             <div>
-                                <h2 className="text-base font-semibold text-white">Still need help?</h2>
-                                <p className="mt-1 text-sm leading-relaxed text-white/50">
+                                <h2 className="text-base font-semibold text-brand-frost">Still need help?</h2>
+                                <p className="mt-1 text-sm leading-relaxed text-brand-ash">
                                     Record the page name, visible error message, approximate time, and a redacted screenshot. Contact the WatchDog deployment administrator through the approved project support channel.
                                 </p>
                             </div>
                         </div>
                         <Link
                             href="/dashboard"
-                            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-white/15 px-3.5 py-2 text-sm font-medium text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+                            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-brand-gunmetal/20 px-3.5 py-2 text-sm font-medium text-brand-ash transition-colors hover:bg-brand-slate hover:text-brand-frost"
                         >
                             Back to dashboard
                             <ExternalLink className="size-3.5" />

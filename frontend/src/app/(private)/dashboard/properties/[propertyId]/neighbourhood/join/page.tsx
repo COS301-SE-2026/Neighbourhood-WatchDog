@@ -33,17 +33,17 @@ function StatusRow({
 }) {
     const iconClassName =
         state === "complete"
-            ? "bg-emerald-500/15 text-emerald-400"
+            ? "bg-brand-green/15 text-brand-green"
             : state === "current"
-                ? "bg-white/10 text-white/65"
-                : "bg-white/[0.04] text-white/25";
+                ? "bg-brand-slate text-brand-ash"
+                : "bg-brand-slate text-brand-ash/60";
 
     const labelClassName =
         state === "complete"
-            ? "text-white"
+            ? "text-brand-frost"
             : state === "current"
-                ? "text-white/65"
-                : "text-white/30";
+                ? "text-brand-ash"
+                : "text-brand-ash/60";
 
     return (
         <div className="flex items-center gap-3">
@@ -65,20 +65,20 @@ function PendingState({ request }: { request: JoinRequest }) {
             role="status"
             aria-live="polite"
         >
-            <div className="border-b border-white/10 pb-7">
-                <div className="flex size-10 items-center justify-center rounded-md bg-emerald-500/10">
-                    <Clock className="size-5 text-emerald-400" />
+            <div className="border-b border-border pb-7">
+                <div className="flex size-10 items-center justify-center rounded-md bg-brand-green/10">
+                    <Clock className="size-5 text-brand-green" />
                 </div>
 
-                <p className="mt-5 text-sm text-emerald-400">
+                <p className="mt-5 text-sm text-brand-green">
                     Request submitted
                 </p>
 
-                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white">
+                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-brand-frost">
                     Awaiting review
                 </h1>
 
-                <p className="mt-3 max-w-lg text-sm leading-relaxed text-white/50">
+                <p className="mt-3 max-w-lg text-sm leading-relaxed text-brand-ash">
                     A neighbourhood administrator will review your request.
                     Once approved, this property will gain access to the
                     neighbourhood workspace and alerts.
@@ -86,7 +86,7 @@ function PendingState({ request }: { request: JoinRequest }) {
             </div>
 
             <div className="py-6">
-                <p className="text-xs font-medium uppercase tracking-wider text-white/40">
+                <p className="text-xs font-medium uppercase tracking-wider text-brand-ash/70">
                     Request progress
                 </p>
 
@@ -111,12 +111,12 @@ function PendingState({ request }: { request: JoinRequest }) {
                 </div>
             </div>
 
-            <div className="border-t border-white/10 pt-5">
-                <p className="text-xs text-white/35">
+            <div className="border-t border-border pt-5">
+                <p className="text-xs text-brand-ash/60">
                     Request reference
                 </p>
 
-                <p className="mt-1 break-all font-mono text-xs text-white/55">
+                <p className="mt-1 break-all font-mono text-xs text-brand-ash">
                     {request.id}
                 </p>
             </div>
@@ -149,17 +149,17 @@ function JoinForm({
             noValidate
             className="max-w-xl"
         >
-            <div className="border-b border-white/10 pb-7">
+            <div className="border-b border-border pb-7">
                 <label
                     htmlFor="join-code"
-                    className="text-sm font-medium text-white"
+                    className="text-sm font-medium text-brand-frost"
                 >
                     Join code
                 </label>
 
                 <p
                     id="join-code-hint"
-                    className="mt-1 text-sm leading-relaxed text-white/45"
+                    className="mt-1 text-sm leading-relaxed text-brand-ash"
                 >
                     Enter the code provided by a neighbourhood administrator.
                 </p>
@@ -182,14 +182,14 @@ function JoinForm({
                         error ? "join-code-error" : "join-code-hint"
                     }
                     className={[
-                        "mt-4 h-10 w-full rounded-md border bg-zinc-950 px-3",
-                        "font-mono text-sm tracking-[0.12em] text-white",
-                        "outline-none placeholder:text-white/20",
-                        "focus:border-emerald-500/70 focus:ring-1 focus:ring-emerald-500/40",
+                        "mt-4 h-10 w-full rounded-md border bg-brand-abyss px-3",
+                        "font-mono text-sm tracking-[0.12em] text-brand-frost",
+                        "outline-none placeholder:text-brand-frost/20",
+                        "focus:border-brand-green/70 focus:ring-1 focus:ring-brand-green/40",
                         "disabled:cursor-not-allowed disabled:opacity-50",
                         error
-                            ? "border-red-500/70 focus:border-red-500 focus:ring-red-500/40"
-                            : "border-white/10",
+                            ? "border-brand-threat/70 focus:border-brand-threat focus:ring-brand-threat/40"
+                            : "border-border",
                     ].join(" ")}
                 />
 
@@ -197,7 +197,7 @@ function JoinForm({
                     <p
                         id="join-code-error"
                         role="alert"
-                        className="mt-2 flex items-center gap-1.5 text-xs text-red-300"
+                        className="mt-2 flex items-center gap-1.5 text-xs text-brand-threat"
                     >
                         <XCircle className="size-3.5 shrink-0" />
                         {error}
@@ -206,14 +206,14 @@ function JoinForm({
             </div>
 
             <div className="flex items-center justify-between gap-4 pt-5">
-                <p className="max-w-sm text-xs leading-relaxed text-white/35">
+                <p className="max-w-sm text-xs leading-relaxed text-brand-ash/60">
                     Your request is sent for the currently selected property.
                 </p>
 
                 <button
                     type="submit"
                     disabled={!code.trim() || loading}
-                    className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md bg-emerald-500 px-3.5 text-sm font-medium text-black transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/30 disabled:text-black/50"
+                    className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md bg-brand-green px-3.5 text-sm font-medium text-brand-void transition-colors hover:bg-brand-green disabled:cursor-not-allowed disabled:bg-brand-green/30 disabled:text-brand-void/50"
                 >
                     {loading ? (
                         <>
@@ -273,9 +273,9 @@ export default function JoinNeighbourhoodPage() {
 
     if (isLoadingProperty) {
         return (
-            <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+            <main className="min-h-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
                 <div className="flex min-h-64 items-center justify-center">
-                    <Loader2 className="size-5 animate-spin text-emerald-400"/>
+                    <Loader2 className="size-5 animate-spin text-brand-green"/>
                 </div>
             </main>
         )
@@ -283,9 +283,9 @@ export default function JoinNeighbourhoodPage() {
 
     if (!activeContext) {
         return (
-            <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+            <main className="min-h-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
                 <div className="mx-auto max-w-3xl">
-                    <p className="text-sm text-emerald-400">
+                    <p className="text-sm text-brand-green">
                         Neighbourhood
                     </p>
 
@@ -293,7 +293,7 @@ export default function JoinNeighbourhoodPage() {
                         Join a neighbourhood
                     </h1>
 
-                    <p className="mt-3 text-sm text-white/50">
+                    <p className="mt-3 text-sm text-brand-ash">
                         Select a property before requesting to join a neighbourhood.
                     </p>
                 </div>
@@ -305,7 +305,7 @@ export default function JoinNeighbourhoodPage() {
 
     if (state.kind === "pending") {
         return (
-            <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+            <main className="min-h-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
                 <div className="mx-auto max-w-3xl">
                     <PendingState request={state.request} />
                 </div>
@@ -314,26 +314,26 @@ export default function JoinNeighbourhoodPage() {
     }
 
     return (
-        <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+        <main className="min-h-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
             <div className="mx-auto max-w-3xl">
-                <header className="border-b border-white/10 pb-7">
-                    <p className="text-sm text-emerald-400">
+                <header className="border-b border-border pb-7">
+                    <p className="text-sm text-brand-green">
                         Neighbourhood
                     </p>
 
-                    <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white">
+                    <h1 className="mt-2 text-2xl font-semibold tracking-tight text-brand-frost">
                         Join a neighbourhood
                     </h1>
 
-                    <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/50">
+                    <p className="mt-3 max-w-xl text-sm leading-relaxed text-brand-ash">
                         Use a neighbourhood join code to request access for
                         your selected property. Once approved, you will be able
                         to view neighbourhood alerts and activity.
                     </p>
 
-                    <div className="mt-4 text-sm text-white/40">
+                    <div className="mt-4 text-sm text-brand-ash/70">
                         Property:{" "}
-                        <span className="text-white/70">
+                        <span className="text-brand-ash">
                             {activeContext.address}
                         </span>
                     </div>
@@ -341,7 +341,7 @@ export default function JoinNeighbourhoodPage() {
 
                 <section className="py-7">
                     <div className="mb-5">
-                        <h2 className="text-base font-semibold text-white">
+                        <h2 className="text-base font-semibold text-brand-frost">
                             Enter join code
                         </h2>
                     </div>
