@@ -5,15 +5,13 @@ from app.models.property_user import PropertyUser
 from app.models.user import User
 from app.services.rtsp_encryption import encrypt_rtsp_url, decrypt_rtsp_url
 from app.services.camera_cache import invalidate_camera_caches
-from app.models.edge_agent_credentials import EdgeAgentCredential
-from datetime import datetime, timezone
 from app.services.audit_service import create_audit_log_item
 
 from fastapi import Response, status
 from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 from app.models.audit_log import AuditAction, TargetEntity
@@ -33,20 +31,6 @@ logger = logging.getLogger(__name__)
 
 NO_DB_SESSION = "No database session"
 NOT_AUTHENTICATED = "Not authenticated"
-EDGE_AGENT_TIMEOUT_SECONDS = float(os.getenv("FAILOVER_AGENT_TIMEOUT_SECONDS", "30"))
-
-
-def _edge_agent_is_available(last_seen_at: datetime | None) -> bool | None:
-    if last_seen_at is None:
-        return None
-
-    if last_seen_at.tzinfo is None:
-        last_seen_at = last_seen_at.replace(tzinfo=timezone.utc)
-
-    age_seconds = (datetime.now(timezone.utc) - last_seen_at).total_seconds()
-
-
-    return age_seconds <= EDGE_AGENT_TIMEOUT_SECONDS
 
 
 _CAMERA_PATH_PATTERN = re.compile(r"^cameras/([0-9a-fA-F-]{36})$")
@@ -323,20 +307,7 @@ async def list_cameras_handler(property_id, db, claims):
     result = await db.execute(stmt)
     cameras = result.scalars().all()
 
-    heartbeat_result = await db.execute(
-        select(
-            EdgeAgentCredential.property_id, func.max(EdgeAgentCredential.last_seen_at).label("last_seen_at")
-        )
-        .where(
-            EdgeAgentCredential.property_id == prop_uuid, EdgeAgentCredential.revoked_at.is_(None)
-        )
-        .group_by(EdgeAgentCredential.property_id)
-    )
 
-    last_seen_by_property = {
-        property_id: last_seen_at
-        for property_id, last_seen_at in heartbeat_result.all()
-    }
 
     return CamerasRes(
         status=200,
@@ -352,7 +323,7 @@ async def list_cameras_handler(property_id, db, claims):
                 location=c.location,
                 enabled=c.enabled,
                 created_at=c.created_at,
-                edge_agent_available=_edge_agent_is_available(last_seen_by_property.get(c.property_id))
+        
             )
             for c in cameras
         ],
