@@ -22,6 +22,7 @@ from app.models.neighbourhood_user import (
 from app.models.property import Property
 from app.models.camera import Camera
 from app.models.edge_agent_credentials import EdgeAgentCredential
+from app.models.property_user import PropertyUser
 from app.schemas.alert import (
     AlertClipUpdateRes,
     CreateInternalAlertRequest,
@@ -94,6 +95,16 @@ def _neighbourhood_alert_stmt(neighbourhood_id: UUID):
         .join(Property, Camera.property_id == Property.id)
         .where(Property.neighbourhood_id == neighbourhood_id)
     )
+
+def _property_alert_stmt(property_id: UUID):
+    """Build the base alert query scoped to one property."""
+
+    return (
+        select(Alert)
+        .join(Camera, Alert.camera_id == Camera.id)
+        .where(Camera.property_id == property_id)
+    )
+
 
 async def _require_neighbourhood_membership(
     db: AsyncSession,
@@ -269,6 +280,39 @@ def _build_alert_res(alert: Alert) -> AlertRes:
 
     )
 
+def _is_critical_alert(alert: Alert) -> bool:
+    return alert.detection_type in {
+        DetectionType.WEAPON_DETECTED,
+        DetectionType.FALL_DETECTED,
+    }
+
+
+def _can_acknowledge_alert(
+    alert: Alert,
+    property_membership: PropertyUser | None,
+    neighbourhood_membership: NeighbourhoodUser | None,
+) -> bool:
+    if neighbourhood_membership is not None:
+        if (
+            neighbourhood_membership.role
+            == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+        ):
+            return True
+
+        if (
+            neighbourhood_membership.role
+            == NeighbourhoodRole.SECURITY_OFFICER
+            and _is_critical_alert(alert)
+        ):
+            return True
+
+    return (
+        property_membership is not None
+        and property_membership.is_admin
+        and not _is_critical_alert(alert)
+    )
+
+
 async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) -> AlertRes:
     """Acknowledge an open alert and record the responsible authorised user."""
     if not alert_id:
@@ -282,36 +326,54 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
             .options(joinedload(Alert.camera).joinedload(Camera.property))
             .where(Alert.id == alert_id)
         )
-        alert = result.scalar_one_or_none()
+        row = result.one_or_none()
 
-        if not alert:
+        if not row:
             logger.warning("acknowledge_alert: alert not found with alert_id=%s", alert_id)
             raise HTTPException(404, ALERT_NOT_FOUND)
+
+        alert, _ , property_obj = row
 
         if alert.status != "OPEN":
             logger.warning("acknowledge_alert: alert not open with alert_id=%s", alert_id)
             raise HTTPException(409, "Alert is already acknowledged or resolved")
 
-        neighbourhood_result = await db.execute(
-            select(Property.neighbourhood_id)
-            .join(Camera, Camera.property_id == Property.id)
-            .where(Camera.id == alert.camera_id)
-        )
-        neighbourhood_id = neighbourhood_result.scalar_one_or_none()
+        resolver_id = UUID(claims["id"])
 
-        if neighbourhood_id is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Camera property is not assigned to a neighbourhood",
+        property_membership_result = await db.execute(
+            select(PropertyUser).where(
+                PropertyUser.property_id == property_obj.id,
+                PropertyUser.user_id == resolver_id,
+            )
+        )
+        property_membership = property_membership_result.scalar_one_or_none()
+
+        neighbourhood_membership = None
+
+        if property_obj.neighbourhood_id is not None:
+            neighbourhood_membership_result = await db.execute(
+                select(NeighbourhoodUser).where(
+                    NeighbourhoodUser.neighbourhood_id == property_obj.neighbourhood_id,
+                    NeighbourhoodUser.user_id == resolver_id,
+                )
+            )
+            neighbourhood_membership = (
+                neighbourhood_membership_result.scalar_one_or_none()
             )
 
-        await _require_neighbourhood_membership(
-            db,
-            claims,
-            neighbourhood_id,
-        )
 
-        resolver_id = UUID(claims["id"])
+
+        if not _can_acknowledge_alert(
+            alert,
+            property_membership,
+            neighbourhood_membership,
+        ):
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to acknowledge this alert",
+            )
+
+        neighbourhood_id = property_obj.neighbourhood_id
 
         old_values = {
             "status": alert.status,
@@ -320,7 +382,6 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
                 alert.resolved_at.isoformat() if alert.resolved_at else None
             ),
         }
-
 
         alert.status = "ACKNOWLEDGED"
         alert.resolved_at = datetime.now(timezone.utc)
@@ -381,6 +442,107 @@ def _validate_db_and_claims(db: AsyncSession, claims: dict):
         logger.warning("acknowledge_alert_handler: no claims entered")
         raise HTTPException(401, NOT_AUTHENTICATED)
 
+async def list_property_alerts_handler(
+    property_id,
+    db: AsyncSession,
+    claims: dict,
+    status_filter: str | None = None,
+    camera_id: UUID | None = None,
+    detection_type: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+    limit: int = DEFAULT_PAGE_SIZE,
+    offset: int = 0,
+) -> tuple[list[AlertRes], int]:
+    """Return paginated alerts for a property the user can access."""
+
+    if not property_id:
+        raise HTTPException(status_code=400, detail="Property id is required")
+
+    _validate_db_and_claims(db, claims)
+
+    try:
+        property_uuid = UUID(str(property_id))
+        current_user_id = UUID(str(claims["id"]))
+    except (KeyError, TypeError, ValueError) as error:
+        raise HTTPException(
+            status_code=401,
+            detail=NOT_AUTHENTICATED,
+        ) from error
+
+    if start_date and end_date and start_date > end_date:
+        raise HTTPException(status_code=400, detail="start_date must be less than end_date")
+
+    try:
+        property_result = await db.execute(
+            select(Property).where(Property.id == property_uuid)
+        )
+        property_obj = property_result.scalar_one_or_none()
+
+        if property_obj is None:
+            raise HTTPException(status_code=404, detail="Property not found")
+
+        membership_result = await db.execute(
+            select(PropertyUser).where(
+                PropertyUser.property_id == property_uuid,
+                PropertyUser.user_id == current_user_id,
+            )
+        )
+        membership = membership_result.scalar_one_or_none()
+
+        if membership is None:
+            raise HTTPException(status_code=403, detail="You do not have access to this property")
+
+        base_stmt = _property_alert_stmt(property_uuid)
+        
+        if status_filter:
+            base_stmt = base_stmt.where(
+                Alert.status == status_filter
+            )
+
+        if camera_id:
+            base_stmt = base_stmt.where(Alert.camera_id == camera_id)
+
+        if detection_type:
+            base_stmt = base_stmt.where(Alert.detection_type == DetectionType(detection_type))
+
+        if start_date:
+            base_stmt = base_stmt.where(Alert.frame_timestamp >= start_date)
+
+        if end_date:
+            base_stmt = base_stmt.where(Alert.frame_timestamp <= end_date)
+
+        count_result = await db.execute(
+            select(func.count()).select_from(base_stmt.subquery())
+        )
+        total = count_result.scalar_one()
+
+        stmt = (
+            base_stmt
+            .order_by(Alert.frame_timestamp.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+
+        result = await db.execute(stmt)
+        alerts = result.scalars().all()
+
+        return [
+            _build_alert_res(alert)
+            for alert in alerts
+        ], total
+        
+
+    except HTTPException:
+        raise
+
+    except IntegrityError:
+        await db.rollback()
+
+        logger.error("list_property_alerts: database error for property_id=%s", property_uuid)
+
+        raise HTTPException(status_code=500, detail="Failed to list property alerts")
+
 async def list_alerts_handler(
     neighbourhood_id,
     db: AsyncSession,
@@ -409,7 +571,7 @@ async def list_alerts_handler(
 
     neighbourhood_uuid = UUID(str(neighbourhood_id))
 
-    await _require_neighbourhood_membership(
+    membership = await _require_neighbourhood_membership(
         db,
         claims,
         neighbourhood_uuid,
@@ -417,6 +579,27 @@ async def list_alerts_handler(
 
     try:
         base_stmt = _neighbourhood_alert_stmt(neighbourhood_uuid)
+
+        current_user_id = UUID(str(claims["id"]))
+
+        if membership.role == NeighbourhoodRole.SECURITY_OFFICER:
+            base_stmt = base_stmt.where(
+                Alert.detection_type.in_(
+                    {
+                        "WEAPON_DETECTED",
+                        "FALL_DETECTED",
+                    }
+                )
+            )
+
+        elif membership.role == NeighbourhoodRole.RESIDENT:
+            base_stmt = base_stmt.join(
+                PropertyUser,
+                PropertyUser.property_id == Property.id,
+            ).where(
+                PropertyUser.user_id == current_user_id,
+            )
+
 
         if status_filter:
             base_stmt = base_stmt.where(Alert.status == status_filter)

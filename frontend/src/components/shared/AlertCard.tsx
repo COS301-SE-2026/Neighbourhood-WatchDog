@@ -201,7 +201,7 @@ interface AlertDetailSheetProps {
   alert: Alert;
   open: boolean;
   onClose: () => void;
-  onAcknowledge: (id: string) => Promise<void>;
+  onAcknowledge?: (id: string) => Promise<void>;
   acknowledging: boolean;
 }
 
@@ -334,7 +334,7 @@ function AlertDetailSheet({
 
           <Separator className="bg-white/10" />
 
-          {isNew && (
+          {onAcknowledge && isNew && (
             <Button
               className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
               onClick={() => onAcknowledge(alert.id)}
@@ -385,8 +385,8 @@ function MetaRow({
 
 export interface AlertCardProps {
   readonly alert: Alert;
-  readonly onAcknowledge: (id: string) => Promise<void>;
-  readonly onBroadcast: (id: string) => Promise<void>;
+  readonly onAcknowledge?: (id: string) => Promise<void>;
+  readonly onBroadcast?: (id: string) => Promise<void>;
   readonly broadcasting: boolean;
 }
 
@@ -399,6 +399,9 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
   const isCritical = severity === "CRITICAL";
 
   async function handleAcknowledge(id: string) {
+    if (!onAcknowledge) {
+      return;
+    }
     setAcknowledging(true);
     try {
       await onAcknowledge(id);
@@ -409,6 +412,10 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
   }
 
   async function handleBroadcast() {
+    if (!onBroadcast) {
+      return;
+    }
+
     await onBroadcast(alert.id);
   }
 
@@ -474,7 +481,7 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
             <TooltipContent side="top">View full alert details</TooltipContent>
           </Tooltip>
 
-          {isNew && (
+          {onBroadcast && isNew && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -504,7 +511,7 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
             </Tooltip>
           )}
 
-          {isNew && (
+          {onAcknowledge && isNew && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

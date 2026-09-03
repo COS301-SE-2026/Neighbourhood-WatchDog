@@ -105,6 +105,12 @@ function getSidebarGroups(
                     icon: Camera,
                 },
                 {
+                    title: "Property alerts",
+                    url: `${propertyBaseUrl}/alerts`,
+                    icon: BellRing,
+                },
+
+                {
                     title: "Connect agent",
                     url: `${propertyBaseUrl}/agent`,
                     icon: KeyRound, 
@@ -136,32 +142,33 @@ function getSidebarGroups(
         return addSystemAdminGroup(groups, systemRole);
     }
 
+    const neighbourhoodItems: SidebarItemData[] = [
+        {
+            title: "Analytics",
+            url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/analytics`,
+            icon: ChartNoAxesCombined,
+        },
+    ];
+
+    if (
+        activeContext.role === "Neighbourhood Admin" ||
+        activeContext.role === "Security Officer"
+    ) {
+        neighbourhoodItems.unshift({
+            title:
+                activeContext.role === "Security Officer"
+                    ? "Critical alerts"
+                    : "Live alerts",
+            url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/alerts`,
+            icon: BellRing,
+            badge: 3,
+        });
+    }
+
+
     groups.push({
         label: "NEIGHBOURHOOD",
-        items: [
-            {
-                title: "Members",
-                url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/members`,
-                icon: Users,
-            },
-            {
-                title: "Live alerts",
-                url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/alerts`,
-                icon: BellRing,
-                badge: 3,
-            },
-            {
-                title: "Analytics",
-                url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/analytics`,
-                icon: ChartNoAxesCombined,
-            }
-            // "Neighbourhood updates" — no /updates route exists yet, add back once it's built:
-            // {
-            //     title: "Neighbourhood updates",
-            //     url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/updates`,
-            //     icon: Megaphone,
-            // },
-        ],
+        items: neighbourhoodItems
     });
 
     if (activeContext.role === "Neighbourhood Admin") {
@@ -169,6 +176,12 @@ function getSidebarGroups(
             label: "MANAGE NEIGHBOURHOOD",
             items: [
                 {
+                    title: "Members",
+                    url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/members`,
+                    icon: Users,
+                },
+                {
+
                     title: "Join requests",
                     url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/join-requests`,
                     icon: ClipboardList,
