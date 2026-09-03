@@ -1,3 +1,4 @@
+import html
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -99,17 +100,33 @@ def build_alert_email(alert_type: str, camera_name: str, location: str,
                     risk_level: str = "HIGH", dashboard_url: str | None = "https://neighbourhood-watch-dog.vercel.app/auth/login") -> str:
     timestamp = datetime.datetime.now().strftime("%d %b %Y · %H:%M")
 
+    formatted_alert_type = html.escape(alert_type.replace("_", " ").strip().title())
+    safe_camera_name = html.escape(camera_name)
+    safe_location = html.escape(location)
+    safe_risk_level = html.escape(risk_level.upper())
+
+    severity_colours = {
+        "CRITICAL": ("#EF4444", "#2A1111"),
+        "HIGH": ("#F59E0B", "#2A1D08"),
+        "MEDIUM": ("#F59E0B", "#2A1D08"),
+        "LOW": ("#6AB0FF", "#10233A"),
+    }
+    severity_colour, severity_background = severity_colours.get(
+        risk_level.upper(), ("#F59E0B", "#2A1D08")
+    )
+
     cta_row = ""
     if dashboard_url:
+        safe_dashboard_url = html.escape(dashboard_url, quote=True)
         cta_row = f"""
             <tr>
-                <td style="padding-top: 32px;">
-                <table role="presentation" cellspacing="0" cellpadding="0">
+                <td style="padding-top: 28px;">
+                <table role="presentation" cellspacing="0" cellpadding="0" width="100%">
                     <tr>
-                    <td align="center" bgcolor="#10B981">
-                        <a href="{dashboard_url}" 
-                            style="display: inline-block; padding: 14px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: bold; color: #000000; text-decoration: none; letter-spacing: 0.5px; text-transform: uppercase;">
-                        Review Alerts &rarr;
+                    <td align="center" bgcolor="#10B981" style="border-radius: 8px;">
+                        <a href="{safe_dashboard_url}"
+                            style="display: block; padding: 15px 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 700; color: #07130F; text-decoration: none;">
+                        View alert details&nbsp; &rarr;
                         </a>
                     </td>
                     </tr>
@@ -123,87 +140,99 @@ def build_alert_email(alert_type: str, camera_name: str, location: str,
     <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WatchDog Alert</title>
+    <meta name="color-scheme" content="dark">
+    <title>Neighbourhood WatchDog alert</title>
+    <style>
+        @media only screen and (max-width: 600px) {{
+            .email-shell {{ padding: 20px 12px !important; }}
+            .email-card {{ width: 100% !important; }}
+            .email-content {{ padding: 28px 24px !important; }}
+            .email-footer {{ padding: 0 24px 24px !important; }}
+            .detail-column {{ display: block !important; width: 100% !important; padding: 0 0 18px !important; }}
+            .timestamp {{ display: block !important; text-align: left !important; padding-top: 10px !important; }}
+        }}
+    </style>
     </head>
-    <body style="margin: 0; padding: 0; background-color: #000000; -webkit-font-smoothing: antialiased;">
+    <body style="margin: 0; padding: 0; background-color: #0A0A0A; -webkit-font-smoothing: antialiased;">
 
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #000000; padding: 40px 20px;">
+    <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; color: transparent;">
+        {safe_risk_level} alert at {safe_location}. Review the camera event and coordinate a response.
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-shell" style="background-color: #0A0A0A; padding: 40px 20px;">
     <tr>
         <td align="center">
-        
-        <!-- Main Card: Darker, subtle border, sharp edges -->
-        <table role="presentation" width="500" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; border: 1px solid #1f1f1f;">
-            
-            <!-- Industrial Top Accent -->
+
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" class="email-card" style="width: 100%; max-width: 560px; background-color: #141414; border: 1px solid #272727; border-radius: 12px; overflow: hidden;">
+
             <tr>
-            <td style="height: 4px; background-color: #10B981; line-height: 4px; font-size: 4px;">&nbsp;</td>
+            <td style="height: 5px; background-color: {severity_colour}; line-height: 5px; font-size: 5px;">&nbsp;</td>
             </tr>
 
-            <!-- Single Padded Content Area -->
             <tr>
-            <td style="padding: 40px;">
-                
-                <!-- App Header -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
+            <td class="email-content" style="padding: 36px 40px 32px;">
+
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 38px;">
                 <tr>
-                    <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #ffffff; font-size: 14px; font-weight: 700; letter-spacing: 2px;">
-                    <span style="color: #10B981; margin-right: 4px;">&#9632;</span> WATCHDOG
+                    <td valign="middle" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                        <table role="presentation" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td align="center" valign="middle" width="38" height="38" style="width: 38px; height: 38px; border: 1px solid #10B981; border-radius: 10px; color: #10B981; font-size: 11px; font-weight: 800; letter-spacing: -0.5px;">NW</td>
+                            <td style="padding-left: 12px; color: #F5F5F5; font-size: 14px; font-weight: 750; line-height: 17px; letter-spacing: 0.4px;">
+                                NEIGHBOURHOOD<br><span style="color: #10B981;">WATCHDOG</span>
+                            </td>
+                        </tr>
+                        </table>
                     </td>
-                    <td align="right" style="font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace; color: #555555; font-size: 12px;">
+                    <td align="right" valign="middle" class="timestamp" style="font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace; color: #8A8A8A; font-size: 11px; line-height: 16px;">
                     {timestamp}
                     </td>
                 </tr>
                 </table>
 
-                <!-- Alert Headline -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 26px;">
                 <tr>
                     <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-                    <div style="color: #10B981; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px;">
-                        {risk_level} Priority Alert
-                    </div>
-                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600; line-height: 1.2; letter-spacing: -0.5px;">
-                        {alert_type}
+                    <span style="display: inline-block; padding: 6px 10px; background-color: {severity_background}; border: 1px solid {severity_colour}; border-radius: 999px; color: {severity_colour}; font-size: 10px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;">
+                        {safe_risk_level} priority
+                    </span>
+                    <h1 style="margin: 18px 0 10px; color: #F5F5F5; font-size: 28px; font-weight: 700; line-height: 1.25; letter-spacing: -0.5px;">
+                        {formatted_alert_type}
                     </h1>
+                    <p style="margin: 0; color: #A3A3A3; font-size: 15px; line-height: 23px;">
+                        Your neighbourhood watch detected an event that needs attention. Review the details and help coordinate the right response.
+                    </p>
                     </td>
                 </tr>
                 </table>
 
-                <!-- Divider -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
-                <tr><td style="border-top: 1px solid #1f1f1f;"></td></tr>
-                </table>
-
-                <!-- Clean Data Grid -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #0D0D0D; border: 1px solid #272727; border-radius: 8px;">
                 <tr>
-                    <!-- Left Column -->
-                    <td width="50%" valign="top" style="padding-right: 20px;">
+                    <td width="50%" valign="top" class="detail-column" style="padding: 20px 12px 20px 20px;">
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                         <tr>
-                        <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #666666; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding-bottom: 4px;">
-                            Camera Source
+                        <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #8A8A8A; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding-bottom: 7px;">
+                            Seen by
                         </td>
                         </tr>
                         <tr>
-                        <td style="font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace; color: #ffffff; font-size: 14px;">
-                            {camera_name}
+                        <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F5F5F5; font-size: 14px; font-weight: 600; line-height: 20px;">
+                            {safe_camera_name}
                         </td>
                         </tr>
                     </table>
                     </td>
-                    
-                    <!-- Right Column -->
-                    <td width="50%" valign="top">
+
+                    <td width="50%" valign="top" class="detail-column" style="padding: 20px 20px 20px 12px;">
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                         <tr>
-                        <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #666666; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding-bottom: 4px;">
-                            Zone Location
+                        <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #8A8A8A; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding-bottom: 7px;">
+                            In your neighbourhood
                         </td>
                         </tr>
                         <tr>
-                        <td style="font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace; color: #ffffff; font-size: 14px;">
-                            {location}
+                        <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F5F5F5; font-size: 14px; font-weight: 600; line-height: 20px;">
+                            {safe_location}
                         </td>
                         </tr>
                     </table>
@@ -211,7 +240,6 @@ def build_alert_email(alert_type: str, camera_name: str, location: str,
                 </tr>
                 </table>
 
-                <!-- CTA Row -->
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 {cta_row}
                 </table>
@@ -219,13 +247,13 @@ def build_alert_email(alert_type: str, camera_name: str, location: str,
             </td>
             </tr>
             
-            <!-- Minimal Footer -->
             <tr>
-            <td style="padding: 0 40px 32px 40px;">
+            <td class="email-footer" style="padding: 0 40px 30px;">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                    <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #444444; font-size: 11px; border-top: 1px solid #1f1f1f; padding-top: 24px;">
-                    System generated by WatchDog Security Node. Do not reply to this email.
+                    <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #777777; font-size: 11px; line-height: 17px; border-top: 1px solid #272727; padding-top: 22px;">
+                    <span style="color: #A3A3A3;">Watching together. Responding sooner.</span><br>
+                    This alert was sent automatically by Neighbourhood WatchDog. Please do not reply.
                     </td>
                 </tr>
                 </table>
