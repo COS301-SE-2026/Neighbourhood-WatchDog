@@ -4,7 +4,7 @@ from typing import List
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
@@ -345,3 +345,48 @@ async def invite_property_member_handler(req: InvitePropertyReq, property_id: UU
     except Exception as e:
         await db.rollback()
         raise HTTPException(500, f"Failed to invite property member: {str(e)}")
+
+    
+
+async def remove_property_member_handler(property_id: UUID, user_id: UUID, db: DbSession, claims: dict) -> None:
+    """Remove a non-admin member from a property."""
+
+    if not claims:
+        raise HTTPException(401, "Not authenticated")
+
+    membership_result = await db.execute(
+        select(PropertyUser).where(
+            PropertyUser.property_id == property_id,
+            PropertyUser.user_id == user_id
+        )
+    )
+    membership = membership_result.scalar_one_or_none()
+
+    if not membership:
+        raise HTTPException(
+            status_code=404,
+            detail="User is not a member of this property"
+        )
+
+    if membership.is_admin:
+        admin_count_result = await db.execute(
+            select(PropertyUser).where(
+                PropertyUser.property_id == property_id,
+                PropertyUser.is_admin.is_(True)
+            )
+        )
+        admin_count = len(admin_count_result.scalars().all())
+
+        if admin_count <= 1:
+            raise HTTPException(
+                status_code=409,
+                detail="The last property administrator cannot be removed"
+            )
+    await db.execute(
+        delete(PropertyUser).where(
+            PropertyUser.property_id == property_id,
+            PropertyUser.user_id == user_id
+        )
+    )
+
+    await db.commit()

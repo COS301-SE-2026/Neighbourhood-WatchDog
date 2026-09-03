@@ -12,6 +12,7 @@ from app.services.property_service import (
     get_property_members_handler,
     get_user_properties_handler,
     invite_property_member_handler,
+    remove_property_member_handler,
 )
 
 router = APIRouter(prefix="/properties", tags=["properties"])
@@ -118,3 +119,19 @@ async def invite_property_member(
     """Sen an invite for user to join current property"""
 
     return await invite_property_member_handler(req, property_id, db, claims)
+
+@router.delete("/{property_id}/members/{user_id}", status_code=204)
+async def remove_property_member(
+    property_id: UUID,
+    user_id: UUID,
+    db: DbSession,
+    claims: PropertyAdminClaims
+):
+    """Remove a non-admin member from a property."""
+
+    await remove_property_member_handler(
+        property_id=property_id,
+        user_id=user_id,
+        db=db,
+        claims=claims
+    )
