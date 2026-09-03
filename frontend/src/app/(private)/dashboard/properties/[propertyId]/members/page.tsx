@@ -235,7 +235,15 @@ export default function PropertyMembers() {
 
 					</div>
 				</section>
-
+			
+				{actionError && (
+					<div
+						role="alert"
+						className="mt-6 rounded-xl border border-destructive/30 bg-destructive/10 px-5 py-4 text-sm text-destructive"
+					>
+						{actionError}
+					</div>
+				)}
 
         <section className="mt-7">
           <div className="mb-4 flex items-center justify-between">
@@ -317,12 +325,28 @@ export default function PropertyMembers() {
                         </div>
                       </div>
 
-                      {member.is_admin && (
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs text-primary">
-                          <ShieldCheck className="size-3.5" />
-                          Admin
-                        </span>
-                      )}
+                      <div className="flex shrink-0 items-center gap-2">
+												{member.is_admin && (
+													<span className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs text-primary">
+														<ShieldCheck className="size-3.5" />
+														Admin
+													</span>
+												)}
+
+												{!member.is_admin && (
+													<button
+														type="button"
+														onClick={() => handleRemoveMember(member)}
+														disabled={removingUserId === member.user_id}
+														className="rounded-md border border-destructive/30 px-2.5 py-1 text-xs text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+													>
+														{removingUserId === member.user_id
+															? "Removing..."
+															: "Remove"}
+													</button>
+												)}
+											</div>
+
                     </div>
                   );
                 })}
