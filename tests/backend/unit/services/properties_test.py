@@ -45,9 +45,17 @@ class TestCreateProperty:
                 "100 Test Street",
                 PropertyTypeEnum.PRIVATE,
                 self.claims,
-                self.mock_db
+                self.mock_db,
+                latitude=-26.2041,
+                longitude=28.0473,
             )
 
+            MockProperty.assert_called_once_with(
+                address="100 Test Street",
+                latitude=-26.2041,
+                longitude=28.0473,
+                property_type=PropertyTypeEnum.PRIVATE,
+            )
             assert self.mock_db.add.call_count == 2
             assert self.mock_db.flush.call_count == 2
             assert self.mock_db.commit.call_count == 1
@@ -225,3 +233,14 @@ class TestGetUserProperties:
 
         assert len(properties) == 1
         assert properties[0].address == "789 Pine St"
+
+    @pytest.mark.asyncio
+    async def test_database_error_is_converted_to_http_500(self):
+        self.mock_db.execute.side_effect = RuntimeError("database unavailable")
+
+        with pytest.raises(HTTPException) as exc_info:
+            await get_user_properties_handler(self.claims, self.mock_db)
+
+        assert exc_info.value.status_code == 500
+        assert "Failed to fetch properties" in exc_info.value.detail
+        assert "database unavailable" in exc_info.value.detail
