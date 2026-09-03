@@ -26,4 +26,24 @@ test.describe("Join Requests", () => {
       page.getByRole("article", { name: /join request from resident/i }),
     ).toBeVisible();
   });
+
+  test("approving request moves it to pending tab", async ({ page }) => {
+    await page.setExtraHTTPHeaders(mockAuthHeaders(ADMIN_USER_ID));
+    await page.goto(
+      "//dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/join-requests",
+    );
+
+    const card = page.getByRole("article", {
+      name: /join request from resident/i,
+    });
+    await card.getByRole("button", { name: /approve/i }).click();
+
+    await expect(card).not.toBeVisible();
+
+    await page.getByRole("tab", { name: /^approved/i }).click();
+
+    await expect(
+      page.getByRole("article", { name: /join request from resident/i }),
+    ).toContainText("Approved");
+  });
 });
