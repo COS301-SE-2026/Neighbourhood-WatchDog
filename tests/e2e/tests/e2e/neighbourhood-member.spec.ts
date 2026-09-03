@@ -56,4 +56,22 @@ test.describe("Neighbourhood members", () => {
     await expect(roleSelect).toHaveValue("RESIDENT");
     await expect(page.getByRole("alert")).toHaveCount(0);
   });
+
+  //last remaining admin cannot demote themselves without handing admin rights to someone else
+  test("the only admin cannot remove their own admin role", async ({
+    page,
+  }) => {
+    await page.setExtraHTTPHeaders(mockAuthHeaders(ADMIN_USER_ID));
+    await page.goto(
+      "/dashboard/properies/${NEIGHBOURHOOD_ID}/neighbourhood/members",
+    );
+
+    const roleSelect = page.getByLabel("Role for test User");
+    await expect(roleSelect).toHaveValue("RESIDENT");
+
+    await expect(page.getByRole("alert")).toContainText(
+      /transfer admin rights/i,
+    );
+    await expect(roleSelect).toHaveValue("NEIGHBOURHOOD_ADMIN");
+  });
 });
