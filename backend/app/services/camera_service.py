@@ -199,7 +199,7 @@ async def deregister_camera_handler(camera_id, db, claims):
         await db.rollback()
         raise HTTPException(500, "Failed to delete camera")
     
-async def edit_camera_handler(
+async def edit_camera_handler( 
     camera_id: UUID, 
     req: CameraEditReq,
     db: AsyncSession, 
