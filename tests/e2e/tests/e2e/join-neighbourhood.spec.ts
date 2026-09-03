@@ -63,4 +63,20 @@ test.describe("Join a neighbourhood", () => {
       /already have a pending request/i,
     );
   });
+
+  test("a property in the neighbourhood cannot request to join", async ({
+    page,
+  }) => {
+    await page.setExtraHTTPHeaders(mockAuthHeaders(MEMBER_USER_ID));
+    await page.goto(
+      "/dashboard/properies/${MEMBER_PROPERTY_ID/neighbourhood/join",
+    );
+
+    await page.locator("#join-code").fill(NEIGHBOURHOOD_JOIN_CODE);
+    await page.getByRole("button", { name: /request to join/i }).click();
+
+    await expect(page.locator("#join-code-error")).toContainText(
+      /already a member/i,
+    );
+  });
 });
