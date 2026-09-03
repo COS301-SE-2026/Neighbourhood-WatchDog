@@ -21,6 +21,23 @@ class PropertyRes(BaseModel):
     longitude: float | None = Field(default=None, ge=-180, le=180)
     created_at: datetime
 
+class PropertyMember(BaseModel):
+    user_id: UUID
+    first_name: str | None = None
+    last_name: str | None = None
+    email: str
+    is_admin: bool
+
+class PropertyMembers(BaseModel):
+    members: list[PropertyMember] = Field(default_factory=list)
+
+class InvitePropertyReq(BaseModel):
+    email: str
+
+class InvitePropertyRes(BaseModel):
+    message: str
+    email_sent: bool
+
 class CreatePropertyRes(BaseModel):
     status: int
     message: str | None = None

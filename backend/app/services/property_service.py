@@ -1,9 +1,10 @@
 import logging
+import asyncio
 from typing import List
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
@@ -15,9 +16,13 @@ from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property, PropertyTypeEnum
 from app.models.property_user import PropertyUser
 from app.models.user import User
+from app.schemas.property import InvitePropertyReq, PropertyMembers
 from app.services.audit_service import create_audit_log_item
+from app.services.notification_service import send_property_invite_email
 
 logger = logging.getLogger(__name__)
+
+NOT_AUTHENTICATED_LITERAL = "Not authenticated"
 
 async def create_property_handler(
     addr: str, 
@@ -40,7 +45,7 @@ async def create_property_handler(
     
     if not claims:
         logger.warning("create_property called with no claims")
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED_LITERAL)
 
     new_property = Property(
         address = addr,
@@ -108,7 +113,7 @@ async def get_user_properties_handler(
 
     if not claims:
         logger.warning("get_user_properties: no claims found for request for user properties")
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED_LITERAL)
 
     try:
         #get user by cognito_sub
@@ -220,3 +225,170 @@ async def get_property_details_handler(property_id: UUID, db: DbSession, claims:
     except Exception as e:
         logger.error("get_property_details: exception raised.")
         raise HTTPException(500, f"Failed to fetch property details: {str(e)}")
+
+
+async def get_property_members_handler(property_id: UUID, db: DbSession, claims: dict) -> PropertyMembers:
+    """Fetch property members"""
+
+    if not claims:
+        logger.warning("get_user_properties: no claims found for request for user properties")
+        raise HTTPException(401, NOT_AUTHENTICATED_LITERAL)
+
+    try:
+        #get user by cognito_sub
+        stmt = select(User).where(User.cognito_sub == claims['sub'])
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            logger.warning("get_user_properties: no user found for cognito_sub=%s", claims['sub'])
+            raise HTTPException(404, "User not found")
+
+        stmt_prop = (
+            select(User, PropertyUser.is_admin)
+            .join(PropertyUser, PropertyUser.user_id == User.id)
+            .where(PropertyUser.property_id == property_id)
+        )
+
+        result = await db.execute(stmt_prop)
+        users = result.all()
+
+        members = [
+            {
+                "user_id": user.id,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.email,
+                "is_admin": is_admin
+            }
+            for user, is_admin in users
+        ]
+
+        return PropertyMembers(members=members)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Failed to fetch members: {str(e)}")
+
+
+async def invite_property_member_handler(req: InvitePropertyReq, property_id: UUID, db: DbSession, claims: dict):
+    """Invite a user to this property"""
+    if not claims:
+        raise HTTPException(401, NOT_AUTHENTICATED_LITERAL)
+
+    try:
+        inviter_result =  await db.execute(
+            select(User).where(User.cognito_sub == claims["sub"])
+        )
+        inviter = inviter_result.scalar_one_or_none()
+
+        if not inviter:
+            raise HTTPException(404, "Inviting user not found")
+
+        property_result = await db.execute(
+            select(Property).where(Property.id == property_id)
+        )
+        property_obj = property_result.scalar_one_or_none()
+
+        if not property_obj:
+            raise HTTPException(404, "Property not found")
+
+        user_result = await db.execute(
+            select(User).where(User.email == req.email)
+        )
+        invited_user = user_result.scalar_one_or_none()
+
+        if not invited_user:
+            raise HTTPException(404, "User with that email does not exist")
+
+        existing_result = await db.execute(
+            select(PropertyUser).where(
+                PropertyUser.property_id == property_id,
+                PropertyUser.user_id == invited_user.id
+            )
+        )
+        existing_member = existing_result.scalar_one_or_none()
+
+        if existing_member:
+            raise HTTPException(409, "User is already a property member")
+
+        db.add(
+            PropertyUser(
+                property_id=property_id,
+                user_id=invited_user.id,
+                is_admin=False
+            )
+        )
+
+        await db.commit()
+
+        inviter_name = f"{inviter.first_name or ''} {inviter.last_name or ''}"
+        if not inviter_name:
+            inviter_name = inviter.email
+
+        success, error = await asyncio.to_thread(
+            send_property_invite_email,
+            invited_user.email,
+            property_obj.address,
+            inviter_name
+        )
+
+        if not success:
+            logger.warning("Property invite email failed: %s", error)
+
+        return {
+            "message": "Property member invited successfully",
+            "email_sent": success
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(500, f"Failed to invite property member: {str(e)}")
+
+    
+
+async def remove_property_member_handler(property_id: UUID, user_id: UUID, db: DbSession, claims: dict) -> None:
+    """Remove a non-admin member from a property."""
+
+    if not claims:
+        raise HTTPException(401, NOT_AUTHENTICATED_LITERAL)
+
+    membership_result = await db.execute(
+        select(PropertyUser).where(
+            PropertyUser.property_id == property_id,
+            PropertyUser.user_id == user_id
+        )
+    )
+    membership = membership_result.scalar_one_or_none()
+
+    if not membership:
+        raise HTTPException(
+            status_code=404,
+            detail="User is not a member of this property"
+        )
+
+    if membership.is_admin:
+        admin_count_result = await db.execute(
+            select(PropertyUser).where(
+                PropertyUser.property_id == property_id,
+                PropertyUser.is_admin.is_(True)
+            )
+        )
+        admin_count = len(admin_count_result.scalars().all())
+
+        if admin_count <= 1:
+            raise HTTPException(
+                status_code=409,
+                detail="The last property administrator cannot be removed"
+            )
+    await db.execute(
+        delete(PropertyUser).where(
+            PropertyUser.property_id == property_id,
+            PropertyUser.user_id == user_id
+        )
+    )
+
+    await db.commit()
