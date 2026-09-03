@@ -77,7 +77,7 @@ _model_lock = threading.Lock()
 
 #clip recording settings
 WEAPON_CLASSES = {"gun", "knife", "grenade", "explosion"}
-CLIP_COOLDOWN_SECS = 0
+CLIP_COOLDOWN_SECS = 5
 CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME") or os.getenv("AWS_BUCKET_NAME", "")
 AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")
