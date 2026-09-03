@@ -133,7 +133,7 @@ export default function PropertyCamerasPage() {
         return (
             <main className="min-h-full w-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
                 <div className="flex min-h-64 flex-col items-center justify-center text-center">
-                    <CameraOff className="mb-4 size-8 text-brand-ash/60" />
+                    <CameraOff className="mb-4 size-8 text-brand-ash" />
                     <h2 className="text-lg font-semibold">
                         No property selected
                     </h2>
