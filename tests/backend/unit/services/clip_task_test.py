@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -5,7 +6,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-from botocore.exceptions import BotoCoreError
+from botocore.exceptions import BotoCoreError, ClientError
 
 from app.tasks import clip_tasks as service
 
@@ -72,9 +73,10 @@ class TestUploadAndLink:
             patch.object(service, "WorkerSessionLocal", return_value=session_context),
             patch.object(service, "_s3_client", return_value=s3_client),
             patch.object(service, "_clip_s3_key", return_value="clips/test.mp4"),
-            patch.object(service.datetime, "now", return_value=timestamp),
+            patch.object(service, "datetime") as datetime_module,
             patch.object(service.asyncio, "to_thread", new=to_thread),
         ):
+            datetime_module.now.return_value = timestamp
             await service._upload_and_link(
                 ALERT_ID,
                 base64.b64encode(b"clip-data").decode(),
@@ -113,7 +115,7 @@ class TestUploadAndLink:
                 "video/webm",
             )
 
-        assert to_thread.await_args.args[4] == "video/webm"
+        assert to_thread.await_args.kwargs["ContentType"] == "video/webm"
         db.commit.assert_awaited_once()
 
     @pytest.mark.asyncio
