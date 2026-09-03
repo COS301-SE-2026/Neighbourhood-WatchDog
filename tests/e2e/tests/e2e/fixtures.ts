@@ -8,7 +8,7 @@ export const DENY_FLOW_USER_ID = "20000000-0000-0000-0000-000000000004";
 
 export const PROPERTY_ID = "30000000-0000-0000-0000-000000000001";
 export const PENDING_PROPERTY_ID = "30000000-0000-0000-0000-000000000002";
-export const FREE_PROPERTY_ID = "30000000-0000-0000-0000-000000000003";
+export const FREE_PROPERTY_ID = "30000000-0000-0000-0000-000000000005";
 export const OFFICER_PROPERTY_ID = "30000000-0000-0000-0000-000000000003";
 export const CREATE_PROPERTY_ID = "30000000-0000-0000-0000-000000000005";
 export const CREATE_USER_ID = "20000000-0000-0000-0000-000000000005";
@@ -20,6 +20,9 @@ export const SECOND_CAMERA_ID = "40000000-0000-0000-0000-000000000002";
 export const ALERT_ID = "80000000-0000-0000-0000-000000000001";
 export const PAIRING_TOKEN = "e2e-pairing-token-001";
 
+export const PENDING_USER_ID = RESIDENT_USER_ID; // User with pending join request
+export const FREE_USER_ID = "20000000-0000-0000-0000-000000000005"; // User who can join neighbourhood
+
 export const test = base.extend({
   page: async ({ page }, use) => {
     await page.setExtraHTTPHeaders({
@@ -27,9 +30,18 @@ export const test = base.extend({
       "X-Mock-User-Id": ADMIN_USER_ID,
     });
 
-    await page.addInitScript(() => {
-      localStorage.setItem("accessToken", "mocktake");
-    });
+    await page.addInitScript(
+      ({ adminUserId }) => {
+        localStorage.setItem("accessToken", "mocktake");
+        localStorage.setItem("X-Mock-User-Id", adminUserId);
+        localStorage.setItem(
+          "X-Mock-Sub",
+          "a16cd2b8-c0c1-70f7-1fb6-17b5cea57bcf",
+        );
+        localStorage.setItem("X-Mock-Role", "SYSTEM_ADMIN");
+      },
+      { adminUserId: ADMIN_USER_ID },
+    );
 
     await use(page);
   },
