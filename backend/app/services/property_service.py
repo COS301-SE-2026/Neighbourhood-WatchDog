@@ -240,18 +240,24 @@ async def get_property_members_handler(property_id: UUID, db: DbSession, claims:
             logger.warning("get_user_properties: no user found for cognito_sub=%s", claims['sub'])
             raise HTTPException(404, "User not found")
 
-        stmt_prop = select(User).join(PropertyUser, PropertyUser.property_id == property_id)
+        stmt_prop = (
+            select(User, PropertyUser.is_admin)
+            .join(PropertyUser, PropertyUser.user_id == User.id)
+            .where(PropertyUser.property_id == property_id)
+        )
+        
         result = await db.execute(stmt_prop)
-        users = result.scalars().all()
+        users = result.all()
 
         members = [
             {
                 "user_id": user.id,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "email": user.email
+                "email": user.email,
+                "is_admin": is_admin
             }
-            for user in users
+            for user, is_admin in users
         ]
 
         return PropertyMembers(members=members)

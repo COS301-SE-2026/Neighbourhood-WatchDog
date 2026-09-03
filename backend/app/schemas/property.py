@@ -26,6 +26,7 @@ class PropertyMember(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     email: str
+    is_admin: bool
 
 class PropertyMembers(BaseModel):
     members: list[PropertyMember] = Field(default_factory=list)
