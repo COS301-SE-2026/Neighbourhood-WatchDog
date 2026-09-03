@@ -33,4 +33,18 @@ test.describe("Join a neighbourhood", () => {
     ).toBeVisible();
     await expect(page.getByText("Request submitted")).toBeVisible();
   });
+
+  test("invalid join code shows an inline error", async ({ page }) => {
+    await page.setExtraHTTPHeaders(mockAuthHeaders(PENDING_USER_ID));
+    await page.goto(
+      "/dashboard/properies/${FREE_PROPERTY_ID/neighbourhood/join",
+    );
+
+    await page.locator("#join-code").fill("NOT-A-REAL-CODE");
+    await page.getByRole("button", { name: /request to join/i }).click();
+
+    await expect(page.locator("#join-code-error")).toContainText(
+      /invalid join code/i,
+    );
+  });
 });
