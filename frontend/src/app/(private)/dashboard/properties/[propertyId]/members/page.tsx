@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import {
   Loader2,
   Mail,
+	MailPlus,
   ShieldCheck,
   UserRound,
   Users,
@@ -23,6 +24,7 @@ export default function PropertyMembers() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+	const [inviteEmail, setInviteEmail] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -81,6 +83,55 @@ export default function PropertyMembers() {
             </div>
           </div>
         </header>
+
+				<section className="mt-7">
+					<div className="rounded-xl border border-border bg-card p-6">
+						<div className="flex items-start gap-3">
+							<div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10">
+								<MailPlus className="size-4 text-primary" />
+							</div>
+
+							<div>
+								<h2 className="text-lg font-semibold">
+									Invite a member
+								</h2>
+
+								<p className="mt-1 text-sm text-muted-foreground">
+									Invite an existing WatchDog user to access this property.
+								</p>
+							</div>
+						</div>
+
+						<form
+							onSubmit={(event) => {
+								event.preventDefault();
+							}}
+							className="mt-5 flex flex-col gap-3 sm:flex-row"
+						>
+							<div className="relative flex-1">
+								<Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+
+								<input
+									type="email"
+									value={inviteEmail}
+									onChange={(event) => setInviteEmail(event.target.value)}
+									placeholder="Enter their email address"
+									aria-label="Invitee email address"
+									className="h-10 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+								/>
+							</div>
+
+							<button
+								type="submit"
+								disabled={!inviteEmail.trim()}
+								className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+							>
+								Send invitation
+							</button>
+						</form>
+					</div>
+				</section>
+
 
         <section className="mt-7">
           <div className="mb-4 flex items-center justify-between">
