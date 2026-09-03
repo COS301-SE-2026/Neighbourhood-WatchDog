@@ -31,4 +31,20 @@ test.describe("Create a neighbourhood", () => {
     await page.locator("#neighbourhood-location").fill("Brooklyn");
     await expect(submit).toBeEnabled();
   });
+
+  test("creating neighbourhood redirects to property camera page", async ({
+    page,
+  }) => {
+    await page.setExtraHTTPHeaders(mockAuthHeaders(FREE_USER_ID));
+    await page.goto(
+      "/dashboard/properies/${FREE_PROPERTY_ID/neighbourhood/setup",
+    );
+
+    await page.locator("nieghbourhood-name").fill("E2E New Neighbourhood");
+    await page.locator("#neighbourhood-location").fill("Centurion");
+
+    await page.getByRole("button", { name: /create neighbourhood/i }).click();
+
+    await page.waitForURL("**/dashboard/properies/${FREE_PROPERTY_ID/cameras");
+  });
 });
