@@ -1,6 +1,8 @@
 # Software Architecture Specification (SAS)
 # Neighbourhood WatchDog
 
+version 3.1 Updated 3 September 2026 
+
 # 1. Introduction
 
 This Software Architecture Specification (SAS) document describes the architectural design of the Neighbourhood WatchDog system. It outlines the system's major components, their responsibilities, interactions, and the technologies used to implement them. The document serves as a reference for developers, stakeholders, and maintainers by providing a comprehensive overview of the software architecture and the rationale behind key design decisions.
