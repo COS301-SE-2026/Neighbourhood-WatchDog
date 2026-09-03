@@ -5,7 +5,7 @@ from app.auth.dependencies import get_current_user
 from app.auth.dependencies import require_role
 from app.core.database import DbSession
 from app.auth.authorization import require_camera_authorization
-from app.auth.authorization import Claims, CameraAdminClaims, CameraMemberClaims
+from app.auth.authorization import Claims, CameraAdminClaims
 from app.schemas.camera_settings import (
     CameraSettingsResponse,
     CreateZoneRequest,
@@ -38,7 +38,7 @@ router = APIRouter(prefix="/cameras", tags=["camera-settings"])
         500: {"description": "Failed to retrieve camera settings"},
     },
 )
-async def get_settings(camera_id: UUID, db: DbSession, claims: CameraMemberClaims):
+async def get_settings(camera_id: UUID, db: DbSession, claims: CameraAdminClaims):
     """Getting the confidence threshold and detection zones for a camera"""
     return await get_camera_settings_handler(camera_id, db, claims)
 
