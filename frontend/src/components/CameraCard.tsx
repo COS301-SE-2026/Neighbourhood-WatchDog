@@ -101,17 +101,7 @@ export default function CameraCard({ id, name, location, visibility, enabled, us
                             Visibility: <span className="text-brand-ash/65">{visibility}</span>
                         </p>
 
-                        {agentDegraded && (
-                            <div
-                                role="status"
-                                className="mt-3 flex items-start gap-2 rounded-md border border-brand-caution/20 bg-brand-caution/10 px-3 py-2 text-xs text-brand-caution"
-                            >
-                                <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-brand-caution" />
-                                <span>
-                                    Stream quality degraded due to agent failure. The system is attempting to keep video available while the Agent reconnects.
-                                </span>
-                            </div>
-                        )}
+                        
 
                     </div>
                 </div>
