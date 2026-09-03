@@ -2,7 +2,7 @@ import { test, expect, PROPERTY_ID } from "./fixtures";
 
 test.describe("Pairing token and edge agent", () => {
   test("generates and displays a pairing token", async ({ page }) => {
-    await page.goto(`dashboard/properties/${PROPERTY_ID}/agent`);
+    await page.goto(`/dashboard/properties/${PROPERTY_ID}/agent`);
 
     await expect(
       page.getByRole("heading", { name: "Connect an edge agent" }),
