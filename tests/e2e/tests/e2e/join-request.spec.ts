@@ -1,0 +1,29 @@
+import { test, expect } from "@playwright/test";
+
+const NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001";
+
+const ADMIN_USER_ID = "20000000-0000-0000-0000-000000000001";
+
+const NON_ADMIN_USER_ID = "20000000-0000-0000-0000-000000000002";
+
+function mockAuthHeaders(userId: string) {
+  return {
+    Authorization: "Bearer mocktake",
+    "X-Mock-User-Id": userId,
+  };
+}
+
+test.describe("Join Requests", () => {
+  test("lists the pending requests", async ({ page }) => {
+    await page.setExtraHTTPHeaders(mockAuthHeaders(ADMIN_USER_ID));
+    await page.goto(
+      "/dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/join-requests",
+    );
+
+    await page.waitForSelector('[role="article"]', { timeout: 30000 });
+
+    await expect(
+      page.getByRole("article", { name: /join request from resident/i }),
+    ).toBeVisible();
+  });
+});
