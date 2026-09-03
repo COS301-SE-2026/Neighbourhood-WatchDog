@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import asyncio
 import hashlib
 import sys
@@ -48,6 +47,10 @@ CAMERA_ZONE_ID = UUID("d0000000-0000-0000-0000-000000000001")
 JOIN_REQUEST_ID = UUID("90000000-0000-0000-0000-000000000001")
 APPROVED_REQUEST_ID = UUID("90000000-0000-0000-0000-000000000002")
 REJECTED_REQUEST_ID = UUID("90000000-0000-0000-0000-000000000003")
+
+FOURTH_USER_ID = UUID("20000000-0000-0000-0000-000000000004")
+FOURTH_PROPERTY_ID = UUID("30000000-0000-0000-0000-000000000004")
+DENY_TEST_REQUEST_ID = UUID("90000000-0000-0000-0000-000000000004")
 RISK_HISTORY_IDS = [
 	UUID("a0000000-0000-0000-0000-000000000001"),
 	UUID("a0000000-0000-0000-0000-000000000002"),
@@ -142,7 +145,14 @@ async def seed_test_database() -> None:
 			"e2e-officer-cognito-sub",
 			UserRole.SECURITY_OFFICER,
 		)
-		db.add_all([neighbourhood, primary_user, resident_user, officer_user])
+		deny_flow_user = _user(
+			FOURTH_USER_ID,
+			"e2e.deny-flow@example.com",
+			"E2E",
+			"DenyFlow",
+			"e2e-deny-flow-cognito-sub",
+		)
+		db.add_all([neighbourhood, primary_user, resident_user, officer_user, deny_flow_user])
 		await db.flush()
 
 		db.add_all(
@@ -165,9 +175,16 @@ async def seed_test_database() -> None:
 					address="67 Review Avenue\nPretoria\nGauteng\n0003",
 					property_type=PropertyTypeEnum.PUBLIC,
 				),
+				Property(
+					id=FOURTH_PROPERTY_ID,
+					neighbourhood_id=None,
+					address="89 Deny Flow Close\nPretoria\nGauteng\n0004",
+					property_type=PropertyTypeEnum.PRIVATE,
+				),
 				PropertyUser(user_id=USER_ID, property_id=PROPERTY_ID, is_admin=True),
 				PropertyUser(user_id=SECOND_USER_ID, property_id=SECOND_PROPERTY_ID, is_admin=True),
 				PropertyUser(user_id=OFFICER_USER_ID, property_id=OFFICER_PROPERTY_ID, is_admin=True),
+				PropertyUser(user_id=FOURTH_USER_ID, property_id=FOURTH_PROPERTY_ID, is_admin=True),
 				NeighbourhoodUser(
 					user_id=USER_ID,
 					neighbourhood_id=NEIGHBOURHOOD_ID,
@@ -312,6 +329,14 @@ async def seed_test_database() -> None:
 					status=JoinRequestStatus.REJECTED,
 					created_at=NOW - timedelta(days=6),
 					resolved_at=NOW - timedelta(days=5),
+				),
+				NeighbourhoodJoinRequest(
+					id=DENY_TEST_REQUEST_ID,
+					neighbourhood_id=NEIGHBOURHOOD_ID,
+					property_id=FOURTH_PROPERTY_ID,
+					user_id=FOURTH_USER_ID,
+					status=JoinRequestStatus.PENDING,
+					created_at=NOW - timedelta(hours=1),
 				),
 				AuditLog(
 					id=AUDIT_LOG_ID,
