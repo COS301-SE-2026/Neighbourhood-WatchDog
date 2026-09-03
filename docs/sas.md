@@ -40,7 +40,7 @@ The purpose of this document is to communicate the architectural structure of th
 - Services must support horizontal scalability where appropriate.
 
 ### 2.4 Architectural Diagram
-![Architecture Diagramv2](/docs/images/Architecture%20Diagramv2.drawio.svg)
+![Architecture Diagramv2](/docs/images/Architecture%20Diagramv3.svg)
 
 ### 2.5 Mapping Quality Requirements to Architectural Decisions
 |Quality Requirement|Architectural Decision|
