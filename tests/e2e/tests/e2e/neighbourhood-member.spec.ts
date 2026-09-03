@@ -12,7 +12,7 @@ test.describe("Neighbourhood members", () => {
   test("admin sees the members and their roles", async ({ page }) => {
     await page.setExtraHTTPHeaders({ "X-Mock-User-Id": ADMIN_USER_ID });
     await page.goto(
-      `/dashboard/properies/${NEIGHBOURHOOD_ID}/neighbourhood/members`,
+      `/dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/neighbourhood/members`,
     );
 
     await expect(page.getByLabel("Role for test user")).toHaveValue(
@@ -27,7 +27,7 @@ test.describe("Neighbourhood members", () => {
   test("non-admin cannot see the members page", async ({ page }) => {
     await page.setExtraHTTPHeaders({ "X-Mock-User-Id": OFFICER_USER_ID });
     await page.goto(
-      `/dashboard/properies/${NEIGHBOURHOOD_ID}/neighbourhood/members`,
+      `/dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/neighbourhood/members`,
     );
 
     await expect(
@@ -38,7 +38,7 @@ test.describe("Neighbourhood members", () => {
   test("admin changes another member's role", async ({ page }) => {
     await page.setExtraHTTPHeaders({ "X-Mock-User-Id": ADMIN_USER_ID });
     await page.goto(
-      `/dashboard/properies/${NEIGHBOURHOOD_ID}/neighbourhood/members`,
+      `/dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/neighbourhood/members`,
     );
 
     const roleSelect = page.getByLabel("Role for E2E Officer");
@@ -56,7 +56,7 @@ test.describe("Neighbourhood members", () => {
   }) => {
     await page.setExtraHTTPHeaders({ "X-Mock-User-Id": ADMIN_USER_ID });
     await page.goto(
-      "/dashboard/properies/${NEIGHBOURHOOD_ID}/neighbourhood/members",
+      "/dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/neighbourhood/members",
     );
 
     const roleSelect = page.getByLabel("Role for test User");
