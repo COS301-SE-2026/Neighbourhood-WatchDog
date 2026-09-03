@@ -1,23 +1,23 @@
-from typing import Annotated, List
+from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, HTTPException
+
+from app.auth.authorization import Claims, NeighbourhoodAdminClaims, is_property_admin
+from app.core.database import DbSession
 from app.schemas.neighbourhood import (
     CreateNeighbourhoodReq,
     CreateNeighbourhoodRes,
-    NeighbourhoodPropertyRes,
     NeighbourhoodMemberRes,
+    NeighbourhoodPropertyRes,
     UpdateMemberRoleReq,
-    UpdateMemberRoleRes
+    UpdateMemberRoleRes,
 )
-from app.core.database import DbSession
-from app.auth.dependencies import get_current_user
-from app.auth.dependencies import require_role
 from app.services.neighbourhood_service import (
     create_neighbourhood_handler,
-    get_neighbourhood_properties_service,
     get_neighbourhood_members_handler,
-    update_neighbourhood_member_role_handler
+    get_neighbourhood_properties_service,
+    update_neighbourhood_member_role_handler,
 )
 
 router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
@@ -36,10 +36,12 @@ router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
 async def create_neighbourhood(
     req: CreateNeighbourhoodReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Claims,
 ):
     """Create neighbourhood and return the neighbourhood that was created"""
-    require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN')
+    allowed = await is_property_admin(req.property_id, claims, db)
+    if not allowed:
+        raise HTTPException(status_code=403, detail="You do not have permission to create a neighbourhood for this property")
 
     new_neighbourhood = await create_neighbourhood_handler(name=req.name, location=req.location, property_id=req.property_id, db = db, claims = claims)
 
@@ -59,10 +61,9 @@ async def create_neighbourhood(
         403: {"description": "Insufficient permissions to access property"},
     },
 )
-async def get_neighbourhood_properties(db: DbSession, claims: Annotated[dict, Depends(get_current_user)] ):
+async def get_neighbourhood_properties(db: DbSession, claims: Claims ):
     """Get properties of all users with neighbour details"""
 
-    require_role("RESIDENT", "NEIGHBOURHOOD_ADMIN")
     
     properties = await get_neighbourhood_properties_service(db = db, claims = claims)
 
@@ -81,11 +82,10 @@ async def get_neighbourhood_properties(db: DbSession, claims: Annotated[dict, De
 async def get_neighbourhood_members(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: NeighbourhoodAdminClaims,
 ):
     """Get all members and their current roles for a neighbourhood."""
 
-    require_role("NEIGHBOURHOOD_ADMIN")
 
     members = await get_neighbourhood_members_handler(
         neighbourhood_id=neighbourhood_id,
@@ -118,11 +118,10 @@ async def update_neighbourhood_member_role(
     member_user_id: UUID,
     req: UpdateMemberRoleReq,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: NeighbourhoodAdminClaims,
 ):
     """Change a member's role in a neighbourhood."""
 
-    require_role("NEIGHBOURHOOD_ADMIN")
 
     updated_member = await update_neighbourhood_member_role_handler(
         neighbourhood_id=neighbourhood_id,

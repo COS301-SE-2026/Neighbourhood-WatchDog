@@ -1,14 +1,12 @@
-from app.core.database import DbSession
-from app.auth.dependencies import require_role
-from app.schemas.pairing_token import LinkPropertyTokenRes
-from app.schemas.pairing_token import EdgeAgentsCredentialsRes
-from app.services.pairing_token import get_pairing_token_handler, pair_agent_handler
-from app.auth.rate_limiter import limiter
-
-from typing import Annotated
 from uuid import UUID
-from fastapi import APIRouter, Depends, Request
 
+from fastapi import APIRouter, Request
+
+from app.auth.authorization import PropertyAdminClaims
+from app.auth.rate_limiter import limiter
+from app.core.database import DbSession
+from app.schemas.pairing_token import EdgeAgentsCredentialsRes, LinkPropertyTokenRes
+from app.services.pairing_token import get_pairing_token_handler, pair_agent_handler
 
 router = APIRouter(prefix="/pairing-token", tags=["pairing-token"])
 
@@ -29,7 +27,7 @@ async def get_pairing_token(
     request: Request,
     property_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(require_role('RESIDENT', 'NEIGHBOURHOOD_ADMIN'))],
+    claims: PropertyAdminClaims,
 ) -> LinkPropertyTokenRes:
     """Creates a pairing token and returns it to the user for the user to link their always on device."""
     return await get_pairing_token_handler(property_id, db, claims)

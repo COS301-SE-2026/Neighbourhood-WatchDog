@@ -1,13 +1,18 @@
 from datetime import datetime
 from uuid import UUID
-from typing import Annotated
-from fastapi import APIRouter, Depends, status
 
-from app.auth.dependencies import get_current_user, require_role
+from fastapi import APIRouter, status
+
+from app.auth.authorization import NeighbourhoodMemberClaims
 from app.core.database import DbSession
-from app.schemas.risk_score_history import NeighbourhoodRiskScoreHistoryRes, NeighbourhoodRiskScoreRes
-from app.services.risk_score_history_service import get_neighbourhood_score_handler, get_neighbourhood_score_history_handler
-
+from app.schemas.risk_score_history import (
+    NeighbourhoodRiskScoreHistoryRes,
+    NeighbourhoodRiskScoreRes,
+)
+from app.services.risk_score_history_service import (
+    get_neighbourhood_score_handler,
+    get_neighbourhood_score_history_handler,
+)
 
 router = APIRouter(prefix="/risk-score", tags=["risk-score"])
 
@@ -22,10 +27,9 @@ router = APIRouter(prefix="/risk-score", tags=["risk-score"])
         404: {"description": "No risk score calculated for this neighbourhood"},
     },
 )
-async def get_neighbourhood_score(neighbourhood_id: UUID, db: DbSession, claims: Annotated[dict, Depends(get_current_user)]):
+async def get_neighbourhood_score(neighbourhood_id: UUID, db: DbSession, claims: NeighbourhoodMemberClaims):
     """Get Risk Score for a Neighbourhood"""
 
-    require_role('NEIGHBOURHOOD_ADMIN', 'RESIDENT')
 
     neighbourhood_risk = await get_neighbourhood_score_handler(neighbourhood_id, db, claims)
 
@@ -46,10 +50,9 @@ async def get_neighbourhood_score(neighbourhood_id: UUID, db: DbSession, claims:
         404: {"description": "Neighbourhood does not have risk score history"},
     },
 )
-async def get_neighbourhood_score_history(neighbourhood_id: UUID, granularity: str,db: DbSession, claims: Annotated[dict, Depends(get_current_user)], start: datetime | None = None, end: datetime | None = None,):
+async def get_neighbourhood_score_history(neighbourhood_id: UUID, granularity: str,db: DbSession, claims: NeighbourhoodMemberClaims, start: datetime | None = None, end: datetime | None = None,):
     """Get Risk Score History of a Neighbourhood"""
 
-    require_role('RESIDENT','NEIGHBOURHOOD_ADMIN')
 
 
     neighbourhood_risk_history = await get_neighbourhood_score_history_handler(neighbourhood_id, granularity, db, claims, start, end)

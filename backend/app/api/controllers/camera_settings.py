@@ -1,30 +1,27 @@
-from typing import Annotated
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
-from app.auth.dependencies import get_current_user
-from app.auth.dependencies import require_role
-from app.core.database import DbSession
 
+from fastapi import APIRouter, HTTPException
+
+from app.auth.authorization import CameraAdminClaims
+from app.core.database import DbSession
 from app.schemas.camera_settings import (
     CameraSettingsResponse,
     CreateZoneRequest,
     UpdateCameraSettingsRequest,
+    UpdateCameraSettingsResponse,
     ZoneResponse,
-    UpdateCameraSettingsResponse
 )
-
 from app.services.camera_settings_service import (
     create_zone_handler,
     delete_zone_handler,
     get_camera_settings_handler,
-    update_camera_settings_handler
+    update_camera_settings_handler,
 )
-
 
 router = APIRouter(prefix="/cameras", tags=["camera-settings"])
 
 
-Claims = Annotated[dict, Depends(get_current_user)]
+# Claims = Annotated[dict, Depends(get_current_user)]
 
 
 @router.get(
@@ -37,10 +34,9 @@ Claims = Annotated[dict, Depends(get_current_user)]
         500: {"description": "Failed to retrieve camera settings"},
     },
 )
-async def get_settings(camera_id: UUID, db: DbSession, claims: Claims):
+async def get_settings(camera_id: UUID, db: DbSession, claims: CameraAdminClaims):
     """Getting the confidence threshold and detection zones for a camera"""
-    require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN")
-    return await get_camera_settings_handler(camera_id, db)
+    return await get_camera_settings_handler(camera_id, db, claims)
 
 
 @router.patch(
@@ -58,10 +54,9 @@ async def update_settings(
     camera_id: UUID,
     payload: UpdateCameraSettingsRequest,
     db: DbSession,
-    claims: Claims,
+    claims: CameraAdminClaims,
 ):
     """Updating the confidence threshold for a camera"""
-    require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN")
 
     if payload.confidence_threshold is None:
         raise HTTPException(400, "confidence_threshold is required")
@@ -81,10 +76,9 @@ async def create_zone(
     camera_id: UUID,
     payload: CreateZoneRequest,
     db: DbSession,
-    claims: Claims,
+    claims: CameraAdminClaims,
 ):
     """Adding a detection zone polygon to a camera"""
-    require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN")
     return await create_zone_handler(camera_id, payload.name, payload.polygon, db, claims)
 
 
@@ -102,8 +96,7 @@ async def delete_zone(
     camera_id: UUID,
     zone_id: UUID,
     db: DbSession,
-    claims: Claims,
+    claims: CameraAdminClaims,
 ):
     """Removing a detection zone from a camera"""
-    require_role("NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_ADMIN")
     return await delete_zone_handler(camera_id, zone_id, db, claims)

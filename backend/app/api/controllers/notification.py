@@ -1,14 +1,14 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
-from typing import Annotated
 
-from app.auth.dependencies import get_current_user
+from fastapi import APIRouter, HTTPException
+from sqlalchemy import select
+
+from app.auth.authorization import Claims
 from app.core.database import DbSession
 from app.models.alert import Alert
 from app.models.camera import Camera
 from app.models.notification import Notification
-from app.schemas.notification import NotificationRes, ListNotificationRes
+from app.schemas.notification import ListNotificationRes, NotificationRes
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 async def list_notifications_for_alert(
     alert_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Claims,
 ):
     role = claims.get("custom:role")
     if role not in ("NEIGHBOURHOOD_ADMIN", "SYSTEM_ADMIN", "SECURITY_OFFICER"):

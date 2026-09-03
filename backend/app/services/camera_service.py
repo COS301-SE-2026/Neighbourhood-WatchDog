@@ -4,14 +4,16 @@ from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.user import User
 from app.services.rtsp_encryption import encrypt_rtsp_url, decrypt_rtsp_url
-
+from app.services.camera_cache import invalidate_camera_caches
+from app.models.edge_agent_credentials import EdgeAgentCredential
+from datetime import datetime, timezone
 from app.services.audit_service import create_audit_log_item
 
 from fastapi import Response, status
 from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 from app.models.audit_log import AuditAction, TargetEntity
@@ -31,6 +33,21 @@ logger = logging.getLogger(__name__)
 
 NO_DB_SESSION = "No database session"
 NOT_AUTHENTICATED = "Not authenticated"
+EDGE_AGENT_TIMEOUT_SECONDS = float(os.getenv("FAILOVER_AGENT_TIMEOUT_SECONDS", "30"))
+
+
+def _edge_agent_is_available(last_seen_at: datetime | None) -> bool | None:
+    if last_seen_at is None:
+        return None
+
+    if last_seen_at.tzinfo is None:
+        last_seen_at = last_seen_at.replace(tzinfo=timezone.utc)
+
+    age_seconds = (datetime.now(timezone.utc) - last_seen_at).total_seconds()
+
+
+    return age_seconds <= EDGE_AGENT_TIMEOUT_SECONDS
+
 
 _CAMERA_PATH_PATTERN = re.compile(r"^cameras/([0-9a-fA-F-]{36})$")
 
@@ -104,6 +121,7 @@ async def register_camera_handler(req, db, claims):
 
         await db.commit()
         await db.refresh(new_camera)
+        await invalidate_camera_caches(new_camera.property_id)
 
         return CameraRes(
             id=new_camera.id,
@@ -149,7 +167,7 @@ async def deregister_camera_handler(camera_id, db, claims):
         if prop_user is None or getattr(getattr(prop_user, "user", None), "cognito_sub", None) != claims.get("sub"):
             raise HTTPException(status_code=403, detail="Forbidden")
 
-        
+        property_id = camera_obj.property_id
         old_values = {
             "property_id": str(camera_obj.property_id),
             "name": camera_obj.name,
@@ -169,6 +187,7 @@ async def deregister_camera_handler(camera_id, db, claims):
         )
 
         await db.commit()
+        await invalidate_camera_caches(property_id)
         
     except HTTPException as he:
         await db.rollback()
@@ -180,7 +199,7 @@ async def deregister_camera_handler(camera_id, db, claims):
         await db.rollback()
         raise HTTPException(500, "Failed to delete camera")
     
-async def edit_camera_handler(
+async def edit_camera_handler( 
     camera_id: UUID, 
     req: CameraEditReq,
     db: AsyncSession, 
@@ -244,6 +263,7 @@ async def edit_camera_handler(
 
         await db.commit()
         await db.refresh(camera_obj)
+        await invalidate_camera_caches(camera_obj.property_id)
 
         return CameraRes(
             id=camera_obj.id,
@@ -303,6 +323,21 @@ async def list_cameras_handler(property_id, db, claims):
     result = await db.execute(stmt)
     cameras = result.scalars().all()
 
+    heartbeat_result = await db.execute(
+        select(
+            EdgeAgentCredential.property_id, func.max(EdgeAgentCredential.last_seen_at).label("last_seen_at")
+        )
+        .where(
+            EdgeAgentCredential.property_id == prop_uuid, EdgeAgentCredential.revoked_at.is_(None)
+        )
+        .group_by(EdgeAgentCredential.property_id)
+    )
+
+    last_seen_by_property = {
+        property_id: last_seen_at
+        for property_id, last_seen_at in heartbeat_result.all()
+    }
+
     return CamerasRes(
         status=200,
         message="Cameras fetched successfully",
@@ -317,6 +352,7 @@ async def list_cameras_handler(property_id, db, claims):
                 location=c.location,
                 enabled=c.enabled,
                 created_at=c.created_at,
+                edge_agent_available=_edge_agent_is_available(last_seen_by_property.get(c.property_id))
             )
             for c in cameras
         ],

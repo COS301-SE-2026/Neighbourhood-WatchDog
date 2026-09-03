@@ -15,7 +15,10 @@ router = APIRouter(
     "/failover/cameras", 
     status_code=status.HTTP_200_OK
 )
-async def failover_cameras(db: DbSession, x_failover_token: Annotated[str | None, Header()] = None) -> FailoverCamerasRes:
+async def failover_cameras(
+    db: DbSession, 
+    x_failover_token: Annotated[str | None, Header()] = None,
+) -> FailoverCamerasRes:
 
     require_failover_controller_token(x_failover_token)
 

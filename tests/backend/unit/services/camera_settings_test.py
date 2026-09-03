@@ -11,6 +11,14 @@ from app.services.camera_settings_service import (
 )
 
 @pytest.fixture(autouse=True)
+def mock_invalidate_camera_caches():
+    with patch(
+        "app.services.camera_settings_service.invalidate_camera_caches",
+        new_callable=AsyncMock,
+    ) as mock_invalidate_camera_caches:
+        yield mock_invalidate_camera_caches
+
+@pytest.fixture(autouse=True)
 def mock_create_audit_log_item():
     """Prevent camera-settings unit tests from writing real audit records."""
     with patch(
@@ -51,6 +59,7 @@ def _make_db(camera=None, zones=None):
     db.flush = AsyncMock()
     db.refresh = AsyncMock()
     db.delete = AsyncMock()
+    db.scalar = AsyncMock(return_value=None)
     return db
 
 
@@ -83,7 +92,7 @@ async def test_get_settings_returns_threshold_and_zones():
 
     db.execute = AsyncMock(side_effect=[camera_result, zones_result])
 
-    result = await get_camera_settings_handler(CAMERA_ID, db)
+    result = await get_camera_settings_handler(CAMERA_ID, db, CLAIMS)
     assert result["confidence_threshold"] == pytest.approx(0.6)
     assert len(result["zones"]) == 1
     assert result["zones"][0]["name"] == "Test Zone"
@@ -93,7 +102,7 @@ async def test_get_settings_returns_threshold_and_zones():
 async def test_get_settings_camera_not_found():
     db = _make_db(camera=None)
     with pytest.raises(HTTPException) as exc:
-        await get_camera_settings_handler(CAMERA_ID, db)
+        await get_camera_settings_handler(CAMERA_ID, db, CLAIMS)
     assert exc.value.status_code == 404
 
 

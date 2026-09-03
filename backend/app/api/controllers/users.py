@@ -1,12 +1,21 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
-from typing import Annotated
+from fastapi import APIRouter
 
+from app.auth.authorization import Claims
 from app.core.database import DbSession
-from app.auth.dependencies import get_current_user
-from app.services.user_service import get_current_user_context_handler, get_current_user_settings_handler, get_user_by_id_handler, update_current_user_settings_handler
-from app.schemas.user import CurrentUserContextRes, GetUserResSchema, UpdateUserSettingsReq, UserSettingsResSchema
+from app.schemas.user import (
+    CurrentUserContextRes,
+    GetUserResSchema,
+    UpdateUserSettingsReq,
+    UserSettingsResSchema,
+)
+from app.services.user_service import (
+    get_current_user_context_handler,
+    get_current_user_settings_handler,
+    get_user_by_id_handler,
+    update_current_user_settings_handler,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -23,7 +32,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 async def get_user_by_id(
     user_id: UUID,
     db: DbSession,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Claims,
 ) -> GetUserResSchema:
     """Returns the id, email, cognito_sub, role and created_at of the user with the passed in id"""
     return await get_user_by_id_handler(
@@ -43,7 +52,7 @@ async def get_user_by_id(
     },
 )
 async def get_my_context(
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Claims,
     db: DbSession,
 ):
     """Returns the context of a user, for the properties and neighbourhoods"""
@@ -60,7 +69,7 @@ async def get_my_context(
     },
 )
 async def get_my_settings(
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Claims,
     db: DbSession,
 ):
     return await get_current_user_settings_handler(claims, db)
@@ -77,7 +86,7 @@ async def get_my_settings(
 )
 async def update_my_settings(
     data: UpdateUserSettingsReq,
-    claims: Annotated[dict, Depends(get_current_user)],
+    claims: Claims,
     db: DbSession,
 ):
     return await update_current_user_settings_handler(data, claims, db)

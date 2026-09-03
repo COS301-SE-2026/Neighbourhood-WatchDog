@@ -6,7 +6,7 @@ import requests
 from fastapi import HTTPException, Request
 
 from app.core.config import config
-from app.core.logging import logging
+from app.core.app_logging import logging
 
 JWKS_URL = (f"https://cognito-idp.{config.aws_region}.amazonaws.com/{config.cognito_user_pool_id}/.well-known/jwks.json") #get public keys from AWS to verify
 ISSUER = (f"https://cognito-idp.{config.aws_region}.amazonaws.com/{config.cognito_user_pool_id}") #did this JWT come from our user pool

@@ -19,6 +19,14 @@ def mock_audit():
     ):
         yield
 
+@pytest.fixture(autouse=True)
+def mock_invalidate_camera_caches():
+    with patch(
+        "app.services.camera_service.invalidate_camera_caches",
+        new_callable=AsyncMock,
+    ) as mock_invalidate_camera_caches:
+        yield mock_invalidate_camera_caches
+
 def make_mock_db():
     mock_db = Mock()
     mock_result = MagicMock()
@@ -189,6 +197,8 @@ class TestDeregisterCamera:
             self.mock_camera_result,
             self.mock_prop_user_result,
         ])
+
+        self.mock_db.refresh = AsyncMock()
 
         self.claims = {
             "id": str(uuid4()),
@@ -483,7 +493,7 @@ class TestEditCamera:
             req=self.mock_req,
             db=self.mock_db,
             claims=self.claims
-        )
+        ) 
 
         self.mock_db.refresh.assert_called_once_with(self.mock_camera)
 
