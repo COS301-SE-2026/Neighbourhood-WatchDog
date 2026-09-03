@@ -85,11 +85,13 @@ jobs:
               '.containerDefinitions[0].image = $IMAGE 
               | .containerDefinitions[0].secrets = (
                 (.containerDefinitions[0].secrets // [])
-                | map(select(.name != "FAILOVER_CONTROLLER_TOKEN" and .name != "GO2RTC_API_USERNAME" and .name != "GO2RTC_API_PASSWORD"))
+                | map(select(.name != "FAILOVER_CONTROLLER_TOKEN" and .name != "GO2RTC_API_USERNAME" and .name != "GO2RTC_API_PASSWORD" and .name != "SMTP_SENDER_EMAIL" and .name != "SMTP_APP_PASSWORD"))
                 + [
                     {"name": "FAILOVER_CONTROLLER_TOKEN", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:FAILOVER_CONTROLLER_TOKEN::"},
                     {"name": "GO2RTC_API_USERNAME", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:GO2RTC_API_USERNAME::"},
-                    {"name": "GO2RTC_API_PASSWORD", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:GO2RTC_API_PASSWORD::"}
+                    {"name": "GO2RTC_API_PASSWORD", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:GO2RTC_API_PASSWORD::"},
+                    {"name": "SMTP_SENDER_EMAIL", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:SMTP_SENDER_EMAIL::"},
+                    {"name": "SMTP_APP_PASSWORD", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:SMTP_APP_PASSWORD::"}
                   ]
               )
               | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
