@@ -1,22 +1,22 @@
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
-from app.core.database import DbSession
+
 from app.auth.authorization import CameraAdminClaims
+from app.core.database import DbSession
 from app.schemas.camera_settings import (
     CameraSettingsResponse,
     CreateZoneRequest,
     UpdateCameraSettingsRequest,
+    UpdateCameraSettingsResponse,
     ZoneResponse,
-    UpdateCameraSettingsResponse
 )
-
 from app.services.camera_settings_service import (
     create_zone_handler,
     delete_zone_handler,
     get_camera_settings_handler,
-    update_camera_settings_handler
+    update_camera_settings_handler,
 )
-
 
 router = APIRouter(prefix="/cameras", tags=["camera-settings"])
 

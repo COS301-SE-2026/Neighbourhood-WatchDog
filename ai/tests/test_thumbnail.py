@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 
 from ai.pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
 
-
 AI_DIR = Path(__file__).resolve().parents[1]
 
 load_dotenv(AI_DIR / ".env")

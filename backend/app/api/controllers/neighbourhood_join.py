@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, status
 
+from app.auth.authorization import Claims, NeighbourhoodAdminClaims
 from app.core.database import DbSession
 from app.schemas.neighbourhood_join import (
     JoinCodeRes,
@@ -19,7 +20,6 @@ from app.services.neighbourhood_join_service import (
     request_to_join_handler,
     resolve_join_request_handler,
 )
-from app.auth.authorization import Claims, NeighbourhoodAdminClaims
 
 router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
 

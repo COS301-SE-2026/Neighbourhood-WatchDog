@@ -1,21 +1,21 @@
-from fastapi import HTTPException
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-from sqlalchemy.exc import IntegrityError
+import logging
 from typing import List
 from uuid import UUID
-import logging
 
-from app.services.audit_service import create_audit_log_item
-from app.models.audit_log import AuditAction
-from app.models.user import User
-from app.models.property import Property, PropertyTypeEnum
-from app.models.property_user import PropertyUser
+from fastapi import HTTPException
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
+
+from app.auth.authorization import is_property_member
+from app.core.database import DbSession
+from app.models.audit_log import AuditAction, TargetEntity
 from app.models.camera import Camera
 from app.models.neighbourhood import Neighbourhood
-from app.core.database import DbSession
-from app.models.audit_log import TargetEntity
-from app.auth.authorization import is_property_member
+from app.models.property import Property, PropertyTypeEnum
+from app.models.property_user import PropertyUser
+from app.models.user import User
+from app.services.audit_service import create_audit_log_item
 
 logger = logging.getLogger(__name__)
 

@@ -1,14 +1,14 @@
+import logging
 from uuid import UUID
+
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.audit_log import AuditAction, TargetEntity
 from app.models.camera import Camera
 from app.models.camera_detection_zone import CameraDetectionZone
-
-import logging
-
 from app.services.audit_service import create_audit_log_item
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.audit_log import AuditAction, TargetEntity
 
 CAMERA_NOT_FOUND = "Camera not found"
 

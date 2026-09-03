@@ -2,21 +2,22 @@ from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
+
+from app.auth.authorization import Claims, NeighbourhoodAdminClaims, is_property_admin
+from app.core.database import DbSession
 from app.schemas.neighbourhood import (
     CreateNeighbourhoodReq,
     CreateNeighbourhoodRes,
-    NeighbourhoodPropertyRes,
     NeighbourhoodMemberRes,
+    NeighbourhoodPropertyRes,
     UpdateMemberRoleReq,
-    UpdateMemberRoleRes
+    UpdateMemberRoleRes,
 )
-from app.auth.authorization import Claims, NeighbourhoodAdminClaims, is_property_admin
-from app.core.database import DbSession
 from app.services.neighbourhood_service import (
     create_neighbourhood_handler,
-    get_neighbourhood_properties_service,
     get_neighbourhood_members_handler,
-    update_neighbourhood_member_role_handler
+    get_neighbourhood_properties_service,
+    update_neighbourhood_member_role_handler,
 )
 
 router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])

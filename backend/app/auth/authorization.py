@@ -1,7 +1,5 @@
 from typing import Annotated, Literal
 from uuid import UUID
-from app.auth.dependencies import require_role
-
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
@@ -10,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import (
     CUSTOM_ROLE_CLAIM,
     get_current_user,
+    require_role,
 )
 from app.core.database import DbSession
 from app.models.camera import Camera
@@ -20,7 +19,6 @@ from app.models.neighbourhood_user import (
 from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.user import User
-
 
 AdminPermission = Literal[
     "SYSTEM_ADMIN",

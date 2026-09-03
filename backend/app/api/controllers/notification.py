@@ -1,13 +1,15 @@
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 
+from app.auth.authorization import Claims
 from app.core.database import DbSession
 from app.models.alert import Alert
 from app.models.camera import Camera
 from app.models.notification import Notification
-from app.schemas.notification import NotificationRes, ListNotificationRes
-from app.auth.authorization import Claims
+from app.schemas.notification import ListNotificationRes, NotificationRes
+
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 @router.get(

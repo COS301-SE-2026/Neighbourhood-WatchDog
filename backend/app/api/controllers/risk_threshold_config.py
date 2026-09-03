@@ -1,10 +1,17 @@
 from uuid import UUID
+
 from fastapi import APIRouter, status
 
+from app.auth.authorization import NeighbourhoodAdminClaims, NeighbourhoodMemberClaims
 from app.core.database import DbSession
-from app.schemas.risk_threshold_config import NeighbourhoodRiskThresholdConfigRes, UpdateRiskThresholdConfigReq
-from app.services.risk_threshold_config_service import get_neighbourhood_risk_threshold_handler, update_neighbourhood_risk_threshold_handler
-from app.auth.authorization import NeighbourhoodMemberClaims, NeighbourhoodAdminClaims
+from app.schemas.risk_threshold_config import (
+    NeighbourhoodRiskThresholdConfigRes,
+    UpdateRiskThresholdConfigReq,
+)
+from app.services.risk_threshold_config_service import (
+    get_neighbourhood_risk_threshold_handler,
+    update_neighbourhood_risk_threshold_handler,
+)
 
 router = APIRouter(prefix="/risk-threshold", tags=["risk-threshold"])
 

@@ -10,13 +10,15 @@ It does contain RBAC:
 
 import os
 from datetime import datetime, timezone
-from botocore.config import Config as BotoConfig
+from uuid import UUID
+
 import boto3
+from botocore.config import Config as BotoConfig
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import APIRouter, HTTPException, status
-from uuid import UUID
 from sqlalchemy import select
 
+from app.auth.authorization import Claims
 from app.core.database import DbSession
 from app.models.alert import Alert
 from app.models.camera import Camera, CameraVisibilityEnum
@@ -24,7 +26,7 @@ from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
 from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.user import User, UserRole
-from app.auth.authorization import Claims
+
 router = APIRouter(prefix="/api/clips", tags=["clips"])
 
 #presigned url valid for 5 minutes

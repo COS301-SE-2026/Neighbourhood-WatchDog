@@ -1,34 +1,42 @@
 import asyncio
 import json
-from uuid import UUID
-from typing import Annotated
 from datetime import datetime
+from typing import Annotated
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query, WebSocket
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.auth.authorization import Claims, NeighbourhoodMemberClaims
 from app.auth.dependencies import get_authenticated_edge_agent
 from app.core.database import DbSession, get_db
-from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, BroadcastAlertReq, ListAlertsRes, Pagination
+from app.models.edge_agent_credentials import EdgeAgentCredential
+from app.schemas.alert import (
+    AcknowledgeAlertRes,
+    AlertCreate,
+    AlertFrequencyMetricsRes,
+    AlertMetricsRes,
+    AlertResponse,
+    BroadcastAlertReq,
+    ListAlertsRes,
+    Pagination,
+    TimeIntervalsEnum,
+    TimePeriod,
+    TrendGroupBy,
+    TrendResponse,
+)
+from app.services import alert_service
 from app.services.alert_service import (
+    DEFAULT_PAGE_SIZE,
+    MAX_PAGE_SIZE,
     acknowledge_alert_handler,
+    broadcast_neighbourhood_alert_service,
     get_alert_frequency_metrics_handler,
     get_response_metrics_handler,
     get_trends_handler,
     list_alerts_handler,
-    broadcast_neighbourhood_alert_service,
-    MAX_PAGE_SIZE,
-    DEFAULT_PAGE_SIZE,
 )
-from app.services import alert_service
-from app.schemas.alert import (
-    AlertMetricsRes,
-    AlertFrequencyMetricsRes,
-    TimeIntervalsEnum,
-    TimePeriod,
-    TrendResponse,
-    TrendGroupBy,
-)
-from app.models.edge_agent_credentials import EdgeAgentCredential
-from app.auth.authorization import Claims, NeighbourhoodMemberClaims
+
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 _connections: dict[str, set[WebSocket]] = {}

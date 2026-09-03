@@ -1,11 +1,22 @@
 from uuid import UUID
 
 from fastapi import APIRouter
-from app.auth.authorization import Claims
 
+from app.auth.authorization import Claims
 from app.core.database import DbSession
-from app.services.user_service import get_current_user_context_handler, get_current_user_settings_handler, get_user_by_id_handler, update_current_user_settings_handler
-from app.schemas.user import CurrentUserContextRes, GetUserResSchema, UpdateUserSettingsReq, UserSettingsResSchema
+from app.schemas.user import (
+    CurrentUserContextRes,
+    GetUserResSchema,
+    UpdateUserSettingsReq,
+    UserSettingsResSchema,
+)
+from app.services.user_service import (
+    get_current_user_context_handler,
+    get_current_user_settings_handler,
+    get_user_by_id_handler,
+    update_current_user_settings_handler,
+)
+
 router = APIRouter(prefix="/users", tags=["users"])
 
 

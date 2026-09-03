@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Query
 from datetime import datetime
 from typing import Annotated, Optional
 
+from fastapi import APIRouter, Query
+
+from app.auth.authorization import SystemAdminClaims
 from app.core.database import DbSession
 from app.schemas.audit_log import AuditAction, GetAuditLogsRes
 from app.services.audit_service import get_audit_logs_handler
-from app.auth.authorization import SystemAdminClaims
+
 PAGE = 1
 SIZE = 30
 
