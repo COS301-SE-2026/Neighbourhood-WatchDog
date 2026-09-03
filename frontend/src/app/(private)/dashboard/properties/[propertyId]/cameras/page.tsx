@@ -21,7 +21,7 @@ interface CameraProp {
     enabled: boolean
     location: string
     rtspUrl?: string;
-    edgeAgentAvailable?: boolean | null;
+
 }
 
 export default function PropertyCamerasPage() {
@@ -75,14 +75,11 @@ export default function PropertyCamerasPage() {
         };
 
         void loadCameras();
-        const refreshTimer = window.setInterval(() => {
-            void loadCameras();
-        }, 10000);
+
 
         return () => {
             cancelled = true;
 
-            window.clearInterval(refreshTimer);
         }
 
     }, [propertyId]);
