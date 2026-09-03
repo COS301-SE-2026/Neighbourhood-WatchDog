@@ -1,0 +1,11 @@
+name: watchdog-infra
+description: AI-assisted neighbourhood security platform
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-python
