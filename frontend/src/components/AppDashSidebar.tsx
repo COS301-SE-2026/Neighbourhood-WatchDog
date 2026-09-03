@@ -105,6 +105,11 @@ function getSidebarGroups(
                     icon: Camera,
                 },
                 {
+                    title: "Members",
+                    url: `${propertyBaseUrl}/members`,
+                    icon: Users,
+                },
+                {
                     title: "Property alerts",
                     url: `${propertyBaseUrl}/alerts`,
                     icon: BellRing,
