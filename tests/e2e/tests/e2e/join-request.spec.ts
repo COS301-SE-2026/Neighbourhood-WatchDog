@@ -1,4 +1,10 @@
-import { test, expect, NEIGHBOURHOOD_ID, ADMIN_USER_ID } from "./fixtures";
+import {
+  test,
+  expect,
+  NEIGHBOURHOOD_ID,
+  ADMIN_USER_ID,
+  RESIDENT_USER_ID,
+} from "./fixtures";
 
 test.describe("Join Requests", () => {
   test("lists the pending requests", async ({ page }) => {
