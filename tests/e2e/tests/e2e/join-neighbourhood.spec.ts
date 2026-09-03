@@ -15,7 +15,7 @@ test.describe("Join a neighbourhood", () => {
   test("valid join code submits a request", async ({ page }) => {
     await page.setExtraHTTPHeaders({ "X-Mock-User-Id": FREE_USER_ID });
     await page.goto(
-      `/dashboard/properies/${FREE_PROPERTY_ID}/neighbourhood/join`,
+      `/dashboard/properties/${FREE_PROPERTY_ID}/neighbourhood/join`,
     );
 
     await page.locator("#join-code").fill(NEIGHBOURHOOD_JOIN_CODE);
@@ -30,7 +30,7 @@ test.describe("Join a neighbourhood", () => {
   test("invalid join code shows an inline error", async ({ page }) => {
     await page.setExtraHTTPHeaders({ "X-Mock-User-Id": PENDING_USER_ID });
     await page.goto(
-      `/dashboard/properies/${PENDING_PROPERTY_ID}/neighbourhood/join`,
+      `/dashboard/properties/${PENDING_PROPERTY_ID}/neighbourhood/join`,
     );
 
     await page.locator("#join-code").fill("NOT-A-REAL-CODE");
@@ -46,7 +46,7 @@ test.describe("Join a neighbourhood", () => {
   }) => {
     await page.setExtraHTTPHeaders({ "X-Mock-User-Id": PENDING_USER_ID });
     await page.goto(
-      `/dashboard/properies/${PENDING_PROPERTY_ID}/neighbourhood/join`,
+      `/dashboard/properties/${PENDING_PROPERTY_ID}/neighbourhood/join`,
     );
 
     await page.locator("#join-code").fill(NEIGHBOURHOOD_JOIN_CODE);
@@ -62,7 +62,7 @@ test.describe("Join a neighbourhood", () => {
   }) => {
     await page.setExtraHTTPHeaders({ "X-Mock-User-Id": PENDING_USER_ID });
     await page.goto(
-      `/dashboard/properies/${MEMBER_PROPERTY_ID}/neighbourhood/join`,
+      `/dashboard/properties/${MEMBER_PROPERTY_ID}/neighbourhood/join`,
     );
 
     await page.locator("#join-code").fill(NEIGHBOURHOOD_JOIN_CODE);
