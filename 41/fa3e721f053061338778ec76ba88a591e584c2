@@ -1,0 +1,14 @@
+tests/backend/unit/services/camera_settings_test.py
+  h_cf6208e37032c0 95,105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "41fa3e721f053061338778ec76ba88a591e584c2",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
