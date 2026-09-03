@@ -1,0 +1,14 @@
+.github/workflows/ci.yml
+  h_cf6208e37032c0 197,219
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "81c1111f546d605110c3add93f3b32a2865e6416",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
