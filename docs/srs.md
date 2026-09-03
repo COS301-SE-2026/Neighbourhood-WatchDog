@@ -580,7 +580,6 @@ The quality requirements are derived directly from the non-functional requiremen
 
 ### Maintainability
 
-feature/display_alert_location
 ---
  
 ### Architectural Patterns
