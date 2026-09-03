@@ -11,6 +11,14 @@ from app.services.camera_settings_service import (
 )
 
 @pytest.fixture(autouse=True)
+def mock_invalidate_camera_caches():
+    with patch(
+        "app.services.camera_settings_service.invalidate_camera_caches",
+        new_callable=AsyncMock,
+    ) as mock_invalidate_camera_caches:
+        yield mock_invalidate_camera_caches
+
+@pytest.fixture(autouse=True)
 def mock_create_audit_log_item():
     """Prevent camera-settings unit tests from writing real audit records."""
     with patch(
@@ -51,6 +59,7 @@ def _make_db(camera=None, zones=None):
     db.flush = AsyncMock()
     db.refresh = AsyncMock()
     db.delete = AsyncMock()
+    db.scalar = AsyncMock(return_value=None)
     return db
 
 

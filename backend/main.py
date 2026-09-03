@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.logging import configure_logging
+from app.core.app_logging import configure_logging
 from app.core.config import config
 from app.auth.middleware import AuthMiddleware
 from app.api.controllers.auth import router as auth_router
