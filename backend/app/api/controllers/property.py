@@ -9,6 +9,7 @@ from app.schemas.property import CreatePropertyReq, CreatePropertyRes, PropertyR
 from app.services.property_service import (
     create_property_handler,
     get_property_details_handler,
+    get_property_members_handler,
     get_user_properties_handler,
 )
 
@@ -94,3 +95,13 @@ async def get_property_details(
 ):
     """Fetch property details including users, neighbourhood, and cameras"""
     return await get_property_details_handler(property_id, db, claims)
+
+@router.get("/{property_id}/members")
+async def get_property_members(
+    property_id: UUID,
+    db: DbSession,
+    claims: PropertyMemberClaims
+):
+    """Fetch property members"""
+
+    return await get_property_members_handler(property_id, db, claims)

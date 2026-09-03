@@ -15,6 +15,7 @@ from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property, PropertyTypeEnum
 from app.models.property_user import PropertyUser
 from app.models.user import User
+from app.schemas.property import PropertyMembers
 from app.services.audit_service import create_audit_log_item
 
 logger = logging.getLogger(__name__)
@@ -220,3 +221,43 @@ async def get_property_details_handler(property_id: UUID, db: DbSession, claims:
     except Exception as e:
         logger.error("get_property_details: exception raised.")
         raise HTTPException(500, f"Failed to fetch property details: {str(e)}")
+
+
+async def get_property_members_handler(property_id: UUID, db: DbSession, claims: dict) -> PropertyMembers:
+    """Fetch property members"""
+
+    if not claims:
+        logger.warning("get_user_properties: no claims found for request for user properties")
+        raise HTTPException(401, "Not authenticated")
+
+    try:
+        #get user by cognito_sub
+        stmt = select(User).where(User.cognito_sub == claims['sub'])
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            logger.warning("get_user_properties: no user found for cognito_sub=%s", claims['sub'])
+            raise HTTPException(404, "User not found")
+
+        stmt_prop = select(User).join(PropertyUser, PropertyUser.property_id == property_id)
+        result = await db.execute(stmt_prop)
+        users = result.scalars().all()
+
+        members = [
+            {
+                "user_id": user.id,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.email
+            }
+            for user in users
+        ]
+
+        return PropertyMembers(members=members)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Failed to fetch members: {str(e)}")
+        
