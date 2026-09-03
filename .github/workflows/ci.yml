@@ -194,7 +194,7 @@ jobs:
       - name: Type check backend
         run: cd backend && mypy . --ignore-missing-imports
 
-  security:
+  python-security:
     runs-on: ubuntu-latest
 
     steps:
@@ -217,3 +217,23 @@ jobs:
 
       - name: Check pip dependencies
         run: pip-audit
+
+  frontend-security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.9.0"
+
+      - name: Install pnpm
+        run: npm install -g pnpm@9
+
+      - name: Install frontend dependencies
+        run: cd frontend && pnpm install
+
+      - name: Run security check on dependencies
+        run: pnpm audit
