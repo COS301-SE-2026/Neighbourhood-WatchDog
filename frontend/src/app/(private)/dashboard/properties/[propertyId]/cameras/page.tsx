@@ -55,7 +55,6 @@ export default function PropertyCamerasPage() {
                         location: camera.location, 
                         visibility: camera.visibility, 
                         enabled: camera.enabled, 
-                        edgeAgentAvailable: camera.edge_agent_available
                     }))
                 );
                 setResolvedPropertyId(propertyId);
@@ -105,7 +104,6 @@ export default function PropertyCamerasPage() {
                     location: newCamera.location,
                     visibility: newCamera.visibility,
                     enabled: newCamera.enabled,
-                    edgeAgentAvailable: null
                 }
             ]);
             setShowCard(false);
@@ -223,7 +221,6 @@ export default function PropertyCamerasPage() {
                                     location={camera.location}
                                     visibility={camera.visibility}
                                     enabled={camera.enabled}
-                                    edgeAgentAvailable={camera.edgeAgentAvailable}
                                     userRole={activeContext.role === "Neighbourhood Admin" ? "NEIGHBOURHOOD_ADMIN" : "RESIDENT"}
                                     onDeleted={(deletedCameraId) => {
                                         setCameras((currentCameras) =>
