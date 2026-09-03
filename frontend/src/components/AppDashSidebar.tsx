@@ -73,15 +73,15 @@ function SidebarSkeleton() {
         <Sidebar collapsible="icon">
             <SidebarHeader>
                 <div className="flex items-center gap-3 px-1 py-2">
-                    <div className="size-9 shrink-0 rounded-md bg-white/5 animate-pulse" />
-                    <div className="h-4 w-32 rounded bg-white/5 animate-pulse" />
+                    <div className="size-9 shrink-0 rounded-md bg-brand-slate animate-pulse" />
+                    <div className="h-4 w-32 rounded bg-brand-slate animate-pulse" />
                 </div>
-                <div className="mt-3 h-16 w-full rounded-lg bg-white/[0.03] animate-pulse" />
+                <div className="mt-3 h-16 w-full rounded-lg bg-brand-depth animate-pulse" />
             </SidebarHeader>
             <SidebarContent>
                 <div className="space-y-2 px-3 py-4">
                     {Array.from({ length: 5 }).map((_, i) => (
-                        <div key={i} className="h-8 w-full rounded-md bg-white/5 animate-pulse" />
+                        <div key={i} className="h-8 w-full rounded-md bg-brand-slate animate-pulse" />
                     ))}
                 </div>
             </SidebarContent>
@@ -337,36 +337,36 @@ const AppDashSidebar = () => {
                             <DropdownMenuTrigger asChild>
                                 <button
                                     type="button"
-                                    className="mt-3 flex w-full items-start gap-2.5 rounded-lg border border-white/10 bg-white/[0.03] p-3 text-left transition-colors hover:bg-white/[0.06] group-data-[collapsible=icon]:hidden"
+                                    className="mt-3 flex w-full items-start gap-2.5 rounded-lg border border-border bg-brand-depth p-3 text-left transition-colors hover:bg-white/[0.06] group-data-[collapsible=icon]:hidden"
                                 >
-                                    <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-emerald-500/10">
-                                        <ActiveContextIcon className="size-3.5 text-emerald-400" />
+                                    <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-brand-green/10">
+                                        <ActiveContextIcon className="size-3.5 text-brand-green-400" />
                                     </div>
 
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-[10px] font-medium uppercase tracking-wider text-white/40">
+                                        <p className="text-[10px] font-medium uppercase tracking-wider text-brand-frost/40">
                                             Viewing
                                         </p>
 
-                                        <p className="mt-1 truncate text-sm font-medium text-white">
+                                        <p className="mt-1 truncate text-sm font-medium text-brand-frost">
                                             {activeContext.name}
                                         </p>
 
-                                        <p className="mt-0.5 truncate text-xs text-white/50">
+                                        <p className="mt-0.5 truncate text-xs text-brand-frost/50">
                                             {activeContextDescription}
                                         </p>
                                     </div>
 
-                                    <ChevronDown className="mt-1 size-4 shrink-0 text-white/40" />
+                                    <ChevronDown className="mt-1 size-4 shrink-0 text-brand-frost/40" />
                                 </button>
                             </DropdownMenuTrigger>
 
                             <DropdownMenuContent
                                 align="start"
                                 side="bottom"
-                                className="w-72 border-white/10 bg-zinc-950 p-1.5 text-white"
+                                className="w-72 border-border bg-brand-abyss p-1.5 text-brand-frost"
                             >
-                                <DropdownMenuLabel className="px-2 py-2 text-xs font-medium uppercase tracking-wider text-white/40">
+                                <DropdownMenuLabel className="px-2 py-2 text-xs font-medium uppercase tracking-wider text-brand-frost/40">
                                     Switch location
                                 </DropdownMenuLabel>
 
@@ -383,24 +383,24 @@ const AppDashSidebar = () => {
                                         <DropdownMenuItem
                                             key={context.id}
                                             onSelect={() => selectContext(context)}
-                                            className={`flex cursor-pointer items-start gap-3 rounded-md px-2 py-2.5 focus:text-white ${
+                                            className={`flex cursor-pointer items-start gap-3 rounded-md px-2 py-2.5 focus:text-brand-frost ${
                                                 isActive
-                                                    ? "bg-emerald-500/10 focus:bg-emerald-500/15"
+                                                    ? "bg-brand-green/10 focus:bg-brand-green/15"
                                                     : ""
                                             }`}
                                         >
                                             <div
                                                 className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md ${
                                                     isActive
-                                                        ? "bg-emerald-500/15"
-                                                        : "bg-white/5"
+                                                        ? "bg-brand-green/15"
+                                                        : "bg-brand-slate"
                                                 }`}
                                             >
                                                 <ContextIcon
                                                     className={`size-3.5 ${
                                                         isActive
-                                                            ? "text-emerald-400"
-                                                            : "text-white/60"
+                                                            ? "text-brand-green-400"
+                                                            : "text-brand-frost/60"
                                                     }`}
                                                 />
                                             </div>
@@ -410,13 +410,13 @@ const AppDashSidebar = () => {
                                                     {context.name}
                                                 </p>
 
-                                                <p className="mt-0.5 truncate text-xs text-white/50">
+                                                <p className="mt-0.5 truncate text-xs text-brand-frost/50">
                                                     {contextDescription}
                                                 </p>
                                             </div>
 
                                             {isActive && (
-                                                <Check className="mt-1 size-4 shrink-0 text-emerald-400" />
+                                                <Check className="mt-1 size-4 shrink-0 text-brand-green-400" />
                                             )}
                                         </DropdownMenuItem>
                                     );
@@ -426,7 +426,7 @@ const AppDashSidebar = () => {
 
                                 <DropdownMenuItem
                                     onSelect={() => setDialogOpen(true)}
-                                    className="cursor-pointer gap-2 rounded-md px-2 py-2.5 text-emerald-400 focus:bg-emerald-500/10 focus:text-emerald-300"
+                                    className="cursor-pointer gap-2 rounded-md px-2 py-2.5 text-brand-green-400 focus:bg-brand-green/10 focus:text-brand-green-300"
                                 >
                                     <Plus className="size-4" />
                                     Add property
@@ -437,13 +437,13 @@ const AppDashSidebar = () => {
                         <button
                             type="button"
                             onClick={() => setDialogOpen(true)}
-                            className="mt-3 w-full rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] p-3 text-left transition-colors hover:bg-emerald-500/[0.1] group-data-[collapsible=icon]:hidden"
+                            className="mt-3 w-full rounded-lg border border-emerald-500/20 bg-brand-green/[0.06] p-3 text-left transition-colors hover:bg-brand-green/[0.1] group-data-[collapsible=icon]:hidden"
                         >
-                            <p className="text-sm font-medium text-white">
+                            <p className="text-sm font-medium text-brand-frost">
                                 Create your first property
                             </p>
 
-                            <p className="mt-1 text-xs text-white/50">
+                            <p className="mt-1 text-xs text-brand-frost/50">
                                 Add a property to start using WatchDog.
                             </p>
                         </button>
@@ -483,21 +483,21 @@ const AppDashSidebar = () => {
                         </SidebarGroup>
                     ))}
                 </SidebarContent>
-                <SidebarFooter className="border-t border-white/10 px-5 py-4 group-data-[collapsible=icon]:px-2">
+                <SidebarFooter className="border-t border-border px-5 py-4 group-data-[collapsible=icon]:px-2">
                     <div
                         title={`${authUser?.fullname ?? ""}`}
                         className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center"
                     >
-                        <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10">
-                            <User className="size-4 text-emerald-400" />
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-brand-green/10">
+                            <User className="size-4 text-brand-green-400" />
                         </div>
                         <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-                            <p className="truncate text-sm font-medium text-white">
+                            <p className="truncate text-sm font-medium text-brand-frost">
                                 {authUser?.fullname}
                             </p>
 
 
-                            <p className="truncate text-[11px] text-white/35">
+                            <p className="truncate text-[11px] text-brand-frost/35">
                                 {footerContextLabel}
                             </p>
 
