@@ -37,7 +37,7 @@ test.describe("Join a neighbourhood", () => {
   test("invalid join code shows an inline error", async ({ page }) => {
     await page.setExtraHTTPHeaders(mockAuthHeaders(PENDING_USER_ID));
     await page.goto(
-      "/dashboard/properies/${FREE_PROPERTY_ID/neighbourhood/join",
+      "/dashboard/properies/${PENDING_PROPERTY_ID/neighbourhood/join",
     );
 
     await page.locator("#join-code").fill("NOT-A-REAL-CODE");
@@ -45,6 +45,22 @@ test.describe("Join a neighbourhood", () => {
 
     await expect(page.locator("#join-code-error")).toContainText(
       /invalid join code/i,
+    );
+  });
+
+  test("a property with a pending request cannot submit another", async ({
+    page,
+  }) => {
+    await page.setExtraHTTPHeaders(mockAuthHeaders(PENDING_USER_ID));
+    await page.goto(
+      "/dashboard/properies/${PENDING_PROPERTY_ID/neighbourhood/join",
+    );
+
+    await page.locator("#join-code").fill(NEIGHBOURHOOD_JOIN_CODE);
+    await page.getByRole("button", { name: /request to join/i }).click();
+
+    await expect(page.locator("#join-code-error")).toContainText(
+      /already have a pending request/i,
     );
   });
 });
