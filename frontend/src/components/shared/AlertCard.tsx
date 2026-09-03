@@ -50,7 +50,7 @@ const AlertLocationMap = dynamic<AlertLocationMapProps>(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-48 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-xs text-white/40">
+      <div className="flex h-48 items-center justify-center rounded-lg border border-border bg-brand-slate text-xs text-brand-ash/70">
         Loading map…
       </div>
     )
@@ -96,22 +96,22 @@ export function getSeverity(detection_type?: string | null): AlertSeverity {
 
 const SEVERITY_CONFIG: Record<AlertSeverity, { bg: string; label: string; icon: ReactNode }> = {
   CRITICAL: {
-    bg: "bg-red-600 text-white",
+    bg: "bg-brand-threat text-brand-frost",
     label: "Critical",
     icon: <ShieldAlert className="h-3 w-3" />,
   },
   HIGH: {
-    bg: "bg-amber-600 text-white",
+    bg: "bg-brand-caution text-brand-void",
     label: "High",
     icon: <AlertTriangle className="h-3 w-3" />,
   },
   MEDIUM: {
-    bg: "bg-sky-600 text-white",
+    bg: "bg-brand-pulse text-brand-frost",
     label: "Medium",
     icon: <Info className="h-3 w-3" />,
   },
   LOW: {
-    bg: "bg-emerald-600 text-white",
+    bg: "bg-brand-green text-brand-void",
     label: "Low",
     icon: <CheckCircle2 className="h-3 w-3" />,
   },
@@ -119,20 +119,20 @@ const SEVERITY_CONFIG: Record<AlertSeverity, { bg: string; label: string; icon: 
 
 const STATUS_CONFIG: Record<AlertStatus, { bg: string; textColor: string; label: string; icon: ReactNode }> = {
   NEW: {
-    bg: "bg-sky-500/15 border border-sky-500/40",
-    textColor: "text-sky-400",
+    bg: "bg-brand-pulse/15 border border-brand-pulse/40",
+    textColor: "text-brand-pulse",
     label: "New",
     icon: <Activity className="h-3 w-3" />,
   },
   ACKNOWLEDGED: {
-    bg: "bg-white/5 border border-white/15",
-    textColor: "text-white/50",
+    bg: "bg-brand-slate border border-brand-gunmetal/20",
+    textColor: "text-brand-ash",
     label: "Acknowledged",
     icon: <CheckCheck className="h-3 w-3" />,
   },
   RESOLVED: {
-    bg: "bg-emerald-500/15 border border-emerald-500/40",
-    textColor: "text-emerald-400",
+    bg: "bg-brand-green/15 border border-brand-green/40",
+    textColor: "text-brand-green",
     label: "Resolved",
     icon: <CheckCircle2 className="h-3 w-3" />,
   },
@@ -219,24 +219,24 @@ function AlertDetailSheet({
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
         side="right"
-        className="w-full max-w-md border-l border-white/10 bg-black text-white"
+        className="w-full max-w-md border-l border-border bg-brand-void text-brand-frost"
       >
         <SheetHeader className="mb-6">
           <div className="flex items-center gap-2 mb-1">
             <SeverityBadge severity={severity} />
             <StatusBadge status={alert.status} />
           </div>
-          <SheetTitle className="text-white text-xl font-semibold leading-7">
+          <SheetTitle className="text-brand-frost text-xl font-semibold leading-7">
             {detectionLabel(alert.detection_type)}
           </SheetTitle>
-          <SheetDescription className="text-white/45 text-sm">
+          <SheetDescription className="text-brand-ash text-sm">
             Full alert details
           </SheetDescription>
         </SheetHeader>
 
         <div className="space-y-4">
           {alert.thumbnail_url ? (
-            <div className="relative rounded-lg overflow-hidden border border-white/10">
+            <div className="relative rounded-lg overflow-hidden border border-border">
               <Image
                 src={alert.thumbnail_url}
                 alt="Detection thumbnail"
@@ -247,9 +247,9 @@ function AlertDetailSheet({
               />
             </div>
           ) : (
-            <div className="rounded-lg border border-white/10 bg-white/5 h-40 flex items-center justify-center gap-2">
-              <Camera className="h-8 w-8 text-emerald-400 opacity-50" />
-              <span className="text-sm text-white/35">No thumbnail</span>
+            <div className="rounded-lg border border-border bg-brand-slate h-40 flex items-center justify-center gap-2">
+              <Camera className="h-8 w-8 text-brand-green opacity-50" />
+              <span className="text-sm text-brand-ash/60">No thumbnail</span>
             </div>
           )}
 
@@ -261,24 +261,24 @@ function AlertDetailSheet({
 
           )}
 
-          <Separator className="bg-white/10" />
+          <Separator className="bg-brand-slate" />
 
           <section aria-labelledby="alert-location-heading" className="space-y-3">
             <div>
-              <h3 id="alert-location-heading" className="text-sm font-semibold text-white">
+              <h3 id="alert-location-heading" className="text-sm font-semibold text-brand-frost">
                 Event location
               </h3>
-              <p className="mt-1 text-xs text-white/45">
+              <p className="mt-1 text-xs text-brand-ash">
                 Location inherited from the property connected to this camera.
               </p>
             </div>
 
             {alert.property_address ? (
-              <p className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
+              <p className="rounded-md border border-border bg-brand-slate px-3 py-2 text-sm text-brand-frost">
                 {alert.property_address}
               </p>
             ) : (
-              <p className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/45">
+              <p className="rounded-md border border-border bg-brand-slate px-3 py-2 text-sm text-brand-ash">
                 Property address is unavailable.
               </p>
             )}
@@ -291,14 +291,14 @@ function AlertDetailSheet({
             ) : (
               <p
                 role="status"
-                className="rounded-md border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-xs text-amber-200"
+                className="rounded-md border border-brand-caution/20 bg-brand-caution/10 px-3 py-2 text-xs text-brand-caution"
               >
                 Map unavailable because this property has no saved coordinates. The property address remains available above.
               </p>
             )}
           </section>
 
-          <Separator className="bg-white/10" />
+          <Separator className="bg-brand-slate" />
 
           <div className="space-y-3">
             <MetaRow label="Alert ID" value={alert.id} mono />
@@ -332,11 +332,11 @@ function AlertDetailSheet({
             )}
           </div>
 
-          <Separator className="bg-white/10" />
+          <Separator className="bg-brand-slate" />
 
           {onAcknowledge && isNew && (
             <Button
-              className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+              className="w-full bg-brand-green hover:bg-brand-green text-brand-void font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2 focus-visible:ring-offset-brand-void"
               onClick={() => onAcknowledge(alert.id)}
               disabled={acknowledging}
               aria-label="Acknowledge this alert"
@@ -371,11 +371,11 @@ function MetaRow({
 }) {
   return (
     <div className="flex justify-between gap-4">
-      <span className="text-xs font-medium text-white/45 shrink-0">
+      <span className="text-xs font-medium text-brand-ash shrink-0">
         {label}
       </span>
       <span
-        className={`text-xs text-white text-right break-all ${mono ? "font-mono" : ""}`}
+        className={`text-xs text-brand-frost text-right break-all ${mono ? "font-mono" : ""}`}
       >
         {value}
       </span>
@@ -424,12 +424,12 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
       <Card
         className={[
           "relative flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-xl border transition-all duration-200",
-          "bg-[#101011] border-white/10",
+          "bg-brand-depth border-border",
           isNew
-            ? "hover:border-emerald-500/50 hover:shadow-md"
+            ? "hover:border-brand-green/50 hover:shadow-md"
             : "opacity-80 hover:opacity-100",
           isCritical && isNew
-            ? "border-red-400/40"
+            ? "border-brand-threat/40"
             : "",
         ]
           .filter(Boolean)
@@ -443,20 +443,20 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
             <SeverityBadge severity={severity} />
             <StatusBadge status={alert.status} />
           </div>
-          <p className="text-base font-semibold text-white leading-snug truncate">
+          <p className="text-base font-semibold text-brand-frost leading-snug truncate">
             {detectionLabel(alert.detection_type)}
           </p>
           <div className="flex flex-wrap items-center gap-3 mt-1">
-            <span className="flex items-center gap-1 text-xs text-white/45 font-mono">
+            <span className="flex items-center gap-1 text-xs text-brand-ash font-mono">
               <Camera className="h-3 w-3" />
               {alert.camera_id.slice(0, 8)}…
             </span>
             {alert.confidence_score != null && (
-              <span className="text-xs text-white/45 font-mono">
+              <span className="text-xs text-brand-ash font-mono">
                 {(alert.confidence_score * 100).toFixed(0)}% confidence
               </span>
             )}
-            <span className="flex items-center gap-1 text-xs text-white/40 font-mono">
+            <span className="flex items-center gap-1 text-xs text-brand-ash/70 font-mono">
               <Clock className="h-3 w-3" />
               {timeAgo(alert.created_at)}
             </span>
@@ -470,7 +470,7 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-emerald-400 hover:bg-white/5 hover:text-white text-xs font-medium transition-colors duration-100"
+                className="text-brand-green hover:bg-brand-slate hover:text-brand-frost text-xs font-medium transition-colors duration-100"
                 onClick={() => setDetailOpen(true)}
                 aria-label="View alert details"
               >
@@ -487,7 +487,7 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-red-400/40 text-red-400 hover:bg-red-500 hover:text-white text-xs font-semibold transition-colors duration-100"
+                  className="border-brand-threat/40 text-brand-threat hover:bg-brand-threat hover:text-brand-frost text-xs font-semibold transition-colors duration-100"
                   onClick={handleBroadcast}
                   disabled={broadcasting}
                   aria-label="Broadcast alert to the neighbourhood"
@@ -516,7 +516,7 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
               <TooltipTrigger asChild>
                 <Button
                   size="sm"
-                  className="bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-semibold transition-colors duration-100 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#101011]"
+                  className="bg-brand-green hover:bg-brand-green text-brand-void text-xs font-semibold transition-colors duration-100 focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2 focus-visible:ring-offset-brand-depth"
                   onClick={() => handleAcknowledge(alert.id)}
                   disabled={acknowledging || broadcasting}
                   aria-label="Acknowledge alert"

@@ -51,16 +51,16 @@ export function ConfirmCard({
   return (
     <Card
       className={cn(
-        "w-full max-w-lg sm:max-w-xl p-2 sm:p-4 rounded-2xl border border-navy/12 bg-white/95 shadow-xl backdrop-blur",
+        "w-full max-w-lg sm:max-w-xl p-2 sm:p-4 rounded-2xl border border-brand-gunmetal/20 bg-brand-depth shadow-xl backdrop-blur",
         className
       )}
     >
       <CardHeader className="space-y-3">
-        <CardTitle className="text-[2rem] sm:text-[2.5rem] font-bold tracking-tight text-navy">
+        <CardTitle className="text-[2rem] sm:text-[2.5rem] font-bold tracking-tight text-brand-frost">
           Verify Your Email
         </CardTitle>
 
-        <CardDescription className="text-base text-body">
+        <CardDescription className="text-base text-brand-ash">
           Enter the 6-digit confirmation code sent to your email
         </CardDescription>
 
@@ -76,21 +76,21 @@ export function ConfirmCard({
       <CardContent className="space-y-6">
         {/* Success message for confirmation */}
         {success && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+          <div className="bg-brand-green/10 border border-brand-green/40 text-brand-green px-4 py-3 rounded-lg text-sm">
             Email confirmed successfully! Redirecting to login...
           </div>
         )}
 
         {/* Success message for resend */}
         {resendSuccess && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+          <div className="bg-brand-green/10 border border-brand-green/40 text-brand-green px-4 py-3 rounded-lg text-sm">
             New confirmation code sent to your email!
           </div>
         )}
 
         {/* Error display */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          <div className="bg-brand-threat/10 border border-brand-threat/40 text-brand-threat px-4 py-3 rounded-lg text-sm">
             {error}
           </div>
         )}
@@ -143,7 +143,7 @@ export function ConfirmCard({
           type="button"
           onClick={onSubmit}
           disabled={isLoading || success}
-          className="w-full h-11 text-base font-medium bg-navy text-white hover:bg-steel transition-colors"
+          className="w-full h-11 text-base font-medium bg-brand-abyss text-brand-frost hover:bg-brand-slate transition-colors"
         >
           {isLoading ? (
             <>
@@ -167,7 +167,7 @@ export function ConfirmCard({
             onClick={onResendCode}
             disabled={isLoading || isResending || success}
             variant="link"
-            className="text-sm text-sky-600 hover:text-sky-800"
+            className="text-sm text-brand-pulse hover:text-brand-ice"
           >
             {isResending ? (
               <>

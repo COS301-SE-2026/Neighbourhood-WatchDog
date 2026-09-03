@@ -61,9 +61,9 @@ export default function NeighbourhoodSetupPage() {
 
     if (isLoadingProperty) {
         return (
-            <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+            <main className="min-h-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
                 <div className="flex min-h-64 items-center justify-center">
-                    <Loader2 className="size-5 animate-spin text-emerald-400" />
+                    <Loader2 className="size-5 animate-spin text-brand-green" />
                 </div>
             </main>
         );
@@ -71,18 +71,18 @@ export default function NeighbourhoodSetupPage() {
 
     if (!activeContext) {
         return (
-            <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+            <main className="min-h-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
                 <div className="mx-auto max-w-3xl">
                     <Link
                         href="/dashboard"
-                        className="inline-flex items-center gap-2 text-sm text-white/45 transition-colors hover:text-white"
+                        className="inline-flex items-center gap-2 text-sm text-brand-ash transition-colors hover:text-brand-frost"
                     >
                         <ArrowLeft className="size-4" />
                         Back to property
                     </Link>
 
-                    <header className="mt-8 border-b border-white/10 pb-7">
-                        <p className="text-sm text-emerald-400">
+                    <header className="mt-8 border-b border-border pb-7">
+                        <p className="text-sm text-brand-green">
                             Neighbourhood setup
                         </p>
 
@@ -90,7 +90,7 @@ export default function NeighbourhoodSetupPage() {
                             Create a neighbourhood
                         </h1>
 
-                        <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/50">
+                        <p className="mt-2 max-w-xl text-sm leading-relaxed text-brand-ash">
                             Select a property before creating a neighbourhood.
                         </p>
                     </header>
@@ -100,44 +100,44 @@ export default function NeighbourhoodSetupPage() {
     }
 
     return (
-        <main className="min-h-full bg-black px-6 py-7 text-white md:px-8">
+        <main className="min-h-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
             <div className="max-w-full">
-                <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-white/45 transition-colors hover:text-white">
+                <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-brand-ash transition-colors hover:text-brand-frost">
                     <ArrowLeft className="size-4" />
                     Back to property
                 </Link>
 
-                <header className="mt-8 border-b border-white/10 pb-7">
-                    <p className="text-sm text-emerald-400">
+                <header className="mt-8 border-b border-border pb-7">
+                    <p className="text-sm text-brand-green">
                         Neighbourhood setup
                     </p>
 
-                    <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white">
+                    <h1 className="mt-2 text-2xl font-semibold tracking-tight text-brand-frost">
                         Create a neighbourhood
                     </h1>
 
-                    <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/50">
+                    <p className="mt-2 max-w-xl text-sm leading-relaxed text-brand-ash">
                         Start a neighbourhood from this property. You can add 
                         neighbouring properties and residents after setup.
                     </p>
                 </header>
 
-                <section className="border-b border-white/10 py-6">
-                    <p className="text-xs font-medium uppercase tracking-wider text-white/40">
+                <section className="border-b border-border py-6">
+                    <p className="text-xs font-medium uppercase tracking-wider text-brand-ash/70">
                         Starting property
                     </p>
 
                     <div className="mt-3 flex items-start gap-3">
-                        <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-emerald-500/10">
-                            <MapPin className="size-4 text-emerald-400" />
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-brand-green/10">
+                            <MapPin className="size-4 text-brand-green" />
                         </div>
 
                         <div>
-                            <p className="text-sm font-medium text-white">
+                            <p className="text-sm font-medium text-brand-frost">
                                 {activeContext.address}
                             </p>
 
-                            <p className="mt-2 text-xs text-white/40">
+                            <p className="mt-2 text-xs text-brand-ash/70">
                                 This property will become the first property in
                                 the new neighbourhood.
                             </p>
@@ -148,10 +148,10 @@ export default function NeighbourhoodSetupPage() {
                 <form onSubmit={handleSubmit}>
                     <section className="py-7">
                         <div className="mb-5">
-                            <h2 className="text-base font-semibold text-white">
+                            <h2 className="text-base font-semibold text-brand-frost">
                                 Neighbourhood details
                             </h2>
-                            <p className="mt-1 text-sm text-white/45">
+                            <p className="mt-1 text-sm text-brand-ash">
                                 Choose a name residents will recognise.
                             </p>
                         </div>
@@ -159,7 +159,7 @@ export default function NeighbourhoodSetupPage() {
                             <div>
                                 <label
                                     htmlFor="neighbourhood-name"
-                                    className="text-sm font-medium text-white"
+                                    className="text-sm font-medium text-brand-frost"
                                 >
                                     Neighbourhood name
                                 </label>
@@ -170,9 +170,9 @@ export default function NeighbourhoodSetupPage() {
                                         setNeighbourhoodName(event.target.value)
                                     }
                                     placeholder="e.g. Brook Street Residents"
-                                    className="mt-2 h-10 w-full rounded-md border border-white/10 bg-zinc-950 px-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-emerald-500/60"
+                                    className="mt-2 h-10 w-full rounded-md border border-border bg-brand-abyss px-3 text-sm text-brand-frost outline-none placeholder:text-brand-ash/60 focus:border-brand-green/60"
                                 />
-                                <p className="mt-2 text-xs text-white/40">
+                                <p className="mt-2 text-xs text-brand-ash/70">
                                     This name will appear in resident workspaces and
                                     neighbourhood communications.
                                 </p>
@@ -180,7 +180,7 @@ export default function NeighbourhoodSetupPage() {
                             <div>
                                 <label
                                     htmlFor="neighbourhood-location"
-                                    className="text-sm font-medium text-white"
+                                    className="text-sm font-medium text-brand-frost"
                                 >
                                     Location
                                 </label>
@@ -191,14 +191,14 @@ export default function NeighbourhoodSetupPage() {
                                         setLocation(event.target.value)
                                     }
                                     placeholder="e.g. Brooklyn"
-                                    className="mt-2 h-10 w-full rounded-md border border-white/10 bg-zinc-950 px-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-emerald-500/60"
+                                    className="mt-2 h-10 w-full rounded-md border border-border bg-brand-abyss px-3 text-sm text-brand-frost outline-none placeholder:text-brand-ash/60 focus:border-brand-green/60"
                                 />
                             </div>
                         </div>
                     </section>
-                    <section className="border-t border-white/10 pt-6">
+                    <section className="border-t border-border pt-6">
                         <div className="flex items-start gap-3">
-                            <p className="text-sm leading-relaxed text-white/50">
+                            <p className="text-sm leading-relaxed text-brand-ash">
                                 You will become the first neighbourhood administrator.
                                 You can then invite residents and review join requests.
                             </p>
@@ -206,14 +206,14 @@ export default function NeighbourhoodSetupPage() {
                         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                             <Link
                                 href="/dashboard"
-                                className="inline-flex h-9 items-center justify-center rounded-md px-3.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+                                className="inline-flex h-9 items-center justify-center rounded-md px-3.5 text-sm font-medium text-brand-ash transition-colors hover:bg-brand-slate hover:text-brand-frost"
                             >
                                 Cancel
                             </Link>
                             <button
                                 type="submit"
                                 disabled={isCreating || !neighbourhoodName.trim() || !location.trim()}
-                                className="inline-flex h-9 items-center justify-center rounded-md bg-emerald-500 px-3.5 text-sm font-medium text-black transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/30 disabled:text-black/50"
+                                className="inline-flex h-9 items-center justify-center rounded-md bg-brand-green px-3.5 text-sm font-medium text-brand-void transition-colors hover:bg-brand-green disabled:cursor-not-allowed disabled:bg-brand-green/30 disabled:text-brand-void/50"
                             >
                                 {isCreating && (
                                         <Loader2 className="size-4 animate-spin" />

@@ -22,7 +22,7 @@ export default function Navbar() {
         <>
             <section className="py-4 flex justify-center lg:py-8 fixed w-full top-0 z-50">
                     <div className="container max-w-5xl px-4 lg:px-0">
-                        <div className="border border-white/15 rounded-[27px] md:rounded-full bg-neutral-950/70 backdrop-blur">
+                        <div className="border border-brand-gunmetal/20 rounded-[27px] md:rounded-full bg-brand-abyss/70 backdrop-blur">
                             <div className="grid grid-cols-2 lg:grid-cols-3   p-2 px-4 md:pr-2 items-center ">
                                 <Link
                                 href="/"
@@ -58,7 +58,7 @@ export default function Navbar() {
                                         <line x1="3" y1="12" x2="21" y2="12" className={twMerge("transition", isOpen && "opacity-0")}></line>
                                         <line x1="3" y1="18" x2="21" y2="18" className={twMerge("origin-left transition",isOpen && "-rotate-45 translate-y-1")}></line>
                                     </svg>
-                                    <Button asChild variant="ghost" className="hidden md:inline-flex border border-white h-10 rounded-full px-6 font-medium items-center"><Link href="/auth/login">Log In</Link></Button>
+                                    <Button asChild variant="ghost" className="hidden md:inline-flex border border-brand-gunmetal h-10 rounded-full px-6 font-medium items-center"><Link href="/auth/login">Log In</Link></Button>
                                     <Button asChild variant="default" className="hidden md:inline-flex h-10 rounded-full px-6 font-medium items-center"><Link href="/auth/signup">Sign Up</Link></Button>
                                 </div>
                             </div>
@@ -75,7 +75,7 @@ export default function Navbar() {
                                                     {link.label}
                                                 </a>
                                             ))}
-                                            <Button asChild variant="ghost" className=" md:inline-flex border border-white h-10 rounded-full px-6 font-medium items-center"><Link href="/auth/login">Log In</Link></Button>
+                                            <Button asChild variant="ghost" className=" md:inline-flex border border-brand-gunmetal h-10 rounded-full px-6 font-medium items-center"><Link href="/auth/login">Log In</Link></Button>
                                             <Button asChild variant="default" className=" md:inline-flex h-10 rounded-full px-6 font-medium items-center"><Link href="/auth/signup">Sign Up</Link></Button>
                                         </div>
                                     </motion.div>

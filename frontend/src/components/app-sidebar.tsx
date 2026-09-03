@@ -121,7 +121,7 @@ function PinToggle({
             "transition-colors duration-150",
             pinned
               ? "text-brand-pulse hover:text-brand-frost hover:bg-brand-slate"
-              : "text-brand-frost/30 hover:text-brand-frost/70 hover:bg-brand-slate",
+              : "text-brand-frost/30 hover:text-brand-ash hover:bg-brand-slate",
           )}
           aria-label={pinned ? "Unpin sidebar" : "Pin sidebar open"}
         >
@@ -161,7 +161,7 @@ function NavTile({
       <span
         className={cn(
           "shrink-0",
-          isActive ? "text-brand-pulse" : "text-brand-frost/60",
+          isActive ? "text-brand-pulse" : "text-brand-ash",
         )}
       >
         {item.icon}
@@ -172,7 +172,7 @@ function NavTile({
           {item.children && (
             <ChevronDown
               className={cn(
-                "h-3.5 w-3.5 shrink-0 text-brand-frost/40 transition-transform duration-200",
+                "h-3.5 w-3.5 shrink-0 text-brand-ash/70 transition-transform duration-200",
                 isOpen && "rotate-180",
               )}
             />
@@ -190,7 +190,7 @@ function NavTile({
         "transition-all duration-150",
         isActive
           ? "bg-brand-abyss text-brand-frost ring-inset ring-1 ring-brand-pulse/35"
-          : "text-brand-frost/70 hover:bg-white/8 hover:text-brand-frost",
+          : "text-brand-ash hover:bg-brand-slate hover:text-brand-frost",
         !isExpanded && "justify-center px-2",
       )}
     >
@@ -211,7 +211,7 @@ function NavTile({
 
       {/* Children dropdown — only when expanded */}
       {isExpanded && item.children && isOpen && (
-        <ul className="mt-1 ml-4 overflow-hidden border-l border-white/10 pl-3 animate-in slide-in-from-top-1 fade-in duration-150">
+        <ul className="mt-1 ml-4 overflow-hidden border-l border-border pl-3 animate-in slide-in-from-top-1 fade-in duration-150">
           {item.children.map((child) => {
             const childActive = pathname === child.href;
             return (
@@ -222,14 +222,14 @@ function NavTile({
                     "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-xs font-medium",
                     "transition-colors duration-100",
                     childActive
-                      ? "bg-brand-abyss text-brand-frost ring-inset ring-1 ring-sky/25"
-                      : "text-brand-frost/55 hover:bg-white/8 hover:text-brand-frost/90",
+                      ? "bg-brand-abyss text-brand-frost ring-inset ring-1 ring-brand-pulse/25"
+                      : "text-brand-frost/55 hover:bg-brand-slate hover:text-brand-frost/90",
                   )}
                 >
                   <span
                     className={cn(
                       "shrink-0",
-                      childActive ? "text-brand-pulse" : "text-brand-frost/40",
+                      childActive ? "text-brand-pulse" : "text-brand-ash/70",
                     )}
                   >
                     {child.icon}
@@ -249,11 +249,11 @@ function NavTile({
                 className={cn(
                   "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-xs font-medium",
                   "transition-colors duration-100",
-                  "text-brand-frost/55 hover:bg-white/8 hover:text-brand-frost/90"
+                  "text-brand-frost/55 hover:bg-brand-slate hover:text-brand-frost/90"
                   //this is temporary: use the variables when we refactor the whole thing's CSS
                 )}
               >
-                <span className="shrink-0 text-brand-frost/40">
+                <span className="shrink-0 text-brand-ash/70">
                   <Plus className="h-3.5 w-3.5" />
                 </span>
                 <span className="truncate">Add Property</span>
@@ -465,16 +465,16 @@ export function AppSidebar() {
                 <button
                   className={cn(
                     "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2",
-                    "text-brand-frost/60 hover:text-brand-frost hover:bg-white/8 transition-colors duration-150",
+                    "text-brand-ash hover:text-brand-frost hover:bg-brand-slate transition-colors duration-150",
                     !isExpanded && "justify-center",
                   )}
                   type="button"
                 >
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue/40 ring-1 ring-sky/40">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-pulse/40 ring-1 ring-brand-pulse/40">
                     <User className="h-3.5 w-3.5 text-brand-pulse" />
                   </span>
                   {isExpanded && (
-                    <span className="truncate text-sm font-medium text-brand-frost/80">
+                    <span className="truncate text-sm font-medium text-brand-frost">
                       {username}
                     </span>
                   )}
@@ -492,7 +492,7 @@ export function AppSidebar() {
                   onClick={handleLogout}
                   className={cn(
                     "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2",
-                    "text-brand-threat hover:text-red-300 hover:bg-red-500/10 transition-colors duration-150",
+                    "text-brand-threat hover:text-brand-threat hover:bg-brand-threat/10 transition-colors duration-150",
                     !isExpanded && "justify-center",
                   )}
                 >

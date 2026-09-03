@@ -33,12 +33,12 @@ export function NewCameraCard({ onClose, onAcknowledge }: NewCameraCardProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-md bg-white rounded-xl shadow-xl">
+    <div className="fixed inset-0 bg-brand-void/50 flex items-center justify-center z-50">
+      <Card className="w-full max-w-md bg-brand-depth rounded-xl shadow-xl">
         <CardHeader className="relative flex items-center justify-center pb-2">
           <button
             onClick={onClose}
-            className="absolute left-4 top-4 text-body hover:text-ink transition-colors"
+            className="absolute left-4 top-4 text-brand-ash hover:text-ink transition-colors"
           >
             <X size={20} />
           </button>
@@ -98,7 +98,7 @@ export function NewCameraCard({ onClose, onAcknowledge }: NewCameraCardProps) {
           <Button
             onClick={handleSubmit}
             disabled={!isValid}
-            className="w-full bg-blue hover:bg-sky text-white rounded-full font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-brand-pulse hover:bg-sky text-brand-frost rounded-full font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Acknowledge
           </Button>

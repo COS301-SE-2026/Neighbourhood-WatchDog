@@ -154,8 +154,11 @@
   --space-12: 96px;
 
   /* Motion */
+  --duration-fast: 100ms;
+  --duration-normal: 200ms;
+  --duration-slow: 350ms;
   --motion-instant: 0ms;
-  --motion-fast: 100ms ease-out;
+  --motion-fast: var(--duration-fast) ease-out;
   --motion-normal: 200ms ease-in-out;
   --motion-slow: 350ms ease-in-out;
   --motion-alert-pulse: 1200ms ease-in-out infinite;

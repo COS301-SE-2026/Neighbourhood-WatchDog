@@ -36,11 +36,11 @@ function getStatusLabel(enabled: boolean, streamState: CameraStreamState, edgeAg
 }
 
 function getStatusDotClass(enabled: boolean, streamState: CameraStreamState, edgeAgentAvailable?: boolean | null): string {
-    if (!enabled) return "bg-amber-400";
-    if (edgeAgentAvailable === false) return "bg-amber-400";
-    if (streamState === "unavailable") return "bg-red-400";
-    if (streamState === "connecting") return "bg-white/40 animate-pulse";
-    return "bg-emerald-400";
+    if (!enabled) return "bg-brand-caution";
+    if (edgeAgentAvailable === false) return "bg-brand-caution";
+    if (streamState === "unavailable") return "bg-brand-threat";
+    if (streamState === "connecting") return "bg-brand-ash/40 animate-pulse";
+    return "bg-brand-green";
 }
 
 export default function CameraCard({ id, name, location, visibility, enabled, edgeAgentAvailable, userRole = "RESIDENT", onDeleted }: CameraCardProps) {
@@ -59,14 +59,14 @@ export default function CameraCard({ id, name, location, visibility, enabled, ed
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <article className="overflow-hidden rounded-lg border border-white/10 bg-[#101011] transition-colors hover:border-white/20">
+            <article className="overflow-hidden rounded-lg border border-border bg-brand-depth text-brand-frost transition-colors hover:border-brand-gunmetal/30">
                 <button
                     type="button"
                     onClick={() => setOpen(true)}
                     aria-label={`Open live stream for ${name}`}
-                    className="relative flex aspect-video w-full flex-col items-center justify-center gap-2 bg-[#18181a] text-white/25 transition-colors hover:bg-[#1c1c1e]"
+                    className="relative flex aspect-video w-full flex-col items-center justify-center gap-2 bg-brand-slate text-brand-ash/25 transition-colors hover:bg-brand-abyss"
                 >
-                    <span className="absolute left-3 top-3 flex items-center gap-2 text-xs font-medium text-white/75">
+                    <span className="absolute left-3 top-3 flex items-center gap-2 text-xs font-medium text-brand-ash/75">
                         <span className={`size-1.5 rounded-full ${statusDotClass}`} />
                         {statusLabel}
                     </span>
@@ -84,11 +84,11 @@ export default function CameraCard({ id, name, location, visibility, enabled, ed
                     )}
                 </button>
 
-                <div className="border-t border-white/10 p-4">
+                <div className="border-t border-border p-4">
                     <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                            <h3 className="truncate text-sm font-semibold text-white">{name}</h3>
-                            <p className="mt-1 truncate text-xs text-white/45">{location}</p>
+                            <h3 className="truncate text-sm font-semibold text-brand-ash">{name}</h3>
+                            <p className="mt-1 truncate text-xs text-brand-ash/45">{location}</p>
                         </div>
 
                         <CameraDropdown
@@ -101,17 +101,17 @@ export default function CameraCard({ id, name, location, visibility, enabled, ed
                         />
                     </div>
 
-                    <div className="mt-4 border-t border-white/10 pt-3">
-                        <p className="text-xs text-white/45">
-                            Visibility: <span className="text-white/65">{visibility}</span>
+                    <div className="mt-4 border-t border-border pt-3">
+                        <p className="text-xs text-brand-ash/45">
+                            Visibility: <span className="text-brand-ash/65">{visibility}</span>
                         </p>
 
                         {agentDegraded && (
                             <div
                                 role="status"
-                                className="mt-3 flex items-start gap-2 rounded-md border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-xs text-amber-200"
+                                className="mt-3 flex items-start gap-2 rounded-md border border-brand-caution/20 bg-brand-caution/10 px-3 py-2 text-xs text-brand-caution"
                             >
-                                <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-amber-300" />
+                                <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-brand-caution" />
                                 <span>
                                     Stream quality degraded due to agent failure. The system is attempting to keep video available while the Agent reconnects.
                                 </span>
@@ -122,11 +122,11 @@ export default function CameraCard({ id, name, location, visibility, enabled, ed
                 </div>
             </article>
 
-            <DialogContent className="max-h-[90vh] w-full max-w-4xl overflow-y-auto border border-white/10 bg-[#0b0b0c] text-white">
+            <DialogContent className="max-h-[90vh] w-full max-w-4xl overflow-y-auto border text-brand-frost border-border text-brand-ash">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-white">
+                    <DialogTitle className="flex items-center gap-2 text-brand-ash">
                         {name}
-                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-white/70">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-ash/70">
                             <span className={`size-1.5 rounded-full ${statusDotClass}`} />
                             {statusLabel}
                         </span>
@@ -136,9 +136,9 @@ export default function CameraCard({ id, name, location, visibility, enabled, ed
                 {agentDegraded && (
                     <div
                         role="status"
-                        className="flex items-start gap-2 rounded-md border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-xs text-amber-200"
+                        className="flex items-start gap-2 rounded-md border border-brand-caution/20 bg-brand-caution/10 px-3 py-2 text-xs text-brand-caution"
                     >
-                        <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-amber-300" />
+                        <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-brand-caution" />
                         <span>
                             Stream quality degraded due to agent failure. The system is attempting to keep video available while the Agent reconnects.
                         </span>
@@ -146,21 +146,21 @@ export default function CameraCard({ id, name, location, visibility, enabled, ed
                 )}
 
                 {!enabled && (
-                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-[#18181a] text-white/45">
+                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-brand-slate text-brand-ash/45">
                         <CameraOff className="h-10 w-10" />
                         <p className="text-sm">This camera is currently disabled.</p>
                     </div>
                 )}
 
                 {enabled && streamState === "connecting" && (
-                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-[#18181a] text-white/45">
+                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-brand-slate text-brand-ash/45">
                         <LoaderCircle className="h-8 w-8 animate-spin" />
                         <p className="text-sm">Connecting to live stream…</p>
                     </div>
                 )}
 
                 {enabled && streamState === "unavailable" && (
-                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-[#18181a] text-white/45">
+                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-brand-slate text-brand-ash/45">
                         <CameraOff className="h-10 w-10" />
                         <p className="text-sm">Live stream is currently unavailable.</p>
                         <p className="text-xs">
@@ -181,8 +181,8 @@ export default function CameraCard({ id, name, location, visibility, enabled, ed
                 )}
 
                 {enabled && streamState === "live" && (
-                    <div className="flex items-center gap-2 text-xs text-white/45">
-                        <Radio className="h-3 w-3 text-emerald-400" />
+                    <div className="flex items-center gap-2 text-xs text-brand-ash/45">
+                        <Radio className="h-3 w-3 text-brand-green" />
                         Live via MediaMTX WebRTC
                     </div>
                 )}

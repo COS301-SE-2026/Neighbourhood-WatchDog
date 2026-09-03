@@ -337,14 +337,14 @@ const AppDashSidebar = () => {
                             <DropdownMenuTrigger asChild>
                                 <button
                                     type="button"
-                                    className="mt-3 flex w-full items-start gap-2.5 rounded-lg border border-border bg-brand-depth p-3 text-left transition-colors hover:bg-white/[0.06] group-data-[collapsible=icon]:hidden"
+                                    className="mt-3 flex w-full items-start gap-2.5 rounded-lg border border-border bg-brand-depth p-3 text-left transition-colors hover:bg-brand-slate group-data-[collapsible=icon]:hidden"
                                 >
                                     <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-brand-green/10">
                                         <ActiveContextIcon className="size-3.5 text-brand-green" />
                                     </div>
 
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-[10px] font-medium uppercase tracking-wider text-brand-frost/40">
+                                        <p className="text-[10px] font-medium uppercase tracking-wider text-brand-ash/70">
                                             Viewing
                                         </p>
 
@@ -352,12 +352,12 @@ const AppDashSidebar = () => {
                                             {activeContext.name}
                                         </p>
 
-                                        <p className="mt-0.5 truncate text-xs text-brand-frost/50">
+                                        <p className="mt-0.5 truncate text-xs text-brand-ash">
                                             {activeContextDescription}
                                         </p>
                                     </div>
 
-                                    <ChevronDown className="mt-1 size-4 shrink-0 text-brand-frost/40" />
+                                    <ChevronDown className="mt-1 size-4 shrink-0 text-brand-ash/70" />
                                 </button>
                             </DropdownMenuTrigger>
 
@@ -366,7 +366,7 @@ const AppDashSidebar = () => {
                                 side="bottom"
                                 className="w-72 border-border bg-brand-abyss p-1.5 text-brand-frost"
                             >
-                                <DropdownMenuLabel className="px-2 py-2 text-xs font-medium uppercase tracking-wider text-brand-frost/40">
+                                <DropdownMenuLabel className="px-2 py-2 text-xs font-medium uppercase tracking-wider text-brand-ash/70">
                                     Switch location
                                 </DropdownMenuLabel>
 
@@ -400,7 +400,7 @@ const AppDashSidebar = () => {
                                                     className={`size-3.5 ${
                                                         isActive
                                                             ? "text-brand-green"
-                                                            : "text-brand-frost/60"
+                                                            : "text-brand-ash"
                                                     }`}
                                                 />
                                             </div>
@@ -410,7 +410,7 @@ const AppDashSidebar = () => {
                                                     {context.name}
                                                 </p>
 
-                                                <p className="mt-0.5 truncate text-xs text-brand-frost/50">
+                                                <p className="mt-0.5 truncate text-xs text-brand-ash">
                                                     {contextDescription}
                                                 </p>
                                             </div>
@@ -422,7 +422,7 @@ const AppDashSidebar = () => {
                                     );
                                 })}
 
-                                <DropdownMenuSeparator className="my-1 bg-white/10" />
+                                <DropdownMenuSeparator className="my-1 bg-brand-gunmetal/20" />
 
                                 <DropdownMenuItem
                                     onSelect={() => setDialogOpen(true)}
@@ -437,13 +437,13 @@ const AppDashSidebar = () => {
                         <button
                             type="button"
                             onClick={() => setDialogOpen(true)}
-                            className="mt-3 w-full rounded-lg border border-emerald-500/20 bg-brand-green/[0.06] p-3 text-left transition-colors hover:bg-brand-green/[0.1] group-data-[collapsible=icon]:hidden"
+                            className="mt-3 w-full rounded-lg border border-brand-green/20 bg-brand-green/10 p-3 text-left transition-colors hover:bg-brand-green/10 group-data-[collapsible=icon]:hidden"
                         >
                             <p className="text-sm font-medium text-brand-frost">
                                 Create your first property
                             </p>
 
-                            <p className="mt-1 text-xs text-brand-frost/50">
+                            <p className="mt-1 text-xs text-brand-ash">
                                 Add a property to start using WatchDog.
                             </p>
                         </button>
@@ -488,7 +488,7 @@ const AppDashSidebar = () => {
                         title={`${authUser?.fullname ?? ""}`}
                         className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center"
                     >
-                        <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-brand-green/10">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-brand-green/30 bg-brand-green/10">
                             <User className="size-4 text-brand-green" />
                         </div>
                         <div className="min-w-0 group-data-[collapsible=icon]:hidden">
@@ -497,7 +497,7 @@ const AppDashSidebar = () => {
                             </p>
 
 
-                            <p className="truncate text-[11px] text-brand-frost/35">
+                            <p className="truncate text-[11px] text-brand-ash/60">
                                 {footerContextLabel}
                             </p>
 
