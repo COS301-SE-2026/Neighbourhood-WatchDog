@@ -1,14 +1,12 @@
 from app.core.database import DbSession
-from app.auth.dependencies import require_role
 from app.schemas.pairing_token import LinkPropertyTokenRes
 from app.schemas.pairing_token import EdgeAgentsCredentialsRes
 from app.services.pairing_token import get_pairing_token_handler, pair_agent_handler
 from app.auth.rate_limiter import limiter
 
-from typing import Annotated
 from uuid import UUID
-from fastapi import APIRouter, Depends, Request
-from app.auth.authorization import Claims, PropertyAdminClaims
+from fastapi import APIRouter, Request
+from app.auth.authorization import PropertyAdminClaims
 
 router = APIRouter(prefix="/pairing-token", tags=["pairing-token"])
 

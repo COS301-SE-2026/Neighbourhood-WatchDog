@@ -1,7 +1,7 @@
-from typing import Annotated, List
+from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from app.schemas.neighbourhood import (
     CreateNeighbourhoodReq,
     CreateNeighbourhoodRes,
@@ -12,8 +12,6 @@ from app.schemas.neighbourhood import (
 )
 from app.auth.authorization import Claims, NeighbourhoodAdminClaims, is_property_admin
 from app.core.database import DbSession
-from app.auth.dependencies import get_current_user
-from app.auth.dependencies import require_role
 from app.services.neighbourhood_service import (
     create_neighbourhood_handler,
     get_neighbourhood_properties_service,

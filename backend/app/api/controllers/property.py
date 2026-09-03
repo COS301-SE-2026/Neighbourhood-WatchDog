@@ -1,12 +1,11 @@
 from app.schemas.property import CreatePropertyReq, CreatePropertyRes, PropertyRes
 from app.services.property_service import create_property_handler, get_user_properties_handler, get_property_details_handler
 from app.core.database import DbSession
-from app.auth.dependencies import get_current_user, require_role
 from app.auth.authorization import Claims, PropertyMemberClaims
-from typing import List, Annotated
+from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends
-from app.auth.authorization import Claims, PropertyAdminClaims
+from fastapi import APIRouter
+from app.auth.authorization import Claims
 
 router = APIRouter(prefix="/properties", tags=["properties"])
 

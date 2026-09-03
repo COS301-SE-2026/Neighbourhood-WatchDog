@@ -1,13 +1,11 @@
 from datetime import datetime
 from uuid import UUID
-from typing import Annotated
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, status
 
-from app.auth.dependencies import get_current_user, require_role
 from app.core.database import DbSession
 from app.schemas.risk_score_history import NeighbourhoodRiskScoreHistoryRes, NeighbourhoodRiskScoreRes
 from app.services.risk_score_history_service import get_neighbourhood_score_handler, get_neighbourhood_score_history_handler
-from app.auth.authorization import Claims, NeighbourhoodMemberClaims, NeighbourhoodAdminClaims
+from app.auth.authorization import NeighbourhoodMemberClaims
 
 router = APIRouter(prefix="/risk-score", tags=["risk-score"])
 

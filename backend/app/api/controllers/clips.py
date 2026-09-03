@@ -13,12 +13,10 @@ from datetime import datetime, timezone
 from botocore.config import Config as BotoConfig
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from uuid import UUID
 from sqlalchemy import select
-from typing import Annotated
 
-from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
 from app.models.alert import Alert
 from app.models.camera import Camera, CameraVisibilityEnum

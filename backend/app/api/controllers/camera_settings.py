@@ -1,11 +1,8 @@
 from typing import Annotated
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
-from app.auth.dependencies import get_current_user
-from app.auth.dependencies import require_role
+from fastapi import APIRouter, HTTPException
 from app.core.database import DbSession
-from app.auth.authorization import require_camera_authorization
-from app.auth.authorization import Claims, CameraAdminClaims
+from app.auth.authorization import CameraAdminClaims
 from app.schemas.camera_settings import (
     CameraSettingsResponse,
     CreateZoneRequest,

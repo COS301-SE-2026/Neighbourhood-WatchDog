@@ -1,9 +1,7 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
-from typing import Annotated
+from fastapi import APIRouter, status
 
-from app.auth.dependencies import get_current_user, require_role
 from app.core.database import DbSession
 from app.schemas.neighbourhood_join import (
     JoinCodeRes,

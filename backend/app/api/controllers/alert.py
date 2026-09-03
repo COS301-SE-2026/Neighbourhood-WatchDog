@@ -5,8 +5,7 @@ from typing import Annotated
 from datetime import datetime
 from fastapi import APIRouter, Depends, Query, WebSocket
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.auth.dependencies import require_role
-from app.auth.dependencies import get_current_user, get_authenticated_edge_agent
+from app.auth.dependencies import get_authenticated_edge_agent
 from app.core.database import DbSession, get_db
 from app.schemas.alert import AcknowledgeAlertRes, AlertCreate, AlertResponse, BroadcastAlertReq, ListAlertsRes, Pagination
 from app.services.alert_service import (

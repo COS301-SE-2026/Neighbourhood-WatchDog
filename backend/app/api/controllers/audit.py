@@ -1,13 +1,11 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 from datetime import datetime
 from typing import Annotated, Optional
 
 from app.core.database import DbSession
-from app.auth.dependencies import get_current_user
-from app.auth.dependencies import require_role
 from app.schemas.audit_log import AuditAction, GetAuditLogsRes
 from app.services.audit_service import get_audit_logs_handler
-from app.auth.authorization import Claims, SystemAdminClaims
+from app.auth.authorization import SystemAdminClaims
 PAGE = 1
 SIZE = 30
 

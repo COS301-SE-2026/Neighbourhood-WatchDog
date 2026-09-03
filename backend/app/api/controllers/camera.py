@@ -1,13 +1,10 @@
-from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 
 from app.schemas.camera import RegisterCameraReq, RegisterCameraRes, CamerasRes, CameraEditReq, EditCameraRes
 from app.services.camera_service import register_camera_handler, list_cameras_handler, deregister_camera_handler, edit_camera_handler
-from app.auth.dependencies import get_current_user
-from app.core.database import DbSession
-from app.auth.dependencies import require_role
+=from app.core.database import DbSession
 from app.auth.authorization import Claims, CameraAdminClaims, PropertyMemberClaims, is_property_admin
 
 router = APIRouter(prefix="/camera", tags=["cameras"])

@@ -1,9 +1,7 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
-from typing import Annotated
 
-from app.auth.dependencies import get_current_user
 from app.core.database import DbSession
 from app.models.alert import Alert
 from app.models.camera import Camera
