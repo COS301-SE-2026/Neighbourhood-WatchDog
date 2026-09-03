@@ -11,19 +11,17 @@ import {
   Users,
 } from "lucide-react";
 
-import { getPropertyMembers, invitePropertyMember } from "@/lib/api/property";
-import type { PropertyMembers } from "@/lib/validators/property";
+import { getPropertyMembers, invitePropertyMember, removePropertyMember } from "@/lib/api/property";
+import type { PropertyMembers, PropertyMember } from "@/lib/validators/property";
 
 export default function PropertyMembers() {
-  const { propertyId } = useParams<{
-    propertyId: string;
-  }>();
+  const { propertyId } = useParams<{propertyId: string}>();
 
-  const [members, setMembers] = useState<
-    PropertyMembers["members"]
-  >([]);
+  const [members, setMembers] = useState<PropertyMembers["members"]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+	const [removingUserId, setRemovingUserId] = useState<string | null>(null);
+	const [actionError, setActionError] = useState<string | null>(null);
 	const [inviteEmail, setInviteEmail] = useState("");
 
 	const [inviteLoading, setInviteLoading] = useState(false);
@@ -100,6 +98,48 @@ export default function PropertyMembers() {
 			setInviteLoading(false);
 		}
 	}
+
+	async function handleRemoveMember(
+		member: PropertyMember,
+	) {
+		if (member.is_admin) {
+			return;
+		}
+
+		const confirmed = window.confirm(
+			`Remove ${member.email} from this property?`,
+		);
+
+		if (!confirmed) {
+			return;
+		}
+
+		setRemovingUserId(member.user_id);
+		setActionError(null);
+
+		try {
+			await removePropertyMember(
+				propertyId,
+				member.user_id,
+			);
+
+			setMembers((currentMembers) =>
+				currentMembers.filter(
+					(currentMember) =>
+						currentMember.user_id !== member.user_id,
+				),
+			);
+		} catch (requestError: unknown) {
+			setActionError(
+				requestError instanceof Error
+					? requestError.message
+					: "Failed to remove property member.",
+			);
+		} finally {
+			setRemovingUserId(null);
+		}
+	}
+
 
 
   return (
