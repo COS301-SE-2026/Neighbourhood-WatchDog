@@ -41,4 +41,19 @@ test.describe("Neighbourhood members", () => {
       page.getByText("You do not have admin access to this neighbourhood."),
     ).toBeVisible();
   });
+
+  test("admin changes another member's role", async ({ page }) => {
+    await page.setExtraHTTPHeaders(mockAuthHeaders(ADMIN_USER_ID));
+    await page.goto(
+      "/dashboard/properies/${NEIGHBOURHOOD_ID}/neighbourhood/members",
+    );
+
+    const roleSelect = page.getByLabel("Role for E2E Officer");
+    await expect(roleSelect).toHaveValue("SECURITY_OFFICER");
+
+    await roleSelect.selectOption("RESIDENT");
+
+    await expect(roleSelect).toHaveValue("RESIDENT");
+    await expect(page.getByRole("alert")).toHaveCount(0);
+  });
 });
