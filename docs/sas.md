@@ -42,7 +42,7 @@ The purpose of this document is to communicate the architectural structure of th
 - Services must support horizontal scalability where appropriate.
 
 ### 2.4 Architectural Diagram
-![Architecture Diagramv2](/docs/images/Architecture%20Diagramv2.drawio.svg)
+![Architecture Diagramv2](/docs/images/Architecture%20Diagramv3.svg)
 
 ### 2.5 Mapping Quality Requirements to Architectural Decisions
 |Quality Requirement|Architectural Decision|
@@ -133,9 +133,9 @@ No credentials are committed to the GitHub repository. Staging generates it .env
 
 ### Deployment Diagram
 
-![Prod Deployment Diagram](/docs/images/Prod%20Deployment%20Diagramv1.drawio.svg)
+![Prod Deployment Diagram](/docs/images/Production%20Deployment%20Diagramv2.svg)
 
-![Staging Deployment Diagram](/docs/images/Prod%20Deployment%20Diagramv1.drawio.svg)
+![Staging Deployment Diagram](/docs/images/Staging%20Deployment%20Diagramv3.drawio.svg)
 
 ### CI/CD Pipeline Diagram
 
