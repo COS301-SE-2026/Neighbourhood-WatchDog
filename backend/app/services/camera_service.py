@@ -33,7 +33,7 @@ NO_DB_SESSION = "No database session"
 NOT_AUTHENTICATED = "Not authenticated"
 
 
-
+_CAMERA_PATH_PATTERN = re.compile(r"^cameras/([0-9a-fA-F-]{36})$")
 
 
 def _publish_master_key() -> bytes:
