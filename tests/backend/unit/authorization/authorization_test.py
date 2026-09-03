@@ -362,3 +362,116 @@ async def test_require_camera_authorization_rejects_unauthorized_user(
         )
 
     assert exc.value.status_code == 403
+
+@pytest.mark.asyncio
+async def test_is_property_member_returns_false_without_sub():
+    db = MagicMock()
+    db.execute = AsyncMock()
+
+    result = await authorization.is_property_member(
+        PROPERTY_ID,
+        {"id": "user-id"},
+        db,
+    )
+
+    assert result is False
+    db.execute.assert_not_awaited()
+
+@pytest.mark.asyncio
+async def test_is_neighbourhood_member_returns_false_without_sub():
+    db = MagicMock()
+    db.execute = AsyncMock()
+
+    result = await authorization.is_neighbourhood_member(
+        NEIGHBOURHOOD_ID,
+        {"id": "user-id"},
+        db,
+    )
+
+    assert result is False
+    db.execute.assert_not_awaited()
+
+@pytest.mark.asyncio
+async def test_required_permission_allows_system_admin():
+    result = await authorization._has_required_permission(
+        ("SYSTEM_ADMIN",),
+        PROPERTY_ID,
+        NEIGHBOURHOOD_ID,
+        SYSTEM_ADMIN_CLAIMS,
+        MagicMock(),
+    )
+
+    assert result is True
+
+@pytest.mark.asyncio
+async def test_required_permission_allows_property_admin(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        authorization,
+        "is_property_admin",
+        AsyncMock(return_value=True),
+    )
+
+    result = await authorization._has_required_permission(
+        ("PROPERTY_ADMIN",),
+        PROPERTY_ID,
+        NEIGHBOURHOOD_ID,
+        CLAIMS,
+        MagicMock(),
+    )
+
+    assert result is True
+
+@pytest.mark.asyncio
+async def test_required_permission_allows_neighbourhood_admin(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        authorization,
+        "is_property_admin",
+        AsyncMock(return_value=False),
+    )
+    monkeypatch.setattr(
+        authorization,
+        "is_neighbourhood_admin",
+        AsyncMock(return_value=True),
+    )
+
+    result = await authorization._has_required_permission(
+        ("NEIGHBOURHOOD_ADMIN",),
+        PROPERTY_ID,
+        NEIGHBOURHOOD_ID,
+        CLAIMS,
+        MagicMock(),
+    )
+
+    assert result is True
+
+@pytest.mark.asyncio
+async def test_required_permission_rejects_user_without_permission(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        authorization,
+        "is_property_admin",
+        AsyncMock(return_value=False),
+    )
+    monkeypatch.setattr(
+        authorization,
+        "is_neighbourhood_admin",
+        AsyncMock(return_value=False),
+    )
+
+    result = await authorization._has_required_permission(
+        (
+            "PROPERTY_ADMIN",
+            "NEIGHBOURHOOD_ADMIN",
+        ),
+        PROPERTY_ID,
+        NEIGHBOURHOOD_ID,
+        CLAIMS,
+        MagicMock(),
+    )
+
+    assert result is False
