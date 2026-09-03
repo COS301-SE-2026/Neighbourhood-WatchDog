@@ -1,20 +1,21 @@
-from fastapi import HTTPException
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-from sqlalchemy.exc import IntegrityError
+import logging
 from typing import List
 from uuid import UUID
-import logging
 
-from app.services.audit_service import create_audit_log_item
-from app.models.audit_log import AuditAction
-from app.models.user import User
-from app.models.property import Property, PropertyTypeEnum
-from app.models.property_user import PropertyUser
+from fastapi import HTTPException
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
+
+from app.auth.authorization import is_property_member
+from app.core.database import DbSession
+from app.models.audit_log import AuditAction, TargetEntity
 from app.models.camera import Camera
 from app.models.neighbourhood import Neighbourhood
-from app.core.database import DbSession
-from app.models.audit_log import TargetEntity
+from app.models.property import Property, PropertyTypeEnum
+from app.models.property_user import PropertyUser
+from app.models.user import User
+from app.services.audit_service import create_audit_log_item
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,9 @@ async def create_property_handler(
     addr: str, 
     prop_type: PropertyTypeEnum, 
     claims: dict, 
-    db: DbSession
+    db: DbSession, 
+    latitude: float | None = None,
+    longitude: float | None = None
 ) -> Property:
     """Creates a new property. Takes in the address, property type (PUBLIC or PRIVATE), 
     claims and the DbSession, creates the property and returns the created property"""
@@ -41,6 +44,8 @@ async def create_property_handler(
 
     new_property = Property(
         address = addr,
+        latitude = latitude,
+        longitude = longitude, 
         property_type = prop_type
     )
 
@@ -76,7 +81,9 @@ async def create_property_handler(
             target_entity_id=new_property.id,
             new_values={
                 "address": new_property.address,
-                "property_type": new_property.property_type.value,
+                "property_type": new_property.property_type.value, 
+                "latitude": new_property.latitude, 
+                "longitude": new_property.longitude
             },
         )
 
@@ -126,11 +133,12 @@ async def get_user_properties_handler(
     except Exception as e:
         raise HTTPException(500, f"Failed to fetch properties: {str(e)}")
     
-async def get_property_details_handler(
-    property_id: UUID,
-    db: DbSession
-) -> dict:
+async def get_property_details_handler(property_id: UUID, db: DbSession, claims: dict) -> dict:
+
     """Gets all the details for the property page"""
+    allowed = claims.get("custom:role") == "SYSTEM_ADMIN" or await is_property_member(property_id, claims, db)
+    if not allowed:
+        raise HTTPException(403, "You do not have permission to view this property.")
 
     if not property_id:
         logger.warning("get_property_details: no property id provided")
@@ -198,7 +206,9 @@ async def get_property_details_handler(
         return {
             "property_id": property_obj.id,
             "address": property_obj.address,
-            "property_type": property_obj.property_type.value,
+            "property_type": property_obj.property_type.value, 
+            "latitude": property_obj.latitude, 
+            "longitude": property_obj.longitude, 
             "created_at": property_obj.created_at,
             "users": users,
             "neighbourhood": neighbourhood,

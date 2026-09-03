@@ -1,33 +1,33 @@
+from app import models  # noqa: F401  (imported for side effects: model registration)
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.logging import configure_logging
+from app.core.app_logging import configure_logging
 from app.core.config import config
 from app.auth.middleware import AuthMiddleware
 from app.api.controllers.auth import router as auth_router
 from app.api.controllers.neighbourhood_join import router as neighbourhood_join_router
 from app.api.controllers.alert import router as alert_router
-from app.api.controllers.detection import router as detection_router
-from app.api.controllers.property import router as property_router
-from app.api.controllers.neighbourhood import router as neighbourhood_router
-from app.api.controllers.camera import router as camera_router
-from app.api.controllers.users import router as users_router
-from app.api.controllers.stream import router as stream_router
-from app.api.controllers.notification import router as notification_router
 from app.api.controllers.audit import router as audit_router
+from app.api.controllers.camera import router as camera_router
 from app.api.controllers.camera_settings import router as camera_settings_router
 from app.api.controllers.clips import router as clips_router
+from app.api.controllers.detection import router as detection_router
 from app.api.controllers.internal import router as internal_router
-from app.api.controllers.risk_score_history import router as risk_score_history_router
 from app.api.controllers.internal_cameras import router as internal_cameras_router
 from app.api.controllers.internal_failover import router as internal_failover_router
+from app.api.controllers.neighbourhood import router as neighbourhood_router
+from app.api.controllers.notification import router as notification_router
 from app.api.controllers.pairing_token import router as pairing_token_router
+from app.api.controllers.property import router as property_router
+from app.api.controllers.risk_score_history import router as risk_score_history_router
 from app.api.controllers.risk_threshold_config import router as risk_threshold_router
-from slowapi.middleware import SlowAPIMiddleware
+from app.api.controllers.stream import router as stream_router
+from app.api.controllers.users import router as users_router
 from app.auth.rate_limiter import limiter
-from app import models  # noqa: F401  (imported for side effects: model registration)
-from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 configure_logging(config.debug and "DEBUG" or "INFO")
 
@@ -35,8 +35,8 @@ configure_logging(config.debug and "DEBUG" or "INFO")
 app = FastAPI(
     title=config.app_name,
     openapi_url="/openapi.json", # if config.debug else None, TODO consider uncommenting
-    docs_url="/docs" if config.debug else None,
-    redoc_url="/redoc" if config.debug else None,
+    docs_url="/docs", # if config.debug else None,
+    redoc_url="/redoc", # if config.debug else None,
 )
 
 if config.testing: #Disable the limiter during testing, preventing exception 429

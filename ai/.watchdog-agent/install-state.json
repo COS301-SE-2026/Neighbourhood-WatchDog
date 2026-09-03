@@ -1,9 +1,0 @@
-{
-  "schema_version": 1,
-  "python_version": "3.12.10",
-  "installed_at": "2026-09-01T17:33:24.174481+00:00",
-  "models": {
-    "best.pt": 6251747,
-    "yolov8n.pt": 6549796
-  }
-}

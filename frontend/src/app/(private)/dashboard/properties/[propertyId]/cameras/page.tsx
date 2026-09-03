@@ -21,6 +21,7 @@ interface CameraProp {
     enabled: boolean
     location: string
     rtspUrl?: string;
+    edgeAgentAvailable?: boolean | null;
 }
 
 export default function PropertyCamerasPage() {
@@ -41,30 +42,47 @@ export default function PropertyCamerasPage() {
 
         let cancelled = false;
 
-        apiFetchCameras(propertyId)
-            .then((data) => {
+        let firstLoad = true;
+        const loadCameras = async () => {
+            try {
+                const data = await apiFetchCameras(propertyId);
                 if (cancelled) return;
+
                 setCameras(
                     data.map((camera) => ({
-                        id: camera.id,
-                        name: camera.name,
-                        location: camera.location,
-                        visibility: camera.visibility,
-                        enabled: camera.enabled
-                    })),
+                        id: camera.id, 
+                        name: camera.name, 
+                        location: camera.location, 
+                        visibility: camera.visibility, 
+                        enabled: camera.enabled, 
+                        edgeAgentAvailable: camera.edge_agent_available
+                    }))
                 );
-
                 setResolvedPropertyId(propertyId);
-            })
-            .catch((error) => {
+            }catch(error) {
                 if (cancelled) return;
                 console.error("Failed to fetch cameras", error);
-                toast.error("Failed to load cameras");
-                setCameras([]);
-                setResolvedPropertyId(propertyId);
-            });
+
+                if (firstLoad) {
+                    toast.error("Failed to load cameras");
+                    setCameras([]);
+                    setResolvedPropertyId(propertyId);
+                }
+            }
+            finally{
+                firstLoad = false;
+            }
+        };
+
+        void loadCameras();
+        const refreshTimer = window.setInterval(() => {
+            void loadCameras();
+        }, 10000);
+
         return () => {
             cancelled = true;
+
+            window.clearInterval(refreshTimer);
         }
 
     }, [propertyId]);
@@ -90,6 +108,7 @@ export default function PropertyCamerasPage() {
                     location: newCamera.location,
                     visibility: newCamera.visibility,
                     enabled: newCamera.enabled,
+                    edgeAgentAvailable: null
                 }
             ]);
             setShowCard(false);
@@ -207,6 +226,7 @@ export default function PropertyCamerasPage() {
                                     location={camera.location}
                                     visibility={camera.visibility}
                                     enabled={camera.enabled}
+                                    edgeAgentAvailable={camera.edgeAgentAvailable}
                                     userRole={activeContext.role === "Neighbourhood Admin" ? "NEIGHBOURHOOD_ADMIN" : "RESIDENT"}
                                     onDeleted={(deletedCameraId) => {
                                         setCameras((currentCameras) =>
