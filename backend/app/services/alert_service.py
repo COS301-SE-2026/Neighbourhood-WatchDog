@@ -256,6 +256,39 @@ def _build_alert_res(alert: Alert) -> AlertRes:
         created_at=alert.created_at,
     )
 
+def _is_critical_alert(alert: Alert) -> bool:
+    return alert.detection_type in {
+        DetectionType.WEAPON_DETECTED,
+        DetectionType.FALL_DETECTED,
+    }
+
+
+def _can_acknowledge_alert(
+    alert: Alert,
+    property_membership: PropertyUser | None,
+    neighbourhood_membership: NeighbourhoodUser | None,
+) -> bool:
+    if neighbourhood_membership is not None:
+        if (
+            neighbourhood_membership.role
+            == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+        ):
+            return True
+
+        if (
+            neighbourhood_membership.role
+            == NeighbourhoodRole.SECURITY_OFFICER
+            and _is_critical_alert(alert)
+        ):
+            return True
+
+    return (
+        property_membership is not None
+        and property_membership.is_admin
+        and not _is_critical_alert(alert)
+    )
+
+
 async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) -> AlertRes:
     """Acknowledge an open alert and record the responsible authorised user."""
     if not alert_id:
@@ -305,35 +338,13 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
                 neighbourhood_membership_result.scalar_one_or_none()
             )
 
-        is_critical = alert.detection_type in {
-            DetectionType.WEAPON_DETECTED,
-            DetectionType.FALL_DETECTED,
-        }
 
-        is_neighbourhood_admin = (
-            neighbourhood_membership is not None
-            and neighbourhood_membership.role
-            == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
-        )
 
-        is_security_officer = (
-            neighbourhood_membership is not None
-            and neighbourhood_membership.role
-            == NeighbourhoodRole.SECURITY_OFFICER
-        )
-
-        is_property_admin = (
-            property_membership is not None
-            and property_membership.is_admin
-        )
-
-        can_acknowledge = (
-            is_neighbourhood_admin
-            or (is_security_officer and is_critical)
-            or (is_property_admin and not is_critical)
-        )
-
-        if not can_acknowledge:
+        if not _can_acknowledge_alert(
+            alert,
+            property_membership,
+            neighbourhood_membership,
+        ):
             raise HTTPException(
                 status_code=403,
                 detail="You do not have permission to acknowledge this alert",
