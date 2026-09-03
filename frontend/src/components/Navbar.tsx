@@ -100,47 +100,6 @@ const Navbar = () => {
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
-
-                    <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel>
-                            <div className="flex flex-col">
-                                <span className="text-sm font-medium">
-                                    {username}
-                                </span>
-
-                                <span className="text-xs font-normal text-muted-foreground">
-                                    Resident
-                                </span>
-                            </div>
-                        </DropdownMenuLabel>
-
-                        <DropdownMenuSeparator />
-
-                        <DropdownMenuItem>
-                            <UserRound className="mr-2 size-4" />
-                            My profile
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem>
-                            <Bell className="mr-2 size-4" />
-                            Notifications
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem>
-                            <Monitor className="mr-2 size-4" />
-                            Appearance
-                        </DropdownMenuItem>
-
-                        <DropdownMenuSeparator />
-
-                        <DropdownMenuItem
-                            onClick={handleLogout}
-                            className="text-destructive focus:text-destructive"
-                        >
-                            <LogOut className="mr-2 size-4" />
-                            Sign out
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
                 </DropdownMenu>
             </div>
         </nav>
