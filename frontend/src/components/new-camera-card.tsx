@@ -98,7 +98,7 @@ export function NewCameraCard({ onClose, onAcknowledge }: NewCameraCardProps) {
           <Button
             onClick={handleSubmit}
             disabled={!isValid}
-            className="w-full bg-brand-pulse hover:bg-sky text-brand-frost rounded-full font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-brand-green hover:bg-brand-green text-brand-void rounded-full font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Acknowledge
           </Button>
