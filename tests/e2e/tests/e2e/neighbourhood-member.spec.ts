@@ -1,25 +1,18 @@
-import { test, expect } from "@playwright/test";
-
-const NEIGHBOURHOOD_ID = "10000000-0000-0000-0000-000000000001";
-
-const ADMIN_USER_ID = "20000000-0000-0000-0000-000000000001";
-
-const OFFICER_USER_ID = "20000000-0000-0000-0000-000000000003";
-
-function mockAuthHeaders(userId: string) {
-  return {
-    Authorization: "Bearer mocktake",
-    "X-Mock-User-Id": userId,
-  };
-}
+import {
+  test,
+  expect,
+  NEIGHBOURHOOD_ID,
+  ADMIN_USER_ID,
+  OFFICER_USER_ID,
+} from "./fixtures";
 
 test.describe("Neighbourhood members", () => {
   test.describe.configure({ mode: "serial" });
 
   test("admin sees the members and their roles", async ({ page }) => {
-    await page.setExtraHTTPHeaders(mockAuthHeaders(ADMIN_USER_ID));
+    await page.setExtraHTTPHeaders({ "X-Mock-User-Id": ADMIN_USER_ID });
     await page.goto(
-      "/dashboard/properies/${NEIGHBOURHOOD_ID}/neighbourhood/members",
+      `/dashboard/properies/${NEIGHBOURHOOD_ID}/neighbourhood/members`,
     );
 
     await expect(page.getByLabel("Role for test user")).toHaveValue(
@@ -32,9 +25,9 @@ test.describe("Neighbourhood members", () => {
   });
 
   test("non-admin cannot see the members page", async ({ page }) => {
-    await page.setExtraHTTPHeaders(mockAuthHeaders(OFFICER_USER_ID));
+    await page.setExtraHTTPHeaders({ "X-Mock-User-Id": OFFICER_USER_ID });
     await page.goto(
-      "/dashboard/properies/${NEIGHBOURHOOD_ID}/neighbourhood/members",
+      `/dashboard/properies/${NEIGHBOURHOOD_ID}/neighbourhood/members`,
     );
 
     await expect(
@@ -43,9 +36,9 @@ test.describe("Neighbourhood members", () => {
   });
 
   test("admin changes another member's role", async ({ page }) => {
-    await page.setExtraHTTPHeaders(mockAuthHeaders(ADMIN_USER_ID));
+    await page.setExtraHTTPHeaders({ "X-Mock-User-Id": ADMIN_USER_ID });
     await page.goto(
-      "/dashboard/properies/${NEIGHBOURHOOD_ID}/neighbourhood/members",
+      `/dashboard/properies/${NEIGHBOURHOOD_ID}/neighbourhood/members`,
     );
 
     const roleSelect = page.getByLabel("Role for E2E Officer");
@@ -61,7 +54,7 @@ test.describe("Neighbourhood members", () => {
   test("the only admin cannot remove their own admin role", async ({
     page,
   }) => {
-    await page.setExtraHTTPHeaders(mockAuthHeaders(ADMIN_USER_ID));
+    await page.setExtraHTTPHeaders({ "X-Mock-User-Id": ADMIN_USER_ID });
     await page.goto(
       "/dashboard/properies/${NEIGHBOURHOOD_ID}/neighbourhood/members",
     );
