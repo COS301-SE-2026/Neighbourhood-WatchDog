@@ -32,6 +32,7 @@ MAX_EMAIL_BATCH_SIZE = int(
 )
 SMTP_ERROR = "SMTP credentials not configured"
 SMTP_NOT_CONFIGURED = "SMTP_SENDER_EMAIL or SMTP_APP_PASSWORD not configured"
+NWD_LITERAL = "https://neighbourhood-watch-dog.vercel.app/auth/login"
 
 CRITICAL_TYPES = {"WEAPON_DETECTED", "FALL_DETECTED"}
 
@@ -103,7 +104,7 @@ def send_property_invite_email(
     recipient_email: str,
     property_address: str,
     inviter_name: str,
-    dashboard_url: str = "https://neighbourhood-watch-dog.vercel.app/auth/login"
+    dashboard_url: str = NWD_LITERAL
 ) -> tuple[bool, str | None]:
     if not SENDER_EMAIL or not SENDER_PASSWORD:
         logger.error(SMTP_NOT_CONFIGURED)
@@ -175,7 +176,7 @@ def send_property_invite_email(
 
 
 def build_alert_email(alert_type: str, camera_name: str, location: str,
-                    risk_level: str = "HIGH", dashboard_url: str | None = "https://neighbourhood-watch-dog.vercel.app/auth/login") -> str:
+                    risk_level: str = "HIGH", dashboard_url: str | None = NWD_LITERAL) -> str:
     timestamp = datetime.datetime.now().strftime("%d %b %Y · %H:%M")
 
     formatted_alert_type = html.escape(alert_type.replace("_", " ").strip().title())
@@ -389,7 +390,7 @@ def send_alert_email_bcc(
     camera_name: str,
     location: str,
     risk_level: str = "HIGH",
-    dashboard_url: str | None = "https://neighbourhood-watch-dog.vercel.app/auth/login"
+    dashboard_url: str | None = NWD_LITERAL
 ) -> tuple[bool, str | None]:
     if not recipient_emails:
         return False, "No email recipients provided"

@@ -22,6 +22,8 @@ from app.services.notification_service import send_property_invite_email
 
 logger = logging.getLogger(__name__)
 
+NOT_AUTHENTICATED_LITERAL = "Not authenticated"
+
 async def create_property_handler(
     addr: str, 
     prop_type: PropertyTypeEnum, 
@@ -43,7 +45,7 @@ async def create_property_handler(
     
     if not claims:
         logger.warning("create_property called with no claims")
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED_LITERAL)
 
     new_property = Property(
         address = addr,
@@ -111,7 +113,7 @@ async def get_user_properties_handler(
 
     if not claims:
         logger.warning("get_user_properties: no claims found for request for user properties")
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED_LITERAL)
 
     try:
         #get user by cognito_sub
@@ -230,7 +232,7 @@ async def get_property_members_handler(property_id: UUID, db: DbSession, claims:
 
     if not claims:
         logger.warning("get_user_properties: no claims found for request for user properties")
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED_LITERAL)
 
     try:
         #get user by cognito_sub
@@ -273,7 +275,7 @@ async def get_property_members_handler(property_id: UUID, db: DbSession, claims:
 async def invite_property_member_handler(req: InvitePropertyReq, property_id: UUID, db: DbSession, claims: dict):
     """Invite a user to this property"""
     if not claims:
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED_LITERAL)
 
     try:
         inviter_result =  await db.execute(
@@ -352,7 +354,7 @@ async def remove_property_member_handler(property_id: UUID, user_id: UUID, db: D
     """Remove a non-admin member from a property."""
 
     if not claims:
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED_LITERAL)
 
     membership_result = await db.execute(
         select(PropertyUser).where(
