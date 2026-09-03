@@ -19,7 +19,7 @@ test.describe("Properties", () => {
     await page.goto(`/dashboard/properties/${PROPERTY_ID}/alerts`);
 
     await expect(
-      page.getByRole("heading", { name: "Propert alerts" }),
+      page.getByRole("heading", { name: "Property alerts" }),
     ).toBeVisible();
 
     await expect(

@@ -56,7 +56,7 @@ test.describe("Neighbourhood members", () => {
   }) => {
     await page.setExtraHTTPHeaders({ "X-Mock-User-Id": ADMIN_USER_ID });
     await page.goto(
-      "/dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/neighbourhood/members",
+      `/dashboard/neighbourhood/${NEIGHBOURHOOD_ID}/neighbourhood/members`,
     );
 
     const roleSelect = page.getByLabel("Role for test User");

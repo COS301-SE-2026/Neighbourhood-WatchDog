@@ -34,7 +34,7 @@ test.describe("Create a neighbourhood", () => {
       `/dashboard/properties/${CREATE_PROPERTY_ID}/neighbourhood/setup`,
     );
 
-    await page.locator("neighbourhood-name").fill("E2E New Neighbourhood");
+    await page.locator("#neighbourhood-name").fill("E2E New Neighbourhood");
     await page.locator("#neighbourhood-location").fill("Centurion");
 
     await page.getByRole("button", { name: /create neighbourhood/i }).click();

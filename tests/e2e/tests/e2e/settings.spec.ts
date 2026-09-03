@@ -10,7 +10,7 @@ test.describe("Settings", () => {
     ).toBeVisible();
 
     await expect(page.getByLabel("Email")).toHaveValue(
-      "e2e.create-neighbourhood@gmail.com",
+      "e2e.create-neighbourhood@example.com",
     );
 
     await page.getByLabel("First name").fill("E2E");
