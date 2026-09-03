@@ -28,8 +28,7 @@ from app.schemas.alert import (
     TrendGroupBy,
 )
 from app.models.edge_agent_credentials import EdgeAgentCredential
-from app.auth.authorization import Claims, NeighbourhoodMemberClaims, NeighbourhoodAdminClaims
-
+from app.auth.authorization import Claims, NeighbourhoodMemberClaims
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 _connections: dict[str, set[WebSocket]] = {}

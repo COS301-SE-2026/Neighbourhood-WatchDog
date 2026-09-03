@@ -5,7 +5,6 @@ from app.auth.authorization import Claims, PropertyMemberClaims
 from typing import List
 from uuid import UUID
 from fastapi import APIRouter
-from app.auth.authorization import Claims
 
 router = APIRouter(prefix="/properties", tags=["properties"])
 
