@@ -34,6 +34,9 @@ def make_mock_db():
 def make_scalar_result(value):
     result = MagicMock()
     result.scalar_one_or_none.return_value = value
+    result.scalar_one.return_value = value
+    result.scalars.return_value.first.return_value = value
+    result.scalars.return_value.all.return_value = [] if value is None else [value]
     return result
 
 

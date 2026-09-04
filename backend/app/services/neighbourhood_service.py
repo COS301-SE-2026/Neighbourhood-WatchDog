@@ -351,7 +351,7 @@ async def update_neighbourhood_member_role_handler(
                     NeighbourhoodUser.role == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
                 )
             )
-            other_admin = other_admin_result.scalar_one_or_none()
+            other_admin = other_admin_result.scalars().first()
 
             if not other_admin:
                 raise HTTPException(
