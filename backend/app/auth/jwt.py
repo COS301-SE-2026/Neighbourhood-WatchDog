@@ -66,10 +66,13 @@ def get_authenticated_claims(request: Request) -> dict: #Send JWT to verify_jwt
     TESTING = os.environ.get("TESTING", "false").lower() == "true"
     if TESTING:
         return {
-            "sub": "00000000-0000-0000-0000-000000000001",
+            "sub": request.headers.get(
+                "X-Mock-Sub",
+                "a16cd2b8-c0c1-70f7-1fb6-17b5cea57bcf",
+            ),
             "given_name": "Test",
             "family_name": "User",
-            "custom:role": "admin",
+            "custom:role": request.headers.get("X-Mock-Role", "RESIDENT"),
             "custom:neighbourhood_id": None,
         }
 

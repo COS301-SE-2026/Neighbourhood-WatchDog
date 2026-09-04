@@ -35,12 +35,34 @@ async def get_current_user(
 
     if TESTING:
         logger.info("get_current_user: TESTING is on. Returning mock user.")
+        mock_user_id = request.headers.get("X-Mock-User-Id")
+        mock_user = None
+        if mock_user_id:
+            try:
+                mock_user = await db.scalar(
+                    select(User).where(User.id == mock_user_id)
+                )
+            except (TypeError, ValueError):
+                mock_user = None
+
+        if mock_user is not None:
+            return {
+                "id": str(mock_user.id),
+                "sub": mock_user.cognito_sub,
+                "given_name": mock_user.first_name,
+                "family_name": mock_user.last_name,
+                CUSTOM_ROLE_CLAIM: mock_user.system_role.value,
+                CUSTOM_NEIGHBOURHOOD_CLAIM: request.headers.get(
+                    "X-Mock-Neighbourhood-Id"
+                ),
+            }
+
         return {
-            "id": request.headers.get("X-Mock-User-Id","00000000-0000-0000-0000-000000000000"),
+            "id": mock_user_id or "00000000-0000-0000-0000-000000000000",
             "sub": request.headers.get("X-Mock-Sub", "00000000-0000-0000-0000-000000000000"),
             "given_name": "Test",
             "family_name": "User",
-            CUSTOM_ROLE_CLAIM: request.headers.get("X-Mock-Role", "SYSTEM_ADMIN"),
+            CUSTOM_ROLE_CLAIM: request.headers.get("X-Mock-Role", "RESIDENT"),
             CUSTOM_NEIGHBOURHOOD_CLAIM: request.headers.get("X-Mock-Neighbourhood-Id"),
         }
 
