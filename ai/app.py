@@ -16,8 +16,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
+from pipeline.utils.frame_buffer import AnnotatedFrameBuffer
 from pipeline.utils.zone_config import filter_detections_by_zones
 from pipeline.processing.alert_confirmation import is_track_ready_to_alert
+
 
 import httpx
 import logging
