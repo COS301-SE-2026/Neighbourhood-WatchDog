@@ -14,7 +14,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { logout } from "@/lib/auth/cognito";
+import { AUTH_EVENT, logout } from "@/lib/auth/cognito";
 import { SidebarTrigger } from "./ui/sidebar";
 
 const Navbar = () => {
@@ -22,8 +22,16 @@ const Navbar = () => {
     const [username, setUsername] = React.useState("");
 
     React.useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setUsername(localStorage.getItem("fullname") ?? "");
+        const syncUsername = () => {
+            setUsername(localStorage.getItem("fullname") ?? "");
+        };
+
+        syncUsername();
+        window.addEventListener(AUTH_EVENT, syncUsername);
+
+        return () => {
+            window.removeEventListener(AUTH_EVENT, syncUsername);
+        };
     }, []);
 
     const handleLogout = async () => {
