@@ -43,7 +43,6 @@ class LoginData(BaseModel):
 
     access_token: Optional[str] = None
     id_token: Optional[str] = None
-    refresh_token: Optional[str] = None
     token_type: Optional[str] = None
     expires_in: Optional[int] = None
 
@@ -75,7 +74,6 @@ class ResendCodeRes(BaseModel):
 class VerifyMFAData(BaseModel):
     access_token: str
     id_token: str
-    refresh_token: Optional[str] = None
     token_type: Optional[str] = None
     expires_in: Optional[int] = None
 
@@ -83,3 +81,13 @@ class VerifyMFAData(BaseModel):
 class VerifyMFARes(BaseModel):
     success: bool
     data: VerifyMFAData
+
+class RefreshTokenData(BaseModel):
+    access_token: str
+    id_token: str
+    token_type: Optional[str] = None
+    expires_in: Optional[int] = None
+
+class RefreshTokenRes(BaseModel):
+    success: bool
+    data: RefreshTokenData

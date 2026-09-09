@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code, respond_to_mfa
+from app.auth.cognito import sign_up, login, confirm_sign_up, resend_code, respond_to_mfa, refresh_tokens, revoke_refresh_token
 from app.models.user import UserRole, User
 import asyncio
 from app.services.audit_service import create_audit_log_item
@@ -161,3 +161,21 @@ async def complete_mfa(payload):
             "expires_in": response.get("expires_in"),
         },
     }
+
+async def refresh_user_session(refresh_token: str):
+    response = await asyncio.to_thread(
+        refresh_tokens,
+        refresh_token
+    )
+
+    return {
+        "success": True,
+        "data": response
+    }
+
+
+async def revoke_user_session(refresh_token: str):
+    await asyncio.to_thread(
+        revoke_refresh_token,
+        refresh_token
+    )

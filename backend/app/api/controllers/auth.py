@@ -19,6 +19,7 @@ from app.schemas.auth import (
     ConfirmSignUpRes,
     ResendCodeRes,
     VerifyMFARes,
+    RefreshTokenRes
 )
 
 from app.services.auth_service import ( #use services
@@ -26,7 +27,9 @@ from app.services.auth_service import ( #use services
     authenticate_user,
     confirm_user,
     resend_confirmation_code,
-    complete_mfa
+    complete_mfa,
+    refresh_user_session,
+    revoke_user_session
 )
 
 
