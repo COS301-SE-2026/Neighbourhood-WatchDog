@@ -23,7 +23,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Update secret in Secrets Manager 
+      - name: Update secret in Secrets Manager
         run: |
           aws secretsmanager put-secret-value \
             --secret-id watchdog/prod/env \
