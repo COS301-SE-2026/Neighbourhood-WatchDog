@@ -84,7 +84,7 @@ export default function SettingsPage() {
             setLastName(data.last_name ?? "");
             setPhoneNumber(data.phone_number ?? "");
 
-            const fullName = `${data.first_name} ?? "" ${data.last_name} ?? ""`.trim();
+            const fullName = `${data.first_name ?? ""} ${data.last_name ?? ""}`.trim();
             updateStoredFullName(fullName);
             queryClient.invalidateQueries({ queryKey: ["userContext"]});
             toast.success("Settings updated");

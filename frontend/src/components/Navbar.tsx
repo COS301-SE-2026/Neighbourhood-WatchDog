@@ -4,6 +4,7 @@ import { Bell, LogOut, Monitor, User, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
+import { useUserContext } from "@/hooks/use-user-context";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -14,16 +15,25 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { logout } from "@/lib/auth/cognito";
+import { AUTH_EVENT, logout } from "@/lib/auth/cognito";
 import { SidebarTrigger } from "./ui/sidebar";
 
 const Navbar = () => {
     const router = useRouter();
     const [username, setUsername] = React.useState("");
-
+    const { data: userContext } = useUserContext();
+    const displayName = userContext?.user.name ?? username;
     React.useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setUsername(localStorage.getItem("fullname") ?? "");
+        const syncUsername = () => {
+            setUsername(localStorage.getItem("fullname") ?? "");
+        };
+
+        syncUsername();
+        window.addEventListener(AUTH_EVENT, syncUsername);
+
+        return () => {
+            window.removeEventListener(AUTH_EVENT, syncUsername);
+        };
     }, []);
 
     const handleLogout = async () => {
@@ -66,7 +76,7 @@ const Navbar = () => {
                         <DropdownMenuLabel>
                             <div className="flex flex-col">
                                 <span className="text-sm font-medium">
-                                    {username}
+                                    {displayName}
                                 </span>
 
                                 <span className="text-xs font-normal text-muted-foreground">
@@ -77,12 +87,12 @@ const Navbar = () => {
 
                         <DropdownMenuSeparator />
 
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => router.push("/dashboard/settings")}>
                             <UserRound
                                 aria-hidden="true"
                                 className="mr-2 size-4"
                             />
-                            My profile
+                            My Profile
                         </DropdownMenuItem>
 
                         <DropdownMenuItem>
