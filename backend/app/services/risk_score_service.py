@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
+from fastapi import HTTPException
 
 from app.core.database import DbSession
 from sqlalchemy import select, func
@@ -57,13 +58,16 @@ async def calculate_risk_score_handler(neighbourhood_id: UUID, db: DbSession):
 
     threshold_stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id == neighbourhood_id)
     threshold_result = await db.execute(threshold_stmt)
-    threshold = threshold_result.scalar_one_or_none()
+    threshold = threshold_result.scalars().first()
 
     if not threshold:
         logger.info("calculate_risk_score: no threshold config for neighbourhood_id=%s falling back to default", neighbourhood_id)
         default_stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id.is_(None))
         default_result = await db.execute(default_stmt)
-        threshold = default_result.scalar_one()
+        threshold = default_result.scalars().first()
+
+    if threshold is None:
+        raise HTTPException(404, "No default risk threshold conflict")
 
     if score <= threshold.low_max:
         classification = RiskLevel.LOW

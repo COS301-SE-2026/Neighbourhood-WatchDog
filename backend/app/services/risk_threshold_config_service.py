@@ -41,13 +41,16 @@ async def get_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, db: D
 
     stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id == neighbourhood_id)
     result = await db.execute(stmt)
-    neighbourhood_risk_config = result.scalar_one_or_none()
+    neighbourhood_risk_config = result.scalars().first()
 
     if not neighbourhood_risk_config:
         logger.info("get_neigbourhood_risk_threshold: no config found for neighbourhood_id=%s, falling back to defualt", neighbourhood_id)
         stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id.is_(None))
         result = await db.execute(stmt)
-        neighbourhood_risk_config = result.scalar_one() #need to put a default in seed script
+        neighbourhood_risk_config = result.scalars().first() #need to put a default in seed script
+
+    if neighbourhood_risk_config is None:
+        raise HTTPException(404, "No default risk threshold conflict")
 
     logger.info("get_neigbourhood_risk_threshold: config retrieved for neighbourhood_id=%s low_max=%s medium_max=%s", neighbourhood_id, neighbourhood_risk_config.low_max, neighbourhood_risk_config.medium_max)
     return RiskThresholdConfigRes(
@@ -88,13 +91,16 @@ async def update_neighbourhood_risk_threshold_handler(neighbourhood_id: UUID, re
     
     stmt = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id == neighbourhood_id)
     result = await db.execute(stmt)
-    neighbourhood_risk_config = result.scalar_one_or_none()
+    neighbourhood_risk_config = result.scalars().first()
 
     if not neighbourhood_risk_config:
         logger.info("get_neigbourhood_risk_threshold: no existing config for neigbourhood_id=%s, creating from default", neighbourhood_id)
         stmt_default = select(RiskThresholdConfig).where(RiskThresholdConfig.neighbourhood_id.is_(None))
         default_result = await db.execute(stmt_default)
-        default_neighbourhood_risk_config = default_result.scalar_one()
+        default_neighbourhood_risk_config = default_result.scalars().first()
+
+        if default_neighbourhood_risk_config is None:
+                raise HTTPException(404, "No default risk threshold conflict")
 
         new_neighbourhood_risk_config = RiskThresholdConfig(
             neighbourhood_id=neighbourhood_id,

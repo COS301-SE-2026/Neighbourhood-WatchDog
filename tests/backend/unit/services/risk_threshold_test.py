@@ -64,13 +64,13 @@ class TestGetRiskThresholdConfig:
             return
 
         config_result = Mock()
-        config_result.scalar_one_or_none.return_value = config
+        config_result.scalars.return_value.first.return_value = config
 
         side_effects = [auth_result, config_result]
 
         if config is None and default_config is not None:
             default_result = Mock()
-            default_result.scalar_one.return_value = default_config
+            default_result.scalars.return_value.first.return_value = default_config
             side_effects.append(default_result)
 
         self.mock_db.execute = AsyncMock(side_effect=side_effects)
@@ -190,13 +190,13 @@ class TestUpdateRiskThresholdConfig:
             return
 
         config_result = Mock()
-        config_result.scalar_one_or_none.return_value = config
+        config_result.scalars.return_value.first.return_value = config
 
         side_effects = [auth_result, config_result]
 
         if config is None and default_config is not None:
             default_result = Mock()
-            default_result.scalar_one.return_value = default_config
+            default_result.scalars.return_value.first.return_value = default_config
             side_effects.append(default_result)
 
         self.mock_db.execute = AsyncMock(side_effect=side_effects)

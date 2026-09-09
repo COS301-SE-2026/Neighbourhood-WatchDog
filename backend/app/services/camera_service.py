@@ -292,12 +292,15 @@ async def list_cameras_handler(property_id, db, claims):
 
     prop_user_result = await db.execute(
         select(PropertyUser)
-        .options(joinedload(PropertyUser.user))
-        .where(PropertyUser.property_id == prop_uuid)
+        .join(PropertyUser.user)
+        .where(
+            PropertyUser.property_id == prop_uuid,
+            User.cognito_sub == claims.get("sub"),
+        )
     )
     prop_user = prop_user_result.scalar_one_or_none()
 
-    if not prop_user or prop_user.user.cognito_sub != claims.get("sub"):
+    if not prop_user:
         raise HTTPException(
             status_code=403,
             detail="This user does not have access to this property",

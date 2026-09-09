@@ -25,7 +25,7 @@ class TestRiskScore:
 
         self.mock_result = Mock()
         self.mock_result.all.side_effect = [self.mock_rows]
-        self.mock_result.scalar_one_or_none.side_effect = [self.mock_threshold]
+        self.mock_result.scalars.return_value.first.return_value = self.mock_threshold
 
         self.mock_db.execute = AsyncMock(return_value=self.mock_result)
 
@@ -38,9 +38,12 @@ class TestRiskScore:
     def reset_side_effects(self, rows=None, threshold=None, default_threshold=None):
         self.mock_result = Mock()
         self.mock_result.all.side_effect = [rows if rows is not None else []]
-        self.mock_result.scalar_one_or_none.side_effect = [threshold]
+
+        first_values = [threshold]
         if default_threshold is not None:
-            self.mock_result.scalar_one.side_effect = [default_threshold]
+            first_values.append(default_threshold)
+        self.mock_result.scalars.return_value.first.side_effect = first_values
+        
 
         self.mock_db.execute = AsyncMock(return_value=self.mock_result)
 
