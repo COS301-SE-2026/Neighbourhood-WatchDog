@@ -87,12 +87,12 @@ const Navbar = () => {
 
                         <DropdownMenuSeparator />
 
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => router.push("/dashboard/settings")}>
                             <UserRound
                                 aria-hidden="true"
                                 className="mr-2 size-4"
                             />
-                            My profile
+                            My Profile
                         </DropdownMenuItem>
 
                         <DropdownMenuItem>
