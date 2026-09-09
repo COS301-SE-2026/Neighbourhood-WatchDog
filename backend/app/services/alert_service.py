@@ -70,8 +70,8 @@ CHUNK_SIZE = 256 * 1024
 def _s3_client():
     return boto3.client(
         "s3",
-        region_name="eu-north-1",
-        endpoint_url="https://s3.eu-north-1.amazonaws.com",
+        region_name="af-south-1",
+        endpoint_url="https://s3.af-south-1.amazonaws.com",
         config=BotoConfig(
             signature_version="s3v4",
             s3={"addressing_style": "virtual"},
