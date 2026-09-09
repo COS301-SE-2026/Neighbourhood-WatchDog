@@ -379,7 +379,7 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
         )
         return None
 
-def _schedule_weapon_clip(camera: CameraSpec, rtsp_url: str, pre_frames: list, weapon_label: str, confidence: float, stop_event: threading.Event) -> None:
+def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, weapon_label: str, confidence: float, stop_event: threading.Event) -> None:
     
     label = weapon_label.lower()
     cooldown_key = (camera.id, label)
@@ -392,8 +392,9 @@ def _schedule_weapon_clip(camera: CameraSpec, rtsp_url: str, pre_frames: list, w
             logger.info(
                 "Weapon alert cooldown active for camera %s / %s",
                 camera.id,
-                label,
+                label
             )
+
             return
 
         _clips_cooldowns[cooldown_key] = now
@@ -416,24 +417,26 @@ def _schedule_weapon_clip(camera: CameraSpec, rtsp_url: str, pre_frames: list, w
         args=(
             alert_id,
             camera,
-            rtsp_url,
-            pre_frames,
-            label,
-            confidence,
-            stop_event,
+            frame_buffer,
+            trigger_sequence,
+            stop_event
         ),
         name=f"watchdog-clip-{camera.id}-{label}",
-        daemon=True,
+        daemon=True
+
+
     ).start()
 
+
     logger.info(
-        "Scheduled footage capture for weapon alert %s on camera %s: "
-        "label=%s, confidence=%.2f, pre_frames=%s",
+        "Scheduled annotated footage capture for weapon alert %s on camera %s: "
+        "label=%s, confidence=%.2f, trigger_sequence=%s",
         alert_id,
         camera.id,
         label,
         confidence,
-        len(pre_frames),
+        trigger_sequence
+        
     )
 
 def _save_weapon_clip(alert_id: str, camera: CameraSpec, rtsp_url: str, pre_frames: list, weapon_label: str, confidence: float, stop_event: threading.Event) -> None:
