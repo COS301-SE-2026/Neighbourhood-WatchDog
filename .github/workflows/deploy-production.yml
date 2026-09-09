@@ -182,7 +182,7 @@ jobs:
 
       - name: Run database migrations
         env:  
-          AWS_REGION: ${{ env.NEW_REVISION }}
+          AWS_REGION: ${{ secrets.NEW_REVISION }}
         run: |
           RESULT=$(aws ecs run-task \
             --cluster watchdog-prod-cluster \
