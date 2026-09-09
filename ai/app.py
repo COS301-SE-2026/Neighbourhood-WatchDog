@@ -439,42 +439,40 @@ def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer
         
     )
 
-def _save_weapon_clip(alert_id: str, camera: CameraSpec, rtsp_url: str, pre_frames: list, weapon_label: str, confidence: float, stop_event: threading.Event) -> None:
-    
+def _save_weapon_clip(alert_id: str, camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, stop_event: threading.Event) -> None:
+    """
+    Build a clip from frames already annotated by the detection loop.
+
+    No YOLO, DeepSort, or second RTSP capture is used here.
+    """
+
     api_key = keyring.get_password("WatchDog", "api_key") or INTERNAL_API_TOKEN
     headers = {"X-Internal-Token": api_key}
 
-    post_frames = []
-    capture = _open_stream(rtsp_url)
+    pre_frames = frame_buffer.snapshot_through(trigger_sequence)
+    post_frames: list = []
 
-    try:
-        if capture is None:
-            logger.warning(
-                "Could not capture post-event footage for alert %s / camera %s",
-                alert_id,
-                camera.id,
-            )
-        else:
-            deadline = time.monotonic() + 3.0
+    next_sequence = trigger_sequence
+    deadline = time.monotonic() + 3.0
 
-            while time.monotonic() < deadline and not stop_event.is_set():
-                ok, frame = capture.read()
+    while time.monotonic() < deadline and not stop_event.is_set():
+        new_frames, next_sequence = frame_buffer.wait_for_after(
+            next_sequence,
+            deadline
+        )
 
-                if not ok:
-                    break
+        if not new_frames:
+            break
 
-                post_frames.append(frame)
-    finally:
-        if capture is not None:
-            capture.release()
+        post_frames.extend(new_frames)
 
     all_frames = pre_frames + post_frames
 
     if not all_frames:
         logger.warning(
-            "No frames available for footage of alert %s / camera %s",
+            "No annotated frames available for footage of alert %s / camera %s",
             alert_id,
-            camera.id,
+            camera.id
         )
         return
 
@@ -487,7 +485,11 @@ def _save_weapon_clip(alert_id: str, camera: CameraSpec, rtsp_url: str, pre_fram
     ]
 
     if not all_frames:
-        logger.warning("No consistently sized frames available for alert %s / camera %s", alert_id, camera.id)
+        logger.warning(
+            "No consistently sized frames available for alert %s / camera %s",
+            alert_id,
+            camera.id
+        )
         return
 
     raw_fd, raw_path = tempfile.mkstemp(suffix=".mp4")
@@ -505,14 +507,15 @@ def _save_weapon_clip(alert_id: str, camera: CameraSpec, rtsp_url: str, pre_fram
         )
 
         if not writer.isOpened():
-            raise RuntimeError("OpenCV could not initialise the temporary clip writer")
+            raise RuntimeError(
+                "OpenCV could not initialise the temporary clip writer"
+            )
 
         try:
             for frame in all_frames:
                 writer.write(frame)
         finally:
             writer.release()
-
 
         subprocess.run(
             [
@@ -542,18 +545,29 @@ def _save_weapon_clip(alert_id: str, camera: CameraSpec, rtsp_url: str, pre_fram
             upload_response = httpx.post(
                 f"{BACKEND_URL}/internal/alerts/{alert_id}/clip",
                 headers=headers,
-                files={"clip": ("weapon-alert.mp4", clip_file, "video/mp4")},
-                timeout=30.0,
+                files={
+                    "clip": (
+                        "weapon-alert.mp4",
+                        clip_file,
+                        "video/mp4"
+                    )
+                },
+                timeout=30.0
             )
+
+
         upload_response.raise_for_status()
 
-        logger.info(
-            "Clip uploaded through backend and linked to alert %s",
-            alert_id,
-        )
+        logger.info("Annotated clip uploaded through backend and linked to alert %s", alert_id)
 
     except Exception:
-        logger.exception("Footage capture/backend upload failed for alert %s / camera %s", alert_id, camera.id)
+        logger.exception(
+            "Annotated footage capture/backend upload failed "
+            "for alert %s / camera %s",
+            alert_id,
+            camera.id 
+            
+        )
 
     finally:
         for clip_path in (raw_path, h264_path):
