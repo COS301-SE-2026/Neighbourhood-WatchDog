@@ -2,7 +2,7 @@ name: Deploy to Production AWS
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "infra/new-aws-account" ]
 
 concurrency:
   group: production-deploy
@@ -63,12 +63,12 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           aws ecr get-login-password --region ${AWS_REGION} \
-            | docker login --username AWS --password-stdin 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+            | docker login --username AWS --password-stdin 778312248988.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
           IMAGE_TAG="${{ github.sha }}"
           docker build -t watchdog-backend ./backend
-          docker tag watchdog-backend:latest 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:$IMAGE_TAG
-          docker push 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:$IMAGE_TAG
+          docker tag watchdog-backend:latest 778312248988.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:$IMAGE_TAG
+          docker push 778312248988.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:$IMAGE_TAG
 
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
@@ -81,17 +81,17 @@ jobs:
             --query 'taskDefinition' \
             --region ${AWS_REGION} > task-def.json
 
-            NEW_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:${{ env.IMAGE_TAG }}" \
+            NEW_TASK_DEF=$(jq --arg IMAGE "778312248988.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:${{ env.IMAGE_TAG }}" \
               '.containerDefinitions[0].image = $IMAGE 
               | .containerDefinitions[0].secrets = (
                 (.containerDefinitions[0].secrets // [])
                 | map(select(.name != "FAILOVER_CONTROLLER_TOKEN" and .name != "GO2RTC_API_USERNAME" and .name != "GO2RTC_API_PASSWORD" and .name != "SMTP_SENDER_EMAIL" and .name != "SMTP_APP_PASSWORD"))
                 + [
-                    {"name": "FAILOVER_CONTROLLER_TOKEN", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:FAILOVER_CONTROLLER_TOKEN::"},
-                    {"name": "GO2RTC_API_USERNAME", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:GO2RTC_API_USERNAME::"},
-                    {"name": "GO2RTC_API_PASSWORD", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:GO2RTC_API_PASSWORD::"},
-                    {"name": "SMTP_SENDER_EMAIL", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:SMTP_SENDER_EMAIL::"},
-                    {"name": "SMTP_APP_PASSWORD", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:SMTP_APP_PASSWORD::"}
+                    {"name": "FAILOVER_CONTROLLER_TOKEN", "valueFrom": "arn:aws:secretsmanager:af-south-1:778312248988:secret:watchdog/prod/env-wgseNY:FAILOVER_CONTROLLER_TOKEN::"},
+                    {"name": "GO2RTC_API_USERNAME", "valueFrom": "arn:aws:secretsmanager:af-south-1:778312248988:secret:watchdog/prod/env-wgseNY:GO2RTC_API_USERNAME::"},
+                    {"name": "GO2RTC_API_PASSWORD", "valueFrom": "arn:aws:secretsmanager:af-south-1:778312248988:secret:watchdog/prod/env-wgseNY:GO2RTC_API_PASSWORD::"},
+                    {"name": "SMTP_SENDER_EMAIL", "valueFrom": "arn:aws:secretsmanager:af-south-1:778312248988:secret:watchdog/prod/env-wgseNY:SMTP_SENDER_EMAIL::"},
+                    {"name": "SMTP_APP_PASSWORD", "valueFrom": "arn:aws:secretsmanager:af-south-1:778312248988:secret:watchdog/prod/env-wgseNY:SMTP_APP_PASSWORD::"}
                   ]
               )
               | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
@@ -118,12 +118,12 @@ jobs:
             --query 'taskDefinition' \
             --region ${AWS_REGION} > worker-task-def.json
 
-          NEW_WORKER_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
+          NEW_WORKER_TASK_DEF=$(jq --arg IMAGE "778312248988.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
             '.containerDefinitions[0].image = $IMAGE 
             | .containerDefinitions[0].secrets = (
                 (.containerDefinitions[0].secrets // [])
                 | map(select(.name != "S3_BUCKET_NAME"))
-                + [{"name": "S3_BUCKET_NAME", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:S3_BUCKET_NAME::"}]
+                + [{"name": "S3_BUCKET_NAME", "valueFrom": "arn:aws:secretsmanager:af-south-1:778312248988:secret:watchdog/prod/env-wgseNY:S3_BUCKET_NAME::"}]
               )
             | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
             worker-task-def.json)
@@ -148,7 +148,7 @@ jobs:
             --query 'taskDefinition' \
             --region ${AWS_REGION} > beat-task-def.json
 
-          NEW_BEAT_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
+          NEW_BEAT_TASK_DEF=$(jq --arg IMAGE "778312248988.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
             '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
             beat-task-def.json)
 
