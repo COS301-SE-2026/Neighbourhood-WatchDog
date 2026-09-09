@@ -1,0 +1,18 @@
+watchdog-infra/__main__.py
+  h_cf6208e37032c0 4-7,9-14,16-18,21,23-25,27-28,30-32,34-50,52-53,55-56,58-65,67-74,76-83,85,87-90,92-96,98-101,103-104,106,108-112,114-120,122-136
+watchdog-infra/Pulumi.prod.yaml
+  h_cf6208e37032c0 1,4-5
+watchdog-infra/Pulumi.yaml
+  h_cf6208e37032c0 2-3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "70749232ac617949165292c411495fc20c8380a4",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
