@@ -34,7 +34,7 @@ def test_snapshot_returns_copies():
 
     later_snapshot = buffer.snapshot_through(sequence)
 
-    assert later_snapshot[0][0, 0] == 5
+    assert int(later_snapshot[0][0, 0, 0]) == 5
 
 
 def test_buffer_is_bounded():
@@ -79,5 +79,5 @@ def test_wait_for_after_returns_frames_after_sequence():
     assert len(frames) == 1
     
     assert frames[0][0, 0, 0] == 2
-    
+
     assert latest_sequence == trigger_sequence + 1
