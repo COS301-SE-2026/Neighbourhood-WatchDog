@@ -7,7 +7,6 @@ import threading
 import tempfile
 import subprocess
 from dotenv import load_dotenv
-from collections import deque
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from fastapi import APIRouter, FastAPI, Query
