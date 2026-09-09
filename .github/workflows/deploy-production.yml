@@ -186,7 +186,7 @@ jobs:
         run: |
           RESULT=$(aws ecs run-task \
             --cluster watchdog-prod-cluster \
-            --task-definition watchdog-backend-task: ${NEW_REVISION} \
+            --task-definition watchdog-backend-task:${NEW_REVISION} \
             --launch-type EC2 \
             --overrides '{"containerOverrides":[{"name":"backend","memory":256,"command":["alembic","upgrade","head"]}]}')
 
