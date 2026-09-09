@@ -2,7 +2,7 @@ import { getApiBaseUrl } from '@/lib/api/auth';
 import { jwtDecode } from 'jwt-decode';
 
 export const AUTH_EVENT = 'watchdog-auth-changed';
-
+import { storeAccessToken, readAccessToken, clearAccessToken } from './token_store';
 // Types for API responses
 interface SignUpResponse {
   user_sub: string;
@@ -59,6 +59,19 @@ interface VerifyMfaResponse {
   };
 }
 
+interface RefreshResponse {
+  success: boolean;
+  data: {
+  access_token: string;
+  id_token: string;
+  expires_in?: number;
+  token_type?: string | null;
+};
+}
+
+let refreshPromise: Promise<string> | null = null;
+
+
 export interface StoredUser {
   sub: string;
   fullname: string;
@@ -73,6 +86,7 @@ const apiClient = async <T>(
 ): Promise<T> => {
   const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
     ...options,
+    credentials: "include",
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -197,8 +211,8 @@ export const setSession = (tokens: {
     address?: { formatted?: string };
   }>(tokens.idToken);
 
-  localStorage.setItem('accessToken', tokens.accessToken);
-  localStorage.setItem('idToken', tokens.idToken);
+  storeAccessToken(tokens.accessToken, tokens.expiresIn ?? 3600);
+
   localStorage.setItem('userSub', claims.sub);
   localStorage.setItem('fullname', claims.name ?? '');
   localStorage.setItem('email', claims.email ?? '');
@@ -220,36 +234,17 @@ export const updateStoredFullName = (fullname: string) => {
 }
 // Get token
 export const getAccessToken = (): string | null => {
-  if (typeof globalThis.window === 'undefined') return null;
-  
-  // Chekc if token is expired, if it is, logout user
-  const expiry = localStorage.getItem('tokenExpiry');
-  if (expiry && Date.now() > Number.parseInt(expiry)) {
-    // Token expired
-    logout();
-    return null;
-  }
+  return readAccessToken();
   
   return localStorage.getItem('accessToken');
 };
 
 //Checks if they are logged in 
 export const isAuthenticated = (): boolean => {
-  if (typeof globalThis.window === 'undefined') return false;
-  
-  const token = getAccessToken();
-  return !!token;
+  return readAccessToken() !== null;
 };
 
-// Logout
-//Do not need to call backend... we are not handling sessions
-export const logout = (): void => {
-  if (typeof window === 'undefined') return;
-  
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('idToken');
-  localStorage.removeItem('tokenExpiry');
-};
+
 
 export const getStoredUser = (): StoredUser | null => {
   if (typeof window === 'undefined') return null;
@@ -289,4 +284,55 @@ export const verifyMfa = async (
     idToken: response.data.id_token,
     expiresIn: response.data.expires_in ?? 0,
   };
+};
+
+export const refreshSession = async (): Promise<string> => {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = (async () => {
+    const response = await apiClient<RefreshResponse>("/auth/refresh", {
+      method: "POST",
+    });
+
+    setSession({
+      accessToken: response.data.access_token,
+      idToken: response.data.id_token,
+      expiresIn: response.data.expires_in,
+    });
+
+    return response.data.access_token;
+  })();
+
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+};
+
+
+export const clearSession = (): void => {
+  clearAccessToken();
+
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("userSub");
+    localStorage.removeItem("fullname");
+    localStorage.removeItem("email");
+    localStorage.removeItem("address");
+
+    window.dispatchEvent(new Event(AUTH_EVENT));
+  }
+};
+
+export const logout = async (): Promise<void> => {
+  try {
+    await fetch(`${getApiBaseUrl()}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+  } finally {
+    clearSession();
+  }
 };
