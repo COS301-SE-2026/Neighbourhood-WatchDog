@@ -302,3 +302,18 @@ class TestAlertMetricRes:
         assert res.items[0].status == "RESOLVED"
         assert res.pagination.total == 57
         assert res.pagination.has_more is True
+
+    def test_empty_items_page_is_valid(self):
+        """Page without items is still valid"""
+        res = AlertMetricsRes(
+            total_alerts=0,
+            acknowledged_count=0,
+            pending_count=0,
+            average_response_seconds=None,
+            items=[],
+            pagination=self._make_pagination(total=0, has_more=False),
+        )
+
+        assert res.items == []
+        assert res.average_response_seconds is None
+        assert res.pagination.has_more is False
