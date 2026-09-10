@@ -87,11 +87,11 @@ jobs:
                 (.containerDefinitions[0].secrets // [])
                 | map(select(.name != "FAILOVER_CONTROLLER_TOKEN" and .name != "GO2RTC_API_USERNAME" and .name != "GO2RTC_API_PASSWORD" and .name != "SMTP_SENDER_EMAIL" and .name != "SMTP_APP_PASSWORD"))
                 + [
-                    {"name": "FAILOVER_CONTROLLER_TOKEN", "valueFrom": "arn:aws:secretsmanager:af-south-1:778312248988:secret:watchdog/prod/env-wgseNY:FAILOVER_CONTROLLER_TOKEN::"},
-                    {"name": "GO2RTC_API_USERNAME", "valueFrom": "arn:aws:secretsmanager:af-south-1:778312248988:secret:watchdog/prod/env-wgseNY:GO2RTC_API_USERNAME::"},
-                    {"name": "GO2RTC_API_PASSWORD", "valueFrom": "arn:aws:secretsmanager:af-south-1:778312248988:secret:watchdog/prod/env-wgseNY:GO2RTC_API_PASSWORD::"},
-                    {"name": "SMTP_SENDER_EMAIL", "valueFrom": "arn:aws:secretsmanager:af-south-1:778312248988:secret:watchdog/prod/env-wgseNY:SMTP_SENDER_EMAIL::"},
-                    {"name": "SMTP_APP_PASSWORD", "valueFrom": "arn:aws:secretsmanager:af-south-1:778312248988:secret:watchdog/prod/env-wgseNY:SMTP_APP_PASSWORD::"}
+                    {"name": "FAILOVER_CONTROLLER_TOKEN", "valueFrom": "arn:aws:secretsmanager:${AWS_REGION}:778312248988:secret:watchdog/prod/env-wgseNY:FAILOVER_CONTROLLER_TOKEN::"},
+                    {"name": "GO2RTC_API_USERNAME", "valueFrom": "arn:aws:secretsmanager:${AWS_REGION}:778312248988:secret:watchdog/prod/env-wgseNY:GO2RTC_API_USERNAME::"},
+                    {"name": "GO2RTC_API_PASSWORD", "valueFrom": "arn:aws:secretsmanager:${AWS_REGION}:778312248988:secret:watchdog/prod/env-wgseNY:GO2RTC_API_PASSWORD::"},
+                    {"name": "SMTP_SENDER_EMAIL", "valueFrom": "arn:aws:secretsmanager:${AWS_REGION}:778312248988:secret:watchdog/prod/env-wgseNY:SMTP_SENDER_EMAIL::"},
+                    {"name": "SMTP_APP_PASSWORD", "valueFrom": "arn:aws:secretsmanager:${AWS_REGION}:778312248988:secret:watchdog/prod/env-wgseNY:SMTP_APP_PASSWORD::"}
                   ]
               )
               | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
@@ -123,7 +123,7 @@ jobs:
             | .containerDefinitions[0].secrets = (
                 (.containerDefinitions[0].secrets // [])
                 | map(select(.name != "S3_BUCKET_NAME"))
-                + [{"name": "S3_BUCKET_NAME", "valueFrom": "arn:aws:secretsmanager:af-south-1:778312248988:secret:watchdog/prod/env-wgseNY:S3_BUCKET_NAME::"}]
+                + [{"name": "S3_BUCKET_NAME", "valueFrom": "arn:aws:secretsmanager:${AWS_REGION}:778312248988:secret:watchdog/prod/env-wgseNY:S3_BUCKET_NAME::"}]
               )
             | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
             worker-task-def.json)
@@ -162,25 +162,7 @@ jobs:
 
           echo "NEW_BEAT_REVISION=$NEW_BEAT_REVISION" >> $GITHUB_ENV
 
-      - name: Deploy Celery worker and beat
-        run: |
-          aws ecs update-service \
-            --cluster watchdog-prod-cluster \
-            --service watchdog-celery-worker-service \
-            --task-definition watchdog-celery-worker-task:${{ env.NEW_WORKER_REVISION }} \
-            --force-new-deployment
-
-          aws ecs update-service \
-            --cluster watchdog-prod-cluster \
-            --service watchdog-celery-beat-service \
-            --task-definition watchdog-celery-beat-task:${{ env.NEW_BEAT_REVISION }} \
-            --force-new-deployment
-
-          aws ecs wait services-stable \
-            --cluster watchdog-prod-cluster \
-            --services watchdog-celery-worker-service watchdog-celery-beat-service
-
-      - name: Run database migrations
+            - name: Run database migrations
         run: |
           RESULT=$(aws ecs run-task \
             --cluster watchdog-prod-cluster \
@@ -213,6 +195,24 @@ jobs:
             echo "Migration failed"
             exit 1
           fi
+
+      - name: Deploy Celery worker and beat
+        run: |
+          aws ecs update-service \
+            --cluster watchdog-prod-cluster \
+            --service watchdog-celery-worker-service \
+            --task-definition watchdog-celery-worker-task:${{ env.NEW_WORKER_REVISION }} \
+            --force-new-deployment
+
+          aws ecs update-service \
+            --cluster watchdog-prod-cluster \
+            --service watchdog-celery-beat-service \
+            --task-definition watchdog-celery-beat-task:${{ env.NEW_BEAT_REVISION }} \
+            --force-new-deployment
+
+          aws ecs wait services-stable \
+            --cluster watchdog-prod-cluster \
+            --services watchdog-celery-worker-service watchdog-celery-beat-service
 
       - name: Deploy new task definition to service
         run: | 
