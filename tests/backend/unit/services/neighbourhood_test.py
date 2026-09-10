@@ -757,3 +757,71 @@ class TestLeaveNeighbourhood:
         assert property_obj.neighbourhood_id is None
         mock_db.delete.assert_not_awaited()
         mock_db.commit.assert_awaited_once()
+
+
+    @pytest.mark.asyncio
+    async def test_missing_claims_returns_401(self):
+        mock_db, _ = make_mock_db()
+
+        with pytest.raises(HTTPException) as exception:
+            await leave_neighbourhood_handler(
+                neighbourhood_id=uuid4(),
+                property_id=uuid4(),
+                db=mock_db,
+                claims=None,
+            )
+
+        assert exception.value.status_code == 401
+        assert exception.value.detail == "Not authenticated"
+
+        mock_db.execute.assert_not_awaited()
+        mock_db.commit.assert_not_awaited()
+
+        mock_db.rollback.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_property_not_in_neighbourhood_returns_404(self):
+        mock_db, _ = make_mock_db()
+
+        mock_db.execute = AsyncMock(
+            return_value=make_scalar_result(None)
+        )
+
+        with pytest.raises(HTTPException) as exception:
+            await leave_neighbourhood_handler(
+                neighbourhood_id=uuid4(),
+                property_id=uuid4(),
+                db=mock_db,
+                claims={"id": str(uuid4())},
+            )
+
+        assert exception.value.status_code == 404
+        assert (
+            exception.value.detail
+            == "Property is not part of this neighbourhood"
+        )
+
+        mock_db.commit.assert_not_awaited()
+        mock_db.rollback.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_unexpected_database_error_returns_500(self):
+        mock_db, _ = make_mock_db()
+
+        mock_db.execute = AsyncMock(
+            side_effect=RuntimeError("database unavailable")
+        )
+
+        with pytest.raises(HTTPException) as exception:
+            await leave_neighbourhood_handler(
+                neighbourhood_id=uuid4(),
+                property_id=uuid4(),
+                db=mock_db,
+                claims={"id": str(uuid4())},
+            )
+
+        assert exception.value.status_code == 500
+        assert exception.value.detail == "Failed to leave neighbourhood"
+
+        mock_db.commit.assert_not_awaited()
+        mock_db.rollback.assert_awaited_once()
