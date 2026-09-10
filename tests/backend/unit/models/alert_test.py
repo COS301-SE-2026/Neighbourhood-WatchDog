@@ -267,3 +267,14 @@ class TestAlertMetricItem:
 
         with pytest.raises(ValidationError):
             AlertMetricItem(**data)
+
+    def test_missing_created_at_raises_validation_error(self):
+        data = _make_metric_item()
+        del data["created_at"]
+
+        with pytest.raises(ValidationError):
+            AlertMetricItem(**data)
+
+    def test_from_attributes_config_present(self):
+        """model_config should allow construction from ORM objects"""
+        assert AlertMetricItem.model_config.get("from_attributes") is True
