@@ -688,3 +688,72 @@ class TestLeaveNeighbourhood:
         assert audit_kwargs["new_values"] == {
             "neighbourhood_id": None,
         }
+
+
+    @pytest.mark.asyncio
+    async def test_membership_remains_when_user_has_another_property(self):
+        mock_db, _ = make_mock_db()
+
+        neighbourhood_id = uuid4()
+        property_id = uuid4()
+        other_property_id = uuid4()
+        user_id = uuid4()
+
+        property_obj = Mock()
+        property_obj.id = property_id
+        property_obj.neighbourhood_id = neighbourhood_id
+
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_scalar_result(property_obj),
+                make_scalar_result(other_property_id),
+            ]
+        )
+        mock_db.delete = AsyncMock()
+
+        await leave_neighbourhood_handler(
+            neighbourhood_id=neighbourhood_id,
+            property_id=property_id,
+            db=mock_db,
+            claims={"id": str(user_id)},
+        )
+
+        assert property_obj.neighbourhood_id is None
+        assert mock_db.execute.await_count == 2
+
+        # The membership query is skipped because another property exists.
+        mock_db.delete.assert_not_awaited()
+        mock_db.commit.assert_awaited_once()
+        mock_db.rollback.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_missing_membership_does_not_prevent_property_leaving(self):
+        mock_db, _ = make_mock_db()
+
+        neighbourhood_id = uuid4()
+        property_id = uuid4()
+        user_id = uuid4()
+
+        property_obj = Mock()
+        property_obj.id = property_id
+        property_obj.neighbourhood_id = neighbourhood_id
+
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_scalar_result(property_obj),
+                make_scalar_result(None),  
+                make_scalar_result(None),
+            ]
+        )
+        mock_db.delete = AsyncMock()
+
+        await leave_neighbourhood_handler(
+            neighbourhood_id=neighbourhood_id,
+            property_id=property_id,
+            db=mock_db,
+            claims={"id": str(user_id)},
+        )
+
+        assert property_obj.neighbourhood_id is None
+        mock_db.delete.assert_not_awaited()
+        mock_db.commit.assert_awaited_once()
