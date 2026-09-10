@@ -49,12 +49,29 @@ export function AlertMetrics({
 }: AlertMetricsProps) {
   const [cameraId, setCameraId] = useState<string | undefined>();
   const [officerId, setOfficerId] = useState<string | undefined>();
+  const [page, setPage] = useState(1);
+  const pageSize = 30;
 
   const { metrics, loading, error, refetch } = useAlertMetrics(
     neighbourhoodId,
     cameraId,
     officerId,
+    (page - 1) * pageSize,
+    pageSize,
   );
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil((metrics?.pagination.total ?? 0) / pageSize),
+  );
+
+  const changeFilter = (
+    value: string,
+    setValue: (value: string | undefined) => void,
+  ) => {
+    setValue(value || undefined);
+    setPage(1);
+  };
 
   return (
     <div className="space-y-4">
@@ -89,7 +106,7 @@ export function AlertMetrics({
         {cameraOptions.length > 0 && (
           <select
             value={cameraId ?? ""}
-            onChange={(e) => setCameraId(e.target.value || undefined)}
+            onChange={(e) => changeFilter(e.target.value, setCameraId)}
             className="bg-card border text-foreground text-xs rounded px-2 py-1"
           >
             <option value="">All cameras</option>
@@ -103,7 +120,7 @@ export function AlertMetrics({
         {officerOptions.length > 0 && (
           <select
             value={officerId ?? ""}
-            onChange={(e) => setOfficerId(e.target.value || undefined)}
+            onChange={(e) => changeFilter(e.target.value, setOfficerId)}
             className="bg-card border text-foreground text-xs rounded px-2 py-1"
           >
             <option value="">All officers</option>
@@ -181,6 +198,47 @@ export function AlertMetrics({
           </table>
         </div>
       )}
+      <div className="flex items-center justify-between gap-3 pt-4 text-xs text-muted-foreground">
+        <span>
+          Page {page} of {totalPages}
+        </span>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setPage(1)}
+            disabled={loading || page === 1}
+            className="rounded-md border border-border px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            First
+          </button>
+          <button
+            type="button"
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            disabled={loading || page === 1}
+            className="rounded-md border border-border px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Previous
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              setPage((current) => Math.min(totalPages, current + 1))
+            }
+            disabled={loading || page === totalPages}
+            className="rounded-md border border-border px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Next
+          </button>
+          <button
+            type="button"
+            onClick={() => setPage(totalPages)}
+            disabled={loading || page === totalPages}
+            className="rounded-md border border-border px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Last
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
