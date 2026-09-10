@@ -75,6 +75,7 @@ class AlertMetricsRes(BaseModel):
 	pending_count: int
 	average_response_seconds: float | None = None
 	items: list[AlertMetricItem]
+	pagination: Pagination
       
 class TimeIntervalsEnum(str, Enum):
 	DAILY = "DAILY"
