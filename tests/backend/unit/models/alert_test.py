@@ -2,7 +2,7 @@ from pydantic import ValidationError
 import pytest
 from uuid import uuid4
 from datetime import datetime, timezone
-from app.schemas.alert import AlertRes, AcknowledgeAlertRes, ListAlertsRes, Pagination
+from app.schemas.alert import AlertRes, AcknowledgeAlertRes, ListAlertsRes, Pagination, AlertMetricItem, AlertMetricsRes
 
 def _make_alert_res(**overrides):
     base = {
@@ -225,3 +225,15 @@ class TestPagination:
             Pagination(total=42
                        , offset=0
                        , has_more=True)
+
+def _make_metric_item(**overrides):
+    base = {
+        "alert_id": uuid4(),
+        "camera_id": uuid4(),
+        "status": "PENDING",
+        "response_seconds": None,
+        "acknowledged_by": None,
+        "created_at": datetime.now(timezone.utc),
+    }
+    base.update(overrides)
+    return base
