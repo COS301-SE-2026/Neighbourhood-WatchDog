@@ -3,7 +3,7 @@ from sqlalchemy import select
 from typing import Annotated
 
 from app.auth.dependencies import get_current_user
-from app.core import config
+from app.core.config import config
 from app.core.database import DbSession
 from app.services.user_service import create_user
 from app.models.user import User
@@ -40,7 +40,9 @@ def set_refresh_cookie(response: Response, refresh_token: str) -> None:
     response.set_cookie(
         key=REFRESH_COOKIE_NAME,
         value=refresh_token,
-        max_age=config.refresh_cookie_secure,
+        max_age=config.refresh_cookie_max_age,
+        httponly=True,
+        secure=config.refresh_cookie_secure,
         samesite=config.refresh_cookie_samesite,
         path=REFRESH_COOKIE_PATH
     )
@@ -51,8 +53,7 @@ def clear_refresh_cookie(response: Response) -> None:
         path=REFRESH_COOKIE_PATH,
         secure=config.refresh_cookie_secure,
         samesite=config.refresh_cookie_samesite,
-        httponly=True,
-        path=REFRESH_COOKIE_PATH
+        httponly=True
     )
 
 

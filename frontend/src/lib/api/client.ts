@@ -1,3 +1,5 @@
+import { getAccessToken, refreshSession, clearSession } from "@/lib/auth/cognito"
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface FetchOptions {
@@ -5,38 +7,69 @@ interface FetchOptions {
   	body?: unknown
 }
 
+async function sendRequest(
+	endpoint: string,
+	options: FetchOptions,
+	token: string
+): Promise<Response> {
+	const { method = "GET", body} = options;
+
+	return fetch(`${API_BASE}${endpoint}`, {
+		method,
+		credentials: "include",
+		headers: {
+			"Content-Type": "application/json",
+			Authorization: `Bearer ${token}`
+		},
+		body: body === undefined ? undefined : JSON.stringify(body)
+	});
+}
+
 export async function apiCall<T>(
 	endpoint: string,
 	options: FetchOptions = {}
 ): Promise<T> {
-	const { method = 'GET', body } = options //  defaul method set to get
 
-	const accessToken = localStorage.getItem("accessToken");
+	let token = getAccessToken()
 
-	const headers: Record<string, string> = {
-		'Content-Type': 'application/json',
-		'Authorization': 'Bearer ' + accessToken,
-		// TODO: Remeber to come back and extract the actual auth token when zaman has set up the stuff
+	if (!token) {
+		try {
+			token = await refreshSession();
+		} catch {
+			clearSession();
+			throw new Error("Your session has expired. Please log in again.")
+		}
 	}
 
-	const response = await fetch(`${API_BASE}${endpoint}`,{
-		method,
-		headers,
-		body: body ? JSON.stringify(body) : undefined,
-	})
+	let response = await sendRequest(endpoint, options, token);
 
-	if (!response.ok) {
-		let errorMsg = `API call failed: ${response.statusText}`;
+	if (response.status === 401) {
 
 		try {
-			const errorBody = await response.json();
-			console.error("API error response:", errorBody);
-			errorMsg = errorBody.detail || errorBody.message || errorMsg;
+			token = await refreshSession();
+			response = await sendRequest(endpoint, options, token);
 		} catch {
+			clearSession();
+			throw new Error("Your session has expired. Please log in again.");
+		}
+	}
+
+	if (!response.ok) {
+		let errorMessage = `API call failed: ${response.statusText}`
+		try {
+			const errorBody = await response.json();
+			errorMessage = 
+				errorBody.detail?.message ||
+				errorBody.detail ||
+				errorBody.message ||
+				errorMessage;
+		} catch {
+		
 		}
 
-		throw new Error(errorMsg);
+		throw new Error(errorMessage);
 	}
+	
 
 	if (response.status === 204) {
 		return undefined as T;

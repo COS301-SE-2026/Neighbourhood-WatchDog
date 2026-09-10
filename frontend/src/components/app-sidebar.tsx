@@ -370,10 +370,7 @@ export function AppSidebar() {
 
   const handleLogout = async () => {
 
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("idToken");
-
-    logout();
+    await logout();
     router.push("/auth/login");
   };
 

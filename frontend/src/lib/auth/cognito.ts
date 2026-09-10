@@ -23,7 +23,6 @@ interface LoginResponse {
 
     access_token?: string;
     id_token?: string;
-    refresh_token?: string | null;
     token_type?: string | null;
     expires_in?: number;
   };
@@ -53,7 +52,6 @@ interface VerifyMfaResponse {
   data: {
     access_token: string;
     id_token: string;
-    refresh_token?: string | null;
     token_type?: string | null;
     expires_in?: number;
   };
@@ -218,9 +216,6 @@ export const setSession = (tokens: {
   localStorage.setItem('email', claims.email ?? '');
   localStorage.setItem('address', claims.address?.formatted ?? '');
 
-  if (typeof tokens.expiresIn === 'number') {
-    localStorage.setItem('tokenExpiry', String(Date.now() + tokens.expiresIn * 1000));
-  }
 
   window.dispatchEvent(new Event(AUTH_EVENT));
   
@@ -235,9 +230,7 @@ export const updateStoredFullName = (fullname: string) => {
 // Get token
 export const getAccessToken = (): string | null => {
   return readAccessToken();
-  
-  return localStorage.getItem('accessToken');
-};
+  };
 
 //Checks if they are logged in 
 export const isAuthenticated = (): boolean => {
