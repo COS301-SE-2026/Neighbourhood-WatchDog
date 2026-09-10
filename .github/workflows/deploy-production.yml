@@ -56,6 +56,9 @@ jobs:
               "FAILOVER_FAILURE_PROBES": "${{ secrets.FAILOVER_FAILURE_PROBES }}",
               "SMTP_SENDER_EMAIL": "${{ secrets.SMTP_SENDER_EMAIL }}",
               "SMTP_APP_PASSWORD": "${{ secrets.SMTP_APP_PASSWORD }}"
+              "REFRESH_COOKIE_SECURE": "${{ secrets.REFRESH_COOKIE_SECURE }}"
+              "REFRESH_COOKIE_SAMESITE": "${{ secrets.REFRESH_COOKIE_SAMESITE }}"
+              "REFRESH_COOKIE_MAX_AGE": "${{ secrets.REFRESH_COOKIE_MAX_AGE }}"
             }'
       
       - name: Build, tag, and push image to ECR
@@ -93,6 +96,9 @@ jobs:
                     {"name": "GO2RTC_API_PASSWORD", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:GO2RTC_API_PASSWORD::"},
                     {"name": "SMTP_SENDER_EMAIL", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:SMTP_SENDER_EMAIL::"},
                     {"name": "SMTP_APP_PASSWORD", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:SMTP_APP_PASSWORD::"}
+                    {"name": "REFRESH_COOKIE_SECURE", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:REFRESH_COOKIE_SECURE::"},
+                    {"name": "REFRESH_COOKIE_SAMESITE", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:REFRESH_COOKIE_SAMESITE::"},
+                    {"name": "REFRESH_COOKIE_MAX_AGE", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:REFRESH_COOKIE_MAX_AGE::"},
                   ]
               )
               | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
