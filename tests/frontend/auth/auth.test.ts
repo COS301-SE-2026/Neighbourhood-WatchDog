@@ -409,6 +409,78 @@ describe("MFA", () => {
   });
 });
 
+
+describe("refresh session", () => {
+  test("restores access token into memory", async () => {
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          access_token: "refreshed-access-token",
+          id_token: TEST_ID_TOKEN,
+          expires_in: 3600,
+          token_type: "Bearer",
+        },
+      }),
+    });
+
+    const token = await refreshSession();
+
+    expect(token).toBe("refreshed-access-token");
+    expect(getAccessToken()).toBe("refreshed-access-token");
+    expect(localStorage.getItem("accessToken")).toBeNull();
+    expect(localStorage.getItem("idToken")).toBeNull();
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/auth/refresh"),
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+      }),
+    );
+  });
+
+  test("rejects when refresh cookie is missing", async () => {
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        detail: "No refresh session found",
+      }),
+    });
+
+    await expect(refreshSession()).rejects.toThrow(
+      "No refresh session found",
+    );
+
+    expect(getAccessToken()).toBeNull();
+  });
+
+  test("shares one refresh request between concurrent callers", async () => {
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          access_token: "refreshed-access-token",
+          id_token: TEST_ID_TOKEN,
+          expires_in: 3600,
+        },
+      }),
+    });
+
+    const [firstToken, secondToken] = await Promise.all([
+      refreshSession(),
+      refreshSession(),
+    ]);
+
+    expect(firstToken).toBe("refreshed-access-token");
+    expect(secondToken).toBe("refreshed-access-token");
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+
 //getAuthToken////////////////////
 test("getAuthToken returns accessToken from localStorage", () => {
   localStorage.setItem("accessToken", "access-123");
