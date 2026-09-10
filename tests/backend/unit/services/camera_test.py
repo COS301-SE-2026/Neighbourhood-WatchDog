@@ -8,6 +8,11 @@ from app.models.camera import CameraVisibilityEnum
 from fastapi import HTTPException
 from datetime import datetime
 
+import app.services.camera_service as camera_service_module
+
+from app.schemas.camera import MediaMtxAuthRequest
+from sqlalchemy.exc import IntegrityError
+
 MOCK_RTSP_URL = "rtsp://example.com/stream"
 MOCK_CAMERA_NAME = "Camera 1"
 
@@ -548,3 +553,433 @@ class TestEditCamera:
                 [0.1, 0.5]
             ]
         ]
+
+def _camera_result(*, scalar=None, rows=None):
+    result = Mock()
+    result.scalar_one_or_none.return_value = scalar
+    result.scalars.return_value.all.return_value = list(rows or [])
+    return result
+
+
+@pytest.mark.asyncio
+async def test_publish_master_key_requires_configuration(monkeypatch):
+    monkeypatch.delenv("MEDIAMTX_PUBLISH_MASTER_KEY", raising=False)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        camera_service_module._publish_master_key()
+
+    assert str(exc_info.value) == (
+        "MEDIAMTX_PUBLISH_MASTER_KEY is not configured."
+    )
+
+
+def test_publish_master_key_and_camera_credentials(monkeypatch):
+    monkeypatch.setenv("MEDIAMTX_PUBLISH_MASTER_KEY", "test-master-key")
+
+    camera_id = str(uuid4())
+
+    username, password = (
+        camera_service_module._camera_publish_credentials(camera_id)
+    )
+
+    assert username == f"camera-{camera_id}"
+    assert password
+    assert "=" not in password
+
+
+@pytest.mark.asyncio
+async def test_register_camera_rejects_missing_property():
+    db, result = make_mock_db()
+    result.scalar_one_or_none.return_value = None
+
+    request = RegisterCameraReq(
+        name="Test Camera",
+        rtsp_url=MOCK_RTSP_URL,
+        location="Front Door",
+        visibility=CameraVisibilityEnum.PRIVATE,
+        property_id=uuid4(),
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await register_camera_handler(
+            req=request,
+            db=db,
+            claims={"id": str(uuid4()), "sub": "test-sub"},
+        )
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Property not found"
+    db.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_register_camera_rolls_back_on_integrity_error():
+    db, result = make_mock_db()
+
+    property_obj = Mock()
+    property_obj.neighbourhood_id = uuid4()
+    result.scalar_one_or_none.return_value = property_obj
+
+    db.flush.side_effect = IntegrityError(
+        "insert camera",
+        {},
+        RuntimeError("duplicate camera"),
+    )
+
+    request = RegisterCameraReq(
+        name="Test Camera",
+        rtsp_url=MOCK_RTSP_URL,
+        location="Front Door",
+        visibility=CameraVisibilityEnum.PRIVATE,
+        property_id=uuid4(),
+    )
+
+    with patch(
+        "app.services.camera_service.Camera"
+    ) as mock_camera:
+        mock_camera.return_value = Mock(
+            id=uuid4(),
+            name="Test Camera",
+            property_id=request.property_id,
+            rtsp_url=MOCK_RTSP_URL,
+            location="Front Door",
+            visibility=CameraVisibilityEnum.PRIVATE,
+            enabled=True,
+            created_at=datetime.now(),
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await register_camera_handler(
+                req=request,
+                db=db,
+                claims={"id": str(uuid4()), "sub": "test-sub"},
+            )
+
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.detail == "Could not register camera"
+    db.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_deregister_camera_handles_integrity_error():
+    db, _ = make_mock_db()
+
+    camera = Mock(
+        id=uuid4(),
+        property_id=uuid4(),
+        name="Camera",
+        visibility=CameraVisibilityEnum.PRIVATE,
+        location="Gate",
+    )
+    user = Mock(cognito_sub="test-sub")
+    property_user = Mock(user=user)
+
+    db.execute = AsyncMock(
+        side_effect=[
+            _camera_result(scalar=camera),
+            _camera_result(scalar=property_user),
+        ]
+    )
+    db.commit.side_effect = IntegrityError(
+        "delete camera",
+        {},
+        RuntimeError("constraint"),
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await deregister_camera_handler(
+            camera_id=camera.id,
+            db=db,
+            claims={"id": str(uuid4()), "sub": "test-sub"},
+        )
+
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.detail == "Could not deregister camera"
+    db.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_deregister_camera_handles_unexpected_error():
+    db, _ = make_mock_db()
+
+    camera = Mock(
+        id=uuid4(),
+        property_id=uuid4(),
+        name="Camera",
+        visibility=CameraVisibilityEnum.PRIVATE,
+        location="Gate",
+    )
+    user = Mock(cognito_sub="test-sub")
+    property_user = Mock(user=user)
+
+    db.execute = AsyncMock(
+        side_effect=[
+            _camera_result(scalar=camera),
+            _camera_result(scalar=property_user),
+        ]
+    )
+    db.commit.side_effect = RuntimeError("database unavailable")
+
+    with pytest.raises(HTTPException) as exc_info:
+        await deregister_camera_handler(
+            camera_id=camera.id,
+            db=db,
+            claims={"id": str(uuid4()), "sub": "test-sub"},
+        )
+
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.detail == "Failed to delete camera"
+    db.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_list_cameras_returns_accessible_property_cameras():
+    property_id = uuid4()
+    neighbourhood_id = uuid4()
+    camera_id = uuid4()
+
+    property_obj = Mock(neighbourhood_id=neighbourhood_id)
+    property_user = Mock()
+    camera = Mock()
+    camera.id = camera_id
+    camera.property_id = property_id
+    camera.name = "Front Camera"
+    camera.visibility = CameraVisibilityEnum.PUBLIC
+    camera.location = "Front Gate"
+    camera.enabled = True
+    camera.created_at = datetime.now()
+    camera.rtsp_url = "encrypted-value"
+
+    db = Mock()
+    db.execute = AsyncMock(
+        side_effect=[
+            _camera_result(scalar=property_obj),
+            _camera_result(scalar=property_user),
+            _camera_result(rows=[camera]),
+        ]
+    )
+
+    with patch(
+        "app.services.camera_service.decrypt_rtsp_url",
+        return_value=MOCK_RTSP_URL,
+    ):
+        response = await camera_service_module.list_cameras_handler(
+            property_id=str(property_id),
+            db=db,
+            claims={"sub": "test-sub"},
+        )
+
+    assert response.status == 200
+    assert len(response.data) == 1
+    assert response.data[0].id == camera_id
+    assert response.data[0].property_id == property_id
+    assert response.data[0].neighbourhood_id == neighbourhood_id
+    assert response.data[0].name == "Front Camera"
+    assert response.data[0].enabled is True
+
+
+@pytest.mark.asyncio
+async def test_list_cameras_rejects_invalid_property_id():
+    db = Mock()
+    db.execute = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await camera_service_module.list_cameras_handler(
+            property_id="not-a-uuid",
+            db=db,
+            claims={"sub": "test-sub"},
+        )
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == "Invalid property ID"
+    db.execute.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_list_cameras_rejects_missing_property():
+    db = Mock()
+    db.execute = AsyncMock(
+        return_value=_camera_result(scalar=None)
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await camera_service_module.list_cameras_handler(
+            property_id=str(uuid4()),
+            db=db,
+            claims={"sub": "test-sub"},
+        )
+
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.detail == "Property does not exist"
+
+
+@pytest.mark.asyncio
+async def test_list_cameras_rejects_user_without_property_access():
+    db = Mock()
+    db.execute = AsyncMock(
+        side_effect=[
+            _camera_result(scalar=Mock(neighbourhood_id=None)),
+            _camera_result(scalar=None),
+        ]
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await camera_service_module.list_cameras_handler(
+            property_id=str(uuid4()),
+            db=db,
+            claims={"sub": "test-sub"},
+        )
+
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.detail == (
+        "This user does not have access to this property"
+    )
+
+
+@pytest.mark.asyncio
+async def test_mediamtx_allows_read_and_playback():
+    db = Mock()
+
+    read_response = await (
+        camera_service_module.authorize_mediamtx_for_agent_handler(
+            MediaMtxAuthRequest(action="read"),
+            db,
+        )
+    )
+    playback_response = await (
+        camera_service_module.authorize_mediamtx_for_agent_handler(
+            MediaMtxAuthRequest(action="playback"),
+            db,
+        )
+    )
+
+    assert read_response.status_code == 204
+    assert playback_response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_mediamtx_rejects_unknown_action():
+    db = Mock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await (
+            camera_service_module.authorize_mediamtx_for_agent_handler(
+                MediaMtxAuthRequest(action="unknown"),
+                db,
+            )
+        )
+
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.detail == (
+        "This MediaMTX action is not allowed."
+    )
+
+
+@pytest.mark.asyncio
+async def test_mediamtx_rejects_invalid_publish_path():
+    db = Mock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await (
+            camera_service_module.authorize_mediamtx_for_agent_handler(
+                MediaMtxAuthRequest(
+                    action="publish",
+                    path="invalid/path",
+                ),
+                db,
+            )
+        )
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == (
+        "Publish path mist be cameras/<camera-uuid>."
+    )
+
+
+@pytest.mark.asyncio
+async def test_mediamtx_rejects_missing_camera():
+    camera_id = uuid4()
+    db = Mock()
+    db.execute = AsyncMock(
+        return_value=_camera_result(scalar=None)
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await (
+            camera_service_module.authorize_mediamtx_for_agent_handler(
+                MediaMtxAuthRequest(
+                    action="publish",
+                    path=f"cameras/{camera_id}",
+                    user="camera-user",
+                    password="camera-password",
+                ),
+                db,
+            )
+        )
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == (
+        "Camera does not exist or is disabled."
+    )
+
+
+@pytest.mark.asyncio
+async def test_mediamtx_rejects_invalid_credentials():
+    camera_id = uuid4()
+    camera = Mock(id=camera_id)
+
+    db = Mock()
+    db.execute = AsyncMock(
+        return_value=_camera_result(scalar=camera)
+    )
+
+    with patch(
+        "app.services.camera_service._camera_publish_credentials",
+        return_value=("expected-user", "expected-password"),
+    ):
+        with pytest.raises(HTTPException) as exc_info:
+            await (
+                camera_service_module.authorize_mediamtx_for_agent_handler(
+                    MediaMtxAuthRequest(
+                        action="publish",
+                        path=f"cameras/{camera_id}",
+                        user="wrong-user",
+                        password="wrong-password",
+                    ),
+                    db,
+                )
+            )
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == (
+        "Invalid publish credential for the requested camera path."
+    )
+
+
+@pytest.mark.asyncio
+async def test_mediamtx_accepts_valid_publish_credentials():
+    camera_id = uuid4()
+    camera = Mock(id=camera_id)
+
+    db = Mock()
+    db.execute = AsyncMock(
+        return_value=_camera_result(scalar=camera)
+    )
+
+    with patch(
+        "app.services.camera_service._camera_publish_credentials",
+        return_value=("expected-user", "expected-password"),
+    ):
+        response = (
+            await camera_service_module.authorize_mediamtx_for_agent_handler(
+                MediaMtxAuthRequest(
+                    action="publish",
+                    path=f"cameras/{camera_id}",
+                    user="expected-user",
+                    password="expected-password",
+                ),
+                db,
+            )
+        )
+
+    assert response.status_code == 204
