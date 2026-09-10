@@ -252,13 +252,13 @@ class TestAlertMetricItem:
         """A resolved item carries a response time and the resolver id"""
         data = _make_metric_item(
             status="RESOLVED",
-            response_time=125.5,
+            response_seconds=125.5,
             acknowledged_by=uuid4(),
         )
         item = AlertMetricItem(**data)
 
         assert item.status == "RESOLVED"
-        assert item.response_time == pytest.approx(125.5)
+        assert item.response_seconds == pytest.approx(125.5)
         assert item.acknowledged_by is not None
 
     def test_missing_alert_id_raises_validation_error(self):
