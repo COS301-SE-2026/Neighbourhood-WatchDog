@@ -408,3 +408,98 @@ async def update_neighbourhood_member_role_handler(
             status_code=500,
             detail="Failed to update member role",
         )
+
+
+async def leave_neighbourhood_handler(
+    neighbourhood_id: UUID,
+    property_id: UUID,
+    db: DbSession,
+    claims: dict
+) -> None:
+    """Remove a property from its current neighboyrhood."""
+
+    if not claims:
+        raise HTTPException(
+            status_code=401,
+            detail=NOT_AUTHENTICATED_MESSAGE
+        )
+
+    current_user_id = UUID(claims["id"])
+
+    try:
+        property_result = await db.execute(
+            select(Property).where(
+                Property.id == property_id,
+                Property.neighbourhood_id == neighbourhood_id
+            )
+        )
+        property_obj = property_result.scalar_one_or_none()
+
+        if not property_obj:
+            raise HTTPException(
+                status_code=404,
+                detail="Property is not part of this neighbourhood"
+            )
+
+        other_property_result = await db.execute(
+            select(Property.id)
+            .join(
+                PropertyUser,
+                PropertyUser.property_id == Property.id
+            )
+            .where(
+                PropertyUser.user_id == current_user_id,
+                Property.neighbourhood_id == neighbourhood_id,
+                Property.id != property_id
+            )
+            .limit(1)
+        )
+
+        other_property_id = other_property_result.scalar_one_or_none()
+
+        property_obj.neighbourhood_id = None    
+
+        if other_property_id is None:
+            membership_result = await db.execute(
+                select(NeighbourhoodUser).where(
+                    NeighbourhoodUser.user_id == current_user_id,
+                    NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+                )
+            )
+            membership = membership_result.scalar_one_or_none()
+
+            if membership:
+                await db.delete(membership)
+
+        await create_audit_log_item(
+            db=db,
+            user_id=current_user_id,
+            action=AuditAction.UPDATE,
+            target_entity_type=TargetEntity.PROPERTY,
+            target_entity_id=property_id,
+            old_values={
+                "neighbourhood_id": str(neighbourhood_id),
+            },
+            new_values={
+                "neighbourhood_id": None,
+            },
+        )
+
+        await db.commit()
+ 
+    except HTTPException:
+        await db.rollback()
+        raise
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to leave neighbourhood"
+        )
+
+    except Exception:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to leave neighbourhood"
+        )
