@@ -177,7 +177,14 @@ async def verify_mfa(request: Request, payload: VerifyMFARequest, response: Resp
 
     return result
 
-@router.post("/refresh", response_model=RefreshTokenRes)
+@router.post(
+    "/refresh", 
+    response_model=RefreshTokenRes,
+    responses={
+        401: {"description": "No refresh session found or refresh token expired"},
+        429: {"description": "Too many refresh attempts"}
+    }
+)
 @limiter.limit("30/minute")
 async def refresh_session(request: Request):
     refresh_token = request.cookies.get(REFRESH_COOKIE_NAME)
