@@ -2,22 +2,17 @@
 
 import { useEffect} from "react"; //use state
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth/auth-context";
 
 export function useRequireAuth() {
     const router = useRouter();
-    // const [loading, setLoading] = useState(true);
+    const {isLoading, isLoggedIn} = useAuth();
 
     useEffect(() => {
-        const token = localStorage.getItem("accessToken");
-
-        if (!token) {
+        if (!isLoading && !isLoggedIn) {
             router.replace("/auth/login");
-            return;
         }
+    }, [isLoading, isLoggedIn, router]);
 
-        // TODO: Send token to backend for JWT validation
-        // setLoading(false);
-    }, [router]);
-
-    // return { loading };
+    return { isLoading, isLoggedIn };
 }
