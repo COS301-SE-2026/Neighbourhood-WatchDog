@@ -48,11 +48,13 @@ class TestAcknowledgeAlert:
         self.camera_patcher.start()
 
     def _make_alert_context(self, alert):
-        camera = Mock()
-
         property_obj = Mock()
         property_obj.id = uuid.uuid4()
         property_obj.neighbourhood_id = self.neighbourhood_id
+
+        camera = Mock()
+        camera.property = property_obj
+        alert.camera = camera
 
         neighbourhood_membership = Mock()
         neighbourhood_membership.user_id = self.user_id
@@ -65,7 +67,7 @@ class TestAcknowledgeAlert:
         property_membership.is_admin = False
 
         return (
-            self._exec_result(one_or_none=(alert, camera, property_obj)),
+            self._exec_result(scalar_one_or_none=alert),
             self._exec_result(scalar_one_or_none=property_membership),
             self._exec_result(scalar_one_or_none=neighbourhood_membership)
         )
@@ -95,6 +97,7 @@ class TestAcknowledgeAlert:
         result = Mock()
         result.scalar_one_or_none.return_value = scalar_one_or_none
         result.one_or_none.return_value = one_or_none
+        result.unique.return_value = result
         return result
 
     @pytest.mark.asyncio
@@ -122,14 +125,12 @@ class TestAcknowledgeAlert:
     async def test_non_member_raises_403(self):
         alert = self._make_alert(status="OPEN")
 
-        camera = Mock()
-
         property_obj = Mock()
         property_obj.id = uuid.uuid4()
         property_obj.neighbourhood_id = self.neighbourhood_id
 
         self.mock_db.execute.side_effect = [
-            self._exec_result(one_or_none=(alert, camera, property_obj)),
+            self._exec_result(scalar_one_or_none=alert),
             self._exec_result(scalar_one_or_none=None),
             self._exec_result(scalar_one_or_none=None),
         ]
@@ -148,7 +149,7 @@ class TestAcknowledgeAlert:
     @pytest.mark.asyncio
     async def test_alert_not_found_raises_404(self):
         self.mock_db.execute.return_value = self._exec_result(
-            one_or_none=None
+            scalar_one_or_none=None
         )
 
         with pytest.raises(HTTPException) as exc:
@@ -159,14 +160,16 @@ class TestAcknowledgeAlert:
     @pytest.mark.asyncio
     async def test_already_acknowledged_raises_409(self):
         alert = self._make_alert(status="ACKNOWLEDGED")
-        
-        camera = Mock()
 
         property_obj = Mock()
         property_obj.id = uuid.uuid4()
         property_obj.neighbourhood_id = self.neighbourhood_id
+
+        camera = Mock()
+        camera.property = property_obj
+        alert.camera = camera
         self.mock_db.execute.return_value = self._exec_result(
-            one_or_none=(alert, camera, property_obj)
+            scalar_one_or_none=alert
         )
 
         with pytest.raises(HTTPException) as exc:
@@ -276,7 +279,7 @@ class TestAcknowledgeAlert:
         
         alert = self._make_alert(status="OPEN")
         alert_result, property_result, _ = self._make_alert_context(alert)
-        property_obj = alert_result.one_or_none.return_value[2]
+        property_obj = alert.camera.property
         property_obj.neighbourhood_id = None
         property_membership = property_result.scalar_one_or_none.return_value
         property_membership.is_admin = True
