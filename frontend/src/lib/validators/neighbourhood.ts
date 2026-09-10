@@ -58,6 +58,11 @@ export const UpdateMemberRoleResSchema = z.object({
   data: NeighbourhoodMemberResSchema
 });
 
+export const LeaveNeighbourhoodParamsSchema = z.object({
+  neighbourhoodId: z.uuid("Invalid neighbourhood ID"),
+  propertyId: z.uuid("Invalid property ID")
+});
+
 export type CreateNeighbourhoodReq = z.infer<typeof CreateNeighbourhoodReqSchema>;
 export type NeighbourhoodRes = z.infer<typeof NeighbourhoodResSchema>;
 export type CreateNeighbourhoodRes = z.infer<typeof CreateNeighbourhoodResSchema>;
@@ -66,3 +71,4 @@ export type NeighbourhoodMemberRes = z.infer<typeof NeighbourhoodMemberResSchema
 export type NeighbourhoodMembersRes = z.infer<typeof NeighbourhoodMembersResSchema>;
 export type UpdateMemberRoleReq = z.infer<typeof UpdateMemberRoleReqSchema>;
 export type UpdateMemberRoleRes = z.infer<typeof UpdateMemberRoleResSchema>;
+export type LeaveNeighbourhoodParams = z.infer<typeof LeaveNeighbourhoodParamsSchema>;

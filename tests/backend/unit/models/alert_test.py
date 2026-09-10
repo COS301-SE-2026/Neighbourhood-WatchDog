@@ -2,7 +2,7 @@ from pydantic import ValidationError
 import pytest
 from uuid import uuid4
 from datetime import datetime, timezone
-from app.schemas.alert import AlertRes, AcknowledgeAlertRes, ListAlertsRes, Pagination
+from app.schemas.alert import AlertRes, AcknowledgeAlertRes, ListAlertsRes, Pagination, AlertMetricItem, AlertMetricsRes
 
 def _make_alert_res(**overrides):
     base = {
@@ -225,3 +225,137 @@ class TestPagination:
             Pagination(total=42
                        , offset=0
                        , has_more=True)
+
+def _make_metric_item(**overrides):
+    base = {
+        "alert_id": uuid4(),
+        "camera_id": uuid4(),
+        "status": "PENDING",
+        "response_seconds": None,
+        "acknowledged_by": None,
+        "created_at": datetime.now(timezone.utc),
+    }
+    base.update(overrides)
+    return base
+
+class TestAlertMetricItem:
+    def test_valid_pending_item(self):
+        """happy path: pending item has no response time or resolver yet"""
+        data = _make_metric_item()
+        item = AlertMetricItem(**data)
+
+        assert item.status == "PENDING"
+        assert item.response_seconds is None
+        assert item.acknowledged_by is None
+
+    def test_resolved_item_with_response_time(self):
+        """A resolved item carries a response time and the resolver id"""
+        data = _make_metric_item(
+            status="RESOLVED",
+            response_seconds=125.5,
+            acknowledged_by=uuid4(),
+        )
+        item = AlertMetricItem(**data)
+
+        assert item.status == "RESOLVED"
+        assert item.response_seconds == pytest.approx(125.5)
+        assert item.acknowledged_by is not None
+
+    def test_missing_alert_id_raises_validation_error(self):
+        data = _make_metric_item()
+        del data["alert_id"]
+
+        with pytest.raises(ValidationError):
+            AlertMetricItem(**data)
+
+    def test_missing_created_at_raises_validation_error(self):
+        data = _make_metric_item()
+        del data["created_at"]
+
+        with pytest.raises(ValidationError):
+            AlertMetricItem(**data)
+
+    def test_from_attributes_config_present(self):
+        """model_config should allow construction from ORM objects"""
+        assert AlertMetricItem.model_config.get("from_attributes") is True
+
+class TestAlertMetricRes:
+    def _make_pagination(self, **overrides):
+        base = {"total": 1, "limit": 30, "offset": 0, "has_more": False}
+        base.update(overrides)
+        return Pagination(**base)
+
+    def test_valid_response_with_items_and_pagination(self):
+        """Happy path: alert metric response with pagination"""
+        item = AlertMetricItem(**_make_metric_item(status="RESOLVED", response_seconds=42.0))
+        res = AlertMetricsRes(
+            total_alerts=57,
+            acknowledged_count=40,
+            pending_count=17,
+            average_response_seconds=88.2,
+            items=[item],
+            pagination=self._make_pagination(total=57, has_more=True),
+        )
+
+        assert res.total_alerts == 57
+        assert res.pending_count == 17
+        assert res.items[0].status == "RESOLVED"
+        assert res.pagination.total == 57
+        assert res.pagination.has_more is True
+
+    def test_empty_items_page_is_valid(self):
+        """Page without items is still valid"""
+        res = AlertMetricsRes(
+            total_alerts=0,
+            acknowledged_count=0,
+            pending_count=0,
+            average_response_seconds=None,
+            items=[],
+            pagination=self._make_pagination(total=0, has_more=False),
+        )
+
+        assert res.items == []
+        assert res.average_response_seconds is None
+        assert res.pagination.has_more is False
+
+    def test_pagination_is_required(self):
+        with pytest.raises(ValidationError):
+            AlertMetricsRes(
+                total_alerts=0,
+                acknowledged_count=0,
+                pending_count=0,
+                average_response_seconds=None,
+                items=[],
+            )
+
+    def test_items_is_required(self):
+        with pytest.raises(ValidationError): #NOSONAR
+            AlertMetricsRes(
+                total_alerts=0,
+                acknowledged_count=0,
+                pending_count=0,
+                average_response_seconds=None,
+                pagination=self._make_pagination(),
+            )
+
+    def test_invalid_item_in_list_raises(self):
+        """Each entry in items must be valid AlertmetricItem"""
+        with pytest.raises(ValidationError): #NOSONAR
+            AlertMetricsRes(
+                total_alerts=1,
+                acknowledged_count=0,
+                pending_count=1,
+                average_response_seconds=None,
+                items=["not-a-metric-item"],
+                pagination=self._make_pagination(),
+            )
+
+    def test_missing_required_count_raises(self):
+        with pytest.raises(ValidationError): #NOSONAR
+            AlertMetricsRes(
+                acknowledged_count=0,
+                pending_count=0,
+                average_response_seconds=None,
+                items=[],
+                pagination=self._make_pagination(),
+            )

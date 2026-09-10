@@ -219,9 +219,9 @@ function AlertDetailSheet({
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
         side="right"
-        className="w-full max-w-md border-l border-border bg-brand-void text-brand-frost"
+        className="w-full max-w-lg border-l border-border bg-brand-void text-brand-frost"
       >
-        <SheetHeader className="mb-6">
+        <SheetHeader className="mb-4 px-4 pt-6 pb-0 sm:px-6">
           <div className="flex items-center gap-2 mb-1">
             <SeverityBadge severity={severity} />
             <StatusBadge status={alert.status} />
@@ -234,7 +234,7 @@ function AlertDetailSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="space-y-4">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-6 sm:px-6">
           {alert.thumbnail_url ? (
             <div className="relative rounded-lg overflow-hidden border border-border">
               <Image
@@ -370,12 +370,12 @@ function MetaRow({
   mono?: boolean;
 }) {
   return (
-    <div className="flex justify-between gap-4">
+    <div className="flex items-start justify-between gap-4">
       <span className="text-xs font-medium text-brand-ash shrink-0">
         {label}
       </span>
       <span
-        className={`text-xs text-brand-frost text-right break-all ${mono ? "font-mono" : ""}`}
+        className={`min-w-0 flex-1 text-xs text-brand-frost text-right break-words ${mono ? "font-mono break-all" : ""}`}
       >
         {value}
       </span>

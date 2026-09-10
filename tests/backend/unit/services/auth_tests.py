@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock , patch
-import backend.app.services.auth_service as auth_service
+from app.services import auth_service
 
 
 
@@ -63,7 +63,7 @@ async def test_register_user_success(mock_cognito):
     mock_db.refresh.side_effect = refresh
 
     with patch(
-        "backend.app.services.auth_service.create_audit_log_item"
+        "app.services.auth_service.create_audit_log_item"
     ) as mock_audit:
 
         result = await auth_service.register_user(payload, mock_db)
@@ -94,8 +94,9 @@ async def test_confirm_user_success(mock_cognito):
     assert result["data"]["confirmed"] is True
 
 #RESEND
-def test_resend_code_success(mock_cognito):
-    result = auth_service.resend_confirmation_code({
+@pytest.mark.asyncio
+async def test_resend_code_success(mock_cognito):
+    result = await auth_service.resend_confirmation_code({
         "email": TEST_EMAIL
     })
 
@@ -136,4 +137,35 @@ async def test_complete_mfa_success(mock_cognito):
     assert result["data"]["access_token"] == "token"
     assert result["data"]["id_token"] == "id"
     assert result["data"]["expires_in"] == 3600
+
+@pytest.mark.asyncio
+async def test_refresh_user_session(monkeypatch):
+    refresh_mock = MagicMock(return_value={
+        "access_token": "new-access",
+        "id_token": "new-id",
+        "expires_in": 3600,
+        "token_type": "Bearer"
+    })
+    monkeypatch.setattr(auth_service, "refresh_tokens", refresh_mock)
+
+    result = await auth_service.refresh_user_session("refresh-token")
+
+    assert result == {
+        "success": True,
+        "data": {
+            "access_token": "new-access",
+            "id_token": "new-id",
+            "expires_in": 3600,
+            "token_type": "Bearer"
+        }
+    }
+    refresh_mock.assert_called_once_with("refresh-token")
+
+@pytest.mark.asyncio
+async def test_revoke_user_session(monkeypatch):
+    revoke_mock = MagicMock()
+    monkeypatch.setattr(auth_service, "revoke_refresh_token", revoke_mock)
+
+    await auth_service.revoke_user_session("refresh-token")
+    revoke_mock.assert_called_once_with("refresh-token")
 #TODO: end to end testing 

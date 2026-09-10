@@ -1,23 +1,19 @@
+import { readAccessToken } from "../auth/token_store";
+
 const FALLBACK_AUTH_TOKEN = "mocktoke";
 
-export function getAuthToken(): string {
-  if (typeof window === "undefined") return FALLBACK_AUTH_TOKEN;
-
-  return (
-    localStorage.getItem("accessToken") ||
-    localStorage.getItem("authToken") ||
-    FALLBACK_AUTH_TOKEN
-  );
+export function getAuthToken(): string | null {
+  return readAccessToken();
 }
 
 export function getAuthHeaders(extraHeaders: HeadersInit = {}): HeadersInit {
+
+  const token = getAuthToken();
   return {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${getAuthToken()}`,
-    "X-Mock-Role": "NEIGHBOURHOOD_ADMIN",
-    "X-Mock-Sub": "00000000-0000-0000-0000-000000000001",
-    "X-Mock-Neighbourhood-Id": "10000000-0000-0000-0000-000000000001",
-    ...extraHeaders,
+    ...(token ? { Authorization: `Bearer ${token}`} : {}),
+    ...extraHeaders
+    
   };
 }
 

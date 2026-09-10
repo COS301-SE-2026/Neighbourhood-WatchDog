@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { AUTH_EVENT, getStoredUser, type StoredUser } from "./cognito";
+import { AUTH_EVENT, clearSession, refreshSession, getStoredUser, type StoredUser } from "./cognito";
 
 interface AuthContextValue {
     user: StoredUser | null;
@@ -16,19 +16,34 @@ export default function AuthProvider({children}: {children: ReactNode}) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const sync = () => setUser(getStoredUser());
+        const sync = () => {
+        setUser(getStoredUser());
+        };
 
-        /* eslint-disable react-hooks/set-state-in-effect -- reading localStorage must happen client-side, after hydration to avoid SSR  mismatch */
-        sync();
-        setIsLoading(false);
-        /* eslint-enable react-hooks/set-state-in-effect */
+        const restore = async () => {
+        try {
+            await refreshSession();
+            sync();
+        } catch {
+            clearSession();
+            setUser(null);
+        } finally {
+            setIsLoading(false);
+        }
+        };
+
+        void restore();
 
         window.addEventListener(AUTH_EVENT, sync);
-        return () => window.removeEventListener(AUTH_EVENT, sync);
+
+        return () => {
+        window.removeEventListener(AUTH_EVENT, sync);
+        };
     }, []);
 
+
     return(
-        <AuthContext.Provider value={{user, isLoggedIn: !user, isLoading}}>
+        <AuthContext.Provider value={{user, isLoggedIn: Boolean(user), isLoading}}>
             {children}
         </AuthContext.Provider>
     )

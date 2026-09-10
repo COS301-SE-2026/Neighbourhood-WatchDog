@@ -90,9 +90,11 @@ async def get_alert_metrics(
     claims: NeighbourhoodMemberClaims,
     camera_id: UUID | None = None,
     officer_id: UUID | None = None,
+    limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """This will rep the time metrics for the alerts in the neighbourhood; can be filtered by camera and officer"""
-    return await get_response_metrics_handler(neighbourhood_id, db, claims, camera_id, officer_id)
+    return await get_response_metrics_handler(neighbourhood_id, db, claims, camera_id, officer_id, limit, offset)
 
 @router.get("/frequency-metrics", response_model=AlertFrequencyMetricsRes)
 async def get_alert_frequency_metrics(
