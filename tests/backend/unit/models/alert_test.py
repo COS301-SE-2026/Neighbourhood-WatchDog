@@ -337,3 +337,15 @@ class TestAlertMetricRes:
                 average_response_seconds=None,
                 pagination=self._make_pagination(),
             )
+
+    def test_invalid_item_in_list_raises(self):
+        """Each entry in items must be valid AlertmetricItem"""
+        with pytest.raises(ValidationError): #NOSONAR
+            AlertMetricsRes(
+                total_alerts=1,
+                acknowledged_count=0,
+                pending_count=1,
+                average_response_seconds=None,
+                items=["not-a-metric-item"],
+                pagination=self._make_pagination(),
+            )
