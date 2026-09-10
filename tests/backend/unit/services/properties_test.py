@@ -866,3 +866,209 @@ async def test_remove_property_member_rejects_last_admin():
         "The last property administrator cannot be removed"
     )
     db.commit.assert_not_awaited()
+
+@pytest.mark.asyncio
+async def test_get_property_details_rejects_missing_property_id():
+    db = _property_service_db()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await property_service_module.get_property_details_handler(
+            property_id=None,
+            db=db,
+            claims={"custom:role": "SYSTEM_ADMIN"},
+        )
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == "No property ID provided."
+
+
+@pytest.mark.asyncio
+async def test_get_property_details_converts_unexpected_error():
+    db = _property_service_db()
+    db.execute.side_effect = RuntimeError("database unavailable")
+
+    with patch(
+        "app.services.property_service.is_property_member",
+        new=AsyncMock(return_value=True),
+    ):
+        with pytest.raises(HTTPException) as exc_info:
+            await property_service_module.get_property_details_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims={"custom:role": "RESIDENT"},
+            )
+
+    assert exc_info.value.status_code == 500
+    assert "Failed to fetch property details" in exc_info.value.detail
+    assert "database unavailable" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_get_property_members_requires_claims():
+    db = _property_service_db()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await property_service_module.get_property_members_handler(
+            property_id=PROPERTY_ID,
+            db=db,
+            claims=None,
+        )
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Not authenticated"
+
+
+@pytest.mark.asyncio
+async def test_get_property_members_converts_unexpected_error():
+    db = _property_service_db()
+    db.execute.side_effect = RuntimeError("database unavailable")
+
+    with pytest.raises(HTTPException) as exc_info:
+        await property_service_module.get_property_members_handler(
+            property_id=PROPERTY_ID,
+            db=db,
+            claims={"sub": "owner-cognito-sub"},
+        )
+
+    assert exc_info.value.status_code == 500
+    assert "Failed to fetch members" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_invite_property_member_requires_claims():
+    db = _property_service_db()
+
+    request = InvitePropertyReq(
+        email="member@example.com",
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await property_service_module.invite_property_member_handler(
+            req=request,
+            property_id=PROPERTY_ID,
+            db=db,
+            claims=None,
+        )
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Not authenticated"
+
+
+@pytest.mark.asyncio
+async def test_invite_property_member_rejects_missing_inviter():
+    db = _property_service_db()
+    db.execute.return_value = _property_service_result(scalar=None)
+
+    request = InvitePropertyReq(
+        email="member@example.com",
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await property_service_module.invite_property_member_handler(
+            req=request,
+            property_id=PROPERTY_ID,
+            db=db,
+            claims=_property_service_claims(),
+        )
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Inviting user not found"
+
+
+@pytest.mark.asyncio
+async def test_invite_property_member_rejects_missing_property():
+    db = _property_service_db()
+
+    db.execute.side_effect = [
+        _property_service_result(scalar=_make_user()),
+        _property_service_result(scalar=None),
+    ]
+
+    request = InvitePropertyReq(
+        email="member@example.com",
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await property_service_module.invite_property_member_handler(
+            req=request,
+            property_id=PROPERTY_ID,
+            db=db,
+            claims=_property_service_claims(),
+        )
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Property not found"
+
+
+@pytest.mark.asyncio
+async def test_invite_property_member_rolls_back_on_unexpected_error():
+    db = _property_service_db()
+
+    inviter = _make_user()
+    property_obj = _make_property()
+    invited_user = _make_user(
+        user_id=INVITED_USER_ID,
+        email="member@example.com",
+        first_name="Member",
+        last_name="User",
+    )
+
+    db.execute.side_effect = [
+        _property_service_result(scalar=inviter),
+        _property_service_result(scalar=property_obj),
+        _property_service_result(scalar=invited_user),
+        _property_service_result(scalar=None),
+    ]
+    db.commit.side_effect = RuntimeError("database unavailable")
+
+    request = InvitePropertyReq(
+        email="member@example.com",
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await property_service_module.invite_property_member_handler(
+            req=request,
+            property_id=PROPERTY_ID,
+            db=db,
+            claims=_property_service_claims(),
+        )
+
+    assert exc_info.value.status_code == 500
+    assert "Failed to invite property member" in exc_info.value.detail
+    db.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_remove_property_member_requires_claims():
+    db = _property_service_db()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await property_service_module.remove_property_member_handler(
+            property_id=PROPERTY_ID,
+            user_id=INVITED_USER_ID,
+            db=db,
+            claims=None,
+        )
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Not authenticated"
+
+
+@pytest.mark.asyncio
+async def test_remove_property_member_rejects_missing_membership():
+    db = _property_service_db()
+    db.execute.return_value = _property_service_result(scalar=None)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await property_service_module.remove_property_member_handler(
+            property_id=PROPERTY_ID,
+            user_id=INVITED_USER_ID,
+            db=db,
+            claims=_property_service_claims(),
+        )
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == (
+        "User is not a member of this property"
+    )
+    db.commit.assert_not_awaited()
