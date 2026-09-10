@@ -314,26 +314,37 @@ describe("confirmation", () => {
 //END CONFIRM SIGNUP///////////////////////////////////////////////
 
 //RESEND CODE///////////////////////////////////////////////
-test("resend confirmation code succeeds", async () => {
-  (fetch as jest.Mock).mockResolvedValue({
-    ok: true,
-    json: async () => ({}),
+describe("resend confirmation code", () => {
+  test("resend confirmation code succeeds", async () => {
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          message: "sent"
+        }
+      }),
+    });
+
+    await expect(
+      resendConfirmationCode("test@example.com")
+    ).resolves.toBeUndefined();
   });
 
-  await expect(
-    resendConfirmationCode("test@example.com")
-  ).resolves.toBeUndefined();
+  test("throws backend errors", async () => { // remove if you want less errors
+    (fetch as jest.Mock).mockRejectedValue({
+      ok: false,
+      json: async () => ({
+        detail: "Resend failed"
+      })
+    });
+
+    await expect(
+      resendConfirmationCode("test@example.com")
+    ).rejects.toThrow("Resend failed");
+  });
 });
 
-test("resend confirmation code handles errors", async () => { // remove if you want less errors
-  (fetch as jest.Mock).mockRejectedValue(
-    new Error("Resend failed")
-  );
-
-  await expect(
-    resendConfirmationCode("test@example.com")
-  ).rejects.toThrow("Resend failed");
-});
 //END RESEND CODE///////////////////////////////////////////////
 
 //getAuthToken////////////////////
