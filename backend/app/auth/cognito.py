@@ -203,3 +203,43 @@ def respond_to_mfa(email: str, session: str, code: str):
 def get_sub_from_id_token(id_token: str) -> str:
     payload = verify_token(id_token)
     return payload["sub"]
+
+
+def refresh_tokens(refresh_token: str):
+    try:
+        client = get_cognito_client()
+
+        response = client.initiate_auth(
+            ClientId=CLIENT_ID,
+            AuthFlow="REFRESH_TOKEN_AUTH",
+            AuthParameters={
+                "REFRESH_TOKEN": refresh_token
+            }
+        )
+
+        auth_result = response["AuthenticationResult"]
+        return {
+            "access_token": auth_result["AccessToken"],
+            "id_token": auth_result["IdToken"],
+            "expires_in": auth_result["ExpiresIn"],
+            "token_type": auth_result["TokenType"]
+        }
+
+    except ClientError as e:
+        raise HTTPException(
+            status_code=401,
+            detail="Refresh token is invalid or expired"
+        ) from e
+
+
+def revoke_refresh_token(refresh_token: str):
+    try:
+        client = get_cognito_client()
+
+        client.revoke_token(
+            ClientId=CLIENT_ID,
+            Token=refresh_token
+        )
+
+    except ClientError:
+        pass

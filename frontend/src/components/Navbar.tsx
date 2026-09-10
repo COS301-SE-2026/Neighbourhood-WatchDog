@@ -4,120 +4,112 @@ import { Bell, LogOut, Monitor, User, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
+import { useUserContext } from "@/hooks/use-user-context";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { logout } from "@/lib/auth/cognito";
+import { AUTH_EVENT, logout } from "@/lib/auth/cognito";
 import { SidebarTrigger } from "./ui/sidebar";
 
 const Navbar = () => {
-    const router = useRouter();
-    const [username, setUsername] = React.useState("");
-
-    React.useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setUsername(localStorage.getItem("fullname") ?? "");
-    }, []);
-
-    const handleLogout = async () => {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("idToken");
-        localStorage.removeItem("fullname");
-
-        logout();
-        router.push("/auth/login");
+  const router = useRouter();
+  const [username, setUsername] = React.useState("");
+  const { data: userContext } = useUserContext();
+  const displayName = userContext?.user.name ?? username;
+  React.useEffect(() => {
+    const syncUsername = () => {
+      setUsername(localStorage.getItem("fullname") ?? "");
     };
 
-    return (
-        <nav className="flex items-center justify-between p-4 text-brand-frost">
-            <SidebarTrigger />
+    syncUsername();
+    window.addEventListener(AUTH_EVENT, syncUsername);
 
-            <div className="flex items-center gap-4">
-                <Link href="/dashboard/help">Help</Link>
-                <Link href="">Dashboard</Link>
+    return () => {
+      window.removeEventListener(AUTH_EVENT, syncUsername);
+    };
+  }, []);
 
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <button
-                            type="button"
-                            aria-label="Open account menu"
-                            title="Open account menu"
-                            className="rounded-full"
-                        >
-                            <Avatar aria-hidden="true">
-                                <AvatarFallback className="bg-muted text-muted-foreground">
-                                    <User
-                                        aria-hidden="true"
-                                        className="size-4"
-                                    />
-                                </AvatarFallback>
-                            </Avatar>
-                        </button>
-                    </DropdownMenuTrigger>
+  const handleLogout = async () => {
+    localStorage.removeItem("fullname");
 
-                    <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel>
-                            <div className="flex flex-col">
-                                <span className="text-sm font-medium">
-                                    {username}
-                                </span>
+    await logout();
+    router.push("/auth/login");
+  };
 
-                                <span className="text-xs font-normal text-muted-foreground">
-                                    Resident
-                                </span>
-                            </div>
-                        </DropdownMenuLabel>
+  return (
+    <nav className="flex items-center justify-between p-4 text-brand-frost">
+      <SidebarTrigger />
 
-                        <DropdownMenuSeparator />
+      <div className="flex items-center gap-4">
+        <Link href="/dashboard/help">Help</Link>
 
-                        <DropdownMenuItem>
-                            <UserRound
-                                aria-hidden="true"
-                                className="mr-2 size-4"
-                            />
-                            My profile
-                        </DropdownMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Open account menu"
+              title="Open account menu"
+              className="rounded-full"
+            >
+              <Avatar aria-hidden="true">
+                <AvatarFallback className="bg-muted text-muted-foreground">
+                  <User aria-hidden="true" className="size-4" />
+                </AvatarFallback>
+              </Avatar>
+            </button>
+          </DropdownMenuTrigger>
 
-                        <DropdownMenuItem>
-                            <Bell
-                                aria-hidden="true"
-                                className="mr-2 size-4"
-                            />
-                            Notifications
-                        </DropdownMenuItem>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">{displayName}</span>
 
-                        <DropdownMenuItem>
-                            <Monitor
-                                aria-hidden="true"
-                                className="mr-2 size-4"
-                            />
-                            Appearance
-                        </DropdownMenuItem>
+                <span className="text-xs font-normal text-muted-foreground">
+                  Resident
+                </span>
+              </div>
+            </DropdownMenuLabel>
 
-                        <DropdownMenuSeparator />
+            <DropdownMenuSeparator />
 
-                        <DropdownMenuItem
-                            onClick={handleLogout}
-                            className="text-destructive focus:text-destructive"
-                        >
-                            <LogOut
-                                aria-hidden="true"
-                                className="mr-2 size-4"
-                            />
-                            Sign out
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-        </nav>
-    );
+            <DropdownMenuItem
+              onSelect={() => router.push("/dashboard/settings")}
+            >
+              <UserRound aria-hidden="true" className="mr-2 size-4" />
+              My Profile
+            </DropdownMenuItem>
+
+            <DropdownMenuItem disabled>
+              <Bell aria-hidden="true" className="mr-2 size-4" />
+              Notifications
+            </DropdownMenuItem>
+
+            <DropdownMenuItem disabled>
+              <Monitor aria-hidden="true" className="mr-2 size-4" />
+              Appearance
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="text-destructive focus:text-destructive"
+            >
+              <LogOut aria-hidden="true" className="mr-2 size-4" />
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </nav>
+  );
 };
 
 export default Navbar;

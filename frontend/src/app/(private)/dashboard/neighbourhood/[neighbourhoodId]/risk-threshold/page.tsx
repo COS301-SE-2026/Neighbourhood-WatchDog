@@ -121,7 +121,7 @@ export default function RiskThresholdPage() {
     return (
         <main className="min-h-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
             <div className="max-w-full">
-                <Link href={`/dashboard/neighbourhood/${activeContext.neighbourhoodId}`} className="inline-flex items-center gap-2 text-sm text-brand-ash transition-colors hover:text-brand-frost">
+                <Link href={`/dashboard/neighbourhood/${activeContext.neighbourhoodId}/alerts`} className="inline-flex items-center gap-2 text-sm text-brand-ash transition-colors hover:text-brand-frost">
                     <ArrowLeft className="size-4" /> Back to neighbourhood
                 </Link>
 
@@ -203,7 +203,7 @@ export default function RiskThresholdPage() {
 
                             <section className="border-t border-border pt-6">
                                 <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                                    <Link href={`/dashboard/neighbourhood/${activeContext.neighbourhoodId}`} className="inline-flex h-9 items-center justify-center rounded-md px-3.5 text-sm font-medium text-brand-ash transition-colors hover:bg-brand-slate hover:text-brand-frost">
+                                    <Link href={`/dashboard/neighbourhood/${activeContext.neighbourhoodId}/risk-threshold`} className="inline-flex h-9 items-center justify-center rounded-md px-3.5 text-sm font-medium text-brand-ash transition-colors hover:bg-brand-slate hover:text-brand-frost">
                                         Cancel
                                     </Link>
                                     <button

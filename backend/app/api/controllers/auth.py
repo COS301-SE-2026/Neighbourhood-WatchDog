@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import select
 from typing import Annotated
 
 from app.auth.dependencies import get_current_user
+from app.core.config import config
 from app.core.database import DbSession
 from app.services.user_service import create_user
 from app.models.user import User
@@ -19,6 +20,7 @@ from app.schemas.auth import (
     ConfirmSignUpRes,
     ResendCodeRes,
     VerifyMFARes,
+    RefreshTokenRes
 )
 
 from app.services.auth_service import ( #use services
@@ -26,8 +28,33 @@ from app.services.auth_service import ( #use services
     authenticate_user,
     confirm_user,
     resend_confirmation_code,
-    complete_mfa
+    complete_mfa,
+    refresh_user_session,
+    revoke_user_session
 )
+
+REFRESH_COOKIE_NAME = "refresh_token"
+REFRESH_COOKIE_PATH = "/auth"
+
+def set_refresh_cookie(response: Response, refresh_token: str) -> None:
+    response.set_cookie(
+        key=REFRESH_COOKIE_NAME,
+        value=refresh_token,
+        max_age=config.refresh_cookie_max_age,
+        httponly=True,
+        secure=config.refresh_cookie_secure,
+        samesite=config.refresh_cookie_samesite,
+        path=REFRESH_COOKIE_PATH
+    )
+
+def clear_refresh_cookie(response: Response) -> None:
+    response.delete_cookie(
+        key=REFRESH_COOKIE_NAME,
+        path=REFRESH_COOKIE_PATH,
+        secure=config.refresh_cookie_secure,
+        samesite=config.refresh_cookie_samesite,
+        httponly=True
+    )
 
 
 def _payload_to_dict(payload):
@@ -66,8 +93,15 @@ async def signup(request: Request, payload: SignUpRequest, db: DbSession):
     },
 )
 @limiter.limit("5/minute")  # Limit to 5 requests per minute
-async def login(request: Request, payload: LoginRequest):
-    return await authenticate_user(_payload_to_dict(payload))
+async def login(request: Request, payload: LoginRequest, response: Response):
+    result =  await authenticate_user(_payload_to_dict(payload))
+
+    refresh_token = result["data"].pop("refresh_token", None)
+
+    if refresh_token:
+        set_refresh_cookie(response, refresh_token)
+
+    return result
 
 @router.post("/confirm", response_model=ConfirmSignUpRes,
     responses={
@@ -133,5 +167,42 @@ async def resend_code(request: Request, payload: ResendCodeRequest):
     },
 )
 @limiter.limit("10/minute")
-async def verify_mfa(request: Request, payload: VerifyMFARequest):
-    return await complete_mfa(_payload_to_dict(payload))
+async def verify_mfa(request: Request, payload: VerifyMFARequest, response: Response):
+    result = await complete_mfa(_payload_to_dict(payload))
+
+    refresh_token = result["data"].pop("refresh_token", None)
+    
+    if refresh_token:
+        set_refresh_cookie(response, refresh_token)
+
+    return result
+
+@router.post(
+    "/refresh", 
+    response_model=RefreshTokenRes,
+    responses={
+        401: {"description": "No refresh session found or refresh token expired"},
+        429: {"description": "Too many refresh attempts"}
+    }
+)
+@limiter.limit("30/minute")
+async def refresh_session(request: Request):
+    refresh_token = request.cookies.get(REFRESH_COOKIE_NAME)
+
+    if not refresh_token:
+        raise HTTPException(
+            status_code=401,
+            detail="No refresh session found"
+        )
+
+    return await refresh_user_session(refresh_token)
+
+
+@router.post("/logout", status_code=204)
+async def logout_session(request: Request, response: Response):
+    refresh_token = request.cookies.get(REFRESH_COOKIE_NAME)
+
+    if refresh_token:
+        await revoke_user_session(refresh_token)
+
+    clear_refresh_cookie(response)

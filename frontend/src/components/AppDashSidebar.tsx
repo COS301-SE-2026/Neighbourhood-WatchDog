@@ -262,6 +262,7 @@ const AppDashSidebar = () => {
     const { user: authUser } = useAuth();
     const { data: userContext } = useUserContext();
     const systemRole = userContext?.user.system_role ?? null;
+    const displayName = userContext?.user.name ?? authUser?.fullname ?? "";
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const handlePropertyAdded = async () => {
@@ -490,7 +491,7 @@ const AppDashSidebar = () => {
                 </SidebarContent>
                 <SidebarFooter className="border-t border-border px-5 py-4 group-data-[collapsible=icon]:px-2">
                     <div
-                        title={`${authUser?.fullname ?? ""}`}
+                        title={displayName}
                         className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center"
                     >
                         <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-brand-green/30 bg-brand-green/10">
@@ -498,7 +499,7 @@ const AppDashSidebar = () => {
                         </div>
                         <div className="min-w-0 group-data-[collapsible=icon]:hidden">
                             <p className="truncate text-sm font-medium text-brand-frost">
-                                {authUser?.fullname}
+                                {displayName}
                             </p>
 
 

@@ -53,6 +53,7 @@ def verify_jwt(token: str) -> dict:
         token,
         key,
         algorithms=["RS256"],
+        leeway=30,
         issuer=ISSUER,
         options={
             "verify_aud": False

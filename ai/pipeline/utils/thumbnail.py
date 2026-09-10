@@ -14,8 +14,14 @@ def annotate_frame(frame: np.ndarray, tracks: list) -> np.ndarray:
 
         detection_type = track.get('detection_type', 'person')
 
+        is_person = detection_type in {
+            "person", 
+            "human_presence"
+
+        }
+
         #update boundary boxes: green=human, red=weapon
-        colour = (0, 0, 255) if detection_type.lower() != 'person' else (0, 255, 0)
+        colour = (0, 255, 0) if is_person else (0, 0, 255)
 
 
         #drawing the boundary box

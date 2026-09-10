@@ -70,8 +70,8 @@ CHUNK_SIZE = 256 * 1024
 def _s3_client():
     return boto3.client(
         "s3",
-        region_name="eu-north-1",
-        endpoint_url="https://s3.eu-north-1.amazonaws.com",
+        region_name=AWS_REGION,
+        endpoint_url=f"https://s3.{AWS_REGION}.amazonaws.com",
         config=BotoConfig(
             signature_version="s3v4",
             s3={"addressing_style": "virtual"},
@@ -639,7 +639,9 @@ async def get_response_metrics_handler(
         db: AsyncSession,
         claims: dict,
         camera_id: UUID | None = None,
-        officer_id: UUID | None = None
+        officer_id: UUID | None = None,
+        limit: int = DEFAULT_PAGE_SIZE,
+        offset: int = 0,
 ) -> AlertMetricsRes:
     """Calculate alert response metrics for an authorised neighbourhood."""
 
@@ -661,7 +663,39 @@ async def get_response_metrics_handler(
     if officer_id:
         stmt = stmt.where(Alert.resolved_by == officer_id)
 
-    result = await db.execute(stmt)
+    aggregate_stmt = (
+        select(
+            func.count(Alert.id),
+            func.count(Alert.id).filter(Alert.status == "OPEN"),
+            func.count(Alert.id).filter(
+                Alert.status.in_(("ACKNOWLEDGED", "RESOLVED"))
+            ),
+            func.avg(
+                func.extract("epoch", Alert.resolved_at - Alert.created_at)
+            ).filter(
+                Alert.resolved_at.is_not(None),
+                Alert.created_at.is_not(None),
+            ),
+        )
+        .select_from(Alert)
+        .join(Camera, Alert.camera_id == Camera.id)
+        .join(Property, Camera.property_id == Property.id)
+        .where(Property.neighbourhood_id == neighbourhood_uuid)
+    )
+
+    if camera_id:
+        aggregate_stmt = aggregate_stmt.where(Alert.camera_id == camera_id)
+
+    if officer_id:
+        aggregate_stmt = aggregate_stmt.where(Alert.resolved_by == officer_id)
+
+    aggregate_result = await db.execute(aggregate_stmt)
+    total, pending_count, acknowledged_count, avg = aggregate_result.one()
+    total = total or 0
+
+    result = await db.execute(
+        stmt.order_by(Alert.created_at.desc()).limit(limit).offset(offset)
+    )
     alerts = result.scalars().all()
 
 
@@ -689,19 +723,19 @@ async def get_response_metrics_handler(
 
         ))
     
-    avg = sum(response_times) / len(response_times) if response_times else None
-    
-    pending_count = sum(1 for a in alerts if a.status == "OPEN")
-
-    acknowledged_count = sum(1 for a in alerts if a.status in ("ACKNOWLEDGED", "RESOLVED"))
-
     logger.info("get_response_metrics: successfully retrieved response metrics for user with cognito_sub=%s", claims['sub'])
     return AlertMetricsRes (
-        total_alerts=len(alerts),
+        total_alerts=total,
         acknowledged_count=acknowledged_count,
         pending_count=pending_count,
-        average_response_seconds=avg,
-        items=items
+        average_response_seconds=float(avg) if avg is not None else None,
+        items=items,
+        pagination={
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "has_more": offset + len(alerts) < total,
+        },
         
     )
 

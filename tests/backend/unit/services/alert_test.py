@@ -621,11 +621,15 @@ class TestResponseMetrics:
         membership_result = Mock()
         membership_result.scalar_one_or_none.return_value = membership
 
+        aggregate_result = Mock()
+        aggregate_result.one.return_value = (1, 1, 0, None)
+
         alerts_result = Mock()
         alerts_result.scalars.return_value.all.return_value = [alert]
 
         self.mock_db.execute.side_effect = [
             membership_result,
+            aggregate_result,
             alerts_result,
         ]
 
@@ -640,7 +644,9 @@ class TestResponseMetrics:
         assert result.average_response_seconds is None
         assert result.items[0].status == "PENDING"
         assert result.items[0].response_seconds is None
-        assert self.mock_db.execute.await_count == 2
+        assert result.pagination.total == 1
+        assert result.pagination.has_more is False
+        assert self.mock_db.execute.await_count == 3
 
 class TestFrequencyMetrics:
     def setup_method(self):

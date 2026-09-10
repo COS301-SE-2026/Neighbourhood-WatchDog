@@ -7,7 +7,6 @@ import threading
 import tempfile
 import subprocess
 from dotenv import load_dotenv
-from collections import deque
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from fastapi import APIRouter, FastAPI, Query
@@ -16,8 +15,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
+from pipeline.utils.frame_buffer import AnnotatedFrameBuffer
 from pipeline.utils.zone_config import filter_detections_by_zones
 from pipeline.processing.alert_confirmation import is_track_ready_to_alert
+
 
 import httpx
 import logging
@@ -80,7 +81,7 @@ WEAPON_CLASSES = {"gun", "knife", "grenade", "explosion"}
 CLIP_COOLDOWN_SECS = 5
 CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME") or os.getenv("AWS_BUCKET_NAME", "")
-AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")
+AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
 
 def _s3_client(): 
     return boto3.client("s3", region_name=AWS_REGION)
@@ -377,7 +378,7 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
         )
         return None
 
-def _schedule_weapon_clip(camera: CameraSpec, rtsp_url: str, pre_frames: list, weapon_label: str, confidence: float, stop_event: threading.Event) -> None:
+def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, weapon_label: str, confidence: float, stop_event: threading.Event) -> None:
     
     label = weapon_label.lower()
     cooldown_key = (camera.id, label)
@@ -390,8 +391,9 @@ def _schedule_weapon_clip(camera: CameraSpec, rtsp_url: str, pre_frames: list, w
             logger.info(
                 "Weapon alert cooldown active for camera %s / %s",
                 camera.id,
-                label,
+                label
             )
+
             return
 
         _clips_cooldowns[cooldown_key] = now
@@ -414,62 +416,62 @@ def _schedule_weapon_clip(camera: CameraSpec, rtsp_url: str, pre_frames: list, w
         args=(
             alert_id,
             camera,
-            rtsp_url,
-            pre_frames,
-            label,
-            confidence,
-            stop_event,
+            frame_buffer,
+            trigger_sequence,
+            stop_event
         ),
         name=f"watchdog-clip-{camera.id}-{label}",
-        daemon=True,
+        daemon=True
+
+
     ).start()
 
+
     logger.info(
-        "Scheduled footage capture for weapon alert %s on camera %s: "
-        "label=%s, confidence=%.2f, pre_frames=%s",
+        "Scheduled annotated footage capture for weapon alert %s on camera %s: "
+        "label=%s, confidence=%.2f, trigger_sequence=%s",
         alert_id,
         camera.id,
         label,
         confidence,
-        len(pre_frames),
+        trigger_sequence
+        
     )
 
-def _save_weapon_clip(alert_id: str, camera: CameraSpec, rtsp_url: str, pre_frames: list, weapon_label: str, confidence: float, stop_event: threading.Event) -> None:
-    
+def _save_weapon_clip(alert_id: str, camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, stop_event: threading.Event) -> None:
+    """
+    Build a clip from frames already annotated by the detection loop.
+
+    No YOLO, DeepSort, or second RTSP capture is used here.
+    """
+
     api_key = keyring.get_password("WatchDog", "api_key") or INTERNAL_API_TOKEN
     headers = {"X-Internal-Token": api_key}
 
-    post_frames = []
-    capture = _open_stream(rtsp_url)
+    pre_frames = frame_buffer.snapshot_through(trigger_sequence)
+    post_frames: list = []
 
-    try:
-        if capture is None:
-            logger.warning(
-                "Could not capture post-event footage for alert %s / camera %s",
-                alert_id,
-                camera.id,
-            )
-        else:
-            deadline = time.monotonic() + 3.0
+    next_sequence = trigger_sequence
+    deadline = time.monotonic() + 3.0
 
-            while time.monotonic() < deadline and not stop_event.is_set():
-                ok, frame = capture.read()
+    while time.monotonic() < deadline and not stop_event.is_set():
+        new_frames, next_sequence = frame_buffer.wait_for_after(
+            next_sequence,
+            deadline
+        )
 
-                if not ok:
-                    break
+        if not new_frames:
+            break
 
-                post_frames.append(frame)
-    finally:
-        if capture is not None:
-            capture.release()
+        post_frames.extend(new_frames)
 
     all_frames = pre_frames + post_frames
 
     if not all_frames:
         logger.warning(
-            "No frames available for footage of alert %s / camera %s",
+            "No annotated frames available for footage of alert %s / camera %s",
             alert_id,
-            camera.id,
+            camera.id
         )
         return
 
@@ -482,7 +484,11 @@ def _save_weapon_clip(alert_id: str, camera: CameraSpec, rtsp_url: str, pre_fram
     ]
 
     if not all_frames:
-        logger.warning("No consistently sized frames available for alert %s / camera %s", alert_id, camera.id)
+        logger.warning(
+            "No consistently sized frames available for alert %s / camera %s",
+            alert_id,
+            camera.id
+        )
         return
 
     raw_fd, raw_path = tempfile.mkstemp(suffix=".mp4")
@@ -500,14 +506,15 @@ def _save_weapon_clip(alert_id: str, camera: CameraSpec, rtsp_url: str, pre_fram
         )
 
         if not writer.isOpened():
-            raise RuntimeError("OpenCV could not initialise the temporary clip writer")
+            raise RuntimeError(
+                "OpenCV could not initialise the temporary clip writer"
+            )
 
         try:
             for frame in all_frames:
                 writer.write(frame)
         finally:
             writer.release()
-
 
         subprocess.run(
             [
@@ -537,18 +544,29 @@ def _save_weapon_clip(alert_id: str, camera: CameraSpec, rtsp_url: str, pre_fram
             upload_response = httpx.post(
                 f"{BACKEND_URL}/internal/alerts/{alert_id}/clip",
                 headers=headers,
-                files={"clip": ("weapon-alert.mp4", clip_file, "video/mp4")},
-                timeout=30.0,
+                files={
+                    "clip": (
+                        "weapon-alert.mp4",
+                        clip_file,
+                        "video/mp4"
+                    )
+                },
+                timeout=30.0
             )
+
+
         upload_response.raise_for_status()
 
-        logger.info(
-            "Clip uploaded through backend and linked to alert %s",
-            alert_id,
-        )
+        logger.info("Annotated clip uploaded through backend and linked to alert %s", alert_id)
 
     except Exception:
-        logger.exception("Footage capture/backend upload failed for alert %s / camera %s", alert_id, camera.id)
+        logger.exception(
+            "Annotated footage capture/backend upload failed "
+            "for alert %s / camera %s",
+            alert_id,
+            camera.id 
+            
+        )
 
     finally:
         for clip_path in (raw_path, h264_path):
@@ -557,96 +575,153 @@ def _save_weapon_clip(alert_id: str, camera: CameraSpec, rtsp_url: str, pre_fram
 
 def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Event) -> None:
     """
-    Background thread: continuously read RTSP, run YOLO+DeepSort, push annotations.
-    The frontend uses WebRTC from mediamtx for display; this loop supplies bounding boxes.
+    Background thread: continuously read RTSP, run YOLO+DeepSort,
+    push live annotations, and retain annotated frames for clips.
     """
-    logger.info("Detection loop starting for camera %s at %s", camera.id, rtsp_url)
+
+    logger.info(
+        "Detection loop starting for camera %s at %s",
+        camera.id,
+        rtsp_url 
+
+    )
 
     tracker = DeepSort(
         max_age=10,
         n_init=TEMPORAL_CONFIRMATION_FRAMES,
-        max_iou_distance=0.5,  #for stricter matching and less duplicate boxes
+        max_iou_distance=0.5,
         embedder="mobilenet",
         embedder_gpu=False,
-        nms_max_overlap=0.5 #to suppress overlapping boxes
+        nms_max_overlap=0.5
+
     )
 
     alerted_ids: set = set()
-    pre_event_frames: deque = deque(maxlen=100)
+
+    #about four seconds at 25 FPS
+    annotated_frames = AnnotatedFrameBuffer(max_frames=100)
+
     latest_frame_reader = LatestFrameReader(rtsp_url, stop_event)
     latest_frame_reader.start()
+
     last_processed_sequence = -1
 
     try:
         while not stop_event.is_set():
-            frame, last_processed_sequence = latest_frame_reader.get_latest_after(last_processed_sequence)
+            frame, last_processed_sequence = (
+                latest_frame_reader.get_latest_after(
+                    last_processed_sequence
+                )
+            )
 
             if frame is None:
                 stop_event.wait(0.01)
                 continue
 
+            person_detections, weapon_detections = _extract_detections(
+                frame,
+                zones=camera.zones,
+                confidence_threshold=camera.confidence_threshold 
+            )
 
-            pre_event_frames.append(frame.copy())
+            #  only human detections are passed through DeepSort
+            tracks = tracker.update_tracks(
+                person_detections,
+                frame=frame 
 
-            person_detections, weapon_detections = _extract_detections(frame, zones=camera.zones, confidence_threshold=camera.confidence_threshold)
+            )
 
-            #only tracking humans through deepsort
-            tracks = tracker.update_tracks(person_detections, frame=frame)
+            tracks_payload = _collect_tracks(
+                tracks,
+                alerted_ids,
+                camera 
 
-            tracks_payload = _collect_tracks(tracks, alerted_ids, camera)
+            )
 
-            print(f"DEBUG: raw_tracks={len(tracks)}, confirmed={sum(1 for t in tracks if t.is_confirmed())}, payload={len(tracks_payload)}, person_dets={len(person_detections)}")
+            weapon_events: list[tuple[str, float]] = []
 
+            #add the raw weapon detections without DeepSort
+            for index, (bbox, confidence, label) in enumerate(weapon_detections):
+                x, y, width, height = bbox
 
+                tracks_payload.append(
+                    {
+                        "track_id": f"threat_{index}",
+                        "confidence": confidence,
+                        "bbox": [x, y, x + width, y + height],
+                        "detection_type": label
 
-            #adding raw weapon detections (no deepsort, no duplication)
-            for i, (bbox, confidence, label) in enumerate(weapon_detections):
-                x, y, w, h = bbox
-
-                tracks_payload.append({
-                    "track_id": f"threat_{i}",
-                    "confidence": confidence,
-                    "bbox": [x, y, x + w, y + h],
-                    "detection_type": label
-
-                })
-
+                    }
+                )
 
                 if label.lower() in WEAPON_CLASSES:
-
                     logger.info(
-                        "Weapon detection observed: camera=%s, label=%s, confidence=%.3f",
+                        "Weapon detection observed: camera=%s, "
+                        "label=%s, confidence=%.3f",
                         camera.id,
                         label,
-                        confidence,
-                    )
-                    
-                    _schedule_weapon_clip(
-                        camera=camera,
-                        rtsp_url=rtsp_url,
-                        pre_frames=list(pre_event_frames),
-                        weapon_label=label,
-                        confidence=confidence,
-                        stop_event=stop_event
+                        confidence
 
                     )
 
-            #filtering out zero confidence (0%) ghost tracks
-            tracks_payload = [t for t in tracks_payload
-                if t.get("confidence", 0) > 0.1 or str(t.get("track_id", "")).startswith("threat_")]
+                    weapon_events.append(
+                        (label, confidence)
+                    )
 
+            #filter out zero confidence ghost tracks
+            tracks_payload = [
+                track
+                for track in tracks_payload
 
-            _push_annotations(BACKEND_URL, camera.id, tracks_payload, datetime.now(timezone.utc).isoformat())
+                if track.get("confidence", 0) > 0.1 or str(track.get("track_id", "")).startswith("threat_")
+            ]
+
+            #  burn the current detection results into the frame
+            #this is CPU-only OpenCV drawing and does not run inference
+            annotated_frame = annotate_frame(frame, tracks_payload)
+
+            ##store the annotated frame before starting the clip worker 
+            trigger_sequence = annotated_frames.append(annotated_frame)
+
+            #  keep the existing live annotation WebSocket behavior
+            _push_annotations(
+                BACKEND_URL,
+                camera.id,
+                tracks_payload,
+                datetime.now(timezone.utc).isoformat()
+
+            )
+
+            # create clips from the already-annotated frames
+            for label, confidence in weapon_events:
+                _schedule_weapon_clip(
+                    camera=camera,
+                    frame_buffer=annotated_frames,
+                    trigger_sequence=trigger_sequence,
+                    weapon_label=label,
+                    confidence=confidence,
+                    stop_event=stop_event 
+
+                )
 
     except Exception:
-        logger.exception("Detection worker crashed for camera %s", camera.id)
+        logger.exception(
+            "Detection worker crashed for camera %s",
+            camera.id 
+
+        )
+
     finally:
         latest_frame_reader.close()
-        logger.info("Detection worker stopped for camera %s", camera.id)
 
-        logger.info("Detection worker stopped for camera %s", camera.id)
+        logger.info(
+            "Detection worker stopped for camera %s",
+            camera.id 
+
+        )
 
 
+        
 def _reconnect_if_needed(cap, rtsp_url: str, stop_event: threading.Event):
     """Return an open capture, reconnecting if necessary."""
     if cap is not None and cap.isOpened():

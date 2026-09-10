@@ -63,12 +63,12 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           aws ecr get-login-password --region ${AWS_REGION} \
-            | docker login --username AWS --password-stdin 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+            | docker login --username AWS --password-stdin 778312248988.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
           IMAGE_TAG="${{ github.sha }}"
           docker build -t watchdog-backend ./backend
-          docker tag watchdog-backend:latest 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:$IMAGE_TAG
-          docker push 809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:$IMAGE_TAG
+          docker tag watchdog-backend:latest 778312248988.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:$IMAGE_TAG
+          docker push 778312248988.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:$IMAGE_TAG
 
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
@@ -81,17 +81,18 @@ jobs:
             --query 'taskDefinition' \
             --region ${AWS_REGION} > task-def.json
 
-            NEW_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:${{ env.IMAGE_TAG }}" \
-              '.containerDefinitions[0].image = $IMAGE 
+            NEW_TASK_DEF=$(jq --arg IMAGE "778312248988.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${{ env.IMAGE_TAG }}" \
+              --arg REGION "${AWS_REGION}" \
+              '.containerDefinitions[0].image = $IMAGE
               | .containerDefinitions[0].secrets = (
                 (.containerDefinitions[0].secrets // [])
                 | map(select(.name != "FAILOVER_CONTROLLER_TOKEN" and .name != "GO2RTC_API_USERNAME" and .name != "GO2RTC_API_PASSWORD" and .name != "SMTP_SENDER_EMAIL" and .name != "SMTP_APP_PASSWORD"))
                 + [
-                    {"name": "FAILOVER_CONTROLLER_TOKEN", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:FAILOVER_CONTROLLER_TOKEN::"},
-                    {"name": "GO2RTC_API_USERNAME", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:GO2RTC_API_USERNAME::"},
-                    {"name": "GO2RTC_API_PASSWORD", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:GO2RTC_API_PASSWORD::"},
-                    {"name": "SMTP_SENDER_EMAIL", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:SMTP_SENDER_EMAIL::"},
-                    {"name": "SMTP_APP_PASSWORD", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:SMTP_APP_PASSWORD::"}
+                    {"name": "FAILOVER_CONTROLLER_TOKEN", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:FAILOVER_CONTROLLER_TOKEN::"},
+                    {"name": "GO2RTC_API_USERNAME", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:GO2RTC_API_USERNAME::"},
+                    {"name": "GO2RTC_API_PASSWORD", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:GO2RTC_API_PASSWORD::"},
+                    {"name": "SMTP_SENDER_EMAIL", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:SMTP_SENDER_EMAIL::"},
+                    {"name": "SMTP_APP_PASSWORD", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:SMTP_APP_PASSWORD::"}
                   ]
               )
               | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
@@ -118,12 +119,13 @@ jobs:
             --query 'taskDefinition' \
             --region ${AWS_REGION} > worker-task-def.json
 
-          NEW_WORKER_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
-            '.containerDefinitions[0].image = $IMAGE 
+          NEW_WORKER_TASK_DEF=$(jq --arg IMAGE "778312248988.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
+            --arg REGION "${AWS_REGION}" \
+            '.containerDefinitions[0].image = $IMAGE
             | .containerDefinitions[0].secrets = (
                 (.containerDefinitions[0].secrets // [])
                 | map(select(.name != "S3_BUCKET_NAME"))
-                + [{"name": "S3_BUCKET_NAME", "valueFrom": "arn:aws:secretsmanager:af-south-1:809809510183:secret:watchdog/prod/env-Qthcyi:S3_BUCKET_NAME::"}]
+                + [{"name": "S3_BUCKET_NAME", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:S3_BUCKET_NAME::"}]
               )
             | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
             worker-task-def.json)
@@ -148,7 +150,7 @@ jobs:
             --query 'taskDefinition' \
             --region ${AWS_REGION} > beat-task-def.json
 
-          NEW_BEAT_TASK_DEF=$(jq --arg IMAGE "809809510183.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
+          NEW_BEAT_TASK_DEF=$(jq --arg IMAGE "778312248988.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
             '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
             beat-task-def.json)
 
@@ -162,29 +164,11 @@ jobs:
 
           echo "NEW_BEAT_REVISION=$NEW_BEAT_REVISION" >> $GITHUB_ENV
 
-      - name: Deploy Celery worker and beat
-        run: |
-          aws ecs update-service \
-            --cluster watchdog-prod-cluster \
-            --service watchdog-celery-worker-service \
-            --task-definition watchdog-celery-worker-task:${{ env.NEW_WORKER_REVISION }} \
-            --force-new-deployment
-
-          aws ecs update-service \
-            --cluster watchdog-prod-cluster \
-            --service watchdog-celery-beat-service \
-            --task-definition watchdog-celery-beat-task:${{ env.NEW_BEAT_REVISION }} \
-            --force-new-deployment
-
-          aws ecs wait services-stable \
-            --cluster watchdog-prod-cluster \
-            --services watchdog-celery-worker-service watchdog-celery-beat-service
-
       - name: Run database migrations
         run: |
           RESULT=$(aws ecs run-task \
             --cluster watchdog-prod-cluster \
-            --task-definition watchdog-backend-task \
+            --task-definition watchdog-backend-task:${{ env.NEW_REVISION }} \
             --launch-type EC2 \
             --overrides '{"containerOverrides":[{"name":"backend","memory":256,"command":["alembic","upgrade","head"]}]}')
 
@@ -213,6 +197,24 @@ jobs:
             echo "Migration failed"
             exit 1
           fi
+
+      - name: Deploy Celery worker and beat
+        run: |
+          aws ecs update-service \
+            --cluster watchdog-prod-cluster \
+            --service watchdog-celery-worker-service \
+            --task-definition watchdog-celery-worker-task:${{ env.NEW_WORKER_REVISION }} \
+            --force-new-deployment
+
+          aws ecs update-service \
+            --cluster watchdog-prod-cluster \
+            --service watchdog-celery-beat-service \
+            --task-definition watchdog-celery-beat-task:${{ env.NEW_BEAT_REVISION }} \
+            --force-new-deployment
+
+          aws ecs wait services-stable \
+            --cluster watchdog-prod-cluster \
+            --services watchdog-celery-worker-service watchdog-celery-beat-service
 
       - name: Deploy new task definition to service
         run: | 
