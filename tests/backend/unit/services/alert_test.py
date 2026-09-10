@@ -125,8 +125,6 @@ class TestAcknowledgeAlert:
     async def test_non_member_raises_403(self):
         alert = self._make_alert(status="OPEN")
 
-        camera = Mock()
-
         property_obj = Mock()
         property_obj.id = uuid.uuid4()
         property_obj.neighbourhood_id = self.neighbourhood_id
