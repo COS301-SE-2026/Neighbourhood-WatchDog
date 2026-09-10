@@ -162,7 +162,7 @@ jobs:
 
           echo "NEW_BEAT_REVISION=$NEW_BEAT_REVISION" >> $GITHUB_ENV
 
-            - name: Run database migrations
+      - name: Run database migrations
         run: |
           RESULT=$(aws ecs run-task \
             --cluster watchdog-prod-cluster \
