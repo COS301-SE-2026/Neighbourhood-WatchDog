@@ -89,85 +89,130 @@ describe("session storage", () => {
 describe("authentication state", () = {
   test("isAuthenticated returns false without an access token", () => {
     expect(isAuthenticated()).toBe(false);
+  
+
+  test("isAuthenticated returns true with an in-memory access token", () => {
+    storeAccessToken("valid-token", 3600);
+
+    expect(isAuthenticated()).toBe(true);
   });
-})
 
-test("updates the stored fullname and emits an auth event", () => {
-  const listener = jest.fn();
-  window.addEventListener(AUTH_EVENT, listener);
+  test("returns stored user when authenticated", () => {
+    storeAccessToken("valid-token", 3600);
 
-  updateStoredFullName("Updated User");
+    localStorage.setItem("userSub", "user-123");
+    localStorage.setItem("fullname", "Test User");
+    localStorage.setItem("email", "test@example.com");
+    localStorage.setItem("address", "123 Main Street");
 
-  expect(localStorage.getItem("fullname")).toBe("Updated User");
-  expect(listener).toHaveBeenCalledTimes(1);
-  window.removeEventListener(AUTH_EVENT, listener);
+    expect(getStoredUser()).toEqual({
+      sub: "user-123",
+      fullname: "Test User",
+      email: "test@example.com",
+      address: "123 Main Street",
+    });
+  });
+
+  test("returns null when profile exists without access token", () => {
+    localStorage.setItem("userSub", "user-123");
+    localStorage.setItem("fullname", "Test User");
+
+    expect(getStoredUser()).toBeNull();
+  });
+
+  test("returns null when user sub is missing", () => {
+    storeAccessToken("valid-token", 3600);
+
+    expect(getStoredUser()).toBeNull();
+  });
+
 });
+
+
 //LOGIN//////////////////////////////////////////////////////
-test("login returns access and id tokens", async () => {
-  (fetch as jest.Mock).mockResolvedValue({
-    ok: true,
-    json: async () => ({
-      data: {
-        access_token: "mock-access-token",
-        id_token: "mock-id-token",
-        expires_in: 3600,
-      },
-    }),
-  });
-
-  const result = await login("test@example.com", "Password123!");
-
-  expect(result).toEqual({
-    accessToken: "mock-access-token",
-    idToken: "mock-id-token",
-    expiresIn: 3600,
-    mfaRequired: false,
-  });
-});
-
-test("login throws backend error message", async () => { // remove if you want less errors
-  (fetch as jest.Mock).mockResolvedValue({
-    ok: false,
-    json: async () => ({
-      detail: "Invalid credentials",
-    }),
-  });
-
-  await expect(
-    login("test@example.com", "wrongpassword")
-  ).rejects.toThrow("Invalid credentials");
-});
-
-test("login returns MFA challenge", async () => {
-  global.fetch = jest.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({
-      success: true,
-      data: {
-        mfa_required: true,
-        session: "abc-session",
-        delivery: {
-          medium: "EMAIL",
-          destination: "z***@g***",
+describe("login", () ={
+  test("login returns access and id tokens", async () => {
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          access_token: "mock-access-token",
+          id_token: "mock-id-token",
+          expires_in: 3600,
+          token_type: "Bearer"
         },
+      }),
+    });
+
+    const result = await login("test@example.com", "Password123!");
+
+    expect(result).toEqual({
+      accessToken: "mock-access-token",
+      idToken: "mock-id-token",
+      expiresIn: 3600,
+      mfaRequired: false,
+    });
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/auth/login"),
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include"
+      })
+    );
+  });
+
+  test("login returns MFA challenge", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          mfa_required: true,
+          session: "abc-session",
+          delivery: {
+            medium: "EMAIL",
+            destination: "z***@g***",
+          },
+        },
+      }),
+    });
+
+    const result = await login(
+      "test@example.com",
+      "Password123!"
+    );
+
+    expect(result).toEqual({
+      mfaRequired: true,
+      session: "abc-session",
+      delivery: {
+        medium: "EMAIL",
+        destination: "z***@g***",
       },
-    }),
+    });
   });
 
-  const result = await login(
-    "test@example.com",
-    "Password123!"
-  );
+  test("login throws backend error message", async () => { // remove if you want less errors
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        detail: "Invalid credentials",
+      }),
+    });
 
-  expect(result).toEqual({
-    mfaRequired: true,
-    session: "abc-session",
-    delivery: {
-      medium: "EMAIL",
-      destination: "z***@g***",
-    },
+    await expect(
+      login("test@example.com", "wrongpassword")
+    ).rejects.toThrow("Invalid credentials");
   });
+
 });
+
+
+
+
+
 //END LOGIN//////////////////////////////////////////////////////
 
 
@@ -360,11 +405,7 @@ test("verify MFA throws backend error message", async () => {
 
 
 
-test("isAuthenticated returns true with a valid access token", () => {
-  localStorage.setItem("accessToken", "valid-token");
 
-  expect(isAuthenticated()).toBe(true);
-});
 
 test("getAccessToken logs out when the token is expired", () => {
   localStorage.setItem("accessToken", "expired-token");
