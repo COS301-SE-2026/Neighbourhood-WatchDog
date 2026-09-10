@@ -8,7 +8,7 @@ interface SignUpResponse {
   success: boolean,
   data: {
     user_sub: string;
-    confirmed: boolean;
+    user_confirmed: boolean;
   };
 }
 
@@ -123,7 +123,7 @@ export const signUp = async (
 
     return {//Handle API response
       userSub: response.data.user_sub,
-      confirmed: response.data.confirmed,
+      confirmed: response.data.user_confirmed,
     };
   } catch (error) {
     console.error('Signup error:', error);

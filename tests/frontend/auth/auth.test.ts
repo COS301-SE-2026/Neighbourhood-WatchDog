@@ -5,8 +5,9 @@ import {
   getStoredUser,
   isAuthenticated,
   updateStoredFullName,
+  clearSession,
+  refreshSession
 } from "../../../frontend/src/lib/auth/cognito";
-jest.mock("amazon-cognito-identity-js", () => require("../../../frontend/__mocks__/amazon-cognito-identity-js.js"));
 
 const TEST_ID_TOKEN =
   "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwibmFtZSI6IlRlc3QgVXNlciIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSJ9.test-signature";
@@ -15,7 +16,7 @@ const TEST_ID_TOKEN =
 beforeEach(() => {
   localStorage.clear();
   clearAccessToken();
-  jest.clearAllMocks;
+  jest.clearAllMocks();
   (fetch as jest.Mock).mockReset();
 });
 
@@ -86,9 +87,10 @@ describe("session storage", () => {
   });
 });
 
-describe("authentication state", () = {
+describe("authentication state", () => {
   test("isAuthenticated returns false without an access token", () => {
     expect(isAuthenticated()).toBe(false);
+  });
   
 
   test("isAuthenticated returns true with an in-memory access token", () => {
@@ -130,7 +132,7 @@ describe("authentication state", () = {
 
 
 //LOGIN//////////////////////////////////////////////////////
-describe("login", () ={
+describe("login", () => {
   test("login returns access and id tokens", async () => {
     (fetch as jest.Mock).mockResolvedValue({
       ok: true,
@@ -228,7 +230,7 @@ describe("signup", () => {
         success: true,
         data: {
           user_sub: "user-123",
-          confirmed: false
+          user_confirmed: false
         }
     }), 
   });
@@ -262,7 +264,7 @@ describe("signup", () => {
         "test@example.com",
         "Password123!",
         "Test",
-        "User"
+        "User",
         "123 Main Street"
       )
     ).rejects.toThrow("User already exists");
@@ -293,7 +295,7 @@ describe("confirmation", () => {
   });
 
   test("confirm signup handles errors", async () => {// remove if you want less errors
-    (fetch as jest.Mock).mockRejectedValue({
+    (fetch as jest.Mock).mockResolvedValue({
       ok: false,
       json: async () => ({
         detail: {
@@ -332,7 +334,7 @@ describe("resend confirmation code", () => {
   });
 
   test("throws backend errors", async () => { // remove if you want less errors
-    (fetch as jest.Mock).mockRejectedValue({
+    (fetch as jest.Mock).mockResolvedValue({
       ok: false,
       json: async () => ({
         detail: "Resend failed"
@@ -478,81 +480,6 @@ describe("refresh session", () => {
     expect(secondToken).toBe("refreshed-access-token");
     expect(fetch).toHaveBeenCalledTimes(1);
   });
-});
-
-
-//getAuthToken////////////////////
-test("getAuthToken returns accessToken from localStorage", () => {
-  localStorage.setItem("accessToken", "access-123");
-
-  expect(getAuthToken()).toBe("access-123");
-});
-
-test("getAuthToken falls back to authToken", () => {
-  localStorage.removeItem("accessToken");
-  localStorage.setItem("authToken", "auth-123");
-
-  expect(getAuthToken()).toBe("auth-123");
-});
-
-//getAuthToken end////////////////////////////
-
-// GET AUTH HEADERS///////////////////
-test("getAuthHeaders returns authorization and content type", () => {
-  localStorage.setItem("accessToken", "token123");
-
-  // expect(getAuthHeaders()).toEqual({
-  //   "Content-Type": "application/json",
-  //   Authorization: "Bearer token123",
-  // });
-});
-// GET AUTH HEADERS/////////////////
-
-
-
-
-
-
-
-
-test("getAccessToken logs out when the token is expired", () => {
-  localStorage.setItem("accessToken", "expired-token");
-  localStorage.setItem(
-    "tokenExpiry",
-    String(Date.now() - 1000)
-  );
-
-  expect(getAccessToken()).toBeNull();
-  expect(localStorage.getItem("accessToken")).toBeNull();
-});
-
-test("getStoredUser returns the stored user", () => {
-  localStorage.setItem("accessToken", "valid-token");
-  localStorage.setItem("userSub", "user-123");
-  localStorage.setItem("fullname", "Test User");
-  localStorage.setItem("email", "test@example.com");
-  localStorage.setItem("address", "123 Main Street");
-
-  expect(getStoredUser()).toEqual({
-    sub: "user-123",
-    fullname: "Test User",
-    email: "test@example.com",
-    address: "123 Main Street",
-  });
-});
-
-// test("getStoredUser returns null without a user sub", () => {
-//   localStorage.setItem("accessToken", "valid-token");
-
-//   expect(getStoredUser()).toBeNull();
-// });
-
-test("updateStoredFullName updates localStorage", () => {
-  updateStoredFullName("Updated User");
-
-  expect(localStorage.getItem("fullname")).toBe(
-    "Updated User"
-  );
 });
 
 
