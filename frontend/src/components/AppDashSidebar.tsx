@@ -120,6 +120,11 @@ function getSidebarGroups(
                     url: `${propertyBaseUrl}/agent`,
                     icon: KeyRound, 
                 },
+                {
+                    title: "Property settings",
+                    url: `${propertyBaseUrl}/settings`,
+                    icon: Settings
+                }
             ],
         },
     ];
