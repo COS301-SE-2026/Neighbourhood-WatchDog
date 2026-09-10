@@ -237,3 +237,13 @@ def _make_metric_item(**overrides):
     }
     base.update(overrides)
     return base
+
+class TestAlertMetricItem:
+    def test_valid_pending_item(self):
+        """happy path: pending item has no response time or resolver yet"""
+        data = _make_metric_item()
+        item = AlertMetricItem(**data)
+
+        assert item.status == "PENDING"
+        assert item.response_seconds is None
+        assert item.acknowledged_by is None
