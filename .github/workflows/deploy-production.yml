@@ -89,7 +89,7 @@ jobs:
               '.containerDefinitions[0].image = $IMAGE
               | .containerDefinitions[0].secrets = (
                 (.containerDefinitions[0].secrets // [])
-                | map(select(.name != "FAILOVER_CONTROLLER_TOKEN" and .name != "GO2RTC_API_USERNAME" and .name != "GO2RTC_API_PASSWORD" and .name != "SMTP_SENDER_EMAIL" and .name != "SMTP_APP_PASSWORD"))
+                | map(select(.name != "FAILOVER_CONTROLLER_TOKEN" and .name != "GO2RTC_API_USERNAME" and .name != "GO2RTC_API_PASSWORD" and .name != "SMTP_SENDER_EMAIL" and .name != "SMTP_APP_PASSWORD" and .name != "REFRESH_COOKIE_SECURE" and .name != "REFRESH_COOKIE_SAMESITE" and .name != "REFRESH_COOKIE_MAX_AGE"))
                 + [
                     {"name": "FAILOVER_CONTROLLER_TOKEN", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:FAILOVER_CONTROLLER_TOKEN::"},
                     {"name": "GO2RTC_API_USERNAME", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:GO2RTC_API_USERNAME::"},
