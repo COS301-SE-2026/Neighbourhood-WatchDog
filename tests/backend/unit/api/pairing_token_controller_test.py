@@ -17,6 +17,7 @@ from app.schemas.pairing_token import (
     LinkPropertyToken,
     LinkPropertyTokenRes,
 )
+from starlette.requests import Request
 
 
 PROPERTY_ID = uuid4()
@@ -26,7 +27,18 @@ CLAIMS = {
     "sub": "cognito-sub-123",
 }
 DB = Mock()
-REQUEST = Mock()
+REQUEST = Request(
+    {
+        "type": "http",
+        "method": "GET",
+        "path": "/pairing-token/test",
+        "headers": [],
+        "query_string": b"",
+        "scheme": "http",
+        "server": ("testserver", 80),
+        "client": ("testclient", 50000),
+    }
+)
 CREATED_AT = datetime(2026, 1, 1, tzinfo=timezone.utc)
 EXPIRES_AT = datetime(2026, 1, 1, 0, 10, tzinfo=timezone.utc)
 

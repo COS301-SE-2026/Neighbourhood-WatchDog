@@ -20,8 +20,24 @@ from app.schemas.auth import (
     VerifyMFARequest,
 )
 
+from starlette.requests import Request
+from starlette.responses import Response
 
-REQUEST = Mock()
+
+REQUEST = Request(
+    {
+        "type": "http",
+        "method": "POST",
+        "path": "/auth/test",
+        "headers": [],
+        "query_string": b"",
+        "scheme": "http",
+        "server": ("testserver", 80),
+        "client": ("testclient", 50000),
+    }
+)
+
+RESPONSE = Response()
 DB = Mock()
 
 SIGNUP_PAYLOAD = SignUpRequest(
@@ -149,6 +165,7 @@ async def test_login_converts_payload_and_delegates_to_authenticate_user():
         response = await login(
             REQUEST,
             LOGIN_PAYLOAD,
+            RESPONSE,
         )
 
     assert response == expected_response
@@ -176,6 +193,7 @@ async def test_login_propagates_authentication_error():
             await login(
                 REQUEST,
                 LOGIN_PAYLOAD,
+                RESPONSE,
             )
 
     assert exc_info.value is error
@@ -316,6 +334,7 @@ async def test_verify_mfa_converts_payload_and_delegates_to_complete_mfa():
         response = await verify_mfa(
             REQUEST,
             MFA_PAYLOAD,
+            RESPONSE,
         )
 
     assert response == expected_response
@@ -344,6 +363,7 @@ async def test_verify_mfa_propagates_service_error():
             await verify_mfa(
                 REQUEST,
                 MFA_PAYLOAD,
+                RESPONSE,
             )
 
     assert exc_info.value is error

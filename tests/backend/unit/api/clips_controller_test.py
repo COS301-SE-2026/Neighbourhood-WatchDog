@@ -165,7 +165,10 @@ async def test_check_rbac_rejects_camera_without_neighbourhood():
     user = make_user()
     db = Mock()
     db.execute = AsyncMock(
-        return_value=make_result(scalar=user)
+        side_effect=[
+            make_result(scalar=user),
+            make_result(scalar=None),
+        ]
     )
 
     with pytest.raises(HTTPException) as exc_info:
@@ -180,7 +183,7 @@ async def test_check_rbac_rejects_camera_without_neighbourhood():
     assert exc_info.value.detail == (
         "This camera is not associated with a neighbourhood."
     )
-    db.execute.assert_awaited_once()
+    assert db.execute.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -190,7 +193,8 @@ async def test_check_rbac_rejects_user_without_neighbourhood_membership():
     db.execute = AsyncMock(
         side_effect=[
             make_result(scalar=user),
-            make_result(scalar=None),
+            make_result(scalar=None),  # property-admin lookup
+            make_result(scalar=None),  # neighbourhood membership lookup
         ]
     )
 
@@ -206,7 +210,7 @@ async def test_check_rbac_rejects_user_without_neighbourhood_membership():
     assert exc_info.value.detail == (
         "You do not belong to this camera's neighbourhood."
     )
-    assert db.execute.await_count == 2
+    assert db.execute.await_count == 3
 
 
 @pytest.mark.asyncio
