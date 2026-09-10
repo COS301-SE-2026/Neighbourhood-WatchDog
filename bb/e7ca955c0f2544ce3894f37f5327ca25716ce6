@@ -1,0 +1,14 @@
+backend/alembic/versions/c6da553e3309_initial.py
+  h_cf6208e37032c0 30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "bbe7ca955c0f2544ce3894f37f5327ca25716ce6",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
