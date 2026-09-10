@@ -260,3 +260,10 @@ class TestAlertMetricItem:
         assert item.status == "RESOLVED"
         assert item.response_time == pytest.approx(125.5)
         assert item.acknowledged_by is not None
+
+    def test_missing_alert_id_raises_validation_error(self):
+        data = _make_metric_item()
+        del data["alert_id"]
+
+        with pytest.raises(ValidationError):
+            AlertMetricItem(**data)
