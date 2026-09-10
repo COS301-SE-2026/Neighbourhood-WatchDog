@@ -168,7 +168,9 @@ async def seed_database(bulk_audit_count: int = 500):
             id=PROPERTY_ID,
             neighbourhood_id=None,
             address="123 Test Street\nTest City\nGauteng\n1234",
-            property_type=PropertyTypeEnum.PRIVATE
+            property_type=PropertyTypeEnum.PRIVATE,
+            latitude=-25.7558,
+            longitude=28.2308
         )
         db.add(test_property)
         await db.flush()
