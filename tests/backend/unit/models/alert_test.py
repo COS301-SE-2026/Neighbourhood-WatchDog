@@ -284,3 +284,21 @@ class TestAlertMetricRes:
         base = {"total": 1, "limit": 30, "offset": 0, "has_more": False}
         base.update(overrides)
         return Pagination(**base)
+
+    def test_valid_response_with_items_and_pagination(self):
+        """Happy path: alert metric response with pagination"""
+        item = AlertMetricItem(**_make_metric_item(status="RESOLVED", response_seconds=42.0))
+        res = AlertMetricsRes(
+            total_alerts=57,
+            acknowledged_count=40,
+            pending_count=17,
+            average_response_seconds=88.2,
+            items=[item],
+            pagination=self._make_pagination(total=57, has_more=True),
+        )
+
+        assert res.total_alerts == 57
+        assert res.pending_count == 17
+        assert res.items[0].status == "RESOLVED"
+        assert res.pagination.total == 57
+        assert res.pagination.has_more is True
