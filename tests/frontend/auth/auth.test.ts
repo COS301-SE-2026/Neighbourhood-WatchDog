@@ -272,34 +272,45 @@ describe("signup", () => {
 //END SIGNUP///////////////////////////////////////////////////////
 
 //CONFRIM SIGNUP////////////////////////////////////////////////
-test("confirm signup returns confirmed status", async () => {
-  (fetch as jest.Mock).mockResolvedValue({
-    ok: true,
-    json: async () => ({
-      confirmed: true,
-    }),
-  });
+describe("confirmation", () => {
+  test("confirm signup returns confirmed status", async () => {
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          confirmed: true
+        },
+      }),
+    });
 
-  const result = await confirmSignUp(
-    "test@example.com",
-    "123456"
-  );
-
-  expect(result).toBe(true);
-});
-
-test("confirm signup handles errors", async () => {// remove if you want less errors
-  (fetch as jest.Mock).mockRejectedValue(
-    new Error("Confirmation failed")
-  );
-
-  await expect(
-    confirmSignUp(
+    const result = await confirmSignUp(
       "test@example.com",
       "123456"
-    )
-  ).rejects.toThrow("Confirmation failed");
-});
+    );
+
+    expect(result).toBe(true);
+  });
+
+  test("confirm signup handles errors", async () => {// remove if you want less errors
+    (fetch as jest.Mock).mockRejectedValue({
+      ok: false,
+      json: async () => ({
+        detail: {
+          message: "Invalid confirmation code"
+        }
+      })
+    });
+
+    await expect(
+      confirmSignUp(
+        "test@example.com",
+        "123456"
+      )
+    ).rejects.toThrow("Invalid confirmation code");
+  });
+})
+
 //END CONFIRM SIGNUP///////////////////////////////////////////////
 
 //RESEND CODE///////////////////////////////////////////////
