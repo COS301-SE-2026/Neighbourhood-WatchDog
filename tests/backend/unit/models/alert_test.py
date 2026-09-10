@@ -317,3 +317,13 @@ class TestAlertMetricRes:
         assert res.items == []
         assert res.average_response_seconds is None
         assert res.pagination.has_more is False
+
+    def test_pagination_is_required(self):
+        with pytest.raises(ValidationError):
+            AlertMetricsRes(
+                total_alerts=0,
+                acknowledged_count=0,
+                pending_count=0,
+                average_response_seconds=None,
+                items=[],
+            )
