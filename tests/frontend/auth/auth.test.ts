@@ -220,19 +220,24 @@ describe("login", () ={
 
 
 //SIGNUP/////////////////////////////////////////////////////////
-test("signup returns created user", async () => {
-  (fetch as jest.Mock).mockResolvedValue({
-    ok: true,
-    json: async () => ({
-      user_sub: "user-123",
-      confirmed: false,
-    }),
+describe("signup", () => {
+  test("returns created user", async () => {
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          user_sub: "user-123",
+          confirmed: false
+        }
+    }), 
   });
 
   const result = await signUp(
     "test@example.com",
     "Password123!",
-    "Test User",
+    "Test",
+    "User",
     "123 Main Street"
   );
 
@@ -240,27 +245,30 @@ test("signup returns created user", async () => {
     userSub: "user-123",
     confirmed: false,
   });
-});
-
-test("signup throws nested backend error message", async () => {// remove if you want less errors
-  (fetch as jest.Mock).mockResolvedValue({
-    ok: false,
-    json: async () => ({
-      detail: {
-        message: "User already exists",
-      },
-    }),
   });
 
-  await expect(
-    signUp(
-      "test@example.com",
-      "Password123!",
-      "Test User",
-      "123 Main Street"
-    )
-  ).rejects.toThrow("User already exists");
-});
+  test("throws nested backend error message", async () => {// remove if you want less errors
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        detail: {
+          message: "User already exists",
+        },
+      }),
+    });
+
+    await expect(
+      signUp(
+        "test@example.com",
+        "Password123!",
+        "Test",
+        "User"
+        "123 Main Street"
+      )
+    ).rejects.toThrow("User already exists");
+  });
+})
+
 //END SIGNUP///////////////////////////////////////////////////////
 
 //CONFRIM SIGNUP////////////////////////////////////////////////
