@@ -35,7 +35,7 @@ PRESIGN_TTL = 300
 FAULT_RETENTION_DAYS = 7
 
 S3_BUCKET = os.getenv("S3_BUCKET_NAME", "")
-AWS_BUCKET_REGION = os.getenv("S3_BUCKET_NAME", "af-south-1")
+AWS_BUCKET_REGION = os.getenv("AWS_REGION", "af-south-1")
 
 
 # Current flow:
