@@ -76,7 +76,7 @@ services:
       MTX_AUTHHTTPADDRESS: ${MTX_AUTHHTTPADDRESS}
     build:
       context: ./mediamtx
-    ports:
+    ports: 
       - "8554:8554" # RTSP
       - "8889:8889" # WebRTC
       - "127.0.0.1:9997:9997"

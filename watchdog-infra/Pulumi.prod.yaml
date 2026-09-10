@@ -1,3 +1,5 @@
-encryptionsalt: v1:e0VUFAfXok8=:v1:cBIEt+5c8NUaO5Lm:bZMHxeK26CetiJtyvmJqR2PH7krJ2g==
+encryptionsalt: v1:MyBr+ffQsqA=:v1:Q5dTUM9xyGy/wrpx:2yjpS8u4cCJZzlAU5Gdrk3Y7iAPQRw==
 config:
   aws:region: af-south-1
+  watchdog-infra:db_password:
+    secure: v1:P3JbqQmMM9t/x/d2:nIBRYvzmkLMO4HPvtQ8kCCQFm0nJN69JQe1Rkj3x
