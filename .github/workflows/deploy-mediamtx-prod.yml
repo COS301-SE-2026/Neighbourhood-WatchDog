@@ -2,7 +2,7 @@ name: Deploy mediamtx to Production
 
 on:
   push:
-    branches: [ "main", "feature/setup-go2rtc" ]
+    branches: [ "main" ]
     paths:
       - 'mediamtx/**'
       - 'go2rtc/**'
