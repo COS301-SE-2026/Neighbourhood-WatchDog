@@ -278,3 +278,9 @@ class TestAlertMetricItem:
     def test_from_attributes_config_present(self):
         """model_config should allow construction from ORM objects"""
         assert AlertMetricItem.model_config.get("from_attributes") is True
+
+class TestAlertMetricRes:
+    def _make_pagination(self, **overrides):
+        base = {"total": 1, "limit": 30, "offset": 0, "has_more": False}
+        base.update(overrides)
+        return Pagination(**base)
