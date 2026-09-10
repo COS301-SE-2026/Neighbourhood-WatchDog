@@ -19,28 +19,13 @@ import { AUTH_EVENT, logout } from "@/lib/auth/cognito";
 import { SidebarTrigger } from "./ui/sidebar";
 
 const Navbar = () => {
-    const router = useRouter();
-    const [username, setUsername] = React.useState("");
-    const { data: userContext } = useUserContext();
-    const displayName = userContext?.user.name ?? username;
-    React.useEffect(() => {
-        const syncUsername = () => {
-            setUsername(localStorage.getItem("fullname") ?? "");
-        };
-
-        syncUsername();
-        window.addEventListener(AUTH_EVENT, syncUsername);
-
-        return () => {
-            window.removeEventListener(AUTH_EVENT, syncUsername);
-        };
-    }, []);
-
-    const handleLogout = async () => {
-        localStorage.removeItem("fullname");
-
-        await logout();
-        router.push("/auth/login");
+  const router = useRouter();
+  const [username, setUsername] = React.useState("");
+  const { data: userContext } = useUserContext();
+  const displayName = userContext?.user.name ?? username;
+  React.useEffect(() => {
+    const syncUsername = () => {
+      setUsername(localStorage.getItem("fullname") ?? "");
     };
 
     syncUsername();
@@ -52,11 +37,9 @@ const Navbar = () => {
   }, []);
 
   const handleLogout = async () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("idToken");
     localStorage.removeItem("fullname");
 
-    logout();
+    await logout();
     router.push("/auth/login");
   };
 
