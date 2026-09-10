@@ -5,8 +5,11 @@ export const AUTH_EVENT = 'watchdog-auth-changed';
 import { storeAccessToken, readAccessToken, clearAccessToken } from './token_store';
 // Types for API responses
 interface SignUpResponse {
-  user_sub: string;
-  confirmed: boolean;
+  success: boolean,
+  data: {
+    user_sub: string;
+    confirmed: boolean;
+  };
 }
 
 interface LoginResponse {
@@ -44,7 +47,10 @@ interface LoginResult {
 }
 
 interface ConfirmResponse {
-  confirmed: boolean;
+  success: boolean,
+  data: {
+    confirmed: boolean;
+  };
 }
 
 interface VerifyMfaResponse {
@@ -116,8 +122,8 @@ export const signUp = async (
     });
 
     return {//Handle API response
-      userSub: response.user_sub,
-      confirmed: response.confirmed,
+      userSub: response.data.user_sub,
+      confirmed: response.data.confirmed,
     };
   } catch (error) {
     console.error('Signup error:', error);
@@ -171,7 +177,7 @@ export const confirmSignUp = async (
       body: JSON.stringify({ email, code }),
     });
 
-    return response.confirmed;
+    return response.data.confirmed;
   } catch (error) {
     console.error('Confirmation error:', error);
     throw error;
