@@ -1,8 +1,8 @@
 import pytest
 from fastapi import HTTPException
 from unittest.mock import MagicMock, Mock, AsyncMock, patch
-from app.models.audit_log import TargetEntity
-from app.services.neighbourhood_service import create_neighbourhood_handler, get_neighbourhood_members_handler, update_neighbourhood_member_role_handler
+from app.models.audit_log import TargetEntity, AuditAction
+from app.services.neighbourhood_service import create_neighbourhood_handler, get_neighbourhood_members_handler, update_neighbourhood_member_role_handler, leave_neighbourhood_handler
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from uuid import uuid4
 from datetime import datetime
@@ -627,3 +627,64 @@ class TestUpdateNeighbourhoodMemberRole:
         )
         mock_db.commit.assert_not_awaited()
         mock_db.rollback.assert_awaited_once()
+
+
+class TestLeaveNeighbourhood:
+
+    @pytest.mark.asyncio
+    async def test_property_leaves_and_membership_is_removed(self):
+        mock_db, _ = make_mock_db()
+
+        neighbourhood_id = uuid4()
+        property_id = uuid4()
+        user_id = uuid4()
+
+        property_obj = Mock()
+        property_obj.id = property_id
+        property_obj.neighbourhood_id = neighbourhood_id
+
+        membership = Mock()
+        membership.user_id = user_id
+        membership.neighbourhood_id = neighbourhood_id
+
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_scalar_result(property_obj),
+                make_scalar_result(None),        # No other property
+                make_scalar_result(membership),
+            ]
+        )
+        mock_db.delete = AsyncMock()
+
+        with patch(
+            AUDIT_PATCH,
+            new_callable=AsyncMock,
+        ) as audit_mock:
+            result = await leave_neighbourhood_handler(
+                neighbourhood_id=neighbourhood_id,
+                property_id=property_id,
+                db=mock_db,
+                claims={"id": str(user_id)},
+            )
+
+        assert result is None
+        assert property_obj.neighbourhood_id is None
+
+        mock_db.delete.assert_awaited_once_with(membership)
+        mock_db.commit.assert_awaited_once()
+        mock_db.rollback.assert_not_awaited()
+
+        audit_mock.assert_awaited_once()
+
+        audit_kwargs = audit_mock.await_args.kwargs
+
+        assert audit_kwargs["user_id"] == user_id
+        assert audit_kwargs["action"] == AuditAction.UPDATE
+        assert audit_kwargs["target_entity_type"] == TargetEntity.PROPERTY
+        assert audit_kwargs["target_entity_id"] == property_id
+        assert audit_kwargs["old_values"] == {
+            "neighbourhood_id": str(neighbourhood_id),
+        }
+        assert audit_kwargs["new_values"] == {
+            "neighbourhood_id": None,
+        }
