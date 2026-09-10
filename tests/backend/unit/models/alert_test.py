@@ -349,3 +349,13 @@ class TestAlertMetricRes:
                 items=["not-a-metric-item"],
                 pagination=self._make_pagination(),
             )
+
+    def test_missing_required_count_raises(self):
+        with pytest.raises(ValidationError): #NOSONAR
+            AlertMetricsRes(
+                acknowledged_count=0,
+                pending_count=0,
+                average_response_seconds=None,
+                items=[],
+                pagination=self._make_pagination(),
+            )
