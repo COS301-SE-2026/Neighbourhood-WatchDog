@@ -556,3 +556,96 @@ test("updateStoredFullName updates localStorage", () => {
 });
 
 
+describe("logout", () => {
+  test("calls backend and clears local session", async () => {
+    storeAccessToken("access-token", 3600);
+    localStorage.setItem("userSub", "user-123");
+    localStorage.setItem("fullname", "Test User");
+
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 204,
+    });
+
+    await logout();
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/auth/logout"),
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+      }),
+    );
+
+    expect(getAccessToken()).toBeNull();
+    expect(localStorage.getItem("userSub")).toBeNull();
+    expect(localStorage.getItem("fullname")).toBeNull();
+  });
+
+  test("clears local session when backend request fails", async () => {
+    storeAccessToken("access-token", 3600);
+    localStorage.setItem("userSub", "user-123");
+
+    (fetch as jest.Mock).mockRejectedValue(
+      new Error("Network error"),
+    );
+
+    await expect(logout()).rejects.toThrow("Network error");
+
+    expect(getAccessToken()).toBeNull();
+    expect(localStorage.getItem("userSub")).toBeNull();
+  });
+});
+
+describe("auth headers", () => {
+  test("includes access token from memory", () => {
+    storeAccessToken("token123", 3600);
+
+    expect(getAuthToken()).toBe("token123");
+
+    expect(getAuthHeaders()).toEqual({
+      "Content-Type": "application/json",
+      Authorization: "Bearer token123",
+    });
+  });
+
+  test("omits Authorization when access token is absent", () => {
+    expect(getAuthHeaders()).toEqual({
+      "Content-Type": "application/json",
+    });
+  });
+});
+
+describe("profile updates", () => {
+  test("updates fullname and emits auth event", () => {
+    const listener = jest.fn();
+
+    window.addEventListener(AUTH_EVENT, listener);
+
+    updateStoredFullName("Updated User");
+
+    expect(localStorage.getItem("fullname")).toBe(
+      "Updated User",
+    );
+
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    window.removeEventListener(AUTH_EVENT, listener);
+  });
+
+  test("clearSession clears access token and profile", () => {
+    storeAccessToken("access-token", 3600);
+    localStorage.setItem("userSub", "user-123");
+    localStorage.setItem("fullname", "Test User");
+    localStorage.setItem("email", "test@example.com");
+    localStorage.setItem("address", "123 Main Street");
+
+    clearSession();
+
+    expect(getAccessToken()).toBeNull();
+    expect(localStorage.getItem("userSub")).toBeNull();
+    expect(localStorage.getItem("fullname")).toBeNull();
+    expect(localStorage.getItem("email")).toBeNull();
+    expect(localStorage.getItem("address")).toBeNull();
+  });
+});
