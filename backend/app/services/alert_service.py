@@ -327,13 +327,17 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
             .options(joinedload(Alert.camera).joinedload(Camera.property))
             .where(Alert.id == alert_id)
         )
-        row = result.one_or_none()
+        row = result.unique().scalar_one_or_none()
 
         if not row:
             logger.warning("acknowledge_alert: alert not found with alert_id=%s", alert_id)
             raise HTTPException(404, ALERT_NOT_FOUND)
 
-        alert, _ , property_obj = row
+        alert = row
+        property_obj = alert.camera.property if alert.camera else None
+
+        if property_obj is None:
+            raise HTTPException(404, ALERT_NOT_FOUND)
 
         if alert.status != "OPEN":
             logger.warning("acknowledge_alert: alert not open with alert_id=%s", alert_id)
@@ -430,7 +434,7 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
         return alert_res
     except HTTPException as he:
         raise he
-    except IntegrityError:
+    except Exception:
         logger.error("acknowledge_alert: failed to acknowledge with alert_id=%s due to integrity error", alert_id)
         await db.rollback()
         raise HTTPException(500, "Failed to acknowledge alert")
