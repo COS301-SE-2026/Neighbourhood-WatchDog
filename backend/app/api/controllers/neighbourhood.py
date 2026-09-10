@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 
-from app.auth.authorization import Claims, NeighbourhoodAdminClaims, is_property_admin
+from app.auth.authorization import Claims, NeighbourhoodAdminClaims, PropertyAdminClaims, is_property_admin
 from app.core.database import DbSession
 from app.schemas.neighbourhood import (
     CreateNeighbourhoodReq,
@@ -18,6 +18,7 @@ from app.services.neighbourhood_service import (
     get_neighbourhood_members_handler,
     get_neighbourhood_properties_service,
     update_neighbourhood_member_role_handler,
+    leave_neighbourhood_handler
 )
 
 router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
@@ -135,4 +136,27 @@ async def update_neighbourhood_member_role(
         status=200,
         message="Neighbourhood member role updated successfully",
         data=updated_member,
+    )
+
+@router.patch(
+    "/{neighbourhood_id}/properties/{property_id}/leave",
+    status_code=204,
+    responses={
+        401: {"description": "Not authenticated"},
+        403: {"description": "Not authorized to manage this property"},
+        404: {"description": "Property or neighbourhood membership not found"},
+    }
+
+)
+async def leave_neighbourhood(
+    neighbourhood_id: UUID,
+    property_id: UUID,
+    db: DbSession,
+    claims: PropertyAdminClaims
+) -> None:
+    await leave_neighbourhood_handler(
+        neighbourhood_id=neighbourhood_id,
+        property_id=property_id,
+        db=db,
+        claims=claims
     )
