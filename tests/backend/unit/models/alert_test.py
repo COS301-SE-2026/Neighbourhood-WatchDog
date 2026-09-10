@@ -327,3 +327,13 @@ class TestAlertMetricRes:
                 average_response_seconds=None,
                 items=[],
             )
+
+    def test_items_is_required(self):
+        with pytest.raises(ValidationError): #NOSONAR
+            AlertMetricsRes(
+                total_alerts=0,
+                acknowledged_count=0,
+                pending_count=0,
+                average_response_seconds=None,
+                pagination=self._make_pagination(),
+            )
