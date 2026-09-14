@@ -303,4 +303,107 @@ class CascadedPipeline:
             })
 
         return confirmed
-    
+
+
+    def _classify_behaviour(self, track: dict[str, Any], now: float, frame_shape: tuple[int, ...]) -> dict[str, Any]:
+
+        track_id = int(track["track_id"])
+        history = self._histories.setdefault(track_id, _TrackHistory())
+        history.last_seen = now
+
+        bbox = track["bbox"]
+        centroid = ((bbox[0] + bbox[2]) / 2.0, (bbox[1] + bbox[3]) / 2.0)
+
+        frame_height, frame_width = frame_shape[:2]
+
+        normalized_centroid = (centroid[0] / max(float(frame_width), 1.0), centroid[1] / max(float(frame_height), 1.0))
+
+        inside = tuple(
+            self._point_in_polygon(normalized_centroid[0], normalized_centroid[1], polygon)
+            for polygon in self.zones
+        )
+
+        if history.previous_inside is not None:
+
+            for index, is_inside in enumerate(inside):
+                was_inside = history.previous_inside[index]
+                if is_inside and not was_inside:
+                    history.entered_at[index] = now
+                elif not is_inside:
+                    history.entered_at.pop(index, None)
+                if is_inside != was_inside:
+                    history.crossings.setdefault(index, deque()).append(now)
+        else:
+            for index, is_inside in enumerate(inside):
+                if is_inside:
+                    history.entered_at[index] = now
+
+
+        history.previous_inside = inside
+
+        crossing_counts: dict[int, int] = {}
+
+        for index, crossing_times in history.crossings.items():
+            while crossing_times and now - crossing_times[0] > self.config.scan_time_window_seconds:
+                crossing_times.popleft()
+
+
+            crossing_counts[index] = len(crossing_times)
+
+        loitering_zone = next(
+            (
+                index
+                for index, entered_at in history.entered_at.items()
+                if now - entered_at >= self.config.loitering_threshold_seconds
+            ),
+            None
+
+        )
+
+
+        perimeter_zone = max(crossing_counts, key=crossing_counts.get, default=None)
+
+        if perimeter_zone is not None and crossing_counts[perimeter_zone] < self.config.scan_crossing_threshold:
+            perimeter_zone = None
+
+        if track["weapon_detected"]:
+            detection_type = DETECTION_WEAPON
+            severity = SEVERITY_CRITICAL
+            selected_zone = loitering_zone if loitering_zone is not None else perimeter_zone
+        elif perimeter_zone is not None:
+            detection_type = DETECTION_PERIMETER_SCAN
+            severity = SEVERITY_HIGH
+            selected_zone = perimeter_zone
+        elif loitering_zone is not None:
+            detection_type = DETECTION_LOITERING
+            severity = SEVERITY_MEDIUM
+            selected_zone = loitering_zone
+        else:
+            detection_type = DETECTION_HUMAN
+            severity = SEVERITY_MEDIUM if track["confidence"] >= 0.75 else SEVERITY_LOW
+            selected_zone = next((index for index, value in enumerate(inside) if value), None)
+
+
+        duration = None
+        if selected_zone is not None and selected_zone in history.entered_at:
+            duration = max(0.0, now - history.entered_at[selected_zone])
+
+        crossing_count = (
+            crossing_counts.get(selected_zone, 0)
+            if selected_zone is not None
+            else None
+
+
+        )
+
+        return {
+            "detection_type": detection_type,
+            "severity": severity,
+            "loitering_duration_seconds": duration,
+            "scan_crossing_count": crossing_count,
+            "zone_id": self.zone_ids[selected_zone]
+            if selected_zone is not None and selected_zone < len(self.zone_ids)
+            else None
+
+            
+        }
