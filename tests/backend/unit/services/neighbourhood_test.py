@@ -1,12 +1,17 @@
 import pytest
 from fastapi import HTTPException
 from unittest.mock import MagicMock, Mock, AsyncMock, patch
-from app.models.audit_log import TargetEntity, AuditAction
-from app.services.neighbourhood_service import create_neighbourhood_handler, get_neighbourhood_members_handler, update_neighbourhood_member_role_handler, leave_neighbourhood_handler
+from app.models.audit_log import TargetEntity
+from app.services.neighbourhood_service import create_neighbourhood_handler, get_neighbourhood_members_handler, update_neighbourhood_member_role_handler
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from uuid import uuid4
 from datetime import datetime
 from app.models.neighbourhood import Neighbourhood
+from app.models.property import PropertyTypeEnum
+from app.services.neighbourhood_service import (
+    get_neighbourhood_properties_service,
+)
+from sqlalchemy.exc import IntegrityError
 
 AUDIT_PATCH = "app.services.neighbourhood_service.create_audit_log_item"
 
@@ -628,200 +633,522 @@ class TestUpdateNeighbourhoodMemberRole:
         mock_db.commit.assert_not_awaited()
         mock_db.rollback.assert_awaited_once()
 
+@pytest.mark.asyncio
+async def test_create_neighbourhood_rejects_property_already_linked():
+    mock_db, mock_result = make_mock_db()
 
-class TestLeaveNeighbourhood:
+    property_obj = Mock()
+    property_obj.neighbourhood_id = uuid4()
+    mock_result.scalar_one_or_none.return_value = property_obj
 
-    @pytest.mark.asyncio
-    async def test_property_leaves_and_membership_is_removed(self):
-        mock_db, _ = make_mock_db()
-
-        neighbourhood_id = uuid4()
-        property_id = uuid4()
-        user_id = uuid4()
-
-        property_obj = Mock()
-        property_obj.id = property_id
-        property_obj.neighbourhood_id = neighbourhood_id
-
-        membership = Mock()
-        membership.user_id = user_id
-        membership.neighbourhood_id = neighbourhood_id
-
-        mock_db.execute = AsyncMock(
-            side_effect=[
-                make_scalar_result(property_obj),
-                make_scalar_result(None),        # No other property
-                make_scalar_result(membership),
-            ]
-        )
-        mock_db.delete = AsyncMock()
-
-        with patch(
-            AUDIT_PATCH,
-            new_callable=AsyncMock,
-        ) as audit_mock:
-            result = await leave_neighbourhood_handler(
-                neighbourhood_id=neighbourhood_id,
-                property_id=property_id,
-                db=mock_db,
-                claims={"id": str(user_id)},
-            )
-
-        assert result is None
-        assert property_obj.neighbourhood_id is None
-
-        mock_db.delete.assert_awaited_once_with(membership)
-        mock_db.commit.assert_awaited_once()
-        mock_db.rollback.assert_not_awaited()
-
-        audit_mock.assert_awaited_once()
-
-        audit_kwargs = audit_mock.await_args.kwargs
-
-        assert audit_kwargs["user_id"] == user_id
-        assert audit_kwargs["action"] == AuditAction.UPDATE
-        assert audit_kwargs["target_entity_type"] == TargetEntity.PROPERTY
-        assert audit_kwargs["target_entity_id"] == property_id
-        assert audit_kwargs["old_values"] == {
-            "neighbourhood_id": str(neighbourhood_id),
-        }
-        assert audit_kwargs["new_values"] == {
-            "neighbourhood_id": None,
-        }
-
-
-    @pytest.mark.asyncio
-    async def test_membership_remains_when_user_has_another_property(self):
-        mock_db, _ = make_mock_db()
-
-        neighbourhood_id = uuid4()
-        property_id = uuid4()
-        other_property_id = uuid4()
-        user_id = uuid4()
-
-        property_obj = Mock()
-        property_obj.id = property_id
-        property_obj.neighbourhood_id = neighbourhood_id
-
-        mock_db.execute = AsyncMock(
-            side_effect=[
-                make_scalar_result(property_obj),
-                make_scalar_result(other_property_id),
-            ]
-        )
-        mock_db.delete = AsyncMock()
-
-        await leave_neighbourhood_handler(
-            neighbourhood_id=neighbourhood_id,
-            property_id=property_id,
+    with pytest.raises(HTTPException) as exc_info:
+        await create_neighbourhood_handler(
+            name="Test Neighbourhood",
+            location="Pretoria",
+            property_id=uuid4(),
             db=mock_db,
-            claims={"id": str(user_id)},
+            claims={"id": str(uuid4())},
         )
 
-        assert property_obj.neighbourhood_id is None
-        assert mock_db.execute.await_count == 2
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == (
+        "Property is already part of another neighbourhood"
+    )
+    mock_db.rollback.assert_awaited_once()
 
-        # The membership query is skipped because another property exists.
-        mock_db.delete.assert_not_awaited()
-        mock_db.commit.assert_awaited_once()
-        mock_db.rollback.assert_not_awaited()
 
-    @pytest.mark.asyncio
-    async def test_missing_membership_does_not_prevent_property_leaving(self):
-        mock_db, _ = make_mock_db()
+@pytest.mark.asyncio
+async def test_create_neighbourhood_rolls_back_on_integrity_error():
+    mock_db, mock_result = make_mock_db()
 
-        neighbourhood_id = uuid4()
-        property_id = uuid4()
-        user_id = uuid4()
+    property_obj = Mock()
+    property_obj.id = uuid4()
+    property_obj.neighbourhood_id = None
 
-        property_obj = Mock()
-        property_obj.id = property_id
-        property_obj.neighbourhood_id = neighbourhood_id
+    ownership = Mock()
+    creator = Mock()
+    creator.id = uuid4()
 
-        mock_db.execute = AsyncMock(
-            side_effect=[
-                make_scalar_result(property_obj),
-                make_scalar_result(None),  
-                make_scalar_result(None),
-            ]
-        )
-        mock_db.delete = AsyncMock()
+    mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+        property_obj,
+        ownership,
+        creator,
+        None,
+    ]
+    mock_db.flush.side_effect = IntegrityError(
+        "insert neighbourhood",
+        {},
+        RuntimeError("duplicate"),
+    )
 
-        await leave_neighbourhood_handler(
-            neighbourhood_id=neighbourhood_id,
-            property_id=property_id,
+    with pytest.raises(HTTPException) as exc_info:
+        await create_neighbourhood_handler(
+            name="Test Neighbourhood",
+            location="Pretoria",
+            property_id=uuid4(),
             db=mock_db,
-            claims={"id": str(user_id)},
+            claims={"id": str(uuid4())},
         )
 
-        assert property_obj.neighbourhood_id is None
-        mock_db.delete.assert_not_awaited()
-        mock_db.commit.assert_awaited_once()
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.detail == "Failed to add neighbourhood"
+    mock_db.rollback.assert_awaited_once()
 
 
-    @pytest.mark.asyncio
-    async def test_missing_claims_returns_401(self):
-        mock_db, _ = make_mock_db()
+@pytest.mark.asyncio
+async def test_create_neighbourhood_handles_unexpected_error():
+    mock_db, mock_result = make_mock_db()
 
-        with pytest.raises(HTTPException) as exception:
-            await leave_neighbourhood_handler(
-                neighbourhood_id=uuid4(),
-                property_id=uuid4(),
-                db=mock_db,
-                claims=None,
-            )
+    property_obj = Mock()
+    property_obj.id = uuid4()
+    property_obj.neighbourhood_id = None
 
-        assert exception.value.status_code == 401
-        assert exception.value.detail == "Not authenticated"
+    ownership = Mock()
+    creator = Mock()
+    creator.id = uuid4()
 
-        mock_db.execute.assert_not_awaited()
-        mock_db.commit.assert_not_awaited()
+    mock_db.execute.return_value.scalar_one_or_none.side_effect = [
+        property_obj,
+        ownership,
+        creator,
+        None,
+    ]
+    mock_db.flush.side_effect = RuntimeError("database unavailable")
 
-        mock_db.rollback.assert_not_awaited()
-
-    @pytest.mark.asyncio
-    async def test_property_not_in_neighbourhood_returns_404(self):
-        mock_db, _ = make_mock_db()
-
-        mock_db.execute = AsyncMock(
-            return_value=make_scalar_result(None)
+    with pytest.raises(HTTPException) as exc_info:
+        await create_neighbourhood_handler(
+            name="Test Neighbourhood",
+            location="Pretoria",
+            property_id=uuid4(),
+            db=mock_db,
+            claims={"id": str(uuid4())},
         )
 
-        with pytest.raises(HTTPException) as exception:
-            await leave_neighbourhood_handler(
-                neighbourhood_id=uuid4(),
-                property_id=uuid4(),
-                db=mock_db,
-                claims={"id": str(uuid4())},
-            )
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.detail == "Failed to create neighbourhood"
+    mock_db.rollback.assert_awaited_once()
 
-        assert exception.value.status_code == 404
-        assert (
-            exception.value.detail
-            == "Property is not part of this neighbourhood"
+
+@pytest.mark.asyncio
+async def test_get_neighbourhood_properties_returns_linked_and_unlinked_properties():
+    user_id = uuid4()
+    property_id_one = uuid4()
+    property_id_two = uuid4()
+    neighbourhood_id = uuid4()
+
+    user = Mock(id=user_id)
+
+    property_one = Mock(
+        id=property_id_one,
+        address="123 Main Street",
+        property_type=PropertyTypeEnum.PRIVATE,
+        neighbourhood_id=neighbourhood_id,
+    )
+    property_two = Mock(
+        id=property_id_two,
+        address="456 Main Street",
+        property_type=PropertyTypeEnum.PUBLIC,
+        neighbourhood_id=None,
+    )
+
+    neighbourhood = Mock()
+    neighbourhood.id = neighbourhood_id
+    neighbourhood.name = "Test Neighbourhood"
+
+    user_result = make_scalar_result(user)
+    properties_result = make_rows_result(
+        [
+            (property_one, neighbourhood),
+            (property_two, None),
+        ]
+    )
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            user_result,
+            properties_result,
+        ]
+    )
+
+    response = await get_neighbourhood_properties_service(
+        db=mock_db,
+        claims={"id": str(user_id)},
+    )
+
+    assert len(response) == 2
+
+    assert response[0].id == property_id_one
+    assert response[0].address == "123 Main Street"
+    assert response[0].neighbourhood_id == neighbourhood_id
+    assert response[0].neighbourhood_name == "Test Neighbourhood"
+
+    assert response[1].id == property_id_two
+    assert response[1].address == "456 Main Street"
+    assert response[1].neighbourhood_id is None
+    assert response[1].neighbourhood_name is None
+
+
+@pytest.mark.asyncio
+async def test_get_neighbourhood_properties_requires_claims():
+    mock_db = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await get_neighbourhood_properties_service(
+            db=mock_db,
+            claims=None,
         )
 
-        mock_db.commit.assert_not_awaited()
-        mock_db.rollback.assert_awaited_once()
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Not authenticated"
+    mock_db.execute.assert_not_awaited()
 
-    @pytest.mark.asyncio
-    async def test_unexpected_database_error_returns_500(self):
-        mock_db, _ = make_mock_db()
 
-        mock_db.execute = AsyncMock(
-            side_effect=RuntimeError("database unavailable")
+@pytest.mark.asyncio
+async def test_get_neighbourhood_properties_rejects_missing_user():
+    user_result = make_scalar_result(None)
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(return_value=user_result)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await get_neighbourhood_properties_service(
+            db=mock_db,
+            claims={"id": str(uuid4())},
         )
 
-        with pytest.raises(HTTPException) as exception:
-            await leave_neighbourhood_handler(
-                neighbourhood_id=uuid4(),
-                property_id=uuid4(),
-                db=mock_db,
-                claims={"id": str(uuid4())},
-            )
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "User not found"
 
-        assert exception.value.status_code == 500
-        assert exception.value.detail == "Failed to leave neighbourhood"
 
-        mock_db.commit.assert_not_awaited()
-        mock_db.rollback.assert_awaited_once()
+@pytest.mark.asyncio
+async def test_get_neighbourhood_members_requires_claims():
+    mock_db = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await get_neighbourhood_members_handler(
+            neighbourhood_id=uuid4(),
+            db=mock_db,
+            claims=None,
+        )
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Not authenticated"
+
+
+@pytest.mark.asyncio
+async def test_get_neighbourhood_members_rejects_missing_neighbourhood():
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        return_value=make_scalar_result(None)
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await get_neighbourhood_members_handler(
+            neighbourhood_id=uuid4(),
+            db=mock_db,
+            claims={"id": str(uuid4())},
+        )
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Neighbourhood not found"
+
+
+def _role_update_test_context():
+    neighbourhood_id = uuid4()
+    admin_id = uuid4()
+    member_id = uuid4()
+
+    neighbourhood = Mock(id=neighbourhood_id)
+
+    admin_membership = Mock(
+        user_id=admin_id,
+        neighbourhood_id=neighbourhood_id,
+        role=NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
+    )
+
+    member_membership = Mock(
+        user_id=member_id,
+        neighbourhood_id=neighbourhood_id,
+        role=NeighbourhoodRole.RESIDENT,
+    )
+
+    member_user = Mock(
+        id=member_id,
+        first_name="Member",
+        last_name="User",
+        email="member@example.com",
+    )
+
+    return (
+        neighbourhood_id,
+        admin_id,
+        member_id,
+        neighbourhood,
+        admin_membership,
+        member_membership,
+        member_user,
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_member_role_requires_claims():
+    mock_db = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await update_neighbourhood_member_role_handler(
+            neighbourhood_id=uuid4(),
+            member_user_id=uuid4(),
+            new_role=NeighbourhoodRole.RESIDENT,
+            db=mock_db,
+            claims=None,
+        )
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Not authenticated"
+
+
+@pytest.mark.asyncio
+async def test_update_member_role_rejects_missing_neighbourhood():
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        return_value=make_scalar_result(None)
+    )
+    mock_db.rollback = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await update_neighbourhood_member_role_handler(
+            neighbourhood_id=uuid4(),
+            member_user_id=uuid4(),
+            new_role=NeighbourhoodRole.RESIDENT,
+            db=mock_db,
+            claims={"id": str(uuid4())},
+        )
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Neighbourhood not found"
+    mock_db.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_update_member_role_rejects_non_admin():
+    neighbourhood_id = uuid4()
+    admin_id = uuid4()
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            make_scalar_result(Mock(id=neighbourhood_id)),
+            make_scalar_result(None),
+        ]
+    )
+    mock_db.rollback = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await update_neighbourhood_member_role_handler(
+            neighbourhood_id=neighbourhood_id,
+            member_user_id=uuid4(),
+            new_role=NeighbourhoodRole.RESIDENT,
+            db=mock_db,
+            claims={"id": str(admin_id)},
+        )
+
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.detail == (
+        "Only neighbourhood admins can change member roles"
+    )
+    mock_db.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_update_member_role_rejects_missing_membership():
+    (
+        neighbourhood_id,
+        admin_id,
+        _,
+        neighbourhood,
+        admin_membership,
+        _,
+        _,
+    ) = _role_update_test_context()
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            make_scalar_result(neighbourhood),
+            make_scalar_result(admin_membership),
+            make_scalar_result(None),
+        ]
+    )
+    mock_db.rollback = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await update_neighbourhood_member_role_handler(
+            neighbourhood_id=neighbourhood_id,
+            member_user_id=uuid4(),
+            new_role=NeighbourhoodRole.RESIDENT,
+            db=mock_db,
+            claims={"id": str(admin_id)},
+        )
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Neighbourhood member not found"
+    mock_db.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_update_member_role_rejects_missing_member_user():
+    (
+        neighbourhood_id,
+        admin_id,
+        member_id,
+        neighbourhood,
+        admin_membership,
+        member_membership,
+        _,
+    ) = _role_update_test_context()
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            make_scalar_result(neighbourhood),
+            make_scalar_result(admin_membership),
+            make_scalar_result(member_membership),
+            make_scalar_result(None),
+        ]
+    )
+    mock_db.rollback = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await update_neighbourhood_member_role_handler(
+            neighbourhood_id=neighbourhood_id,
+            member_user_id=member_id,
+            new_role=NeighbourhoodRole.SECURITY_OFFICER,
+            db=mock_db,
+            claims={"id": str(admin_id)},
+        )
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Member user not found"
+    mock_db.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_update_member_role_rejects_same_role():
+    (
+        neighbourhood_id,
+        admin_id,
+        member_id,
+        neighbourhood,
+        admin_membership,
+        member_membership,
+        member_user,
+    ) = _role_update_test_context()
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            make_scalar_result(neighbourhood),
+            make_scalar_result(admin_membership),
+            make_scalar_result(member_membership),
+            make_scalar_result(member_user),
+        ]
+    )
+    mock_db.rollback = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await update_neighbourhood_member_role_handler(
+            neighbourhood_id=neighbourhood_id,
+            member_user_id=member_id,
+            new_role=NeighbourhoodRole.RESIDENT,
+            db=mock_db,
+            claims={"id": str(admin_id)},
+        )
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == "Member already has this role"
+    mock_db.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_update_member_role_rolls_back_on_integrity_error():
+    (
+        neighbourhood_id,
+        admin_id,
+        member_id,
+        neighbourhood,
+        admin_membership,
+        member_membership,
+        member_user,
+    ) = _role_update_test_context()
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            make_scalar_result(neighbourhood),
+            make_scalar_result(admin_membership),
+            make_scalar_result(member_membership),
+            make_scalar_result(member_user),
+        ]
+    )
+    mock_db.commit = AsyncMock(
+        side_effect=IntegrityError(
+            "update role",
+            {},
+            RuntimeError("constraint"),
+        )
+    )
+    mock_db.rollback = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await update_neighbourhood_member_role_handler(
+            neighbourhood_id=neighbourhood_id,
+            member_user_id=member_id,
+            new_role=NeighbourhoodRole.SECURITY_OFFICER,
+            db=mock_db,
+            claims={"id": str(admin_id)},
+        )
+
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.detail == "Failed to update member role"
+    mock_db.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_update_member_role_handles_unexpected_error():
+    (
+        neighbourhood_id,
+        admin_id,
+        member_id,
+        neighbourhood,
+        admin_membership,
+        member_membership,
+        member_user,
+    ) = _role_update_test_context()
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            make_scalar_result(neighbourhood),
+            make_scalar_result(admin_membership),
+            make_scalar_result(member_membership),
+            make_scalar_result(member_user),
+        ]
+    )
+    mock_db.commit = AsyncMock(
+        side_effect=RuntimeError("database unavailable")
+    )
+    mock_db.rollback = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await update_neighbourhood_member_role_handler(
+            neighbourhood_id=neighbourhood_id,
+            member_user_id=member_id,
+            new_role=NeighbourhoodRole.SECURITY_OFFICER,
+            db=mock_db,
+            claims={"id": str(admin_id)},
+        )
+
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.detail == "Failed to update member role"
+    mock_db.rollback.assert_awaited_once()
