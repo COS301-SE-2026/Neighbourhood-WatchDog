@@ -151,4 +151,42 @@ class CascadedPipeline:
         return PipelineResult(tracks=tracks, events=events)
 
 
-    
+    def _detect_persons(self, frame: Any) -> list[dict[str, Any]]:
+
+        with self._inference_guard():
+
+            results = self.person_model.predict(
+                frame,
+                verbose=False,
+                conf=self.config.person_confidence,
+                iou=self.config.person_iou,
+                imgsz=self.config.person_imgsz,
+                classes=[PERSON_CLASS_ID]
+
+            )
+
+        persons: list[dict[str, Any]] = []
+
+        for box in self._boxes_from_result(results):
+
+            class_id = int(self._scalar(box.cls[0]))
+            confidence = float(self._scalar(box.conf[0]))
+
+            if class_id != PERSON_CLASS_ID or confidence < self.config.person_confidence:
+                continue
+
+            bbox = self._xyxy(box)
+            if self._valid_bbox(bbox):
+                persons.append({
+                    "bbox": bbox,
+                    "confidence": confidence,
+                    "crop": self._crop(frame, bbox),
+
+                    "weapon_detected": False,
+                    "weapon_type": None,
+                    "weapon_confidence": None
+
+                })
+
+                
+        return persons
