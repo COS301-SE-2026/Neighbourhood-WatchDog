@@ -103,3 +103,52 @@ class CascadedPipeline:
         self._histories: dict[int, _TrackHistory] = {}
 
     
+    def process_frame(self, frame: Any, *, timestamp: float | None = None) -> PipelineResult:
+        """"process one BGR frame and returns the current annotations plus new events.
+
+        ``events`` is edge-triggered: a track generates one event when its classification first becomes active, and another only when its classification changes.  This prevents one backend alert per frame.
+        """
+        now = time.monotonic() if timestamp is None else float(timestamp)
+
+        persons = self._detect_persons(frame)
+
+        if not persons:
+            self._cleanup_histories(now)
+            return PipelineResult()
+
+        enriched_persons = self._enrich_with_weapons(frame, persons)
+        confirmed_tracks = self._track(frame, enriched_persons)
+
+        tracks: list[dict[str, Any]] = []
+        events: list[dict[str, Any]] = []
+
+        for track in confirmed_tracks:
+            track_id = int(track["track_id"])
+            behaviour = self._classify_behaviour(track, now, frame.shape[:2])
+
+            output = {
+                **track,
+                **behaviour,
+                "is_confirmed": True
+
+            } #dictionary containing everything from track, behaviour, and appending a 'true confirmation'
+
+
+            tracks.append(output)
+
+            history = self._histories[track_id]
+
+
+            if history.last_emitted_type != output["detection_type"]:
+                events.append(dict(output))
+
+                history.last_emitted_type = output["detection_type"]
+
+        self._cleanup_histories(now)
+
+
+
+        return PipelineResult(tracks=tracks, events=events)
+
+
+    
