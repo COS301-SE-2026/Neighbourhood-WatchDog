@@ -18,7 +18,7 @@ from pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
 from pipeline.utils.frame_buffer import AnnotatedFrameBuffer
 from pipeline.utils.zone_config import filter_detections_by_zones
 from pipeline.processing.alert_confirmation import is_track_ready_to_alert
-
+from pipeline.processing.cascaded_pipeline import CascadedPipeline, CascadedPipelineConfig
 
 import httpx
 import logging
