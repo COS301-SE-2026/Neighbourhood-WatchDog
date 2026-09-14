@@ -190,3 +190,117 @@ class CascadedPipeline:
 
                 
         return persons
+
+    def _enrich_with_weapons(self, frame: Any, persons: list[dict[str, Any]]) -> list[dict[str, Any]]:
+
+        enriched: list[dict[str, Any]] = []
+
+        for person in persons:
+            x1, y1, x2, y2 = [int(value) for value in person["bbox"]]
+
+            crop = person["crop"]
+
+            if crop is None or crop.size == 0:
+                enriched.append(person)
+                continue
+
+            with self._inference_guard():
+
+                results = self.weapon_model.predict(
+                    crop,
+                    verbose=False,
+                    conf=self.config.weapon_confidence,
+                    iou=self.config.weapon_iou,
+                    imgsz=self.config.weapon_imgsz
+
+                )
+
+            best_weapon: tuple[float, str, list[float]] | None = None
+
+            
+            for box in self._boxes_from_result(results):
+                confidence = float(self._scalar(box.conf[0]))
+
+
+                if confidence < self.config.weapon_confidence:
+                    continue
+
+                local_bbox = self._xyxy(box)
+                absolute_bbox = [
+                    local_bbox[0] + x1,
+                    local_bbox[1] + y1,
+                    local_bbox[2] + x1,
+                    local_bbox[3] + y1
+                ]
+
+                class_id = int(self._scalar(box.cls[0]))
+                label = self._class_name(self.weapon_model, class_id)
+
+                if best_weapon is None or confidence > best_weapon[0]:
+                    best_weapon = (confidence, label, absolute_bbox)
+
+            item = dict(person)
+
+            if best_weapon is not None:
+                confidence, label, _ = best_weapon
+                item.update({
+                    "weapon_detected": True,
+                    "weapon_type": label,
+                    "weapon_confidence": confidence
+
+
+                })
+
+
+            enriched.append(item)
+
+        return enriched
+
+    def _track(self, frame: Any, persons: list[dict[str, Any]]) -> list[dict[str, Any]]:
+
+        detections = []
+
+        for person in persons:
+            x1, y1, x2, y2 = person["bbox"]
+
+            detections.append((
+                [x1, y1, x2 - x1, y2 - y1],
+                float(person["confidence"]),
+                "person"
+
+            ))
+
+        raw_tracks = self.tracker.update_tracks(detections, frame=frame)
+        confirmed: list[dict[str, Any]] = []
+
+        for raw_track in raw_tracks:
+            if not raw_track.is_confirmed():
+                continue
+
+            if getattr(raw_track, "time_since_update", 0) > 0:
+                continue
+
+            track_bbox = [float(value) for value in raw_track.to_ltrb()]
+
+            parent = self._best_parent(track_bbox, persons)
+
+            confidence = (
+                float(raw_track.det_conf)
+                if raw_track.det_conf is not None
+                else float(parent["confidence"] if parent else 0.0)
+            )
+
+            confirmed.append({
+                "track_id": int(raw_track.track_id),
+                "bbox": track_bbox,
+                "confidence": confidence,
+
+
+                "weapon_detected": bool(parent and parent["weapon_detected"]),
+                "weapon_type": parent["weapon_type"] if parent else None,
+                "weapon_confidence": parent["weapon_confidence"] if parent else None
+                
+            })
+
+        return confirmed
+    
