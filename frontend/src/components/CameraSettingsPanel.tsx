@@ -4,7 +4,7 @@ import { useCameraSettings } from "@/hooks/use-camera-settings";
 import { ZoneEditor } from "./ZoneEditor";
 import { Button } from "./ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Trash2, PlusCircle } from "lucide-react";
+import { LoaderCircle, Trash2, PlusCircle } from "lucide-react";
 
 
 interface CameraSettingsPanelProps {
@@ -25,7 +25,7 @@ export function CameraSettingsPanel({
     userRole, 
     videoRef
 }: CameraSettingsPanelProps) {
-    const { settings, loading, updateThreshold, createZone, deleteZone } = useCameraSettings(cameraId);
+    const { settings, loading, updateThreshold, createZone, deleteZone, zoneMutation } = useCameraSettings(cameraId);
 
     const [drawingZone, setDrawingZone] = useState(false);
     const [threshold, setThreshold] = useState<number | null>(null);
@@ -45,6 +45,8 @@ export function CameraSettingsPanel({
 
 
     const currentThreshold = threshold ?? settings.confidence_threshold;
+    const applyingZone = zoneMutation !== null;
+    const zoneStatusMessage = zoneMutation === "adding" ? "Applying new zone configuration…" : "Applying zone removal…";
 
     const handleThresholdCommit = async (val: number[]) => {
         await updateThreshold(val[0]);
@@ -53,10 +55,10 @@ export function CameraSettingsPanel({
 
 
     return (
-        <div className="space-y-5 p-4 border border-border rounded-lg">
-            <h3 className="font-semibold text-sm text-brand-frost">Camera Detection Settings</h3>
-
-            {/*confidence threshold*/}
+        <div className="space-y-5 rounded-lg border border-border p-4">
+            <h3 className="text-sm font-semibold text-brand-frost">
+                Camera Detection Settings
+            </h3>
 
             <div>
                 <label className="text-xs text-brand-ash">
@@ -72,76 +74,86 @@ export function CameraSettingsPanel({
                     onValueChange={val => setThreshold(val[0])}
                     onValueCommit={handleThresholdCommit}
                 />
-                
-                <p className="text-xs text-brand-ash mt-1">
+
+                <p className="mt-1 text-xs text-brand-ash">
                     Detection below this confidence will not trigger alerts.
                 </p>
-
             </div>
 
-
-            {/*detection zones */}
             <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-medium text-brand-frost">
+                        Detection zones
+                    </span>
 
-                <span className="text-xs font-medium text-brand-frost">Detection zones</span>
-
-                {!drawingZone && (
-                    <Button size="sm" variant="outline" onClick={() => setDrawingZone(true)} className="border-border bg-transparent text-brand-frost hover:bg-brand-slate hover:text-brand-frost">
-                    <PlusCircle className="w-3 h-3 mr-1" /> Add zone
-                    </Button>
-                )}
-
+                    {!drawingZone && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={applyingZone}
+                            onClick={() => setDrawingZone(true)}
+                            className="border-border bg-transparent text-brand-frost hover:bg-brand-slate hover:text-brand-frost"
+                        >
+                            <PlusCircle className="mr-1 h-3 w-3" />
+                            Add zone
+                        </Button>
+                    )}
                 </div>
+
+                {applyingZone && (
+                    <div
+                        role="status"
+                        aria-live="polite"
+                        className="mb-3 flex items-center gap-2 rounded-md border border-brand-caution/30 bg-brand-slate px-3 py-2 text-xs text-brand-frost"
+                    >
+                        <LoaderCircle className="h-4 w-4 shrink-0 animate-spin text-brand-caution" />
+                        <span>
+                            {zoneStatusMessage} The live stream will update in a few seconds.
+                        </span>
+                    </div>
+                )}
 
                 {settings.zones.length === 0 && !drawingZone && (
-                <p className="text-xs text-brand-ash">
-                    No zones configured. All detections trigger alerts.
-                </p>
+                    <p className="text-xs text-brand-ash">
+                        No zones configured. All detections trigger alerts.
+                    </p>
                 )}
 
-
-
-
-                {/*existing zones list */}
                 <ul className="space-y-1">
-                {settings.zones.map(zone => (
-                    <li key={zone.id} className="flex items-center justify-between text-xs bg-brand-slate text-brand-ash rounded px-2 py-1">
+                    {settings.zones.map(zone => (
+                        <li
+                            key={zone.id}
+                            className="flex items-center justify-between rounded bg-brand-slate px-2 py-1 text-xs text-brand-ash"
+                        >
+                            <span>{zone.name} ({zone.polygon.length} pts)</span>
 
-                    <span>{zone.name} ({zone.polygon.length} pts)</span>
-
-                    <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-5 w-5 hover:bg-brand-slate"
-                        onClick={() => deleteZone(zone.id)}
-                    >
-                        <Trash2 className="w-3 h-3 text-brand-threat" />
-
-                    </Button>
-                    </li>
-                ))}
-
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                disabled={applyingZone}
+                                className="h-5 w-5 hover:bg-brand-slate"
+                                aria-label={`Remove ${zone.name}`}
+                                onClick={() => void deleteZone(zone.id)}
+                            >
+                                <Trash2 className="h-3 w-3 text-brand-threat" />
+                            </Button>
+                        </li>
+                    ))}
                 </ul>
 
-
-                {/*zone drawing canvas */}
                 {drawingZone && (
-                <div className="mt-3">
-
-                    <ZoneEditor
-                    videoRef={videoRef}
-                    onSave={async (polygon, name) => {
-                        await createZone(polygon, name)
-                        setDrawingZone(false)
-                    }}
-                    onCancel={() => setDrawingZone(false)}
-                    />
-                    
-                </div>
+                    <div className="mt-3">
+                        <ZoneEditor
+                            videoRef={videoRef}
+                            onSave={async (polygon, name) => {
+                                await createZone(polygon, name);
+                                setDrawingZone(false);
+                            }}
+                            onCancel={() => setDrawingZone(false)}
+                        />
+                    </div>
                 )}
             </div>
         </div>
-    )
-
+    );
 }
