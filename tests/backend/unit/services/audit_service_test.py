@@ -6,6 +6,9 @@ from app.models.audit_log import AuditAction, AuditLog
 from app.models.user import UserRole
 from uuid import uuid4
 from datetime import datetime
+from sqlalchemy import select
+
+from app.services import audit_service as audit_service_module
 
 OLD_EMAIL = "john@example.com"
 NEW_EMAIL = "john@example.co.za"
@@ -445,3 +448,85 @@ class TestGetAuditLogsHandler:
 
         assert exception.value.status_code == 500
         self.mock_db.execute.assert_not_awaited()
+
+
+def test_validate_action_values_supports_delete():
+    old_values = {"email": "old@example.com"}
+    new_values = {"email": "new@example.com"}
+
+    returned_old, returned_new = (
+        audit_service_module._validate_action_values(
+            AuditAction.DELETE,
+            old_values,
+            new_values,
+        )
+    )
+
+    assert returned_old == old_values
+    assert returned_new is None
+
+
+def test_validate_action_values_returns_values_for_unknown_action():
+    old_values = {"before": True}
+    new_values = {"after": True}
+
+    returned_old, returned_new = (
+        audit_service_module._validate_action_values(
+            "UNKNOWN_ACTION",
+            old_values,
+            new_values,
+        )
+    )
+
+    assert returned_old == old_values
+    assert returned_new == new_values
+
+
+@pytest.mark.parametrize(
+    ("page", "size", "detail"),
+    [
+        (0, 30, "page must be >= 1"),
+        (1, 0, "size must be >= 1"),
+    ],
+)
+def test_validate_pagination_rejects_invalid_values(page, size, detail):
+    with pytest.raises(HTTPException) as exc_info:
+        audit_service_module._validate_pagination(page, size)
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.detail == detail
+
+
+def test_apply_filters_applies_search_action_and_date_filters():
+    statement = select(AuditLog)
+    start_date = datetime(2026, 1, 1)
+    end_date = datetime(2026, 12, 31)
+
+    filtered = audit_service_module._apply_filters(
+        statement,
+        search_term="camera",
+        action=AuditAction.DELETE,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    assert filtered is not statement
+
+    compiled_sql = str(filtered)
+    assert "audit_log" in compiled_sql
+def test_validate_action_values_supports_create():
+    new_values = {
+        "email": "created@example.com",
+        "role": "RESIDENT",
+    }
+
+    returned_old, returned_new = (
+        audit_service_module._validate_action_values(
+            AuditAction.CREATE,
+            old_values=None,
+            new_values=new_values,
+        )
+    )
+
+    assert returned_old is None
+    assert returned_new == new_values
