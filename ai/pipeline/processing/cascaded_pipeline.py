@@ -405,5 +405,16 @@ class CascadedPipeline:
             if selected_zone is not None and selected_zone < len(self.zone_ids)
             else None
 
-            
+
         }
+
+    def _cleanup_histories(self, now: float) -> None:
+
+        expired = [
+            track_id
+            for track_id, history in self._histories.items()
+            if now - history.last_seen > self.config.history_retention_seconds
+        ]
+        
+        for track_id in expired:
+            del self._histories[track_id]
