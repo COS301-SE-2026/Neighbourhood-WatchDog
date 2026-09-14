@@ -122,24 +122,44 @@ export function useCameraSettings(cameraId: string) {
 
     const createZone = useCallback(async (polygon: number[][], name = "Zone") => {
         if (!isValidUUID) return;
+
+        beginZoneMutation("adding");
+
         try {
             const zone = await apiCall<Zone>(`/cameras/${cameraId}/zones`, {
                 method: "POST",
                 body: { name, polygon }
             });
             setSettings(prev => prev ? { ...prev, zones: [...prev.zones, zone] } : prev);
+
+            keepZoneMutationVisibileBreifly();
         } catch (e: unknown) {
             const message = e instanceof Error ? e.message : JSON.stringify(e);
             console.error("Zone save failed: ", message);
             alert("Zone save error: " + message);
         }
-    }, [cameraId, isValidUUID]);
+    }, [beginZoneMutation, cameraId, failZoneMutation, isValidUUID, keepZoneMutationVisibileBreifly]);
 
     const deleteZone = useCallback(async (zoneId: string) => {
         if (!isValidUUID) return;
-        await apiCall(`/cameras/${cameraId}/zones/${zoneId}`, { method: "DELETE" });
-        setSettings(prev => prev ? { ...prev, zones: prev.zones.filter(z => z.id !== zoneId) } : prev);
-    }, [cameraId, isValidUUID]);
 
-    return { settings, loading, error, updateThreshold, createZone, deleteZone, refetch };
+        beginZoneMutation("adding");
+
+        try {
+            await apiCall(`/cameras/${cameraId}/zones/${zoneId}`, { method: "DELETE" });
+            setSettings(prev => prev ? { ...prev, zones: prev.zones.filter(z => z.id !== zoneId) } : prev);
+
+            keepZoneMutationVisibileBreifly();
+        }
+        catch (e: unknown) {
+            failZoneMutation();
+
+            const message = e instanceof Error ? e.message : JSON.stringify(e);
+            console.error("Zone delete failed: ", message);
+
+            alert("Zone delete error: " + message);
+        }
+    }, [beginZoneMutation, cameraId, failZoneMutation, isValidUUID, keepZoneMutationVisibileBreifly]);
+
+    return { settings, loading, error, zoneMutation, updateThreshold, createZone, deleteZone, refetch };
 }
