@@ -449,5 +449,84 @@ class CascadedPipeline:
 
         union = area_left + area_right - intersection
 
-        
+
         return intersection / union if union else 0.0
+
+    @staticmethod
+    def _point_in_polygon(px: float, py: float, polygon: Sequence[Sequence[float]]) -> bool:
+        inside = False
+
+        j = len(polygon) - 1
+        
+        for i, (xi, yi) in enumerate(polygon):
+            xj, yj = polygon[j]
+
+            if (yi > py) != (yj > py):
+                denominator = yj - yi
+
+                if denominator and px < (xj - xi) * (py - yi) / denominator + xi:
+                    inside = not inside
+
+            j = i
+
+        return inside
+
+    @staticmethod
+    def _crop(frame: Any, bbox: list[float]) -> Any:
+
+        frame_height, frame_width = frame.shape[:2]
+
+        x1 = max(0, min(frame_width, int(bbox[0])))
+        y1 = max(0, min(frame_height, int(bbox[1])))
+        x2 = max(0, min(frame_width, int(bbox[2])))
+        y2 = max(0, min(frame_height, int(bbox[3])))
+
+
+        return frame[y1:y2, x1:x2]
+
+    @staticmethod
+    def _valid_bbox(bbox: list[float]) -> bool:
+        return bbox[2] > bbox[0] and bbox[3] > bbox[1]
+
+    @staticmethod
+    def _xyxy(box: Any) -> list[float]:
+        return [float(value) for value in box.xyxy[0].tolist()]
+
+    @staticmethod
+    def _scalar(value: Any) -> float:
+        return float(value.item() if hasattr(value, "item") else value)
+
+    @staticmethod
+    def _boxes_from_result(results: Any) -> list[Any]:
+        if not results:
+            return []
+        
+        boxes = getattr(results[0], "boxes", None)
+
+
+        return list(boxes) if boxes is not None else []
+
+    @staticmethod
+    def _class_name(model: Any, class_id: int) -> str:
+        names = getattr(model, "names", {})
+
+        if isinstance(names, dict):
+            return str(names.get(class_id, class_id)).lower()
+        
+        if 0 <= class_id < len(names):
+            return str(names[class_id]).lower()
+
+        
+        return str(class_id)
+
+    def _inference_guard(self):
+        if self.inference_lock is None:
+            return _NullContext()
+        return self.inference_lock
+
+class _NullContext:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
