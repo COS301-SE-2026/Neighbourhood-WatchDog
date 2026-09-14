@@ -415,6 +415,18 @@ class CascadedPipeline:
             for track_id, history in self._histories.items()
             if now - history.last_seen > self.config.history_retention_seconds
         ]
-        
+
         for track_id in expired:
             del self._histories[track_id]
+
+    @staticmethod
+    def _best_parent(track_bbox: list[float], persons: list[dict[str, Any]]) -> dict[str, Any] | None:
+        if not persons:
+            return None
+        
+        return max(
+            persons,
+            key=lambda person: CascadedPipeline._iou(track_bbox, person["bbox"])
+
+
+        )
