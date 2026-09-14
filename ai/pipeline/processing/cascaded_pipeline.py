@@ -8,7 +8,8 @@
 """
 
 from __future__ import annotations
-from collections import dataclass, field
+from collections import deque
+from dataclasses import dataclass, field
 from threading import Lock
 from typing import Any, Sequence
 
@@ -34,3 +35,36 @@ SEVERITY_HIGH = "HIGH"
 SEVERITY_CRITICAL = "CRITICAL"
 
 
+@dataclass(frozen=True)
+class CascadedPipelineConfig:
+
+    person_confidence: float = 0.25
+    person_iou: float = 0.70
+    person_imgsz: int = 640
+    weapon_confidence: float = 0.50
+    weapon_iou: float = 0.50
+    weapon_imgsz: int = 512
+    max_age: int = 10
+    n_init: int = 3
+    max_iou_distance: float = 0.5
+    loitering_threshold_seconds: float = 30.0
+    scan_time_window_seconds: float = 30.0
+    scan_crossing_threshold: int = 3
+    history_retention_seconds: float = 300.0
+
+
+@dataclass
+class PipelineResult:
+    tracks: list[dict[str, Any]] = field(default_factory=list)
+    events: list[dict[str, Any]] = field(default_factory=list)
+    
+
+
+@dataclass
+class _TrackHistory:
+
+    last_seen: float = 0.0
+    previous_inside: tuple[bool, ...] | None = None
+    entered_at: dict[int, float] = field(default_factory=dict)
+    crossings: dict[int, deque[float]] = field(default_factory=dict)
+    last_emitted_type: str | None = None
