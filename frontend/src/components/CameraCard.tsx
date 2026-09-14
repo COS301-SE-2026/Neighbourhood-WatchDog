@@ -100,14 +100,11 @@ export default function CameraCard({ id, name, location, visibility, enabled, us
                         <p className="text-xs text-brand-ash">
                             Visibility: <span className="text-brand-frost">{visibility}</span>
                         </p>
-
-                        
-
                     </div>
                 </div>
             </article>
 
-            <DialogContent className="max-h-[90vh] w-full max-w-4xl overflow-y-auto border text-brand-frost border-border text-brand-ash">
+            <DialogContent className="max-h-[90vh] w-full max-w-4xl overflow-y-auto border border-border text-brand-ash">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-brand-ash">
                         {name}
@@ -118,8 +115,6 @@ export default function CameraCard({ id, name, location, visibility, enabled, us
                     </DialogTitle>
                 </DialogHeader>
 
-                
-
                 {!enabled && (
                     <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-brand-slate text-brand-ash">
                         <CameraOff className="h-10 w-10" />
@@ -127,31 +122,30 @@ export default function CameraCard({ id, name, location, visibility, enabled, us
                     </div>
                 )}
 
-                {enabled && streamState === "connecting" && (
-                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-brand-slate text-brand-ash">
-                        <LoaderCircle className="h-8 w-8 animate-spin" />
-                        <p className="text-sm">Connecting to live stream…</p>
-                    </div>
-                )}
-
-                {enabled && streamState === "unavailable" && (
-                    <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-md bg-brand-slate text-brand-ash">
-                        <CameraOff className="h-10 w-10" />
-                        <p className="text-sm">Live stream is currently unavailable.</p>
-                        <p className="text-xs">
-                            Confirm that the camera is enabled and actively publishing.
-                        </p>
-                    </div>
-                )}
-
-                {enabled && open && streamState !== "unavailable" && (
-                    <div className={streamState === "connecting" ? "hidden" : undefined}>
+                {enabled && open && (
+                    <div className="relative">
+                        {/*keeps CameraFeed mounted while connecting/unavailable. the internal reconnect effect must stay alive after a zone mutation. */}
                         <CameraFeed
                             ref={videoRef}
                             streamPath={streamPath}
                             cameraId={id}
                             onStreamStateChange={setStreamState}
                         />
+
+                        {streamState === "connecting" && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-md bg-brand-slate/85 text-brand-ash">
+                                <LoaderCircle className="h-8 w-8 animate-spin" />
+                                <p className="text-sm">Connecting to live stream…</p>
+                            </div>
+                        )}
+
+                        {streamState === "unavailable" && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-md bg-brand-slate/85 text-brand-ash">
+                                <CameraOff className="h-10 w-10" />
+                                <p className="text-sm">Live stream is reconnecting…</p>
+                                <p className="text-xs">The stream will retry automatically.</p>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -169,5 +163,5 @@ export default function CameraCard({ id, name, location, visibility, enabled, us
                 />
             </DialogContent>
         </Dialog>
-    )
+    );
 }
