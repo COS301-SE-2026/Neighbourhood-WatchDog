@@ -1,8 +1,12 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { apiCall } from "@/lib/api/client";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ZONE_APPLY_SETTLE_MS = 5000;
+
+export type ZoneMutation = "adding" | "removing" | null;
+
 
 export interface Zone {
     id: string
@@ -23,6 +27,9 @@ export function useCameraSettings(cameraId: string) {
     const [settings, setSettings] = useState<CameraSettings | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [refetchToken, setRefetchToken] = useState(0);
+
+    const [zoneMutation, setZoneMutation] = useState<ZoneMutation>(null);
+    const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [loadedFor, setLoadedFor] = useState<string | null>(null);
 
@@ -58,6 +65,14 @@ export function useCameraSettings(cameraId: string) {
             ignore = true;
         };
     }, [cameraId, isValidUUID, refetchToken]);
+
+    useEffect(() => {
+        return () => {
+            if (settleTimerRef.current !== null) {
+                clearTimeout(settleTimerRef.current);
+            }
+        }
+    }, []);
 
     const refetch = useCallback(() => {
         setRefetchToken(t => t + 1);
