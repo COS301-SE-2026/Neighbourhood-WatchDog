@@ -1,8 +1,12 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { apiCall } from "@/lib/api/client";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ZONE_APPLY_SETTLE_MS = 5000;
+
+export type ZoneMutation = "adding" | "removing" | null;
+
 
 export interface Zone {
     id: string
@@ -23,6 +27,9 @@ export function useCameraSettings(cameraId: string) {
     const [settings, setSettings] = useState<CameraSettings | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [refetchToken, setRefetchToken] = useState(0);
+
+    const [zoneMutation, setZoneMutation] = useState<ZoneMutation>(null);
+    const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [loadedFor, setLoadedFor] = useState<string | null>(null);
 
@@ -59,6 +66,14 @@ export function useCameraSettings(cameraId: string) {
         };
     }, [cameraId, isValidUUID, refetchToken]);
 
+    useEffect(() => {
+        return () => {
+            if (settleTimerRef.current !== null) {
+                clearTimeout(settleTimerRef.current);
+            }
+        }
+    }, []);
+
     const refetch = useCallback(() => {
         setRefetchToken(t => t + 1);
     }, []);
@@ -72,26 +87,78 @@ export function useCameraSettings(cameraId: string) {
         setSettings(prev => prev ? { ...prev, confidence_threshold: threshold } : prev);
     }, [cameraId, isValidUUID]);
 
+
+    const beginZoneMutation = useCallback((mutation: Exclude<ZoneMutation, null>) => {
+        if (settleTimerRef.current !== null) {
+            clearTimeout(settleTimerRef.current);
+            settleTimerRef.current = null;
+        }
+
+        setZoneMutation(mutation);
+    }, []);
+
+    const keepZoneMutationVisibileBreifly = useCallback(() => {
+        if (settleTimerRef.current !== null){
+            clearTimeout(settleTimerRef.current);
+        }
+
+        settleTimerRef.current = setTimeout(() => {
+            settleTimerRef.current = null;
+            setZoneMutation(null);
+
+        }, ZONE_APPLY_SETTLE_MS);
+    }, []);
+
+    const failZoneMutation = useCallback(() => {
+        if (settleTimerRef.current !== null) {
+            clearTimeout(settleTimerRef.current);
+            settleTimerRef.current = null;
+        }
+
+        setZoneMutation(null);
+    }, []);
+    
+
     const createZone = useCallback(async (polygon: number[][], name = "Zone") => {
         if (!isValidUUID) return;
+
+        beginZoneMutation("adding");
+
         try {
             const zone = await apiCall<Zone>(`/cameras/${cameraId}/zones`, {
                 method: "POST",
                 body: { name, polygon }
             });
             setSettings(prev => prev ? { ...prev, zones: [...prev.zones, zone] } : prev);
+
+            keepZoneMutationVisibileBreifly();
         } catch (e: unknown) {
             const message = e instanceof Error ? e.message : JSON.stringify(e);
             console.error("Zone save failed: ", message);
             alert("Zone save error: " + message);
         }
-    }, [cameraId, isValidUUID]);
+    }, [beginZoneMutation, cameraId, failZoneMutation, isValidUUID, keepZoneMutationVisibileBreifly]);
 
     const deleteZone = useCallback(async (zoneId: string) => {
         if (!isValidUUID) return;
-        await apiCall(`/cameras/${cameraId}/zones/${zoneId}`, { method: "DELETE" });
-        setSettings(prev => prev ? { ...prev, zones: prev.zones.filter(z => z.id !== zoneId) } : prev);
-    }, [cameraId, isValidUUID]);
 
-    return { settings, loading, error, updateThreshold, createZone, deleteZone, refetch };
+        beginZoneMutation("adding");
+
+        try {
+            await apiCall(`/cameras/${cameraId}/zones/${zoneId}`, { method: "DELETE" });
+            setSettings(prev => prev ? { ...prev, zones: prev.zones.filter(z => z.id !== zoneId) } : prev);
+
+            keepZoneMutationVisibileBreifly();
+        }
+        catch (e: unknown) {
+            failZoneMutation();
+
+            const message = e instanceof Error ? e.message : JSON.stringify(e);
+            console.error("Zone delete failed: ", message);
+
+            alert("Zone delete error: " + message);
+        }
+    }, [beginZoneMutation, cameraId, failZoneMutation, isValidUUID, keepZoneMutationVisibileBreifly]);
+
+    return { settings, loading, error, zoneMutation, updateThreshold, createZone, deleteZone, refetch };
 }
