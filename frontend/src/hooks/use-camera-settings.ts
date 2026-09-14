@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { apiCall } from "@/lib/api/client";
+import { clear } from "console";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ZONE_APPLY_SETTLE_MS = 5000;
@@ -86,6 +87,38 @@ export function useCameraSettings(cameraId: string) {
         });
         setSettings(prev => prev ? { ...prev, confidence_threshold: threshold } : prev);
     }, [cameraId, isValidUUID]);
+
+
+    const beginZoneMutation = useCallback((mutation: Exclude<ZoneMutation, null>) => {
+        if (settleTimerRef.current !== null) {
+            clearTimeout(settleTimerRef.current);
+            settleTimerRef.current = null;
+        }
+
+        setZoneMutation(mutation);
+    }, []);
+
+    const keepZoneMutationVisibileBreifly = useCallback(() => {
+        if (settleTimerRef.current !== null){
+            clearTimeout(settleTimerRef.current);
+        }
+
+        settleTimerRef.current = setTimeout(() => {
+            settleTimerRef.current = null;
+            setZoneMutation(null);
+
+        }, ZONE_APPLY_SETTLE_MS);
+    }, []);
+
+    const failZoneMutation = useCallback(() => {
+        if (settleTimerRef.current !== null) {
+            clearTimeout(settleTimerRef.current);
+            settleTimerRef.current = null;
+        }
+
+        setZoneMutation(null);
+    }, []);
+    
 
     const createZone = useCallback(async (polygon: number[][], name = "Zone") => {
         if (!isValidUUID) return;
