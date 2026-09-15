@@ -607,152 +607,84 @@ def _save_weapon_clip(alert_id: str, camera: CameraSpec, frame_buffer: Annotated
                 os.unlink(clip_path)
 
 def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Event) -> None:
-    """
-    Background thread: continuously read RTSP, run YOLO+DeepSort,
-    push live annotations, and retain annotated frames for clips.
-    """
+    """"reads one camera, runs the cascaded pipeline, and publish results."""
 
-    logger.info(
-        "Detection loop starting for camera %s at %s",
-        camera.id,
-        rtsp_url 
+    logger.info("Detection loop starting for camera %s", camera.id)
+
+    pipeline = CascadedPipeline(
+        person_model=person_model,
+        weapon_model=threat_model,
+        zones=camera.zones,
+        zone_ids=camera.zone_ids,
+
+        config=CascadedPipelineConfig(
+            person_confidence=camera.confidence_threshold,
+            person_iou=PERSON_NMS_IOU_THRESHOLD,
+            weapon_confidence=WEAPON_CONFIDENCE_THRESHOLD,
+            weapon_iou=WEAPON_NMS_IOU_THRESHOLD,
+            n_init=TEMPORAL_CONFIRMATION_FRAMES,
+            loitering_threshold_seconds=float(
+                os.getenv("LOITERING_THRESHOLD_SECONDS", "30")
+            ),
+            scan_time_window_seconds=float(
+                os.getenv("SCAN_TIME_WINDOW_SECONDS", "30")
+            ),
+            scan_crossing_threshold=int(
+                os.getenv("SCAN_CROSSING_THRESHOLD", "3")
+            )
+        ),
+
+        inference_lock=_model_lock
+
 
     )
 
-    tracker = DeepSort(
-        max_age=10,
-        n_init=TEMPORAL_CONFIRMATION_FRAMES,
-        max_iou_distance=0.5,
-        embedder="mobilenet",
-        embedder_gpu=False,
-        nms_max_overlap=0.5
-
-    )
-
-    alerted_ids: set = set()
-
-    #about four seconds at 25 FPS
     annotated_frames = AnnotatedFrameBuffer(max_frames=100)
-
     latest_frame_reader = LatestFrameReader(rtsp_url, stop_event)
     latest_frame_reader.start()
-
     last_processed_sequence = -1
 
     try:
         while not stop_event.is_set():
-            frame, last_processed_sequence = (
-                latest_frame_reader.get_latest_after(
-                    last_processed_sequence
-                )
-            )
+            frame, last_processed_sequence = latest_frame_reader.get_latest_after(last_processed_sequence)
 
             if frame is None:
                 stop_event.wait(0.01)
                 continue
 
-            person_detections, weapon_detections = _extract_detections(
-                frame,
-                zones=camera.zones,
-                confidence_threshold=camera.confidence_threshold 
-            )
+            result = pipeline.process_frame(frame)
+            tracks_payload = result.tracks
 
-            #  only human detections are passed through DeepSort
-            tracks = tracker.update_tracks(
-                person_detections,
-                frame=frame 
+            trigger_sequence = annotated_frames.append(annotate_frame(frame, tracks_payload))
 
-            )
-
-            tracks_payload = _collect_tracks(
-                tracks,
-                alerted_ids,
-                camera 
-
-            )
-
-            weapon_events: list[tuple[str, float]] = []
-
-            #add the raw weapon detections without DeepSort
-            for index, (bbox, confidence, label) in enumerate(weapon_detections):
-                x, y, width, height = bbox
-
-                tracks_payload.append(
-                    {
-                        "track_id": f"threat_{index}",
-                        "confidence": confidence,
-                        "bbox": [x, y, x + width, y + height],
-                        "detection_type": label
-
-                    }
-                )
-
-                if label.lower() in WEAPON_CLASSES:
-                    logger.info(
-                        "Weapon detection observed: camera=%s, "
-                        "label=%s, confidence=%.3f",
-                        camera.id,
-                        label,
-                        confidence
-
-                    )
-
-                    weapon_events.append(
-                        (label, confidence)
-                    )
-
-            #filter out zero confidence ghost tracks
-            tracks_payload = [
-                track
-                for track in tracks_payload
-
-                if track.get("confidence", 0) > 0.1 or str(track.get("track_id", "")).startswith("threat_")
-            ]
-
-            #  burn the current detection results into the frame
-            #this is CPU-only OpenCV drawing and does not run inference
-            annotated_frame = annotate_frame(frame, tracks_payload)
-
-            ##store the annotated frame before starting the clip worker 
-            trigger_sequence = annotated_frames.append(annotated_frame)
-
-            #  keep the existing live annotation WebSocket behavior
             _push_annotations(
                 BACKEND_URL,
                 camera.id,
                 tracks_payload,
                 datetime.now(timezone.utc).isoformat()
 
+
             )
 
-            # create clips from the already-annotated frames
-            for label, confidence in weapon_events:
-                _schedule_weapon_clip(
-                    camera=camera,
-                    frame_buffer=annotated_frames,
-                    trigger_sequence=trigger_sequence,
-                    weapon_label=label,
-                    confidence=confidence,
-                    stop_event=stop_event 
+            for event in result.events:
+                _post_detection_event(camera, event)
 
-                )
+
+                if event["detection_type"] == "WEAPON_DETECTED":
+                    _schedule_weapon_clip(
+                        camera=camera,
+                        frame_buffer=annotated_frames,
+                        trigger_sequence=trigger_sequence,
+                        weapon_label=event.get("weapon_type") or "weapon",
+                        confidence=float(event["weapon_confidence"] or event["confidence"]),
+                        stop_event=stop_event
+                    )
 
     except Exception:
-        logger.exception(
-            "Detection worker crashed for camera %s",
-            camera.id 
-
-        )
-
+        logger.exception("Detection worker crashed for camera %s", camera.id)
     finally:
         latest_frame_reader.close()
-
-        logger.info(
-            "Detection worker stopped for camera %s",
-            camera.id 
-
-        )
-
+        logger.info("Detection worker stopped for camera %s", camera.id)
 
         
 def _reconnect_if_needed(cap, rtsp_url: str, stop_event: threading.Event):
