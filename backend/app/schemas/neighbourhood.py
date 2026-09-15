@@ -1,4 +1,4 @@
-from pydantic import BaseModel, StringConstraints
+from pydantic import BaseModel, StringConstraints, Field
 from typing import Annotated, Literal
 from uuid import UUID
 from datetime import datetime
@@ -58,3 +58,7 @@ class UpdateSecurityAvailabilityReq(BaseModel):
 class UpdateSecurityAvailabilityRes(BaseModel):
     status: int
     message: str | None = None
+
+class UpdateOfficerLocationReq(BaseModel):
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
