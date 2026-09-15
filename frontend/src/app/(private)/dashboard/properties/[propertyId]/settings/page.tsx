@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, LogOut } from "lucide-react";
+import { Loader2, LogOut, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { leaveNeighbourhood } from "@/lib/api/neighbourhood";
+import { removeProperty } from "@/lib/api/property";
 import { useUserContext } from "@/hooks/use-user-context";
 
 import {
@@ -27,8 +28,9 @@ export default function PropertySettingsPage() {
   const { propertyId } = useParams<{ propertyId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: userContext, isLoading } = useUserContext();
+  const { data: userContext, isLoading, refetch: refetchUserContext } = useUserContext();
 
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
   const property = userContext?.properties.find(
@@ -68,6 +70,47 @@ export default function PropertySettingsPage() {
       );
     } finally {
       setIsLeaving(false);
+    }
+  }
+
+  async function handleDeleteProperty() {
+    if (!property?.is_admin) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await removeProperty(property.id);
+
+      localStorage.removeItem("lastActivePropertyId");
+
+      // Refreshing the context so the removed property disappears from the sidebar and property selector.
+      const refreshedContext = await refetchUserContext();
+      const nextProperty = refreshedContext.data?.properties[0];
+
+      toast.success("Property permanently removed");
+
+      if (nextProperty) {
+        localStorage.setItem(
+          "lastActivePropertyId",
+          nextProperty.id,
+        );
+
+        router.replace(
+          `/dashboard/properties/${nextProperty.id}/cameras`,
+        );
+      } else {
+        router.replace("/dashboard");
+      }
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to remove property",
+      );
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -173,6 +216,8 @@ export default function PropertySettingsPage() {
             </div>
           </section>
         )}
+
+        
       </div>
     </main>
   );
