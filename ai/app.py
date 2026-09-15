@@ -87,7 +87,7 @@ def _s3_client():
 
 
 #cooldown tracker per weapon class
-_clips_cooldowns: dict[tuple[str, str], float] = {}
+_clips_cooldowns: dict[tuple[str, int, str], float] = {}
 _cooldown_lock = threading.Lock()
 
 
@@ -220,7 +220,7 @@ class LatestFrameReader:
             if cap is not None:
                 cap.release()
 
-def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: float) -> str | None:
+def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: float, local_track_id: int) -> str | None:
     """Create a weapon alert immediately, independently of S3 footage."""
 
     api_key = keyring.get_password("WatchDog", "api_key") or INTERNAL_API_TOKEN
@@ -229,7 +229,9 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
         "camera_id": camera.id,
         "detection_type": "WEAPON_DETECTED",
         "confidence_score": confidence,
+        "local_track_id": local_track_id, 
         "frame_timestamp": datetime.now(timezone.utc).isoformat(),
+
     }
 
     logger.info(
