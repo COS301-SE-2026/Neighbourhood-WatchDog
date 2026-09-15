@@ -114,6 +114,39 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
         logger.warning("Could not push annotations for camera %s: %s", camera_id, error)
 
 
+def _post_detection_event(camera: CameraSpec, event: dict) -> None:
+    """ send one edge-triggered classified event to the backend."""
+
+    api_key = keyring.get_password("WatchDog", "api_key")
+    if not api_key:
+        logger.warning("Cannot post detection event for camera %s: no paired API key", camera.id)
+        return
+
+    payload = {
+        "camera_id": camera.id,
+        "frame_timestamp": datetime.now(timezone.utc).isoformat(),
+        "detection_type": event["detection_type"],
+        "confidence_score": float(event["confidence"]),
+        "zone_id": event.get("zone_id")
+    }
+
+    try:
+        response = httpx.post(
+            f"{BACKEND_URL}/internal/detections",
+            headers={"X-Internal-Token": api_key},
+            json=payload,
+            timeout=1.0
+        )
+
+        response.raise_for_status()
+
+    except httpx.RequestError as error:
+        logger.warning(
+            "Could not post detection event for camera %s: %s", camera.id, error)
+    except httpx.HTTPStatusError as error:
+        logger.warning("Backend rejected detection event for camera %s: %s", camera.id, error.response.status_code)
+
+
 def _extract_detections(frame, zones: list | tuple | None = None, confidence_threshold: float | None = None) -> tuple[list, list]:
     """Convert YOLO results to DeepSort detection format.
     
