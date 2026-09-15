@@ -21,12 +21,15 @@ class FakeResult:
 class FakeModel:
     def __init__(self, results, names=None):
         self.results = results
-        self.names = names or {0: "person", 1: "knife"}
+        self.names = names or {
+            0: "person",
+            1: "knife",
+        }
         self.calls = []
 
     def predict(self, frame, **kwargs):
         self.calls.append((frame.shape, kwargs))
-        return [self.results]
+        return [FakeResult(self.results)]
 
 
 class FakeTrack:
@@ -68,7 +71,7 @@ def test_weapon_model_is_not_called_when_gate_finds_no_person():
     assert result.tracks == []
     assert result.events == []
     assert len(person_model.calls) == 1
-    assert weapon_model.calls == 0
+    assert len(weapon_model.calls) == 0
     assert tracker.calls == 0
 
 
