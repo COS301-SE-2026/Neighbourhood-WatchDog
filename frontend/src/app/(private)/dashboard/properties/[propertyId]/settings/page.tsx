@@ -217,7 +217,83 @@ export default function PropertySettingsPage() {
           </section>
         )}
 
-        
+        {property.is_admin && (
+          <section className="mt-8 rounded-xl border border-destructive/40 bg-card p-6">
+            <h2 className="text-lg font-semibold text-destructive">
+              Delete property
+            </h2>
+
+            <div className="mt-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+              <div>
+                <h3 className="font-medium">
+                  Permanently delete {property.address}
+                </h3>
+
+                <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                  This permanently removes the property, its cameras, alerts,
+                  member access and associated edge-agent credentials. The
+                  local WatchDog Agent will need a new pairing token before it
+                  can be used again.
+                </p>
+              </div>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={isDeleting}
+                    className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-destructive px-4 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Trash2 className="mr-2 size-4" />
+                    Delete property
+                  </button>
+                </AlertDialogTrigger>
+
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Permanently delete this property?
+                    </AlertDialogTitle>
+
+                    <AlertDialogDescription>
+                      This will permanently delete{" "}
+                      <span className="font-medium text-foreground">
+                        {property.address}
+                      </span>
+                      , including its cameras, alerts, member access and
+                      edge-agent connection. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isDeleting}>
+                      Cancel
+                    </AlertDialogCancel>
+
+                    <AlertDialogAction
+                      disabled={isDeleting}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        void handleDeleteProperty();
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {isDeleting ? (
+                        <>
+                          <Loader2 className="mr-2 size-4 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        "Delete permanently"
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </section>
+        )}
+
       </div>
     </main>
   );
