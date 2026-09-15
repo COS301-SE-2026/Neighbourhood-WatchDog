@@ -7,6 +7,7 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
+from app.models.audit_log import AuditAction, TargetEntity
 from app.models.camera import CameraVisibilityEnum
 from app.models.property import PropertyTypeEnum
 from app.schemas.property import InvitePropertyReq
@@ -1072,3 +1073,85 @@ async def test_remove_property_member_rejects_missing_membership():
         "User is not a member of this property"
     )
     db.commit.assert_not_awaited()
+
+class TestRemoveProperty:
+    @pytest.mark.asyncio
+    async def test_remove_property_requires_claims(self):
+        db = _property_service_db()
+
+        with pytest.raises(HTTPException) as exc_info:
+            await property_service_module.remove_property_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=None,
+            )
+
+        assert exc_info.value.status_code == 401
+        assert exc_info.value.detail == "Not authorized"
+
+        db.execute.assert_not_awaited()
+        db.commit.assert_not_awaited()
+        db.rollback.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_remove_property_returns_404_when_missing(self):
+        db = _property_service_db()
+        db.execute.return_value = _property_service_result(
+            scalar=None,
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await property_service_module.remove_property_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=_property_service_claims(),
+            )
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == "Property does not exist."
+
+        db.commit.assert_not_awaited()
+        db.rollback.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_remove_property_without_agent_credentials(self):
+        db = _property_service_db()
+        property_obj = _make_property()
+
+        db.execute.side_effect = [
+            _property_service_result(scalar=property_obj),
+            _property_service_result(rows=[]),
+            Mock(),  # Result of DELETE statement
+        ]
+
+        with patch(
+            "app.services.property_service.create_audit_log_item",
+            new=AsyncMock(),
+        ) as audit_mock:
+            result = await property_service_module.remove_property_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=_property_service_claims(),
+            )
+
+        assert result is None
+        assert db.execute.await_count == 3
+        db.commit.assert_awaited_once()
+        db.rollback.assert_not_awaited()
+
+        audit_mock.assert_awaited_once()
+
+        audit_kwargs = audit_mock.await_args.kwargs
+
+        assert audit_kwargs["user_id"] == USER_ID
+        assert audit_kwargs["action"] == AuditAction.DELETE
+        assert (
+            audit_kwargs["target_entity_type"]
+            == TargetEntity.PROPERTY
+        )
+        assert audit_kwargs["target_entity_id"] == PROPERTY_ID
+        assert audit_kwargs["old_values"] == {
+            "address": "123 Test Street",
+            "property_type": PropertyTypeEnum.PRIVATE.value,
+            "neighbourhood_id": str(NEIGHBOURHOOD_ID),
+        }
