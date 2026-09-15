@@ -52,8 +52,8 @@ class UpdateMemberRoleRes(BaseModel):
 
 
 class UpdateSecurityAvailabilityReq(BaseModel):
-    neighbourhood_id = UUID
-    new_availability = AvailabilityStatus
+    neighbourhood_id: UUID
+    new_availability: AvailabilityStatus
 
 class UpdateSecurityAvailabilityRes(BaseModel):
     status: int
