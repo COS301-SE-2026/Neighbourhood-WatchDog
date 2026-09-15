@@ -258,9 +258,9 @@ export default function PropertySettingsPage() {
                     <AlertDialogDescription>
                       This will permanently delete{" "}
                       <span className="font-medium text-foreground">
-                        {property.address}
-                      </span>
-                      , including its cameras, alerts, member access and
+                        {property.address},
+                      </span>{" "}
+                      including its cameras, alerts, member access and
                       edge-agent connection. This action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>

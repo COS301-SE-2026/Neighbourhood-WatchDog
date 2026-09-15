@@ -1100,11 +1100,12 @@ class TestRemoveProperty:
             scalar=None,
         )
 
+        claims = _property_service_claims()
         with pytest.raises(HTTPException) as exc_info:
             await property_service_module.remove_property_handler(
                 property_id=PROPERTY_ID,
                 db=db,
-                claims=_property_service_claims(),
+                claims=claims,
             )
 
         assert exc_info.value.status_code == 404
