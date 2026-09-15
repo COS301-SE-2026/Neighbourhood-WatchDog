@@ -10,6 +10,7 @@ from app.models.property_user import PropertyUser
 from app.models.user import User
 from app.models.audit_log import TargetEntity
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
+from app.models.security_officer import AvailabilityStatus
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 import secrets
@@ -503,3 +504,28 @@ async def leave_neighbourhood_handler(
             status_code=500,
             detail="Failed to leave neighbourhood"
         )
+
+async def update_officer_availability_handler(
+    neighbourhood_id: UUID,
+    new_availability: AvailabilityStatus,
+    db: DbSession,
+    claims: dict,
+) -> UpdateSecurityAvailabilityRes:
+    """Finds the security officer row for this user in this neighbourhood and updates their availability to be 
+        the new one"""
+    # validate
+    if neighbourhood_id is None or neighbourhood_id == "":
+        logger.info(
+                    "Camera registered: camera_id=%s, property_id=%s",
+                    new_camera.id,
+                    new_camera.property_id,
+                )
+        raise HTTPException(400, "No user neighbourhood ID provided")
+
+    # find correct neighbourhooduser + security officer using claims and neighbourhood id
+
+    # update the availability
+
+    # return security availability res
+
+    

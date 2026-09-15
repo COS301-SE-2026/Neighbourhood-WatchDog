@@ -12,13 +12,16 @@ from app.schemas.neighbourhood import (
     NeighbourhoodPropertyRes,
     UpdateMemberRoleReq,
     UpdateMemberRoleRes,
+    UpdateSecurityAvailabilityReq,
+    UpdateSecurityAvailabilityRes,
 )
 from app.services.neighbourhood_service import (
     create_neighbourhood_handler,
     get_neighbourhood_members_handler,
     get_neighbourhood_properties_service,
     update_neighbourhood_member_role_handler,
-    leave_neighbourhood_handler
+    leave_neighbourhood_handler,
+    update_officer_availability_handler,
 )
 
 router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
@@ -159,4 +162,25 @@ async def leave_neighbourhood(
         property_id=property_id,
         db=db,
         claims=claims
+    )
+
+
+@router.patch(
+    "/update-officer-availability",
+    status_code=200,
+    response_model=UpdateSecurityAvailabilityRes,
+    responses={
+
+    }
+)
+async def update_officer_availability(
+    req: UpdateSecurityAvailabilityReq,
+    db: DbSession,
+    claims: Claims,
+) -> UpdateSecurityAvailabilityRes:
+    return await update_officer_availability_handler(
+        req.neighbourhood_id,
+        req.new_availability,
+        db,
+        claims
     )
