@@ -137,6 +137,7 @@ class CreateInternalAlertRequest(BaseModel):
     camera_id: str
     detection_type: str
     confidence_score: float
+    local_track_id: int | None = None
     thumbnail_url: str | None = None
     frame_timestamp: str | None = None
 

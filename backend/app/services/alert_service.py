@@ -50,6 +50,8 @@ from app.models.neighbourhood import Neighbourhood
 from app.services.notification_service import _format_whatsapp_message, _notify_users
 from app.models.user import User
 
+from app.models.tracking import TrackingSighting, TrackingSubject
+
 
 logger = logging.getLogger(__name__)
 
@@ -1107,6 +1109,25 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
         )
 
         db.add(alert)
+        await db.flush()
+
+        if body.local_track_id is not None:
+            tracking_subject = TrackingSubject(alert_id=alert.id)
+            db.add(tracking_subject)
+            await db.flush()
+
+            initial_sighting = TrackingSighting(
+                tracking_subject_id=tracking_subject.id,
+                camera_id=alert.camera_id,
+                local_track_id=body.local_track_id,
+                observed_at=alert.frame_timestamp,
+                sequence_no=1,
+                match_confidence=None
+                
+            )
+
+            db.add(initial_sighting)
+
         await db.commit()
         await db.refresh(alert)
 
