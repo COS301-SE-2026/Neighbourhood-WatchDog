@@ -46,3 +46,11 @@ export async function removePropertyMember(
   });
   
 }
+
+export async function removeProperty(
+  propertyId: string,
+): Promise<void> {
+  await apiCall<void>(`/properties/${propertyId}`, {
+    method: "DELETE",
+  });
+}
