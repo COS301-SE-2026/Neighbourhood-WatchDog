@@ -296,10 +296,10 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
         )
         return None
 
-def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, weapon_label: str, confidence: float, stop_event: threading.Event) -> None:
+def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, weapon_label: str, confidence: float, local_track_id: int, stop_event: threading.Event) -> None:
     
     label = weapon_label.lower()
-    cooldown_key = (camera.id, label)
+    cooldown_key = (camera.id, local_track_id, label)
     now = time.monotonic()
 
     with _cooldown_lock:
@@ -320,6 +320,8 @@ def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer
         camera=camera,
         weapon_label=label,
         confidence=confidence,
+        local_track_id=local_track_id
+
     )
 
     if alert_id is None:
@@ -556,13 +558,18 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
 
 
                 if event["detection_type"] == "WEAPON_DETECTED":
+                    local_track_id = int(event["track_id"])
+
                     _schedule_weapon_clip(
                         camera=camera,
                         frame_buffer=annotated_frames,
                         trigger_sequence=trigger_sequence,
                         weapon_label=event.get("weapon_type") or "weapon",
                         confidence=float(event["weapon_confidence"] or event["confidence"]),
+                        local_track_id=local_track_id, 
                         stop_event=stop_event
+
+                        
                     )
 
     except Exception:
