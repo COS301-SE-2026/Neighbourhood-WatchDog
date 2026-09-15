@@ -11,6 +11,7 @@
     "test": "jest --passWithNoTests"
   },
   "dependencies": {
+    "@serwist/next": "^9.5.12",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-table": "^8.21.3",
     "amazon-cognito-identity-js": "^6.3.16",
@@ -28,6 +29,7 @@
     "react-chartjs-2": "^5.3.1",
     "react-dom": "19.2.4",
     "react-leaflet": "^5.0.0",
+    "serwist": "^9.5.12",
     "shadcn": "^4.7.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
