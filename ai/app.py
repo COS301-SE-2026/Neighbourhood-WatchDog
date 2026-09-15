@@ -768,60 +768,48 @@ app.add_middleware(
 
 
 def annotated_mjpeg(rtsp_url: str):
-    """MJPEG endpoint - useful for direct debugging/testing."""
-    cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
+
+    cap = cv2.VideoCapture(
+        rtsp_url,
+        cv2.CAP_FFMPEG
+    )
+
     if not cap.isOpened():
         return
-    frame_count = 0
+
+    pipeline = CascadedPipeline(
+        person_model=person_model,
+        weapon_model=threat_model,
+
+        config=CascadedPipelineConfig(
+            person_confidence=PERSON_CONFIDENCE_THRESHOLD,
+            weapon_confidence=WEAPON_CONFIDENCE_THRESHOLD,
+        ),
+
+        inference_lock=_model_lock
+
+    )
+
     try:
         while True:
             ret, frame = cap.read()
+
             if not ret:
                 break
-            frame_count += 1
-            if frame_count % 2 != 0:
-                continue
 
-
-            #weapon detection
-            threat_results = threat_model.predict(frame, imgsz=640, conf=0.35, verbose=False)
-            tracks_for_thumbnail = [
-                {
-                    "track_id": i,
-                    "confidence": float(box.conf[0]),
-                    "bbox": box.xyxy[0].tolist(),
-                    "detection_type": threat_model.names[int(box.cls[0])],
-
-                }
-                for i, box in enumerate(threat_results[0].boxes)
-            ]
-
-
-            #human detection
-            person_results = person_model.predict(frame, imgsz=640, conf=0.5, classes=[0], verbose=False)
-            tracks_for_thumbnail += [
-                {
-                    "track_id": 100 + i,
-                    "confidence": float(box.conf[0]),
-                    "bbox": box.xyxy[0].tolist(),
-                    "detection_type": "HUMAN_PRESENCE",
-
-                }
-
-                for i, box in enumerate(person_results[0].boxes)
-            ]
-
-
-
-            annotated = annotate_frame(frame, tracks_for_thumbnail)
+            result = pipeline.process_frame(frame)
+            annotated = annotate_frame(frame, result.tracks)
             jpeg_bytes = encode_frame_as_jpeg(annotated)
+
             yield (
                 b"--frame\r\n"
-                b"Content-Type: image/jpeg\r\n\r\n" + jpeg_bytes + b"\r\n"
+                b"Content-Type: image/jpeg\r\n\r\n"
+                + jpeg_bytes
+                + b"\r\n"
             )
+
     finally:
         cap.release()
-
 
 @stream_router.get("")
 def stream_annotated(url: str = Query(..., description="RTSP URL")):
