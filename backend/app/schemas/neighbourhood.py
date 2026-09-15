@@ -66,3 +66,10 @@ class UpdateOfficerLocationReq(BaseModel):
 class UpdateOfficerLocationRes(BaseModel):
     status: int
     message: str | None = None
+
+class OfficerLocationRes(BaseModel):
+    officer_id: UUID
+    latitude: float
+    longitude: float
+    location_updated_at: datetime
+    is_stale: bool
