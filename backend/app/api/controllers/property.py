@@ -12,6 +12,7 @@ from app.services.property_service import (
     get_property_members_handler,
     get_user_properties_handler,
     invite_property_member_handler,
+    remove_property_handler,
     remove_property_member_handler,
 )
 
@@ -132,6 +133,20 @@ async def remove_property_member(
     await remove_property_member_handler(
         property_id=property_id,
         user_id=user_id,
+        db=db,
+        claims=claims
+    )
+
+@router.delete("/{property_id}", status_code=204)
+async def remove_property(
+    property_id: UUID,
+    db: DbSession,
+    claims: PropertyAdminClaims
+):
+    """Remove a property."""
+
+    await remove_property_handler(
+        property_id=property_id,
         db=db,
         claims=claims
     )

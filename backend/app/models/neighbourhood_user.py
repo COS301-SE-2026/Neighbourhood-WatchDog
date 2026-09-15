@@ -21,6 +21,7 @@ class NeighbourhoodUser(Base):
     # Relationships
     user = relationship("User", back_populates="neighbourhood_memberships")
     neighbourhood = relationship("Neighbourhood", back_populates="user_memberships")
+    security_officer = relationship("SecurityOfficer", back_populates="neighbourhood_user", uselist=False)
     
     __table_args__ = (
         Index("uq_neighbourhood_user_unique", "user_id", "neighbourhood_id", unique=True),

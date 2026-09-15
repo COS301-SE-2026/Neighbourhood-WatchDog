@@ -15,7 +15,7 @@ class Camera(Base):
     __tablename__ = "camera"
 
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False, server_default=text("gen_random_uuid()"))
-    property_id = Column(UUID(as_uuid=True), ForeignKey("property.id"), nullable=False)
+    property_id = Column(UUID(as_uuid=True), ForeignKey("property.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)
     visibility = Column(SAEnum(CameraVisibilityEnum, name="camera_visibility"), nullable=False, server_default="PRIVATE")
     location = Column(String, nullable=False)

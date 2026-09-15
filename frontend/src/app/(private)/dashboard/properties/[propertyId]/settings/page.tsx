@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, LogOut } from "lucide-react";
+import { Loader2, LogOut, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { leaveNeighbourhood } from "@/lib/api/neighbourhood";
+import { removeProperty } from "@/lib/api/property";
 import { useUserContext } from "@/hooks/use-user-context";
 
 import {
@@ -27,8 +28,9 @@ export default function PropertySettingsPage() {
   const { propertyId } = useParams<{ propertyId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: userContext, isLoading } = useUserContext();
+  const { data: userContext, isLoading, refetch: refetchUserContext } = useUserContext();
 
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
   const property = userContext?.properties.find(
@@ -68,6 +70,47 @@ export default function PropertySettingsPage() {
       );
     } finally {
       setIsLeaving(false);
+    }
+  }
+
+  async function handleDeleteProperty() {
+    if (!property?.is_admin) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await removeProperty(property.id);
+
+      localStorage.removeItem("lastActivePropertyId");
+
+      // Refreshing the context so the removed property disappears from the sidebar and property selector.
+      const refreshedContext = await refetchUserContext();
+      const nextProperty = refreshedContext.data?.properties[0];
+
+      toast.success("Property permanently removed");
+
+      if (nextProperty) {
+        localStorage.setItem(
+          "lastActivePropertyId",
+          nextProperty.id,
+        );
+
+        router.replace(
+          `/dashboard/properties/${nextProperty.id}/cameras`,
+        );
+      } else {
+        router.replace("/dashboard");
+      }
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to remove property",
+      );
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -173,6 +216,84 @@ export default function PropertySettingsPage() {
             </div>
           </section>
         )}
+
+        {property.is_admin && (
+          <section className="mt-8 rounded-xl border border-destructive/40 bg-card p-6">
+            <h2 className="text-lg font-semibold text-destructive">
+              Delete property
+            </h2>
+
+            <div className="mt-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+              <div>
+                <h3 className="font-medium">
+                  Permanently delete {property.address}
+                </h3>
+
+                <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                  This permanently removes the property, its cameras, alerts,
+                  member access and associated edge-agent credentials. The
+                  local WatchDog Agent will need a new pairing token before it
+                  can be used again.
+                </p>
+              </div>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={isDeleting}
+                    className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-destructive px-4 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Trash2 className="mr-2 size-4" />
+                    Delete property
+                  </button>
+                </AlertDialogTrigger>
+
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Permanently delete this property?
+                    </AlertDialogTitle>
+
+                    <AlertDialogDescription>
+                      This will permanently delete{" "}
+                      <span className="font-medium text-foreground">
+                        {property.address},
+                      </span>{" "}
+                      including its cameras, alerts, member access and
+                      edge-agent connection. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isDeleting}>
+                      Cancel
+                    </AlertDialogCancel>
+
+                    <AlertDialogAction
+                      disabled={isDeleting}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        void handleDeleteProperty();
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {isDeleting ? (
+                        <>
+                          <Loader2 className="mr-2 size-4 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        "Delete permanently"
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </section>
+        )}
+
       </div>
     </main>
   );

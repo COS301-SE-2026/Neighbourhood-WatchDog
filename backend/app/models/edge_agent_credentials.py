@@ -19,5 +19,6 @@ class EdgeAgentCredential(Base):
 
     __table_args__ = (
         Index("ix_edge_agent_credentials_property_id", "property_id"),
+        Index("ix_edge_agent_credentials_property_last_seen", "property_id", "last_seen_at")
     )
     

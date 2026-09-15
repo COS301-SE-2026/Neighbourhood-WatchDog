@@ -363,6 +363,7 @@ async def list_enabled_cameras_for_agent_handler(property_id: UUID, db:AsyncSess
                 neighbourhood_id=camera.property.neighbourhood_id,
                 confidence_threshold=camera.confidence_threshold,
                 zones=[zone.polygon for zone in camera.detection_zones],
+                zone_ids=[zone.id for zone in camera.detection_zones],
                 publish_username=publish_username,
                 publish_password=publish_password,
             )
