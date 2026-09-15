@@ -116,7 +116,7 @@ class CascadedPipeline:
             self._cleanup_histories(now)
             return PipelineResult()
 
-        enriched_persons = self._enrich_with_weapons(frame, persons)
+        enriched_persons = self._enrich_with_weapons(persons)
         confirmed_tracks = self._track(frame, enriched_persons)
 
         tracks: list[dict[str, Any]] = []
@@ -191,12 +191,12 @@ class CascadedPipeline:
                 
         return persons
 
-    def _enrich_with_weapons(self, frame: Any, persons: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _enrich_with_weapons(self, persons: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
         enriched: list[dict[str, Any]] = []
 
         for person in persons:
-            x1, y1, x2, y2 = [int(value) for value in person["bbox"]]
+            x1, y1, _, _ = [int(value) for value in person["bbox"]]
 
             crop = person["crop"]
 
