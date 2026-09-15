@@ -8,6 +8,11 @@ from app.models.camera import CameraVisibilityEnum
 from fastapi import HTTPException
 from datetime import datetime
 
+import app.services.camera_service as camera_service_module
+
+from app.schemas.camera import MediaMtxAuthRequest
+from sqlalchemy.exc import IntegrityError
+
 MOCK_RTSP_URL = "rtsp://example.com/stream"
 MOCK_CAMERA_NAME = "Camera 1"
 
