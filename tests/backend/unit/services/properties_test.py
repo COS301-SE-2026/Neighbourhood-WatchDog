@@ -1155,3 +1155,73 @@ class TestRemoveProperty:
             "property_type": PropertyTypeEnum.PRIVATE.value,
             "neighbourhood_id": str(NEIGHBOURHOOD_ID),
         }
+
+    @pytest.mark.asyncio
+    async def test_remove_property_audits_agent_credentials(self):
+        db = _property_service_db()
+        property_obj = _make_property()
+
+        first_credential_id = uuid4()
+        second_credential_id = uuid4()
+        revoked_at = datetime(2026, 2, 1)
+
+        credentials = [
+            SimpleNamespace(
+                id=first_credential_id,
+                property_id=PROPERTY_ID,
+                revoked_at=None,
+            ),
+            SimpleNamespace(
+                id=second_credential_id,
+                property_id=PROPERTY_ID,
+                revoked_at=revoked_at,
+            ),
+        ]
+
+        db.execute.side_effect = [
+            _property_service_result(scalar=property_obj),
+            _property_service_result(rows=credentials),
+            Mock(),
+        ]
+
+        with patch(
+            "app.services.property_service.create_audit_log_item",
+            new=AsyncMock(),
+        ) as audit_mock:
+            await property_service_module.remove_property_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=_property_service_claims(),
+            )
+
+        # Two edge credentials plus the property itself.
+        assert audit_mock.await_count == 3
+
+        first_agent_audit = audit_mock.await_args_list[0].kwargs
+        second_agent_audit = audit_mock.await_args_list[1].kwargs
+        property_audit = audit_mock.await_args_list[2].kwargs
+
+        assert first_agent_audit["target_entity_type"] == TargetEntity.EDGEAGENTCREDENTIALS
+        assert first_agent_audit["target_entity_id"] == first_credential_id
+        
+        assert first_agent_audit["old_values"] == {
+            "property_id": str(PROPERTY_ID),
+            "revoked_at": None,
+        }
+
+        assert second_agent_audit["target_entity_type"] == TargetEntity.EDGEAGENTCREDENTIALS
+        
+        assert second_agent_audit["target_entity_id"] == second_credential_id
+        
+        assert second_agent_audit["old_values"] == {
+            "property_id": str(PROPERTY_ID),
+            "revoked_at": revoked_at.isoformat(),
+        }
+
+        assert property_audit["target_entity_type"] == TargetEntity.PROPERTY
+        
+        assert property_audit["target_entity_id"] == PROPERTY_ID
+
+        db.commit.assert_awaited_once()
+        db.rollback.assert_not_awaited()
+
