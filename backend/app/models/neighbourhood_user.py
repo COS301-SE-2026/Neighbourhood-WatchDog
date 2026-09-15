@@ -10,6 +10,11 @@ class NeighbourhoodRole(str, Enum):
     NEIGHBOURHOOD_ADMIN = "NEIGHBOURHOOD_ADMIN"
     SECURITY_OFFICER = "SECURITY_OFFICER"
 
+class AvailabilityStatus(str, Enum):
+    AVAILABLE = "AVAILABLE"     # officer is ready to receive alerts
+    BUSY = "BUSY"               # officer is busy with an incident but an alert can be added to the queue
+    UNAVAILABLE = "UNAVAILABLE" # officer cannot receive alerts right now  
+
 class NeighbourhoodUser(Base):
     __tablename__ = "neighbourhood_user"
     
@@ -17,6 +22,7 @@ class NeighbourhoodUser(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id", ondelete="CASCADE"), nullable=False)
     role = Column(SAEnum(NeighbourhoodRole, name="neighbourhood_role"), nullable=False)
+    availability_status = Column(SAEnum(AvailabilityStatus, name="availability_status"), nullable=True, default=AvailabilityStatus.UNAVAILABLE) # this is for security officers
     
     # Relationships
     user = relationship("User", back_populates="neighbourhood_memberships")
