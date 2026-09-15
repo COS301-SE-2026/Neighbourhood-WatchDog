@@ -51,10 +51,10 @@ class UpdateMemberRoleRes(BaseModel):
     data: NeighbourhoodMemberRes
 
 
-class UpdateSecurityAvailability(BaseModel):
+class UpdateSecurityAvailabilityReq(BaseModel):
     neighbourhood_id = UUID
     new_availability = AvailabilityStatus
 
-class UpdateSecurityAvailabilityResponse(BaseModel):
+class UpdateSecurityAvailabilityRes(BaseModel):
     status: int
     message: str | None = None
