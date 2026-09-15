@@ -147,121 +147,7 @@ def _post_detection_event(camera: CameraSpec, event: dict) -> None:
         logger.warning("Backend rejected detection event for camera %s: %s", camera.id, error.response.status_code)
 
 
-def _extract_detections(frame, zones: list | tuple | None = None, confidence_threshold: float | None = None) -> tuple[list, list]:
-    """Convert YOLO results to DeepSort detection format.
-    
-    runs both models and retains their detection inside the configured camera zones
-    
-    no zones = all detection are retained
-    configured zones = detections are retained only when the centre of the boundary box falls inside at least one polygon
-    """
 
-    zones = zones or []
-
-
-    person_confidence = (PERSON_CONFIDENCE_THRESHOLD if confidence_threshold is None else confidence_threshold)
-    weapon_confidence = WEAPON_CONFIDENCE_THRESHOLD
-
-    # #running yolo on frame, applying the confidendce threshold and zone filters
-    # with _settings_lock:
-    #     threshold = _camera_settings["confidence_threshold"]
-    #     zones = list(_camera_settings["zones"])
-
-
-
-    frame_h, frame_w = frame.shape[:2]
-
-    #only passing human objects to deepsort
-    person_detections = []
-    weapon_detections = []
-
-
-    with _model_lock:
-
-        #threat detection
-        threat_results = threat_model.predict(
-            frame,
-            imgsz=512,
-            conf=weapon_confidence,
-            iou=WEAPON_NMS_IOU_THRESHOLD,
-            verbose=False
-        )
-
-
-        #person detection
-        person_results = person_model.predict(
-            frame,
-            imgsz=640,
-            conf=person_confidence,
-            iou=PERSON_NMS_IOU_THRESHOLD,
-            classes=[0],
-            verbose=False
-            )
-
-    for box in threat_results[0].boxes:
-        x1, y1, x2, y2 = box.xyxy[0].tolist()
-        confidence = float(box.conf[0])
-
-        label = threat_model.names[int(box.cls[0])] # represents gun, knife, grenade
-
-        weapon_detections.append(([x1, y1, x2 - x1, y2 - y1], confidence, label))
-
-
-    for box in person_results[0].boxes:
-        x1, y1, x2, y2 = box.xyxy[0].tolist()
-        confidence = float(box.conf[0])
-        person_detections.append(([x1, y1, x2 - x1, y2 - y1], confidence, "HUMAN_PRESENCE"))
-
-
-
-    #applying the zones filter (current plan: pass all it no zones are configured)
-    person_detections = filter_detections_by_zones(person_detections, zones, frame_w, frame_h)
-    weapon_detections = filter_detections_by_zones(weapon_detections, zones, frame_w, frame_h)
-
-
-
-
-    logger.debug("Filtered detections: persons=%s, threats=%s, zones=%s, threshold=%.2f", len(person_detections), len(weapon_detections), len(zones), confidence_threshold if confidence_threshold is not None else person_confidence)
-
-
-    return person_detections, weapon_detections
-
-
-def _build_track_payload(track) -> dict:
-    """Convert a confirmed DeepSort track to the annotation payload format."""
-    left, top, right, bottom = track.to_ltrb()
-
-    detection_type = track.get_det_class() or "HUMAN_PRESENCE"
-
-
-    return {
-        "track_id": track.track_id,
-        "confidence": float(track.det_conf) if track.det_conf is not None else 0.0,
-        "bbox": [left, top, right, bottom],
-        "detection_type": detection_type,
-    }
-
-
-def _send_new_person_alert(camera: CameraSpec, track_id: int, confidence: float, detection_type: str = "UNKNOWN") -> None:
-    """Send a one-time human-presence alert to the backend."""
-    try:
-        api_key = keyring.get_password("WatchDog", "api_key")
-
-        httpx.post(
-            f"{BACKEND_URL}/alerts/",
-            json={
-                "camera_id": camera.id,
-                "neighbourhood_id": camera.neighbourhood_id,
-                "detection_type": detection_type.upper(), #GUN, KNIFE, GRENADE
-                "confidence": confidence,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "thumbnail_url": None,
-            },
-            headers={"X-Internal-Token": api_key},
-            timeout=1.0,
-        )
-    except Exception:
-        logger.exception("Alert POST failed for camera %s", camera.id, track_id)
 
 
 def _open_stream(rtsp_url: str):
@@ -701,26 +587,6 @@ def _reconnect_if_needed(cap, rtsp_url: str, stop_event: threading.Event):
     return new_cap
 
 
-def _collect_tracks(tracks, alerted_ids: set, camera: CameraSpec) -> list:
-    """Build the annotation payload from confirmed tracks, firing alerts for new persons."""
-    payload = []
-    for track in tracks:
-        if not track.is_confirmed() or track.time_since_update > 0:
-            continue
-
-
-        track_id = track.track_id
-        track_data = _build_track_payload(track)
-        payload.append(track_data)
-
-        if (track.det_conf is not None and is_track_ready_to_alert(track, alerted_ids, TEMPORAL_CONFIRMATION_FRAMES)):
-            alerted_ids.add(track_id)
-
-            detection_type = track.get_det_class() or "UNKNOWN"
-
-            logger.info("New detection - Track ID: %s, conf: %.2f", detection_type, camera.id, track_id, track.det_conf)
-            _send_new_person_alert(camera, track_id, float(track.det_conf), detection_type)
-    return payload
 
 
 @asynccontextmanager
