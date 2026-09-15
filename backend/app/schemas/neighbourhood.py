@@ -3,6 +3,7 @@ from typing import Annotated, Literal
 from uuid import UUID
 from datetime import datetime
 
+from app.models.security_officer import AvailabilityStatus
 from app.models.neighbourhood_user import NeighbourhoodRole
 
 NonEmptyString = Annotated[str, StringConstraints(min_length=1, strip_whitespace=True)]
@@ -48,3 +49,12 @@ class UpdateMemberRoleRes(BaseModel):
     status: int
     message: str
     data: NeighbourhoodMemberRes
+
+
+class UpdateSecurityAvailability(BaseModel):
+    neighbourhood_id = UUID
+    new_availability = AvailabilityStatus
+
+class UpdateSecurityAvailabilityResponse(BaseModel):
+    status: int
+    message: str | None = None
