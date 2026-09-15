@@ -1,8 +1,9 @@
 import uuid
 from enum import Enum
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy import Column, ForeignKey, Enum as SAEnum, Index
+from sqlalchemy import Column, ForeignKey, Enum as SAEnum, Index, DateTime
 from sqlalchemy.orm import relationship
+from geoalchemy2 import Geography
 from app.core.database import Base
 
 class AvailabilityStatus(str, Enum):
@@ -19,7 +20,8 @@ class SecurityOfficer(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     neighbourhood_user_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood_user.id", ondelete="CASCADE"), nullable=False, unique=True)
     availability_status = Column(SAEnum(AvailabilityStatus, name="availability_status"), nullable=True, default=AvailabilityStatus.UNAVAILABLE) # this is for security officers
-
+    last_known_location = Column(Geography(geometry_type="POINT", srid=4326), nullable=True)
+    location_updated_at = Column(DateTime(timezone=True), nullable=True)
     # Relationships
     neighbourhood_user = relationship("NeighbourhoodUser", back_populates="security_officer")
 
