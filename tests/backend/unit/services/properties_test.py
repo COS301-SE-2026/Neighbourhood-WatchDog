@@ -1225,3 +1225,79 @@ class TestRemoveProperty:
         db.commit.assert_awaited_once()
         db.rollback.assert_not_awaited()
 
+    @pytest.mark.asyncio
+    async def test_remove_unlinked_property_audits_null_neighbourhood(self):
+        db = _property_service_db()
+        property_obj = _make_property_without_neighbourhood()
+
+        db.execute.side_effect = [
+            _property_service_result(scalar=property_obj),
+            _property_service_result(rows=[]),
+            Mock(),
+        ]
+
+        with patch(
+            "app.services.property_service.create_audit_log_item",
+            new=AsyncMock(),
+        ) as audit_mock:
+            await property_service_module.remove_property_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=_property_service_claims(),
+            )
+
+        property_audit = audit_mock.await_args.kwargs
+
+        assert property_audit["old_values"]["neighbourhood_id"] is None
+        db.commit.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_remove_property_rolls_back_on_integrity_error(self):
+        db = _property_service_db()
+        property_obj = _make_property()
+
+        db.execute.side_effect = [
+            _property_service_result(scalar=property_obj),
+            _property_service_result(rows=[]),
+            IntegrityError(
+                "delete property",
+                {},
+                RuntimeError("foreign key violation"),
+            ),
+        ]
+
+        with pytest.raises(HTTPException) as exc_info:
+            await property_service_module.remove_property_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=_property_service_claims(),
+            )
+
+        assert exc_info.value.status_code == 409
+        assert exc_info.value.detail == (
+            "Property could not be removed because "
+            "related records still exist."
+        )
+
+        db.commit.assert_not_awaited()
+        db.rollback.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_remove_property_rolls_back_on_unexpected_error(self):
+        db = _property_service_db()
+        db.execute.side_effect = RuntimeError(
+            "database unavailable",
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await property_service_module.remove_property_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=_property_service_claims(),
+            )
+
+        assert exc_info.value.status_code == 500
+        assert exc_info.value.detail == "Failed to remove property."
+
+        db.commit.assert_not_awaited()
+        db.rollback.assert_awaited_once()
