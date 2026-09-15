@@ -26,6 +26,7 @@ class CameraSpec:
     neighbourhood_id: str | None = None
     confidence_threshold: float = 0.5
     zones: tuple[tuple[tuple[float, float], ...], ...] = ()
+    zone_ids: tuple[str, ...] = ()
 
 
 @dataclass
@@ -131,6 +132,10 @@ class CameraSupervisor:
                 zones=tuple(
                     tuple((float(x), float(y)) for x, y in polygon)
                     for polygon in camera.get("zones", [])
+                ),
+                zone_ids=tuple(
+                    str(zone_id)
+                    for zone_id in camera.get("zone_ids", [])
                 )
             )
 
