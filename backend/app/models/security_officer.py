@@ -27,5 +27,4 @@ class SecurityOfficer(Base):
 
     __table_args__ = (
         Index("ix_security_officer_lookup", "neighbourhood_user_id", "availability_status"),
-        Index("ix_security_officer_location", "last_known_location", postgresql_using="gist"),
     )
