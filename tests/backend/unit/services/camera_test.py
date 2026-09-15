@@ -503,6 +503,7 @@ class TestEditCamera:
 
         property_id = uuid4()
         neighbourhood_id = uuid4()
+        zone_id = uuid4()
 
         camera = MagicMock()
         camera.id = uuid4()
@@ -510,8 +511,10 @@ class TestEditCamera:
         camera.enabled = True
         camera.confidence_threshold = 0.70
         camera.property = MagicMock(neighbourhood_id=neighbourhood_id)
+
         camera.detection_zones = [
             MagicMock(
+                id=zone_id,
                 polygon=[
                     [0.1, 0.1],
                     [0.5, 0.1],
@@ -548,3 +551,4 @@ class TestEditCamera:
                 [0.1, 0.5]
             ]
         ]
+        assert payload.data[0].zone_ids == [zone_id]
