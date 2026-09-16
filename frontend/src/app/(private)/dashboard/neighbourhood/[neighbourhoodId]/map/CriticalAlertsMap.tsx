@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   useEffect,
   useMemo,
@@ -9,7 +8,6 @@ import { latLngBounds } from "leaflet";
 import {
   CircleMarker,
   MapContainer,
-  Popup,
   TileLayer,
   Tooltip,
   useMap,
@@ -22,9 +20,14 @@ import type {
 
 interface CriticalAlertsMapProps {
   readonly alerts: CriticalAlertMapItem[];
+  readonly selectedPropertyId?: string | null;
+  readonly onSelectProperty: (
+    property: PropertyAlertGroup,
+  ) => void;
 }
 
-interface PropertyAlertGroup {
+
+export interface PropertyAlertGroup {
   propertyId: string;
   propertyAddress: string;
   latitude: number;
@@ -63,43 +66,6 @@ const STATUS_STYLES: Record<
     colour: "#10b981",
   },
 };
-
-function detectionLabel(
-  type: CriticalAlertMapItem["detection_type"],
-): string {
-  switch (type) {
-    case "WEAPON_DETECTED":
-      return "Weapon detected";
-    case "FALL_DETECTED":
-      return "Fall detected";
-  }
-}
-
-function statusLabel(
-  status: CriticalAlertStatus,
-): string {
-  switch (status) {
-    case "OPEN":
-      return "Open";
-    case "ACKNOWLEDGED":
-      return "Acknowledged";
-    case "RESOLVED":
-      return "Resolved";
-  }
-}
-
-function formatDateTime(value: string): string {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("en-ZA", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-}
 
 function groupAlertsByProperty(
   alerts: CriticalAlertMapItem[],
@@ -229,6 +195,8 @@ function FitPropertyBounds({
 
 export function CriticalAlertsMap({
   alerts,
+  selectedPropertyId,
+  onSelectProperty
 }: CriticalAlertsMapProps) {
   const properties = useMemo(
     () => groupAlertsByProperty(alerts),
@@ -301,164 +269,56 @@ export function CriticalAlertsMap({
 
           return (
             <CircleMarker
-              key={property.propertyId}
-              center={[
+            key={property.propertyId}
+            center={[
                 property.latitude,
                 property.longitude,
-              ]}
-              radius={markerRadius(
+            ]}
+            radius={markerRadius(
                 property.alerts.length,
-              )}
-              pathOptions={{
-                color: statusStyle.colour,
+            )}
+            pathOptions={{
+                color:
+                selectedPropertyId ===
+                property.propertyId
+                    ? "#ffffff"
+                    : statusStyle.colour,
                 fillColor: fillColour,
                 fillOpacity: 0.85,
-                weight: 4,
-                dashArray:
-                  statusStyle.dashArray,
-              }}
+                weight:
+                selectedPropertyId ===
+                property.propertyId
+                    ? 6
+                    : 4,
+                dashArray: statusStyle.dashArray,
+            }}
+            eventHandlers={{
+                click: () =>
+                onSelectProperty(property),
+            }}
             >
-              <Tooltip
+            <Tooltip
                 direction="top"
                 offset={[0, -8]}
-              >
+            >
                 <div>
-                  <strong>
+                <strong>
                     {property.propertyAddress}
-                  </strong>
+                </strong>
 
-                  <br />
+                <br />
 
-                  {property.alerts.length}{" "}
-                  {property.alerts.length === 1
-                    ? "critical alert"
-                    : "critical alerts"}
+                {property.alerts.length} critical{" "}
+                {property.alerts.length === 1
+                    ? "alert"
+                    : "alerts"}
                 </div>
-              </Tooltip>
-
-              <Popup maxWidth={380}>
-                <PropertyAlertPopup
-                  property={property}
-                />
-              </Popup>
+            </Tooltip>
             </CircleMarker>
           );
         })}
       </MapContainer>
     </section>
-  );
-}
-
-function PropertyAlertPopup({
-  property,
-}: {
-  readonly property: PropertyAlertGroup;
-}) {
-  return (
-    <div className="w-72 space-y-3">
-      <header>
-        <p className="font-semibold text-neutral-900">
-          {property.propertyAddress}
-        </p>
-
-        <p className="mt-1 text-xs text-neutral-600">
-          {property.alerts.length} critical{" "}
-          {property.alerts.length === 1
-            ? "alert"
-            : "alerts"}
-        </p>
-      </header>
-
-      <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
-        {property.alerts.map((alert) => (
-          <AlertPopupItem
-            key={alert.id}
-            alert={alert}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function AlertPopupItem({
-  alert,
-}: {
-  readonly alert: CriticalAlertMapItem;
-}) {
-  const typeColour =
-    TYPE_COLOURS[alert.detection_type];
-
-  const statusStyle =
-    STATUS_STYLES[alert.status];
-
-  const alertsPageUrl =
-    `/dashboard/neighbourhood/` +
-    `${alert.neighbourhood_id}/alerts` +
-    `?alert=${alert.id}`;
-
-  return (
-    <article className="rounded-md border border-neutral-200 bg-white p-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <span
-            aria-hidden="true"
-            className="size-2.5 shrink-0 rounded-full"
-            style={{
-              backgroundColor: typeColour,
-            }}
-          />
-
-          <p className="truncate text-xs font-semibold text-neutral-900">
-            {detectionLabel(
-              alert.detection_type,
-            )}
-          </p>
-        </div>
-
-        <span
-          className="shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium"
-          style={{
-            borderColor:
-              statusStyle.colour,
-            color: statusStyle.colour,
-          }}
-        >
-          {statusLabel(alert.status)}
-        </span>
-      </div>
-
-      <dl className="mt-2 space-y-1 text-xs text-neutral-600">
-        <div>
-          <dt className="inline font-medium text-neutral-800">
-            Camera:{" "}
-          </dt>
-
-          <dd className="inline">
-            {alert.camera_name}
-          </dd>
-        </div>
-
-        <div>
-          <dt className="inline font-medium text-neutral-800">
-            Created:{" "}
-          </dt>
-
-          <dd className="inline">
-            {formatDateTime(
-              alert.created_at,
-            )}
-          </dd>
-        </div>
-      </dl>
-
-      <Link
-        href={alertsPageUrl}
-        className="mt-3 inline-flex text-xs font-semibold text-emerald-700 underline-offset-2 hover:underline"
-      >
-        View alert
-      </Link>
-    </article>
   );
 }
 

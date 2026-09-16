@@ -9,14 +9,39 @@ import {
   RefreshCw,
   ShieldAlert,
 } from "lucide-react";
+import Link from "next/link";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useCriticalAlerts } from "@/hooks/use-critical-alerts";
 import { useUserContext } from "@/hooks/use-user-context";
+import type { PropertyAlertGroup } from "./CriticalAlertsMap";
 import type {
+  CriticalAlertStatus,
   UnlocatedCriticalAlertItem,
 } from "@/lib/validators/alert";
+import { useState, useMemo } from "react";
+
+function statusLabel(
+  status: CriticalAlertStatus,
+): string {
+  switch (status) {
+    case "OPEN":
+      return "Open";
+    case "ACKNOWLEDGED":
+      return "Acknowledged";
+    case "RESOLVED":
+      return "Resolved";
+  }
+}
+
 
 const CriticalAlertsMap = dynamic(
   () =>
@@ -60,7 +85,110 @@ function MapLoadingState() {
   );
 }
 
+function PropertyAlertsSheet({
+  property,
+  open,
+  onClose,
+}: {
+  readonly property: PropertyAlertGroup | null;
+  readonly open: boolean;
+  readonly onClose: () => void;
+}) {
+  if (!property) {
+    return null;
+  }
+
+  const visibleAlerts =
+    property.alerts.slice(0, 20);
+
+  return (
+    <Sheet
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          onClose();
+        }
+      }}
+    >
+      <SheetContent className="w-full overflow-y-auto border-border bg-brand-depth text-brand-frost sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle className="text-brand-frost">
+            {property.propertyAddress}
+          </SheetTitle>
+
+          <SheetDescription className="text-brand-ash">
+            {property.alerts.length} critical{" "}
+            {property.alerts.length === 1
+              ? "alert"
+              : "alerts"}
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="mt-6 space-y-3">
+          {visibleAlerts.map((alert) => (
+            <article
+              key={alert.id}
+              className="rounded-lg border border-border bg-brand-abyss p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-sm font-semibold">
+                  {detectionLabel(
+                    alert.detection_type,
+                  )}
+                </p>
+
+                <span className="rounded-full border border-border px-2 py-0.5 text-xs text-brand-ash">
+                  {statusLabel(alert.status)}
+                </span>
+              </div>
+
+              <p className="mt-3 text-xs text-brand-ash">
+                Camera: {alert.camera_name}
+              </p>
+
+              <p className="mt-1 text-xs text-brand-ash">
+                {formatDateTime(
+                  alert.created_at,
+                )}
+              </p>
+
+              <Link
+                href={
+                  `/dashboard/neighbourhood/` +
+                  `${alert.neighbourhood_id}/alerts` +
+                  `?alert=${alert.id}`
+                }
+                className="mt-3 inline-block text-xs font-semibold text-brand-green hover:underline"
+              >
+                View alert
+              </Link>
+            </article>
+          ))}
+        </div>
+
+        {property.alerts.length > 20 && (
+          <div className="mt-5 border-t border-border pt-4">
+            <Link
+              href={
+                `/dashboard/neighbourhood/` +
+                `${property.alerts[0].neighbourhood_id}/alerts`
+              }
+              className="text-sm font-semibold text-brand-green hover:underline"
+            >
+              View all {property.alerts.length} alerts
+            </Link>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+
 export default function NeighbourhoodAlertMapPage() {
+
+  const [ selectedProperty, setSelectedProperty] = useState<PropertyAlertGroup | null>(null);
+
   const { neighbourhoodId } = useParams<{
     neighbourhoodId: string;
   }>();
@@ -213,8 +341,21 @@ export default function NeighbourhoodAlertMapPage() {
         ) : (
           <CriticalAlertsMap
             alerts={mappedAlerts}
-          />
+            selectedPropertyId={
+                selectedProperty?.propertyId ?? null
+            }
+            onSelectProperty={setSelectedProperty}
+        />
+
         )}
+
+        <PropertyAlertsSheet
+            property={selectedProperty}
+            open={selectedProperty !== null}
+            onClose={() => setSelectedProperty(null)}
+        />
+
+        
 
         <UnlocatedAlerts
           alerts={unlocatedAlerts}
