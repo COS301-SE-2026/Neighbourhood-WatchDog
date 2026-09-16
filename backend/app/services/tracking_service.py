@@ -9,7 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.alert import Alert
 from app.models.tracking import TrackingSighting, TrackingSubject
-
+from app.models.camera import Camera
+from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
+from app.models.property import Property
+from app.schemas.tracking import TrackingSightingResponse, TrackingTimelineData, TrackingTimelineResponse
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +90,19 @@ async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUI
         await db.commit()
         await db.refresh(sighting)
 
+        logger.info(
+            "Recorded tracking sighting: subject=%s camera=%s "
+            "local_track_id=%s sequence=%s",
+            tracking_subject.id,
+            camera_id,
+            local_track_id,
+            next_sequence
+             
+        )
 
+
+
+        return sighting
 
     except HTTPException:
         raise
@@ -128,3 +143,23 @@ async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUI
             detail="Failed to record tracking sighting"
         ) from exc
 
+
+##authorization check - decide if a user can view a tracking timeline for a neighbourhhod
+async def _require_tracking_timeline_access(*, db: AsyncSession, claims: dict, neighbourhood_id: UUID) -> None:
+    """only security, neighbourhood admins, and systems admins can see the tracking timeline"""
+
+
+    if claims.get("custom:role") == "SYSTEM_ADMIN":
+        return
+
+    try:
+        user_id = UUID(claims["id"])
+
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(
+            status_code=401, 
+            detail="Not authenticated" 
+
+        ) from exc
+
+    
