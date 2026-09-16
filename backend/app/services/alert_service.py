@@ -328,6 +328,7 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
             select(Alert)
             .options(joinedload(Alert.camera).joinedload(Camera.property))
             .where(Alert.id == alert_id)
+            .with_for_update(of=Alert)
         )
         row = result.unique().scalar_one_or_none()
 

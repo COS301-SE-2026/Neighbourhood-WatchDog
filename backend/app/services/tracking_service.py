@@ -25,3 +25,45 @@ async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUI
             status_code=422, 
             detail="match confidence must be between 0 and 1" 
         )
+
+
+    if local_track_id < 0:
+        raise HTTPException(
+            status_code=422, 
+            detail="local track id cannot be negative"
+        )
+
+
+    try:
+        subject_stmt = (
+            select(TrackingSubject, Alert)
+            .join(Alert, Alert.id == TrackingSubject.alert_id)
+            .where(TrackingSubject.id == tracking_subject_id)
+            .with_for_update() ##this locks the trackingsubject row while the transaction is running
+                                                # ensures that tracking updates for the same subject are handled sequentially
+
+            )      
+
+        subject_result = await db.execute(subject_stmt)
+        row = subject_result.one_or_none()
+
+        if row is None:
+            raise HTTPException(
+                status_code=404, 
+                detail="Tracking subject and related Alert not found"
+
+            )
+
+        tracking_subject, parent_alert = row
+
+        if parent_alert.status != "OPEN": # only an OPEN alert can recieve new sightings
+            raise HTTPException(
+                status_code=409, 
+                detail="Tracking sequence has already terminated"
+            )
+
+        
+    
+    except HTTPException:
+        raise
+
