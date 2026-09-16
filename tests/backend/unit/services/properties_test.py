@@ -15,6 +15,7 @@ from app.services import property_service as property_service_module
 from app.services.property_service import (
     create_property_handler,
     get_user_properties_handler,
+    get_property_resident_context_handler
 )
 
 @pytest.fixture(autouse=True)
@@ -1302,3 +1303,45 @@ class TestRemoveProperty:
 
         db.commit.assert_not_awaited()
         db.rollback.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_get_property_resident_context_returns_property_and_residents():
+        db = _property_service_db()
+
+        property_obj = _make_property()
+        owner = _make_user()
+        resident = _make_user(
+            user_id=INVITED_USER_ID,
+            email="resident@example.com",
+            first_name="Resident",
+            last_name="User",
+            cognito_sub="resident-cognito-sub",
+        )
+
+        db.execute.side_effect = [
+            _property_service_result(scalar=property_obj),
+            _property_service_result(
+                rows=[
+                    (owner, True),
+                    (resident, False),
+                ]
+            ),
+        ]
+
+        response = await property_service_module.get_property_resident_context_handler(
+            property_id=PROPERTY_ID,
+            db=db,
+            claims={"sub": "security-officer-sub"},
+        )
+
+        assert response.property_id == PROPERTY_ID
+        assert response.address == "123 Test Street"
+        assert response.neighbourhood_id == NEIGHBOURHOOD_ID
+        assert len(response.residents) == 2
+
+        assert response.residents[0].user_id == USER_ID
+        assert response.residents[0].is_admin is True
+
+        assert response.residents[1].user_id == INVITED_USER_ID
+        assert response.residents[1].email == "resident@example.com"
+        assert response.residents[1].is_admin is False

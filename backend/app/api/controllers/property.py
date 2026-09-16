@@ -100,7 +100,7 @@ async def get_property_details(
     """Fetch property details including users, neighbourhood, and cameras"""
     return await get_property_details_handler(property_id, db, claims)
 
-@router.get("/{property_id}/members", response_model=PropertyMembers)
+@router.get("/{property_id}/members", response_model=PropertyMembers) #Property members UI
 async def get_property_members(
     property_id: UUID,
     db: DbSession,
@@ -110,7 +110,7 @@ async def get_property_members(
 
     return await get_property_members_handler(property_id, db, claims)
 
-@router.get(
+@router.get(#authorised alert/property context
     "/{property_id}/residents",
     response_model=PropertyResidentContextRes,
     responses={
