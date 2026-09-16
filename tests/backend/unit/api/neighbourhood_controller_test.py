@@ -336,3 +336,25 @@ async def test_update_security_availability_delegates_and_returns_response():
         db=DB,
         claims=CLAIMS,
     )
+
+@pytest.mark.asyncio
+async def test_update_security_availability_never_takes_officer_id():
+    """Endpoint does not have an officer id field in its schema"""
+    payload = UpdateSecurityAvailabilityReq(
+            neighbourhood_id=NEIGHBOURHOOD_ID,
+            new_availability=AvailabilityStatus.AVAILABLE,
+        )
+    assert not hasattr(payload, "officer_id")
+    assert not hasattr(payload, "user_id")
+
+    with patch(
+        "app.api.controllers.neighbourhood.update_security_availability_handler",
+        new=AsyncMock(return_value=UpdateSecurityAvailabilityRes(status=200, message="ok",)
+        ),
+    ) as handler:
+        await update_security_availability(payload, DB, CLAIMS)
+
+    _, kwargs = handler.await_args
+    assert set(kwargs.keys()) == {"neighbourhood_id", "new_availability", "db", "claims"}
+    assert kwargs["claims"] is CLAIMS
+    
