@@ -62,7 +62,13 @@ async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUI
                 detail="Tracking sequence has already terminated"
             )
 
-        
+
+        #calculating the next sequence number
+        next_sequence_stmt = select(
+            func.coalesce(func.max(TrackingSighting.sequence_no), 0) + 1 #finds the highest sequence number for the subject and adds 1
+        ).where(
+            TrackingSighting.tracking_subject_id == tracking_subject_id
+        )
     
     except HTTPException:
         raise
