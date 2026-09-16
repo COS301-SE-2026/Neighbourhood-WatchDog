@@ -162,4 +162,20 @@ async def _require_tracking_timeline_access(*, db: AsyncSession, claims: dict, n
 
         ) from exc
 
-    
+
+    result = await db.execute(
+        select(NeighbourhoodUser).where(
+            NeighbourhoodUser.user_id == user_id, NeighbourhoodUser.neighbourhood_id == neighbourhood_id, NeighbourhoodUser.role.in_(
+                {NeighbourhoodRole.SECURITY_OFFICER, NeighbourhoodRole.NEIGHBOURHOOD_ADMIN}
+            )
+        )
+    )
+
+
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(
+            status_code=403, 
+            detail="Only authorized officers can view tracking timelines" 
+
+            
+        )
