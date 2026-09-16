@@ -131,8 +131,9 @@ async def get_property_resident_context(
     """
     Return resident context for a property associated with an alert.
 
-    Access is restricted by the property resident-context authorization
-    dependency.
+    Access is limited to system administrators, neighbourhood
+    administrators, and security officers who are authorised in the
+    property's neighbourhood.
     """
 
     return await get_property_resident_context_handler(

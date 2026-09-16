@@ -511,35 +511,6 @@ async def test_property_resident_context_allows_system_admin():
     db.execute.assert_awaited_once()
 
 @pytest.mark.asyncio
-async def test_property_resident_context_allows_property_admin(monkeypatch):
-    checker = authorization.require_property_resident_context()
-
-    property_obj = MagicMock()
-    property_obj.neighbourhood_id = NEIGHBOURHOOD_ID
-
-    property_admin_check = AsyncMock(return_value=True)
-    monkeypatch.setattr(
-        authorization,
-        "is_property_admin",
-        property_admin_check,
-    )
-
-    db = make_db(db_result(property_obj))
-
-    result = await checker(
-        PROPERTY_ID,
-        db,
-        CLAIMS,
-    )
-
-    assert result == CLAIMS
-    property_admin_check.assert_awaited_once_with(
-        PROPERTY_ID,
-        CLAIMS,
-        db,
-    )
-
-@pytest.mark.asyncio
 async def test_property_resident_context_rejects_property_without_neighbourhood(
     monkeypatch,
 ):

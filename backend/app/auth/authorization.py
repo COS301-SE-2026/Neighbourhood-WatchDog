@@ -421,15 +421,14 @@ def require_neighbourhood_authorization(
 
 def require_property_resident_context():
     """
-    Allow authorised users to view resident context for a property.
-
     Access is granted to:
     - system administrators;
-    - property administrators for the requested property;
     - neighbourhood administrators in the property's neighbourhood;
     - security officers in the property's neighbourhood.
 
-    Ordinary residents and users from other neighbourhoods are denied.
+    Property administration alone does not grant access to this context.
+    A property administrator must also have an authorised role in the
+    property's neighbourhood.
     """
 
     async def checker(
@@ -454,10 +453,6 @@ def require_property_resident_context():
         current_role = claims.get(CUSTOM_ROLE_CLAIM)
 
         if current_role == "SYSTEM_ADMIN":
-            return claims
-
-        # A property administrator may view residents for their own property.
-        if await is_property_admin(property_id, claims, db):
             return claims
 
         # Neighbourhood-scoped access requires the property to belong to a
