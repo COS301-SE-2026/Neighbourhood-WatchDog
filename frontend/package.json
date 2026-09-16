@@ -11,10 +11,13 @@
     "test": "jest --passWithNoTests"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/geolocation": "^8.2.2",
     "@serwist/next": "^9.5.12",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-table": "^8.21.3",
     "amazon-cognito-identity-js": "^6.3.16",
+    "capacitor-native-settings": "^8.2.0",
     "chart.js": "^4.5.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -37,6 +40,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6",
     "@testing-library/react": "^16",
