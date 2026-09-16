@@ -179,3 +179,11 @@ class TestUpdateSecurityAvailabilityReq:
                 neighbourhood_id="not-a-uuid",
                 new_availability=AvailabilityStatus.AVAILABLE,
             )
+
+    def test_invalid_availability_value(self):
+        "Test invalid availability raises"
+        with pytest.raises(ValidationError):
+            UpdateSecurityAvailabilityReq(
+                neighbourhood_id=uuid4(),
+                new_availability="ON_A_BREAK",
+            )
