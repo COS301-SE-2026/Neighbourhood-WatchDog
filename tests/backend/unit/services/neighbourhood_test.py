@@ -1349,3 +1349,31 @@ async def test_update_availability_rolls_back_on_integrity_error():
     assert exc_info.value.status_code == 500
     assert exc_info.value.detail == "Failed to update availability status"
     mock_db.rollback.assert_awaited_once()
+
+@pytest.mark.asyncio
+async def test_update_availability_handles_unexpected_error():
+    officer_user_id, neighbourhood_id, membership, officer = _availability_test_context()
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            make_scalar_result(membership), 
+            make_scalar_result(officer),
+        ]
+    )
+    mock_db.commit = AsyncMock(
+        side_effect=RuntimeError("database unavailable")
+    )
+    mock_db.rollback = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+            await update_security_availability_handler(
+                neighbourhood_id=neighbourhood_id,
+                new_availability=AvailabilityStatus.AVAILABLE,
+                db=mock_db,
+                claims={"id": str(officer_user_id)},
+            )
+
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.detail == "Failed to update availability status"
+    mock_db.rollback.assert_awaited_once()
