@@ -187,3 +187,11 @@ class TestUpdateSecurityAvailabilityReq:
                 neighbourhood_id=uuid4(),
                 new_availability="ON_A_BREAK",
             )
+
+    def test_none_availability_value(self):
+        "Test None is rejected"
+        with pytest.raises(ValidationError):
+            UpdateSecurityAvailabilityReq(
+                neighbourhood_id=uuid4(),
+                new_availability=None,
+            )
