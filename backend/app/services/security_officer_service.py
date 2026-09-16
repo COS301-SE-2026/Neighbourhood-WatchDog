@@ -33,15 +33,21 @@ async def update_location_handler(
         raise HTTPException(401, "Not authenticated")
     
     stmt = (
-        select(SecurityOfficer)
+        select(SecurityOfficer) # this is what deals with the validation ensuring that the person is an officer
         .join(NeighbourhoodUser)
         .join(User)
-        .where(User.cognito_sub == claims.sub)
+        .where(User.cognito_sub == claims['sub'])
         .where(NeighbourhoodUser.neighbourhood_id == neighbourhood_id)
     )
     result = await db.execute(stmt)
     officer_obj = result.scalars().first() 
 
+    print(officer_obj.last_known_location)
+
+    if officer_obj is None:
+        logger.warning("update_location_handler Security officer not found. Failed for user with claim, claims=%s", claims)
+        raise HTTPException(404, "Security officer not found")
+    
     try:
         officer_obj.last_known_location = WKTElement(f"POINT({long} {lat})", srid=4326)
         officer_obj.location_updated_at = datetime.now(datetime.timezone.utc)
@@ -52,6 +58,7 @@ async def update_location_handler(
         logger.warning("update_location_handler failed for officer with claim, claims=%s", claims)
         raise HTTPException(500, "Failed to update security officer's location")
 
+    logger.info("update_location_handler successfully updated the officer with claim, claims=%s's ", claims)
     return UpdateOfficerLocationRes(
         status=200,
         message="Successfully updated security officer's location",
