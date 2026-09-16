@@ -1305,7 +1305,7 @@ class TestRemoveProperty:
         db.rollback.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_get_property_resident_context_returns_property_and_residents():
+    async def test_get_property_resident_context_returns_property_and_residents(self):
         db = _property_service_db()
 
         property_obj = _make_property()
