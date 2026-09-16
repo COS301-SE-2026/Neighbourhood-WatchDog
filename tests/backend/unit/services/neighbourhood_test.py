@@ -1292,3 +1292,33 @@ async def test_update_availability_updates_and_commits():
     assert audit_kwargs["target_entity_id"] == officer.id
     assert audit_kwargs["old_values"] == {"availability_status": "UNAVAILABLE"}
     assert audit_kwargs["new_values"] == {"availability_status": "AVAILABLE"}
+
+@pytest.mark.asyncio
+async def test_update_availability_short_circuits_when_unchanged():
+    officer_user_id, neighbourhood_id, membership, officer = _availability_test_context()
+
+    officer.availability_status = AvailabilityStatus.AVAILABLE
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            make_scalar_result(membership), 
+            make_scalar_result(officer),
+        ]
+    )
+    mock_db.commit = AsyncMock()
+
+    with patch(AUDIT_PATCH, new=AsyncMock()) as audit_mock:
+            response = await update_security_availability_handler(
+                neighbourhood_id=neighbourhood_id,
+                new_availability=AvailabilityStatus.AVAILABLE,
+                db=mock_db,
+                claims={"id": str(officer_user_id)},
+            )
+
+    assert response.status == 200
+    assert response.message == "Availability status unchanged"
+
+    mock_db.commit.assert_not_awaited()
+    audit_mock.assert_not_awaited()
+    
