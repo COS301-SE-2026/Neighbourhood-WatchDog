@@ -1174,3 +1174,19 @@ def _availability_test_context(role=NeighbourhoodRole.SECURITY_OFFICER):
     )
 
     return officer_user_id, neighbourhood_id, membership, officer
+
+@pytest.mark.asyncio
+async def test_update_availability_requires_claims():
+    mock_db = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await update_security_availability_handler(
+            neighbourhood_id=uuid4(),
+            new_availability=AvailabilityStatus.AVAILABLE,
+            db=mock_db,
+            claims=None,
+        )
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Not authenticated"
+    mock_db.execute.assert_not_awaited()
