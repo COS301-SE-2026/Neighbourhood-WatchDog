@@ -1,4 +1,5 @@
 import pytest
+import inspect
 from fastapi import HTTPException
 from unittest.mock import MagicMock, Mock, AsyncMock, patch
 from app.models.audit_log import TargetEntity
@@ -1377,3 +1378,9 @@ async def test_update_availability_handles_unexpected_error():
     assert exc_info.value.status_code == 500
     assert exc_info.value.detail == "Failed to update availability status"
     mock_db.rollback.assert_awaited_once()
+
+@pytest.mark.asyncio
+async def test_update_availability_handler_has_no_target_user_params():
+    """Scoped to authenticated user only, there is no param for targeting another user"""
+    params = set(inspect.signature(update_security_availability_handler).parameters)
+    assert params == {"neighbourhood_id", "new_availability", "db", "claims"}
