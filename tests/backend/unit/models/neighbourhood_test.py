@@ -157,3 +157,10 @@ class TestUpdateSecurityAvailabilityReq:
             )
 
         assert req.new_availability == AvailabilityStatus.BUSY
+
+    def test_missing_neighbourhood_id_raises(self):
+        """Test missing neighbourhood id raises validationError"""
+        with pytest.raises(ValidationError):
+            UpdateSecurityAvailabilityReq(
+                new_availability=AvailabilityStatus.AVAILABLE,
+            )
