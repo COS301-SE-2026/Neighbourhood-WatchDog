@@ -26,6 +26,14 @@ export const CriticalAlertStatusSchema = z.enum([
   "RESOLVED"
 ]);
 
+const DatabaseUuidSchema = z
+  .string()
+  .regex(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    "Invalid UUID format",
+  );
+
+
 
 export const NumberInPeriod = z.object({
     period: z.coerce.date().array(),
@@ -39,14 +47,14 @@ export const AlertFrequencyMetricsRes = z.object({
 })
 
 export const CriticalAlertBaseSchema = z.object({
-  id: z.uuid(),
-  camera_id: z.uuid(),
+  id: DatabaseUuidSchema,
+  camera_id: DatabaseUuidSchema,
   camera_name: z.string(),
-  neighbourhood_id: z.uuid(),
+  neighbourhood_id: DatabaseUuidSchema,
   detection_type: CriticalDetectionTypeSchema,
   status: CriticalAlertStatusSchema,
   created_at: z.string().datetime({ offset: true }),
-  property_id: z.uuid(),
+  property_id: DatabaseUuidSchema,
   property_address: z.string(),
   thumbnail_url: z.string().nullable().optional()
 });

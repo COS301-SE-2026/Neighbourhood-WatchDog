@@ -117,6 +117,112 @@ export default function NeighbourhoodAlertMapPage() {
       </main>
     );
   }
+
+  return (
+    <main className="min-h-full bg-brand-void px-6 py-8 text-brand-frost md:px-8">
+      <div className="w-full max-w-6xl">
+        <header className="mb-6 flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="size-5 text-brand-threat" />
+
+              <h1 className="text-2xl font-semibold tracking-tight">
+                Critical alert map
+              </h1>
+            </div>
+
+            <p className="mt-2 text-sm text-brand-ash">
+              Monitor weapon and fall detections
+              throughout your neighbourhood.
+            </p>
+
+            {lastUpdated && (
+              <p className="mt-2 flex items-center gap-1.5 text-xs text-brand-ash">
+                <Clock className="size-3.5" />
+                Last updated{" "}
+                {formatDateTime(lastUpdated)}
+              </p>
+            )}
+          </div>
+
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={loading}
+            onClick={() => void refetch()}
+            className="border-border bg-transparent text-brand-green hover:bg-brand-slate hover:text-brand-frost"
+          >
+            <RefreshCw
+              className={`mr-1.5 size-3.5 ${
+                loading ? "animate-spin" : ""
+              }`}
+            />
+            Refresh
+          </Button>
+        </header>
+
+        {error && (
+          <div
+            role="alert"
+            className="mb-5 flex items-start gap-3 rounded-lg border border-brand-threat/30 bg-brand-threat/10 px-4 py-3"
+          >
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-brand-threat" />
+
+            <div>
+              <p className="text-sm font-medium text-brand-threat">
+                Unable to refresh map
+              </p>
+
+              <p className="mt-1 text-xs text-brand-ash">
+                {mappedAlerts.length > 0
+                  ? "Showing the most recently loaded alerts."
+                  : error}
+              </p>
+            </div>
+          </div>
+        )}
+
+        <section className="mb-5 grid gap-3 sm:grid-cols-3">
+          <SummaryCard
+            label="Mapped alerts"
+            value={mappedAlerts.length}
+            colour="text-brand-frost"
+          />
+
+          <SummaryCard
+            label="Open alerts"
+            value={
+              mappedAlerts.filter(
+                (alert) =>
+                  alert.status === "OPEN",
+              ).length
+            }
+            colour="text-brand-threat"
+          />
+
+          <SummaryCard
+            label="Missing coordinates"
+            value={unlocatedAlerts.length}
+            colour="text-brand-caution"
+          />
+        </section>
+
+        {loading && mappedAlerts.length === 0 ? (
+          <MapLoadingState />
+        ) : (
+          <CriticalAlertsMap
+            alerts={mappedAlerts}
+          />
+        )}
+
+        <UnlocatedAlerts
+          alerts={unlocatedAlerts}
+        />
+      </div>
+    </main>
+  );
+
 }
 
 function SummaryCard({
