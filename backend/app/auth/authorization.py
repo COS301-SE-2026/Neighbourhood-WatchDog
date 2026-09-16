@@ -516,4 +516,5 @@ CameraAdminAndNeighbourhoodAdminClaims = Annotated[dict, Depends(require_camera_
 NeighbourhoodMemberClaims = Annotated[dict, Depends(require_neighbourhood_member())]
 NeighbourhoodAdminClaims = Annotated[dict, Depends(require_neighbourhood_authorization("NEIGHBOURHOOD_ADMIN", "SYSTEM_ADMIN"))]
 SystemAdminClaims = Annotated[dict, Depends(require_role("SYSTEM_ADMIN"))]
+PropertyResidentContextClaims = Annotated[dict, Depends(require_property_resident_context())]
 # EdgeAgentClaims = Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)]
