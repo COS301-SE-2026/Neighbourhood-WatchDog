@@ -27,7 +27,6 @@ from app.models.property_user import PropertyUser
 from app.schemas.alert import (
     AlertClipUpdateRes,
     CreateInternalAlertRequest,
-    CriticalAlertMapData,
     InternalAlertCreateRes,
     UnlocatedCriticalAlertsData,
     UpdateAlertClipRequest,
@@ -340,10 +339,7 @@ def _build_alert_res(alert: Alert) -> AlertRes:
     )
 
 def _is_critical_alert(alert: Alert) -> bool:
-    return alert.detection_type in {
-        DetectionType.WEAPON_DETECTED,
-        DetectionType.FALL_DETECTED,
-    }
+    return alert.detection_type in CRITICAL_DETECTION_TYPES
 
 
 def _can_acknowledge_alert(
@@ -1372,7 +1368,7 @@ async def get_critical_alerts_map_handler(
     neighbourhood_id: UUID,
     db: DbSession,
     claims: dict,
-) -> CriticalAlertsMapData:
+) -> CriticalAlertMapData:
     """Return critical alerts for a security officer's neighbourhood."""
 
     if not claims:
@@ -1441,10 +1437,16 @@ async def get_unlocated_critical_alerts_handler(
     """Return critical alerts missing one or both coordinates."""
 
     if not claims:
-            raise HTTPException(status_code=401, detail=NOT_AUTHENTICATED)
+        raise HTTPException(status_code=401, detail=NOT_AUTHENTICATED)
     
     if not db:
         raise HTTPException(status_code=500, detail=NO_DATABASE_SESSION)
+
+    neighbourhood_result = await db.execute(select(Neighbourhood).where(Neighbourhood.id == neighbourhood_id))
+    neighbourhood = neighbourhood_result.scalar_one_or_none()
+
+    if not neighbourhood:
+        raise HTTPException(status_code=404, detail="Neighbourhood not found")
 
     stmt = (
         _critical_neighbourhood_alerts_stmt(neighbourhood_id)

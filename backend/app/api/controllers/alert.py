@@ -18,13 +18,14 @@ from app.schemas.alert import (
     AlertMetricsRes,
     AlertResponse,
     BroadcastAlertReq,
-    CriticalAlertsMapRes,
+    CriticalAlertMapRes,
     ListAlertsRes,
     Pagination,
     TimeIntervalsEnum,
     TimePeriod,
     TrendGroupBy,
     TrendResponse,
+    UnlocatedCriticalAlertsRes,
 )
 from app.services import alert_service
 from app.services.alert_service import (
@@ -36,6 +37,7 @@ from app.services.alert_service import (
     get_critical_alerts_map_handler,
     get_response_metrics_handler,
     get_trends_handler,
+    get_unlocated_critical_alerts_handler,
     list_alerts_handler,
     list_property_alerts_handler,
 )
@@ -286,30 +288,62 @@ async def broadcast_neighbourhood_alert(
 
     await broadcast_neighbourhood_alert_service(req.alert_id, db, claims)
 
+
 @router.get(
     "/neighbourhoods/{neighbourhood_id}/critical/map",
-    response_model=CriticalAlertsMapRes,
-    summary="List critical alerts for a security officer's neighbourhood",
+    response_model=CriticalAlertMapRes,
+    summary="List mapped critical alerts for a neighbourhood",
     responses={
         401: {"description": "Not authenticated"},
-        403: {"description": "User is not a security officer in this neighbourhood"},
-        404: {"description": "Neighbourhood not found"},
+        403: {
+            "description":
+                "User is not a security officer in this neighbourhood"
+        }
     },
 )
 async def get_critical_alerts_map(
     neighbourhood_id: UUID,
     db: DbSession,
     claims: SecurityOfficerClaims,
-) -> CriticalAlertsMapRes:
-    alerts = await get_critical_alerts_map_handler(
+) -> CriticalAlertMapRes:
+    data = await get_critical_alerts_map_handler(
         neighbourhood_id=neighbourhood_id,
         db=db,
         claims=claims,
     )
 
-    return CriticalAlertsMapRes(
+    return CriticalAlertMapRes(
         status=200,
-        data=alerts,
+        message="Mapped critical alerts retrieved successfully",
+        data=data,
     )
 
-                                                                                                  
+
+@router.get(
+    "/neighbourhoods/{neighbourhood_id}/critical/unlocated",
+    response_model=UnlocatedCriticalAlertsRes,
+    summary="List critical alerts missing coordinates",
+    responses={
+        401: {"description": "Not authenticated"},
+        403: {
+            "description":
+                "User is not a security officer in this neighbourhood"
+        }
+    },
+)
+async def get_unlocated_critical_alerts(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: SecurityOfficerClaims,
+) -> UnlocatedCriticalAlertsRes:
+    data = await get_unlocated_critical_alerts_handler(
+        neighbourhood_id=neighbourhood_id,
+        db=db,
+        claims=claims,
+    )
+
+    return UnlocatedCriticalAlertsRes(
+        status=200,
+        message="Unlocated critical alerts retrieved successfully",
+        data=data,
+    )
