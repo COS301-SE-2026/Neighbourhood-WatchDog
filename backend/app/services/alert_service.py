@@ -1331,6 +1331,13 @@ async def get_critical_alerts_map_handler(
     if not db:
         raise HTTPException(status_code=500, detail=NO_DATABASE_SESSION)
 
+    neighbourhood_result = await db.execute(select(Neighbourhood).where(Neighbourhood.id == neighbourhood_id))
+    neighbourhood = neighbourhood_result.scalar_one_or_none()
+
+    if not neighbourhood:
+        raise HTTPException(status_code=404, detail="Neighbourhood not found")
+
+    
     stmt = (
         select(Alert, Camera, Property)
         .join(
@@ -1347,3 +1354,58 @@ async def get_critical_alerts_map_handler(
         )
         .order_by(Alert.created_at.desc())
     )
+
+    try:
+        result = await db.execute(stmt)
+        rows = result.all()
+
+        mapped_alerts: list[CriticalAlertMapItem] = []
+        alerts_without_coordinates: list[CriticalAlertMapItem] = []
+
+        for alert, camera, property_obj in rows:
+            item = CriticalAlertMapItem(
+                id=alert.id,
+                camera_id=camera.id,
+                camera_name=camera.name,
+                neighbourhood_id=property_obj.neighbourhood_id,
+                detection_type=(
+                    alert.detection_type.value
+                    if hasattr(alert.detection_type, "value")
+                    else str(alert.detection_type)
+                ),
+                status=alert.status,
+                created_at=alert.created_at,
+                property_id=property_obj.id,
+                property_address=property_obj.address,
+                latitude=property_obj.latitude,
+                longitude=property_obj.longitude,
+                thumbnail_url=alert.thumbnail_url,
+            )
+
+            if (
+                property_obj.latitude is not None
+                and property_obj.longitude is not None
+            ):
+                mapped_alerts.append(item)
+            else:
+                alerts_without_coordinates.append(item)
+
+        return CriticalAlertsMapData(
+            mapped_alerts=mapped_alerts,
+            alerts_without_coordinates=alerts_without_coordinates,
+            last_updated=datetime.now(timezone.utc),
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as error:
+        logger.exception(
+            "Failed to retrieve critical alerts for neighbourhood_id=%s",
+            neighbourhood_id,
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to retrieve critical alerts",
+        ) from error
