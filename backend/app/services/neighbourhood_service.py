@@ -559,14 +559,16 @@ async def update_security_availability_handler(
         if old_status == new_availability:
             return UpdateSecurityAvailabilityRes(
                 status=200,
-                message="Availabilty status unchanged"
+                message="Availability status unchanged"
             )
+
+        officer.availability_status = new_availability
 
         await create_audit_log_item(
             db=db,
             user_id=current_user_id,
             action=AuditAction.UPDATE,
-            target_entity_type=TargetEntity.SECURITY_OFFICER,
+            target_entity_type=TargetEntity.SECURITYOFFICER,
             target_entity_id=officer.id,
             old_values={
                 "availability_status": old_status.value if old_status else None
@@ -591,13 +593,13 @@ async def update_security_availability_handler(
         await db.rollback()
         raise HTTPException(
             status_code=500,
-            detail="Failed to update availabilty status"
+            detail="Failed to update availability status"
         )
 
     except Exception:
         await db.rollback()
         raise HTTPException(
             status_code=500,
-            detail="Failed to update availabilty status"
+            detail="Failed to update availability status"
         )
         

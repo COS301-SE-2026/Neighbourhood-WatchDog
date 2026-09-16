@@ -1282,7 +1282,7 @@ async def test_update_availability_updates_and_commits():
 
     assert response.status == 200
     assert response.message == "Availability status updated successfully"
-    assert officer.availability_status == AvailabilityStatus.AVAILANLE
+    assert officer.availability_status == AvailabilityStatus.AVAILABLE
 
     mock_db.commit.assert_awaited_once()
     mock_db.rollback.assert_not_awaited()
