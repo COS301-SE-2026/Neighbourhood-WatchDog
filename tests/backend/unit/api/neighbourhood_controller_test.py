@@ -10,8 +10,10 @@ from app.api.controllers.neighbourhood import (
     get_neighbourhood_members,
     get_neighbourhood_properties,
     update_neighbourhood_member_role,
+    update_security_availability,
 )
 from app.models.neighbourhood_user import NeighbourhoodRole
+from app.models.security_officer import AvailabilityStatus
 from app.schemas.neighbourhood import (
     CreateNeighbourhoodReq,
     NeighbourhoodMemberRes,
@@ -19,6 +21,8 @@ from app.schemas.neighbourhood import (
     NeighbourhoodRes,
     UpdateMemberRoleReq,
     UpdateMemberRoleRes,
+    UpdateSecurityAvailabilityReq,
+    UpdateSecurityAvailabilityRes,
 )
 
 
@@ -304,6 +308,31 @@ async def test_update_neighbourhood_member_role_propagates_service_error():
         neighbourhood_id=NEIGHBOURHOOD_ID,
         member_user_id=MEMBER_USER_ID,
         new_role=payload.role,
+        db=DB,
+        claims=CLAIMS,
+    )
+
+@pytest.mark.asyncio
+async def test_update_security_availability_delegates_and_returns_response():
+    payload = UpdateSecurityAvailabilityReq(
+        neighbourhood_id=NEIGHBOURHOOD_ID,
+        new_availability=AvailabilityStatus.BUSY,
+    )
+    expected = UpdateSecurityAvailabilityRes(
+        status=200,
+        message="Availability status updated successfully",
+    )
+
+    with patch(
+        "app.api.controllers.neighbourhood.update_security_availability_handler",
+        new=AsyncMock(return_value=expected),
+    ) as handler:
+        response = await update_security_availability(payload, DB, CLAIMS)
+
+    assert response is expected
+    handler.assert_awaited_once_with(
+        neighbourhood_id=payload.neighbourhood_id,
+        new_availability=payload.new_availability,
         db=DB,
         claims=CLAIMS,
     )
