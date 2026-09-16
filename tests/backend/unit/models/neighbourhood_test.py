@@ -211,3 +211,10 @@ class TestUpdateSecurityAvailabilityRes:
         model = UpdateSecurityAvailabilityRes(status=200)
         assert model.status == 200
         assert model.message is None
+
+    def test_missing_status(self):
+        """Test that missing status raises error"""
+        with pytest.raises(ValidationError):
+            UpdateSecurityAvailabilityRes(
+                 message="Availability status updated sucessfully"
+            )
