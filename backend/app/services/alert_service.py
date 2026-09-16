@@ -10,6 +10,7 @@ from dateutil.relativedelta import relativedelta
 
 from fastapi import HTTPException, UploadFile
 from uuid import UUID
+from app.core.database import DbSession, get_db
 
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
@@ -1310,3 +1311,9 @@ async def _read_clip_with_limit(
 
     return b"".join(chunks)
 
+async def get_critical_alerts_map_handler(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: dict
+):
+    pass

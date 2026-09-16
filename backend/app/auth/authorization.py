@@ -419,6 +419,38 @@ def require_neighbourhood_authorization(
 
     return checker
 
+def require_security_officer():
+    async def checker(
+        neighbourhood_id: UUID,
+        db: DbSession,
+        claims: Annotated[dict, Depends(get_current_user)],
+    ) -> dict:
+        result = await db.execute(
+            select(NeighbourhoodUser)
+            .join(NeighbourhoodUser.user)
+            .where(
+                NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+                NeighbourhoodUser.role == NeighbourhoodRole.SECURITY_OFFICER,
+                User.cognito_sub == claims.get("sub"),
+            )
+        )
+
+        membership = result.scalar_one_or_none()
+
+        if membership is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "You are not a security officer "
+                    "in this neighbourhood"
+                ),
+            )
+
+        return claims
+
+    return checker
+
+
 #These Aliases will make it easier to read the code in the controllers
 Claims = Annotated[dict, Depends(get_current_user)]#Use this role if you need an endpoint to be accessible by any authenticated user, regardless of their role.
 PropertyAdminClaims = Annotated[dict, Depends(require_property_authorization("PROPERTY_ADMIN", "SYSTEM_ADMIN"))]
@@ -428,4 +460,6 @@ CameraAdminAndNeighbourhoodAdminClaims = Annotated[dict, Depends(require_camera_
 NeighbourhoodMemberClaims = Annotated[dict, Depends(require_neighbourhood_member())]
 NeighbourhoodAdminClaims = Annotated[dict, Depends(require_neighbourhood_authorization("NEIGHBOURHOOD_ADMIN", "SYSTEM_ADMIN"))]
 SystemAdminClaims = Annotated[dict, Depends(require_role("SYSTEM_ADMIN"))]
+SecurityOfficerClaims = Annotated[dict, Depends(require_security_officer())]
+
 # EdgeAgentClaims = Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)]

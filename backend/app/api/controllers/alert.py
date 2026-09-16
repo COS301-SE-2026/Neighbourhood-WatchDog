@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, WebSocket
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.authorization import Claims, NeighbourhoodMemberClaims
+from app.auth.authorization import Claims, NeighbourhoodMemberClaims, SecurityOfficerClaims
 from app.auth.dependencies import get_authenticated_edge_agent
 from app.core.database import DbSession, get_db
 from app.models.edge_agent_credentials import EdgeAgentCredential
@@ -283,3 +283,31 @@ async def broadcast_neighbourhood_alert(
     
 
     await broadcast_neighbourhood_alert_service(req.alert_id, db, claims)
+
+@router.get(
+    "/neighbourhoods/{neighbourhood_id}/critical",
+    response_model=CriticalAlertsMapRes,
+    summary="List critical alerts for a security officer's neighbourhood",
+    responses={
+        401: {"description": "Not authenticated"},
+        403: {"description": "User is not a security officer in this neighbourhood"},
+        404: {"description": "Neighbourhood not found"},
+    },
+)
+async def get_critical_alerts_map(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: SecurityOfficerClaims,
+) -> CriticalAlertsMapRes:
+    alerts = await get_critical_alerts_map_handler(
+        neighbourhood_id=neighbourhood_id,
+        db=db,
+        claims=claims,
+    )
+
+    return CriticalAlertsMapRes(
+        status=200,
+        data=alerts,
+    )
+
+                                                                                                  
