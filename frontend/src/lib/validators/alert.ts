@@ -99,7 +99,25 @@ export const UnlocatedCriticalAlertsResSchema = z.object({
   status: z.number().int(),
   message: z.string().nullable().optional(),
   data: UnlocatedCriticalAlertsDataSchema
-});
+})
+
+export const CriticalAlertMapCacheSchema =
+  z.object({
+    version: z.literal(1),
+    mapped_alerts: z.array(
+      CriticalAlertMapItemSchema,
+    ),
+    unlocated_alerts: z.array(
+      UnlocatedCriticalAlertItemSchema,
+    ),
+    last_updated: z
+      .string()
+      .datetime({ offset: true }),
+    cached_at: z
+      .string()
+      .datetime({ offset: true }),
+  });
+
 
 
 export type TimePeriod = z.infer<typeof TimePeriod>
@@ -112,3 +130,4 @@ export type CriticalAlertMapItem = z.infer<typeof CriticalAlertMapItemSchema>;
 export type UnlocatedCriticalAlertItem = z.infer<typeof UnlocatedCriticalAlertItemSchema>;
 export type CriticalAlertMapRes = z.infer<typeof CriticalAlertMapResSchema>;
 export type UnlocatedCriticalAlertsRes = z.infer<typeof UnlocatedCriticalAlertsResSchema>;
+export type CriticalAlertMapCache = z.infer<typeof CriticalAlertMapCacheSchema>;
