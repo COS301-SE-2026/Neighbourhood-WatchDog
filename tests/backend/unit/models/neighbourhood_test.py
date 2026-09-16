@@ -1,7 +1,8 @@
 from pydantic import ValidationError
 import pytest
 from uuid import uuid4
-from app.schemas.neighbourhood import CreateNeighbourhoodReq, NeighbourhoodRes, CreateNeighbourhoodRes
+from app.schemas.neighbourhood import CreateNeighbourhoodReq, NeighbourhoodRes, CreateNeighbourhoodRes, UpdateSecurityAvailabilityRes, UpdateSecurityAvailabilityReq
+from app.models.security_officer import AvailabilityStatus
 from datetime import datetime
 
 class TestCreateNeighbourhoodReq:
@@ -134,3 +135,16 @@ class TestCreateNeighbourhoodRes:
         assert model.status == 400
         assert model.message is None
         assert model.data is None
+
+class TestUpdateSecurityAvailabilityReq:
+    def test_valid_model(self):
+        """Happy path"""
+        neighbourhood_id = uuid4()
+
+        req = UpdateSecurityAvailabilityReq(
+            neighbourhood_id=neighbourhood_id,
+            new_availability=AvailabilityStatus.AVAILABLE,
+        )
+
+        assert req.neighbourhood_id == neighbourhood_id
+        assert req.new_availability == AvailabilityStatus.AVAILABLE
