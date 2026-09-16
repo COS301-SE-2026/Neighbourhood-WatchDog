@@ -69,7 +69,26 @@ async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUI
         ).where(
             TrackingSighting.tracking_subject_id == tracking_subject_id
         )
-    
+
+        next_sequence_result = await db.execute(next_sequence_stmt)
+        next_sequence = int(next_sequence_result.scalar_one())
+
+        sighting = TrackingSighting(
+            tracking_subject_id=tracking_subject_id, 
+            camera_id=camera_id, 
+            local_track_id=local_track_id, 
+            observed_at=observed_at, 
+            sequence_no=next_sequence, 
+            match_confidence=match_conf
+
+        )
+
+        db.add(sighting)
+        await db.commit()
+        await db.refresh(sighting)
+
+        
+
     except HTTPException:
         raise
 
