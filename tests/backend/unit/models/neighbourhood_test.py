@@ -164,3 +164,10 @@ class TestUpdateSecurityAvailabilityReq:
             UpdateSecurityAvailabilityReq(
                 new_availability=AvailabilityStatus.AVAILABLE,
             )
+
+    def test_missing_availability_raises(self):
+        """Test missing new availability raises validationError"""
+        with pytest.raises(ValidationError):
+            UpdateSecurityAvailabilityReq(
+                neighbourhood_id=uuid4(),
+            )
