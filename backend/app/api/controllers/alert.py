@@ -287,7 +287,7 @@ async def broadcast_neighbourhood_alert(
     await broadcast_neighbourhood_alert_service(req.alert_id, db, claims)
 
 @router.get(
-    "/neighbourhoods/{neighbourhood_id}/critical",
+    "/neighbourhoods/{neighbourhood_id}/critical/map",
     response_model=CriticalAlertsMapRes,
     summary="List critical alerts for a security officer's neighbourhood",
     responses={
