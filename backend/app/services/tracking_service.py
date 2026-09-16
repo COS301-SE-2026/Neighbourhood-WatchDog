@@ -87,8 +87,44 @@ async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUI
         await db.commit()
         await db.refresh(sighting)
 
-        
+
 
     except HTTPException:
         raise
+
+    except IntegrityError as exc:
+
+        await db.rollback()
+
+        logger.warning(
+            "Could not record duplicate or invalid tracking sighting "
+            "for subject=%s: %s",
+            tracking_subject_id,
+            exc
+
+        )
+
+
+        raise HTTPException(
+            status_code=409,
+            detail="Tracking sighting could not be recorded"
+
+        ) from exc
+
+
+
+    except Exception as exc:
+        await db.rollback()
+        logger.exception(
+            "Unexpected failure recording tracking sighting "
+            "for subject=%s",
+            tracking_subject_id
+
+        )
+
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to record tracking sighting"
+        ) from exc
 
