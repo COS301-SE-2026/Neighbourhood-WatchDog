@@ -475,3 +475,197 @@ async def test_required_permission_rejects_user_without_permission(
     )
 
     assert result is False
+
+@pytest.mark.asyncio
+async def test_property_resident_context_returns_404_for_missing_property():
+    checker = authorization.require_property_resident_context()
+
+    db = make_db(db_result(None))
+
+    with pytest.raises(HTTPException) as exc_info:
+        await checker(
+            PROPERTY_ID,
+            db,
+            CLAIMS,
+        )
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Property not found"
+
+@pytest.mark.asyncio
+async def test_property_resident_context_allows_system_admin():
+    checker = authorization.require_property_resident_context()
+
+    property_obj = MagicMock()
+    property_obj.neighbourhood_id = NEIGHBOURHOOD_ID
+
+    db = make_db(db_result(property_obj))
+
+    result = await checker(
+        PROPERTY_ID,
+        db,
+        SYSTEM_ADMIN_CLAIMS,
+    )
+
+    assert result == SYSTEM_ADMIN_CLAIMS
+    db.execute.assert_awaited_once()
+
+@pytest.mark.asyncio
+async def test_property_resident_context_allows_property_admin(monkeypatch):
+    checker = authorization.require_property_resident_context()
+
+    property_obj = MagicMock()
+    property_obj.neighbourhood_id = NEIGHBOURHOOD_ID
+
+    property_admin_check = AsyncMock(return_value=True)
+    monkeypatch.setattr(
+        authorization,
+        "is_property_admin",
+        property_admin_check,
+    )
+
+    db = make_db(db_result(property_obj))
+
+    result = await checker(
+        PROPERTY_ID,
+        db,
+        CLAIMS,
+    )
+
+    assert result == CLAIMS
+    property_admin_check.assert_awaited_once_with(
+        PROPERTY_ID,
+        CLAIMS,
+        db,
+    )
+
+@pytest.mark.asyncio
+async def test_property_resident_context_rejects_property_without_neighbourhood(
+    monkeypatch,
+):
+    checker = authorization.require_property_resident_context()
+
+    property_obj = MagicMock()
+    property_obj.neighbourhood_id = None
+
+    monkeypatch.setattr(
+        authorization,
+        "is_property_admin",
+        AsyncMock(return_value=False),
+    )
+
+    db = make_db(db_result(property_obj))
+
+    with pytest.raises(HTTPException) as exc_info:
+        await checker(
+            PROPERTY_ID,
+            db,
+            CLAIMS,
+        )
+
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.detail == (
+        "This property is not associated with a neighbourhood"
+    )
+
+@pytest.mark.asyncio
+async def test_property_resident_context_rejects_missing_identity():
+    checker = authorization.require_property_resident_context()
+
+    property_obj = MagicMock()
+    property_obj.neighbourhood_id = NEIGHBOURHOOD_ID
+
+    claims_without_sub = {
+        "custom:role": "SECURITY_OFFICER",
+    }
+
+    db = make_db(db_result(property_obj))
+
+    with pytest.raises(HTTPException) as exc_info:
+        await checker(
+            PROPERTY_ID,
+            db,
+            claims_without_sub,
+        )
+
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.detail == (
+        "Authenticated user identity is missing"
+    )
+
+@pytest.mark.asyncio
+async def test_property_resident_context_rejects_user_without_matching_membership(
+    monkeypatch,
+):
+    checker = authorization.require_property_resident_context()
+
+    property_obj = MagicMock()
+    property_obj.neighbourhood_id = NEIGHBOURHOOD_ID
+
+    monkeypatch.setattr(
+        authorization,
+        "is_property_admin",
+        AsyncMock(return_value=False),
+    )
+
+    db = make_db(
+        db_result(property_obj),
+        db_result(None),
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await checker(
+            PROPERTY_ID,
+            db,
+            CLAIMS,
+        )
+
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.detail == (
+        "You do not have permission to view resident "
+        "context for this property"
+    )
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "role",
+    [
+        "NEIGHBOURHOOD_ADMIN",
+        "SECURITY_OFFICER",
+    ],
+)
+async def test_property_resident_context_allows_authorised_neighbourhood_roles(
+    monkeypatch,
+    role,
+):
+    checker = authorization.require_property_resident_context()
+
+    property_obj = MagicMock()
+    property_obj.neighbourhood_id = NEIGHBOURHOOD_ID
+
+    membership = MagicMock()
+    membership.role = role
+
+    monkeypatch.setattr(
+        authorization,
+        "is_property_admin",
+        AsyncMock(return_value=False),
+    )
+
+    db = make_db(
+        db_result(property_obj),
+        db_result(membership),
+    )
+
+    claims = {
+        **CLAIMS,
+        "custom:role": role,
+    }
+
+    result = await checker(
+        PROPERTY_ID,
+        db,
+        claims,
+    )
+
+    assert result == claims
