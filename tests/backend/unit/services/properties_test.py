@@ -14,8 +14,7 @@ from app.schemas.property import InvitePropertyReq
 from app.services import property_service as property_service_module
 from app.services.property_service import (
     create_property_handler,
-    get_user_properties_handler,
-    get_property_resident_context_handler
+    get_user_properties_handler
 )
 
 @pytest.fixture(autouse=True)
