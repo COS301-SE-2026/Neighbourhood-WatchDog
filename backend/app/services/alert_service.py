@@ -41,7 +41,9 @@ from app.schemas.alert import (
     TrendDirection, 
     TrendBucket, 
     TrendData, 
-    AlertResponse
+    AlertResponse,
+    CriticalAlertMapItem,
+    CriticalAlertsMapData
 )
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction, TargetEntity
@@ -65,6 +67,11 @@ CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "")
 AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
 CHUNK_SIZE = 256 * 1024
+
+CRITICAL_DETECTION_TYPES = frozenset({
+    DetectionType.WEAPON_DETECTED,
+    DetectionType.FALL_DETECTED,
+})
 
 
 
@@ -1314,6 +1321,29 @@ async def _read_clip_with_limit(
 async def get_critical_alerts_map_handler(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: dict
-):
-    pass
+    claims: dict,
+) -> CriticalAlertsMapData:
+    """Return critical alerts for a security officer's neighbourhood."""
+
+    if not claims:
+        raise HTTPException(status_code=401, detail=NOT_AUTHENTICATED)
+
+    if not db:
+        raise HTTPException(status_code=500, detail=NO_DATABASE_SESSION)
+
+    stmt = (
+        select(Alert, Camera, Property)
+        .join(
+            Camera,
+            Alert.camera_id == Camera.id,
+        )
+        .join(
+            Property,
+            Camera.property_id == Property.id,
+        )
+        .where(
+            Property.neighbourhood_id == neighbourhood_id,
+            Alert.detection_type.in_(CRITICAL_DETECTION_TYPES),
+        )
+        .order_by(Alert.created_at.desc())
+    )
