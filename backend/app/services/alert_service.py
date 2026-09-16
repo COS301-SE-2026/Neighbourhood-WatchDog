@@ -12,7 +12,7 @@ from fastapi import HTTPException, UploadFile
 from uuid import UUID
 from app.core.database import DbSession, get_db
 
-from sqlalchemy import select, func
+from sqlalchemy import or_, select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -27,7 +27,9 @@ from app.models.property_user import PropertyUser
 from app.schemas.alert import (
     AlertClipUpdateRes,
     CreateInternalAlertRequest,
+    CriticalAlertMapData,
     InternalAlertCreateRes,
+    UnlocatedCriticalAlertsData,
     UpdateAlertClipRequest,
     AlertRes, 
     AlertCreate, 
@@ -43,7 +45,8 @@ from app.schemas.alert import (
     TrendData, 
     AlertResponse,
     CriticalAlertMapItem,
-    CriticalAlertsMapData
+    CriticalAlertMapData,
+    UnlocatedCriticalAlertItem
 )
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction, TargetEntity
@@ -68,11 +71,58 @@ S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "")
 AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
 CHUNK_SIZE = 256 * 1024
 
-CRITICAL_DETECTION_TYPES = frozenset({
+CRITICAL_DETECTION_TYPES = {
     DetectionType.WEAPON_DETECTED,
     DetectionType.FALL_DETECTED,
-})
+}
 
+def _critical_neighbourhood_alerts_stmt(
+    neighbourhood_id: UUID,
+):
+    """Build the shared query for neighbourhood critical alerts."""
+
+    return (
+        select(Alert, Camera, Property)
+        .join(
+            Camera,
+            Alert.camera_id == Camera.id,
+        )
+        .join(
+            Property,
+            Camera.property_id == Property.id,
+        )
+        .where(
+            Property.neighbourhood_id == neighbourhood_id,
+            Alert.detection_type.in_(CRITICAL_DETECTION_TYPES),
+        )
+    )
+
+
+def _critical_alert_item_values(
+    alert: Alert,
+    camera: Camera,
+    property_obj: Property,
+) -> dict:
+    """Convert joined alert data into common response fields."""
+
+    return {
+        "id": alert.id,
+        "camera_id": camera.id,
+        "camera_name": camera.name,
+        "neighbourhood_id": property_obj.neighbourhood_id,
+        "detection_type": (
+            alert.detection_type.value
+            if hasattr(alert.detection_type, "value")
+            else str(alert.detection_type)
+        ),
+        "status": alert.status,
+        "created_at": alert.created_at,
+        "property_id": property_obj.id,
+        "property_address": property_obj.address,
+        "latitude": property_obj.latitude,
+        "longitude": property_obj.longitude,
+        "thumbnail_url": alert.thumbnail_url,
+    }
 
 
 def _s3_client():
@@ -1339,18 +1389,10 @@ async def get_critical_alerts_map_handler(
 
     
     stmt = (
-        select(Alert, Camera, Property)
-        .join(
-            Camera,
-            Alert.camera_id == Camera.id,
-        )
-        .join(
-            Property,
-            Camera.property_id == Property.id,
-        )
+        _critical_neighbourhood_alerts_stmt(neighbourhood_id)
         .where(
-            Property.neighbourhood_id == neighbourhood_id,
-            Alert.detection_type.in_(CRITICAL_DETECTION_TYPES),
+            Property.latitude.is_not(None),
+            Property.longitude.is_not(None),
         )
         .order_by(Alert.created_at.desc())
     )
@@ -1359,40 +1401,19 @@ async def get_critical_alerts_map_handler(
         result = await db.execute(stmt)
         rows = result.all()
 
-        mapped_alerts: list[CriticalAlertMapItem] = []
-        alerts_without_coordinates: list[CriticalAlertMapItem] = []
-
-        for alert, camera, property_obj in rows:
-            item = CriticalAlertMapItem(
-                id=alert.id,
-                camera_id=camera.id,
-                camera_name=camera.name,
-                neighbourhood_id=property_obj.neighbourhood_id,
-                detection_type=(
-                    alert.detection_type.value
-                    if hasattr(alert.detection_type, "value")
-                    else str(alert.detection_type)
-                ),
-                status=alert.status,
-                created_at=alert.created_at,
-                property_id=property_obj.id,
-                property_address=property_obj.address,
-                latitude=property_obj.latitude,
-                longitude=property_obj.longitude,
-                thumbnail_url=alert.thumbnail_url,
+        alerts = [
+            CriticalAlertMapItem(
+                **_critical_alert_item_values(
+                    alert,
+                    camera,
+                    property_obj,
+                )
             )
+            for alert, camera, property_obj in rows
+        ]
 
-            if (
-                property_obj.latitude is not None
-                and property_obj.longitude is not None
-            ):
-                mapped_alerts.append(item)
-            else:
-                alerts_without_coordinates.append(item)
-
-        return CriticalAlertsMapData(
-            mapped_alerts=mapped_alerts,
-            alerts_without_coordinates=alerts_without_coordinates,
+        return CriticalAlertMapData(
+            alerts=alerts,
             last_updated=datetime.now(timezone.utc),
         )
 
@@ -1401,11 +1422,72 @@ async def get_critical_alerts_map_handler(
 
     except Exception as error:
         logger.exception(
-            "Failed to retrieve critical alerts for neighbourhood_id=%s",
+            "Failed to retrieve mapped critical alerts "
+            "for neighbourhood_id=%s",
             neighbourhood_id,
         )
 
         raise HTTPException(
             status_code=500,
-            detail="Failed to retrieve critical alerts",
+            detail="Failed to retrieve critical alerts for map",
+        ) from error
+
+
+async def get_unlocated_critical_alerts_handler(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: dict,
+) -> UnlocatedCriticalAlertsData:
+    """Return critical alerts missing one or both coordinates."""
+
+    if not claims:
+            raise HTTPException(status_code=401, detail=NOT_AUTHENTICATED)
+    
+    if not db:
+        raise HTTPException(status_code=500, detail=NO_DATABASE_SESSION)
+
+    stmt = (
+        _critical_neighbourhood_alerts_stmt(neighbourhood_id)
+        .where(
+            or_(
+                Property.latitude.is_(None),
+                Property.longitude.is_(None),
+            )
+        )
+        .order_by(Alert.created_at.desc())
+    )
+
+    try:
+        result = await db.execute(stmt)
+        rows = result.all()
+
+        alerts = [
+            UnlocatedCriticalAlertItem(
+                **_critical_alert_item_values(
+                    alert,
+                    camera,
+                    property_obj,
+                )
+            )
+            for alert, camera, property_obj in rows
+        ]
+
+        return UnlocatedCriticalAlertsData(
+            alerts=alerts,
+            last_updated=datetime.now(timezone.utc),
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as error:
+        logger.exception(
+            "Failed to retrieve unlocated critical alerts "
+            "for neighbourhood_id=%s",
+            neighbourhood_id,
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to retrieve unlocated critical alerts",
         ) from error

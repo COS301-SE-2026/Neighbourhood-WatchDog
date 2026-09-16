@@ -191,21 +191,21 @@ class UnlocatedCriticalAlertItem(CriticalAlertBase):
 	longitude: float | None = None
 
 
-class CriticalAlertsMapData(BaseModel):
+class CriticalAlertMapData(BaseModel):
     alerts: list[CriticalAlertMapItem]
     last_updated: datetime
 
 
-class CriticalAlertsMapRes(BaseModel):
+class CriticalAlertMapRes(BaseModel):
     status: int
     message: str | None = None
-    data: CriticalAlertsMapData
+    data: CriticalAlertMapData
 
-class UnlocatedAlertsMapData(BaseModel):
+class UnlocatedCriticalAlertsData(BaseModel):
     alerts: list[UnlocatedCriticalAlertItem]
     last_updated: datetime
 
-class UnlocatedCriticalAlertsMapRes(BaseModel):
+class UnlocatedCriticalAlertsRes(BaseModel):
     status: int
     message: str | None = None
-    data: UnlocatedAlertsMapData
+    data: UnlocatedCriticalAlertsData
