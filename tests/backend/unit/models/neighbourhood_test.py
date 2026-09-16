@@ -205,3 +205,9 @@ class TestUpdateSecurityAvailabilityRes:
         )
         assert model.status == 200
         assert model.message == "Availability status updated sucessfully"
+
+    def test_without_message(self):
+        """Test response without optional message"""
+        model = UpdateSecurityAvailabilityRes(status=200)
+        assert model.status == 200
+        assert model.message is None
