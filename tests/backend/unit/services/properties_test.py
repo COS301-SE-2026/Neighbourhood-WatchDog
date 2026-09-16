@@ -14,7 +14,7 @@ from app.schemas.property import InvitePropertyReq
 from app.services import property_service as property_service_module
 from app.services.property_service import (
     create_property_handler,
-    get_user_properties_handler,
+    get_user_properties_handler
 )
 
 @pytest.fixture(autouse=True)
@@ -1302,3 +1302,94 @@ class TestRemoveProperty:
 
         db.commit.assert_not_awaited()
         db.rollback.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_get_property_resident_context_returns_property_and_residents(self):
+        db = _property_service_db()
+
+        property_obj = _make_property()
+        owner = _make_user()
+        resident = _make_user(
+            user_id=INVITED_USER_ID,
+            email="resident@example.com",
+            first_name="Resident",
+            last_name="User",
+            cognito_sub="resident-cognito-sub",
+        )
+
+        db.execute.side_effect = [
+            _property_service_result(scalar=property_obj),
+            _property_service_result(
+                rows=[
+                    (owner, True),
+                    (resident, False),
+                ]
+            ),
+        ]
+
+        response = await property_service_module.get_property_resident_context_handler(
+            property_id=PROPERTY_ID,
+            db=db,
+            claims={"sub": "security-officer-sub"},
+        )
+
+        assert response.property_id == PROPERTY_ID
+        assert response.address == "123 Test Street"
+        assert response.neighbourhood_id == NEIGHBOURHOOD_ID
+        assert len(response.residents) == 2
+
+        assert response.residents[0].user_id == USER_ID
+        assert response.residents[0].is_admin is True
+
+        assert response.residents[1].user_id == INVITED_USER_ID
+        assert response.residents[1].email == "resident@example.com"
+        assert response.residents[1].is_admin is False
+
+    @pytest.mark.asyncio
+    async def test_get_property_resident_context_requires_claims(self):
+        db = _property_service_db()
+
+        with pytest.raises(HTTPException) as exc_info:
+            await property_service_module.get_property_resident_context_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=None,
+            )
+
+        assert exc_info.value.status_code == 401
+        assert exc_info.value.detail == "Not authenticated"
+        db.execute.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_get_property_resident_context_returns_404_for_missing_property(
+        self,
+    ):
+        db = _property_service_db()
+        db.execute.return_value = _property_service_result(scalar=None)
+
+        with pytest.raises(HTTPException) as exc_info:
+            await property_service_module.get_property_resident_context_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims={"sub": "security-officer-sub"},
+            )
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == "Property not found"
+
+    @pytest.mark.asyncio
+    async def test_get_property_resident_context_converts_database_error(self):
+        db = _property_service_db()
+        db.execute.side_effect = RuntimeError("database unavailable")
+
+        with pytest.raises(HTTPException) as exc_info:
+            await property_service_module.get_property_resident_context_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims={"sub": "security-officer-sub"},
+            )
+
+        assert exc_info.value.status_code == 500
+        assert exc_info.value.detail == (
+            "Failed to fetch resident context"
+        )

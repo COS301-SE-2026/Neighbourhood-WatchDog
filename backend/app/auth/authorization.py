@@ -419,6 +419,89 @@ def require_neighbourhood_authorization(
 
     return checker
 
+def require_property_resident_context():
+    """
+    Access is granted to:
+    - system administrators;
+    - neighbourhood administrators in the property's neighbourhood;
+    - security officers in the property's neighbourhood.
+
+    Property administration alone does not grant access to this context.
+    A property administrator must also have an authorised role in the
+    property's neighbourhood.
+    """
+
+    async def checker(
+        property_id: UUID,
+        db: DbSession,
+        claims: Annotated[
+            dict,
+            Depends(get_current_user),
+        ],
+    ) -> dict:
+        property_result = await db.execute(
+            select(Property).where(Property.id == property_id)
+        )
+        property_obj = property_result.scalar_one_or_none()
+
+        if property_obj is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Property not found",
+            )
+
+        current_role = claims.get(CUSTOM_ROLE_CLAIM)
+
+        if current_role == "SYSTEM_ADMIN":
+            return claims
+
+        # Neighbourhood-scoped access requires the property to belong to a
+        # neighbourhood and the caller to belong to that same neighbourhood.
+        if property_obj.neighbourhood_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This property is not associated with a neighbourhood",
+            )
+
+        user_sub = claims.get("sub")
+
+        if not user_sub:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Authenticated user identity is missing",
+            )
+
+        membership_result = await db.execute(
+            select(NeighbourhoodUser)
+            .join(NeighbourhoodUser.user)
+            .where(
+                NeighbourhoodUser.neighbourhood_id
+                == property_obj.neighbourhood_id,
+                NeighbourhoodUser.role.in_(
+                    (
+                        NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
+                        NeighbourhoodRole.SECURITY_OFFICER,
+                    )
+                ),
+                User.cognito_sub == user_sub,
+            )
+        )
+
+        membership = membership_result.scalar_one_or_none()
+
+        if membership is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "You do not have permission to view resident "
+                    "context for this property"
+                ),
+            )
+
+        return claims
+
+    return checker
+
 #These Aliases will make it easier to read the code in the controllers
 Claims = Annotated[dict, Depends(get_current_user)]#Use this role if you need an endpoint to be accessible by any authenticated user, regardless of their role.
 PropertyAdminClaims = Annotated[dict, Depends(require_property_authorization("PROPERTY_ADMIN", "SYSTEM_ADMIN"))]
@@ -428,4 +511,5 @@ CameraAdminAndNeighbourhoodAdminClaims = Annotated[dict, Depends(require_camera_
 NeighbourhoodMemberClaims = Annotated[dict, Depends(require_neighbourhood_member())]
 NeighbourhoodAdminClaims = Annotated[dict, Depends(require_neighbourhood_authorization("NEIGHBOURHOOD_ADMIN", "SYSTEM_ADMIN"))]
 SystemAdminClaims = Annotated[dict, Depends(require_role("SYSTEM_ADMIN"))]
+PropertyResidentContextClaims = Annotated[dict, Depends(require_property_resident_context())]
 # EdgeAgentClaims = Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)]
