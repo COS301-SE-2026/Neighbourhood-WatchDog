@@ -148,3 +148,12 @@ class TestUpdateSecurityAvailabilityReq:
 
         assert req.neighbourhood_id == neighbourhood_id
         assert req.new_availability == AvailabilityStatus.AVAILABLE
+
+    def test_accepts_string_enum(self):
+        """Raw string values should be accepted since Availability is a string enum"""
+        req = UpdateSecurityAvailabilityReq(
+                neighbourhood_id=uuid4(),
+                new_availability="BUSY",
+            )
+
+        assert req.new_availability == AvailabilityStatus.BUSY
