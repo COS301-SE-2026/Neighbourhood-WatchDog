@@ -126,3 +126,66 @@ function FitAlertBounds({
 
   return null;
 }
+
+
+function MapLegend() {
+  return (
+    <div
+      aria-label="Map marker legend"
+      className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-brand-ash"
+    >
+      <LegendItem
+        colour="#ef4444"
+        label="Weapon"
+      />
+
+      <LegendItem
+        colour="#f59e0b"
+        label="Fall"
+      />
+
+      <LegendItem
+        colour="#38bdf8"
+        label="Acknowledged"
+        outline
+      />
+
+      <LegendItem
+        colour="#10b981"
+        label="Resolved"
+        outline
+      />
+    </div>
+  );
+}
+
+function LegendItem({
+  colour,
+  label,
+  outline = false,
+}: {
+  readonly colour: string;
+  readonly label: string;
+  readonly outline?: boolean;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        aria-hidden="true"
+        className="size-2.5 rounded-full"
+        style={
+          outline
+            ? {
+                border: `2px solid ${colour}`,
+                backgroundColor: "transparent",
+              }
+            : {
+                backgroundColor: colour,
+              }
+        }
+      />
+
+      {label}
+    </span>
+  );
+}
