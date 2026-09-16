@@ -1232,3 +1232,27 @@ async def test_update_availability_rejects_non_officer():
     assert exc_info.value.status_code == 403
     assert exc_info.value.detail == "Only security officers can update availability status"
     mock_db.rollback.assert_awaited_once()
+
+@pytest.mark.asyncio
+async def test_update_availability_rejects_missing_officer():
+    officer_user_id, neighbourhood_id, membership, _ = _availability_test_context()
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            make_scalar_result(membership), 
+            make_scalar_result(None),
+        ]
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+            await update_security_availability_handler(
+                neighbourhood_id=neighbourhood_id,
+                new_availability=AvailabilityStatus.AVAILABLE,
+                db=mock_db,
+                claims={"id": str(officer_user_id)},
+            )
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Security officer not found"
+    mock_db.rollback.assert_awaited_once()
