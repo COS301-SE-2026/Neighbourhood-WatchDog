@@ -195,3 +195,13 @@ class TestUpdateSecurityAvailabilityReq:
                 neighbourhood_id=uuid4(),
                 new_availability=None,
             )
+
+class TestUpdateSecurityAvailabilityRes:
+    def test_with_message(self):
+        """Test response with a message"""
+        model = UpdateSecurityAvailabilityRes(
+            status=200,
+            message="Availability status updated sucessfully",
+        )
+        assert model.status == 200
+        assert model.message == "Availability status updated sucessfully"
