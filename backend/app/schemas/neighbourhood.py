@@ -60,6 +60,7 @@ class UpdateSecurityAvailabilityRes(BaseModel):
     message: str | None = None
 
 class UpdateOfficerLocationReq(BaseModel):
+    neighbourhood_id: UUID
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
 
