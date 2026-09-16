@@ -171,3 +171,11 @@ class TestUpdateSecurityAvailabilityReq:
             UpdateSecurityAvailabilityReq(
                 neighbourhood_id=uuid4(),
             )
+
+    def test_invalid_uuid_type(self):
+        "Test invalid neighbourhood_id raises"
+        with pytest.raises(ValidationError):
+            UpdateSecurityAvailabilityReq(
+                neighbourhood_id="not-a-uuid",
+                new_availability=AvailabilityStatus.AVAILABLE,
+            )
