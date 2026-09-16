@@ -21,7 +21,7 @@ from app.services.neighbourhood_service import (
     get_neighbourhood_properties_service,
     update_neighbourhood_member_role_handler,
     leave_neighbourhood_handler,
-    update_security_availabilty_handler,
+    update_security_availability_handler,
 )
 
 router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
@@ -180,7 +180,7 @@ async def update_security_availability(
     claims: Claims,
 ):
     """Updates the security officer's availability status"""
-    return await update_security_availabilty_handler(
+    return await update_security_availability_handler(
         neighbourhood_id=req.neighbourhood_id,
         new_availability=req.new_availability,
         db=db,

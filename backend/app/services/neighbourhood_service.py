@@ -505,7 +505,7 @@ async def leave_neighbourhood_handler(
             detail="Failed to leave neighbourhood"
         )
 
-async def update_security_availabilty_handler(
+async def update_security_availability_handler(
         neighbourhood_id: UUID,
         new_availability: AvailabilityStatus,
         db: DbSession,
