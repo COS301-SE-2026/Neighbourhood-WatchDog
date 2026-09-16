@@ -118,3 +118,87 @@ export default function NeighbourhoodAlertMapPage() {
     );
   }
 }
+
+function SummaryCard({
+  label,
+  value,
+  colour,
+}: {
+  readonly label: string;
+  readonly value: number;
+  readonly colour: string;
+}) {
+  return (
+    <Card className="border-border bg-brand-depth p-4">
+      <p className="text-xs uppercase tracking-wide text-brand-ash">
+        {label}
+      </p>
+
+      <p className={`mt-2 text-2xl font-semibold ${colour}`}>
+        {value}
+      </p>
+    </Card>
+  );
+}
+
+function UnlocatedAlerts({
+  alerts,
+}: {
+  readonly alerts: UnlocatedCriticalAlertItem[];
+}) {
+  return (
+    <Card className="mt-6 overflow-hidden border-border bg-brand-depth">
+      <div className="flex items-start gap-3 border-b border-border px-5 py-4">
+        <MapPinOff className="mt-0.5 size-4 text-brand-caution" />
+
+        <div>
+          <h2 className="text-sm font-semibold">
+            Alerts missing coordinates
+          </h2>
+
+          <p className="mt-1 text-xs text-brand-ash">
+            These alerts cannot be placed on the map.
+          </p>
+        </div>
+      </div>
+
+      {alerts.length === 0 ? (
+        <p className="px-5 py-10 text-center text-sm text-brand-ash">
+          All critical alerts have valid coordinates.
+        </p>
+      ) : (
+        <div className="divide-y divide-border">
+          {alerts.map((alert) => (
+            <article
+              key={alert.id}
+              className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <p className="text-sm font-medium">
+                  {detectionLabel(
+                    alert.detection_type,
+                  )}
+                </p>
+
+                <p className="mt-1 text-xs text-brand-ash">
+                  {alert.property_address}
+                </p>
+
+                <p className="mt-1 text-xs text-brand-ash/70">
+                  {alert.camera_name} ·{" "}
+                  {formatDateTime(
+                    alert.created_at,
+                  )}
+                </p>
+              </div>
+
+              <span className="w-fit rounded-full border border-border bg-brand-slate px-2.5 py-1 text-xs text-brand-ash">
+                {alert.status}
+              </span>
+            </article>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
