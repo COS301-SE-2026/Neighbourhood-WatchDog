@@ -42,15 +42,13 @@ async def update_location_handler(
     result = await db.execute(stmt)
     officer_obj = result.scalars().first() 
 
-    print(officer_obj.last_known_location)
-
     if officer_obj is None:
         logger.warning("update_location_handler Security officer not found. Failed for user with claim, claims=%s", claims)
         raise HTTPException(404, "Security officer not found")
     
     try:
         officer_obj.last_known_location = WKTElement(f"POINT({long} {lat})", srid=4326)
-        officer_obj.location_updated_at = datetime.now(datetime.timezone.utc)
+        officer_obj.location_updated_at = datetime.now()
 
         await db.commit()
     except Exception:
