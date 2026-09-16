@@ -357,4 +357,29 @@ async def test_update_security_availability_never_takes_officer_id():
     _, kwargs = handler.await_args
     assert set(kwargs.keys()) == {"neighbourhood_id", "new_availability", "db", "claims"}
     assert kwargs["claims"] is CLAIMS
-    
+
+@pytest.mark.asyncio
+async def test_update_security_availability_propagates_service_error():
+    payload = UpdateSecurityAvailabilityReq(
+            neighbourhood_id=NEIGHBOURHOOD_ID,
+            new_availability=AvailabilityStatus.UNAVAILABLE,
+        )
+    error = HTTPException(
+        status_code=403,
+        detail="Only security officers can update availability status",
+    )
+
+    with patch(
+        "app.api.controllers.neighbourhood.update_security_availability_handler",
+        new=AsyncMock(side_effect=error),
+    ) as handler:
+        with pytest.raises(HTTPException) as exc_info:
+            await update_security_availability(payload, DB, CLAIMS)
+
+    assert exc_info.value is error
+    handler.assert_awaited_once_with(
+        neighbourhood_id=payload.neighbourhood_id,
+        new_availability=payload.new_availability,
+        db=DB,
+        claims=CLAIMS,
+    )
