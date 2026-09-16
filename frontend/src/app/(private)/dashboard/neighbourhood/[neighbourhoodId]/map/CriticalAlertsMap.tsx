@@ -236,7 +236,7 @@ export function CriticalAlertsMap({
         minZoom={3}
         maxZoom={19}
         scrollWheelZoom
-        className="h-[34rem] w-full"
+        className="relative z-0 h-[34rem] w-full"
       >
         <FitPropertyBounds
           properties={properties}
@@ -339,14 +339,8 @@ function MapLegend() {
       />
 
       <LegendItem
-        colour="#38bdf8"
-        label="Acknowledged"
-        outline
-      />
-
-      <LegendItem
-        colour="#10b981"
-        label="Resolved"
+        colour="#ef4444"
+        label="Open"
         outline
       />
     </div>

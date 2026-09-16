@@ -49,7 +49,7 @@ from app.schemas.alert import (
 )
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction, TargetEntity
-from app.models.alert import Alert, DetectionType
+from app.models.alert import Alert, DetectionType, AlertStatus
 
 from app.models.neighbourhood import Neighbourhood
 from app.services.notification_service import _format_whatsapp_message, _notify_users
@@ -93,6 +93,7 @@ def _critical_neighbourhood_alerts_stmt(
         .where(
             Property.neighbourhood_id == neighbourhood_id,
             Alert.detection_type.in_(CRITICAL_DETECTION_TYPES),
+            Alert.status == AlertStatus.OPEN.value
         )
     )
 
