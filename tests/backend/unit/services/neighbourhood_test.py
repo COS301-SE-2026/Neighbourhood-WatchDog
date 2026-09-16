@@ -2,8 +2,9 @@ import pytest
 from fastapi import HTTPException
 from unittest.mock import MagicMock, Mock, AsyncMock, patch
 from app.models.audit_log import TargetEntity
-from app.services.neighbourhood_service import create_neighbourhood_handler, get_neighbourhood_members_handler, update_neighbourhood_member_role_handler
+from app.services.neighbourhood_service import create_neighbourhood_handler, get_neighbourhood_members_handler, update_neighbourhood_member_role_handler, update_security_availability_handler
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
+from app.models.security_officer import AvailabilityStatus
 from uuid import uuid4
 from datetime import datetime
 from app.models.neighbourhood import Neighbourhood
@@ -1152,3 +1153,24 @@ async def test_update_member_role_handles_unexpected_error():
     assert exc_info.value.status_code == 500
     assert exc_info.value.detail == "Failed to update member role"
     mock_db.rollback.assert_awaited_once()
+
+def _availability_test_context(role=NeighbourhoodRole.SECURITY_OFFICER):
+    officer_user_id = uuid4()
+    neighbourhood_id = uuid4()
+    membership_id = uuid4()
+    officer_id = uuid4()
+
+    membership = Mock(
+        id=membership_id,
+        user_id=officer_user_id,
+        neighbourhood_id=neighbourhood_id,
+        role=role,
+    )
+
+    officer = Mock(
+        id=officer_id,
+        neighbourhood_user_id=membership_id,
+        availability_status=AvailabilityStatus.UNAVAILABLE,
+    )
+
+    return officer_user_id, neighbourhood_id, membership, officer
