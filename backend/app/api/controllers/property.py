@@ -3,9 +3,9 @@ from uuid import UUID
 
 from fastapi import APIRouter
 
-from app.auth.authorization import Claims, PropertyAdminClaims, PropertyMemberClaims
+from app.auth.authorization import (Claims, PropertyAdminClaims,PropertyMemberClaims, PropertyResidentContextClaims)
 from app.core.database import DbSession
-from app.schemas.property import CreatePropertyReq, CreatePropertyRes, InvitePropertyReq, InvitePropertyRes, PropertyMembers, PropertyRes
+from app.schemas.property import CreatePropertyReq, CreatePropertyRes, InvitePropertyReq, InvitePropertyRes, PropertyMembers, PropertyRes, PropertyResidentContextRes
 from app.services.property_service import (
     create_property_handler,
     get_property_details_handler,
@@ -14,6 +14,7 @@ from app.services.property_service import (
     invite_property_member_handler,
     remove_property_handler,
     remove_property_member_handler,
+    get_property_resident_context_handler
 )
 
 router = APIRouter(prefix="/properties", tags=["properties"])
@@ -108,6 +109,37 @@ async def get_property_members(
     """Fetch property members"""
 
     return await get_property_members_handler(property_id, db, claims)
+
+@router.get(
+    "/{property_id}/residents",
+    response_model=PropertyResidentContextRes,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        403: {
+            "description": (
+                "Insufficient permissions or cross-neighbourhood access"
+            )
+        },
+        404: {"description": "Property not found"},
+    },
+)
+async def get_property_resident_context(
+    property_id: UUID,
+    db: DbSession,
+    claims: PropertyResidentContextClaims,
+) -> PropertyResidentContextRes:
+    """
+    Return resident context for a property associated with an alert.
+
+    Access is restricted by the property resident-context authorization
+    dependency.
+    """
+
+    return await get_property_resident_context_handler(
+        property_id=property_id,
+        db=db,
+        claims=claims,
+    )
 
 
 @router.post("/{property_id}/member", response_model=InvitePropertyRes)
