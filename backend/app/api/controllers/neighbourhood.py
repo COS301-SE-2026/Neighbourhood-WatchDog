@@ -198,6 +198,7 @@ async def update_security_availability(
     status_code=200,
     responses={
         401: {"description": "Invalid or missing authentication token"},
+        404: {"description": "Security officer not found"},
     }
 )
 async def update_location(
@@ -218,6 +219,7 @@ async def update_location(
     status_code=200,
     responses={
         401: {"description": "Invalid or missing authentication token"},
+        404: {"description": "Security officer not found"},
     }
 )
 async def get_security_availability(
