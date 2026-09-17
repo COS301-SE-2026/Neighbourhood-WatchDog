@@ -320,6 +320,18 @@ async def match_tracking_embedding(*, db: AsyncSession, body: MatchTrackingEmbed
             ) 
         )
 
+    return TrackingMatchResponse(
+        status=200,
+        message="Tracking subject matched",
+        data=TrackingMatchData(
+            matched=True,
+            tracking_subject_id=tracking_subject.id,
+            similarity=similarity,
+            threshold=TRACKING_MATCH_MIN_SIMILARITY 
+
+        )
+        
+    )
 
 ##authorization check - decide if a user can view a tracking timeline for a neighbourhhod
 async def _require_tracking_timeline_access(*, db: AsyncSession, claims: dict, neighbourhood_id: UUID) -> None:
