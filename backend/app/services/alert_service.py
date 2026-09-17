@@ -10,7 +10,7 @@ from dateutil.relativedelta import relativedelta
 
 from fastapi import HTTPException, UploadFile
 from uuid import UUID
-from app.core.database import DbSession, get_db
+from app.core.database import DbSession
 
 from sqlalchemy import or_, select, func
 from sqlalchemy.exc import IntegrityError

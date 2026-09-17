@@ -216,28 +216,36 @@ export function useCriticalAlerts(
   // Load cache immediately, then obtain fresh state.
   useEffect(() => {
     if (!neighbourhoodId) {
-      setMappedAlerts([]);
-      setUnlocatedAlerts([]);
-      setLastUpdated(null);
-      setUsingCachedData(false);
-      setLoading(false);
       return;
     }
 
-    const cacheLoaded = readCache();
+    let cancelled = false;
 
-    if (cacheLoaded) {
-      setLoading(false);
-    }
+    queueMicrotask(() => {
+      if (cancelled) {
+        return;
+      }
 
-    if (navigator.onLine) {
-      void reconcile(!cacheLoaded);
-    }
+      const cacheLoaded = readCache();
+
+      if (cacheLoaded) {
+        setLoading(false);
+      }
+
+      if (navigator.onLine) {
+        void reconcile(!cacheLoaded);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     neighbourhoodId,
     readCache,
     reconcile,
   ]);
+
 
   // Detect browser online/offline changes.
   useEffect(() => {
@@ -399,16 +407,18 @@ export function useCriticalAlerts(
 
   const isStale = usingCachedData || !isOnline || !wsConnected;
 
+  const hasNeighbourhood = neighbourhoodId.length > 0;
+
   return {
-    mappedAlerts,
-    unlocatedAlerts,
-    lastUpdated,
-    loading,
-    error,
+    mappedAlerts: hasNeighbourhood ? mappedAlerts : [],
+    unlocatedAlerts: hasNeighbourhood ? unlocatedAlerts : [],
+    lastUpdated: hasNeighbourhood ? lastUpdated : null,
+    loading: hasNeighbourhood ? loading : false,
+    error: hasNeighbourhood ? error : null,
     isOnline,
-    wsConnected,
-    isStale,
-    usingCachedData,
+    wsConnected: hasNeighbourhood ? wsConnected : false,
+    isStale: hasNeighbourhood ? isStale : false,
+    usingCachedData: hasNeighbourhood ? usingCachedData : false,
     refetch: () => reconcile(true),
   };
 }

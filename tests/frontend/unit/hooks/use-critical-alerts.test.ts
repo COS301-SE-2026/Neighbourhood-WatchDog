@@ -165,7 +165,7 @@ describe("useCriticalAlerts offline cache", () => {
     setOnline(true);
 
     mockFetchMap.mockResolvedValue(
-      mapResponse([MPPED_ALERT]),
+      mapResponse([MAPPED_ALERT]),
     );
 
     mockFetchUnlocated.mockResolvedValue(
@@ -330,6 +330,96 @@ describe("useCriticalAlerts offline cache", () => {
     expect(
       result.current.mappedAlerts,
     ).toEqual([MAPPED_ALERT]);
+  });
+  test("reconciles and clears stale state after reconnect", async () => {
+    const { result } = renderHook(() =>
+      useCriticalAlerts(
+        NEIGHBOURHOOD_ID,
+      ),
+    );
+
+    await waitFor(() => {
+      expect(
+        MockWebSocket.instances,
+      ).toHaveLength(1);
+    });
+
+    act(() => {
+      MockWebSocket.instances[0].open();
+    });
+
+    await waitFor(() => {
+      expect(result.current.isStale).toBe(
+        false,
+      );
+    });
+
+    act(() => {
+      setOnline(false);
+      window.dispatchEvent(
+        new Event("offline"),
+      );
+    });
+
+    await waitFor(() => {
+      expect(result.current.isOnline).toBe(
+        false,
+      );
+    });
+
+    expect(result.current.isStale).toBe(
+      true,
+    );
+    expect(
+      result.current.mappedAlerts,
+    ).toHaveLength(1);
+
+    mockFetchMap.mockResolvedValue(
+      mapResponse([
+        MAPPED_ALERT,
+        SECOND_ALERT,
+      ]),
+    );
+
+    act(() => {
+      setOnline(true);
+      window.dispatchEvent(
+        new Event("online"),
+      );
+    });
+
+    await waitFor(() => {
+      expect(
+        MockWebSocket.instances.length,
+      ).toBeGreaterThan(1);
+    });
+
+    const reconnectedWebSocket =
+      MockWebSocket.instances[
+        MockWebSocket.instances.length - 1
+      ];
+
+    act(() => {
+      reconnectedWebSocket.open();
+    });
+
+    await waitFor(() => {
+      expect(result.current.isOnline).toBe(
+        true,
+      );
+      expect(result.current.wsConnected).toBe(
+        true,
+      );
+      expect(result.current.isStale).toBe(
+        false,
+      );
+      expect(
+        result.current.usingCachedData,
+      ).toBe(false);
+      expect(
+        result.current.mappedAlerts,
+      ).toHaveLength(2);
+    });
   });
 
 
