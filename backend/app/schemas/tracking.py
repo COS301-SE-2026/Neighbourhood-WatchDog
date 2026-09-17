@@ -60,3 +60,27 @@ class TrackingMatchResponse(BaseModel):
     status: int
     message: str
     data: TrackingMatchData
+
+
+#payload for when a service reports a new sighting of a tracked subject
+class RecordTrackingSightingRequest(BaseModel):
+    tracking_subject_id: UUID
+    camera_id: UUID
+    local_track_id: int = Field(ge=0)
+    observed_at: datetime
+    match_confidence: float = Field(ge=0.0, le=1.0)
+
+
+class TrackingSightingCreateData(BaseModel):
+    alert_id: UUID
+    tracking_subject_id: UUID
+    sighting_id: UUID
+    camera_id: UUID
+    sequence_no: int
+    match_confidence: float
+
+
+class TrackingSightingCreateResponse(BaseModel):
+    status: int
+    message: str
+    data: TrackingSightingCreateData
