@@ -419,17 +419,23 @@ class CascadedPipeline:
         for track_id in expired:
             del self._histories[track_id]
 
-    @staticmethod
+    @staticmethod 
     def _best_parent(track_bbox: list[float], persons: list[dict[str, Any]]) -> dict[str, Any] | None:
+        ##identify which person in a frame best matches a given object
         if not persons:
             return None
-        
-        return max(
-            persons,
+
+        best_parent = max(
+            persons, 
             key=lambda person: CascadedPipeline._iou(track_bbox, person["bbox"])
-
-
         )
+
+        best_iou = CascadedPipeline._iou(track_bbox, best_parent["bbox"])
+
+        if best_iou <= 0.0:
+            return None
+        
+        return best_parent
 
     @staticmethod
     def _iou(left: list[float], right: list[float]) -> float:
