@@ -226,6 +226,23 @@ async def match_tracking_embedding(*, db: AsyncSession, body: MatchTrackingEmbed
         raise HTTPException(
             status_code=404,
             detail="Candidate camera not found"
+
+        )
+
+
+    candidate_camera, candidate_property = candidate_camera_row
+
+    if candidate_camera.property_id != candidate_property_id:
+        raise HTTPException(
+            status_code=403,
+            detail="The edge agent is not authorized for this camera"
+
+        )
+
+    if candidate_property.neighbourhood_id is None:
+        raise HTTPException(
+            status_code=403,
+            detail="Candidate camera is not associated with a neighbourhood"
             
         )
 
