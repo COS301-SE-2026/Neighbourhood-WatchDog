@@ -14,6 +14,7 @@ from app.schemas.neighbourhood import (
     UpdateSecurityAvailabilityRes,
     UpdateOfficerLocationReq,
     UpdateOfficerLocationRes,
+    GetSecurityAvailabilityRes,
 )
 from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property
@@ -636,7 +637,7 @@ async def update_location_handler(
     neighbourhood_id = req.neighbourhood_id
 
     if not claims:
-        logger.warning("create_property called with no claims")
+        logger.warning("update_location_handler called with no claims")
         raise HTTPException(401, "Not authenticated")
     
     stmt = (
@@ -667,4 +668,37 @@ async def update_location_handler(
     return UpdateOfficerLocationRes(
         status=200,
         message="Successfully updated security officer's location",
+    )
+
+async def get_security_availability_handler(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: Claims,
+) -> GetSecurityAvailabilityRes:
+    """Uses the claims and the neighbourhood id to find the officer's availability from
+    the Security Officer table"""
+
+    if not claims:
+        logger.warning("get_security_availability_handler called with no claims")
+        raise HTTPException(401, "Not authenticated")
+    
+    stmt = (
+        select(SecurityOfficer) # this is what deals with the validation ensuring that the person is an officer
+        .join(NeighbourhoodUser)
+        .join(User)
+        .where(User.cognito_sub == claims['sub'])
+        .where(NeighbourhoodUser.neighbourhood_id == neighbourhood_id)
+    )
+    result = await db.execute(stmt)
+    officer_obj = result.scalars().first() 
+
+    if officer_obj is None:
+        logger.warning("get_security_availability_handler Security officer not found. Failed for user with claim, claims=%s", claims)
+        raise HTTPException(404, "Security officer not found")
+
+    logger.info("get_security_availability_handler successfully fetched availability of the officer with claim, claims=%s's ", claims)
+    return GetSecurityAvailabilityRes(
+        status=200,
+        message="Successfully retrieved officer availability",
+        availability=officer_obj.availability_status,
     )
