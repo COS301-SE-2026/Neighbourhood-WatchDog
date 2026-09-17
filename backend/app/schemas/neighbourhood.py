@@ -51,6 +51,11 @@ class UpdateMemberRoleRes(BaseModel):
     data: NeighbourhoodMemberRes
 
 
+class GetSecurityAvailabilityRes(BaseModel):
+    status: int
+    message: str | None = None
+    availability: AvailabilityStatus | None
+
 class UpdateSecurityAvailabilityReq(BaseModel):
     neighbourhood_id: UUID
     new_availability: AvailabilityStatus
@@ -74,3 +79,4 @@ class OfficerLocationRes(BaseModel):
     longitude: float
     location_updated_at: datetime
     is_stale: bool
+    
