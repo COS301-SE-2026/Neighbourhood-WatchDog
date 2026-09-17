@@ -22,6 +22,8 @@ from app.services.alert_service import (
     _read_clip_with_limit,
 )
 from app.tasks.clip_tasks import MAX_CLIP_SIZE_BYTES, upload_alert_clip_task
+from app.schemas.tracking import MatchTrackingEmbeddingRequest, TrackingMatchResponse
+from app.services.tracking_service import match_tracking_embedding
 
 router = APIRouter(prefix="/internal", tags=["internal"])
 
@@ -111,3 +113,30 @@ async def upload_clip(
     upload_alert_clip_task.delay(str(alert.id), clip_b64, clip.content_type or "video/mp4")
 
     return ClipUploadAcceptedRes(alert_id=alert.id, status="queued")
+
+
+@router.post(
+    "/tracking/match",
+    response_model=TrackingMatchResponse,
+    status_code=200,
+    responses={
+        401: {"description": "Invalid or revoked edge agent credential"},
+        403: {"description": "The edge agent is not authorized for this camera"},
+        404: {"description": "Candidate camera not found"}
+
+    }
+)
+async def match_tracking(body: MatchTrackingEmbeddingRequest, db: DbSession, credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)]) -> TrackingMatchResponse:
+    """
+    Match a candidate appearance embedding against active subjects.
+
+    This endpoint returns a match decision only. It does not create a
+    tracking sighting.
+    """
+
+    return await match_tracking_embedding(
+        db=db,
+        body=body,
+        candidate_property_id=credential.property_id
+        
+    )
