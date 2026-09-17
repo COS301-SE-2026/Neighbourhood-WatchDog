@@ -14,6 +14,8 @@ from app.schemas.neighbourhood import (
     UpdateMemberRoleRes,
     UpdateSecurityAvailabilityRes,
     UpdateSecurityAvailabilityReq,
+    UpdateOfficerLocationReq,
+    UpdateOfficerLocationRes,
 )
 from app.services.neighbourhood_service import (
     create_neighbourhood_handler,
@@ -22,6 +24,7 @@ from app.services.neighbourhood_service import (
     update_neighbourhood_member_role_handler,
     leave_neighbourhood_handler,
     update_security_availability_handler,
+    update_location_handler,
 )
 
 router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
@@ -185,4 +188,24 @@ async def update_security_availability(
         new_availability=req.new_availability,
         db=db,
         claims=claims,
+    )
+
+@router.patch(
+    "/security/update-location",
+    response_model=UpdateOfficerLocationReq, # noqa
+    status_code=200,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+    }
+)
+async def update_location(
+    req: UpdateOfficerLocationReq,
+    db: DbSession,
+    claims: Claims,
+) -> UpdateOfficerLocationRes:
+    """Gets the security officer's latest location and updates it in the database"""
+    return await update_location_handler(
+        req,
+        db,
+        claims,
     )
