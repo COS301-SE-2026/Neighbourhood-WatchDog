@@ -15,7 +15,6 @@ import {
 import { CriticalAlertMapCacheSchema } from "@/lib/validators/alert";
 
 import type {
-  CriticalAlertMapCache,
   CriticalAlertMapItem,
   UnlocatedCriticalAlertItem,
 } from "@/lib/validators/alert";
@@ -239,46 +238,6 @@ export function useCriticalAlerts(
     readCache,
     reconcile,
   ]);
-
-  // Detect browser online/offline changes.
-  useEffect(() => {
-    function handleOnline() {
-      setIsOnline(true);
-
-      // Reconcile anything missed while offline.
-      void reconcile(false);
-    }
-
-    function handleOffline() {
-      setIsOnline(false);
-      setWsConnected(false);
-
-      websocketRef.current?.close();
-    }
-
-    window.addEventListener(
-      "online",
-      handleOnline,
-    );
-
-    window.addEventListener(
-      "offline",
-      handleOffline,
-    );
-
-    return () => {
-      window.removeEventListener(
-        "online",
-        handleOnline,
-      );
-
-      window.removeEventListener(
-        "offline",
-        handleOffline,
-      );
-    };
-  }, [reconcile]);
-
 
   // Detect browser online/offline changes.
   useEffect(() => {

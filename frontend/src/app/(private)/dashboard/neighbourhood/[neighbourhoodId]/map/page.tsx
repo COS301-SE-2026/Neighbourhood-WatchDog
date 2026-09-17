@@ -28,7 +28,7 @@ import type {
   CriticalAlertStatus,
   UnlocatedCriticalAlertItem,
 } from "@/lib/validators/alert";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 
 function statusLabel(
   status: CriticalAlertStatus,
@@ -216,9 +216,32 @@ export default function NeighbourhoodAlertMapPage() {
     loading,
     error,
     refetch,
+    isOnline,
+    wsConnected,
+    isStale,
+    usingCachedData,
   } = useCriticalAlerts(
     isSecurityOfficer ? neighbourhoodId : "",
   );
+
+  const currentSelectedProperty =
+  selectedProperty
+    ? {
+        ...selectedProperty,
+        alerts: mappedAlerts
+          .filter(
+            (alert) =>
+              alert.property_id ===
+              selectedProperty.propertyId,
+          )
+          .sort(
+            (first, second) =>
+              new Date(second.created_at).getTime() -
+              new Date(first.created_at).getTime(),
+          ),
+      }
+    : null;
+
 
   if (userContextLoading) {
     return (
@@ -272,13 +295,21 @@ export default function NeighbourhoodAlertMapPage() {
                 {formatDateTime(lastUpdated)}
               </p>
             )}
+
+            <p className="mt-1 text-xs text-brand-ash">
+                {!isOnline
+                  ? "Offline"
+                  : wsConnected
+                    ? "Live updates connected"
+                    : "Connecting to live updates…"}
+              </p>
           </div>
 
           <Button
             type="button"
             size="sm"
             variant="outline"
-            disabled={loading}
+            disabled={loading || !isOnline}
             onClick={() => void refetch()}
             className="border-border bg-transparent text-brand-green hover:bg-brand-slate hover:text-brand-frost"
           >
@@ -287,9 +318,50 @@ export default function NeighbourhoodAlertMapPage() {
                 loading ? "animate-spin" : ""
               }`}
             />
-            Refresh
+            {isOnline ? "Refresh" : "Offline"}
           </Button>
         </header>
+
+        {isStale && (
+          <div
+            role="status"
+            className="mb-5 flex items-start gap-3 rounded-lg border border-brand-caution/30 bg-brand-caution/10 px-4 py-3"
+          >
+            <WifiOff className="mt-0.5 size-4 shrink-0 text-brand-caution" />
+
+            <div>
+              <p className="text-sm font-medium text-brand-caution">
+                {!isOnline
+                  ? "You are offline"
+                  : "Live updates disconnected"}
+              </p>
+
+              <p className="mt-1 text-xs text-brand-ash">
+                {usingCachedData
+                  ? "Showing the last saved alert-map state. It may be out of date."
+                  : "The latest loaded alerts remain visible while live updates reconnect."}
+              </p>
+
+              {lastUpdated && (
+                <p className="mt-1 text-xs text-brand-ash/70">
+                  Data last updated{" "}
+                  {formatDateTime(lastUpdated)}
+                </p>
+              )}
+
+              <p className="mt-1 text-xs text-brand-ash">
+                {!isOnline
+                  ? "Offline"
+                  : wsConnected
+                    ? "Live updates connected"
+                    : "Connecting to live updates…"}
+              </p>
+
+
+            </div>
+          </div>
+        )}
+
 
         {error && (
           <div
@@ -343,7 +415,7 @@ export default function NeighbourhoodAlertMapPage() {
           <CriticalAlertsMap
             alerts={mappedAlerts}
             selectedPropertyId={
-                selectedProperty?.propertyId ?? null
+                currentSelectedProperty?.propertyId ?? null
             }
             onSelectProperty={setSelectedProperty}
         />
@@ -351,8 +423,11 @@ export default function NeighbourhoodAlertMapPage() {
         )}
 
         <PropertyAlertsSheet
-            property={selectedProperty}
-            open={selectedProperty !== null}
+            property={currentSelectedProperty}
+            open={
+              currentSelectedProperty !== null &&
+              currentSelectedProperty.alerts.length > 0
+            }
             onClose={() => setSelectedProperty(null)}
         />
 
