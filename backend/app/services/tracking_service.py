@@ -191,12 +191,21 @@ async def get_tracking_timeline(*, db: AsyncSession, alert_id: UUID, claims: dic
         .where(Alert.id == alert_id)
     )
 
-    alert_result = alert_result.one_or_none()
+    alert_row = alert_result.one_or_none()
 
-    if alert_result is None:
+    if alert_row is None:
         raise HTTPException(
             status_code=404, 
             detail="Alert not found"
+
+        )
+
+    alert, originating_camera, property_obj = alert_row
+
+    if property_obj.neighbourhood_id is None:
+        raise HTTPException(
+            status_code=403, 
+            detail="Alert is not associated with a neighbourhood"
 
         )
 
