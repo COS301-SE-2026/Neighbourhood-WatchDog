@@ -12,11 +12,14 @@ import {
   getAuthToken,
   WS_BASE
 } from "@/lib/api/alert";
+import { CriticalAlertMapCacheSchema } from "@/lib/validators/alert";
+
 import type {
-  CriticalAlertMapCacheSchema,
+  CriticalAlertMapCache,
   CriticalAlertMapItem,
   UnlocatedCriticalAlertItem,
 } from "@/lib/validators/alert";
+
 
 const CACHE_VERSION = 1 as const;
 const RECONNECT_DELAYS_MS = 3_000;
@@ -89,6 +92,127 @@ export function useCriticalAlerts(
     [neighbourhoodId]
   );
 
+   const readCache = useCallback((): boolean => {
+    if (!neighbourhoodId) {
+      return false;
+    }
+
+    const key = getCacheKey(neighbourhoodId);
+
+    try {
+      const stored = localStorage.getItem(key);
+
+      if (!stored) {
+        return false;
+      }
+
+      const parsed =
+        CriticalAlertMapCacheSchema.safeParse(
+          JSON.parse(stored),
+        );
+
+      if (!parsed.success) {
+        localStorage.removeItem(key);
+        return false;
+      }
+
+      // Only open alerts belong on this map.
+      const mapped =
+        parsed.data.mapped_alerts.filter(
+          (alert) =>
+            alert.status === "OPEN",
+        );
+
+      const unlocated =
+        parsed.data.unlocated_alerts.filter(
+          (alert) =>
+            alert.status === "OPEN",
+        );
+
+      setMappedAlerts(mapped);
+      setUnlocatedAlerts(unlocated);
+      setLastUpdated(
+        parsed.data.last_updated,
+      );
+      setUsingCachedData(true);
+
+      return true;
+    } catch {
+      localStorage.removeItem(key);
+      return false;
+    }
+  }, [neighbourhoodId]);
+
+  const reconcile = useCallback(
+    async (showLoading = false) => {
+      if (!neighbourhoodId) {
+        return;
+      }
+
+      if (showLoading) {
+        setLoading(true);
+      }
+
+      setError(null);
+
+      try {
+        const [
+          mapResponse,
+          unlocatedResponse,
+        ] = await Promise.all([
+          fetchCriticalAlertMap(
+            neighbourhoodId,
+          ),
+          fetchUnlocatedCriticalAlerts(
+            neighbourhoodId,
+          ),
+        ]);
+
+        const mapped =
+          mapResponse.data.alerts.filter(
+            (alert) =>
+              alert.status === "OPEN",
+          );
+
+        const unlocated =
+          unlocatedResponse.data.alerts.filter(
+            (alert) =>
+              alert.status === "OPEN",
+          );
+
+        const updatedAt = mapResponse.data.last_updated;
+
+        setMappedAlerts(mapped);
+        setUnlocatedAlerts(unlocated);
+        setLastUpdated(updatedAt);
+        setUsingCachedData(false);
+
+        writeCache(
+          mapped,
+          unlocated,
+          updatedAt,
+        );
+      } catch (caughtError) {
+        setError(
+          caughtError instanceof Error
+            ? caughtError.message
+            : "Failed to retrieve critical alerts",
+        );
+
+        // Keep the existing/cache state visible.
+        setUsingCachedData(true);
+      } finally {
+        if (showLoading) {
+          setLoading(false);
+        }
+      }
+    },
+    [
+      neighbourhoodId,
+      writeCache,
+    ],
+  );
+ 
 
   const fetchAlerts = useCallback(async () => {
     if (!neighbourhoodId) {
