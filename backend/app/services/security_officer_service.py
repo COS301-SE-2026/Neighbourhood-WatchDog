@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import HTTPException
 from sqlalchemy import select
 from geoalchemy2.elements import WKTElement
@@ -15,6 +15,14 @@ from app.schemas.neighbourhood import (
 )
 
 logger = logging.getLogger(__name__)
+
+STALE_LOCATION_THRESHOLD_SECONDS = 120
+
+def is_location_stale(location_updated_at: datetime | None ) -> bool:
+    if location_updated_at is None:
+        return True
+    age = (datetime.now(timezone.utc) - location_updated_at).total_seconds()
+    return age > STALE_LOCATION_THRESHOLD_SECONDS
 
 async def update_location_handler(
     req: UpdateOfficerLocationReq,
@@ -48,7 +56,7 @@ async def update_location_handler(
     
     try:
         officer_obj.last_known_location = WKTElement(f"POINT({long} {lat})", srid=4326)
-        officer_obj.location_updated_at = datetime.now()
+        officer_obj.location_updated_at = datetime.now(timezone.utc)
 
         await db.commit()
     except Exception:
