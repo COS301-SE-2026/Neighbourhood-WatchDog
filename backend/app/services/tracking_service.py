@@ -307,6 +307,20 @@ async def match_tracking_embedding(*, db: AsyncSession, body: MatchTrackingEmbed
     similarity = max(0.0, min(1.0, 1.0 - float(distance)))
 
 
+    if similarity < TRACKING_MATCH_MIN_SIMILARITY:
+        return TrackingMatchResponse(
+            status=200,
+            message="Closest tracking subject did not meet the similarity threshold",
+            data=TrackingMatchData(
+                matched=False,
+                tracking_subject_id=None,
+                similarity=similarity,
+                threshold=TRACKING_MATCH_MIN_SIMILARITY
+
+            ) 
+        )
+
+
 ##authorization check - decide if a user can view a tracking timeline for a neighbourhhod
 async def _require_tracking_timeline_access(*, db: AsyncSession, claims: dict, neighbourhood_id: UUID) -> None:
     """only security, neighbourhood admins, and systems admins can see the tracking timeline"""
