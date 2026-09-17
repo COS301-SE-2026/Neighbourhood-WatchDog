@@ -238,7 +238,7 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
             if appearance_embedding is not None
             else None
         )
-        
+
     }
 
     logger.info(
@@ -303,7 +303,8 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
         )
         return None
 
-def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, weapon_label: str, confidence: float, local_track_id: int, stop_event: threading.Event) -> None:
+def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, weapon_label: str, 
+                          confidence: float, local_track_id: int, stop_event: threading.Event, appearance_embedding: list[float] | None = None) -> None:
     
     label = weapon_label.lower()
     cooldown_key = (camera.id, local_track_id, label)
@@ -327,8 +328,10 @@ def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer
         camera=camera,
         weapon_label=label,
         confidence=confidence,
-        local_track_id=local_track_id
+        local_track_id=local_track_id,
+        appearance_embedding=appearance_embedding
 
+        
     )
 
     if alert_id is None:
