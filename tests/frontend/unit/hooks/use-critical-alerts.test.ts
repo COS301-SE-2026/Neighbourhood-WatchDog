@@ -225,4 +225,112 @@ describe("useCriticalAlerts offline cache", () => {
     ).not.toHaveBeenCalled();
   });
 
+  test("writes refreshed state after WebSocket update", async () => {
+    const { result } = renderHook(() =>
+      useCriticalAlerts(
+        NEIGHBOURHOOD_ID,
+      ),
+    );
+
+    await waitFor(() => {
+      expect(
+        result.current.mappedAlerts,
+      ).toHaveLength(1);
+    });
+
+    const websocket =
+      MockWebSocket.instances[0];
+
+    act(() => {
+      websocket.open();
+    });
+
+    await waitFor(() => {
+      expect(result.current.wsConnected).toBe(
+        true,
+      );
+    });
+
+    mockFetchMap.mockResolvedValue(
+      mapResponse([
+        MAPPED_ALERT,
+        SECOND_ALERT,
+      ]),
+    );
+
+    act(() => {
+      websocket.receive({
+        event: "new_alert",
+      });
+    });
+
+    await waitFor(() => {
+      expect(
+        result.current.mappedAlerts,
+      ).toHaveLength(2);
+    });
+
+    const cached = JSON.parse(
+      localStorage.getItem(CACHE_KEY) ?? "{}",
+    ) as {
+      version: number;
+      mapped_alerts: CriticalAlertMapItem[];
+      last_updated: string;
+    };
+
+    expect(cached.version).toBe(1);
+    expect(cached.mapped_alerts).toHaveLength(
+      2,
+    );
+    expect(cached.last_updated).toBe(
+      LAST_UPDATED,
+    );
+  });
+
+  test("keeps existing alerts when WebSocket disconnects", async () => {
+    const { result } = renderHook(() =>
+      useCriticalAlerts(
+        NEIGHBOURHOOD_ID,
+      ),
+    );
+
+    await waitFor(() => {
+      expect(
+        result.current.mappedAlerts,
+      ).toHaveLength(1);
+    });
+
+    const websocket =
+      MockWebSocket.instances[0];
+
+    act(() => {
+      websocket.open();
+    });
+
+    await waitFor(() => {
+      expect(result.current.isStale).toBe(
+        false,
+      );
+    });
+
+    act(() => {
+      websocket.disconnect();
+    });
+
+    await waitFor(() => {
+      expect(result.current.wsConnected).toBe(
+        false,
+      );
+    });
+
+    expect(result.current.isStale).toBe(
+      true,
+    );
+
+    expect(
+      result.current.mappedAlerts,
+    ).toEqual([MAPPED_ALERT]);
+  });
+
+
 });
