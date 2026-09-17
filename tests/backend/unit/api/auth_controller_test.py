@@ -1,7 +1,8 @@
-from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+import main # noqa: F401
 from fastapi import HTTPException
+from unittest.mock import AsyncMock, Mock, patch
 
 from app.api.controllers.auth import (
     auth_ping,

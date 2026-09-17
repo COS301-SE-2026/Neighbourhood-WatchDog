@@ -1,7 +1,8 @@
 from pydantic import ValidationError
 import pytest
 from uuid import uuid4
-from app.schemas.neighbourhood import CreateNeighbourhoodReq, NeighbourhoodRes, CreateNeighbourhoodRes
+from app.schemas.neighbourhood import CreateNeighbourhoodReq, NeighbourhoodRes, CreateNeighbourhoodRes, UpdateSecurityAvailabilityRes, UpdateSecurityAvailabilityReq
+from app.models.security_officer import AvailabilityStatus
 from datetime import datetime
 
 class TestCreateNeighbourhoodReq:
@@ -134,3 +135,86 @@ class TestCreateNeighbourhoodRes:
         assert model.status == 400
         assert model.message is None
         assert model.data is None
+
+class TestUpdateSecurityAvailabilityReq:
+    def test_valid_model(self):
+        """Happy path"""
+        neighbourhood_id = uuid4()
+
+        req = UpdateSecurityAvailabilityReq(
+            neighbourhood_id=neighbourhood_id,
+            new_availability=AvailabilityStatus.AVAILABLE,
+        )
+
+        assert req.neighbourhood_id == neighbourhood_id
+        assert req.new_availability == AvailabilityStatus.AVAILABLE
+
+    def test_accepts_string_enum(self):
+        """Raw string values should be accepted since Availability is a string enum"""
+        req = UpdateSecurityAvailabilityReq(
+                neighbourhood_id=uuid4(),
+                new_availability="BUSY",
+            )
+
+        assert req.new_availability == AvailabilityStatus.BUSY
+
+    def test_missing_neighbourhood_id_raises(self):
+        """Test missing neighbourhood id raises validationError"""
+        with pytest.raises(ValidationError):
+            UpdateSecurityAvailabilityReq(
+                new_availability=AvailabilityStatus.AVAILABLE,
+            )
+
+    def test_missing_availability_raises(self):
+        """Test missing new availability raises validationError"""
+        with pytest.raises(ValidationError):
+            UpdateSecurityAvailabilityReq(
+                neighbourhood_id=uuid4(),
+            )
+
+    def test_invalid_uuid_type(self):
+        "Test invalid neighbourhood_id raises"
+        with pytest.raises(ValidationError):
+            UpdateSecurityAvailabilityReq(
+                neighbourhood_id="not-a-uuid",
+                new_availability=AvailabilityStatus.AVAILABLE,
+            )
+
+    def test_invalid_availability_value(self):
+        "Test invalid availability raises"
+        with pytest.raises(ValidationError):
+            UpdateSecurityAvailabilityReq(
+                neighbourhood_id=uuid4(),
+                new_availability="ON_A_BREAK",
+            )
+
+    def test_none_availability_value(self):
+        "Test None is rejected"
+        with pytest.raises(ValidationError):
+            UpdateSecurityAvailabilityReq(
+                neighbourhood_id=uuid4(),
+                new_availability=None,
+            )
+
+class TestUpdateSecurityAvailabilityRes:
+    def test_with_message(self):
+        """Test response with a message"""
+        model = UpdateSecurityAvailabilityRes(
+            status=200,
+            message="Availability status updated sucessfully",
+        )
+        assert model.status == 200
+        assert model.message == "Availability status updated sucessfully"
+
+    def test_without_message(self):
+        """Test response without optional message"""
+        model = UpdateSecurityAvailabilityRes(status=200)
+        assert model.status == 200
+        assert model.message is None
+
+    def test_missing_status(self):
+        """Test that missing status raises error"""
+        with pytest.raises(ValidationError):
+            UpdateSecurityAvailabilityRes(
+                 message="Availability status updated sucessfully"
+            )

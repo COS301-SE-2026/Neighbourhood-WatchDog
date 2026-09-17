@@ -10,8 +10,10 @@ from app.api.controllers.neighbourhood import (
     get_neighbourhood_members,
     get_neighbourhood_properties,
     update_neighbourhood_member_role,
+    update_security_availability,
 )
 from app.models.neighbourhood_user import NeighbourhoodRole
+from app.models.security_officer import AvailabilityStatus
 from app.schemas.neighbourhood import (
     CreateNeighbourhoodReq,
     NeighbourhoodMemberRes,
@@ -19,6 +21,8 @@ from app.schemas.neighbourhood import (
     NeighbourhoodRes,
     UpdateMemberRoleReq,
     UpdateMemberRoleRes,
+    UpdateSecurityAvailabilityReq,
+    UpdateSecurityAvailabilityRes,
 )
 
 
@@ -304,6 +308,78 @@ async def test_update_neighbourhood_member_role_propagates_service_error():
         neighbourhood_id=NEIGHBOURHOOD_ID,
         member_user_id=MEMBER_USER_ID,
         new_role=payload.role,
+        db=DB,
+        claims=CLAIMS,
+    )
+
+@pytest.mark.asyncio
+async def test_update_security_availability_delegates_and_returns_response():
+    payload = UpdateSecurityAvailabilityReq(
+        neighbourhood_id=NEIGHBOURHOOD_ID,
+        new_availability=AvailabilityStatus.BUSY,
+    )
+    expected = UpdateSecurityAvailabilityRes(
+        status=200,
+        message="Availability status updated successfully",
+    )
+
+    with patch(
+        "app.api.controllers.neighbourhood.update_security_availability_handler",
+        new=AsyncMock(return_value=expected),
+    ) as handler:
+        response = await update_security_availability(payload, DB, CLAIMS)
+
+    assert response is expected
+    handler.assert_awaited_once_with(
+        neighbourhood_id=payload.neighbourhood_id,
+        new_availability=payload.new_availability,
+        db=DB,
+        claims=CLAIMS,
+    )
+
+@pytest.mark.asyncio
+async def test_update_security_availability_never_takes_officer_id():
+    """Endpoint does not have an officer id field in its schema"""
+    payload = UpdateSecurityAvailabilityReq(
+            neighbourhood_id=NEIGHBOURHOOD_ID,
+            new_availability=AvailabilityStatus.AVAILABLE,
+        )
+    assert not hasattr(payload, "officer_id")
+    assert not hasattr(payload, "user_id")
+
+    with patch(
+        "app.api.controllers.neighbourhood.update_security_availability_handler",
+        new=AsyncMock(return_value=UpdateSecurityAvailabilityRes(status=200, message="ok",)
+        ),
+    ) as handler:
+        await update_security_availability(payload, DB, CLAIMS)
+
+    _, kwargs = handler.await_args
+    assert set(kwargs.keys()) == {"neighbourhood_id", "new_availability", "db", "claims"}
+    assert kwargs["claims"] is CLAIMS
+
+@pytest.mark.asyncio
+async def test_update_security_availability_propagates_service_error():
+    payload = UpdateSecurityAvailabilityReq(
+            neighbourhood_id=NEIGHBOURHOOD_ID,
+            new_availability=AvailabilityStatus.UNAVAILABLE,
+        )
+    error = HTTPException(
+        status_code=403,
+        detail="Only security officers can update availability status",
+    )
+
+    with patch(
+        "app.api.controllers.neighbourhood.update_security_availability_handler",
+        new=AsyncMock(side_effect=error),
+    ) as handler:
+        with pytest.raises(HTTPException) as exc_info:
+            await update_security_availability(payload, DB, CLAIMS)
+
+    assert exc_info.value is error
+    handler.assert_awaited_once_with(
+        neighbourhood_id=payload.neighbourhood_id,
+        new_availability=payload.new_availability,
         db=DB,
         claims=CLAIMS,
     )

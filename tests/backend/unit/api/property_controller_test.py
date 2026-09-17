@@ -9,6 +9,7 @@ from app.api.controllers.property import (
     create_property,
     get_property_details,
     get_user_properties,
+    get_property_resident_context
 )
 from app.models.property import PropertyTypeEnum
 from app.schemas.property import CreatePropertyReq
@@ -95,3 +96,35 @@ async def test_get_property_details_delegates_to_service():
 
     assert response == expected
     handler.assert_awaited_once_with(PROPERTY_ID, db, CLAIMS)
+
+@pytest.mark.asyncio
+async def test_get_property_resident_context_delegates_to_service():
+    db = Mock()
+    expected = {
+        "property_id": PROPERTY_ID,
+        "address": "123 Test Street",
+        "property_type": PropertyTypeEnum.PRIVATE,
+        "neighbourhood_id": None,
+        "latitude": None,
+        "longitude": None,
+        "created_at": CREATED_AT,
+        "residents": [],
+    }
+
+    with patch(
+        "app.api.controllers.property."
+        "get_property_resident_context_handler",
+        new=AsyncMock(return_value=expected),
+    ) as handler:
+        response = await get_property_resident_context(
+            PROPERTY_ID,
+            db,
+            CLAIMS,
+        )
+
+    assert response == expected
+    handler.assert_awaited_once_with(
+        property_id=PROPERTY_ID,
+        db=db,
+        claims=CLAIMS,
+    )
