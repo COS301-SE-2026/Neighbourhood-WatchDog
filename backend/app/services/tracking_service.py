@@ -61,7 +61,7 @@ def normalize_appearance_embedding(values: list[float] | None) -> list[float] | 
         raise HTTPException(
             status_code=422,
             detail="appearance_embedding must not be a zero vector"
-            
+
         )
 
     return [value / norm for value in embedding]
@@ -192,6 +192,26 @@ async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUI
             status_code=500,
             detail="Failed to record tracking sighting"
         ) from exc
+
+
+async def match_tracking_embedding(*, db: AsyncSession, body: MatchTrackingEmbeddingRequest, candidate_property_id: UUID) -> TrackingMatchResponse:
+    """given a new person's appereance embedding from a camera, find the closest active tracking subject that could be that same person"""
+
+
+    if body.embedding_model != APPEARANCE_EMBEDDING_MODEL:
+        raise HTTPException(
+            status_code=422, 
+            detail=f"Unsupported appearance embedding model: {body.embedding_model}"
+        )
+
+    candidate_embedding = normalize_appearance_embedding(body.appearance_embedding)
+
+    if candidate_embedding is None:
+        raise HTTPException(
+            status_code=422,
+            detail="appearance_embedding is required"
+            
+        )
 
 
 ##authorization check - decide if a user can view a tracking timeline for a neighbourhhod
