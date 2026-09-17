@@ -3,13 +3,14 @@ from typing import List
 from fastapi import HTTPException
 from app.core.database import DbSession
 from uuid import UUID
-from app.schemas.neighbourhood import NeighbourhoodPropertyRes, NeighbourhoodRes, NeighbourhoodMemberRes
+from app.schemas.neighbourhood import NeighbourhoodPropertyRes, NeighbourhoodRes, NeighbourhoodMemberRes, UpdateSecurityAvailabilityRes
 from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.user import User
 from app.models.audit_log import TargetEntity
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
+from app.models.security_officer import SecurityOfficer, AvailabilityStatus
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 import secrets
@@ -503,3 +504,102 @@ async def leave_neighbourhood_handler(
             status_code=500,
             detail="Failed to leave neighbourhood"
         )
+
+async def update_security_availability_handler(
+        neighbourhood_id: UUID,
+        new_availability: AvailabilityStatus,
+        db: DbSession,
+        claims: dict,
+) -> UpdateSecurityAvailabilityRes:
+    """Update the security officer's availabilty status within a given neighbourhood"""
+    if not claims:
+        raise HTTPException(
+            status_code=401,
+            detail=NOT_AUTHENTICATED_MESSAGE
+        )
+
+    current_user_id = UUID(claims["id"])
+
+    try:
+        membership_result = await db.execute(
+            select(NeighbourhoodUser).where(
+                NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+                NeighbourhoodUser.user_id == current_user_id,
+            )
+        )
+        membership = membership_result.scalar_one_or_none()
+
+        if not membership:
+            raise HTTPException(
+                status_code=404,
+                detail="You are not a member of this neighbourhood"
+            )
+
+        if membership.role != NeighbourhoodRole.SECURITY_OFFICER:
+            raise HTTPException(
+                status_code=403,
+                detail="Only security officers can update availability status"
+            )
+
+        officer_result = await db.execute(
+            select(SecurityOfficer).where(
+                SecurityOfficer.neighbourhood_user_id == membership.id
+            )
+        )
+        officer = officer_result.scalar_one_or_none()
+
+        if not officer:
+            raise HTTPException(
+                status_code=404,
+                detail="Security officer not found"
+            )
+
+        old_status = officer.availability_status
+
+        if old_status == new_availability:
+            return UpdateSecurityAvailabilityRes(
+                status=200,
+                message="Availability status unchanged"
+            )
+
+        officer.availability_status = new_availability
+
+        await create_audit_log_item(
+            db=db,
+            user_id=current_user_id,
+            action=AuditAction.UPDATE,
+            target_entity_type=TargetEntity.SECURITYOFFICER,
+            target_entity_id=officer.id,
+            old_values={
+                "availability_status": old_status.value if old_status else None
+            },
+            new_values={
+                 "availability_status": new_availability.value
+            },
+        )
+
+        await db.commit()
+
+        return UpdateSecurityAvailabilityRes(
+            status=200,
+            message="Availability status updated successfully",
+        )
+
+    except HTTPException:
+        await db.rollback()
+        raise
+
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update availability status"
+        )
+
+    except Exception:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update availability status"
+        )
+        
