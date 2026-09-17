@@ -1093,3 +1093,72 @@ class TestSendAlertEmailBcc:
             "resident1@gmail.com",
             "resident2@gmail.com"
         ]
+
+
+class TestCriticalAlertMap:
+    def setup_method(self):
+        self.mock_db = Mock()
+        self.mock_db.execute = AsyncMock()
+
+        self.neighbourhood_id = uuid.uuid4()
+        self.property_id = uuid.uuid4()
+        self.camera_id = uuid.uuid4()
+        self.alert_id = uuid.uuid4()
+
+        self.claims = {
+            "id": str(uuid.uuid4()),
+            "sub": "cognito-sub-123"
+        }
+
+        self.neighbourhood = Mock()
+        self.neighbourhood.id = (
+            self.neighbourhood_id
+        )
+
+    def _make_joined_alert(
+        self,
+        latitude=-25.7479,
+        longitude=28.2293
+    ):
+        alert = Mock()
+        alert.id = self.alert_id
+        alert.detection_type = (
+            DetectionType.WEAPON_DETECTED
+        )
+        alert.status = "OPEN"
+        alert.created_at = datetime.now(
+            timezone.utc
+        )
+        alert.thumbnail_url = None
+
+        camera = Mock()
+        camera.id = self.camera_id
+        camera.name = "Front Gate Camera"
+        camera.property_id = self.property_id
+
+        property_obj = Mock()
+        property_obj.id = self.property_id
+        property_obj.neighbourhood_id = (
+            self.neighbourhood_id
+        )
+        property_obj.address = (
+            "123 Test Street, Pretoria"
+        )
+        property_obj.latitude = latitude
+        property_obj.longitude = longitude
+
+        return alert, camera, property_obj
+
+    def _mock_query_results(self, rows):
+        neighbourhood_result = Mock()
+        neighbourhood_result.scalar_one_or_none.return_value = (
+            self.neighbourhood
+        )
+
+        alerts_result = Mock()
+        alerts_result.all.return_value = rows
+
+        self.mock_db.execute.side_effect = [
+            neighbourhood_result,
+            alerts_result,
+        ]
