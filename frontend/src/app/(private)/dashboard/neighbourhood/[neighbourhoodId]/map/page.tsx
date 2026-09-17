@@ -206,8 +206,10 @@ export default function NeighbourhoodAlertMapPage() {
         neighbourhoodId,
     )?.neighbourhood?.role ?? null;
 
-  const isSecurityOfficer =
-    neighbourhoodRole === "SECURITY_OFFICER";
+  const canViewCriticalMap =
+    neighbourhoodRole === "SECURITY_OFFICER" ||
+    neighbourhoodRole === "NEIGHBOURHOOD_ADMIN";
+
 
   const {
     mappedAlerts,
@@ -221,7 +223,7 @@ export default function NeighbourhoodAlertMapPage() {
     isStale,
     usingCachedData,
   } = useCriticalAlerts(
-    isSecurityOfficer ? neighbourhoodId : "",
+    canViewCriticalMap ? neighbourhoodId : "",
   );
 
   const currentSelectedProperty =
@@ -251,7 +253,7 @@ export default function NeighbourhoodAlertMapPage() {
     );
   }
 
-  if (!isSecurityOfficer) {
+  if (!canViewCriticalMap) {
     return (
       <main className="min-h-full bg-brand-void px-6 py-8 text-brand-frost">
         <div className="mx-auto max-w-6xl">
@@ -262,7 +264,7 @@ export default function NeighbourhoodAlertMapPage() {
 
             <p className="mt-2 text-sm text-brand-ash">
               The critical-alert map is available only
-              to security officers in this neighbourhood.
+              to security officers and neighbourhood administrators.
             </p>
           </Card>
         </div>

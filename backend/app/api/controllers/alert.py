@@ -14,7 +14,7 @@ from app.models.neighbourhood_user import (
 from app.models.user import User
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.authorization import Claims, NeighbourhoodMemberClaims, SecurityOfficerClaims
+from app.auth.authorization import Claims, NeighbourhoodMemberClaims, CriticalAlertMapClaims
 from app.auth.dependencies import get_authenticated_edge_agent
 from app.core.database import DbSession, get_db
 from app.models.edge_agent_credentials import EdgeAgentCredential
@@ -294,8 +294,12 @@ async def alert_websocket(
                 NeighbourhoodUser.user_id == user.id,
                 NeighbourhoodUser.neighbourhood_id
                 == neighbourhood_id,
-                NeighbourhoodUser.role
-                == NeighbourhoodRole.SECURITY_OFFICER,
+                NeighbourhoodUser.role.in_(
+                    (
+                        NeighbourhoodRole.SECURITY_OFFICER,
+                        NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
+                    )
+                )
             )
         )
         membership = (
@@ -361,7 +365,7 @@ async def broadcast_neighbourhood_alert(
 async def get_critical_alerts_map(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: SecurityOfficerClaims,
+    claims: CriticalAlertMapClaims,
 ) -> CriticalAlertMapRes:
     data = await get_critical_alerts_map_handler(
         neighbourhood_id=neighbourhood_id,
@@ -391,7 +395,7 @@ async def get_critical_alerts_map(
 async def get_unlocated_critical_alerts(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: SecurityOfficerClaims,
+    claims: CriticalAlertMapClaims,
 ) -> UnlocatedCriticalAlertsRes:
     data = await get_unlocated_critical_alerts_handler(
         neighbourhood_id=neighbourhood_id,
