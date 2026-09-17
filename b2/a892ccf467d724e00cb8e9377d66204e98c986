@@ -1,0 +1,14 @@
+backend/app/services/security_officer_service.py
+  h_cf6208e37032c0 2,19-26,59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b2a892ccf467d724e00cb8e9377d66204e98c986",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
