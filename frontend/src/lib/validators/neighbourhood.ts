@@ -93,3 +93,4 @@ export type LeaveNeighbourhoodParams = z.infer<typeof LeaveNeighbourhoodParamsSc
 export type AvailabilityStatus = z.infer<typeof AvailabilityStatusSchema>;
 export type UpdateSecurityAvailabilityReq = z.infer<typeof UpdateSecurityAvailabilityReqSchema>;
 export type UpdateSecurityAvailabilityRes = z.infer<typeof UpdateSecurityAvailabilityResSchema>;
+export type GetSecurityAvailabilityRes = z.infer<typeof GetSecurityAvailabilityResSchema>;
