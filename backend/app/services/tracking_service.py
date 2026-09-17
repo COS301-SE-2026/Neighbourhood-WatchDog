@@ -179,3 +179,15 @@ async def _require_tracking_timeline_access(*, db: AsyncSession, claims: dict, n
 
             
         )
+
+
+async def get_tracking_timeline(*, db: AsyncSession, alert_id: UUID, claims: dict) -> TrackingTimelineResponse:
+    """returing ordered movement timeline for one alert"""
+
+    alert_result = await db.execute(
+        select(Alert, Camera, Property)
+        .join(Camera, Camera.id == Alert.camera_id)
+        .join(Property, Property.id == Camera.property_id)
+        .where(Alert.id == alert_id)
+    )
+    
