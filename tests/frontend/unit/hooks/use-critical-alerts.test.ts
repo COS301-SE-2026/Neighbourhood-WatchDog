@@ -144,3 +144,85 @@ const mockFetchUnlocated =
   fetchUnlocatedCriticalAlerts as jest.MockedFunction<
     typeof fetchUnlocatedCriticalAlerts
   >;
+
+describe("useCriticalAlerts offline cache", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    jest.clearAllMocks();
+
+    MockWebSocket.instances = [];
+
+    Object.defineProperty(
+      globalThis,
+      "WebSocket",
+      {
+        configurable: true,
+        writable: true,
+        value: MockWebSocket,
+      },
+    );
+
+    setOnline(true);
+
+    mockFetchMap.mockResolvedValue(
+      mapResponse([MPPED_ALERT]),
+    );
+
+    mockFetchUnlocated.mockResolvedValue(
+      unlocatedResponse(),
+    );
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  test("renders cached alerts while offline", async () => {
+    setOnline(false);
+
+    localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({
+        version: 1,
+        mapped_alerts: [MAPPED_ALERT],
+        unlocated_alerts: [],
+        last_updated: LAST_UPDATED,
+        cached_at: LAST_UPDATED,
+      }),
+    );
+
+    const { result } = renderHook(() =>
+      useCriticalAlerts(
+        NEIGHBOURHOOD_ID,
+      ),
+    );
+
+    await waitFor(() => {
+      expect(
+        result.current.mappedAlerts,
+      ).toHaveLength(1);
+    });
+
+    expect(
+      result.current.mappedAlerts[0].id,
+    ).toBe(MAPPED_ALERT.id);
+
+    expect(result.current.isOnline).toBe(
+      false
+    );
+    expect(result.current.isStale).toBe(
+      true
+    );
+    expect(
+      result.current.usingCachedData,
+    ).toBe(true);
+    expect(result.current.loading).toBe(
+      false
+    );
+
+    expect(
+      mockFetchMap,
+    ).not.toHaveBeenCalled();
+  });
+
+});
