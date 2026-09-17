@@ -243,8 +243,16 @@ async def match_tracking_embedding(*, db: AsyncSession, body: MatchTrackingEmbed
         raise HTTPException(
             status_code=403,
             detail="Candidate camera is not associated with a neighbourhood"
-            
+
         )
+
+
+    #distance close to 0 = very similar
+    #distance larger = less similar
+    cosine_distance = (
+        TrackingSubject.reference_embedding.cosine_distance(candidate_embedding)
+        .label("cosine_distance")
+    )
 
 
 ##authorization check - decide if a user can view a tracking timeline for a neighbourhhod
