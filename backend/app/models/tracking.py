@@ -8,6 +8,8 @@ from pgvector.sqlalchemy import Vector
 
 
 APPEARANCE_EMBEDDING_DIMENSION = 1280
+APPEARANCE_EMBEDDING_MODEL = "deep_sort_mobilenet_v2_bottleneck" ##using deepsorts fast-lightweight brain (MobileNetV2) to create visual fingerprints (bottleneck) to identify obj on stream
+#using this cause CNN is too heavy on computational complexity
 
 class TrackingSubject(Base):
     __tablename__ = "tracking_subject"
