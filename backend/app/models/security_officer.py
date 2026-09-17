@@ -24,6 +24,7 @@ class SecurityOfficer(Base):
     location_updated_at = Column(DateTime(timezone=True), nullable=True)
     # Relationships
     neighbourhood_user = relationship("NeighbourhoodUser", back_populates="security_officer")
+    dispatch = relationship("Dispatch", back_populates="officer", foreign_keys="Dispatch.officer_id")
 
     __table_args__ = (
         Index("ix_security_officer_lookup", "neighbourhood_user_id", "availability_status"),
