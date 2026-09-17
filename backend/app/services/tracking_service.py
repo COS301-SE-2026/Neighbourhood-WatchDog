@@ -1,20 +1,29 @@
 import logging
+import math
+import os
 from datetime import datetime
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import exists, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.alert import Alert
-from app.models.tracking import TrackingSighting, TrackingSubject
+from app.models.tracking import TrackingSighting, TrackingSubject, APPEARANCE_EMBEDDING_DIMENSION, APPEARANCE_EMBEDDING_MODEL
 from app.models.camera import Camera
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
 from app.models.property import Property
-from app.schemas.tracking import TrackingSightingResponse, TrackingTimelineData, TrackingTimelineResponse
+from app.schemas.tracking import MatchTrackingEmbeddingRequest, TrackingMatchData, TrackingMatchResponse, TrackingSightingResponse, TrackingTimelineData, TrackingTimelineResponse
 
 logger = logging.getLogger(__name__)
+
+TRACKING_MATCH_MIN_SIMILARITY = float(os.getenv("TRACKING_MATCH_MIN_SIMILARITY", "0.75"))
+
+if not 0.0 <= TRACKING_MATCH_MIN_SIMILARITY <= 1.0:
+    raise ValueError("TRACKING_MATCH_MIN_SIMILARITY must be between 0 and 1")
+
+
 
 
 async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUID, camera_id: UUID, local_track_id: int, observed_at: datetime, match_confidence: float | None = None) -> TrackingSighting:
