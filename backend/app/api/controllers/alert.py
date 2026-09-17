@@ -4,7 +4,14 @@ from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, WebSocket
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
+from sqlalchemy import select
+from app.auth.jwt import verify_jwt
+from app.models.neighbourhood_user import (
+    NeighbourhoodRole,
+    NeighbourhoodUser
+)
+from app.models.user import User
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.authorization import Claims, NeighbourhoodMemberClaims, SecurityOfficerClaims
@@ -254,14 +261,56 @@ async def acknowledge_alert(
     return AcknowledgeAlertRes(status=200, data=result)
 
 
-@router.websocket("/ws")
+@router.websocket("/{neighbourhood_id}/ws")
 async def alert_websocket(
-    neighbourhood_id: UUID,
     websocket: WebSocket,
-    claims: Claims
+    neighbourhood_id: UUID,
+    db: DbSession,
+    token: Annotated[str, Query()],
 ):
-   
-    user_id = claims["id"]
+    """Stream neighbourhood alert events to an authorised officer."""
+
+    try:
+        token_claims = verify_jwt(token)
+        cognito_sub = token_claims.get("sub")
+
+        if not cognito_sub:
+            await websocket.close(code=1008)
+            return
+
+        user_result = await db.execute(
+            select(User).where(
+                User.cognito_sub == cognito_sub,
+            )
+        )
+        user = user_result.scalar_one_or_none()
+
+        if user is None:
+            await websocket.close(code=1008)
+            return
+
+        membership_result = await db.execute(
+            select(NeighbourhoodUser).where(
+                NeighbourhoodUser.user_id == user.id,
+                NeighbourhoodUser.neighbourhood_id
+                == neighbourhood_id,
+                NeighbourhoodUser.role
+                == NeighbourhoodRole.SECURITY_OFFICER,
+            )
+        )
+        membership = (
+            membership_result.scalar_one_or_none()
+        )
+
+        if membership is None:
+            await websocket.close(code=1008)
+            return
+
+    except Exception:
+        await websocket.close(code=1008)
+        return
+
+    user_id = str(user.id)
 
     await websocket.accept()
     register_connection(user_id, websocket)
@@ -269,13 +318,21 @@ async def alert_websocket(
     try:
         while True:
             try:
-                await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                await asyncio.wait_for(
+                    websocket.receive_text(),
+                    timeout=30.0,
+                )
             except asyncio.TimeoutError:
-                await websocket.send_text(json.dumps({"event": "ping"}))
-    except Exception:
+                await websocket.send_text(
+                    json.dumps({"event": "ping"})
+                )
+
+    except WebSocketDisconnect:
         pass
+
     finally:
-        remove_connection(str(neighbourhood_id), websocket)
+        remove_connection(user_id, websocket)
+
 
 @router.post("/broadcast")
 async def broadcast_neighbourhood_alert(
