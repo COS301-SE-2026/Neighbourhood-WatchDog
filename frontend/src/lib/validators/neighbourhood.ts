@@ -82,13 +82,13 @@ export const GetSecurityAvailabilityResSchema = z.object({
   location_updated_at: z.coerce.date(),
 });
 
-export const UpdateSecurityLocationResSchema = z.object({
+export const UpdateSecurityLocationReqSchema = z.object({
   neighbourhood_id: z.uuid("Invalid neighbourhood ID"),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
 });
 
-export const UpdateSecurityLocationReqSchema = z.object({
+export const UpdateSecurityLocationResSchema = z.object({
   status: z.number().int(),
   message: z.string().nullable().optional(),
 });
