@@ -1,5 +1,5 @@
 import { apiCall } from './client'
-import { CreateNeighbourhoodReq, NeighbourhoodRes, CreateNeighbourhoodRes, NeighbourPropertiesRes, UpdateMemberRoleReq, NeighbourhoodMemberRes, UpdateMemberRoleRes, NeighbourhoodMembersRes, LeaveNeighbourhoodParams, LeaveNeighbourhoodParamsSchema } from '../validators/neighbourhood'
+import { CreateNeighbourhoodReq, NeighbourhoodRes, CreateNeighbourhoodRes, NeighbourPropertiesRes, UpdateMemberRoleReq, NeighbourhoodMemberRes, UpdateMemberRoleRes, NeighbourhoodMembersRes, LeaveNeighbourhoodParams, LeaveNeighbourhoodParamsSchema, AvailabilityStatus, UpdateSecurityAvailabilityRes } from '../validators/neighbourhood'
 
 export async function addNeighbourhood(data: CreateNeighbourhoodReq): Promise<NeighbourhoodRes> {
   const result = await apiCall<CreateNeighbourhoodRes>('/neighbourhood/create-neighbourhood', {
@@ -79,5 +79,21 @@ export async function leaveNeighbourhood(
     {
       method: "PATCH"
     }
+  );
+}
+
+export async function updateSecurityAvailability(
+  neighbourhoodId: string,
+  newAvailability: AvailabilityStatus,
+): Promise<UpdateSecurityAvailabilityRes> {
+  return apiCall<UpdateSecurityAvailabilityRes>(
+    `/neighbourhood/security/availability`,
+    {
+      method: "PATCH",
+      body: {
+        neighbourhood_id: neighbourhoodId,
+        new_availability: newAvailability,
+      },
+    },
   );
 }
