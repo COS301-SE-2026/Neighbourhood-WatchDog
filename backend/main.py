@@ -24,7 +24,6 @@ from app.api.controllers.risk_score_history import router as risk_score_history_
 from app.api.controllers.risk_threshold_config import router as risk_threshold_router
 from app.api.controllers.stream import router as stream_router
 from app.api.controllers.users import router as users_router
-from app.api.controllers.security_officer import router as officer_router
 from app.auth.rate_limiter import limiter
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -81,7 +80,6 @@ app.include_router(internal_failover_router)
 app.include_router(risk_score_history_router)
 app.include_router(pairing_token_router)
 app.include_router(risk_threshold_router)
-app.include_router(officer_router)
 
 @app.get("/health")
 def health_check():
