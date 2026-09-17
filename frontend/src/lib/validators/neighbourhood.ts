@@ -75,6 +75,12 @@ export const UpdateSecurityAvailabilityResSchema = z.object({
   message: z.string().nullable().optional(),
 });
 
+export const GetSecurityAvailabilityResSchema = z.object({
+  status: z.number().int(),
+  availability: AvailabilityStatusSchema,
+  message: z.string().nullable().optional(),
+});
+
 export type CreateNeighbourhoodReq = z.infer<typeof CreateNeighbourhoodReqSchema>;
 export type NeighbourhoodRes = z.infer<typeof NeighbourhoodResSchema>;
 export type CreateNeighbourhoodRes = z.infer<typeof CreateNeighbourhoodResSchema>;
