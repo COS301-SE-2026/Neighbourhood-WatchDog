@@ -217,4 +217,21 @@ async def get_tracking_timeline(*, db: AsyncSession, alert_id: UUID, claims: dic
         .where(TrackingSubject.alert_id == alert_id)
     )
 
-    
+    tracking_subject = subject_result.scalar_one_or_none()
+    if tracking_subject is None:
+        raise HTTPException(
+            status_code=404, 
+            detail="Tracking timeline not found"
+
+        )
+
+
+    sightings_result = db.execute(
+        select(TrackingSighting, Camera)
+        .join(Camera, Camera.id == TrackingSighting.camera_id)
+        .where(TrackingSighting.tracking_subject_id == tracking_subject.id)
+        .order_by(
+            TrackingSighting.sequence_no.asc(), 
+            TrackingSighting.observed_at.asc()
+            )
+    )
