@@ -190,4 +190,14 @@ async def get_tracking_timeline(*, db: AsyncSession, alert_id: UUID, claims: dic
         .join(Property, Property.id == Camera.property_id)
         .where(Alert.id == alert_id)
     )
+
+    alert_result = alert_result.one_or_none()
+
+    if alert_result is None:
+        raise HTTPException(
+            status_code=404, 
+            detail="Alert not found"
+
+        )
+
     
