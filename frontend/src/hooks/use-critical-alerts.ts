@@ -212,7 +212,114 @@ export function useCriticalAlerts(
       writeCache,
     ],
   );
- 
+
+
+  // Load cache immediately, then obtain fresh state.
+  useEffect(() => {
+    if (!neighbourhoodId) {
+      setMappedAlerts([]);
+      setUnlocatedAlerts([]);
+      setLastUpdated(null);
+      setUsingCachedData(false);
+      setLoading(false);
+      return;
+    }
+
+    const cacheLoaded = readCache();
+
+    if (cacheLoaded) {
+      setLoading(false);
+    }
+
+    if (navigator.onLine) {
+      void reconcile(!cacheLoaded);
+    }
+  }, [
+    neighbourhoodId,
+    readCache,
+    reconcile,
+  ]);
+
+  // Detect browser online/offline changes.
+  useEffect(() => {
+    function handleOnline() {
+      setIsOnline(true);
+
+      // Reconcile anything missed while offline.
+      void reconcile(false);
+    }
+
+    function handleOffline() {
+      setIsOnline(false);
+      setWsConnected(false);
+
+      websocketRef.current?.close();
+    }
+
+    window.addEventListener(
+      "online",
+      handleOnline,
+    );
+
+    window.addEventListener(
+      "offline",
+      handleOffline,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "online",
+        handleOnline,
+      );
+
+      window.removeEventListener(
+        "offline",
+        handleOffline,
+      );
+    };
+  }, [reconcile]);
+
+
+  // Detect browser online/offline changes.
+  useEffect(() => {
+    function handleOnline() {
+      setIsOnline(true);
+
+      // Reconcile anything missed while offline.
+      void reconcile(false);
+    }
+
+    function handleOffline() {
+      setIsOnline(false);
+      setWsConnected(false);
+
+      websocketRef.current?.close();
+    }
+
+    window.addEventListener(
+      "online",
+      handleOnline,
+    );
+
+    window.addEventListener(
+      "offline",
+      handleOffline,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "online",
+        handleOnline,
+      );
+
+      window.removeEventListener(
+        "offline",
+        handleOffline,
+      );
+    };
+  }, [reconcile]);
+
+
 
   const fetchAlerts = useCallback(async () => {
     if (!neighbourhoodId) {
