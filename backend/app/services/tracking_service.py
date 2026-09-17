@@ -142,7 +142,7 @@ async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUI
             raise HTTPException(
                 status_code=409,
                 detail="Tracking subject already has a sighting on this camera" 
-                
+
             )
 
 
@@ -222,6 +222,141 @@ async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUI
             status_code=500,
             detail="Failed to record tracking sighting"
         ) from exc
+
+
+async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTrackingSightingRequest, candidate_property_id: UUID) -> TrackingSightingCreateResponse:
+    """
+    records a cross-camera tracking sighting for an edge agent, but first makes sure the agent is allowed to use the camera and that the tracking subject belongs to the same neighbourhood.
+    """
+
+    candidate_camera_result = await db.execute(
+        select(Camera, Property)
+        .join(Property, Property.id == Camera.property_id)
+        .where(Camera.id == body.camera_id)
+    )
+
+    candidate_camera_row = candidate_camera_result.one_or_none()
+
+    if candidate_camera_row is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Candidate camera not found"
+
+        )
+
+    candidate_camera, candidate_property = candidate_camera_row
+
+    if candidate_camera.property_id != candidate_property_id:
+        raise HTTPException(
+            status_code=403,
+            detail="The edge agent is not authorized for this camera" 
+
+        )
+
+    if candidate_property.neighbourhood_id is None:
+        raise HTTPException(
+            status_code=403,
+            detail="Candidate camera is not associated with a neighbourhood" 
+
+        )
+
+    source_subject_result = await db.execute(
+        select(TrackingSubject, Alert, Camera, Property)
+        .join(Alert, Alert.id == TrackingSubject.alert_id)
+        .join(Camera, Camera.id == Alert.camera_id)
+        .join(Property, Property.id == Camera.property_id)
+        .where(TrackingSubject.id == body.tracking_subject_id)
+
+    )
+
+    source_subject_row = source_subject_result.one_or_none()
+
+    if source_subject_row is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Tracking subject not found" 
+
+        )
+
+    tracking_subject, parent_alert, source_camera, source_property = (source_subject_row)
+
+    if source_property.neighbourhood_id != candidate_property.neighbourhood_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Tracking subject belongs to a different neighbourhood"
+
+        )
+    
+
+    sighting = await record_tracking_sighting(
+        db=db,
+        tracking_subject_id=tracking_subject.id,
+        camera_id=body.camera_id,
+        local_track_id=body.local_track_id,
+        observed_at=body.observed_at,
+        match_confidence=body.match_confidence
+
+
+    )
+
+    authorized_recipient_result = await db.execute(
+        select(NeighbourhoodUser.user_id)
+        .where(
+            NeighbourhoodUser.neighbourhood_id == candidate_property.neighbourhood_id,
+            NeighbourhoodUser.role.in_(
+                {
+                    NeighbourhoodRole.SECURITY_OFFICER,
+                    NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
+                    NeighbourhoodRole.SYSTEM_ADMIN
+
+                }
+            )
+
+        )
+    )
+
+    recipient_ids = [
+        str(user_id)
+        for user_id in authorized_recipient_result.scalars().all()
+    ]
+
+    #  imported locally to avoid a module-level circular import.
+    from app.api.controllers.alert import broadcast
+
+    await broadcast(
+        recipient_ids,
+        {
+            "event": "tracking.sighting",
+            "alert_id": str(parent_alert.id),
+            "tracking_subject_id": str(tracking_subject.id),
+            "sighting_id": str(sighting.id),
+            "camera_id": str(body.camera_id),
+            "local_track_id": body.local_track_id,
+            "observed_at": body.observed_at.isoformat(),
+            "sequence_no": sighting.sequence_no,
+            "match_confidence": body.match_confidence
+
+
+        }
+    )
+
+    return TrackingSightingCreateResponse(
+        status=201,
+        message="Tracking sighting recorded and broadcast",
+        data=TrackingSightingCreateData(
+            alert_id=parent_alert.id,
+            tracking_subject_id=tracking_subject.id,
+            sighting_id=sighting.id,
+            camera_id=body.camera_id,
+            sequence_no=sighting.sequence_no,
+            match_confidence=body.match_confidence
+
+
+        )
+
+
+    )
+
 
 
 async def match_tracking_embedding(*, db: AsyncSession, body: MatchTrackingEmbeddingRequest, candidate_property_id: UUID) -> TrackingMatchResponse:
