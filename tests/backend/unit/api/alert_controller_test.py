@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
+from fastapi import WebSocketDisconnect
 import pytest
 
 from app.api.controllers.alert import (
@@ -103,3 +104,70 @@ async def test_alert_websocket_rejects_token_without_subject():
     )
     websocket.accept.assert_not_called()
     db.execute.assert_not_awaited()
+
+@pytest.mark.asyncio
+async def test_alert_websocket_registers_authorised_user():
+    neighbourhood_id = uuid4()
+
+    user = MagicMock()
+    user.id = uuid4()
+
+    membership = MagicMock()
+
+    user_result = MagicMock()
+    user_result.scalar_one_or_none.return_value = user
+
+    membership_result = MagicMock()
+    membership_result.scalar_one_or_none.return_value = (
+        membership
+    )
+
+    db = MagicMock()
+    db.execute = AsyncMock(
+        side_effect=[
+            user_result,
+            membership_result,
+        ]
+    )
+
+    websocket = MagicMock()
+    websocket.accept = AsyncMock()
+    websocket.close = AsyncMock()
+    websocket.receive_text = AsyncMock(
+        side_effect=WebSocketDisconnect(
+            code=1000
+        )
+    )
+
+    with (
+        patch(
+            "app.api.controllers.alert.verify_jwt",
+            return_value={
+                "sub": "cognito-user",
+            },
+        ),
+        patch(
+            "app.api.controllers.alert."
+            "register_connection",
+        ) as register,
+        patch(
+            "app.api.controllers.alert."
+            "remove_connection",
+        ) as remove,
+    ):
+        await alert_websocket(
+            websocket=websocket,
+            neighbourhood_id=neighbourhood_id,
+            db=db,
+            token="valid-token",
+        )
+
+    websocket.accept.assert_awaited_once()
+    register.assert_called_once_with(
+        str(user.id),
+        websocket,
+    )
+    remove.assert_called_once_with(
+        str(user.id),
+        websocket,
+    )
