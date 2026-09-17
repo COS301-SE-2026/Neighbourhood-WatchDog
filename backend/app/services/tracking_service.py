@@ -25,6 +25,47 @@ if not 0.0 <= TRACKING_MATCH_MIN_SIMILARITY <= 1.0:
 
 
 
+def normalize_appearance_embedding(values: list[float] | None) -> list[float] | None:
+    """validate and normalize deeprsort appearance embedding - return json/db unit vector"""
+
+    if values is None:
+        return None
+
+    if len(values) != APPEARANCE_EMBEDDING_DIMENSION:
+        raise HTTPException(
+            status_code=422, 
+            detail=f"appearance_embedding must contain exactly {APPEARANCE_EMBEDDING_DIMENSION} values"
+
+        )
+
+    try:
+        embedding = [float(value) for value in values]
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=422, 
+            detail="appearance_embedding must contain numeric values"
+
+        ) from exc
+
+
+    if not all(math.isfinite(value) for value in embedding):
+        raise HTTPException(
+            status_code=422,
+            detail="appearance_embedding must contain only finite values" 
+
+        )
+
+    norm = math.sqrt(sum(value * value for value in embedding))
+
+    if norm <= 0.0:
+        raise HTTPException(
+            status_code=422,
+            detail="appearance_embedding must not be a zero vector"
+            
+        )
+
+    return [value / norm for value in embedding]
+
 
 async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUID, camera_id: UUID, local_track_id: int, observed_at: datetime, match_confidence: float | None = None) -> TrackingSighting:
     """records a camera sighting for one tracking subject
