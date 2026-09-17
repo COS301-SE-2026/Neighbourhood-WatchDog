@@ -1,6 +1,6 @@
 import uuid
 from enum import Enum
-from sqlalchemy import Boolean, Column, Index, ForeignKey, text, TIMESTAMP, Enum as SAEnum, Float, Integer
+from sqlalchemy import CheckConstraint, Column, Index, ForeignKey, text, TIMESTAMP, Enum as SAEnum, Float, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -26,18 +26,27 @@ class Dispatch(Base):
     distance = Column(Float, nullable=True) #distance from alert in metres
     eta = Column(Float, nullable=True) #eta to alert in seconds
     workload = Column(Integer, nullable=True)
-    is_queued = Column(Boolean, nullable=False, server_default="false")
     status = Column(SAEnum(DispatchStatus, name="dispatch_status"), nullable=False, default=DispatchStatus.SELECTED)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
     responded_at = Column(TIMESTAMP(timezone=True), nullable=True)
 
     #relationships
     alert = relationship("Alert", back_populates="dispatch")
-    officer = relationship("SecurityOfficer")
+    neighbourhood = relationship("Neighbourhood", back_populates="dispatches")
+    officer = relationship("SecurityOfficer", back_populates="dispatch", foreign_keys=[officer_id])
 
     #indexes
     __table_args__ = (
         Index("ix_dispatch_alert_rank", "alert_id", "rank"),
         Index("ix_dispatch_officer", "officer_id"),
         Index("ix_dispatch_neighbourhood", "neighbourhood_id"),
+        Index("ix_dispatch_neighbourhood_status", "neighbourhood_id", "status"),
+        Index("uq_dispatch_alert_officer", "alert_id", "officer_id", unique=True, postgresql_where=text("officer_id IS NOT NULL")),
+
+        CheckConstraint(
+            "(status = 'NO_CANDIDATE' AND officer_id IS NULL) "
+            "OR (status != 'NO_CANDIDATE' AND officer_id IS NOT NULL)",
+            name="ck_dispatch_officer_matches_status",
+        ),
+        CheckConstraint("rank > 0", name="ck_dispatch_rank_positive"),
     )
