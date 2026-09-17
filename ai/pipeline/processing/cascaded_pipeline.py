@@ -327,7 +327,7 @@ class CascadedPipeline:
                 "weapon_detected": bool(parent and parent["weapon_detected"]),
                 "weapon_type": parent["weapon_type"] if parent else None,
                 "weapon_confidence": parent["weapon_confidence"] if parent else None
-                
+
             })
 
         return confirmed
@@ -446,6 +446,47 @@ class CascadedPipeline:
 
         for track_id in expired:
             del self._histories[track_id]
+
+
+    @staticmethod
+    def _get_appearance_embedding(raw_track: Any) -> list[float] | None:
+        """
+        Return the latest normalized DeepSORT appearance feature.
+
+        The vector is kept in memory only at this stage. It is not persisted
+        or sent through the regular annotation endpoint yet.
+        """
+
+        get_feature = getattr(raw_track, "get_feature", None)
+
+        if not callable(get_feature):
+            return None
+
+        try:
+            raw_feature = get_feature()
+        except (IndexError, TypeError, ValueError):
+            return None
+
+        if raw_feature is None:
+            return None
+
+        try:
+            values = [float(value) for value in raw_feature]
+        except (TypeError, ValueError):
+            return None
+
+        if not values:
+            return None
+
+        if not all(math.isfinite(value) for value in values):
+            return None
+
+        norm = math.sqrt(sum(value * value for value in values))
+
+        if norm <= 0.0:
+            return None
+
+        return [value / norm for value in values]
 
     @staticmethod 
     def _best_parent(track_bbox: list[float], persons: list[dict[str, Any]]) -> dict[str, Any] | None:
