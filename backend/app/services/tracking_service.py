@@ -14,7 +14,18 @@ from app.models.tracking import TrackingSighting, TrackingSubject, APPEARANCE_EM
 from app.models.camera import Camera
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
 from app.models.property import Property
-from app.schemas.tracking import MatchTrackingEmbeddingRequest, TrackingMatchData, TrackingMatchResponse, TrackingSightingResponse, TrackingTimelineData, TrackingTimelineResponse
+from app.schemas.tracking import (
+    MatchTrackingEmbeddingRequest,
+    RecordTrackingSightingRequest,
+    TrackingMatchData,
+    TrackingMatchResponse,
+    TrackingSightingCreateData,
+    TrackingSightingCreateResponse,
+    TrackingSightingResponse,
+    TrackingTimelineData,
+    TrackingTimelineResponse
+)
+
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +124,25 @@ async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUI
             raise HTTPException(
                 status_code=409, 
                 detail="Tracking sequence has already terminated"
+            )
+
+
+        duplicate_sighting_stmt = (
+            select(TrackingSighting.id)
+            .where(
+                TrackingSighting.tracking_subject_id == tracking_subject_id,
+                TrackingSighting.camera_id == camera_id 
+            )
+            .limit(1)
+        )
+
+        duplicate_sighting_result = await db.execute(duplicate_sighting_stmt)
+
+        if duplicate_sighting_result.scalar_one_or_none() is not None:
+            raise HTTPException(
+                status_code=409,
+                detail="Tracking subject already has a sighting on this camera" 
+                
             )
 
 
@@ -330,7 +360,7 @@ async def match_tracking_embedding(*, db: AsyncSession, body: MatchTrackingEmbed
             threshold=TRACKING_MATCH_MIN_SIMILARITY 
 
         )
-        
+
     )
 
 ##authorization check - decide if a user can view a tracking timeline for a neighbourhhod
