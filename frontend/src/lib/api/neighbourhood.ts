@@ -13,6 +13,8 @@ import {
   AvailabilityStatus, 
   UpdateSecurityAvailabilityRes,
   GetSecurityAvailabilityRes,
+  UpdateSecurityLocationReq,
+  UpdateSecurityLocationRes,
 } from '../validators/neighbourhood'
 
 export async function addNeighbourhood(data: CreateNeighbourhoodReq): Promise<NeighbourhoodRes> {
@@ -112,11 +114,27 @@ export async function updateSecurityAvailability(
   );
 }
 
+export async function updateSecurityLocation(
+  req: UpdateSecurityLocationReq,
+): Promise<UpdateSecurityLocationRes> {
+  return apiCall<UpdateSecurityLocationRes>(
+    `/neighbourhood/security/update-location`,
+    {
+      method: "PATCH",
+      body: {
+        neighbourhood_id: req.neighbourhood_id,
+        latitude: req.latitude,
+        longitude: req.longitude,
+      },
+    },
+  );
+}
+
 export async function getSecurityAvailability(
   neighbourhoodId: string,
 ): Promise<GetSecurityAvailabilityRes> {
   return apiCall<GetSecurityAvailabilityRes>(
     `/neighbourhood/${neighbourhoodId}/security/availability`,
-    { method: "GET" },
+    { method: "GET", },
   );
 }
