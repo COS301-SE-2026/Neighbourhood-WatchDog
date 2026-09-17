@@ -210,6 +210,22 @@ async def match_tracking_embedding(*, db: AsyncSession, body: MatchTrackingEmbed
         raise HTTPException(
             status_code=422,
             detail="appearance_embedding is required"
+
+        )
+
+    candidate_camera_result = await db.execute(
+        select(Camera, Property)
+        .join(Property, Property.id == Camera.property_id)
+        .where(Camera.id == body.camera_id)
+
+    )
+
+    candidate_camera_row = candidate_camera_result.one_or_none()
+
+    if candidate_camera_row is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Candidate camera not found"
             
         )
 
