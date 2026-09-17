@@ -1,10 +1,13 @@
 import uuid
 
-from sqlalchemy import CheckConstraint, Column, DateTime, Float, ForeignKey, Index, Integer, UniqueConstraint, text
+from sqlalchemy import CheckConstraint, Column, DateTime, Float, ForeignKey, Index, Integer, String, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+from pgvector.sqlalchemy import Vector
 
+
+APPEARANCE_EMBEDDING_DIMENSION = 1280
 
 class TrackingSubject(Base):
     __tablename__ = "tracking_subject"
@@ -14,6 +17,10 @@ class TrackingSubject(Base):
     ## existing Alert acts as the incident / tracking-session root
     alert_id = Column(UUID(as_uuid=True), ForeignKey("alert.id", ondelete="CASCADE"), nullable=False, unique=True)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=text("now()"))
+
+    reference_embedding = Column(Vector(APPEARANCE_EMBEDDING_DIMENSION),nullable=True)
+    embedding_model = Column(String(128), nullable=True)
+
     alert = relationship("Alert", back_populates="tracking_subject")
     sightings = relationship("TrackingSighting", back_populates="tracking_subject", cascade="all, delete-orphan", order_by="TrackingSighting.sequence_no")
 

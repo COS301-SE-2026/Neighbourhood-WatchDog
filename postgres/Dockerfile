@@ -11,7 +11,7 @@ RUN apk add --no-cache --virtual .pgvector-build-dependencies \
         --branch ${PGVECTOR_VERSION} \
         https://github.com/pgvector/pgvector.git \
         /tmp/pgvector \
-    && make -C /tmp/pgvector \
-    && make -C /tmp/pgvector install \
+    && make -C /tmp/pgvector with_llvm=no \
+    && make -C /tmp/pgvector with_llvm=no install \
     && rm -rf /tmp/pgvector \
     && apk del .pgvector-build-dependencies
