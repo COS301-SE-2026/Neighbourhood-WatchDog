@@ -331,7 +331,7 @@ def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer
         local_track_id=local_track_id,
         appearance_embedding=appearance_embedding
 
-        
+
     )
 
     if alert_id is None:
@@ -570,6 +570,8 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
                 if event["detection_type"] == "WEAPON_DETECTED":
                     local_track_id = int(event["track_id"])
 
+                    appearance_embedding = result.appearance_embeddings.get(local_track_id)
+
                     _schedule_weapon_clip(
                         camera=camera,
                         frame_buffer=annotated_frames,
@@ -577,8 +579,8 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
                         weapon_label=event.get("weapon_type") or "weapon",
                         confidence=float(event["weapon_confidence"] or event["confidence"]),
                         local_track_id=local_track_id, 
-                        stop_event=stop_event
-
+                        stop_event=stop_event,
+                        appearance_embedding=appearance_embedding
                         
                     )
 
