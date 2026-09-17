@@ -174,7 +174,7 @@ class CascadedPipeline:
             events=events,
             appearance_embeddings=appearance_embeddings
 
-            
+
         )
 
 
@@ -322,6 +322,7 @@ class CascadedPipeline:
                 "bbox": track_bbox,
                 "confidence": confidence,
 
+                "appearance_embedding": self._get_appearance_embedding(raw_track),
 
                 "weapon_detected": bool(parent and parent["weapon_detected"]),
                 "weapon_type": parent["weapon_type"] if parent else None,
