@@ -124,3 +124,31 @@ def test_loitering_is_derived_from_track_history():
     assert second.events[0]["severity"] == "MEDIUM"
     assert second.events[0]["zone_id"] == "zone-1"
     assert second.events[0]["loitering_duration_seconds"] == 6.0
+
+
+def test_best_parent_returns_none_when_no_person_overlaps_track():
+
+    track_bbox = [100, 100, 140, 160]
+
+    persons = [
+        {
+            "bbox": [0, 0, 20, 20],
+            "confidence": 0.95,
+            "weapon_detected": True,
+            "weapon_type": "knife",
+            "weapon_confidence": 0.90
+
+        },
+        {
+            "bbox": [200, 200, 240, 260],
+            "confidence": 0.88,
+            "weapon_detected": False,
+            "weapon_type": None,
+            "weapon_confidence": None
+
+        }
+
+        
+    ]
+
+    assert CascadedPipeline._best_parent(track_bbox, persons) is None
