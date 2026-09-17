@@ -1286,3 +1286,71 @@ class TestCriticalAlertMap:
             "property.longitude IS NULL"
             in query_text
         )
+
+    @pytest.mark.asyncio
+    async def test_map_returns_empty_alert_list(
+        self,
+    ):
+        self._mock_query_results([])
+
+        result = (
+            await get_critical_alerts_map_handler(
+                neighbourhood_id=(
+                    self.neighbourhood_id
+                ),
+                db=self.mock_db,
+                claims=self.claims
+            )
+        )
+
+        assert result.alerts == []
+        assert result.last_updated is not None
+        assert self.mock_db.execute.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_map_rejects_missing_neighbourhood(
+        self,
+    ):
+        neighbourhood_result = Mock()
+        neighbourhood_result.scalar_one_or_none.return_value = (
+            None
+        )
+
+        self.mock_db.execute.return_value = (
+            neighbourhood_result
+        )
+
+        with pytest.raises(
+            HTTPException
+        ) as exc_info:
+            await get_critical_alerts_map_handler(
+                neighbourhood_id=(
+                    self.neighbourhood_id
+                ),
+                db=self.mock_db,
+                claims=self.claims
+            )
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == (
+            "Neighbourhood not found"
+        )
+        assert self.mock_db.execute.await_count == 1
+
+    @pytest.mark.asyncio
+    async def test_unlocated_rejects_missing_claims(
+        self,
+    ):
+        with pytest.raises(
+            HTTPException
+        ) as exc_info:
+            await get_unlocated_critical_alerts_handler(
+                neighbourhood_id=(
+                    self.neighbourhood_id
+                ),
+                db=self.mock_db,
+                claims=None
+            )
+
+        assert exc_info.value.status_code == 401
+        assert self.mock_db.execute.await_count == 0
