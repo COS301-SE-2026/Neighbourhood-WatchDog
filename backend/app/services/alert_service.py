@@ -51,6 +51,7 @@ from app.services.notification_service import _format_whatsapp_message, _notify_
 from app.models.user import User
 
 from app.models.tracking import TrackingSighting, TrackingSubject
+from app.services.tracking_service import normalise_appearance_embedding
 
 
 logger = logging.getLogger(__name__)
@@ -1112,8 +1113,31 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
         db.add(alert)
         await db.flush()
 
+        if body.appearance_embedding is not None and body.local_track_id is None:
+            raise HTTPException(
+                status_code=422,
+                detail="local_track_id is required when an appearance_embedding is provided"
+    
+            )
+
+        if body.appearance_embedding is not None and body.embedding_model is None:
+            raise HTTPException(
+                status_code=422,
+                detail="embedding_model is required when an appearance_embedding is provided"
+    
+            )
+
         if body.local_track_id is not None:
-            tracking_subject = TrackingSubject(alert_id=alert.id)
+
+            reference_embedding = normalise_appearance_embedding(body.appearance_embedding)
+
+            tracking_subject = TrackingSubject(
+                alert_id=alert.id,
+                reference_embedding=reference_embedding,
+                embedding_model=body.embedding_model
+                
+            )
+
             db.add(tracking_subject)
             await db.flush()
 
