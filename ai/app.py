@@ -53,6 +53,7 @@ WEAPON_CONFIDENCE_THRESHOLD = float(os.getenv("WEAPON_CONFIDENCE_THRESHOLD", "0.
 WEAPON_NMS_IOU_THRESHOLD = float(os.getenv("WEAPON_NMS_IOU_THRESHOLD", "0.50"))
 TEMPORAL_CONFIRMATION_FRAMES = int(os.getenv("TEMPORAL_CONFIRMATION_FRAMES", "3"))
 
+APPEARANCE_EMBEDDING_MODEL = "deep_sort_mobilenet_v2_bottleneck"
 
 # #cache for the camera settings, refresh every 30 seconds ---- still need to test
 # _camera_settings: dict =  {
@@ -220,7 +221,7 @@ class LatestFrameReader:
             if cap is not None:
                 cap.release()
 
-def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: float, local_track_id: int) -> str | None:
+def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: float, local_track_id: int, appearance_embedding: list[float] | None = None) -> str | None:
     """Create a weapon alert immediately, independently of S3 footage."""
 
     api_key = keyring.get_password("WatchDog", "api_key") or INTERNAL_API_TOKEN
@@ -229,9 +230,15 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
         "camera_id": camera.id,
         "detection_type": "WEAPON_DETECTED",
         "confidence_score": confidence,
-        "local_track_id": local_track_id, 
+        "local_track_id": local_track_id,
         "frame_timestamp": datetime.now(timezone.utc).isoformat(),
-
+        "appearance_embedding": appearance_embedding,
+        "embedding_model": (
+            APPEARANCE_EMBEDDING_MODEL
+            if appearance_embedding is not None
+            else None
+        )
+        
     }
 
     logger.info(
