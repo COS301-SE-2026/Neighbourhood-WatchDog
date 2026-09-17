@@ -1,5 +1,19 @@
 import { apiCall } from './client'
-import { CreateNeighbourhoodReq, NeighbourhoodRes, CreateNeighbourhoodRes, NeighbourPropertiesRes, UpdateMemberRoleReq, NeighbourhoodMemberRes, UpdateMemberRoleRes, NeighbourhoodMembersRes, LeaveNeighbourhoodParams, LeaveNeighbourhoodParamsSchema, AvailabilityStatus, UpdateSecurityAvailabilityRes } from '../validators/neighbourhood'
+import { 
+  CreateNeighbourhoodReq, 
+  NeighbourhoodRes, 
+  CreateNeighbourhoodRes, 
+  NeighbourPropertiesRes,
+  UpdateMemberRoleReq, 
+  NeighbourhoodMemberRes, 
+  UpdateMemberRoleRes, 
+  NeighbourhoodMembersRes, 
+  LeaveNeighbourhoodParams, 
+  LeaveNeighbourhoodParamsSchema, 
+  AvailabilityStatus, 
+  UpdateSecurityAvailabilityRes,
+  GetSecurityAvailabilityRes,
+} from '../validators/neighbourhood'
 
 export async function addNeighbourhood(data: CreateNeighbourhoodReq): Promise<NeighbourhoodRes> {
   const result = await apiCall<CreateNeighbourhoodRes>('/neighbourhood/create-neighbourhood', {
@@ -95,5 +109,14 @@ export async function updateSecurityAvailability(
         new_availability: newAvailability,
       },
     },
+  );
+}
+
+export async function getSecurityAvailability(
+  neighbourhoodId: string,
+): Promise<GetSecurityAvailabilityRes> {
+  return apiCall<GetSecurityAvailabilityRes>(
+    `/neighbourhood/${neighbourhoodId}/security/availability`,
+    { method: "GET" },
   );
 }
