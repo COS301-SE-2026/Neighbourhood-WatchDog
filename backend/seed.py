@@ -84,9 +84,9 @@ async def seed_bulk_audit_logs(db: AsyncSession, user_id: UUID, count: int = 500
         entity_type = secrets.choice(TARGET_ENTITY_TYPES)
         entity_id = secrets.choice(ENTITY_IDS_BY_TYPE[entity_type])
         timestamp = now - timedelta(
-            days=random.randint(0, 90),
-            hours=random.randint(0, 23),
-            minutes=random.randint(0, 59),
+            days=random.randint(0, 90), #noqa
+            hours=random.randint(0, 23), #noqa
+            minutes=random.randint(0, 59), #noqa
         )
         old_values, new_values = _fake_values_for_action(action)
 
@@ -292,20 +292,20 @@ async def seed_database(bulk_audit_count: int = 500):
             day = one_year_ago + timedelta(days=day_offset)
 
             recency_weight = day_offset / num_days
-            daily_count = random.randint(0, int(2 + recency_weight * 8))
+            daily_count = random.randint(0, int(2 + recency_weight * 8)) #noqa
 
             for _ in range(daily_count):
                 event_time = day + timedelta(
-                    hours=random.randint(0, 23),
-                    minutes=random.randint(0, 59),
-                    seconds=random.randint(0, 59),
+                    hours=random.randint(0, 23), #noqa
+                    minutes=random.randint(0, 59), #noqa
+                    seconds=random.randint(0, 59), #noqa
                 )
 
                 alert = Alert(
                     id=uuid4(),
                     camera_id=CAMERA_ID,
                     frame_timestamp=event_time,
-                    detection_type=random.choice(detection_types),
+                    detection_type=random.choice(detection_types), #noqa
                     confidence_score=round(random.uniform(0.55, 0.99), 2),
                     thumbnail_url=None,
                     processed=True,
@@ -317,19 +317,19 @@ async def seed_database(bulk_audit_count: int = 500):
                 await db.flush()  # need detection_event.id for the FK below
                 detection_events_created += 1
  
-                status = random.choices(alert_statuses, weights=status_weights)[0]
+                status = random.choices(alert_statuses, weights=status_weights)[0] #noqa
  
                 resolved_by = None
                 resolved_at = None
                 if status == AlertStatus.RESOLVED:
                     resolved_by = USER_ID
-                    resolved_at = event_time + timedelta(minutes=random.randint(5, 300))
+                    resolved_at = event_time + timedelta(minutes=random.randint(5, 300)) #noqa
 
                 alert = Alert(
                     id=uuid4(),
                     camera_id=CAMERA_ID,
                     frame_timestamp=event_time,
-                    detection_type=random.choice(detection_types),
+                    detection_type=random.choice(detection_types), #noqa
                     confidence_score=round(random.uniform(0.55, 0.99), 2),
                     thumbnail_url=None,
                     processed=True,
