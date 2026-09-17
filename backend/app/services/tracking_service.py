@@ -235,3 +235,22 @@ async def get_tracking_timeline(*, db: AsyncSession, alert_id: UUID, claims: dic
             TrackingSighting.observed_at.asc()
             )
     )
+
+
+    sightings = [
+        TrackingSightingResponse(
+            id=sighting.id, 
+            camera_id=sighting_camera.id, 
+            camera_name=sighting_camera.name, 
+            camera_location=sighting_camera.location, 
+            local_track_id=sighting.local_track_id,
+            observed_at=sighting.observed_at,
+            sequence_no=sighting.sequence_no,
+            match_confidence=sighting.match_confidence,
+
+            
+        )
+        for sighting, sighting_camera in sightings_result.all()
+
+
+    ]
