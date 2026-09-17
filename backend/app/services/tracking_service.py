@@ -255,6 +255,58 @@ async def match_tracking_embedding(*, db: AsyncSession, body: MatchTrackingEmbed
     )
 
 
+    #dont match someone already seen by the camera
+    already_seen_on_candidate_camera = ~exists(
+        select(TrackingSighting.id)
+        .where(
+            TrackingSighting.tracking_subject_id == TrackingSubject.id,
+            TrackingSighting.camera_id == body.camera_id 
+
+        )
+    )
+
+
+    subject_stmt = (
+        select(TrackingSubject, cosine_distance)
+        .join(Alert, Alert.id == TrackingSubject.alert_id)
+        .join(Camera, Camera.id == Alert.camera_id)
+        .join(Property, Property.id == Camera.property_id)
+        .where(
+            Alert.status == "OPEN",
+            TrackingSubject.reference_embedding.is_not(None),
+            TrackingSubject.embedding_model == body.embedding_model,
+            Property.neighbourhood_id == candidate_property.neighbourhood_id,
+            already_seen_on_candidate_camera
+
+        )
+        .order_by(cosine_distance.asc())
+        .limit(1)
+    )
+
+
+    result = await db.execute(subject_stmt)
+    row = result.one_or_none()
+
+    if row is None:
+        return TrackingMatchResponse(
+            status=200,
+            message="No active tracking subject matched",
+            data=TrackingMatchData(
+                matched=False,
+                tracking_subject_id=None,
+                similarity=None,
+                threshold=TRACKING_MATCH_MIN_SIMILARITY 
+
+            )
+
+        )
+
+    tracking_subject, distance = row
+
+    #converting distance to similarity
+    similarity = max(0.0, min(1.0, 1.0 - float(distance)))
+
+
 ##authorization check - decide if a user can view a tracking timeline for a neighbourhhod
 async def _require_tracking_timeline_access(*, db: AsyncSession, claims: dict, neighbourhood_id: UUID) -> None:
     """only security, neighbourhood admins, and systems admins can see the tracking timeline"""
