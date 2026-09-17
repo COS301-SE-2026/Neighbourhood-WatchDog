@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   Clock,
   MapPinOff,
+  WifiOff,
   RefreshCw,
   ShieldAlert,
 } from "lucide-react";

@@ -22,7 +22,7 @@ import type {
 
 
 const CACHE_VERSION = 1 as const;
-const RECONNECT_DELAYS_MS = 3_000;
+const RECONNECT_DELAY_MS = 3_000;
 
 function getCacheKey(
   neighbourhoodId: string
@@ -319,45 +319,126 @@ export function useCriticalAlerts(
     };
   }, [reconcile]);
 
-
-
-  const fetchAlerts = useCallback(async () => {
-    if (!neighbourhoodId) {
-      setMappedAlerts([]);
-      setUnlocatedAlerts([]);
-      setLoading(false);
+  // Connect and automatically reconnect WebSocket.
+  useEffect(() => {
+    if (!neighbourhoodId || !isOnline) {
       return;
     }
 
-    setLoading(true);
-    setError(null);
+    let disposed = false;
 
-    try {
-      const [mapResponse, unlocatedResponse] =
-        await Promise.all([
-          fetchCriticalAlertMap(neighbourhoodId),
-          fetchUnlocatedCriticalAlerts(neighbourhoodId),
-        ]);
+    function scheduleReconnect() {
+      if (
+        disposed ||
+        !navigator.onLine
+      ) {
+        return;
+      }
 
-      setMappedAlerts(mapResponse.data.alerts);
-      setUnlocatedAlerts(
-        unlocatedResponse.data.alerts,
-      );
-      setLastUpdated(mapResponse.data.last_updated);
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "Failed to retrieve critical alerts",
-      );
-    } finally {
-      setLoading(false);
+      reconnectTimerRef.current =
+        setTimeout(
+          connect,
+          RECONNECT_DELAY_MS,
+        );
     }
-  }, [neighbourhoodId]);
 
-  useEffect(() => {
-    void fetchAlerts();
-  }, [fetchAlerts]);
+    function connect() {
+      if (
+        disposed ||
+        !navigator.onLine
+      ) {
+        return;
+      }
+
+      const token = getAuthToken();
+
+      if (!token) {
+        scheduleReconnect();
+        return;
+      }
+
+      const websocketUrl =
+        `${WS_BASE}/alerts/` +
+        `${encodeURIComponent(
+          neighbourhoodId,
+        )}/ws` +
+        `?token=${encodeURIComponent(token)}`;
+
+      const websocket =
+        new WebSocket(websocketUrl);
+
+      websocketRef.current = websocket;
+
+      websocket.onopen = () => {
+        if (disposed) {
+          return;
+        }
+
+        setWsConnected(true);
+
+        // Fetch anything missed during disconnection.
+        void reconcile(false);
+      };
+
+      websocket.onmessage = (message) => {
+        try {
+          const event = JSON.parse(
+            message.data as string,
+          ) as {
+            event?: string;
+          };
+
+          if (event.event === "ping") {
+            return;
+          }
+
+          void reconcile(false);
+        } catch {
+        }
+      };
+
+      websocket.onerror = () => {
+        websocket.close();
+      };
+
+      websocket.onclose = () => {
+        if (disposed) {
+          return;
+        }
+
+        setWsConnected(false);
+        scheduleReconnect();
+      };
+    }
+
+    connect();
+
+    return () => {
+      disposed = true;
+
+      if (reconnectTimerRef.current) {
+        clearTimeout(
+          reconnectTimerRef.current,
+        );
+      }
+
+      const websocket =
+        websocketRef.current;
+
+      if (websocket) {
+        websocket.onclose = null;
+        websocket.close();
+      }
+
+      websocketRef.current = null;
+    };
+  }, [
+    neighbourhoodId,
+    isOnline,
+    reconcile,
+  ]);
+
+  const isStale = usingCachedData || !isOnline || !wsConnected;
 
   return {
     mappedAlerts,
@@ -365,6 +446,10 @@ export function useCriticalAlerts(
     lastUpdated,
     loading,
     error,
-    refetch: fetchAlerts,
+    isOnline,
+    wsConnected,
+    isStale,
+    usingCachedData,
+    refetch: () => reconcile(true),
   };
 }
