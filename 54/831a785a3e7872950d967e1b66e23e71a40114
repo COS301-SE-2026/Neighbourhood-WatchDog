@@ -1,0 +1,14 @@
+backend/app/api/controllers/neighbourhood.py
+  h_cf6208e37032c0 17,29,213-232
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "54831a785a3e7872950d967e1b66e23e71a40114",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
