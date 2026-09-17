@@ -210,3 +210,11 @@ async def get_tracking_timeline(*, db: AsyncSession, alert_id: UUID, claims: dic
         )
 
     
+    await _require_tracking_timeline_access(db=db, claims=claims, neighbourhood_id=property_obj.neighbourhood_id)
+
+    subject_result = await db.execute(
+        select(TrackingSubject)
+        .where(TrackingSubject.alert_id == alert_id)
+    )
+
+    
