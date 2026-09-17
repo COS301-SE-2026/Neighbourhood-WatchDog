@@ -78,6 +78,20 @@ function detectionLabel(
     : "Fall detected";
 }
 
+function connectionStatusLabel(
+  isOnline: boolean,
+  wsConnected: boolean,
+): string {
+  if (!isOnline) {
+    return "Offline";
+  }
+
+  return wsConnected
+    ? "Live updates connected"
+    : "Connecting to live updates…";
+}
+
+
 function MapLoadingState() {
   return (
     <div className="flex h-[34rem] items-center justify-center rounded-lg border border-border bg-brand-depth">
@@ -299,11 +313,10 @@ export default function NeighbourhoodAlertMapPage() {
             )}
 
             <p className="mt-1 text-xs text-brand-ash">
-                {!isOnline
-                  ? "Offline"
-                  : wsConnected
-                    ? "Live updates connected"
-                    : "Connecting to live updates…"}
+                {connectionStatusLabel(
+                  isOnline,
+                  wsConnected,
+                )}
               </p>
           </div>
 
@@ -352,11 +365,10 @@ export default function NeighbourhoodAlertMapPage() {
               )}
 
               <p className="mt-1 text-xs text-brand-ash">
-                {!isOnline
-                  ? "Offline"
-                  : wsConnected
-                    ? "Live updates connected"
-                    : "Connecting to live updates…"}
+                {connectionStatusLabel(
+                  isOnline,
+                  wsConnected,
+                )}
               </p>
 
 

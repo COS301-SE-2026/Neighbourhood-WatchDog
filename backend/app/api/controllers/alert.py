@@ -352,7 +352,6 @@ async def broadcast_neighbourhood_alert(
 
 @router.get(
     "/neighbourhoods/{neighbourhood_id}/critical/map",
-    response_model=CriticalAlertMapRes,
     summary="List mapped critical alerts for a neighbourhood",
     responses={
         401: {"description": "Not authenticated"},
@@ -382,7 +381,6 @@ async def get_critical_alerts_map(
 
 @router.get(
     "/neighbourhoods/{neighbourhood_id}/critical/unlocated",
-    response_model=UnlocatedCriticalAlertsRes,
     summary="List critical alerts missing coordinates",
     responses={
         401: {"description": "Not authenticated"},

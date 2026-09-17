@@ -63,6 +63,7 @@ MAX_PAGE_SIZE = 100
 NO_DATABASE_SESSION = "No database session"
 NOT_AUTHORISED = "Not authorised for this neighbourhood"
 NOT_AUTHENTICATED = "Not authenticated"
+NEIGHBOURHOOD_NOT_FOUND = "Neighbourhood not found"
 ALERT_ID_INVALID = "alert_id is not a valid UUID"
 ALERT_NOT_FOUND = "Alert not found"
 CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
@@ -1048,7 +1049,7 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
     neighbourhood = result.scalar_one_or_none()
     if not neighbourhood:
         logger.warning("broadcast_neighbourhood_alert_service: could not find neighbourhoodcamera linked to alert with alert_id=%s", alert_id)
-        raise HTTPException(status_code=404, detail="Neighbourhood not found")
+        raise HTTPException(status_code=404, detail=NEIGHBOURHOOD_NOT_FOUND)
 
     detection_type = alert.detection_type.value \
     if hasattr(alert.detection_type, "value") \
@@ -1382,7 +1383,7 @@ async def get_critical_alerts_map_handler(
     neighbourhood = neighbourhood_result.scalar_one_or_none()
 
     if not neighbourhood:
-        raise HTTPException(status_code=404, detail="Neighbourhood not found")
+        raise HTTPException(status_code=404, detail=NEIGHBOURHOOD_NOT_FOUND)
 
     
     stmt = (
@@ -1447,7 +1448,7 @@ async def get_unlocated_critical_alerts_handler(
     neighbourhood = neighbourhood_result.scalar_one_or_none()
 
     if not neighbourhood:
-        raise HTTPException(status_code=404, detail="Neighbourhood not found")
+        raise HTTPException(status_code=404, detail=NEIGHBOURHOOD_NOT_FOUND)
 
     stmt = (
         _critical_neighbourhood_alerts_stmt(neighbourhood_id)
