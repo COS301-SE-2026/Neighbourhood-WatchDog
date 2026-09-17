@@ -14,6 +14,7 @@ from threading import Lock
 from typing import Any, Sequence
 
 import time
+import math
 
 
 try:
@@ -58,6 +59,8 @@ class PipelineResult:
     tracks: list[dict[str, Any]] = field(default_factory=list)
     events: list[dict[str, Any]] = field(default_factory=list)
 
+    #keyed by camera-local DeepSORT track ID. These are kept separate from tracks because the annotation endpoint should not receive large appearance vectors on every frame.
+    appearance_embeddings: dict[int, list[float]] = field(default_factory=dict)
 
 
 @dataclass
@@ -121,34 +124,58 @@ class CascadedPipeline:
 
         tracks: list[dict[str, Any]] = []
         events: list[dict[str, Any]] = []
+        appearance_embeddings: dict[int, list[float]] = {}
 
         for track in confirmed_tracks:
             track_id = int(track["track_id"])
-            behaviour = self._classify_behaviour(track, now, frame.shape[:2])
+
+            appearance_embedding = track.get("appearance_embedding")
+
+            #  keep the appearance vector out of the regular annotation payload.
+            public_track = {
+                key: value
+                for key, value in track.items()
+                if key != "appearance_embedding"
+
+
+            }
+
+            behaviour = self._classify_behaviour(
+                public_track,
+                now,
+                frame.shape[:2]
+
+            )
 
             output = {
-                **track,
+                **public_track,
                 **behaviour,
                 "is_confirmed": True
 
-            } #dictionary containing everything from track, behaviour, and appending a 'true confirmation'
-
+            }
 
             tracks.append(output)
+
+            if appearance_embedding is not None:
+                appearance_embeddings[track_id] = appearance_embedding
 
             history = self._histories[track_id]
 
 
             if history.last_emitted_type != output["detection_type"]:
                 events.append(dict(output))
-
                 history.last_emitted_type = output["detection_type"]
+
 
         self._cleanup_histories(now)
 
+        return PipelineResult(
+            tracks=tracks,
+            events=events,
+            appearance_embeddings=appearance_embeddings
 
-
-        return PipelineResult(tracks=tracks, events=events)
+            
+        )
 
 
     def _detect_persons(self, frame: Any) -> list[dict[str, Any]]:
