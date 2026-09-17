@@ -254,3 +254,17 @@ async def get_tracking_timeline(*, db: AsyncSession, alert_id: UUID, claims: dic
 
 
     ]
+
+
+    return TrackingTimelineResponse (
+        status=200, 
+        message="Tracking timeline retrieved successfully", 
+        data=TrackingTimelineData(
+            alert_id=alert_id, 
+            tracking_subject_id=tracking_subject.id, 
+            alert_status=alert.status, 
+            sightings=sightings
+
+        )
+        
+    )
