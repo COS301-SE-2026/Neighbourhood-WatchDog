@@ -370,6 +370,132 @@ def _record_tracking_sighting(camera: CameraSpec, local_track_id: int, observed_
         return None
 
 
+def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: float, local_track_id: int, appearance_embedding: list[float] | None = None) -> str | None:
+    """
+    Match a detection to an existing incident before creating a new alert.
+
+    If a match is found, record a sighting against the existing alert.
+    If no match is found, create a new alert and tracking subject.
+    """
+
+    api_key = keyring.get_password("WatchDog", "api_key") or INTERNAL_API_TOKEN
+    observed_at = datetime.now(timezone.utc).isoformat()
+
+    if appearance_embedding is not None:
+        matcher_succeeded, tracking_subject_id, similarity = (
+            _match_tracking_subject(camera=camera, appearance_embedding=appearance_embedding, api_key=api_key)
+        )
+
+
+        if tracking_subject_id is not None and similarity is not None:
+            #not creating a second alert when the detection matches an existing subject. 
+            ## if recording fails, return None instead of creating a duplicate incident.
+            return _record_tracking_sighting(
+                camera=camera,
+                local_track_id=local_track_id,
+                observed_at=observed_at,
+                tracking_subject_id=tracking_subject_id,
+                match_confidence=similarity,
+                api_key=api_key
+
+            )
+
+        if not matcher_succeeded:
+            logger.warning(
+                "Tracking matcher unavailable for camera=%s; "
+                "falling back to a new alert",
+                camera.id
+
+            )
+
+    payload = {
+        "camera_id": camera.id,
+        "detection_type": "WEAPON_DETECTED",
+        "confidence_score": confidence,
+        "local_track_id": local_track_id,
+        "frame_timestamp": observed_at,
+        "appearance_embedding": appearance_embedding,
+
+        "embedding_model": (
+            APPEARANCE_EMBEDDING_MODEL
+            if appearance_embedding is not None
+            else None
+        )
+
+    }
+
+    logger.info(
+        "Creating weapon alert: camera=%s, label=%s, confidence=%.3f, "
+        "backend=%s",
+        camera.id,
+        weapon_label,
+        confidence,
+        BACKEND_URL
+
+    )
+
+    try:
+        response = httpx.post(
+            f"{BACKEND_URL}/internal/alerts",
+            headers={"X-Internal-Token": api_key},
+            json=payload,
+            timeout=10.0
+
+        )
+
+        logger.info(
+            "Weapon alert API response: status=%s, body=%s",
+            response.status_code,
+            response.text
+
+        )
+
+        response.raise_for_status()
+
+        alert_id = response.json().get("alert_id")
+
+        if not alert_id:
+            raise RuntimeError(f"Weapon alert API returned 2xx but no alert_id: {response.text}")
+
+        logger.info(
+            "Created weapon alert %s for camera %s (%s, %.2f)",
+            alert_id,
+            camera.id,
+            weapon_label,
+            confidence
+
+        )
+        
+
+        return str(alert_id)
+
+    except httpx.HTTPStatusError as error:
+        logger.exception(
+            "Weapon alert API rejected request: status=%s, body=%s",
+            error.response.status_code,
+            error.response.text
+
+        )
+        return None
+
+    except httpx.RequestError as error:
+        logger.exception(
+            "Could not reach weapon alert API at %s: %s",
+            BACKEND_URL,
+            error
+
+        )
+        return None
+
+    except Exception:
+        logger.exception(
+            "Unexpected weapon-alert creation failure for camera %s (%s)",
+            camera.id,
+            weapon_label
+        )
+        return None
+    
+
 def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, weapon_label: str, 
                           confidence: float, local_track_id: int, stop_event: threading.Event, appearance_embedding: list[float] | None = None) -> None:
     
