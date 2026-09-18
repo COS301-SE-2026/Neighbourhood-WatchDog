@@ -176,7 +176,7 @@ function getSidebarGroups(
         });
     }
 
-    if (activeContext.role === "Security Officer") {
+    if (activeContext.role === "Security Officer" || activeContext.role == "Neighbourhood Admin") {
         neighbourhoodItems.unshift({
             title: "Alert map",
             url:
