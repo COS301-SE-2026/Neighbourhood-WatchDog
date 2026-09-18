@@ -31,3 +31,5 @@ class AlertDispatchRes(BaseModel):
     queued: list[DispatchCandidateRes] = [] #busy officers
     no_candidate: bool = False
 
+class RespondDispatchReq(BaseModel):
+    action: Literal["ACCEPT", "DECLINE"]
