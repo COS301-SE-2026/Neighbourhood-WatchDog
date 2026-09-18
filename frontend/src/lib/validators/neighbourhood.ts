@@ -63,6 +63,46 @@ export const LeaveNeighbourhoodParamsSchema = z.object({
   propertyId: z.uuid("Invalid property ID")
 });
 
+export const AvailabilityStatusSchema = z.enum(["AVAILABLE", "BUSY", "UNAVAILABLE"]);
+
+export const DutyStatusSchema = z.enum(["ON_DUTY", "OFF_DUTY"]);
+
+export const UpdateSecurityAvailabilityReqSchema = z.object({
+  neighbourhood_id: z.uuid("Invalid neighbourhood ID"),
+  new_availability: AvailabilityStatusSchema,
+});
+
+export const UpdateSecurityAvailabilityResSchema = z.object({
+  status: z.number().int(),
+  message: z.string().nullable().optional(),
+});
+
+export const GetSecurityAvailabilityResSchema = z.object({
+  status: z.number().int(),
+  message: z.string().nullable().optional(),
+  availability: AvailabilityStatusSchema,
+  location_updated_at: z.coerce.date(),
+});
+
+export const UpdateSecurityLocationReqSchema = z.object({
+  neighbourhood_id: z.uuid("Invalid neighbourhood ID"),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+});
+
+export const UpdateSecurityLocationResSchema = z.object({
+  status: z.number().int(),
+  message: z.string().nullable().optional(),
+});
+
+export const OfficerLocationResSchema = z.object({
+  officer_id: z.uuid("Invalid officer ID"),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  location_updated_at: z.coerce.date(),
+  is_stale: z.boolean(),
+});
+
 export type CreateNeighbourhoodReq = z.infer<typeof CreateNeighbourhoodReqSchema>;
 export type NeighbourhoodRes = z.infer<typeof NeighbourhoodResSchema>;
 export type CreateNeighbourhoodRes = z.infer<typeof CreateNeighbourhoodResSchema>;
@@ -72,3 +112,11 @@ export type NeighbourhoodMembersRes = z.infer<typeof NeighbourhoodMembersResSche
 export type UpdateMemberRoleReq = z.infer<typeof UpdateMemberRoleReqSchema>;
 export type UpdateMemberRoleRes = z.infer<typeof UpdateMemberRoleResSchema>;
 export type LeaveNeighbourhoodParams = z.infer<typeof LeaveNeighbourhoodParamsSchema>;
+export type AvailabilityStatus = z.infer<typeof AvailabilityStatusSchema>;
+export type DutyStatus = z.infer<typeof DutyStatusSchema>;
+export type UpdateSecurityAvailabilityReq = z.infer<typeof UpdateSecurityAvailabilityReqSchema>;
+export type UpdateSecurityAvailabilityRes = z.infer<typeof UpdateSecurityAvailabilityResSchema>;
+export type GetSecurityAvailabilityRes = z.infer<typeof GetSecurityAvailabilityResSchema>;
+export type UpdateSecurityLocationRes = z.infer<typeof UpdateSecurityLocationResSchema>;
+export type UpdateSecurityLocationReq = z.infer<typeof UpdateSecurityLocationReqSchema>;
+export type OfficerLocationRes = z.infer<typeof OfficerLocationResSchema>;

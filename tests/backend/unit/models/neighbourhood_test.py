@@ -1,8 +1,7 @@
 from pydantic import ValidationError
 import pytest
 from uuid import uuid4
-from app.schemas.neighbourhood import CreateNeighbourhoodReq, NeighbourhoodRes, CreateNeighbourhoodRes, UpdateSecurityAvailabilityRes, UpdateSecurityAvailabilityReq
-from app.models.security_officer import AvailabilityStatus
+from app.schemas.neighbourhood import CreateNeighbourhoodReq, NeighbourhoodRes, CreateNeighbourhoodRes, UpdateSecurityAvailabilityRes, UpdateSecurityAvailabilityReq, OnDutyStatus
 from datetime import datetime
 
 class TestCreateNeighbourhoodReq:
@@ -143,26 +142,17 @@ class TestUpdateSecurityAvailabilityReq:
 
         req = UpdateSecurityAvailabilityReq(
             neighbourhood_id=neighbourhood_id,
-            new_availability=AvailabilityStatus.AVAILABLE,
+            new_duty_status=OnDutyStatus.ON_DUTY,
         )
 
         assert req.neighbourhood_id == neighbourhood_id
-        assert req.new_availability == AvailabilityStatus.AVAILABLE
-
-    def test_accepts_string_enum(self):
-        """Raw string values should be accepted since Availability is a string enum"""
-        req = UpdateSecurityAvailabilityReq(
-                neighbourhood_id=uuid4(),
-                new_availability="BUSY",
-            )
-
-        assert req.new_availability == AvailabilityStatus.BUSY
+        assert req.new_duty_status == OnDutyStatus.ON_DUTY
 
     def test_missing_neighbourhood_id_raises(self):
         """Test missing neighbourhood id raises validationError"""
         with pytest.raises(ValidationError):
             UpdateSecurityAvailabilityReq(
-                new_availability=AvailabilityStatus.AVAILABLE,
+                new_duty_status=OnDutyStatus.ON_DUTY,
             )
 
     def test_missing_availability_raises(self):
@@ -177,7 +167,7 @@ class TestUpdateSecurityAvailabilityReq:
         with pytest.raises(ValidationError):
             UpdateSecurityAvailabilityReq(
                 neighbourhood_id="not-a-uuid",
-                new_availability=AvailabilityStatus.AVAILABLE,
+                new_duty_status=OnDutyStatus.ON_DUTY,
             )
 
     def test_invalid_availability_value(self):
@@ -185,7 +175,7 @@ class TestUpdateSecurityAvailabilityReq:
         with pytest.raises(ValidationError):
             UpdateSecurityAvailabilityReq(
                 neighbourhood_id=uuid4(),
-                new_availability="ON_A_BREAK",
+                new_duty_status="ON_A_BREAK",
             )
 
     def test_none_availability_value(self):
@@ -193,7 +183,7 @@ class TestUpdateSecurityAvailabilityReq:
         with pytest.raises(ValidationError):
             UpdateSecurityAvailabilityReq(
                 neighbourhood_id=uuid4(),
-                new_availability=None,
+                new_duty_status=None,
             )
 
 class TestUpdateSecurityAvailabilityRes:

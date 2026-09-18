@@ -12,6 +12,7 @@ import {
     SidebarMenuBadge,
     SidebarMenuButton,
     SidebarMenuItem,
+    useSidebar,
 } from "@/components/ui/sidebar";
 
 import logoImage from "@/assets/images/logo-mark-only.svg";
@@ -41,6 +42,7 @@ import {
     User,
     UserPlus,
     Users,
+    Shield,
     type LucideIcon,
 } from "lucide-react";
 
@@ -56,6 +58,7 @@ import {
 import { usePropertyContext, type PropertyContext } from "@/hooks/use-property-context";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useUserContext } from "@/hooks/use-user-context";
+import { number } from "zod";
 
 type SidebarItemData = {
     title: string;
@@ -191,6 +194,22 @@ function getSidebarGroups(
         items: neighbourhoodItems
     });
 
+    const securityItems: SidebarItemData[] = [];
+
+    if (activeContext.role === "Security Officer") {
+        securityItems.unshift({
+            title: "Officer Status",
+            url: `/dashboard/security/${activeContext.id}/`,
+            icon: Shield,
+            // badge: , TODO: make this badge glow green when the officer's location is being broadcast
+        });
+    }
+
+    groups.push({
+        label: "SECURITY",
+        items: securityItems
+    })
+
     if (activeContext.role === "Neighbourhood Admin") {
         groups.push({
             label: "MANAGE NEIGHBOURHOOD",
@@ -278,6 +297,8 @@ const AppDashSidebar = () => {
     const { data: userContext } = useUserContext();
     const systemRole = userContext?.user.system_role ?? null;
     const displayName = userContext?.user.name ?? authUser?.fullname ?? "";
+    
+    const { setOpenMobile, isMobile } = useSidebar();
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const handlePropertyAdded = async () => {
@@ -335,6 +356,9 @@ const AppDashSidebar = () => {
                             >
                                 <Link
                                     href="/dashboard"
+                                    onClick={() => {
+                                        if (isMobile) setOpenMobile(false)
+                                    }}
                                     className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center"
                                 >
                                     <div className="flex size-9 shrink-0 items-center justify-center">
@@ -486,7 +510,11 @@ const AppDashSidebar = () => {
                                         return (
                                             <SidebarMenuItem key={item.title}>
                                                 <SidebarMenuButton asChild isActive={isActive}>
-                                                    <Link href={item.url}>
+                                                    <Link 
+                                                        href={item.url}
+                                                        onClick={() => {
+                                                            if (isMobile) setOpenMobile(false)
+                                                        }}>
                                                         <Icon />
                                                         <span>{item.title}</span>
                                                     </Link>

@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from geoalchemy2.elements import WKTElement
 
 from app.schemas.neighbourhood import UpdateOfficerLocationReq
-from app.services.security_officer_service import update_location_handler
+from app.services.neighbourhood_service import update_location_handler
 
 
 class TestUpdateOfficerLocation:

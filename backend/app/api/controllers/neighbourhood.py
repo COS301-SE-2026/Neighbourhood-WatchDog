@@ -14,6 +14,9 @@ from app.schemas.neighbourhood import (
     UpdateMemberRoleRes,
     UpdateSecurityAvailabilityRes,
     UpdateSecurityAvailabilityReq,
+    GetSecurityAvailabilityRes,
+    UpdateOfficerLocationReq,
+    UpdateOfficerLocationRes,
 )
 from app.services.neighbourhood_service import (
     create_neighbourhood_handler,
@@ -22,6 +25,8 @@ from app.services.neighbourhood_service import (
     update_neighbourhood_member_role_handler,
     leave_neighbourhood_handler,
     update_security_availability_handler,
+    update_location_handler,
+    get_security_availability_handler
 )
 
 router = APIRouter(prefix="/neighbourhood", tags=["neighbourhood"])
@@ -182,7 +187,49 @@ async def update_security_availability(
     """Updates the security officer's availability status"""
     return await update_security_availability_handler(
         neighbourhood_id=req.neighbourhood_id,
-        new_availability=req.new_availability,
+        new_duty_status=req.new_duty_status,
         db=db,
         claims=claims,
+    )
+
+@router.patch(
+    "/security/update-location",
+    response_model=UpdateOfficerLocationReq, # noqa
+    status_code=200,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        404: {"description": "Security officer not found"},
+    }
+)
+async def update_location(
+    req: UpdateOfficerLocationReq,
+    db: DbSession,
+    claims: Claims,
+) -> UpdateOfficerLocationRes:
+    """Gets the security officer's latest location and updates it in the database"""
+    return await update_location_handler(
+        req,
+        db,
+        claims,
+    )
+
+@router.get(
+    "/{neighbourhood_id}/security/availability",
+    response_model=GetSecurityAvailabilityRes, # noqa
+    status_code=200,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        404: {"description": "Security officer not found"},
+    }
+)
+async def get_security_availability(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: Claims,
+) -> GetSecurityAvailabilityRes:
+    """Gets the security officer's latest location and updates it in the database"""
+    return await get_security_availability_handler(
+        neighbourhood_id,
+        db,
+        claims,
     )

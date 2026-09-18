@@ -9,14 +9,6 @@ export function useLocationPermission() {
 	const [loading, setLoading] = useState(true);
 
 	const refresh = useCallback(async () => {
-		if (!Capacitor.isNativePlatform()) {
-		
-			setStatus("unsupported");
-			setLoading(false);
-			return "unsupported" as LocationPermissionState;
-		
-		}
-
 		setLoading(true);
 
 		try {
