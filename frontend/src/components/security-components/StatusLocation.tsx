@@ -14,6 +14,7 @@ import type { DutyStatus } from "@/lib/validators/neighbourhood"
 import { getSecurityAvailability, updateSecurityAvailability } from "@/lib/api/neighbourhood"
 import { cn } from "@/lib/utils"
 import { useLocationPermission } from "@/hooks/use-location-permission"
+import { useOfficerLocationTracking } from "@/hooks/use-officer-location-tracking"
 import { LocationPermissionDialog } from "../shared/LocationPermissionDialog"
 import { Capacitor } from "@capacitor/core" 
 
@@ -44,8 +45,8 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
 
 
   const loadAvailability = useCallback(
-    async (signal?: { cancelled: boolean }) => {
-      setLoading(true)
+    async (signal?: { cancelled: boolean }, silent = false) => {
+      if (!silent) setLoading(true)
       setError(null)
         
       try {
@@ -62,6 +63,16 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
       }
     }, [neighbourhoodId],
   )
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadAvailability(undefined, true)
+    }, 30_000)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [loadAvailability])
 
   useEffect(() => {
     const signal = { cancelled: false }
@@ -113,6 +124,8 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
       setSaving(false)
     }
   }
+
+  useOfficerLocationTracking(neighbourhoodId, officerStatus === "ON_DUTY")
 
   if (loading) {
     return (
