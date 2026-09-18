@@ -144,6 +144,8 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
   const [wsConnected, setWsConnected] = useState(false);
   const [fetchTick, setFetchTick] = useState(0);
 
+  const [trackingRefreshKey, setTrackingRefreshKey] = useState(0);
+
   const [selectedSeverities, setSelectedSeverities] = useState<Set<AlertSeverity>>(new Set(ALL_SEVERITIES));
   const [selectedStatus, setSelectedStatus] = useState<AlertStatus | null>(null);
   const [activeTab, setActiveTab] = useState<"current" | "history">("current");
@@ -224,6 +226,12 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
         try {
           const message = JSON.parse(event.data as string) as { event: string; payload?: Record<string, unknown> };
           if (message.event === "ping") return;
+          
+          if (message.event === "tracking.sighting") {
+            setTrackingRefreshKey((current) => current + 1);
+            return;
+          }
+
           if (message.event === "alert.new" && message.payload) {
             const incomingAlert = normaliseAlert(message.payload);
 
@@ -484,7 +492,16 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
               ) : (
                 <div className="space-y-3">
                   {filtered.map((alert) => (
-                    <AlertCard key={alert.id} alert={alert} onAcknowledge={handleAcknowledge} onBroadcast={isNeighbourhoodAdmin ? handleBroadcast : undefined} broadcasting={broadcastingAlertId === alert.id} />
+                    <AlertCard
+                      key={alert.id}
+                      alert={alert}
+                      onAcknowledge={handleAcknowledge}
+                      onBroadcast={
+                        isNeighbourhoodAdmin ? handleBroadcast : undefined
+                      }
+                      broadcasting={broadcastingAlertId === alert.id}
+                      trackingRefreshKey={trackingRefreshKey}
+                    />
                   ))}
                 </div>
               )}
