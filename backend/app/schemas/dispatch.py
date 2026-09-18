@@ -33,3 +33,8 @@ class AlertDispatchRes(BaseModel):
 
 class RespondDispatchReq(BaseModel):
     action: Literal["ACCEPT", "DECLINE"]
+
+class RespondDispatchRes(BaseModel):
+    status: int
+    message: str | None = None
+    data: DispatchCandidateRes | None
