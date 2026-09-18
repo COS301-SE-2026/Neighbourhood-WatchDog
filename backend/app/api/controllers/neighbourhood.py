@@ -194,7 +194,7 @@ async def update_security_availability(
 
 @router.patch(
     "/security/update-location",
-    response_model=UpdateOfficerLocationReq, # noqa
+    response_model=UpdateOfficerLocationRes, # noqa
     status_code=200,
     responses={
         401: {"description": "Invalid or missing authentication token"},
