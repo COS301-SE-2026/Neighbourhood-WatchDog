@@ -9,12 +9,12 @@ import {
   UpdateMemberRoleRes, 
   NeighbourhoodMembersRes, 
   LeaveNeighbourhoodParams, 
-  LeaveNeighbourhoodParamsSchema, 
-  AvailabilityStatus, 
+  LeaveNeighbourhoodParamsSchema,  
   UpdateSecurityAvailabilityRes,
   GetSecurityAvailabilityRes,
   UpdateSecurityLocationReq,
   UpdateSecurityLocationRes,
+  DutyStatus,
 } from '../validators/neighbourhood'
 
 export async function addNeighbourhood(data: CreateNeighbourhoodReq): Promise<NeighbourhoodRes> {
@@ -100,7 +100,7 @@ export async function leaveNeighbourhood(
 
 export async function updateSecurityAvailability(
   neighbourhoodId: string,
-  newAvailability: AvailabilityStatus,
+  newAvailability: DutyStatus,
 ): Promise<UpdateSecurityAvailabilityRes> {
   return apiCall<UpdateSecurityAvailabilityRes>(
     `/neighbourhood/security/availability`,

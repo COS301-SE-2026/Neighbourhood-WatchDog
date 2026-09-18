@@ -9,16 +9,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select"
-import type { AvailabilityStatus } from "@/lib/validators/neighbourhood"
+import type { DutyStatus } from "@/lib/validators/neighbourhood"
 import { getSecurityAvailability, updateSecurityAvailability } from "@/lib/api/neighbourhood"
 import { cn } from "@/lib/utils"
 
 const STALE_LOCATION_THRESHOLD_MS = 120_000
 
-const STATUS_OPTIONS: { value: AvailabilityStatus; label: string; dotClass: string }[] = [
-  { value: "AVAILABLE", label: "Available", dotClass: "bg-brand-green" },
-  { value: "BUSY", label: "Busy", dotClass: "bg-yellow-500" },
-  { value: "UNAVAILABLE", label: "Unavailable", dotClass: "bg-brand-ash" },
+const STATUS_OPTIONS: { value: DutyStatus; label: string; dotClass: string }[] = [
+  { value: "ON_DUTY", label: "On Duty", dotClass: "bg-brand-green" },
+  { value: "OFF_DUTY", label: "Off Duty", dotClass: "bg-brand-ash" },
 ]
 interface StatusToggleInterface {
   readonly neighbourhoodId: string
@@ -31,7 +30,7 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [isStale, setIsStale] = useState(true)
 
-  const [officerStatus, setOfficerStatus] = useState<AvailabilityStatus | null>(null)
+  const [officerStatus, setOfficerStatus] = useState<DutyStatus | null>(null)
   const [locationUpdatedAt, setLocationUpdatedAt] = useState<Date | null>(null)
   
   const loadAvailability = useCallback(
@@ -43,7 +42,7 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
         const res = await getSecurityAvailability(neighbourhoodId)
         if (signal?.cancelled) return
 
-        setOfficerStatus(res.availability)
+        setOfficerStatus((res.availability == "AVAILABLE" || res.availability == "BUSY") ? "ON_DUTY" : "OFF_DUTY")
         setLocationUpdatedAt(res.location_updated_at ? new Date(res.location_updated_at) : null)
       } catch (err) {
         if (signal?.cancelled) return
@@ -76,7 +75,7 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
     return () => clearInterval(interval)
   })
 
-  const handleStatusChange = async (next: AvailabilityStatus) => {
+  const handleStatusChange = async (next: DutyStatus) => {
     const previous = officerStatus
     setOfficerStatus(next)
     setSaveError(null)
@@ -127,7 +126,7 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
           <b>Status:</b>
           <Select
             value={officerStatus ?? undefined}
-            onValueChange={(value) => handleStatusChange(value as AvailabilityStatus)}
+            onValueChange={(value) => handleStatusChange(value as DutyStatus)}
             disabled={saving}
           >
             <SelectTrigger className="w-40">
