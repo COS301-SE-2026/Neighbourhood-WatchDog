@@ -64,7 +64,7 @@ class OnDutyStatus(str, Enum):
 
 class UpdateSecurityAvailabilityReq(BaseModel):
     neighbourhood_id: UUID
-    new_availability: OnDutyStatus
+    new_duty_status: OnDutyStatus
 
 class UpdateSecurityAvailabilityRes(BaseModel):
     status: int

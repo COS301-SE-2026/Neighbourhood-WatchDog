@@ -15,6 +15,7 @@ from app.schemas.neighbourhood import (
     UpdateOfficerLocationReq,
     UpdateOfficerLocationRes,
     GetSecurityAvailabilityRes,
+    OnDutyStatus,
 )
 from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property
@@ -34,6 +35,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 NOT_AUTHENTICATED_MESSAGE = "Not authenticated"
+SECURITY_OFFICER_NOT_FOUND = "Security officer not found"
 STALE_LOCATION_THRESHOLD_SECONDS = 120
 
 async def create_neighbourhood_handler(name: str, location: str, property_id: UUID, db: DbSession, claims: dict):
@@ -522,7 +524,7 @@ async def leave_neighbourhood_handler(
 
 async def update_security_availability_handler(
         neighbourhood_id: UUID,
-        new_availability: AvailabilityStatus,
+        new_duty_status: OnDutyStatus,
         db: DbSession,
         claims: dict,
 ) -> UpdateSecurityAvailabilityRes:
@@ -566,10 +568,18 @@ async def update_security_availability_handler(
         if not officer:
             raise HTTPException(
                 status_code=404,
-                detail="Security officer not found"
+                detail=SECURITY_OFFICER_NOT_FOUND
             )
 
         old_status = officer.availability_status
+
+        # It goes straight into avail or unavail coz I dont assume that they will be assigned a new alert upon changing status.
+        # that can happen when the officer's location is shared for the first time
+        new_availability = (
+            AvailabilityStatus.AVAILABLE 
+            if (new_duty_status == new_duty_status.ON_DUTY) 
+            else AvailabilityStatus.UNAVAILABLE
+        )
 
         if old_status == new_availability:
             return UpdateSecurityAvailabilityRes(
@@ -638,7 +648,7 @@ async def update_location_handler(
 
     if not claims:
         logger.warning("update_location_handler called with no claims")
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED_MESSAGE)
     
     stmt = (
         select(SecurityOfficer) # this is what deals with the validation ensuring that the person is an officer
@@ -652,7 +662,7 @@ async def update_location_handler(
 
     if officer_obj is None:
         logger.warning("update_location_handler Security officer not found. Failed for user with claim, claims=%s", claims)
-        raise HTTPException(404, "Security officer not found")
+        raise HTTPException(404, SECURITY_OFFICER_NOT_FOUND)
     
     try:
         officer_obj.last_known_location = WKTElement(f"POINT({long} {lat})", srid=4326)
@@ -680,7 +690,7 @@ async def get_security_availability_handler(
 
     if not claims:
         logger.warning("get_security_availability_handler called with no claims")
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(401, NOT_AUTHENTICATED_MESSAGE)
     
     stmt = (
         select(SecurityOfficer) # this is what deals with the validation ensuring that the person is an officer
@@ -694,7 +704,7 @@ async def get_security_availability_handler(
 
     if officer_obj is None:
         logger.warning("get_security_availability_handler Security officer not found. Failed for user with claim, claims=%s", claims)
-        raise HTTPException(404, "Security officer not found")
+        raise HTTPException(404, SECURITY_OFFICER_NOT_FOUND)
 
     logger.info("get_security_availability_handler successfully fetched availability of the officer with claim, claims=%s's ", claims)
     return GetSecurityAvailabilityRes(

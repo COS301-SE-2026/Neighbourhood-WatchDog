@@ -6,6 +6,7 @@ from app.models.audit_log import TargetEntity
 from app.services.neighbourhood_service import create_neighbourhood_handler, get_neighbourhood_members_handler, update_neighbourhood_member_role_handler, update_security_availability_handler
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from app.models.security_officer import AvailabilityStatus
+from app.schemas.neighbourhood import OnDutyStatus
 from uuid import uuid4
 from datetime import datetime
 from app.models.neighbourhood import Neighbourhood
@@ -1183,7 +1184,7 @@ async def test_update_availability_requires_claims():
     with pytest.raises(HTTPException) as exc_info:
         await update_security_availability_handler(
             neighbourhood_id=uuid4(),
-            new_availability=AvailabilityStatus.AVAILABLE,
+            new_duty_status=OnDutyStatus.ON_DUTY,
             db=mock_db,
             claims=None,
         )
@@ -1202,7 +1203,7 @@ async def test_update_availability_rejects_non_member():
     with pytest.raises(HTTPException) as exc_info:
             await update_security_availability_handler(
                 neighbourhood_id=uuid4(),
-                new_availability=AvailabilityStatus.AVAILABLE,
+                new_duty_status=OnDutyStatus.ON_DUTY,
                 db=mock_db,
                 claims={"id": str(uuid4())},
             )
@@ -1225,7 +1226,7 @@ async def test_update_availability_rejects_non_officer():
     with pytest.raises(HTTPException) as exc_info:
             await update_security_availability_handler(
                 neighbourhood_id=neighbourhood_id,
-                new_availability=AvailabilityStatus.AVAILABLE,
+                new_duty_status=OnDutyStatus.ON_DUTY,
                 db=mock_db,
                 claims={"id": str(officer_user_id)},
             )
@@ -1249,7 +1250,7 @@ async def test_update_availability_rejects_missing_officer():
     with pytest.raises(HTTPException) as exc_info:
             await update_security_availability_handler(
                 neighbourhood_id=neighbourhood_id,
-                new_availability=AvailabilityStatus.AVAILABLE,
+                new_duty_status=OnDutyStatus.ON_DUTY,
                 db=mock_db,
                 claims={"id": str(officer_user_id)},
             )
@@ -1275,7 +1276,7 @@ async def test_update_availability_updates_and_commits():
     with patch(AUDIT_PATCH, new=AsyncMock()) as audit_mock:
             response = await update_security_availability_handler(
                 neighbourhood_id=neighbourhood_id,
-                new_availability=AvailabilityStatus.AVAILABLE,
+                new_duty_status=OnDutyStatus.ON_DUTY,
                 db=mock_db,
                 claims={"id": str(officer_user_id)},
             )
@@ -1312,7 +1313,7 @@ async def test_update_availability_short_circuits_when_unchanged():
     with patch(AUDIT_PATCH, new=AsyncMock()) as audit_mock:
             response = await update_security_availability_handler(
                 neighbourhood_id=neighbourhood_id,
-                new_availability=AvailabilityStatus.AVAILABLE,
+                new_duty_status=OnDutyStatus.ON_DUTY,
                 db=mock_db,
                 claims={"id": str(officer_user_id)},
             )
@@ -1342,7 +1343,7 @@ async def test_update_availability_rolls_back_on_integrity_error():
     with pytest.raises(HTTPException) as exc_info:
             await update_security_availability_handler(
                 neighbourhood_id=neighbourhood_id,
-                new_availability=AvailabilityStatus.AVAILABLE,
+                new_duty_status=OnDutyStatus.ON_DUTY,
                 db=mock_db,
                 claims={"id": str(officer_user_id)},
             )
@@ -1370,7 +1371,7 @@ async def test_update_availability_handles_unexpected_error():
     with pytest.raises(HTTPException) as exc_info:
             await update_security_availability_handler(
                 neighbourhood_id=neighbourhood_id,
-                new_availability=AvailabilityStatus.AVAILABLE,
+                new_duty_status=OnDutyStatus.ON_DUTY,
                 db=mock_db,
                 claims={"id": str(officer_user_id)},
             )
@@ -1383,4 +1384,4 @@ async def test_update_availability_handles_unexpected_error():
 async def test_update_availability_handler_has_no_target_user_params():
     """Scoped to authenticated user only, there is no param for targeting another user"""
     params = set(inspect.signature(update_security_availability_handler).parameters)
-    assert params == {"neighbourhood_id", "new_availability", "db", "claims"}
+    assert params == {"neighbourhood_id", "new_duty_status", "db", "claims"}

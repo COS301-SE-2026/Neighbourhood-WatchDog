@@ -187,7 +187,7 @@ async def update_security_availability(
     """Updates the security officer's availability status"""
     return await update_security_availability_handler(
         neighbourhood_id=req.neighbourhood_id,
-        new_availability=req.new_availability,
+        new_duty_status=req.new_duty_status,
         db=db,
         claims=claims,
     )

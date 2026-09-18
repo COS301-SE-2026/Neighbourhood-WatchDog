@@ -13,7 +13,6 @@ from app.api.controllers.neighbourhood import (
     update_security_availability,
 )
 from app.models.neighbourhood_user import NeighbourhoodRole
-from app.models.security_officer import AvailabilityStatus
 from app.schemas.neighbourhood import (
     CreateNeighbourhoodReq,
     NeighbourhoodMemberRes,
@@ -23,6 +22,7 @@ from app.schemas.neighbourhood import (
     UpdateMemberRoleRes,
     UpdateSecurityAvailabilityReq,
     UpdateSecurityAvailabilityRes,
+    OnDutyStatus,
 )
 
 
@@ -316,7 +316,7 @@ async def test_update_neighbourhood_member_role_propagates_service_error():
 async def test_update_security_availability_delegates_and_returns_response():
     payload = UpdateSecurityAvailabilityReq(
         neighbourhood_id=NEIGHBOURHOOD_ID,
-        new_availability=AvailabilityStatus.BUSY,
+        new_duty_status=OnDutyStatus.ON_DUTY,
     )
     expected = UpdateSecurityAvailabilityRes(
         status=200,
@@ -332,7 +332,7 @@ async def test_update_security_availability_delegates_and_returns_response():
     assert response is expected
     handler.assert_awaited_once_with(
         neighbourhood_id=payload.neighbourhood_id,
-        new_availability=payload.new_availability,
+        new_duty_status=payload.new_duty_status,
         db=DB,
         claims=CLAIMS,
     )
@@ -342,7 +342,7 @@ async def test_update_security_availability_never_takes_officer_id():
     """Endpoint does not have an officer id field in its schema"""
     payload = UpdateSecurityAvailabilityReq(
             neighbourhood_id=NEIGHBOURHOOD_ID,
-            new_availability=AvailabilityStatus.AVAILABLE,
+            new_duty_status=OnDutyStatus.ON_DUTY,
         )
     assert not hasattr(payload, "officer_id")
     assert not hasattr(payload, "user_id")
@@ -355,14 +355,14 @@ async def test_update_security_availability_never_takes_officer_id():
         await update_security_availability(payload, DB, CLAIMS)
 
     _, kwargs = handler.await_args
-    assert set(kwargs.keys()) == {"neighbourhood_id", "new_availability", "db", "claims"}
+    assert set(kwargs.keys()) == {"neighbourhood_id", "new_duty_status", "db", "claims"}
     assert kwargs["claims"] is CLAIMS
 
 @pytest.mark.asyncio
 async def test_update_security_availability_propagates_service_error():
     payload = UpdateSecurityAvailabilityReq(
             neighbourhood_id=NEIGHBOURHOOD_ID,
-            new_availability=AvailabilityStatus.UNAVAILABLE,
+            new_duty_status=OnDutyStatus.OFF_DUTY,
         )
     error = HTTPException(
         status_code=403,
@@ -379,7 +379,7 @@ async def test_update_security_availability_propagates_service_error():
     assert exc_info.value is error
     handler.assert_awaited_once_with(
         neighbourhood_id=payload.neighbourhood_id,
-        new_availability=payload.new_availability,
+        new_duty_status=payload.new_duty_status,
         db=DB,
         claims=CLAIMS,
     )
