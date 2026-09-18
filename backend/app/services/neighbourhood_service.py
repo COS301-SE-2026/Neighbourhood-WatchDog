@@ -382,6 +382,27 @@ async def update_neighbourhood_member_role_handler(
 
         member_membership.role = new_role
 
+        if new_role == NeighbourhoodRole.SECURITY_OFFICER:
+            existing_officer = await db.execute(
+                select(SecurityOfficer).where(
+                    SecurityOfficer.neighbourhood_user_id == member_membership.id
+                )
+            )
+            if existing_officer.scalar_one_or_none() is None:
+                db.add(SecurityOfficer(
+                    neighbourhood_user_id=member_membership.id,
+                    availability_status=AvailabilityStatus.UNAVAILABLE
+                ))    
+        elif old_role == NeighbourhoodRole.SECURITY_OFFICER:
+            existing_officer = await db.execute(
+                select(SecurityOfficer).where(
+                    SecurityOfficer.neighbourhood_user_id == member_membership.id
+                )
+            )
+            officer = existing_officer.scalar_one_or_none()
+            if officer is not None:
+                await db.delete(officer)
+
         await create_audit_log_item(
             db=db,
             user_id=current_user_id,
