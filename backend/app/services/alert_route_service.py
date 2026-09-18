@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from geoalchemy2 import Geography
+from geoalchemy2 import Geography, Geometry
 from sqlalchemy import cast, func, select
 
 from app.core.database import DbSession
@@ -12,10 +12,26 @@ from app.models.neighbourhood_user import (
 from app.models.property import Property
 from app.models.security_officer import SecurityOfficer
 from app.models.user import User
-from app.schemas.alert import AlertDistanceData
+import logging
+
+import httpx
+
+from app.core.config import config
+from app.schemas.alert import (
+    AlertDistanceData,
+    AlertRouteData,
+    RouteGeometry,
+)
+
 from app.services.neighbourhood_service import (
     is_location_stale,
 )
+
+logger = logging.getLogger(__name__)
+
+
+class RoutingServiceUnavailable(Exception):
+    """Raised when OSRM cannot produce a valid route."""
 
 
 async def calculate_property_distance_handler(
@@ -41,6 +57,15 @@ async def calculate_property_distance_handler(
         Geography(geometry_type="POINT", srid=4326,)
     )
 
+    officer_geometry = cast(
+        SecurityOfficer.last_known_location,
+        Geometry(
+            geometry_type="POINT",
+            srid=4326,
+        ),
+    )
+
+
     distance_metres = func.ST_Distance(
         SecurityOfficer.last_known_location,
         property_location,
@@ -55,13 +80,20 @@ async def calculate_property_distance_handler(
             Property.longitude.label(
                 "property_longitude"
             ),
+            Property.address.label("property_address"),
+            func.ST_Y(officer_geometry).label(
+                "officer_latitude",
+            ),
+            func.ST_X(officer_geometry).label(
+                "officer_longitude",
+            ),
             SecurityOfficer.last_known_location
             .is_not(None)
             .label("has_officer_location"),
             SecurityOfficer.location_updated_at.label(
                 "officer_location_updated_at"
             ),
-            distance_metres,
+            distance_metres
         )
         .select_from(Property)
         .join(
@@ -105,10 +137,11 @@ async def calculate_property_distance_handler(
 
     return AlertDistanceData(
         property_id=row.property_id,
-        distance_metres=float(
-            row.distance_metres,
-        ),
-        officer_location_updated_at=(
-            row.officer_location_updated_at
-        ),
+        property_address=row.property_address,
+        property_latitude=float(row.property_latitude),
+        property_longitude=float(row.property_longitude),
+        officer_latitude=float(row.officer_latitude),
+        officer_longitude=float(row.officer_longitude),
+        distance_metres=float(row.distance_metres),
+        officer_location_updated_at=row.officer_location_updated_at,
     )

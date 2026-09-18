@@ -1,7 +1,7 @@
 from enum import Enum
 from datetime import datetime
 from uuid import UUID
-from typing import Optional, List
+from typing import Optional, List, Literal
 from pydantic import BaseModel, ConfigDict
 
 
@@ -212,8 +212,30 @@ class UnlocatedCriticalAlertsRes(BaseModel):
 
 class AlertDistanceData(BaseModel):
     property_id: UUID
+    property_address: str
+    property_latitude: float
+    property_longitude: float
+    officer_latitude: float
+    officer_longitude: float
     distance_metres: float
     officer_location_updated_at: datetime
+
+class RouteGeometry(BaseModel):
+    type: Literal["LineString"]
+    coordinates: list[tuple[float, float]]
+
+
+class AlertRouteData(AlertDistanceData):
+    route_distance_metres: float | None = None
+    eta_seconds: float | None = None
+    route_geometry: RouteGeometry | None = None
+    routing_error: str | None = None
+
+
+class AlertRouteRes(BaseModel):
+    status: int
+    message: str | None = None
+    data: AlertRouteData
 
 class AlertDistanceRes(BaseModel):
     status: int
