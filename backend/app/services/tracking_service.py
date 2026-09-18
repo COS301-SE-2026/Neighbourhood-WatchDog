@@ -320,25 +320,39 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
         for user_id in authorized_recipient_result.scalars().all()
     ]
 
-    #  imported locally to avoid a module-level circular import.
+
+    tracking_event_payload = {
+        "alert_id": str(parent_alert.id),
+        "tracking_subject_id": str(tracking_subject.id),
+        "sighting_id": str(sighting.id),
+        "camera_id": str(body.camera_id),
+        "local_track_id": body.local_track_id,
+        "observed_at": body.observed_at.isoformat(),
+        "sequence_no": sighting.sequence_no,
+        "match_confidence": body.match_confidence
+
+    }
+
+    #  imported locally to avoid a module level circular import.
     from app.api.controllers.alert import broadcast
 
-    await broadcast(
-        recipient_ids,
-        {
-            "event": "tracking.sighting",
-            "alert_id": str(parent_alert.id),
-            "tracking_subject_id": str(tracking_subject.id),
-            "sighting_id": str(sighting.id),
-            "camera_id": str(body.camera_id),
-            "local_track_id": body.local_track_id,
-            "observed_at": body.observed_at.isoformat(),
-            "sequence_no": sighting.sequence_no,
-            "match_confidence": body.match_confidence
+    try:
+        await broadcast(
+            recipient_ids,
+            {
+                "event": "tracking.sighting",
+                "payload": tracking_event_payload
+            } 
 
+        )
 
-        }
-    )
+    except Exception:
+        logger.exception(
+            "Tracking sighting committed but WebSocket broadcast failed: sighting_id=%s subject_id=%s",
+            sighting.id,
+            tracking_subject.id
+
+        )
 
     return TrackingSightingCreateResponse(
         status=201,
