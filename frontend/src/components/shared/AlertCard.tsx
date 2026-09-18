@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 
 import { AlertFootagePlayer } from "@/components/shared/AlertFootagePlayer";
+import { TrackingTimeline } from "@/components/shared/TrackingTimeline";
 
 
 type AlertLocationMapProps = {
@@ -203,6 +204,7 @@ interface AlertDetailSheetProps {
   onClose: () => void;
   onAcknowledge?: (id: string) => Promise<void>;
   acknowledging: boolean;
+  trackingRefreshKey?: number;
 }
 
 function AlertDetailSheet({
@@ -211,6 +213,7 @@ function AlertDetailSheet({
   onClose,
   onAcknowledge,
   acknowledging,
+  trackingRefreshKey = 0,
 }: AlertDetailSheetProps) {
   const severity = getSeverity(alert.detection_type);
   const isNew = alert.status === "NEW";
@@ -259,6 +262,19 @@ function AlertDetailSheet({
               timestamp={alert.created_at}
             />
 
+          )}
+
+          {alert.detection_type === "WEAPON_DETECTED" && (
+            <>
+              <TrackingTimeline
+                alertId={alert.id}
+                alertStatus={alert.status}
+                enabled={open}
+                refreshKey={trackingRefreshKey}
+              />
+
+              <Separator className="bg-brand-slate" />
+            </>
           )}
 
           <Separator className="bg-brand-slate" />
@@ -388,9 +404,10 @@ export interface AlertCardProps {
   readonly onAcknowledge?: (id: string) => Promise<void>;
   readonly onBroadcast?: (id: string) => Promise<void>;
   readonly broadcasting: boolean;
+  readonly trackingRefreshKey?: number;
 }
 
-export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: AlertCardProps) {
+export function AlertCard({alert, onAcknowledge, onBroadcast, broadcasting, trackingRefreshKey = 0}: AlertCardProps) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
 
@@ -545,6 +562,7 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
         onClose={() => setDetailOpen(false)}
         onAcknowledge={handleAcknowledge}
         acknowledging={acknowledging}
+        trackingRefreshKey={trackingRefreshKey}
       />
     </>
   );
