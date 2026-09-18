@@ -1,7 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { Card, CardAction, CardContent } from "../ui/card"
+import { Card, CardContent } from "../ui/card"
+import { Loader2 } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -12,6 +13,9 @@ import {
 import type { DutyStatus } from "@/lib/validators/neighbourhood"
 import { getSecurityAvailability, updateSecurityAvailability } from "@/lib/api/neighbourhood"
 import { cn } from "@/lib/utils"
+import { useLocationPermission } from "@/hooks/use-location-permission"
+import { LocationPermissionDialog } from "../shared/LocationPermissionDialog"
+import { Capacitor } from "@capacitor/core" 
 
 const STALE_LOCATION_THRESHOLD_MS = 120_000
 
@@ -33,6 +37,12 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
   const [officerStatus, setOfficerStatus] = useState<DutyStatus | null>(null)
   const [locationUpdatedAt, setLocationUpdatedAt] = useState<Date | null>(null)
   
+  const { status: permissionStatus, refresh: refreshPermission } = useLocationPermission()
+  const [showPermissionDialog, setShowPermissionDialog] = useState(false)
+  const [showUnsupportedNote, setShowUnsupportedNote] = useState(false)
+  const [permissionBlocked, setPermissionBlocked] = useState(false)
+
+
   const loadAvailability = useCallback(
     async (signal?: { cancelled: boolean }) => {
       setLoading(true)
@@ -76,6 +86,19 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
   })
 
   const handleStatusChange = async (next: DutyStatus) => {
+    if (next === "ON_DUTY" && !Capacitor.isNativePlatform()) {
+      setShowUnsupportedNote(true)
+      return 
+    }
+
+    if (next === "ON_DUTY" && permissionStatus !== "granted") {
+      setPermissionBlocked(true)
+      setShowPermissionDialog(true)
+      return 
+    }
+
+    setPermissionBlocked(false)
+    setShowUnsupportedNote(false)
     const previous = officerStatus
     setOfficerStatus(next)
     setSaveError(null)
@@ -94,9 +117,8 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
   if (loading) {
     return (
       <Card className="px-6 py-8 text-foreground md:px-8">
-        <CardContent className="space-y-2 p-0">
-          <div className="h-4 w-24 animate-pulse rounded bg-brand-slate"></div>
-          <div className="h-4 w-40 animate-pulse rounded bg-brand-slate"></div>
+        <CardContent className="flex items-center justify-center p-0 py-6">
+          <Loader2 className="size-5 animate-spin text-brand-green"/>
         </CardContent>
       </Card>
     )
@@ -110,7 +132,7 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
           <button
             type="button"
             onClick={() => loadAvailability()}
-            className="text-sm font-medium underline underline-offset-2"
+            className="text-sm font-medium underline underline-offset-2 cursor-pointer"
           >
             Retry
           </button>
@@ -120,7 +142,8 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
   }
 
   return (
-    <Card className="px-6 py-8 text-foreground md:px-8">
+    <div>
+    <Card className="px-6 py-5 text-foreground md:px-8">
       <CardContent className="space-y-3 p-0">
         <div className="flex items-center gap-3">
           <b>Status:</b>
@@ -166,8 +189,31 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
           </span>
         </div>
       </CardContent>
-
-      <CardAction/>
     </Card>
+    {permissionBlocked && (
+      <div className="flex items-center gap-2 text-sm text-destructive">
+        <span>Location permission is required to go on duty.</span>
+        <button
+          type="button"
+          onClick={() => handleStatusChange("ON_DUTY")}
+          className="font-medium underline underline-offset-2 cursor-pointer">
+            Retry
+        </button>
+      </div>
+    )}
+    {showUnsupportedNote && (
+      <div className="text-sm px-5 py-5 text-brand-ash">
+        Going on duty requires the WatchDog mobile app to share your location.
+        Please switch to your phone to go on duty.
+      </div>
+    )}
+    <LocationPermissionDialog
+      open={showPermissionDialog}
+      onOpenChange={(open) => {
+        setShowPermissionDialog(open)
+        if (!open) refreshPermission()
+      }}
+    />
+    </div>
   )
 }
