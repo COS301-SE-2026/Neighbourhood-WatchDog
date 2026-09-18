@@ -22,3 +22,12 @@ class DispatchCandidateRes(BaseModel):
     created_at: datetime
     notified_at: datetime | None
     responded_at: datetime | None
+
+class AlertDispatchRes(BaseModel):
+    """Lists selected, pending and queued officers for a given alert"""
+    alert_id: UUID
+    selected: DispatchCandidateRes | None = None
+    pending: list[DispatchCandidateRes] = [] #reserve queue ordered by rank
+    queued: list[DispatchCandidateRes] = [] #busy officers
+    no_candidate: bool = False
+
