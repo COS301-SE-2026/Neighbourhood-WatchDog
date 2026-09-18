@@ -16,7 +16,9 @@ from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.schemas.alert import TimeIntervalsEnum, TimePeriod
 from app.services.alert_service import (
     acknowledge_alert_handler, 
-    broadcast_neighbourhood_alert_service, 
+    broadcast_neighbourhood_alert_service,
+    get_critical_alerts_map_handler,
+    get_unlocated_critical_alerts_handler, 
     list_alerts_handler, 
     get_response_metrics_handler, 
     get_alert_frequency_metrics_handler,
@@ -1093,3 +1095,262 @@ class TestSendAlertEmailBcc:
             "resident1@gmail.com",
             "resident2@gmail.com"
         ]
+
+
+class TestCriticalAlertMap:
+    def setup_method(self):
+        self.mock_db = Mock()
+        self.mock_db.execute = AsyncMock()
+
+        self.neighbourhood_id = uuid.uuid4()
+        self.property_id = uuid.uuid4()
+        self.camera_id = uuid.uuid4()
+        self.alert_id = uuid.uuid4()
+
+        self.claims = {
+            "id": str(uuid.uuid4()),
+            "sub": "cognito-sub-123"
+        }
+
+        self.neighbourhood = Mock()
+        self.neighbourhood.id = (
+            self.neighbourhood_id
+        )
+
+    def _make_joined_alert(
+        self,
+        latitude=-25.7479,
+        longitude=28.2293
+    ):
+        alert = Mock()
+        alert.id = self.alert_id
+        alert.detection_type = (
+            DetectionType.WEAPON_DETECTED
+        )
+        alert.status = "OPEN"
+        alert.created_at = datetime.now(
+            timezone.utc
+        )
+        alert.thumbnail_url = None
+
+        camera = Mock()
+        camera.id = self.camera_id
+        camera.name = "Front Gate Camera"
+        camera.property_id = self.property_id
+
+        property_obj = Mock()
+        property_obj.id = self.property_id
+        property_obj.neighbourhood_id = (
+            self.neighbourhood_id
+        )
+        property_obj.address = (
+            "123 Test Street, Pretoria"
+        )
+        property_obj.latitude = latitude
+        property_obj.longitude = longitude
+
+        return alert, camera, property_obj
+
+    def _mock_query_results(self, rows):
+        neighbourhood_result = Mock()
+        neighbourhood_result.scalar_one_or_none.return_value = (
+            self.neighbourhood
+        )
+
+        alerts_result = Mock()
+        alerts_result.all.return_value = rows
+
+        self.mock_db.execute.side_effect = [
+            neighbourhood_result,
+            alerts_result,
+        ]
+
+    @pytest.mark.asyncio
+    async def test_get_critical_alerts_map_happy_path(
+        self,
+    ):
+        joined_alert = self._make_joined_alert()
+
+        self._mock_query_results(
+            [joined_alert]
+        )
+
+        result = (
+            await get_critical_alerts_map_handler(
+                neighbourhood_id=(
+                    self.neighbourhood_id
+                ),
+                db=self.mock_db,
+                claims=self.claims
+            )
+        )
+
+        assert len(result.alerts) == 1
+
+        alert = result.alerts[0]
+
+        assert alert.id == self.alert_id
+        assert alert.camera_id == self.camera_id
+        assert alert.camera_name == "Front Gate Camera"
+
+        assert alert.neighbourhood_id == self.neighbourhood_id
+        
+        assert alert.property_id == self.property_id
+        
+        assert alert.property_address == "123 Test Street, Pretoria"
+        
+        assert alert.latitude == -25.7479
+        assert alert.longitude == 28.2293
+        assert alert.detection_type == "WEAPON_DETECTED"
+        
+        assert alert.status == "OPEN"
+
+        assert self.mock_db.execute.await_count == 2
+
+        map_query = (
+            self.mock_db.execute
+            .await_args_list[1]
+            .args[0]
+        )
+        query_text = str(map_query)
+
+        assert (
+            "property.neighbourhood_id"
+            in query_text
+        )
+        assert (
+            "property.latitude IS NOT NULL"
+            in query_text
+        )
+        assert (
+            "property.longitude IS NOT NULL"
+            in query_text
+        )
+        assert (
+            "alert.detection_type IN"
+            in query_text
+        )
+        assert "alert.status =" in query_text
+
+    @pytest.mark.asyncio
+    async def test_get_unlocated_alerts_happy_path(
+        self,
+    ):
+        joined_alert = self._make_joined_alert(
+            latitude=None,
+            longitude=None
+        )
+
+        self._mock_query_results(
+            [joined_alert]
+        )
+
+        result = (
+            await get_unlocated_critical_alerts_handler(
+                neighbourhood_id=(
+                    self.neighbourhood_id
+                ),
+                db=self.mock_db,
+                claims=self.claims
+            )
+        )
+
+        assert len(result.alerts) == 1
+
+        alert = result.alerts[0]
+
+        assert alert.id == self.alert_id
+        assert alert.property_id == self.property_id
+    
+        assert alert.latitude is None
+        assert alert.longitude is None
+
+        assert self.mock_db.execute.await_count == 2
+
+        unlocated_query = (
+            self.mock_db.execute
+            .await_args_list[1]
+            .args[0]
+        )
+        query_text = str(unlocated_query)
+
+        assert (
+            "property.neighbourhood_id"
+            in query_text
+        )
+        assert (
+            "property.latitude IS NULL"
+            in query_text
+        )
+        assert (
+            "property.longitude IS NULL"
+            in query_text
+        )
+
+    @pytest.mark.asyncio
+    async def test_map_returns_empty_alert_list(
+        self,
+    ):
+        self._mock_query_results([])
+
+        result = (
+            await get_critical_alerts_map_handler(
+                neighbourhood_id=(
+                    self.neighbourhood_id
+                ),
+                db=self.mock_db,
+                claims=self.claims
+            )
+        )
+
+        assert result.alerts == []
+        assert result.last_updated is not None
+        assert self.mock_db.execute.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_map_rejects_missing_neighbourhood(
+        self,
+    ):
+        neighbourhood_result = Mock()
+        neighbourhood_result.scalar_one_or_none.return_value = (
+            None
+        )
+
+        self.mock_db.execute.return_value = (
+            neighbourhood_result
+        )
+
+        with pytest.raises(
+            HTTPException
+        ) as exc_info:
+            await get_critical_alerts_map_handler(
+                neighbourhood_id=(
+                    self.neighbourhood_id
+                ),
+                db=self.mock_db,
+                claims=self.claims
+            )
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == (
+            "Neighbourhood not found"
+        )
+        assert self.mock_db.execute.await_count == 1
+
+    @pytest.mark.asyncio
+    async def test_unlocated_rejects_missing_claims(
+        self,
+    ):
+        with pytest.raises(
+            HTTPException
+        ) as exc_info:
+            await get_unlocated_critical_alerts_handler(
+                neighbourhood_id=(
+                    self.neighbourhood_id
+                ),
+                db=self.mock_db,
+                claims=None
+            )
+
+        assert exc_info.value.status_code == 401
+        assert self.mock_db.execute.await_count == 0

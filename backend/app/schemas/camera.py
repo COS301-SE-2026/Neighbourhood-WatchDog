@@ -66,6 +66,7 @@ class EnabledCamerasRes(BaseModel):
     neighbourhood_id: UUID | None = None
     confidence_threshold: float
     zones: list[list[list[float]]] = Field(default_factory=list)
+    zone_ids: list[UUID] = Field(default_factory=list)
     publish_username: NonEmptyString
     publish_password: NonEmptyString
 

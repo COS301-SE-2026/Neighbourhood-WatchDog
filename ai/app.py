@@ -13,12 +13,9 @@ from fastapi import APIRouter, FastAPI, Query
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
-from deep_sort_realtime.deepsort_tracker import DeepSort
 from pipeline.utils.thumbnail import annotate_frame, encode_frame_as_jpeg
 from pipeline.utils.frame_buffer import AnnotatedFrameBuffer
-from pipeline.utils.zone_config import filter_detections_by_zones
-from pipeline.processing.alert_confirmation import is_track_ready_to_alert
-
+from pipeline.processing.cascaded_pipeline import CascadedPipeline, CascadedPipelineConfig
 
 import httpx
 import logging
@@ -114,121 +111,40 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
         logger.warning("Could not push annotations for camera %s: %s", camera_id, error)
 
 
-def _extract_detections(frame, zones: list | tuple | None = None, confidence_threshold: float | None = None) -> tuple[list, list]:
-    """Convert YOLO results to DeepSort detection format.
-    
-    runs both models and retains their detection inside the configured camera zones
-    
-    no zones = all detection are retained
-    configured zones = detections are retained only when the centre of the boundary box falls inside at least one polygon
-    """
+def _post_detection_event(camera: CameraSpec, event: dict) -> None:
+    """ send one edge-triggered classified event to the backend."""
 
-    zones = zones or []
+    api_key = keyring.get_password("WatchDog", "api_key")
+    if not api_key:
+        logger.warning("Cannot post detection event for camera %s: no paired API key", camera.id)
+        return
 
-
-    person_confidence = (PERSON_CONFIDENCE_THRESHOLD if confidence_threshold is None else confidence_threshold)
-    weapon_confidence = WEAPON_CONFIDENCE_THRESHOLD
-
-    # #running yolo on frame, applying the confidendce threshold and zone filters
-    # with _settings_lock:
-    #     threshold = _camera_settings["confidence_threshold"]
-    #     zones = list(_camera_settings["zones"])
-
-
-
-    frame_h, frame_w = frame.shape[:2]
-
-    #only passing human objects to deepsort
-    person_detections = []
-    weapon_detections = []
-
-
-    with _model_lock:
-
-        #threat detection
-        threat_results = threat_model.predict(
-            frame,
-            imgsz=512,
-            conf=weapon_confidence,
-            iou=WEAPON_NMS_IOU_THRESHOLD,
-            verbose=False
-        )
-
-
-        #person detection
-        person_results = person_model.predict(
-            frame,
-            imgsz=640,
-            conf=person_confidence,
-            iou=PERSON_NMS_IOU_THRESHOLD,
-            classes=[0],
-            verbose=False
-            )
-
-    for box in threat_results[0].boxes:
-        x1, y1, x2, y2 = box.xyxy[0].tolist()
-        confidence = float(box.conf[0])
-
-        label = threat_model.names[int(box.cls[0])] # represents gun, knife, grenade
-
-        weapon_detections.append(([x1, y1, x2 - x1, y2 - y1], confidence, label))
-
-
-    for box in person_results[0].boxes:
-        x1, y1, x2, y2 = box.xyxy[0].tolist()
-        confidence = float(box.conf[0])
-        person_detections.append(([x1, y1, x2 - x1, y2 - y1], confidence, "HUMAN_PRESENCE"))
-
-
-
-    #applying the zones filter (current plan: pass all it no zones are configured)
-    person_detections = filter_detections_by_zones(person_detections, zones, frame_w, frame_h)
-    weapon_detections = filter_detections_by_zones(weapon_detections, zones, frame_w, frame_h)
-
-
-
-
-    logger.debug("Filtered detections: persons=%s, threats=%s, zones=%s, threshold=%.2f", len(person_detections), len(weapon_detections), len(zones), confidence_threshold if confidence_threshold is not None else person_confidence)
-
-
-    return person_detections, weapon_detections
-
-
-def _build_track_payload(track) -> dict:
-    """Convert a confirmed DeepSort track to the annotation payload format."""
-    left, top, right, bottom = track.to_ltrb()
-
-    detection_type = track.get_det_class() or "HUMAN_PRESENCE"
-
-
-    return {
-        "track_id": track.track_id,
-        "confidence": float(track.det_conf) if track.det_conf is not None else 0.0,
-        "bbox": [left, top, right, bottom],
-        "detection_type": detection_type,
+    payload = {
+        "camera_id": camera.id,
+        "frame_timestamp": datetime.now(timezone.utc).isoformat(),
+        "detection_type": event["detection_type"],
+        "confidence_score": float(event["confidence"]),
+        "zone_id": event.get("zone_id")
     }
 
-
-def _send_new_person_alert(camera: CameraSpec, track_id: int, confidence: float, detection_type: str = "UNKNOWN") -> None:
-    """Send a one-time human-presence alert to the backend."""
     try:
-        api_key = keyring.get_password("WatchDog", "api_key")
-
-        httpx.post(
-            f"{BACKEND_URL}/alerts/",
-            json={
-                "camera_id": camera.id,
-                "neighbourhood_id": camera.neighbourhood_id,
-                "detection_type": detection_type.upper(), #GUN, KNIFE, GRENADE
-                "confidence": confidence,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "thumbnail_url": None,
-            },
+        response = httpx.post(
+            f"{BACKEND_URL}/internal/detections",
             headers={"X-Internal-Token": api_key},
-            timeout=1.0,
+            json=payload,
+            timeout=1.0
         )
-    except Exception:
-        logger.exception("Alert POST failed for camera %s", camera.id, track_id)
+
+        response.raise_for_status()
+
+    except httpx.RequestError as error:
+        logger.warning(
+            "Could not post detection event for camera %s: %s", camera.id, error)
+    except httpx.HTTPStatusError as error:
+        logger.warning("Backend rejected detection event for camera %s: %s", camera.id, error.response.status_code)
+
+
+
 
 
 def _open_stream(rtsp_url: str):
@@ -574,152 +490,84 @@ def _save_weapon_clip(alert_id: str, camera: CameraSpec, frame_buffer: Annotated
                 os.unlink(clip_path)
 
 def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Event) -> None:
-    """
-    Background thread: continuously read RTSP, run YOLO+DeepSort,
-    push live annotations, and retain annotated frames for clips.
-    """
+    """"reads one camera, runs the cascaded pipeline, and publish results."""
 
-    logger.info(
-        "Detection loop starting for camera %s at %s",
-        camera.id,
-        rtsp_url 
+    logger.info("Detection loop starting for camera %s", camera.id)
+
+    pipeline = CascadedPipeline(
+        person_model=person_model,
+        weapon_model=threat_model,
+        zones=camera.zones,
+        zone_ids=camera.zone_ids,
+
+        config=CascadedPipelineConfig(
+            person_confidence=camera.confidence_threshold,
+            person_iou=PERSON_NMS_IOU_THRESHOLD,
+            weapon_confidence=WEAPON_CONFIDENCE_THRESHOLD,
+            weapon_iou=WEAPON_NMS_IOU_THRESHOLD,
+            n_init=TEMPORAL_CONFIRMATION_FRAMES,
+            loitering_threshold_seconds=float(
+                os.getenv("LOITERING_THRESHOLD_SECONDS", "30")
+            ),
+            scan_time_window_seconds=float(
+                os.getenv("SCAN_TIME_WINDOW_SECONDS", "30")
+            ),
+            scan_crossing_threshold=int(
+                os.getenv("SCAN_CROSSING_THRESHOLD", "3")
+            )
+        ),
+
+        inference_lock=_model_lock
+
 
     )
 
-    tracker = DeepSort(
-        max_age=10,
-        n_init=TEMPORAL_CONFIRMATION_FRAMES,
-        max_iou_distance=0.5,
-        embedder="mobilenet",
-        embedder_gpu=False,
-        nms_max_overlap=0.5
-
-    )
-
-    alerted_ids: set = set()
-
-    #about four seconds at 25 FPS
     annotated_frames = AnnotatedFrameBuffer(max_frames=100)
-
     latest_frame_reader = LatestFrameReader(rtsp_url, stop_event)
     latest_frame_reader.start()
-
     last_processed_sequence = -1
 
     try:
         while not stop_event.is_set():
-            frame, last_processed_sequence = (
-                latest_frame_reader.get_latest_after(
-                    last_processed_sequence
-                )
-            )
+            frame, last_processed_sequence = latest_frame_reader.get_latest_after(last_processed_sequence)
 
             if frame is None:
                 stop_event.wait(0.01)
                 continue
 
-            person_detections, weapon_detections = _extract_detections(
-                frame,
-                zones=camera.zones,
-                confidence_threshold=camera.confidence_threshold 
-            )
+            result = pipeline.process_frame(frame)
+            tracks_payload = result.tracks
 
-            #  only human detections are passed through DeepSort
-            tracks = tracker.update_tracks(
-                person_detections,
-                frame=frame 
+            trigger_sequence = annotated_frames.append(annotate_frame(frame, tracks_payload))
 
-            )
-
-            tracks_payload = _collect_tracks(
-                tracks,
-                alerted_ids,
-                camera 
-
-            )
-
-            weapon_events: list[tuple[str, float]] = []
-
-            #add the raw weapon detections without DeepSort
-            for index, (bbox, confidence, label) in enumerate(weapon_detections):
-                x, y, width, height = bbox
-
-                tracks_payload.append(
-                    {
-                        "track_id": f"threat_{index}",
-                        "confidence": confidence,
-                        "bbox": [x, y, x + width, y + height],
-                        "detection_type": label
-
-                    }
-                )
-
-                if label.lower() in WEAPON_CLASSES:
-                    logger.info(
-                        "Weapon detection observed: camera=%s, "
-                        "label=%s, confidence=%.3f",
-                        camera.id,
-                        label,
-                        confidence
-
-                    )
-
-                    weapon_events.append(
-                        (label, confidence)
-                    )
-
-            #filter out zero confidence ghost tracks
-            tracks_payload = [
-                track
-                for track in tracks_payload
-
-                if track.get("confidence", 0) > 0.1 or str(track.get("track_id", "")).startswith("threat_")
-            ]
-
-            #  burn the current detection results into the frame
-            #this is CPU-only OpenCV drawing and does not run inference
-            annotated_frame = annotate_frame(frame, tracks_payload)
-
-            ##store the annotated frame before starting the clip worker 
-            trigger_sequence = annotated_frames.append(annotated_frame)
-
-            #  keep the existing live annotation WebSocket behavior
             _push_annotations(
                 BACKEND_URL,
                 camera.id,
                 tracks_payload,
                 datetime.now(timezone.utc).isoformat()
 
+
             )
 
-            # create clips from the already-annotated frames
-            for label, confidence in weapon_events:
-                _schedule_weapon_clip(
-                    camera=camera,
-                    frame_buffer=annotated_frames,
-                    trigger_sequence=trigger_sequence,
-                    weapon_label=label,
-                    confidence=confidence,
-                    stop_event=stop_event 
+            for event in result.events:
+                _post_detection_event(camera, event)
 
-                )
+
+                if event["detection_type"] == "WEAPON_DETECTED":
+                    _schedule_weapon_clip(
+                        camera=camera,
+                        frame_buffer=annotated_frames,
+                        trigger_sequence=trigger_sequence,
+                        weapon_label=event.get("weapon_type") or "weapon",
+                        confidence=float(event["weapon_confidence"] or event["confidence"]),
+                        stop_event=stop_event
+                    )
 
     except Exception:
-        logger.exception(
-            "Detection worker crashed for camera %s",
-            camera.id 
-
-        )
-
+        logger.exception("Detection worker crashed for camera %s", camera.id)
     finally:
         latest_frame_reader.close()
-
-        logger.info(
-            "Detection worker stopped for camera %s",
-            camera.id 
-
-        )
-
+        logger.info("Detection worker stopped for camera %s", camera.id)
 
         
 def _reconnect_if_needed(cap, rtsp_url: str, stop_event: threading.Event):
@@ -736,26 +584,6 @@ def _reconnect_if_needed(cap, rtsp_url: str, stop_event: threading.Event):
     return new_cap
 
 
-def _collect_tracks(tracks, alerted_ids: set, camera: CameraSpec) -> list:
-    """Build the annotation payload from confirmed tracks, firing alerts for new persons."""
-    payload = []
-    for track in tracks:
-        if not track.is_confirmed() or track.time_since_update > 0:
-            continue
-
-
-        track_id = track.track_id
-        track_data = _build_track_payload(track)
-        payload.append(track_data)
-
-        if (track.det_conf is not None and is_track_ready_to_alert(track, alerted_ids, TEMPORAL_CONFIRMATION_FRAMES)):
-            alerted_ids.add(track_id)
-
-            detection_type = track.get_det_class() or "UNKNOWN"
-
-            logger.info("New detection - Track ID: %s, conf: %.2f", detection_type, camera.id, track_id, track.det_conf)
-            _send_new_person_alert(camera, track_id, float(track.det_conf), detection_type)
-    return payload
 
 
 @asynccontextmanager
@@ -803,60 +631,48 @@ app.add_middleware(
 
 
 def annotated_mjpeg(rtsp_url: str):
-    """MJPEG endpoint - useful for direct debugging/testing."""
-    cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
+
+    cap = cv2.VideoCapture(
+        rtsp_url,
+        cv2.CAP_FFMPEG
+    )
+
     if not cap.isOpened():
         return
-    frame_count = 0
+
+    pipeline = CascadedPipeline(
+        person_model=person_model,
+        weapon_model=threat_model,
+
+        config=CascadedPipelineConfig(
+            person_confidence=PERSON_CONFIDENCE_THRESHOLD,
+            weapon_confidence=WEAPON_CONFIDENCE_THRESHOLD,
+        ),
+
+        inference_lock=_model_lock
+
+    )
+
     try:
         while True:
             ret, frame = cap.read()
+
             if not ret:
                 break
-            frame_count += 1
-            if frame_count % 2 != 0:
-                continue
 
-
-            #weapon detection
-            threat_results = threat_model.predict(frame, imgsz=640, conf=0.35, verbose=False)
-            tracks_for_thumbnail = [
-                {
-                    "track_id": i,
-                    "confidence": float(box.conf[0]),
-                    "bbox": box.xyxy[0].tolist(),
-                    "detection_type": threat_model.names[int(box.cls[0])],
-
-                }
-                for i, box in enumerate(threat_results[0].boxes)
-            ]
-
-
-            #human detection
-            person_results = person_model.predict(frame, imgsz=640, conf=0.5, classes=[0], verbose=False)
-            tracks_for_thumbnail += [
-                {
-                    "track_id": 100 + i,
-                    "confidence": float(box.conf[0]),
-                    "bbox": box.xyxy[0].tolist(),
-                    "detection_type": "HUMAN_PRESENCE",
-
-                }
-
-                for i, box in enumerate(person_results[0].boxes)
-            ]
-
-
-
-            annotated = annotate_frame(frame, tracks_for_thumbnail)
+            result = pipeline.process_frame(frame)
+            annotated = annotate_frame(frame, result.tracks)
             jpeg_bytes = encode_frame_as_jpeg(annotated)
+
             yield (
                 b"--frame\r\n"
-                b"Content-Type: image/jpeg\r\n\r\n" + jpeg_bytes + b"\r\n"
+                b"Content-Type: image/jpeg\r\n\r\n"
+                + jpeg_bytes
+                + b"\r\n"
             )
+
     finally:
         cap.release()
-
 
 @stream_router.get("")
 def stream_annotated(url: str = Query(..., description="RTSP URL")):

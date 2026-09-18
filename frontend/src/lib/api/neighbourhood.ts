@@ -1,5 +1,21 @@
 import { apiCall } from './client'
-import { CreateNeighbourhoodReq, NeighbourhoodRes, CreateNeighbourhoodRes, NeighbourPropertiesRes, UpdateMemberRoleReq, NeighbourhoodMemberRes, UpdateMemberRoleRes, NeighbourhoodMembersRes, LeaveNeighbourhoodParams, LeaveNeighbourhoodParamsSchema } from '../validators/neighbourhood'
+import { 
+  CreateNeighbourhoodReq, 
+  NeighbourhoodRes, 
+  CreateNeighbourhoodRes, 
+  NeighbourPropertiesRes,
+  UpdateMemberRoleReq, 
+  NeighbourhoodMemberRes, 
+  UpdateMemberRoleRes, 
+  NeighbourhoodMembersRes, 
+  LeaveNeighbourhoodParams, 
+  LeaveNeighbourhoodParamsSchema,  
+  UpdateSecurityAvailabilityRes,
+  GetSecurityAvailabilityRes,
+  UpdateSecurityLocationReq,
+  UpdateSecurityLocationRes,
+  DutyStatus,
+} from '../validators/neighbourhood'
 
 export async function addNeighbourhood(data: CreateNeighbourhoodReq): Promise<NeighbourhoodRes> {
   const result = await apiCall<CreateNeighbourhoodRes>('/neighbourhood/create-neighbourhood', {
@@ -79,5 +95,46 @@ export async function leaveNeighbourhood(
     {
       method: "PATCH"
     }
+  );
+}
+
+export async function updateSecurityAvailability(
+  neighbourhoodId: string,
+  newDutyStatus: DutyStatus,
+): Promise<UpdateSecurityAvailabilityRes> {
+  return apiCall<UpdateSecurityAvailabilityRes>(
+    `/neighbourhood/security/availability`,
+    {
+      method: "PATCH",
+      body: {
+        neighbourhood_id: neighbourhoodId,
+        new_duty_status: newDutyStatus,
+      },
+    },
+  );
+}
+
+export async function updateSecurityLocation(
+  req: UpdateSecurityLocationReq,
+): Promise<UpdateSecurityLocationRes> {
+  return apiCall<UpdateSecurityLocationRes>(
+    `/neighbourhood/security/update-location`,
+    {
+      method: "PATCH",
+      body: {
+        neighbourhood_id: req.neighbourhood_id,
+        latitude: req.latitude,
+        longitude: req.longitude,
+      },
+    },
+  );
+}
+
+export async function getSecurityAvailability(
+  neighbourhoodId: string,
+): Promise<GetSecurityAvailabilityRes> {
+  return apiCall<GetSecurityAvailabilityRes>(
+    `/neighbourhood/${neighbourhoodId}/security/availability`,
+    { method: "GET", },
   );
 }

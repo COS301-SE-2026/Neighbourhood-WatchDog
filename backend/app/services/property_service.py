@@ -12,17 +12,19 @@ from app.auth.authorization import is_property_member
 from app.core.database import DbSession
 from app.models.audit_log import AuditAction, TargetEntity
 from app.models.camera import Camera
+from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property, PropertyTypeEnum
 from app.models.property_user import PropertyUser
 from app.models.user import User
-from app.schemas.property import InvitePropertyReq, PropertyMembers
+from app.schemas.property import (InvitePropertyReq, PropertyMember, PropertyMembers, PropertyResidentContextRes)
 from app.services.audit_service import create_audit_log_item
 from app.services.notification_service import send_property_invite_email
 
 logger = logging.getLogger(__name__)
 
 NOT_AUTHENTICATED_LITERAL = "Not authenticated"
+NOT_AUTHORIZED_LITERAL = "Not authorized"
 
 async def create_property_handler(
     addr: str, 
@@ -271,6 +273,77 @@ async def get_property_members_handler(property_id: UUID, db: DbSession, claims:
     except Exception as e:
         raise HTTPException(500, f"Failed to fetch members: {str(e)}")
 
+async def get_property_resident_context_handler(
+    property_id: UUID,
+    db: DbSession,
+    claims: dict
+) -> PropertyResidentContextRes:
+    """
+    Return the property summary and users linked to the property.
+
+    The controller dependency performs role and neighbourhood
+    authorization before this handler is called.
+    """
+
+    if not claims:
+        raise HTTPException(
+            status_code=401,
+            detail=NOT_AUTHENTICATED_LITERAL,
+        )
+
+    try:
+        property_result = await db.execute(
+            select(Property).where(Property.id == property_id)
+        )
+        property_obj = property_result.scalar_one_or_none()
+
+        if property_obj is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Property not found",
+            )
+
+        resident_result = await db.execute(
+            select(User, PropertyUser.is_admin)
+            .join(PropertyUser, PropertyUser.user_id == User.id)
+            .where(PropertyUser.property_id == property_id)
+            .order_by(User.last_name, User.first_name, User.id)
+        )
+
+        residents = [
+            PropertyMember(
+                user_id=user.id,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                email=user.email,
+                is_admin=is_admin,
+            )
+            for user, is_admin in resident_result.all()
+        ]
+
+        return PropertyResidentContextRes(
+            property_id=property_obj.id,
+            address=property_obj.address,
+            property_type=property_obj.property_type,
+            neighbourhood_id=property_obj.neighbourhood_id,
+            latitude=property_obj.latitude,
+            longitude=property_obj.longitude,
+            created_at=property_obj.created_at,
+            residents=residents,
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logger.exception(
+            "Failed to fetch resident context for property_id=%s",
+            property_id,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to fetch resident context",
+        )
 
 async def invite_property_member_handler(req: InvitePropertyReq, property_id: UUID, db: DbSession, claims: dict):
     """Invite a user to this property"""
@@ -392,3 +465,95 @@ async def remove_property_member_handler(property_id: UUID, user_id: UUID, db: D
     )
 
     await db.commit()
+
+async def remove_property_handler(property_id: UUID, db: DbSession, claims: dict) -> None:
+    """Permenantly remove a property """
+    if not claims:
+        raise HTTPException(401, NOT_AUTHORIZED_LITERAL)
+
+    current_user_id = UUID(claims["id"])
+
+    try:
+        property_result = await db.execute(
+            select(Property).where(
+                Property.id == property_id,
+            )
+        )
+        property_obj = property_result.scalar_one_or_none()
+
+        if not property_obj:
+            raise HTTPException(
+                status_code=404,
+                detail="Property does not exist.",
+            )
+
+        credential_result = await db.execute(
+            select(EdgeAgentCredential).where(
+                EdgeAgentCredential.property_id == property_id,
+            )
+        )
+        credentials = credential_result.scalars().all()
+
+        for credential in credentials:
+            await create_audit_log_item(
+                db=db,
+                user_id=current_user_id,
+                action=AuditAction.DELETE,
+                target_entity_type=TargetEntity.EDGEAGENTCREDENTIALS,
+                target_entity_id=credential.id,
+                old_values={
+                    "property_id": str(property_id),
+                    "revoked_at": (
+                        credential.revoked_at.isoformat()
+                        if credential.revoked_at
+                        else None
+                    ),
+                },
+            )
+
+        await create_audit_log_item(
+            db=db,
+            user_id=current_user_id,
+            action=AuditAction.DELETE,
+            target_entity_type=TargetEntity.PROPERTY,
+            target_entity_id=property_obj.id,
+            old_values={
+                "address": property_obj.address,
+                "property_type": property_obj.property_type.value,
+                "neighbourhood_id": (
+                    str(property_obj.neighbourhood_id)
+                    if property_obj.neighbourhood_id
+                    else None
+                ),
+            },
+        )
+
+        await db.execute(
+            delete(Property).where(
+                Property.id == property_id,
+            )
+        )
+
+        await db.commit()
+
+    except HTTPException:
+        await db.rollback()
+        raise
+
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Property could not be removed because related records still exist.",
+        )
+
+    except Exception:
+        await db.rollback()
+        logger.exception(
+            "Failed to remove property_id=%s",
+            property_id,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to remove property.",
+        )

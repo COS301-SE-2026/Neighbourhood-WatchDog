@@ -72,3 +72,13 @@ class PropertyDetailedRes(BaseModel):
     users: list[UserSummary]
     neighbourhood: NeighbourhoodSummary | None = None
     cameras: list[CameraSummary]
+    
+class PropertyResidentContextRes(BaseModel):
+    property_id: UUID
+    address: NonEmptyString
+    property_type: PropertyTypeEnum
+    neighbourhood_id: UUID | None = None
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    created_at: datetime
+    residents: list[PropertyMember] = Field(default_factory=list)

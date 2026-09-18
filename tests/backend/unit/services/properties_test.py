@@ -7,13 +7,14 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
+from app.models.audit_log import AuditAction, TargetEntity
 from app.models.camera import CameraVisibilityEnum
 from app.models.property import PropertyTypeEnum
 from app.schemas.property import InvitePropertyReq
 from app.services import property_service as property_service_module
 from app.services.property_service import (
     create_property_handler,
-    get_user_properties_handler,
+    get_user_properties_handler
 )
 
 @pytest.fixture(autouse=True)
@@ -1072,3 +1073,323 @@ async def test_remove_property_member_rejects_missing_membership():
         "User is not a member of this property"
     )
     db.commit.assert_not_awaited()
+
+class TestRemoveProperty:
+    @pytest.mark.asyncio
+    async def test_remove_property_requires_claims(self):
+        db = _property_service_db()
+
+        with pytest.raises(HTTPException) as exc_info:
+            await property_service_module.remove_property_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=None,
+            )
+
+        assert exc_info.value.status_code == 401
+        assert exc_info.value.detail == "Not authorized"
+
+        db.execute.assert_not_awaited()
+        db.commit.assert_not_awaited()
+        db.rollback.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_remove_property_returns_404_when_missing(self):
+        db = _property_service_db()
+        db.execute.return_value = _property_service_result(
+            scalar=None,
+        )
+
+        claims = _property_service_claims()
+        with pytest.raises(HTTPException) as exc_info:
+            await property_service_module.remove_property_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=claims,
+            )
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == "Property does not exist."
+
+        db.commit.assert_not_awaited()
+        db.rollback.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_remove_property_without_agent_credentials(self):
+        db = _property_service_db()
+        property_obj = _make_property()
+
+        db.execute.side_effect = [
+            _property_service_result(scalar=property_obj),
+            _property_service_result(rows=[]),
+            Mock(),  # Result of DELETE statement
+        ]
+
+        with patch(
+            "app.services.property_service.create_audit_log_item",
+            new=AsyncMock(),
+        ) as audit_mock:
+            result = await property_service_module.remove_property_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=_property_service_claims(),
+            )
+
+        assert result is None
+        assert db.execute.await_count == 3
+        db.commit.assert_awaited_once()
+        db.rollback.assert_not_awaited()
+
+        audit_mock.assert_awaited_once()
+
+        audit_kwargs = audit_mock.await_args.kwargs
+
+        assert audit_kwargs["user_id"] == USER_ID
+        assert audit_kwargs["action"] == AuditAction.DELETE
+        assert (
+            audit_kwargs["target_entity_type"]
+            == TargetEntity.PROPERTY
+        )
+        assert audit_kwargs["target_entity_id"] == PROPERTY_ID
+        assert audit_kwargs["old_values"] == {
+            "address": "123 Test Street",
+            "property_type": PropertyTypeEnum.PRIVATE.value,
+            "neighbourhood_id": str(NEIGHBOURHOOD_ID),
+        }
+
+    @pytest.mark.asyncio
+    async def test_remove_property_audits_agent_credentials(self):
+        db = _property_service_db()
+        property_obj = _make_property()
+
+        first_credential_id = uuid4()
+        second_credential_id = uuid4()
+        revoked_at = datetime(2026, 2, 1)
+
+        credentials = [
+            SimpleNamespace(
+                id=first_credential_id,
+                property_id=PROPERTY_ID,
+                revoked_at=None,
+            ),
+            SimpleNamespace(
+                id=second_credential_id,
+                property_id=PROPERTY_ID,
+                revoked_at=revoked_at,
+            ),
+        ]
+
+        db.execute.side_effect = [
+            _property_service_result(scalar=property_obj),
+            _property_service_result(rows=credentials),
+            Mock(),
+        ]
+
+        with patch(
+            "app.services.property_service.create_audit_log_item",
+            new=AsyncMock(),
+        ) as audit_mock:
+            await property_service_module.remove_property_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=_property_service_claims(),
+            )
+
+        # Two edge credentials plus the property itself.
+        assert audit_mock.await_count == 3
+
+        first_agent_audit = audit_mock.await_args_list[0].kwargs
+        second_agent_audit = audit_mock.await_args_list[1].kwargs
+        property_audit = audit_mock.await_args_list[2].kwargs
+
+        assert first_agent_audit["target_entity_type"] == TargetEntity.EDGEAGENTCREDENTIALS
+        assert first_agent_audit["target_entity_id"] == first_credential_id
+        
+        assert first_agent_audit["old_values"] == {
+            "property_id": str(PROPERTY_ID),
+            "revoked_at": None,
+        }
+
+        assert second_agent_audit["target_entity_type"] == TargetEntity.EDGEAGENTCREDENTIALS
+        
+        assert second_agent_audit["target_entity_id"] == second_credential_id
+        
+        assert second_agent_audit["old_values"] == {
+            "property_id": str(PROPERTY_ID),
+            "revoked_at": revoked_at.isoformat(),
+        }
+
+        assert property_audit["target_entity_type"] == TargetEntity.PROPERTY
+        
+        assert property_audit["target_entity_id"] == PROPERTY_ID
+
+        db.commit.assert_awaited_once()
+        db.rollback.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_remove_unlinked_property_audits_null_neighbourhood(self):
+        db = _property_service_db()
+        property_obj = _make_property_without_neighbourhood()
+
+        db.execute.side_effect = [
+            _property_service_result(scalar=property_obj),
+            _property_service_result(rows=[]),
+            Mock(),
+        ]
+
+        with patch(
+            "app.services.property_service.create_audit_log_item",
+            new=AsyncMock(),
+        ) as audit_mock:
+            await property_service_module.remove_property_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=_property_service_claims(),
+            )
+
+        property_audit = audit_mock.await_args.kwargs
+
+        assert property_audit["old_values"]["neighbourhood_id"] is None
+        db.commit.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_remove_property_rolls_back_on_integrity_error(self):
+        db = _property_service_db()
+        property_obj = _make_property()
+
+        db.execute.side_effect = [
+            _property_service_result(scalar=property_obj),
+            _property_service_result(rows=[]),
+            IntegrityError(
+                "delete property",
+                {},
+                RuntimeError("foreign key violation"),
+            ),
+        ]
+
+        with pytest.raises(HTTPException) as exc_info:
+            await property_service_module.remove_property_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=_property_service_claims(),
+            )
+
+        assert exc_info.value.status_code == 409
+        assert exc_info.value.detail == (
+            "Property could not be removed because "
+            "related records still exist."
+        )
+
+        db.commit.assert_not_awaited()
+        db.rollback.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_remove_property_rolls_back_on_unexpected_error(self):
+        db = _property_service_db()
+        db.execute.side_effect = RuntimeError(
+            "database unavailable",
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await property_service_module.remove_property_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=_property_service_claims(),
+            )
+
+        assert exc_info.value.status_code == 500
+        assert exc_info.value.detail == "Failed to remove property."
+
+        db.commit.assert_not_awaited()
+        db.rollback.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_get_property_resident_context_returns_property_and_residents(self):
+        db = _property_service_db()
+
+        property_obj = _make_property()
+        owner = _make_user()
+        resident = _make_user(
+            user_id=INVITED_USER_ID,
+            email="resident@example.com",
+            first_name="Resident",
+            last_name="User",
+            cognito_sub="resident-cognito-sub",
+        )
+
+        db.execute.side_effect = [
+            _property_service_result(scalar=property_obj),
+            _property_service_result(
+                rows=[
+                    (owner, True),
+                    (resident, False),
+                ]
+            ),
+        ]
+
+        response = await property_service_module.get_property_resident_context_handler(
+            property_id=PROPERTY_ID,
+            db=db,
+            claims={"sub": "security-officer-sub"},
+        )
+
+        assert response.property_id == PROPERTY_ID
+        assert response.address == "123 Test Street"
+        assert response.neighbourhood_id == NEIGHBOURHOOD_ID
+        assert len(response.residents) == 2
+
+        assert response.residents[0].user_id == USER_ID
+        assert response.residents[0].is_admin is True
+
+        assert response.residents[1].user_id == INVITED_USER_ID
+        assert response.residents[1].email == "resident@example.com"
+        assert response.residents[1].is_admin is False
+
+    @pytest.mark.asyncio
+    async def test_get_property_resident_context_requires_claims(self):
+        db = _property_service_db()
+
+        with pytest.raises(HTTPException) as exc_info:
+            await property_service_module.get_property_resident_context_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=None,
+            )
+
+        assert exc_info.value.status_code == 401
+        assert exc_info.value.detail == "Not authenticated"
+        db.execute.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_get_property_resident_context_returns_404_for_missing_property(
+        self,
+    ):
+        db = _property_service_db()
+        db.execute.return_value = _property_service_result(scalar=None)
+
+        with pytest.raises(HTTPException) as exc_info:
+            await property_service_module.get_property_resident_context_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims={"sub": "security-officer-sub"},
+            )
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == "Property not found"
+
+    @pytest.mark.asyncio
+    async def test_get_property_resident_context_converts_database_error(self):
+        db = _property_service_db()
+        db.execute.side_effect = RuntimeError("database unavailable")
+
+        with pytest.raises(HTTPException) as exc_info:
+            await property_service_module.get_property_resident_context_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims={"sub": "security-officer-sub"},
+            )
+
+        assert exc_info.value.status_code == 500
+        assert exc_info.value.detail == (
+            "Failed to fetch resident context"
+        )

@@ -14,7 +14,7 @@ class Property(Base):
     __tablename__ = "property"
 
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False, server_default=text("gen_random_uuid()"))
-    neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id", ondelete="CASCADE"), nullable=True, index=True)
+    neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id", ondelete="SET NULL"), nullable=True, index=True)
     address = Column(String, nullable=False)
     latitude = Column(Float, nullable = True)
     longitude = Column(Float, nullable = True)

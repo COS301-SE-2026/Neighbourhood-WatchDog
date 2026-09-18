@@ -21,7 +21,7 @@ class Alert(Base):
     __tablename__ = "alert"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    camera_id = Column(UUID(as_uuid=True), ForeignKey("camera.id"), nullable=False)
+    camera_id = Column(UUID(as_uuid=True), ForeignKey("camera.id", ondelete="CASCADE"), nullable=False)
     frame_timestamp = Column(TIMESTAMP(timezone=True), nullable=False)
     detection_type = Column(SAEnum(DetectionType, name="detection_type"), nullable=False)
     confidence_score = Column(Float, nullable=False)
