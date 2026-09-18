@@ -38,3 +38,16 @@ class RespondDispatchRes(BaseModel):
     status: int
     message: str | None = None
     data: DispatchCandidateRes | None
+
+class DispatchNotificationRes(BaseModel):
+    """What a notified officer sees"""
+    dispatch_id: UUID
+    alert_id: UUID
+    detection_type: str
+    confidence_score: float
+    thumbnail_url: str | None
+    distance: float
+    eta: float | None
+    frame_timestamp: datetime
+    notified_at: datetime
+    expires_at: datetime | None = None #response deadline
