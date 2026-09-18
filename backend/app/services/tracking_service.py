@@ -5,10 +5,10 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import exists, func, select
+from sqlalchemy import and_, exists, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.models.user import User, UserRole
 from app.models.alert import Alert
 from app.models.tracking import TrackingSighting, TrackingSubject, APPEARANCE_EMBEDDING_DIMENSION, APPEARANCE_EMBEDDING_MODEL
 from app.models.camera import Camera
@@ -300,18 +300,26 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
     )
 
     authorized_recipient_result = await db.execute(
-        select(NeighbourhoodUser.user_id)
+        select(User.id)
+        .distinct()
+        .outerjoin(
+            NeighbourhoodUser,
+            NeighbourhoodUser.user_id == User.id,
+        )
         .where(
-            NeighbourhoodUser.neighbourhood_id == candidate_property.neighbourhood_id,
-            NeighbourhoodUser.role.in_(
-                {
-                    NeighbourhoodRole.SECURITY_OFFICER,
-                    NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
-                    NeighbourhoodRole.SYSTEM_ADMIN
-
-                }
+            or_(
+                User.system_role == UserRole.SYSTEM_ADMIN,
+                and_(
+                    NeighbourhoodUser.neighbourhood_id
+                    == candidate_property.neighbourhood_id,
+                    NeighbourhoodUser.role.in_(
+                        {
+                            NeighbourhoodRole.SECURITY_OFFICER,
+                            NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
+                        }
+                    ),
+                ),
             )
-
         )
     )
 
@@ -594,7 +602,7 @@ async def get_tracking_timeline(*, db: AsyncSession, alert_id: UUID, claims: dic
         )
 
 
-    sightings_result = db.execute(
+    sightings_result = await db.execute(
         select(TrackingSighting, Camera)
         .join(Camera, Camera.id == TrackingSighting.camera_id)
         .where(TrackingSighting.tracking_subject_id == tracking_subject.id)
