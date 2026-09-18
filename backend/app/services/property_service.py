@@ -17,7 +17,7 @@ from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property, PropertyTypeEnum
 from app.models.property_user import PropertyUser
 from app.models.user import User
-from app.schemas.property import InvitePropertyReq, PropertyMembers
+from app.schemas.property import (InvitePropertyReq, PropertyMember, PropertyMembers, PropertyResidentContextRes)
 from app.services.audit_service import create_audit_log_item
 from app.services.notification_service import send_property_invite_email
 
@@ -273,6 +273,77 @@ async def get_property_members_handler(property_id: UUID, db: DbSession, claims:
     except Exception as e:
         raise HTTPException(500, f"Failed to fetch members: {str(e)}")
 
+async def get_property_resident_context_handler(
+    property_id: UUID,
+    db: DbSession,
+    claims: dict
+) -> PropertyResidentContextRes:
+    """
+    Return the property summary and users linked to the property.
+
+    The controller dependency performs role and neighbourhood
+    authorization before this handler is called.
+    """
+
+    if not claims:
+        raise HTTPException(
+            status_code=401,
+            detail=NOT_AUTHENTICATED_LITERAL,
+        )
+
+    try:
+        property_result = await db.execute(
+            select(Property).where(Property.id == property_id)
+        )
+        property_obj = property_result.scalar_one_or_none()
+
+        if property_obj is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Property not found",
+            )
+
+        resident_result = await db.execute(
+            select(User, PropertyUser.is_admin)
+            .join(PropertyUser, PropertyUser.user_id == User.id)
+            .where(PropertyUser.property_id == property_id)
+            .order_by(User.last_name, User.first_name, User.id)
+        )
+
+        residents = [
+            PropertyMember(
+                user_id=user.id,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                email=user.email,
+                is_admin=is_admin,
+            )
+            for user, is_admin in resident_result.all()
+        ]
+
+        return PropertyResidentContextRes(
+            property_id=property_obj.id,
+            address=property_obj.address,
+            property_type=property_obj.property_type,
+            neighbourhood_id=property_obj.neighbourhood_id,
+            latitude=property_obj.latitude,
+            longitude=property_obj.longitude,
+            created_at=property_obj.created_at,
+            residents=residents,
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logger.exception(
+            "Failed to fetch resident context for property_id=%s",
+            property_id,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to fetch resident context",
+        )
 
 async def invite_property_member_handler(req: InvitePropertyReq, property_id: UUID, db: DbSession, claims: dict):
     """Invite a user to this property"""

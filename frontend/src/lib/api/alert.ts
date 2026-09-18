@@ -1,6 +1,14 @@
 import type { Alert, AlertStatus } from "@/components/shared/AlertCard";
 import { getApiBaseUrl, getAuthHeaders } from "@/lib/api/auth";
-import { AlertFrequencyMetricsRes, TimeIntervalsEnum, TimePeriod } from "../validators/alert";
+import { 
+  AlertFrequencyMetricsRes, 
+  TimeIntervalsEnum, 
+  TimePeriod, 
+  CriticalAlertMapResSchema, 
+  UnlocatedCriticalAlertsResSchema, 
+  type CriticalAlertMapRes,
+  type UnlocatedCriticalAlertsRes
+ } from "../validators/alert";
 import { apiCall } from "./client";
 
 export { getAuthToken } from "@/lib/api/auth";
@@ -262,4 +270,33 @@ export async function fetchTrackingTimeline(alertId: string, signal?: AbortSigna
 
   
   return response.data;
+}
+export async function fetchCriticalAlertMap(
+  neighbourhoodId: string,
+): Promise<CriticalAlertMapRes> {
+  const result = await apiCall<unknown>(
+    `/alerts/neighbourhoods/${encodeURIComponent(
+      neighbourhoodId,
+    )}/critical/map`,
+    {
+      method: "GET",
+    },
+  );
+
+  return CriticalAlertMapResSchema.parse(result);
+}
+
+export async function fetchUnlocatedCriticalAlerts(
+  neighbourhoodId: string,
+): Promise<UnlocatedCriticalAlertsRes> {
+  const result = await apiCall<unknown>(
+    `/alerts/neighbourhoods/${encodeURIComponent(
+      neighbourhoodId,
+    )}/critical/unlocated`,
+    {
+      method: "GET",
+    },
+  );
+
+  return UnlocatedCriticalAlertsResSchema.parse(result);
 }

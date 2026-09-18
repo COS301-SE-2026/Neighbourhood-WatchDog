@@ -1,9 +1,12 @@
 import pytest
+import inspect
 from fastapi import HTTPException
 from unittest.mock import MagicMock, Mock, AsyncMock, patch
 from app.models.audit_log import TargetEntity
-from app.services.neighbourhood_service import create_neighbourhood_handler, get_neighbourhood_members_handler, update_neighbourhood_member_role_handler
+from app.services.neighbourhood_service import create_neighbourhood_handler, get_neighbourhood_members_handler, update_neighbourhood_member_role_handler, update_security_availability_handler
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
+from app.models.security_officer import AvailabilityStatus
+from app.schemas.neighbourhood import OnDutyStatus
 from uuid import uuid4
 from datetime import datetime
 from app.models.neighbourhood import Neighbourhood
@@ -545,7 +548,8 @@ class TestUpdateNeighbourhoodMemberRole:
                 make_scalar_result(neighbourhood),
                 make_scalar_result(admin_membership),
                 make_scalar_result(member_membership),
-                make_scalar_result(member_user)
+                make_scalar_result(member_user),
+                make_scalar_result(None)
             ]
         )
         mock_db.commit = AsyncMock()
@@ -1152,3 +1156,233 @@ async def test_update_member_role_handles_unexpected_error():
     assert exc_info.value.status_code == 500
     assert exc_info.value.detail == "Failed to update member role"
     mock_db.rollback.assert_awaited_once()
+
+def _availability_test_context(role=NeighbourhoodRole.SECURITY_OFFICER):
+    officer_user_id = uuid4()
+    neighbourhood_id = uuid4()
+    membership_id = uuid4()
+    officer_id = uuid4()
+
+    membership = Mock(
+        id=membership_id,
+        user_id=officer_user_id,
+        neighbourhood_id=neighbourhood_id,
+        role=role,
+    )
+
+    officer = Mock(
+        id=officer_id,
+        neighbourhood_user_id=membership_id,
+        availability_status=AvailabilityStatus.UNAVAILABLE,
+    )
+
+    return officer_user_id, neighbourhood_id, membership, officer
+
+@pytest.mark.asyncio
+async def test_update_availability_requires_claims():
+    mock_db = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await update_security_availability_handler(
+            neighbourhood_id=uuid4(),
+            new_duty_status=OnDutyStatus.ON_DUTY,
+            db=mock_db,
+            claims=None,
+        )
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Not authenticated"
+    mock_db.execute.assert_not_awaited()
+
+@pytest.mark.asyncio
+async def test_update_availability_rejects_non_member():
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        return_value=make_scalar_result(None)
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+            await update_security_availability_handler(
+                neighbourhood_id=uuid4(),
+                new_duty_status=OnDutyStatus.ON_DUTY,
+                db=mock_db,
+                claims={"id": str(uuid4())},
+            )
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "You are not a member of this neighbourhood"
+    mock_db.rollback.assert_awaited_once()
+
+@pytest.mark.asyncio
+async def test_update_availability_rejects_non_officer():
+    officer_user_id, neighbourhood_id, membership, _ = _availability_test_context(
+        role=NeighbourhoodRole.RESIDENT
+    )
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[make_scalar_result(membership)]
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+            await update_security_availability_handler(
+                neighbourhood_id=neighbourhood_id,
+                new_duty_status=OnDutyStatus.ON_DUTY,
+                db=mock_db,
+                claims={"id": str(officer_user_id)},
+            )
+
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.detail == "Only security officers can update availability status"
+    mock_db.rollback.assert_awaited_once()
+
+@pytest.mark.asyncio
+async def test_update_availability_rejects_missing_officer():
+    officer_user_id, neighbourhood_id, membership, _ = _availability_test_context()
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            make_scalar_result(membership), 
+            make_scalar_result(None),
+        ]
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+            await update_security_availability_handler(
+                neighbourhood_id=neighbourhood_id,
+                new_duty_status=OnDutyStatus.ON_DUTY,
+                db=mock_db,
+                claims={"id": str(officer_user_id)},
+            )
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Security officer not found"
+    mock_db.rollback.assert_awaited_once()
+
+@pytest.mark.asyncio
+async def test_update_availability_updates_and_commits():
+    officer_user_id, neighbourhood_id, membership, officer = _availability_test_context()
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            make_scalar_result(membership), 
+            make_scalar_result(officer),
+        ]
+    )
+    mock_db.commit = AsyncMock()
+    mock_db.rollback = AsyncMock()
+
+    with patch(AUDIT_PATCH, new=AsyncMock()) as audit_mock:
+            response = await update_security_availability_handler(
+                neighbourhood_id=neighbourhood_id,
+                new_duty_status=OnDutyStatus.ON_DUTY,
+                db=mock_db,
+                claims={"id": str(officer_user_id)},
+            )
+
+    assert response.status == 200
+    assert response.message == "Availability status updated successfully"
+    assert officer.availability_status == AvailabilityStatus.AVAILABLE
+
+    mock_db.commit.assert_awaited_once()
+    mock_db.rollback.assert_not_awaited()
+
+    audit_mock.assert_awaited_once()
+    _, audit_kwargs = audit_mock.call_args
+    assert audit_kwargs["user_id"] == officer_user_id
+    assert audit_kwargs["target_entity_id"] == officer.id
+    assert audit_kwargs["old_values"] == {"availability_status": "UNAVAILABLE"}
+    assert audit_kwargs["new_values"] == {"availability_status": "AVAILABLE"}
+
+@pytest.mark.asyncio
+async def test_update_availability_short_circuits_when_unchanged():
+    officer_user_id, neighbourhood_id, membership, officer = _availability_test_context()
+
+    officer.availability_status = AvailabilityStatus.AVAILABLE
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            make_scalar_result(membership), 
+            make_scalar_result(officer),
+        ]
+    )
+    mock_db.commit = AsyncMock()
+
+    with patch(AUDIT_PATCH, new=AsyncMock()) as audit_mock:
+            response = await update_security_availability_handler(
+                neighbourhood_id=neighbourhood_id,
+                new_duty_status=OnDutyStatus.ON_DUTY,
+                db=mock_db,
+                claims={"id": str(officer_user_id)},
+            )
+
+    assert response.status == 200
+    assert response.message == "Availability status unchanged"
+
+    mock_db.commit.assert_not_awaited()
+    audit_mock.assert_not_awaited()
+
+@pytest.mark.asyncio
+async def test_update_availability_rolls_back_on_integrity_error():
+    officer_user_id, neighbourhood_id, membership, officer = _availability_test_context()
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            make_scalar_result(membership), 
+            make_scalar_result(officer),
+        ]
+    )
+    mock_db.commit = AsyncMock(
+        side_effect=IntegrityError("update availability", {}, RuntimeError("constraint"))
+    )
+    mock_db.rollback = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+            await update_security_availability_handler(
+                neighbourhood_id=neighbourhood_id,
+                new_duty_status=OnDutyStatus.ON_DUTY,
+                db=mock_db,
+                claims={"id": str(officer_user_id)},
+            )
+
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.detail == "Failed to update availability status"
+    mock_db.rollback.assert_awaited_once()
+
+@pytest.mark.asyncio
+async def test_update_availability_handles_unexpected_error():
+    officer_user_id, neighbourhood_id, membership, officer = _availability_test_context()
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            make_scalar_result(membership), 
+            make_scalar_result(officer),
+        ]
+    )
+    mock_db.commit = AsyncMock(
+        side_effect=RuntimeError("database unavailable")
+    )
+    mock_db.rollback = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+            await update_security_availability_handler(
+                neighbourhood_id=neighbourhood_id,
+                new_duty_status=OnDutyStatus.ON_DUTY,
+                db=mock_db,
+                claims={"id": str(officer_user_id)},
+            )
+
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.detail == "Failed to update availability status"
+    mock_db.rollback.assert_awaited_once()
+
+@pytest.mark.asyncio
+async def test_update_availability_handler_has_no_target_user_params():
+    """Scoped to authenticated user only, there is no param for targeting another user"""
+    params = set(inspect.signature(update_security_availability_handler).parameters)
+    assert params == {"neighbourhood_id", "new_duty_status", "db", "claims"}

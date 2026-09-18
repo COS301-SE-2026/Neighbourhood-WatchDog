@@ -419,6 +419,170 @@ def require_neighbourhood_authorization(
 
     return checker
 
+def require_security_officer():
+    async def checker(
+        neighbourhood_id: UUID,
+        db: DbSession,
+        claims: Annotated[dict, Depends(get_current_user)],
+    ) -> dict:
+        result = await db.execute(
+            select(NeighbourhoodUser)
+            .join(NeighbourhoodUser.user)
+            .where(
+                NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+                NeighbourhoodUser.role == NeighbourhoodRole.SECURITY_OFFICER,
+                User.cognito_sub == claims.get("sub"),
+            )
+        )
+
+        membership = result.scalar_one_or_none()
+
+        if membership is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "You are not a security officer "
+                    "in this neighbourhood"
+                ),
+            )
+
+        return claims
+
+    return checker
+
+
+def require_critical_alert_map_access():
+    async def checker(
+        neighbourhood_id: UUID,
+        db: DbSession,
+        claims: Annotated[
+            dict,
+            Depends(get_current_user),
+        ],
+    ) -> dict:
+        result = await db.execute(
+            select(NeighbourhoodUser)
+            .join(NeighbourhoodUser.user)
+            .where(
+                NeighbourhoodUser.neighbourhood_id
+                == neighbourhood_id,
+                NeighbourhoodUser.role.in_(
+                    (
+                        NeighbourhoodRole.SECURITY_OFFICER,
+                        NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
+                    )
+                ),
+                User.cognito_sub
+                == claims.get("sub"),
+            )
+        )
+
+        membership = result.scalar_one_or_none()
+
+        if membership is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "You do not have access to the "
+                    "critical-alert map for this neighbourhood"
+                ),
+            )
+
+        return claims
+
+    return checker
+
+
+def require_property_resident_context():
+    """
+    Permit neighbourhood administrators and security officers
+    to access resident context for a property's neighbourhood.
+    """
+
+    async def checker(
+        property_id: UUID,
+        db: DbSession,
+        claims: Annotated[
+            dict,
+            Depends(get_current_user),
+        ],
+    ) -> dict:
+        property_result = await db.execute(
+            select(Property).where(
+                Property.id == property_id
+            )
+        )
+        property_obj = (
+            property_result.scalar_one_or_none()
+        )
+
+        if property_obj is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Property not found",
+            )
+
+        current_role = claims.get(
+            CUSTOM_ROLE_CLAIM
+        )
+
+        if current_role == "SYSTEM_ADMIN":
+            return claims
+
+        if property_obj.neighbourhood_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "This property is not associated "
+                    "with a neighbourhood"
+                ),
+            )
+
+        user_sub = claims.get("sub")
+
+        if not user_sub:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "Authenticated user identity "
+                    "is missing"
+                ),
+            )
+
+        membership_result = await db.execute(
+            select(NeighbourhoodUser)
+            .join(NeighbourhoodUser.user)
+            .where(
+                NeighbourhoodUser.neighbourhood_id
+                == property_obj.neighbourhood_id,
+                NeighbourhoodUser.role.in_(
+                    (
+                        NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
+                        NeighbourhoodRole.SECURITY_OFFICER,
+                    )
+                ),
+                User.cognito_sub == user_sub,
+            )
+        )
+
+        membership = (
+            membership_result.scalar_one_or_none()
+        )
+
+        if membership is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "You do not have permission to view "
+                    "resident context for this property"
+                ),
+            )
+
+        return claims
+
+    return checker
+
+
 #These Aliases will make it easier to read the code in the controllers
 Claims = Annotated[dict, Depends(get_current_user)]#Use this role if you need an endpoint to be accessible by any authenticated user, regardless of their role.
 PropertyAdminClaims = Annotated[dict, Depends(require_property_authorization("PROPERTY_ADMIN", "SYSTEM_ADMIN"))]
@@ -428,4 +592,7 @@ CameraAdminAndNeighbourhoodAdminClaims = Annotated[dict, Depends(require_camera_
 NeighbourhoodMemberClaims = Annotated[dict, Depends(require_neighbourhood_member())]
 NeighbourhoodAdminClaims = Annotated[dict, Depends(require_neighbourhood_authorization("NEIGHBOURHOOD_ADMIN", "SYSTEM_ADMIN"))]
 SystemAdminClaims = Annotated[dict, Depends(require_role("SYSTEM_ADMIN"))]
+SecurityOfficerClaims = Annotated[dict, Depends(require_security_officer())]
+CriticalAlertMapClaims = Annotated[dict, Depends(require_critical_alert_map_access())]
+PropertyResidentContextClaims = Annotated[dict, Depends(require_property_resident_context())]
 # EdgeAgentClaims = Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)]

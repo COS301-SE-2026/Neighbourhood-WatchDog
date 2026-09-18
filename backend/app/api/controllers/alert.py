@@ -4,10 +4,17 @@ from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, WebSocket
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
+from sqlalchemy import select
+from app.auth.jwt import verify_jwt
+from app.models.neighbourhood_user import (
+    NeighbourhoodRole,
+    NeighbourhoodUser
+)
+from app.models.user import User
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.authorization import Claims, NeighbourhoodMemberClaims
+from app.auth.authorization import Claims, NeighbourhoodMemberClaims, CriticalAlertMapClaims
 from app.auth.dependencies import get_authenticated_edge_agent
 from app.core.database import DbSession, get_db
 from app.models.edge_agent_credentials import EdgeAgentCredential
@@ -18,12 +25,14 @@ from app.schemas.alert import (
     AlertMetricsRes,
     AlertResponse,
     BroadcastAlertReq,
+    CriticalAlertMapRes,
     ListAlertsRes,
     Pagination,
     TimeIntervalsEnum,
     TimePeriod,
     TrendGroupBy,
     TrendResponse,
+    UnlocatedCriticalAlertsRes,
 )
 from app.services import alert_service
 from app.services.alert_service import (
@@ -32,8 +41,10 @@ from app.services.alert_service import (
     acknowledge_alert_handler,
     broadcast_neighbourhood_alert_service,
     get_alert_frequency_metrics_handler,
+    get_critical_alerts_map_handler,
     get_response_metrics_handler,
     get_trends_handler,
+    get_unlocated_critical_alerts_handler,
     list_alerts_handler,
     list_property_alerts_handler,
 )
@@ -272,14 +283,60 @@ async def acknowledge_alert(
     return AcknowledgeAlertRes(status=200, data=result)
 
 
-@router.websocket("/ws")
+@router.websocket("/{neighbourhood_id}/ws")
 async def alert_websocket(
-    neighbourhood_id: UUID,
     websocket: WebSocket,
-    claims: Claims
+    neighbourhood_id: UUID,
+    db: DbSession,
+    token: Annotated[str, Query()],
 ):
-   
-    user_id = claims["id"]
+    """Stream neighbourhood alert events to an authorised officer."""
+
+    try:
+        token_claims = verify_jwt(token)
+        cognito_sub = token_claims.get("sub")
+
+        if not cognito_sub:
+            await websocket.close(code=1008)
+            return
+
+        user_result = await db.execute(
+            select(User).where(
+                User.cognito_sub == cognito_sub,
+            )
+        )
+        user = user_result.scalar_one_or_none()
+
+        if user is None:
+            await websocket.close(code=1008)
+            return
+
+        membership_result = await db.execute(
+            select(NeighbourhoodUser).where(
+                NeighbourhoodUser.user_id == user.id,
+                NeighbourhoodUser.neighbourhood_id
+                == neighbourhood_id,
+                NeighbourhoodUser.role.in_(
+                    (
+                        NeighbourhoodRole.SECURITY_OFFICER,
+                        NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
+                    )
+                )
+            )
+        )
+        membership = (
+            membership_result.scalar_one_or_none()
+        )
+
+        if membership is None:
+            await websocket.close(code=1008)
+            return
+
+    except Exception:
+        await websocket.close(code=1008)
+        return
+
+    user_id = str(user.id)
 
     await websocket.accept()
     register_connection(user_id, websocket)
@@ -287,11 +344,18 @@ async def alert_websocket(
     try:
         while True:
             try:
-                await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                await asyncio.wait_for(
+                    websocket.receive_text(),
+                    timeout=30.0,
+                )
             except asyncio.TimeoutError:
-                await websocket.send_text(json.dumps({"event": "ping"}))
-    except Exception:
+                await websocket.send_text(
+                    json.dumps({"event": "ping"})
+                )
+
+    except WebSocketDisconnect:
         pass
+
     finally:
         remove_connection(user_id, websocket)
 
@@ -305,3 +369,61 @@ async def broadcast_neighbourhood_alert(
     
 
     await broadcast_neighbourhood_alert_service(req.alert_id, db, claims)
+
+
+@router.get(
+    "/neighbourhoods/{neighbourhood_id}/critical/map",
+    summary="List mapped critical alerts for a neighbourhood",
+    responses={
+        401: {"description": "Not authenticated"},
+        403: {
+            "description":
+                "User is not a security officer in this neighbourhood"
+        }
+    },
+)
+async def get_critical_alerts_map(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: CriticalAlertMapClaims,
+) -> CriticalAlertMapRes:
+    data = await get_critical_alerts_map_handler(
+        neighbourhood_id=neighbourhood_id,
+        db=db,
+        claims=claims,
+    )
+
+    return CriticalAlertMapRes(
+        status=200,
+        message="Mapped critical alerts retrieved successfully",
+        data=data,
+    )
+
+
+@router.get(
+    "/neighbourhoods/{neighbourhood_id}/critical/unlocated",
+    summary="List critical alerts missing coordinates",
+    responses={
+        401: {"description": "Not authenticated"},
+        403: {
+            "description":
+                "User is not a security officer in this neighbourhood"
+        }
+    },
+)
+async def get_unlocated_critical_alerts(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: CriticalAlertMapClaims,
+) -> UnlocatedCriticalAlertsRes:
+    data = await get_unlocated_critical_alerts_handler(
+        neighbourhood_id=neighbourhood_id,
+        db=db,
+        claims=claims,
+    )
+
+    return UnlocatedCriticalAlertsRes(
+        status=200,
+        message="Unlocated critical alerts retrieved successfully",
+        data=data,
+    )

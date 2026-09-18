@@ -183,3 +183,45 @@ class ClipUploadAcceptedRes(BaseModel):
 
 	alert_id: UUID
 	status: str
+
+class CriticalAlertBase(BaseModel):
+    id: UUID
+    camera_id: UUID
+    camera_name: str
+    neighbourhood_id: UUID
+    detection_type: str
+    status: str
+    created_at: datetime
+    property_id: UUID
+    property_address: str
+    thumbnail_url: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+class CriticalAlertMapItem(CriticalAlertBase):
+	latitude: float 
+	longitude: float
+
+class UnlocatedCriticalAlertItem(CriticalAlertBase):
+	latitude: float | None = None
+	longitude: float | None = None
+
+
+class CriticalAlertMapData(BaseModel):
+    alerts: list[CriticalAlertMapItem]
+    last_updated: datetime
+
+
+class CriticalAlertMapRes(BaseModel):
+    status: int
+    message: str | None = None
+    data: CriticalAlertMapData
+
+class UnlocatedCriticalAlertsData(BaseModel):
+    alerts: list[UnlocatedCriticalAlertItem]
+    last_updated: datetime
+
+class UnlocatedCriticalAlertsRes(BaseModel):
+    status: int
+    message: str | None = None
+    data: UnlocatedCriticalAlertsData

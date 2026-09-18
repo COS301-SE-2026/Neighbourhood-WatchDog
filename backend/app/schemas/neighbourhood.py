@@ -1,6 +1,7 @@
 from pydantic import BaseModel, StringConstraints, Field
 from typing import Annotated, Literal
 from uuid import UUID
+from enum import Enum
 from datetime import datetime
 
 from app.models.security_officer import AvailabilityStatus
@@ -51,15 +52,26 @@ class UpdateMemberRoleRes(BaseModel):
     data: NeighbourhoodMemberRes
 
 
+class GetSecurityAvailabilityRes(BaseModel):
+    status: int
+    message: str | None = None
+    availability: AvailabilityStatus | None
+    location_updated_at: datetime | None
+
+class OnDutyStatus(str, Enum):
+    ON_DUTY = "ON_DUTY"
+    OFF_DUTY = "OFF_DUTY"
+
 class UpdateSecurityAvailabilityReq(BaseModel):
     neighbourhood_id: UUID
-    new_availability: AvailabilityStatus
+    new_duty_status: OnDutyStatus
 
 class UpdateSecurityAvailabilityRes(BaseModel):
     status: int
     message: str | None = None
 
 class UpdateOfficerLocationReq(BaseModel):
+    neighbourhood_id: UUID
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
 
@@ -73,3 +85,4 @@ class OfficerLocationRes(BaseModel):
     longitude: float
     location_updated_at: datetime
     is_stale: bool
+    
