@@ -100,7 +100,7 @@ export async function leaveNeighbourhood(
 
 export async function updateSecurityAvailability(
   neighbourhoodId: string,
-  newAvailability: DutyStatus,
+  newDutyStatus: DutyStatus,
 ): Promise<UpdateSecurityAvailabilityRes> {
   return apiCall<UpdateSecurityAvailabilityRes>(
     `/neighbourhood/security/availability`,
@@ -108,7 +108,7 @@ export async function updateSecurityAvailability(
       method: "PATCH",
       body: {
         neighbourhood_id: neighbourhoodId,
-        new_availability: newAvailability,
+        new_duty_status: newDutyStatus,
       },
     },
   );
