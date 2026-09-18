@@ -548,7 +548,8 @@ class TestUpdateNeighbourhoodMemberRole:
                 make_scalar_result(neighbourhood),
                 make_scalar_result(admin_membership),
                 make_scalar_result(member_membership),
-                make_scalar_result(member_user)
+                make_scalar_result(member_user),
+                make_scalar_result(None)
             ]
         )
         mock_db.commit = AsyncMock()
