@@ -338,8 +338,7 @@ export default function NeighbourhoodAlertMapPage() {
         </header>
 
         {isStale && (
-          <div
-            role="status"
+          <output
             className="mb-5 flex items-start gap-3 rounded-lg border border-brand-caution/30 bg-brand-caution/10 px-4 py-3"
           >
             <WifiOff className="mt-0.5 size-4 shrink-0 text-brand-caution" />
@@ -373,7 +372,7 @@ export default function NeighbourhoodAlertMapPage() {
 
 
             </div>
-          </div>
+          </output>
         )}
 
 
