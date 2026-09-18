@@ -129,6 +129,9 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
     [userContext, neighbourhoodId],
   );
 
+  const isSystemAdmin =
+  userContext?.user.system_role === "SYSTEM_ADMIN";
+
   const isNeighbourhoodAdmin =
     neighbourhoodRole === "NEIGHBOURHOOD_ADMIN";
 
@@ -136,7 +139,10 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
     neighbourhoodRole === "SECURITY_OFFICER";
 
   const canViewAlerts =
-    isNeighbourhoodAdmin || isSecurityOfficer;
+    isSystemAdmin || isNeighbourhoodAdmin || isSecurityOfficer;
+
+  const canViewTracking =
+    isSystemAdmin || isNeighbourhoodAdmin || isSecurityOfficer;
 
   const [{ alerts, loading, error }, dispatch] = useReducer(fetchReducer, initialFetchState);
 
