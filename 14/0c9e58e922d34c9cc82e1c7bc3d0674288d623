@@ -1,0 +1,14 @@
+frontend/src/lib/api/neighbourhood.ts
+  h_cf6208e37032c0 103,111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "140c9e58e922d34c9cc82e1c7bc3d0674288d623",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
