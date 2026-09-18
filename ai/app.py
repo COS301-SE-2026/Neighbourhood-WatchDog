@@ -290,6 +290,86 @@ def _match_tracking_subject(camera: CameraSpec, appearance_embedding: list[float
         return False, None, None
 
 
+
+def _record_tracking_sighting(camera: CameraSpec, local_track_id: int, observed_at: str, tracking_subject_id: str, match_confidence: float, api_key: str) -> str | None:
+    """
+    Persist a validated cross-camera sighting.
+
+    Returns the parent alert ID so the clip remains attached to the original incident.
+
+    inform backend that existing subject was seen on camera
+    """
+
+    try:
+        response = httpx.post(
+            f"{BACKEND_URL}/internal/tracking/sightings",
+            headers={"X-Internal-Token": api_key},
+
+            json={
+                "tracking_subject_id": tracking_subject_id,
+                "camera_id": camera.id,
+                "local_track_id": local_track_id,
+                "observed_at": observed_at,
+                "match_confidence": match_confidence
+
+            },
+            timeout=10.0
+
+        )
+
+        response.raise_for_status()
+
+        response_data = response.json()
+        sighting_data = response_data.get("data") or {}
+        alert_id = sighting_data.get("alert_id")
+
+        if not alert_id:
+            raise RuntimeError("Tracking sighting endpoint returned 2xx without alert_id")
+
+        logger.info(
+            "Recorded tracking sighting: alert=%s subject=%s camera=%s "
+            "confidence=%.4f",
+            alert_id,
+            tracking_subject_id,
+            camera.id,
+            match_confidence
+
+        )
+
+        return str(alert_id)
+
+    except httpx.HTTPStatusError as error:
+        logger.exception(
+            "Tracking sighting rejected: camera=%s subject=%s "
+            "status=%s body=%s",
+            camera.id,
+            tracking_subject_id,
+            error.response.status_code,
+            error.response.text
+            
+        )
+        return None
+
+    except httpx.RequestError as error:
+        logger.exception(
+            "Could not record tracking sighting for camera=%s subject=%s: %s",
+            camera.id,
+            tracking_subject_id,
+            error
+
+        )
+        return None
+
+    except Exception:
+        logger.exception(
+            "Unexpected tracking sighting failure for camera=%s subject=%s",
+            camera.id,
+            tracking_subject_id
+
+        )
+        return None
+
+
 def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, weapon_label: str, 
                           confidence: float, local_track_id: int, stop_event: threading.Event, appearance_embedding: list[float] | None = None) -> None:
     
