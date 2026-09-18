@@ -29,6 +29,7 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState<boolean>(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [isStale, setIsStale] = useState(true)
 
   const [officerStatus, setOfficerStatus] = useState<AvailabilityStatus | null>(null)
   const [locationUpdatedAt, setLocationUpdatedAt] = useState<Date | null>(null)
@@ -55,12 +56,25 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
 
   useEffect(() => {
     const signal = { cancelled: false }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadAvailability(signal)
 
     return () => {
       signal.cancelled = true
     }
   }, [neighbourhoodId])
+
+  useEffect(() => {
+    const computeStale = () => {
+      setIsStale(
+        locationUpdatedAt === null ||
+        Date.now() - locationUpdatedAt.getTime() > STALE_LOCATION_THRESHOLD_MS
+      )
+    }
+    computeStale()
+    const interval = setInterval(computeStale, 30_000)
+    return () => clearInterval(interval)
+  })
 
   const handleStatusChange = async (next: AvailabilityStatus) => {
     const previous = officerStatus
@@ -105,10 +119,6 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
       </Card>
     )
   }
-
-  const isStale =
-    locationUpdatedAt === null ||
-    Date.now() - locationUpdatedAt.getTime() > STALE_LOCATION_THRESHOLD_MS
 
   return (
     <Card className="px-6 py-8 text-foreground md:px-8">
