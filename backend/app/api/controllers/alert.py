@@ -293,7 +293,7 @@ async def alert_websocket(
     except Exception:
         pass
     finally:
-        remove_connection(str(neighbourhood_id), websocket)
+        remove_connection(user_id, websocket)
 
 @router.post("/broadcast")
 async def broadcast_neighbourhood_alert(
