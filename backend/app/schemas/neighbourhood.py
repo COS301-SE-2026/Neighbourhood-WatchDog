@@ -1,6 +1,7 @@
 from pydantic import BaseModel, StringConstraints, Field
 from typing import Annotated, Literal
 from uuid import UUID
+from enum import Enum
 from datetime import datetime
 
 from app.models.security_officer import AvailabilityStatus
@@ -57,9 +58,13 @@ class GetSecurityAvailabilityRes(BaseModel):
     availability: AvailabilityStatus | None
     location_updated_at: datetime | None
 
+class OnDutyStatus(str, Enum):
+    ON_DUTY = "ON_DUTY"
+    OFF_DUTY = "OFF_DUTY"
+
 class UpdateSecurityAvailabilityReq(BaseModel):
     neighbourhood_id: UUID
-    new_availability: AvailabilityStatus
+    new_availability: OnDutyStatus
 
 class UpdateSecurityAvailabilityRes(BaseModel):
     status: int
