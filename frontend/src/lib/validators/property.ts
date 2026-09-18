@@ -131,6 +131,17 @@ export const propertyMembersSchema = z.object({
   members: z.array(propertyMemberSchema).default([])
 });
 
+export const PropertyResidentContextSchema = z.object({
+  property_id: z.uuid(),
+  address: z.string(),
+  property_type: PropertyTypeEnum,
+  neighbourhood_id: z.uuid().nullable(),
+  latitude: z.number().nullable(),
+  longitude: z.number().nullable(),
+  created_at: z.coerce.date(),
+  residents: z.array(propertyMemberSchema).default([]),
+});
+
 export const invitePropertyMemberSchema = z.object({
   email: z.email("Enter a valid email address")
 });
@@ -152,5 +163,6 @@ export type NeighbourhoodSummary = z.infer<typeof NeighbourhoodSummarySchema>;
 export type PropertyDetailedRes = z.infer<typeof PropertyDetailedResSchema>;
 export type PropertyMember = z.infer<typeof propertyMemberSchema>;
 export type PropertyMembers = z.infer<typeof propertyMembersSchema>;
+export type PropertyResidentContext = z.infer<typeof PropertyResidentContextSchema>;
 export type InvitePropertyMemberInput = z.infer<typeof invitePropertyMemberSchema>;
 export type InvitePropertyMemberResponse = z.infer<typeof invitePropertyMemberResponseSchema>;
