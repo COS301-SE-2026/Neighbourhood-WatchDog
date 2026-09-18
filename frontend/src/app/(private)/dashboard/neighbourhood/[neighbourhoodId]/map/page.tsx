@@ -161,11 +161,13 @@ function PropertyAlertsSheet({
                 <p className="mt-1 text-xs text-brand-ash">
                   {residentsLoading
                     ? "Loading resident information..."
-                    : `${residentContext?.residents.length ?? 0} linked ${
-                        residentContext?.residents.length === 1
-                          ? "person"
-                          : "people"
-                      }`}
+                    : residentsError
+                      ? "Resident information unavailable"
+                      : `${residentContext?.residents.length ?? 0} linked ${
+                          residentContext?.residents.length === 1
+                            ? "person"
+                            : "people"
+                        }`}
                 </p>
               </div>
             </div>
