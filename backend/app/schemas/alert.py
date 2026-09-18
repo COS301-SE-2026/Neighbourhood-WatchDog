@@ -209,3 +209,13 @@ class UnlocatedCriticalAlertsRes(BaseModel):
     status: int
     message: str | None = None
     data: UnlocatedCriticalAlertsData
+
+class AlertDistanceData(BaseModel):
+    property_id: UUID
+    distance_metres: float
+    officer_location_updated_at: datetime
+
+class AlertDistanceRes(BaseModel):
+    status: int
+    message: str | None = None
+    data: AlertDistanceData
