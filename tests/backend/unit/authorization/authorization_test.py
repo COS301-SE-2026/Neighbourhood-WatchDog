@@ -476,6 +476,76 @@ async def test_required_permission_rejects_user_without_permission(
 
     assert result is False
 
+
+class TestCriticalAlertMapAuthorization:
+    def setup_method(self):
+        self.neighbourhood_id = uuid4()
+        self.claims = {
+            "id": str(uuid4()),
+            "sub": "critical-map-user",
+        }
+
+        self.checker = (
+            authorization
+            .require_critical_alert_map_access()
+        )
+
+    @pytest.mark.asyncio
+    async def test_allows_valid_membership(self):
+        membership = MagicMock()
+        db = make_db(
+            db_result(membership)
+        )
+
+        result = await self.checker(
+            self.neighbourhood_id,
+            db,
+            self.claims,
+        )
+
+        assert result == self.claims
+        db.execute.assert_awaited_once()
+
+        query = db.execute.await_args.args[0]
+        query_text = str(query)
+
+        assert (
+            "neighbourhood_user.neighbourhood_id"
+            in query_text
+        )
+        assert (
+            "neighbourhood_user.role IN"
+            in query_text
+        )
+
+    @pytest.mark.asyncio
+    async def test_rejects_direct_access_to_other_neighbourhood(
+        self,
+    ):
+        other_neighbourhood_id = uuid4()
+
+        # The user has no membership matching the
+        # neighbourhood ID supplied in the URL.
+        db = make_db(
+            db_result(None)
+        )
+
+        with pytest.raises(
+            HTTPException
+        ) as exc_info:
+            await self.checker(
+                other_neighbourhood_id,
+                db,
+                self.claims,
+            )
+
+        assert exc_info.value.status_code == 403
+        assert exc_info.value.detail == (
+            "You do not have access to the "
+            "critical-alert map for this neighbourhood"
+        )
+
+        db.execute.assert_awaited_once()
 @pytest.mark.asyncio
 async def test_property_resident_context_returns_404_for_missing_property():
     checker = authorization.require_property_resident_context()

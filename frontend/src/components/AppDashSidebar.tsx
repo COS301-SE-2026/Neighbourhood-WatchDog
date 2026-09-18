@@ -33,6 +33,7 @@ import {
     ClipboardList,
     FileText,
     House,
+    MapPinned,
     KeyRound,
     Plus,
     Settings,
@@ -175,6 +176,15 @@ function getSidebarGroups(
         });
     }
 
+    if (activeContext.role === "Security Officer" || activeContext.role == "Neighbourhood Admin") {
+        neighbourhoodItems.unshift({
+            title: "Alert map",
+            url:
+            `/dashboard/neighbourhood/` +
+            `${activeContext.neighbourhoodId}/map`,
+            icon: MapPinned,
+        });
+    }
 
     groups.push({
         label: "NEIGHBOURHOOD",
