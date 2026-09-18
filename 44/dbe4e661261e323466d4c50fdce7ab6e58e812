@@ -1,0 +1,14 @@
+frontend/src/components/security-components/StatusLocation.tsx
+  h_cf6208e37032c0 32,59,67-78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "44dbe4e661261e323466d4c50fdce7ab6e58e812",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
