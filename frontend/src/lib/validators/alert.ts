@@ -118,6 +118,20 @@ export const CriticalAlertMapCacheSchema =
       .datetime({ offset: true }),
   });
 
+export const AlertDistanceDataSchema = z.object({
+  property_id: DatabaseUuidSchema,
+  distance_metres: z.number().finite().nonnegative(),
+  officer_location_updated_at: z.string().datetime({ offset: true }),
+});
+
+
+export const AlertDistanceResSchema = z.object({
+  status: z.number().int(),
+  message: z.string().nullable().optional(),
+  data: AlertDistanceDataSchema,
+});
+
+
 
 
 export type TimePeriod = z.infer<typeof TimePeriod>
@@ -131,3 +145,5 @@ export type UnlocatedCriticalAlertItem = z.infer<typeof UnlocatedCriticalAlertIt
 export type CriticalAlertMapRes = z.infer<typeof CriticalAlertMapResSchema>;
 export type UnlocatedCriticalAlertsRes = z.infer<typeof UnlocatedCriticalAlertsResSchema>;
 export type CriticalAlertMapCache = z.infer<typeof CriticalAlertMapCacheSchema>;
+export type AlertDistanceData = z.infer<typeof AlertDistanceDataSchema>;
+export type AlertDistanceRes = z.infer<typeof AlertDistanceResSchema>;
