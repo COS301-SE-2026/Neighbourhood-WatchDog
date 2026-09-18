@@ -5,8 +5,11 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
+from app.models.security_officer import AvailabilityStatus
+
 class DispatchStatus(str, Enum):
     SELECTED = "SELECTED" #primary officer chosen
+    PENDING = "PENDING" #ranked, available officers in reserve
     QUEUED = "QUEUED" #for busy officers
     NOTIFIED = "NOTIFIED" #officer notified waiting for response
     ACCEPTED = "ACCEPTED" #accepts dispatch request
@@ -19,15 +22,18 @@ class Dispatch(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     alert_id = Column(UUID(as_uuid=True), ForeignKey("alert.id", ondelete="CASCADE"), nullable=False)
-    neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id", ondelete="CASCADE"), nullable=False)
-    officer_id = Column(UUID(as_uuid=True), ForeignKey("security_officer.id", ondelete="CASCADE"), nullable=True)
-    rank = Column(Integer, nullable=False) 
+    neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id", ondelete="SET NULL"), nullable=True)
+    officer_id = Column(UUID(as_uuid=True), ForeignKey("security_officer.id", ondelete="SET NULL"), nullable=True)
+    rank = Column(Integer, nullable=True) 
     score = Column(Float, nullable=True) #lower score is better
     distance = Column(Float, nullable=True) #distance from alert in metres
     eta = Column(Float, nullable=True) #eta to alert in seconds
     workload = Column(Integer, nullable=True)
+    officer_availability = Column(SAEnum(AvailabilityStatus, name="availability_status"), nullable=True)
+    officer_location_updated_at = Column(TIMESTAMP(timezone=True), nullable=True) #location freshness at ranking
     status = Column(SAEnum(DispatchStatus, name="dispatch_status"), nullable=False, default=DispatchStatus.SELECTED)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    notified_at = Column(TIMESTAMP(timezone=True), nullable=True)
     responded_at = Column(TIMESTAMP(timezone=True), nullable=True)
 
     #relationships
@@ -42,11 +48,13 @@ class Dispatch(Base):
         Index("ix_dispatch_neighbourhood", "neighbourhood_id"),
         Index("ix_dispatch_neighbourhood_status", "neighbourhood_id", "status"),
         Index("uq_dispatch_alert_officer", "alert_id", "officer_id", unique=True, postgresql_where=text("officer_id IS NOT NULL")),
+        Index("uq_dispatch_one_selected_per_alert", "alert_id", unique=True, postgresql_where=text("status = 'SELECTED'")),
 
         CheckConstraint(
             "(status = 'NO_CANDIDATE' AND officer_id IS NULL) "
-            "OR (status != 'NO_CANDIDATE' AND officer_id IS NOT NULL)",
+            "OR status IN ('ACCEPTED', 'DECLINED', 'TIMED_OUT') "
+            "OR officer_id IS NOT NULL",
             name="ck_dispatch_officer_matches_status",
         ),
-        CheckConstraint("rank > 0", name="ck_dispatch_rank_positive"),
+        CheckConstraint("rank IS NULL OR rank > 0", name="ck_dispatch_rank_positive"),
     )
