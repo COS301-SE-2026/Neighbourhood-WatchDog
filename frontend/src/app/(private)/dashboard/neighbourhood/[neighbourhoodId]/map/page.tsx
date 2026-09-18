@@ -9,6 +9,7 @@ import {
   WifiOff,
   RefreshCw,
   ShieldAlert,
+  Users
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -23,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useCriticalAlerts } from "@/hooks/use-critical-alerts";
 import { useUserContext } from "@/hooks/use-user-context";
+import { usePropertyResidentContext } from "@/hooks/use-property-resident-context";
 import type { PropertyAlertGroup } from "./CriticalAlertsMap";
 import type {
   CriticalAlertStatus,
@@ -109,6 +111,14 @@ function PropertyAlertsSheet({
   readonly open: boolean;
   readonly onClose: () => void;
 }) {
+  const {
+    data: residentContext,
+    loading: residentsLoading,
+    error: residentsError,
+    retry: retryResidents,
+  } = usePropertyResidentContext(
+    property?.propertyId ?? null,
+  );
   if (!property) {
     return null;
   }
@@ -138,6 +148,101 @@ function PropertyAlertsSheet({
               : "alerts"}
           </SheetDescription>
         </SheetHeader>
+        <section className="mt-6 rounded-lg border border-border bg-brand-abyss p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <Users className="mt-0.5 size-4 text-brand-green" />
+
+              <div>
+                <h2 className="text-sm font-semibold text-brand-frost">
+                  People at this property
+                </h2>
+
+                <p className="mt-1 text-xs text-brand-ash">
+                  {residentsLoading
+                    ? "Loading resident information..."
+                    : `${residentContext?.residents.length ?? 0} linked ${
+                        residentContext?.residents.length === 1
+                          ? "person"
+                          : "people"
+                      }`}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {residentsLoading && (
+            <div className="mt-4 space-y-2">
+              <div className="h-10 animate-pulse rounded-md bg-brand-slate" />
+              <div className="h-10 animate-pulse rounded-md bg-brand-slate" />
+            </div>
+          )}
+
+          {!residentsLoading && residentsError && (
+            <div className="mt-4">
+              <p className="text-xs text-brand-caution">
+                {residentsError}
+              </p>
+
+              <button
+                type="button"
+                onClick={retryResidents}
+                className="mt-2 text-xs font-semibold text-brand-green hover:underline"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
+          {!residentsLoading &&
+            !residentsError &&
+            residentContext?.residents.length === 0 && (
+              <p className="mt-4 text-xs text-brand-ash">
+                No people are currently linked to this property.
+              </p>
+            )}
+
+          {!residentsLoading &&
+            !residentsError &&
+            residentContext &&
+            residentContext.residents.length > 0 && (
+              <ul className="mt-4 space-y-2">
+                {residentContext.residents.map((resident) => {
+                  const fullName = [
+                    resident.first_name,
+                    resident.last_name,
+                  ]
+                    .filter(Boolean)
+                    .join(" ");
+
+                  return (
+                    <li
+                      key={resident.user_id}
+                      className="rounded-md border border-border px-3 py-2"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm text-brand-frost">
+                          {fullName || resident.email}
+                        </p>
+
+                        {resident.is_admin && (
+                          <span className="shrink-0 rounded-full border border-brand-green/40 px-2 py-0.5 text-[10px] text-brand-green">
+                            Property admin
+                          </span>
+                        )}
+                      </div>
+
+                      {fullName && (
+                        <p className="mt-1 truncate text-xs text-brand-ash">
+                          {resident.email}
+                        </p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+        </section>
 
         <div className="mt-6 space-y-3">
           {visibleAlerts.map((alert) => (
