@@ -278,7 +278,7 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
 
         )
 
-    tracking_subject, parent_alert, source_camera, source_property = (source_subject_row)
+    tracking_subject, parent_alert, _, source_property = source_subject_row
 
     if source_property.neighbourhood_id != candidate_property.neighbourhood_id:
         raise HTTPException(
@@ -576,7 +576,7 @@ async def get_tracking_timeline(*, db: AsyncSession, alert_id: UUID, claims: dic
 
         )
 
-    alert, originating_camera, property_obj = alert_row
+    alert, _, property_obj = alert_row
 
     if property_obj.neighbourhood_id is None:
         raise HTTPException(

@@ -217,7 +217,6 @@ async def list_property_alerts(
 
 @router.get(
         "/{alert_id}/tracking", 
-        response_model=TrackingTimelineResponse, 
         summary="Get the ordered tracking timeline for an alert", 
         responses={
             403: {"description": "Only authorized officers can view tracking timelines"}, 

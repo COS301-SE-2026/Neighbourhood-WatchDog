@@ -108,12 +108,9 @@ export function TrackingTimeline({
       )}
 
       {!loading && error && (
-        <p
-          role="status"
-          className="rounded-md border border-brand-caution/30 bg-brand-caution/10 px-3 py-2 text-xs text-brand-caution"
-        >
+        <output className="block rounded-md border border-brand-caution/30 bg-brand-caution/10 px-3 py-2 text-xs text-brand-caution">
           {error}
-        </p>
+        </output>
       )}
 
       {!loading && !error && timeline && (

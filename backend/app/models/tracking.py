@@ -52,8 +52,11 @@ class TrackingSighting(Base):
     __table_args__ = (
 
         UniqueConstraint("tracking_subject_id", "sequence_no", name="uq_tracking_sighting_subject_sequence"),
-        CheckConstraint( "sequence_no > 0", name="ck_tracking_sighting_sequence_positive"),
-        CheckConstraint("match_confidence IS NULL OR " "(match_confidence >= 0 AND match_confidence <= 1)", name="ck_tracking_sighting_confidence_range"),
+        CheckConstraint("sequence_no > 0", name="ck_tracking_sighting_sequence_positive"),
+        CheckConstraint(
+            "match_confidence IS NULL OR (match_confidence >= 0 AND match_confidence <= 1)",
+            name="ck_tracking_sighting_confidence_range",
+        ),
         Index("ix_tracking_sighting_subject_observed_at", "tracking_subject_id", "observed_at"), #subject and time
         Index("ix_tracking_sighting_camera_observed_at", "camera_id", "observed_at"), #camera and time
 

@@ -43,14 +43,17 @@ async def test_http_exception_is_reraised():
     """
 
     db = MagicMock()
+    tracking_subject_id = uuid4()
+    camera_id = uuid4()
+    observed_at = datetime.now(timezone.utc)
 
     with pytest.raises(HTTPException) as exc:
         await record_tracking_sighting(
             db=db,
-            tracking_subject_id=uuid4(),
-            camera_id=uuid4(),
+            tracking_subject_id=tracking_subject_id,
+            camera_id=camera_id,
             local_track_id=1,
-            observed_at=datetime.now(timezone.utc),
+            observed_at=observed_at,
             match_confidence=1.5,
         )
 
@@ -80,14 +83,17 @@ async def test_integrity_error_is_converted_to_409():
         )
     )
     db.rollback = AsyncMock()
+    tracking_subject_id = uuid4()
+    camera_id = uuid4()
+    observed_at = datetime.now(timezone.utc)
 
     with pytest.raises(HTTPException) as exc:
         await record_tracking_sighting(
             db=db,
-            tracking_subject_id=uuid4(),
-            camera_id=uuid4(),
+            tracking_subject_id=tracking_subject_id,
+            camera_id=camera_id,
             local_track_id=1,
-            observed_at=datetime.now(timezone.utc),
+            observed_at=observed_at,
         )
 
     assert exc.value.status_code == 409
@@ -117,14 +123,17 @@ async def test_unexpected_exception_is_converted_to_500():
         side_effect=RuntimeError("database connection failed")
     )
     db.rollback = AsyncMock()
+    tracking_subject_id = uuid4()
+    camera_id = uuid4()
+    observed_at = datetime.now(timezone.utc)
 
     with pytest.raises(HTTPException) as exc:
         await record_tracking_sighting(
             db=db,
-            tracking_subject_id=uuid4(),
-            camera_id=uuid4(),
+            tracking_subject_id=tracking_subject_id,
+            camera_id=camera_id,
             local_track_id=1,
-            observed_at=datetime.now(timezone.utc),
+            observed_at=observed_at,
         )
 
     assert exc.value.status_code == 500

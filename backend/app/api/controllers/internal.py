@@ -119,7 +119,6 @@ async def upload_clip(
 
 @router.post(
     "/tracking/match",
-    response_model=TrackingMatchResponse,
     status_code=200,
     responses={
         401: {"description": "Invalid or revoked edge agent credential"},
@@ -145,7 +144,6 @@ async def match_tracking(body: MatchTrackingEmbeddingRequest, db: DbSession, cre
 
 @router.post(
     "/tracking/sightings",
-    response_model=TrackingSightingCreateResponse,
     status_code=201,
     responses={
         401: {"description": "Invalid or revoked edge agent credential"},
