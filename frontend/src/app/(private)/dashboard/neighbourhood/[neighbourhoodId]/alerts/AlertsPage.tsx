@@ -506,6 +506,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
                         isNeighbourhoodAdmin ? handleBroadcast : undefined
                       }
                       broadcasting={broadcastingAlertId === alert.id}
+                      canViewTracking={canViewTracking}
                       trackingRefreshKey={trackingRefreshKey}
                     />
                   ))}

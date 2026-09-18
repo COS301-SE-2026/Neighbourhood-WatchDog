@@ -41,41 +41,50 @@ export function TrackingTimeline({
     if (!enabled) return;
 
     const controller = new AbortController();
-    setLoading(true);
-    setError(null);
 
-    fetchTrackingTimeline(alertId, controller.signal)
-      .then((data) => {
-        setTimeline(data);
-      })
-      .catch((reason: unknown) => {
+    async function loadTimeline() {
+        setLoading(true);
+        setError(null);
+
+        try {
+        const data = await fetchTrackingTimeline(
+            alertId,
+            controller.signal,
+        );
+
+        if (!controller.signal.aborted) {
+            setTimeline(data);
+        }
+        } catch (reason: unknown) {
         if (
-          reason instanceof DOMException &&
-          reason.name === "AbortError"
+            reason instanceof DOMException &&
+            reason.name === "AbortError"
         ) {
-          return;
+            return;
         }
 
         if (reason instanceof ApiError && reason.statusCode === 404) {
-          setTimeline(null);
-          setError("No tracking timeline is available for this alert.");
-          return;
+            setTimeline(null);
+            setError("No tracking timeline is available for this alert.");
+            return;
         }
 
         setError(
-          reason instanceof Error
+            reason instanceof Error
             ? reason.message
             : "Failed to load the tracking timeline.",
         );
-      })
-      .finally(() => {
+        } finally {
         if (!controller.signal.aborted) {
-          setLoading(false);
+            setLoading(false);
         }
-      });
+        }
+    }
+
+    void loadTimeline();
 
     return () => controller.abort();
-  }, [alertId, enabled, refreshKey]);
+    }, [alertId, enabled, refreshKey]);
 
   return (
     <Card className="border-border bg-brand-depth p-4">

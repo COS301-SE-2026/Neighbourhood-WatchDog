@@ -205,6 +205,7 @@ interface AlertDetailSheetProps {
   onAcknowledge?: (id: string) => Promise<void>;
   acknowledging: boolean;
   trackingRefreshKey?: number;
+  canViewTracking: boolean;
 }
 
 function AlertDetailSheet({
@@ -213,6 +214,7 @@ function AlertDetailSheet({
   onClose,
   onAcknowledge,
   acknowledging,
+  canViewTracking,
   trackingRefreshKey = 0,
 }: AlertDetailSheetProps) {
   const severity = getSeverity(alert.detection_type);
@@ -264,7 +266,8 @@ function AlertDetailSheet({
 
           )}
 
-          {alert.detection_type === "WEAPON_DETECTED" && (
+          {alert.detection_type === "WEAPON_DETECTED" &&
+            canViewTracking && (
             <>
               <TrackingTimeline
                 alertId={alert.id}
@@ -405,9 +408,10 @@ export interface AlertCardProps {
   readonly onBroadcast?: (id: string) => Promise<void>;
   readonly broadcasting: boolean;
   readonly trackingRefreshKey?: number;
+  readonly canViewTracking: boolean;
 }
 
-export function AlertCard({alert, onAcknowledge, onBroadcast, broadcasting, trackingRefreshKey = 0}: AlertCardProps) {
+export function AlertCard({alert, onAcknowledge, onBroadcast, broadcasting, canViewTracking, trackingRefreshKey = 0}: AlertCardProps) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
 
@@ -562,6 +566,7 @@ export function AlertCard({alert, onAcknowledge, onBroadcast, broadcasting, trac
         onClose={() => setDetailOpen(false)}
         onAcknowledge={handleAcknowledge}
         acknowledging={acknowledging}
+        canViewTracking={canViewTracking}
         trackingRefreshKey={trackingRefreshKey}
       />
     </>
