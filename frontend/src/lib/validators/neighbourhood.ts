@@ -65,6 +65,8 @@ export const LeaveNeighbourhoodParamsSchema = z.object({
 
 export const AvailabilityStatusSchema = z.enum(["AVAILABLE", "BUSY", "UNAVAILABLE"]);
 
+export const DutyStatusSchema = z.enum(["ON_DUTY", "OFF_DUTY"]);
+
 export const UpdateSecurityAvailabilityReqSchema = z.object({
   neighbourhood_id: z.uuid("Invalid neighbourhood ID"),
   new_availability: AvailabilityStatusSchema,
@@ -111,6 +113,7 @@ export type UpdateMemberRoleReq = z.infer<typeof UpdateMemberRoleReqSchema>;
 export type UpdateMemberRoleRes = z.infer<typeof UpdateMemberRoleResSchema>;
 export type LeaveNeighbourhoodParams = z.infer<typeof LeaveNeighbourhoodParamsSchema>;
 export type AvailabilityStatus = z.infer<typeof AvailabilityStatusSchema>;
+export type DutyStatus = z.infer<typeof DutyStatusSchema>;
 export type UpdateSecurityAvailabilityReq = z.infer<typeof UpdateSecurityAvailabilityReqSchema>;
 export type UpdateSecurityAvailabilityRes = z.infer<typeof UpdateSecurityAvailabilityResSchema>;
 export type GetSecurityAvailabilityRes = z.infer<typeof GetSecurityAvailabilityResSchema>;
