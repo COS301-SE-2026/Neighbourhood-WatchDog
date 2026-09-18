@@ -701,4 +701,5 @@ async def get_security_availability_handler(
         status=200,
         message="Successfully retrieved officer availability",
         availability=officer_obj.availability_status,
+        location_updated_at=officer_obj.location_updated_at,
     )

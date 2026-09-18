@@ -55,6 +55,7 @@ class GetSecurityAvailabilityRes(BaseModel):
     status: int
     message: str | None = None
     availability: AvailabilityStatus | None
+    location_updated_at: datetime | None
 
 class UpdateSecurityAvailabilityReq(BaseModel):
     neighbourhood_id: UUID
