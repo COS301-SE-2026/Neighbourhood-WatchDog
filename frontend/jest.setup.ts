@@ -5,11 +5,20 @@ global.fetch = jest.fn() as jest.Mock;
 
 // Radix UI uses ResizeObserver, which jsdom does not provide.
 class MockResizeObserver implements ResizeObserver {
-  observe(_target: Element, _options?: ResizeObserverOptions): void {}
+  private readonly observedTargets = new Set<Element>();
 
-  unobserve(_target: Element): void {}
+  observe(target: Element, options?: ResizeObserverOptions): void {
+    this.observedTargets.add(target);
+    void options;
+  }
 
-  disconnect(): void {}
+  unobserve(target: Element): void {
+    this.observedTargets.delete(target);
+  }
+
+  disconnect(): void {
+    this.observedTargets.clear();
+  }
 }
 
 Object.defineProperty(globalThis, "ResizeObserver", {

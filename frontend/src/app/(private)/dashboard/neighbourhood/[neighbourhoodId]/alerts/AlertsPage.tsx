@@ -32,6 +32,14 @@ import {
 } from "@/lib/api/alert";
 import { toast } from "sonner";
 import { claimTrackingEvent } from "@/lib/tracking-events";
+import {
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from "react";
 
 const ALL_SEVERITIES: AlertSeverity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "RESOLVED"];
@@ -201,6 +209,90 @@ function handleAlertSocketMessage(message: AlertSocketMessage, isSecurityOfficer
 }
 
 
+type AlertsWebSocketOptions = {
+  url: string;
+  wsRef: MutableRefObject<WebSocket | null>;
+  mountedRef: MutableRefObject<boolean>;
+  isSecurityOfficer: boolean;
+  seenEventIds: Set<string>;
+  dispatch: (action: FetchAction) => void;
+  onTrackingRefresh: () => void;
+  onConnectionChange: (connected: boolean) => void;
+};
+
+function createAlertsWebSocket({url, wsRef, mountedRef, isSecurityOfficer, seenEventIds, dispatch, onTrackingRefresh, onConnectionChange}: AlertsWebSocketOptions): () => void {
+  let unmounted = false;
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const connect = (): void => {
+    if (unmounted) {
+      return;
+    }
+
+    const ws = new WebSocket(url);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      if (mountedRef.current) {
+        onConnectionChange(true);
+      }
+    };
+
+    ws.onclose = () => {
+      if (mountedRef.current) {
+        onConnectionChange(false);
+      }
+
+      if (!unmounted) {
+        reconnectTimer = setTimeout(connect, 3_000);
+      }
+    };
+
+    ws.onerror = () => {
+      ws.close();
+    };
+
+    ws.onmessage = (event) => {
+      if (!mountedRef.current) {
+        return;
+      }
+
+      try {
+        const message = JSON.parse(event.data as string) as AlertSocketMessage;
+
+        handleAlertSocketMessage(
+          message,
+          isSecurityOfficer,
+          seenEventIds,
+          dispatch,
+          onTrackingRefresh
+
+        );
+      } catch {
+        // Ignore malformed WebSocket payloads.
+      }
+    };
+  };
+
+  connect();
+
+  return () => {
+    unmounted = true;
+
+    if (reconnectTimer !== null) {
+      clearTimeout(reconnectTimer);
+    }
+
+    const ws = wsRef.current;
+
+    if (ws) {
+      ws.onclose = null;
+      ws.close();
+    }
+  };
+}
+
+
 export default function AlertsPage({ neighbourhoodId }: Props) {
 
   const {
@@ -298,52 +390,25 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
   }, [neighbourhoodId, fetchTick, alertFilters, activeTab, userContextLoading, canViewAlerts]);
 
   useEffect(() => {
-    if (activeTab !== "current" || userContextLoading || !canViewAlerts) return;
+    if (activeTab !== "current" || userContextLoading || !canViewAlerts) {
+      return;
+    }
 
     const token = getAuthToken();
     const url = `${WS_BASE}/alerts/${neighbourhoodId}/ws${token ? `?token=${token}` : ""}`;
 
-    let unmounted = false;
-    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-
-    function connect() {
-      if (unmounted) return;
-      const ws = new WebSocket(url);
-      wsRef.current = ws;
-
-      ws.onopen = () => { if (mountedRef.current) setWsConnected(true); };
-      ws.onclose = () => {
-        if (mountedRef.current) setWsConnected(false);
-        if (!unmounted) reconnectTimer = setTimeout(connect, 3_000);
-      };
-      ws.onerror = () => ws.close();
-      ws.onmessage = (event) => {
-        if (!mountedRef.current) return;
-
-        try {
-          const message = JSON.parse(event.data as string) as AlertSocketMessage;
-
-          handleAlertSocketMessage(
-            message,
-            isSecurityOfficer,
-            seenTrackingEventIdsRef.current,
-            dispatch,
-            () => setTrackingRefreshKey((current) => current + 1),
-          );
-        } catch {
-          // Ignore malformed WebSocket payloads.
-        }
-      };
-    }
-
-    connect();
-
-    return () => {
-      unmounted = true;
-      if (reconnectTimer !== null) clearTimeout(reconnectTimer);
-      const ws = wsRef.current;
-      if (ws) { ws.onclose = null; ws.close(); }
-    };
+    return createAlertsWebSocket({
+      url,
+      wsRef,
+      mountedRef,
+      isSecurityOfficer,
+      seenEventIds: seenTrackingEventIdsRef.current,
+      dispatch,
+      onTrackingRefresh: () => {
+        setTrackingRefreshKey((current) => current + 1);
+      },
+      onConnectionChange: setWsConnected,
+    });
   }, [neighbourhoodId, activeTab, userContextLoading, canViewAlerts, isSecurityOfficer]);
 
   async function handleAcknowledge(id: string) {
