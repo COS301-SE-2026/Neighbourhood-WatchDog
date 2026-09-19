@@ -2,10 +2,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
 import cv2
+
+
+AI_ROOT = Path(__file__).resolve().parents[1]
+
+if str(AI_ROOT) not in sys.path:
+    sys.path.insert(0, str(AI_ROOT))
+
 
 from pipeline.processing.cascaded_pipeline import CascadedPipeline, CascadedPipelineConfig
 
@@ -93,20 +101,39 @@ def summarize_track_ids(frame_track_ids: list[list[int]], max_gap_frames: int) -
     }
 
 
-
-#running a video through our pipeline
-def evaluate_video(video_path: Path, person_model_path: Path, *, max_age: int, n_init: int, max_iou_distance: float) -> dict[str, Any]:
-
+def load_video_frames(video_path: Path) -> list[Any]:
     capture = cv2.VideoCapture(str(video_path))
 
     if not capture.isOpened():
         raise RuntimeError(f"Could not open video: {video_path}")
 
+    frames: list[Any] = []
+
+    try:
+        while True:
+            ok, frame = capture.read()
+
+            if not ok:
+                break
+
+            frames.append(frame)
+    finally:
+        capture.release()
+
+    if not frames:
+        raise RuntimeError(f"No frames could be decoded from video: {video_path}")
+
+    return frames
+
+
+#running a video through our pipeline
+def evaluate_frames( frames: list[Any], video_label: str, person_model_path: Path, *, max_age: int, n_init: int, max_iou_distance: float) -> dict[str, Any]:
+
     person_model = YOLO(str(person_model_path))
 
     tracker = DeepSort(
-        max_age=max_age, #how long someone can survive without detection
-        n_init=n_init,  ##how many detections are needed to confirm a track
+        max_age=max_age,
+        n_init=n_init,
         max_iou_distance=max_iou_distance,
         embedder="mobilenet",
         embedder_gpu=False,
@@ -116,7 +143,7 @@ def evaluate_video(video_path: Path, person_model_path: Path, *, max_age: int, n
 
     pipeline = CascadedPipeline(
         person_model=person_model,
-        weapon_model=EmptyWeaponModel(), #replaced the weapon model with this one cause we dont want it to intefer with this evaluation
+        weapon_model=EmptyWeaponModel(),
         tracker=tracker,
         config=CascadedPipelineConfig(
             max_age=max_age,
@@ -128,35 +155,22 @@ def evaluate_video(video_path: Path, person_model_path: Path, *, max_age: int, n
     )
 
     frame_track_ids: list[list[int]] = []
-    frames_read = 0
 
-    #processign every video frame
-    try:
-        while True:
-            ok, frame = capture.read()
+    for frame_number, frame in enumerate(frames):
+        result = pipeline.process_frame(frame, timestamp=float(frame_number))
 
-            if not ok:
-                break
+        ids = sorted(
+            int(track["track_id"])
+            for track in result.tracks
+            if track.get("track_id") is not None
+        )
 
-            result = pipeline.process_frame(frame, timestamp=float(frames_read))
+        frame_track_ids.append(ids)
 
-            ## extracting track ids
-            ids = sorted(
-                int(track["track_id"])
-                for track in result.tracks
-                if track.get("track_id") is not None
-            )
-
-            frame_track_ids.append(ids)
-            frames_read += 1
-    finally:
-        capture.release()
-
-    #summarize tracking
     summary = summarize_track_ids(frame_track_ids, max_gap_frames=max_age)
 
     return {
-        "video": str(video_path),
+        "video": video_label,
         "configuration": {
             "max_age": max_age,
             "n_init": n_init,
@@ -225,8 +239,11 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    baseline = evaluate_video(
-        args.video,
+    frames = load_video_frames(args.video)
+
+    baseline = evaluate_frames(
+        frames,
+        str(args.video),
         args.person_model,
         max_age=args.baseline_max_age,
         n_init=args.n_init,
@@ -234,13 +251,14 @@ def main() -> None:
 
     )
 
-    candidate = evaluate_video(
-        args.video,
+    candidate = evaluate_frames(
+        frames,
+        str(args.video),
         args.person_model,
         max_age=args.candidate_max_age,
         n_init=args.n_init,
         max_iou_distance=args.max_iou_distance
-
+        
     )
 
     result = {
