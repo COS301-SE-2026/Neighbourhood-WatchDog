@@ -142,4 +142,43 @@ describe("useAlertPropertyRoute", () => {
     jest.restoreAllMocks();
   });
 
+  test("loads the initial route and ETA", async () => {
+    mockFetchRoute.mockResolvedValue(
+      routeResponse(
+        FIRST_UPDATE,
+        420,
+      ),
+    );
+
+    const { result } = renderHook(() =>
+      useAlertPropertyRoute(
+        PROPERTY_ID,
+        true,
+      ),
+    );
+
+    await waitFor(() => {
+      expect(
+        result.current.route?.eta_seconds,
+      ).toBe(420);
+    });
+
+    expect(
+      result.current.route?.property_id,
+    ).toBe(PROPERTY_ID);
+
+    expect(
+      result.current.routeError,
+    ).toBeNull();
+
+    expect(
+      result.current.routeLoading,
+    ).toBe(false);
+
+    expect(
+      mockFetchRoute,
+    ).toHaveBeenCalledWith(PROPERTY_ID);
+  });
+
+
 });
