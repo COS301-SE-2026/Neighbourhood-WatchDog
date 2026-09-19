@@ -330,10 +330,17 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
 
 
     tracking_event_payload = {
+        #the sighting ID is the idempotency key for this event.
+        "event_id": str(sighting.id),
+        "event_type": "cross_property_match",
         "alert_id": str(parent_alert.id),
         "tracking_subject_id": str(tracking_subject.id),
         "sighting_id": str(sighting.id),
+
         "camera_id": str(body.camera_id),
+        "camera_name": candidate_camera.name,
+        "camera_location": candidate_camera.location,
+
         "local_track_id": body.local_track_id,
         "observed_at": body.observed_at.isoformat(),
         "sequence_no": sighting.sequence_no,
