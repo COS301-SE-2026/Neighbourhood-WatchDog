@@ -41,6 +41,26 @@ class EmptyWeaponModel:
         return [] #always return empty, indicating no weapon detection (don't want weapon detection affecting the test)
 
 
+def classify_tracking_transition(previous_id: int | None, current_id: int, gap_frames: int, max_gap_frames: int) -> tuple[int, int, int]:
+    """
+    Return:
+        short_occlusion_recoveries,
+        short_occlusion_breaks,
+        direct_id_switches
+    """
+    if previous_id is None:
+        return 0, 0, 0
+
+    if gap_frames == 0:
+        return (0, 0, 1) if current_id != previous_id else (0, 0, 0)
+
+    if gap_frames <= max_gap_frames:
+        if current_id == previous_id:
+            return 1, 0, 0
+
+        return 0, 1, 0
+
+    return 0, 0, 0
 
 ##The function asks: Did the tracker recover the same ID after the person temporarily disappeared?
 def summarize_track_ids(frame_track_ids: list[list[int]], max_gap_frames: int) -> dict[str, str]:
@@ -67,28 +87,29 @@ def summarize_track_ids(frame_track_ids: list[list[int]], max_gap_frames: int) -
 
     #processing each frame
     for ids in frame_track_ids:
-        if len(ids) == 1:
-            current_id = ids[0]
-            observed_frames += 1
-            unique_ids.add(current_id)
-
-
-            #detecting direct id switches
+        if len(ids) != 1:
             if previous_id is not None:
-                if gap_frames == 0 and current_id != previous_id:
-                    direct_id_switches +=1
-                elif 0 < gap_frames <= max_gap_frames:
-                    if current_id == previous_id:
-                        short_occlusion_recoveries += 1
-                    else:
-                        short_occlusion_breaks += 1
-
-            previous_id = current_id
-            gap_frames = 0
+                gap_frames += 1
             continue
 
-        if previous_id is not None:
-            gap_frames +=1
+        current_id = ids[0]
+        observed_frames += 1
+        unique_ids.add(current_id)
+
+        recoveries, breaks, switches = classify_tracking_transition(
+            previous_id=previous_id,
+            current_id=current_id,
+            gap_frames=gap_frames,
+            max_gap_frames=max_gap_frames
+            
+        )
+
+        short_occlusion_recoveries += recoveries
+        short_occlusion_breaks += breaks
+        direct_id_switches += switches
+
+        previous_id = current_id
+        gap_frames = 0
 
     return {
         "frames": len(frame_track_ids),
