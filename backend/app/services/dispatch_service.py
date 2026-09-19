@@ -97,3 +97,37 @@ def filter_eligible(candidates: list[OfficerCandidate]) -> list[OfficerCandidate
 def estimate_eta_seconds(distance: float) -> float:
     """Estimate of ETA from straight line distance - Needs to be replaced with something more accurate"""
     return distance * ROUTE_CIRCUITRY_FACTOR / OFFICER_AVG_SPEED
+
+def rank_candidates(
+        eligible: list[OfficerCandidate],
+        detection_type: str,
+        now: datetime | None = None,
+) -> list[RankedCandidate]:
+    """Ranks eligible officers by availability and weighted scores, distance and officer_id used for tie-breaking"""
+    now = now or datetime.now(timezone.utc)
+    weights = RANKING_WEIGHTS.get(detection_type, DEFAULT_WEIGHTS)
+
+    scored: list[tuple[OfficerCandidate, float, float]] = []
+    for e in eligible:
+        eta = estimate_eta_seconds(e.distance)
+        age = max((now - e.location_updated_at).total_seconds(), 0.0)
+        freshness_ratio = min(age/STALE_LOCATION_THRESHOLD_SECONDS, 1.0)
+        score = (
+            weights.eta_weight * (eta/60.0)
+            + weights.workload_weight * e.workload
+            + weights.freshness_weight * freshness_ratio
+        )
+        scored.append((e, eta, score))
+
+    scored.sort(
+        key=lambda t: (
+            _AVAILABILITY_TIER[t[0].availability_status],
+            t[2],
+            t[0].distance,
+            str(t[0].officer_id),
+        )
+    )
+    return [
+        RankedCandidate(candidate=e, eta=eta, score=score, rank=rank)
+        for rank, (e, eta, score) in enumerate(scored, start=1)
+    ]
