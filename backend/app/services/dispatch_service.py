@@ -93,3 +93,7 @@ def filter_eligible(candidates: list[OfficerCandidate]) -> list[OfficerCandidate
             continue
         eligible.append(c)
     return eligible
+
+def estimate_eta_seconds(distance: float) -> float:
+    """Estimate of ETA from straight line distance - Needs to be replaced with something more accurate"""
+    return distance * ROUTE_CIRCUITRY_FACTOR / OFFICER_AVG_SPEED
