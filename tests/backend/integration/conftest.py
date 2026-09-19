@@ -13,6 +13,26 @@ except Exception:
 
 TEST_BEARER = "Bearer test"
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--run-integration",
+        action="store_true",
+        default=False,
+        help="Run backend integration tests against the configured test database"
+
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--run-integration"):
+        return
+
+    skip_integration = pytest.mark.skip(reason="Integration tests require --run-integration")
+
+    for item in items:
+        item.add_marker(skip_integration)
+
+
 def pytest_configure(config):
     os.environ["TESTING"] = "true"
     os.environ["SKIP_DB_INIT"] = "false"

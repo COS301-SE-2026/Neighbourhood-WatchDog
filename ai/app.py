@@ -53,6 +53,7 @@ WEAPON_CONFIDENCE_THRESHOLD = float(os.getenv("WEAPON_CONFIDENCE_THRESHOLD", "0.
 WEAPON_NMS_IOU_THRESHOLD = float(os.getenv("WEAPON_NMS_IOU_THRESHOLD", "0.50"))
 TEMPORAL_CONFIRMATION_FRAMES = int(os.getenv("TEMPORAL_CONFIRMATION_FRAMES", "3"))
 
+APPEARANCE_EMBEDDING_MODEL = "deep_sort_mobilenet_v2_bottleneck"
 
 # #cache for the camera settings, refresh every 30 seconds ---- still need to test
 # _camera_settings: dict =  {
@@ -87,7 +88,7 @@ def _s3_client():
 
 
 #cooldown tracker per weapon class
-_clips_cooldowns: dict[tuple[str, str], float] = {}
+_clips_cooldowns: dict[tuple[str, int, str], float] = {}
 _cooldown_lock = threading.Lock()
 
 
@@ -220,24 +221,217 @@ class LatestFrameReader:
             if cap is not None:
                 cap.release()
 
-def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: float) -> str | None:
-    """Create a weapon alert immediately, independently of S3 footage."""
+
+def _match_tracking_subject(camera: CameraSpec, appearance_embedding: list[float], api_key: str) -> tuple[bool, str | None, float | None]:
+    """
+    Attempt to match an appearance embedding against an active tracking subject (does this person look like an existing tracking subject)
+
+    Returns: (request_succeeded, tracking_subject_id, similarity)
+    A successful request with no match returns: (True, None, None)
+    A failed matcher request returns: (False, None, None)
+    """
+
+    try:
+        response = httpx.post(
+            f"{BACKEND_URL}/internal/tracking/match",
+            headers={"X-Internal-Token": api_key},
+    
+            json={
+                "camera_id": camera.id,
+                "appearance_embedding": appearance_embedding,
+                "embedding_model": APPEARANCE_EMBEDDING_MODEL
+    
+            },
+            timeout=10.0
+    
+        )
+    
+        response.raise_for_status()
+        response_data = response.json()
+        match_data = response_data.get("data") or {}
+    
+        if not match_data.get("matched"):
+            logger.info("No existing tracking subject matched camera=%s", camera.id)
+    
+            return True, None, None
+    
+        tracking_subject_id = match_data.get("tracking_subject_id")
+        similarity = match_data.get("similarity")
+    
+        if not tracking_subject_id or similarity is None:
+            raise RuntimeError("Tracking matcher returned matched=true without tracking_subject_id or similarity")
+    
+        similarity = float(similarity)
+    
+        logger.info(
+            "Tracking subject matched: camera=%s subject=%s similarity=%.4f",
+            camera.id,
+            tracking_subject_id,
+            similarity
+    
+        )
+    
+        return True, str(tracking_subject_id), similarity
+
+    
+    except httpx.RequestError as error:
+        logger.exception(
+            "Could not reach tracking matcher for camera=%s: %s",
+            camera.id,
+            error,
+        )
+        return False, None, None
+
+    except Exception:
+        logger.exception(
+            "Unexpected tracking matcher failure for camera=%s",
+            camera.id,
+        )
+        return False, None, None
+
+
+
+def _record_tracking_sighting(camera: CameraSpec, local_track_id: int, observed_at: str, tracking_subject_id: str, match_confidence: float, api_key: str) -> str | None:
+    """
+    Persist a validated cross-camera sighting.
+
+    Returns the parent alert ID so the clip remains attached to the original incident.
+
+    inform backend that existing subject was seen on camera
+    """
+
+    try:
+        response = httpx.post(
+            f"{BACKEND_URL}/internal/tracking/sightings",
+            headers={"X-Internal-Token": api_key},
+
+            json={
+                "tracking_subject_id": tracking_subject_id,
+                "camera_id": camera.id,
+                "local_track_id": local_track_id,
+                "observed_at": observed_at,
+                "match_confidence": match_confidence
+
+            },
+            timeout=10.0
+
+        )
+
+        response.raise_for_status()
+
+        response_data = response.json()
+        sighting_data = response_data.get("data") or {}
+        alert_id = sighting_data.get("alert_id")
+
+        if not alert_id:
+            raise RuntimeError("Tracking sighting endpoint returned 2xx without alert_id")
+
+        logger.info(
+            "Recorded tracking sighting: alert=%s subject=%s camera=%s "
+            "confidence=%.4f",
+            alert_id,
+            tracking_subject_id,
+            camera.id,
+            match_confidence
+
+        )
+
+        return str(alert_id)
+
+    except httpx.HTTPStatusError as error:
+        logger.exception(
+            "Tracking sighting rejected: camera=%s subject=%s "
+            "status=%s body=%s",
+            camera.id,
+            tracking_subject_id,
+            error.response.status_code,
+            error.response.text
+            
+        )
+        return None
+
+    except httpx.RequestError as error:
+        logger.exception(
+            "Could not record tracking sighting for camera=%s subject=%s: %s",
+            camera.id,
+            tracking_subject_id,
+            error
+
+        )
+        return None
+
+    except Exception:
+        logger.exception(
+            "Unexpected tracking sighting failure for camera=%s subject=%s",
+            camera.id,
+            tracking_subject_id
+
+        )
+        return None
+
+
+def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: float, local_track_id: int, appearance_embedding: list[float] | None = None) -> str | None:
+    """
+    Match a detection to an existing incident before creating a new alert.
+
+    If a match is found, record a sighting against the existing alert.
+    If no match is found, create a new alert and tracking subject.
+    """
 
     api_key = keyring.get_password("WatchDog", "api_key") or INTERNAL_API_TOKEN
+    observed_at = datetime.now(timezone.utc).isoformat()
+
+    if appearance_embedding is not None:
+        matcher_succeeded, tracking_subject_id, similarity = (
+            _match_tracking_subject(camera=camera, appearance_embedding=appearance_embedding, api_key=api_key)
+        )
+
+
+        if tracking_subject_id is not None and similarity is not None:
+            #not creating a second alert when the detection matches an existing subject. 
+            ## if recording fails, return None instead of creating a duplicate incident.
+            return _record_tracking_sighting(
+                camera=camera,
+                local_track_id=local_track_id,
+                observed_at=observed_at,
+                tracking_subject_id=tracking_subject_id,
+                match_confidence=similarity,
+                api_key=api_key
+
+            )
+
+        if not matcher_succeeded:
+            logger.warning(
+                "Tracking matcher unavailable for camera=%s; "
+                "falling back to a new alert",
+                camera.id
+
+            )
 
     payload = {
         "camera_id": camera.id,
         "detection_type": "WEAPON_DETECTED",
         "confidence_score": confidence,
-        "frame_timestamp": datetime.now(timezone.utc).isoformat(),
+        "local_track_id": local_track_id,
+        "frame_timestamp": observed_at,
+        "appearance_embedding": appearance_embedding,
+
+        "embedding_model": (
+            APPEARANCE_EMBEDDING_MODEL
+            if appearance_embedding is not None
+            else None
+        )
+
     }
 
     logger.info(
-        "Creating weapon alert: camera=%s, label=%s, confidence=%.3f, backend=%s",
+        "Creating weapon alert: camera=%s, label=%s, confidence=%.3f, "
+        "backend=%s",
         camera.id,
         weapon_label,
         confidence,
-        BACKEND_URL,
+        BACKEND_URL
+
     )
 
     try:
@@ -245,28 +439,33 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
             f"{BACKEND_URL}/internal/alerts",
             headers={"X-Internal-Token": api_key},
             json=payload,
-            timeout=10.0,
+            timeout=10.0
+
         )
 
-        logger.info("Weapon alert API response: status=%s, body=%s", response.status_code, response.text)
+        logger.info(
+            "Weapon alert API response: status=%s, body=%s",
+            response.status_code,
+            response.text
+
+        )
 
         response.raise_for_status()
 
         alert_id = response.json().get("alert_id")
+
         if not alert_id:
-            raise RuntimeError(
-                "Weapon alert API returned 2xx but no alert_id: "
-                f"{response.text}"
-            )
+            raise RuntimeError(f"Weapon alert API returned 2xx but no alert_id: {response.text}")
 
         logger.info(
             "Created weapon alert %s for camera %s (%s, %.2f)",
             alert_id,
             camera.id,
             weapon_label,
-            confidence,
-        )
+            confidence
 
+        )
+        
 
         return str(alert_id)
 
@@ -274,7 +473,8 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
         logger.exception(
             "Weapon alert API rejected request: status=%s, body=%s",
             error.response.status_code,
-            error.response.text,
+            error.response.text
+
         )
         return None
 
@@ -282,7 +482,8 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
         logger.exception(
             "Could not reach weapon alert API at %s: %s",
             BACKEND_URL,
-            error,
+            error
+
         )
         return None
 
@@ -290,14 +491,16 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
         logger.exception(
             "Unexpected weapon-alert creation failure for camera %s (%s)",
             camera.id,
-            weapon_label,
+            weapon_label
         )
         return None
+    
 
-def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, weapon_label: str, confidence: float, stop_event: threading.Event) -> None:
+def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, weapon_label: str, 
+                          confidence: float, local_track_id: int, stop_event: threading.Event, appearance_embedding: list[float] | None = None) -> None:
     
     label = weapon_label.lower()
-    cooldown_key = (camera.id, label)
+    cooldown_key = (camera.id, local_track_id, label)
     now = time.monotonic()
 
     with _cooldown_lock:
@@ -318,6 +521,10 @@ def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer
         camera=camera,
         weapon_label=label,
         confidence=confidence,
+        local_track_id=local_track_id,
+        appearance_embedding=appearance_embedding
+
+
     )
 
     if alert_id is None:
@@ -554,13 +761,20 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
 
 
                 if event["detection_type"] == "WEAPON_DETECTED":
+                    local_track_id = int(event["track_id"])
+
+                    appearance_embedding = result.appearance_embeddings.get(local_track_id)
+
                     _schedule_weapon_clip(
                         camera=camera,
                         frame_buffer=annotated_frames,
                         trigger_sequence=trigger_sequence,
                         weapon_label=event.get("weapon_type") or "weapon",
                         confidence=float(event["weapon_confidence"] or event["confidence"]),
-                        stop_event=stop_event
+                        local_track_id=local_track_id, 
+                        stop_event=stop_event,
+                        appearance_embedding=appearance_embedding
+                        
                     )
 
     except Exception:

@@ -233,6 +233,44 @@ export async function fetchAlertFrequencyData(
 }
 
 
+
+export interface TrackingSighting {
+  id: string;
+  camera_id: string;
+  camera_name: string;
+  camera_location: string;
+  local_track_id: number;
+  observed_at: string;
+  sequence_no: number;
+  match_confidence: number | null;
+
+}
+
+export interface TrackingTimelineData {
+  alert_id: string;
+  tracking_subject_id: string;
+  alert_status: string;
+  sightings: TrackingSighting[];
+
+}
+
+interface TrackingTimelineResponse {
+  status: number;
+  message?: string | null;
+  data?: TrackingTimelineData | null;
+
+}
+
+export async function fetchTrackingTimeline(alertId: string, signal?: AbortSignal): Promise<TrackingTimelineData> {
+  const response = await apiFetch<TrackingTimelineResponse>(`/alerts/${alertId}/tracking`, { signal });
+
+  if (!response.data) {
+    throw new ApiError(response.message ?? "Tracking timeline is unavailable", response.status);
+  }
+
+  
+  return response.data;
+}
 export async function fetchCriticalAlertMap(
   neighbourhoodId: string,
 ): Promise<CriticalAlertMapRes> {
