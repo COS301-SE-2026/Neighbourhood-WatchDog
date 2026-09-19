@@ -1,3 +1,4 @@
+import logging
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -10,6 +11,9 @@ from app.models.zone import GeospatialZone
 from app.schemas.detection import DetectionIngestReq, DetectionIngestRes
 from app.services.alert_service import _build_alert_res
 from app.services.notification_service import dispatch_notifications
+from app.services.dispatch_service import dispatch_alert
+
+logger = logging.getLogger(__name__)
 
 SENSITIVITY_THRESHOLDS: dict[str, float] = {
     "LOW": 0.80,
@@ -115,6 +119,11 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
                     confidence_score=data.confidence_score,
                     frame_timestamp=data.frame_timestamp,
                 )
+
+                try:
+                    await dispatch_alert(db, alert_id)
+                except Exception:
+                    logger.exception("Dispatch failed for alert %s", alert.id)
 
         return DetectionIngestRes(
             status=201,
