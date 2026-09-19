@@ -1,0 +1,55 @@
+from dataclasses import dataclass, replace
+from datetime import datetime, timezone
+from uuid import UUID
+
+from fastapi import HTPPException
+from sqlalchemy import select, func, cast
+from geoalchemy2 import Geography
+
+from app.auth.authorization import Claims
+from app.core.database import DbSession
+from app.models.alert import Alert, DetectionType
+from app.models.camera import Camera
+from app.models.user import User
+from app.models.property import Property
+from app.models.dispatch import Dispatch, DispatchStatus
+from app.models.security_officer import SecurityOfficer, AvailabilityStatus
+from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
+from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes
+from app.services.security_officer_service import STALE_LOCATION_THRESHOLD_SECONDS, is_location_stale
+
+CRITICAL_DETECTION_TYPES: frozenset[str] = frozenset({"WEAPON_DETECTED", "FALL_DETECTED"})
+OFFICER_AVG_SPEED = 8.33 #m/s or about 30km/h
+ROUTE_CIRCUITRY_FACTOR = 1.3 #road distance is about 30% longer than straight-line
+
+@dataclass(frozen=True)
+class RankingWeights:
+    """Score = eta_weight * ETA(min) + workload_weight * workload(no of active alerts) + freshness_weight * location_age_ratio"""
+    eta_weight: float
+    workload_weight: float
+    freshness_weight: float
+
+DEFAULT_WEIGHTS = RankingWeights(eta_weight=1.0, workload_weight=1.0, freshness_weight=0.5)
+
+RANKING_WEIGHTS: dict[str, RankingWeights] = {
+    "WEAPON_DETECTED": RankingWeights(eta_weight=1.5, workload_weight=0.25, freshness_weight=0.5),
+    "FALL_DETECTED": RankingWeights(eta_weight=1.5, workload_weight=0.5, freshness_weight=0.5),
+}
+
+ACTIVE_DISPATCH_STATUS = (
+    DispatchStatus.SELECTED,
+    DispatchStatus.NOTIFIED,
+    DispatchStatus.ACCEPTED,
+)
+
+#available officers rank ahead of busy officers
+_AVAILABILITY_TIER: dict[AvailabilityStatus, int] = {
+    AvailabilityStatus.AVAILABLE: 0,
+    AvailabilityStatus.BUSY: 1,
+}
+
+#roles allowed to view dispatch details
+DISPATCH_VIEWER_ROLES = (
+    NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
+    NeighbourhoodRole.SECURITY_OFFICER,
+)
