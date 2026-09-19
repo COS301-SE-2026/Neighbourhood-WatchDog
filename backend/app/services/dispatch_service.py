@@ -252,3 +252,21 @@ async def _fetch_dispatch_rows(db: DbSession, alert_id: UUID) -> list[Dispatch]:
         .order_by(Dispatch.rank.asc().nulls_last(), Dispatch.created_at.asc())
     )
     return list((await db.execute(stmt)).scalars().all())
+
+def _build_candidate_res(d: Dispatch) -> DispatchCandidateRes:
+    return DispatchCandidateRes(
+        id=d.id,
+        alert_id=d.alert_id,
+        officer_id=d.officer_id,
+        rank=d.rank,
+        score=d.score,
+        distance=d.distance,
+        eta=d.eta,
+        workload=d.workload,
+        status=d.status,
+        officer_availability=d.officer_availability,
+        is_location_stale=is_location_stale(d.officer_location_updated_at),
+        created_at=d.created_at,
+        notified_at=d.notified_at,
+        responded_at=d.responded_at,
+    )
