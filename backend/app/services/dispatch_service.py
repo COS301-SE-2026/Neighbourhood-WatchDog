@@ -244,3 +244,11 @@ async def _fetch_workloads(
     )
     result = await db.execute(stmt)
     return {officer_id: count for officer_id, count in result.all()}
+
+async def _fetch_dispatch_rows(db: DbSession, alert_id: UUID) -> list[Dispatch]:
+    stmt = (
+        select(Dispatch)
+        .where(Dispatch.alert_id == alert_id)
+        .order_by(Dispatch.rank.asc().nulls_last(), Dispatch.created_at.asc())
+    )
+    return list((await db.execute(stmt)).scalars().all())
