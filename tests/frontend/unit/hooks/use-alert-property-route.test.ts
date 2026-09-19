@@ -290,5 +290,96 @@ describe("useAlertPropertyRoute", () => {
     },
   );
 
+  test(
+    "keeps distance data when OSRM fails gracefully",
+    async () => {
+      mockFetchRoute.mockResolvedValue(
+        routeResponse(
+          FIRST_UPDATE,
+          null,
+          "Route and ETA are temporarily unavailable",
+        ),
+      );
+
+      const { result } = renderHook(() =>
+        useAlertPropertyRoute(
+          PROPERTY_ID,
+          true,
+        ),
+      );
+
+      await waitFor(() => {
+        expect(
+          result.current.route,
+        ).not.toBeNull();
+      });
+
+      expect(
+        result.current.route
+          ?.distance_metres,
+      ).toBe(2500);
+
+      expect(
+        result.current.route
+          ?.route_distance_metres,
+      ).toBeNull();
+
+      expect(
+        result.current.route
+          ?.eta_seconds,
+      ).toBeNull();
+
+      expect(
+        result.current.route
+          ?.route_geometry,
+      ).toBeNull();
+
+      expect(
+        result.current.route
+          ?.routing_error,
+      ).toBe(
+        "Route and ETA are temporarily unavailable",
+      );
+
+      expect(
+        result.current.routeError,
+      ).toBeNull();
+    },
+  );
+
+  test(
+    "shows stale-location fallback",
+    async () => {
+      mockFetchRoute.mockRejectedValue(
+        new Error(
+          "422 Officer location is stale",
+        ),
+      );
+
+      const { result } = renderHook(() =>
+        useAlertPropertyRoute(
+          PROPERTY_ID,
+          true,
+        ),
+      );
+
+      await waitFor(() => {
+        expect(
+          result.current.routeError,
+        ).toBe(
+          "Officer location is unavailable or stale.",
+        );
+      });
+
+      expect(
+        result.current.route,
+      ).toBeNull();
+
+      expect(
+        result.current.routeLoading,
+      ).toBe(false);
+    },
+  );
+
 
 });
