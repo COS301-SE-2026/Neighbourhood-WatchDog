@@ -1,5 +1,9 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { createElement, type ReactNode } from "react";
+import {
+  createElement,
+  type ImgHTMLAttributes,
+  type ReactNode,
+} from "react";
 import {
   AlertCard,
   detectionLabel,
@@ -16,8 +20,19 @@ jest.mock("next/dynamic", () => ({
   default: () => () => null,
 }));
 
+jest.mock("next/image", () => ({
+  __esModule: true,
+  default: (props: ImgHTMLAttributes<HTMLImageElement>) =>
+    createElement("img", props),
+}));
+
 jest.mock("@/components/shared/AlertFootagePlayer", () => ({
   AlertFootagePlayer: () => null,
+}));
+
+jest.mock("@/components/shared/TrackingTimeline", () => ({
+  TrackingTimeline: ({ alertId }: { alertId: string }) =>
+    createElement("div", { "data-testid": "tracking-timeline" }, alertId),
 }));
 
 jest.mock("@/components/ui/tooltip", () => {
@@ -199,6 +214,55 @@ describe("AlertCard rendered states", () => {
     expect(screen.getByText("No thumbnail")).toBeInTheDocument();
     expect(screen.getByText("Property address is unavailable.")).toBeInTheDocument();
     expect(screen.getByText(/Map unavailable because this property has no saved coordinates/)).toBeInTheDocument();
+  });
+
+  test("renders weapon tracking and complete location details", () => {
+    render(
+      createElement(AlertCard, {
+        alert: makeAlert({
+          detection_type: "WEAPON_DETECTED",
+          thumbnail_url: "https://example.com/thumb.jpg",
+          property_address: "12 Main Street",
+          property_latitude: -25.7479,
+          property_longitude: 28.2293,
+          resolved_at: "2026-09-03T12:00:00.000Z",
+        }),
+        broadcasting: false,
+        canViewTracking: true,
+        trackingRefreshKey: 4,
+      }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "View alert details" }));
+
+    expect(screen.getByAltText("Detection thumbnail")).toBeInTheDocument();
+    expect(screen.getByTestId("tracking-timeline")).toHaveTextContent("alert-123456");
+    expect(screen.getByText("12 Main Street")).toBeInTheDocument();
+    expect(screen.getByText("Resolved at")).toBeInTheDocument();
+    expect(screen.queryByText(/Map unavailable because/)).not.toBeInTheDocument();
+  });
+
+  test("renders the busy broadcast and acknowledgement states", async () => {
+    const onAcknowledge = jest.fn(() => new Promise<void>(() => undefined));
+    const onBroadcast = jest.fn().mockResolvedValue(undefined);
+
+    render(
+      createElement(AlertCard, {
+        alert: makeAlert(),
+        onBroadcast,
+        onAcknowledge,
+        broadcasting: true,
+      }),
+    );
+
+    expect(screen.getByRole("button", { name: "Broadcast alert to the neighbourhood" })).toHaveTextContent("Sending");
+    expect(screen.getByRole("button", { name: "Acknowledge alert" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "View alert details" }));
+    fireEvent.click(screen.getByRole("button", { name: "Acknowledge this alert" }));
+
+    await waitFor(() => expect(onAcknowledge).toHaveBeenCalledWith("alert-123456"));
+    expect(screen.getByRole("button", { name: "Acknowledge this alert" })).toHaveTextContent("Acknowledging");
   });
 
   test("does not show new-alert actions for an acknowledged alert", () => {
