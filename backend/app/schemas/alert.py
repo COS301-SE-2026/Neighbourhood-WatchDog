@@ -179,7 +179,8 @@ class CriticalAlertBase(BaseModel):
     property_id: UUID
     property_address: str
     thumbnail_url: str | None = None
-
+    confidence_score: float | None = None
+    resolved_at: datetime | None = None
     model_config = ConfigDict(from_attributes=True)
 
 class CriticalAlertMapItem(CriticalAlertBase):
