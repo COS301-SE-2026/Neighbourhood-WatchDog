@@ -126,6 +126,8 @@ def _critical_alert_item_values(
         "latitude": property_obj.latitude,
         "longitude": property_obj.longitude,
         "thumbnail_url": alert.thumbnail_url,
+        "confidence_score": alert.confidence_score,
+        "resolved_at": alert.resolved_at,
     }
 
 
