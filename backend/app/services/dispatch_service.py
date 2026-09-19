@@ -1,9 +1,11 @@
+import logging
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import HTPPException
 from sqlalchemy import select, func, cast
+from sqlalchemy.exc import IntegrityError
 from geoalchemy2 import Geography
 
 from app.auth.authorization import Claims
@@ -17,6 +19,8 @@ from app.models.security_officer import SecurityOfficer, AvailabilityStatus
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes
 from app.services.security_officer_service import STALE_LOCATION_THRESHOLD_SECONDS, is_location_stale
+
+logger = logging.getLogger(__name__)
 
 CRITICAL_DETECTION_TYPES: frozenset[str] = frozenset({"WEAPON_DETECTED", "FALL_DETECTED"})
 OFFICER_AVG_SPEED = 8.33 #m/s or about 30km/h
@@ -295,3 +299,57 @@ def _build_alert_dispatch_res(alert_id: UUID, rows: list[Dispatch]) -> AlertDisp
         queued=queued,
         no_candidate=no_candidate,
     )
+
+async def dispatch_alert(db: DbSession, alert_id: UUID) -> AlertDispatchRes:
+    """Ranks officers for an alert and records dispatch attempts"""
+    context = await _load_alert_context(db, alert_id)
+    if context is None:
+        raise HTPPException(404, "Alert not found")
+
+    if context.detction_type not in CRITICAL_DETECTION_TYPES:
+        logger.info("dispatch_alert skipped: alert %s (%s) is not critical", alert_id, context.detection_type)
+        return AlertDispatchRes(alert_id=alert_id)
+
+    existing = await _fetch_dispatch_rows(db, alert_id)
+    if existing:
+        return _build_alert_dispatch_res(alert_id, existing)
+
+    try:
+        ranked: list[RankedCandidate] = []
+
+        if context.neighbourhood_id is None:
+            logger.warning("dispatch_alert: alert %s belongs to a property with no neighbourhood", alert_id)
+        elif context.latitude is None or context.longitude is None:
+            logger.warning("dispatch_alert: alert %s property has no coordinates", alert_id)
+        else:
+            officers = await _fetch_neighbourhood_officers(
+                db, context.neighbourhood_id, context.latitude, context.longitude
+            )
+            eligible = filter_eligible(officers)
+            logger.info(
+                "dispatch_alert: alert %s - %d officers in neighbourhood, %d eligible",
+                alert_id, len(officers), len(eligible),
+            )
+
+            workloads = await _fetch_workloads(db, [e.officer_id for e in eligible], alert_id)
+            eligible = [replace(e, workload=workloads.get(e.officer_id, 0)) for e in eligible]
+            ranked = rank_candidates(eligible, context.detction_type)
+
+            db.add_all(_build_dispatch_rows(context, ranked))
+            await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        existing = await _fetch_dispatch_rows(db, alert_id)
+        if existing:
+            return _build_alert_dispatch_res(alert_id, existing)
+        logger.exception("dispatch_alert failed for alert %s", alert_id)
+        raise HTPPException(500, "Failed to dispatch alert")
+    except HTPPException:
+        raise
+    except Exception:
+        await db.rollback()
+        logger.exception("dispatch_alert failed for alert %s", alert_id)
+        raise HTPPException(500, "Failed to dispatch alert")
+
+    rows = await _fetch_dispatch_rows(db, alert_id)
+    return _build_alert_dispatch_res(alert_id, rows)
