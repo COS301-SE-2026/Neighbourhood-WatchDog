@@ -143,3 +143,77 @@ class TestPropertyDistance:
         assert exc_info.value.detail == (
             "Officer location is stale"
         )
+
+class TestPropertyRoute:
+    @pytest.mark.asyncio
+    async def test_returns_osrm_route_and_eta(self):
+        distance = make_distance()
+
+        geometry = RouteGeometry(
+            type="LineString",
+            coordinates=[
+                (28.2100, -25.7600),
+                (28.2293, -25.7479),
+            ],
+        )
+
+        with (
+            patch(
+                "app.services.alert_route_service."
+                "calculate_property_distance_handler",
+                new=AsyncMock(return_value=distance),
+            ),
+            patch(
+                "app.services.alert_route_service."
+                "_request_osrm_route",
+                new=AsyncMock(
+                    return_value=(
+                        3100,
+                        420,
+                        geometry,
+                    )
+                ),
+            ),
+        ):
+            result = await get_property_route_handler(
+                property_id=PROPERTY_ID,
+                db=MagicMock(),
+                claims=CLAIMS,
+            )
+
+        assert result.route_distance_metres == 3100
+        assert result.eta_seconds == 420
+        assert result.route_geometry == geometry
+        assert result.routing_error is None
+
+    @pytest.mark.asyncio
+    async def test_returns_distance_when_osrm_fails(
+        self,
+    ):
+        distance = make_distance()
+
+        with (
+            patch(
+                "app.services.alert_route_service."
+                "calculate_property_distance_handler",
+                new=AsyncMock(return_value=distance),
+            ),
+            patch(
+                "app.services.alert_route_service."
+                "_request_osrm_route",
+                new=AsyncMock(
+                    side_effect=RoutingServiceUnavailable,
+                ),
+            ),
+        ):
+            result = await get_property_route_handler(
+                property_id=PROPERTY_ID,
+                db=MagicMock(),
+                claims=CLAIMS,
+            )
+
+        assert result.distance_metres == 2500
+        assert result.route_distance_metres is None
+        assert result.eta_seconds is None
+        assert result.route_geometry is None
+        assert result.routing_error == "Route and ETA are temporarily unavailable"
