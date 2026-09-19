@@ -103,6 +103,27 @@ function MapLoadingState() {
   );
 }
 
+function createGoogleMapsUrl(
+  route: AlertRouteData,
+): string {
+  const params = new URLSearchParams({
+    api: "1",
+    origin:
+      `${route.officer_latitude},` +
+      `${route.officer_longitude}`,
+    destination:
+      `${route.property_latitude},` +
+      `${route.property_longitude}`,
+    travelmode: "driving",
+  });
+
+  return (
+    "https://www.google.com/maps/dir/?" +
+    params.toString()
+  );
+}
+
+
 function RouteSummary({
   route,
   loading,
@@ -153,6 +174,8 @@ function RouteSummary({
           Math.ceil(route.eta_seconds / 60),
         );
 
+  const googleMapsUrl = createGoogleMapsUrl(route);
+
   return (
     <div className="mt-5 rounded-lg border border-border bg-brand-abyss p-4">
       <p className="text-xs uppercase tracking-wide text-brand-ash">
@@ -188,6 +211,15 @@ function RouteSummary({
           {route.routing_error}
         </p>
       )}
+
+      <a
+        href={googleMapsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-4 inline-flex w-full items-center justify-center rounded-md bg-brand-green px-4 py-2 text-sm font-semibold text-brand-void transition-colors hover:bg-brand-green/90"
+      >
+        Open in Google Maps
+      </a>
     </div>
   );
 }
