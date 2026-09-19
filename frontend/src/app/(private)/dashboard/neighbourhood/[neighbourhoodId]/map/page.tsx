@@ -35,7 +35,7 @@ function statusLabel(
   status: CriticalAlertStatus,
 ): string {
   switch (status) {
-    case "OPEN
+    case "OPEN":
       return "Open";
     case "ACKNOWLEDGED":
       return "Acknowledged";
@@ -125,10 +125,14 @@ function PropertyAlertsSheet({
   property,
   open,
   onClose,
+  onSelectAlert,
 }: {
   readonly property: PropertyAlertGroup | null;
   readonly open: boolean;
   readonly onClose: () => void;
+  readonly onSelectAlert: (
+    alert: CriticalAlertMapItem,
+  ) => void;
 }) {
   const {
     data: residentContext,

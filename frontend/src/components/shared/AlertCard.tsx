@@ -221,7 +221,8 @@ export function AlertDetailSheet({
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
         side="right"
-        className="w-full max-w-lg border-l border-border bg-brand-void text-brand-frost"
+        overlayClassName="z-[1100]"
+        className="z-[1101] w-full max-w-lg border-l border-border bg-brand-void text-brand-frost"
       >
         {onBack && (
           <Button
