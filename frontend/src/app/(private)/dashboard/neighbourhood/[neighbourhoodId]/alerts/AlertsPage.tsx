@@ -30,6 +30,8 @@ import {
   AlertFilters,
   broadcastAlert
 } from "@/lib/api/alert";
+import { toast } from "sonner";
+import { claimTrackingEvent } from "@/lib/tracking-events";
 
 const ALL_SEVERITIES: AlertSeverity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "RESOLVED"];
@@ -159,6 +161,8 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
   const [historyEndDate, setHisoryEndDate] = useState("");
   const [broadcastingAlertId, setBroadcastingAlertId] = useState<string | null>(null);
 
+  const seenTrackingEventIdsRef = useRef<Set<string>>(new Set());
+
   const alertFilters = useMemo<AlertFilters>(() => {
     const base: AlertFilters = {};
     if (selectedStatus) base.status = selectedStatus;
@@ -233,7 +237,24 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
           const message = JSON.parse(event.data as string) as { event: string; payload?: Record<string, unknown> };
           if (message.event === "ping") return;
           
-          if (message.event === "tracking.sighting") {
+          if (message.event === "tracking.sighting" && message.payload) {
+            const payload = message.payload;
+
+            if (!claimTrackingEvent(payload.event_id, seenTrackingEventIdsRef.current)) {
+              return;
+            }
+
+            const cameraName = typeof payload.camera_name === "string" ? payload.camera_name "another camera";
+
+            const cameraLocation = typeof payload.camera_location === "string" ? payload.camera_location : "location unavailable";
+
+            const sequenceNumber = typeof payload.sequence_no === "number" ? payload.sequence_no : "?";
+
+            toast.info("Cross-property match detected", {
+              id: `tracking-match-${String(payload.event_id)}`,
+              description: `${cameraName} · ${cameraLocation} · sequence ${sequenceNumber}`,
+            });
+
             setTrackingRefreshKey((current) => current + 1);
             return;
           }
