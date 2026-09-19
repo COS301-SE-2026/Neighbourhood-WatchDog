@@ -324,8 +324,31 @@ function PropertyAlertsSheet({
 
 
 export default function NeighbourhoodAlertMapPage() {
+  function handleSelectProperty(property: PropertyAlertGroup) {
+    setSelectedAlert(null);
+    setSelectedProperty(property);
+  }
 
-  const [ selectedProperty, setSelectedProperty] = useState<PropertyAlertGroup | null>(null);
+  async function handleAcknowledgeSelectedAlert(alertId: string) {
+    setAcknowledgingAlert(true);
+
+    try {
+      await acknowledgeAlert(alertId);
+      setSelectedAlert(null);
+      await refetch();
+    } catch (error) {
+      console.error("Failed to acknowledge critical alert:", error);
+    } finally {
+      setAcknowledgingAlert(false);
+    }
+  }
+  const [
+    selectedAlert,
+    setSelectedAlert,
+  ] = useState<CriticalAlertMapItem | null>(null);
+
+  const [acknowledgingAlert, setAcknowledgingAlert] =
+    useState(false);
 
   const { neighbourhoodId } = useParams<{
     neighbourhoodId: string;
@@ -553,20 +576,33 @@ export default function NeighbourhoodAlertMapPage() {
             selectedPropertyId={
                 currentSelectedProperty?.propertyId ?? null
             }
-            onSelectProperty={setSelectedProperty}
+            onSelectProperty={handleSelectProperty}
         />
 
         )}
 
         <PropertyAlertsSheet
-            property={currentSelectedProperty}
-            open={
-              currentSelectedProperty !== null &&
-              currentSelectedProperty.alerts.length > 0
-            }
-            onClose={() => setSelectedProperty(null)}
+          property={currentSelectedProperty}
+          open={
+            currentSelectedProperty !== null &&
+            currentSelectedProperty.alerts.length > 0
+          }
+          onSelectAlert={setSelectedAlert}
+          onClose={() => {
+            setSelectedAlert(null);
+            setSelectedProperty(null);
+          }}
         />
-
+        {selectedAlert && (
+          <AlertDetailSheet
+            alert={toAlertDetailModel(selectedAlert)}
+            open
+            onBack={() => setSelectedAlert(null)}
+            onClose={() => setSelectedAlert(null)}
+            onAcknowledge={handleAcknowledgeSelectedAlert}
+            acknowledging={acknowledgingAlert}
+          />
+        )}
         
 
         <UnlocatedAlerts
