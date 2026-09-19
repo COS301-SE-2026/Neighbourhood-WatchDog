@@ -170,3 +170,22 @@ def _build_dispatch_rows(context: AlertContext, ranked: list[RankedCandidate]) -
                 )
             )
         return rows
+
+async def _load_alert_context(db: DbSession, alert_id: UUID) -> AlertContext | None:
+    stmt = (
+        select(Alert.id, Alert.detection_type, Property.neighbourhood_id, Property.latitude, Property.longitude)
+        .join(Camera, Camera.id == Alert.camera_id)
+        .join(Property, Property.id == Camera.property_id)
+        .where(Alert.id == alert_id)
+    )
+    row = (await db.execute(stmt)).first()
+    if row is None:
+        return None
+    
+    return AlertContext(
+        alert_id=row[0],
+        detection_type=_enum_value(row[1]),
+        neighbourhood_id=row[2],
+        latitude=row[3],
+        longitude=row[4],
+    )
