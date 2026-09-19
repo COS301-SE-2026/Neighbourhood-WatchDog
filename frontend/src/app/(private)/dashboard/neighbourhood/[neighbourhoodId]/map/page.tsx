@@ -412,8 +412,6 @@ export default function NeighbourhoodAlertMapPage() {
       }
     : null;
 
-  const selectedPropertyId = currentSelectedProperty?.propertyId ?? null;
-
   const {
     route,
     routeError,
