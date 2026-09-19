@@ -7,9 +7,8 @@ global.fetch = jest.fn() as jest.Mock;
 class MockResizeObserver implements ResizeObserver {
   private readonly observedTargets = new Set<Element>();
 
-  observe(target: Element, options?: ResizeObserverOptions): void {
+  observe(target: Element): void {
     this.observedTargets.add(target);
-    void options;
   }
 
   unobserve(target: Element): void {
