@@ -381,5 +381,60 @@ describe("useAlertPropertyRoute", () => {
     },
   );
 
+  test(
+    "does not fetch when route tracking is disabled",
+    () => {
+      const { result } = renderHook(() =>
+        useAlertPropertyRoute(
+          PROPERTY_ID,
+          false,
+        ),
+      );
+
+      expect(
+        mockFetchRoute,
+      ).not.toHaveBeenCalled();
+
+      expect(
+        mockFetchDistance,
+      ).not.toHaveBeenCalled();
+
+      expect(
+        result.current.route,
+      ).toBeNull();
+
+      expect(
+        result.current.routeLoading,
+      ).toBe(false);
+    },
+  );
+	
+  test(
+    "does not fetch without a selected property",
+    () => {
+      const { result } = renderHook(() =>
+        useAlertPropertyRoute(
+          null,
+          true,
+        ),
+      );
+
+      expect(
+        mockFetchRoute,
+      ).not.toHaveBeenCalled();
+
+      expect(
+        mockFetchDistance,
+      ).not.toHaveBeenCalled();
+
+      expect(
+        result.current.route,
+      ).toBeNull();
+
+      expect(
+        result.current.routeLoading,
+      ).toBe(false);
+    },
+  );
 
 });
