@@ -79,3 +79,17 @@ class RankedCandidate:
 
 def _enum_value(value) -> str:
     return str(getattr(value, "value", value))
+
+def filter_eligible(candidates: list[OfficerCandidate]) -> list[OfficerCandidate]:
+    """Returns eligible officers who can be dispatched"""
+    """Unavailable officers, officers without a location and officers with stale location are excluded"""
+    eligible: list[OfficerCandidate] = []
+    for c in candidates:
+        if c.availability_status not in _AVAILABILITY_TIER:
+            continue
+        if c.distance is None or c.location_updated_at is None:
+            continue
+        if is_location_stale(c.location_updated_at):
+            continue
+        eligible.append(c)
+    return eligible
