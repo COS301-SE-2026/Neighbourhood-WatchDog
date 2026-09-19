@@ -75,5 +75,104 @@ describe("useOfficerLocationTracking", () => {
     cleanup();
   });
 
+  test(
+    "watches and sends officer location while on duty",
+    async () => {
+      renderHook(() =>
+        useOfficerLocationTracking(
+          NEIGHBOURHOOD_ID,
+          true,
+        ),
+      );
 
+      await waitFor(() => {
+        expect(
+          mockWatchPosition,
+        ).toHaveBeenCalledTimes(1);
+      });
+
+      expect(
+        mockWatchPosition,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          enableHighAccuracy: true,
+          minimumUpdateInterval: 10_000,
+          interval: 10_000,
+        }),
+        expect.any(Function),
+      );
+
+      const position = {
+        coords: {
+          latitude: -25.7479,
+          longitude: 28.2293,
+        },
+      } as Position;
+
+      act(() => {
+        watchCallback?.(
+          position,
+        );
+      });
+
+      await waitFor(() => {
+        expect(
+          mockUpdateLocation,
+        ).toHaveBeenCalledWith({
+          neighbourhood_id:
+            NEIGHBOURHOOD_ID,
+          latitude: -25.7479,
+          longitude: 28.2293,
+        });
+      });
+    },
+  );
+
+  test(
+    "clears the location watcher when unmounted",
+    async () => {
+      const { unmount } = renderHook(() =>
+        useOfficerLocationTracking(
+          NEIGHBOURHOOD_ID,
+          true,
+        ),
+      );
+
+      await waitFor(() => {
+        expect(
+          mockWatchPosition,
+        ).toHaveBeenCalledTimes(1);
+      });
+
+      unmount();
+
+      await waitFor(() => {
+        expect(
+          mockClearWatch,
+        ).toHaveBeenCalledWith({
+          id: "officer-watch",
+        });
+      });
+    },
+  );
+
+  test(
+    "does not watch location while off duty",
+    () => {
+      renderHook(() =>
+        useOfficerLocationTracking(
+          NEIGHBOURHOOD_ID,
+          false,
+        ),
+      );
+
+      expect(
+        mockWatchPosition,
+      ).not.toHaveBeenCalled();
+
+      expect(
+        mockUpdateLocation,
+      ).not.toHaveBeenCalled();
+    },
+  );
 });
