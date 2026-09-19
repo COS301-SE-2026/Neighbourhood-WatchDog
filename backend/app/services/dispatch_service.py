@@ -189,3 +189,37 @@ async def _load_alert_context(db: DbSession, alert_id: UUID) -> AlertContext | N
         latitude=row[3],
         longitude=row[4],
     )
+
+async def _fetch_neighbourhood_officers(
+        db: DbSession,
+        neighbourhood_id: UUID,
+        latitude: float,
+        longitude: float,
+) -> list[OfficerCandidate]:
+    alert_point = cast(
+        func.ST_SetSRID(func.ST_MakePoint(longitude, latitude), 4326),
+        Geography(geometry_type="POINT", srid=4326),
+    )
+    distance_expr = func.ST_Distance(SecurityOfficer.last_known_location, alert_point)
+
+    stmt = (
+        select(
+            SecurityOfficer.id,
+            SecurityOfficer.availability_status,
+            SecurityOfficer.location_updated_at,
+            distance_expr,
+        ).join(NeighbourhoodUser, NeighbourhoodUser.id == SecurityOfficer.neighbourhood_user_id)
+        .where(NeighbourhoodUser.neighbourhood_id == neighbourhood_id)
+        .where(NeighbourhoodUser.role == NeighbourhoodRole.SECURITY_OFFICER)
+    )
+    result = await db.execute(stmt)
+
+    return [
+        OfficerCandidate(
+            officer_id=officer_id,
+            availability_status=availability,
+            location_updated_at=updated_at,
+            distance=float(distance) if distance is not None else None,
+        )
+        for officer_id, availability, updated_at, distance in result.all()
+    ]
