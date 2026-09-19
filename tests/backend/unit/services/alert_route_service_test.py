@@ -57,3 +57,89 @@ def make_db(row):
     db.execute = AsyncMock(return_value=result)
 
     return db
+
+
+class TestPropertyDistance:
+    @pytest.mark.asyncio
+    async def test_returns_distance_for_valid_locations(
+        self,
+    ):
+        db = make_db(make_db_row())
+
+        with patch(
+            "app.services.alert_route_service."
+            "is_location_stale",
+            return_value=False,
+        ):
+            result = (
+                await calculate_property_distance_handler(
+                    property_id=PROPERTY_ID,
+                    db=db,
+                    claims=CLAIMS,
+                )
+            )
+
+        assert result.property_id == PROPERTY_ID
+        assert result.distance_metres == 2500
+        assert result.officer_latitude == -25.7600
+        assert result.property_latitude == -25.7479
+        db.execute.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_rejects_missing_authentication(self):
+        db = MagicMock()
+        db.execute = AsyncMock()
+
+        with pytest.raises(
+            HTTPException
+        ) as exc_info:
+            await calculate_property_distance_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims={},
+            )
+
+        assert exc_info.value.status_code == 401
+        db.execute.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_rejects_property_outside_officer_neighbourhood(
+        self,
+    ):
+        db = make_db(None)
+
+        with pytest.raises(
+            HTTPException
+        ) as exc_info:
+            await calculate_property_distance_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=CLAIMS,
+            )
+
+        assert exc_info.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_rejects_stale_officer_location(
+        self,
+    ):
+        db = make_db(make_db_row())
+
+        with patch(
+            "app.services.alert_route_service."
+            "is_location_stale",
+            return_value=True,
+        ):
+            with pytest.raises(
+                HTTPException
+            ) as exc_info:
+                await calculate_property_distance_handler(
+                    property_id=PROPERTY_ID,
+                    db=db,
+                    claims=CLAIMS,
+                )
+
+        assert exc_info.value.status_code == 422
+        assert exc_info.value.detail == (
+            "Officer location is stale"
+        )
