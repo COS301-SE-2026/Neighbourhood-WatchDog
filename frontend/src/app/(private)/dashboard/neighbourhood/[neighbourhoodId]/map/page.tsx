@@ -830,24 +830,18 @@ export default function NeighbourhoodAlertMapPage() {
             currentSelectedProperty !== null &&
             currentSelectedProperty.alerts.length > 0
           }
-          onClose={() =>
-            setSelectedProperty(null)
-          }
-          onShowRoute={(propertyId) => {
-            setRoutePropertyId(propertyId);
-            setSelectedProperty(null);
-          }}
-          property={currentSelectedProperty}
-          open={
-            currentSelectedProperty !== null &&
-            currentSelectedProperty.alerts.length > 0
-          }
           onSelectAlert={setSelectedAlert}
           onClose={() => {
             setSelectedAlert(null);
             setSelectedProperty(null);
           }}
+          onShowRoute={(propertyId) => {
+            setSelectedAlert(null);
+            setRoutePropertyId(propertyId);
+            setSelectedProperty(null);
+          }}
         />
+
         {selectedAlert && (
           <AlertDetailSheet
             alert={toAlertDetailModel(selectedAlert)}
@@ -856,6 +850,7 @@ export default function NeighbourhoodAlertMapPage() {
             onClose={() => setSelectedAlert(null)}
             onAcknowledge={handleAcknowledgeSelectedAlert}
             acknowledging={acknowledgingAlert}
+            canViewTracking={isSecurityOfficer}
           />
         )}
 
