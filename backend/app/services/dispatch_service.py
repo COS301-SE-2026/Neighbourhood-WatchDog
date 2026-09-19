@@ -270,3 +270,28 @@ def _build_candidate_res(d: Dispatch) -> DispatchCandidateRes:
         notified_at=d.notified_at,
         responded_at=d.responded_at,
     )
+
+def _build_alert_dispatch_res(alert_id: UUID, rows: list[Dispatch]) -> AlertDispatchRes:
+    selected: DispatchCandidateRes| None = None
+    pending: list[DispatchCandidateRes] = []
+    queued: list[DispatchCandidateRes] = []
+    no_candidate = False
+
+    for d in rows:
+        if d.status in ACTIVE_DISPATCH_STATUS:
+            if selected is None:
+                selected = _build_candidate_res(d)
+        elif d.status == DispatchStatus.PENDING:
+            pending.append(_build_candidate_res(d))
+        elif d.status == DispatchStatus.QUEUED:
+            queued.append(_build_candidate_res(d))
+        elif d.status == DispatchStatus.NO_CANDIDATE:
+            no_candidate = True
+
+    return AlertDispatchRes(
+        alert_id=alert_id,
+        selected=selected,
+        pending=pending,
+        queued=queued,
+        no_candidate=no_candidate,
+    )
