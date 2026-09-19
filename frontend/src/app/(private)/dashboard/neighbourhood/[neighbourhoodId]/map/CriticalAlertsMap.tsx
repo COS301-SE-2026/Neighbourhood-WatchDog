@@ -311,45 +311,7 @@ export function CriticalAlertsMap({
           />
         )}
 
-        {route && (
-          <>
-            <CircleMarker
-              center={[
-                route.officer_latitude,
-                route.officer_longitude,
-              ]}
-              radius={9}
-              pathOptions={{
-                color: "#ffffff",
-                fillColor: "#38bdf8",
-                fillOpacity: 1,
-                weight: 3,
-              }}
-            >
-              <Tooltip direction="top">
-                Officer location
-              </Tooltip>
-            </CircleMarker>
-
-            <CircleMarker
-              center={[
-                route.property_latitude,
-                route.property_longitude,
-              ]}
-              radius={12}
-              pathOptions={{
-                color: "#ffffff",
-                fillColor: "#ef4444",
-                fillOpacity: 0.9,
-                weight: 4,
-              }}
-            >
-              <Tooltip direction="top">
-                Alert property
-              </Tooltip>
-            </CircleMarker>
-          </>
-        )}
+        
 
 
         {properties.map((property) => {
@@ -418,6 +380,46 @@ export function CriticalAlertsMap({
             </CircleMarker>
           );
         })}
+
+        {route && (
+          <>
+            <CircleMarker
+              center={[
+                route.officer_latitude,
+                route.officer_longitude,
+              ]}
+              radius={9}
+              pathOptions={{
+                color: "#ffffff",
+                fillColor: "#38bdf8",
+                fillOpacity: 1,
+                weight: 3,
+              }}
+            >
+              <Tooltip direction="top">
+                Officer location
+              </Tooltip>
+            </CircleMarker>
+
+            <CircleMarker
+              center={[
+                route.property_latitude,
+                route.property_longitude,
+              ]}
+              radius={12}
+              pathOptions={{
+                color: "#ffffff",
+                fillColor: "#ef4444",
+                fillOpacity: 0.9,
+                weight: 4,
+              }}
+            >
+              <Tooltip direction="top">
+                Alert property
+              </Tooltip>
+            </CircleMarker>
+          </>
+        )}
       </MapContainer>
     </section>
   );

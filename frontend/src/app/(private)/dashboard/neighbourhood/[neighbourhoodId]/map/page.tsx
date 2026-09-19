@@ -197,18 +197,16 @@ function PropertyAlertsSheet({
   property,
   open,
   onClose,
-  route,
-  routeLoading,
-  routeError,
-  showRoute,
+  canShowRoute,
+  onShowRoute,
 }: {
   readonly property: PropertyAlertGroup | null;
   readonly open: boolean;
   readonly onClose: () => void;
-  readonly route: AlertRouteData | null;
-  readonly routeLoading: boolean;
-  readonly routeError: string | null;
-  readonly showRoute: boolean;
+  readonly canShowRoute: boolean;
+  readonly onShowRoute: (
+    propertyId: string,
+  ) => void;
 }) {
   if (!property) {
     return null;
@@ -240,12 +238,16 @@ function PropertyAlertsSheet({
           </SheetDescription>
         </SheetHeader>
 
-        {showRoute && (
-          <RouteSummary
-            route={route}
-            loading={routeLoading}
-            error={routeError}
-          />
+        {canShowRoute && (
+          <Button
+            type="button"
+            className="mt-5 w-full bg-brand-green text-brand-void hover:bg-brand-green/90"
+            onClick={() =>
+              onShowRoute(property.propertyId)
+            }
+          >
+            Show route
+          </Button>
         )}
 
 
@@ -313,6 +315,7 @@ function PropertyAlertsSheet({
 export default function NeighbourhoodAlertMapPage() {
 
   const [ selectedProperty, setSelectedProperty] = useState<PropertyAlertGroup | null>(null);
+  const [routePropertyId, setRoutePropertyId] = useState<string | null>(null);
 
   const { neighbourhoodId } = useParams<{
     neighbourhoodId: string;
@@ -384,7 +387,7 @@ export default function NeighbourhoodAlertMapPage() {
     routeError,
     routeLoading,
   } = useAlertPropertyRoute(
-    selectedPropertyId,
+    routePropertyId,
     isSecurityOfficer
   );
 
@@ -553,6 +556,41 @@ export default function NeighbourhoodAlertMapPage() {
           />
         </section>
 
+        {isSecurityOfficer && routePropertyId && (
+          <section className="mb-5 rounded-lg border border-border bg-brand-depth p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-sm font-semibold text-brand-frost">
+                  Active route
+                </h2>
+
+                <p className="mt-1 text-xs text-brand-ash">
+                  Route from your current location to the
+                  selected alert property.
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  setRoutePropertyId(null)
+                }
+              >
+                Close route
+              </Button>
+            </div>
+
+            <RouteSummary
+              route={route}
+              loading={routeLoading}
+              error={routeError}
+            />
+          </section>
+        )}
+
+
         {loading && mappedAlerts.length === 0 ? (
           <MapLoadingState />
         ) : (
@@ -560,7 +598,9 @@ export default function NeighbourhoodAlertMapPage() {
             alerts={mappedAlerts}
             route={route}
             selectedPropertyId={
-                currentSelectedProperty?.propertyId ?? null
+              routePropertyId ??
+              currentSelectedProperty?.propertyId ??
+              null
             }
             onSelectProperty={setSelectedProperty}
         />
@@ -569,16 +609,20 @@ export default function NeighbourhoodAlertMapPage() {
 
         <PropertyAlertsSheet
           property={currentSelectedProperty}
-          route={route}
-          routeLoading={routeLoading}
-          routeError={routeError}
-          showRoute={isSecurityOfficer}
+          canShowRoute={isSecurityOfficer}
           open={
             currentSelectedProperty !== null &&
             currentSelectedProperty.alerts.length > 0
           }
-          onClose={() => setSelectedProperty(null)}
+          onClose={() =>
+            setSelectedProperty(null)
+          }
+          onShowRoute={(propertyId) => {
+            setRoutePropertyId(propertyId);
+            setSelectedProperty(null);
+          }}
         />
+
 
         
 
