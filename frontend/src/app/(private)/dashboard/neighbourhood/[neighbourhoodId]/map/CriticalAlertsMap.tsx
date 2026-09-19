@@ -8,18 +8,21 @@ import { latLngBounds } from "leaflet";
 import {
   CircleMarker,
   MapContainer,
+  Polyline,
   TileLayer,
   Tooltip,
   useMap,
 } from "react-leaflet";
 
 import type {
+  AlertRouteData,
   CriticalAlertMapItem,
   CriticalAlertStatus,
 } from "@/lib/validators/alert";
 
 interface CriticalAlertsMapProps {
   readonly alerts: CriticalAlertMapItem[];
+  readonly route: AlertRouteData | null;
   readonly selectedPropertyId?: string | null;
   readonly onSelectProperty: (
     property: PropertyAlertGroup,
@@ -193,8 +196,43 @@ function FitPropertyBounds({
   return null;
 }
 
+function FitRouteBounds({
+  route,
+}: {
+  readonly route: AlertRouteData | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!route) {
+      return;
+    }
+
+    map.fitBounds(
+      [
+        [
+          route.officer_latitude,
+          route.officer_longitude,
+        ],
+        [
+          route.property_latitude,
+          route.property_longitude,
+        ],
+      ],
+      {
+        padding: [60, 60],
+        maxZoom: 17,
+      },
+    );
+  }, [map, route]);
+
+  return null;
+}
+
+
 export function CriticalAlertsMap({
   alerts,
+  route,
   selectedPropertyId,
   onSelectProperty
 }: CriticalAlertsMapProps) {
@@ -202,6 +240,15 @@ export function CriticalAlertsMap({
     () => groupAlertsByProperty(alerts),
     [alerts],
   );
+
+  const routePositions: [number, number][] =
+    route?.route_geometry?.coordinates.map(
+      ([longitude, latitude]) => [
+        latitude,
+        longitude,
+      ],
+    ) ?? [];
+
 
   return (
     <section
@@ -250,6 +297,22 @@ export function CriticalAlertsMap({
           }
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        <FitRouteBounds route={route} />
+
+        {routePositions.length > 0 && (
+          <Polyline
+            positions={routePositions}
+            pathOptions={{
+              color: "#10b981",
+              weight: 5,
+              opacity: 0.85,
+            }}
+          />
+        )}
+
+        
+
 
         {properties.map((property) => {
           const detectionType =
@@ -317,6 +380,46 @@ export function CriticalAlertsMap({
             </CircleMarker>
           );
         })}
+
+        {route && (
+          <>
+            <CircleMarker
+              center={[
+                route.officer_latitude,
+                route.officer_longitude,
+              ]}
+              radius={9}
+              pathOptions={{
+                color: "#ffffff",
+                fillColor: "#38bdf8",
+                fillOpacity: 1,
+                weight: 3,
+              }}
+            >
+              <Tooltip direction="top">
+                Officer location
+              </Tooltip>
+            </CircleMarker>
+
+            <CircleMarker
+              center={[
+                route.property_latitude,
+                route.property_longitude,
+              ]}
+              radius={12}
+              pathOptions={{
+                color: "#ffffff",
+                fillColor: "#ef4444",
+                fillOpacity: 0.9,
+                weight: 4,
+              }}
+            >
+              <Tooltip direction="top">
+                Alert property
+              </Tooltip>
+            </CircleMarker>
+          </>
+        )}
       </MapContainer>
     </section>
   );

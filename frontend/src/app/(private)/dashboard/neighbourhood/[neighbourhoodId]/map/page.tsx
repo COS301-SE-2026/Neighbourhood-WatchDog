@@ -22,9 +22,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useCriticalAlerts } from "@/hooks/use-critical-alerts";
+import { useAlertPropertyRoute } from "@/hooks/use-alert-property-route";
+import { useOfficerMapLocationTracking } from "@/hooks/use-officer-map-location-tracking";
 import { useUserContext } from "@/hooks/use-user-context";
 import type { PropertyAlertGroup } from "./CriticalAlertsMap";
 import type {
+  AlertRouteData,
   CriticalAlertStatus,
   UnlocatedCriticalAlertItem,
 } from "@/lib/validators/alert";
@@ -100,14 +103,142 @@ function MapLoadingState() {
   );
 }
 
+function createGoogleMapsUrl(
+  route: AlertRouteData,
+): string {
+  const params = new URLSearchParams({
+    api: "1",
+    origin:
+      `${route.officer_latitude},` +
+      `${route.officer_longitude}`,
+    destination:
+      `${route.property_latitude},` +
+      `${route.property_longitude}`,
+    travelmode: "driving",
+  });
+
+  return (
+    "https://www.google.com/maps/dir/?" +
+    params.toString()
+  );
+}
+
+
+function RouteSummary({
+  route,
+  loading,
+  error,
+}: {
+  readonly route: AlertRouteData | null;
+  readonly loading: boolean;
+  readonly error: string | null;
+}) {
+  if (loading) {
+    return (
+      <div className="mt-5 rounded-lg border border-border bg-brand-abyss p-4 text-sm text-brand-ash">
+        Calculating route…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mt-5 rounded-lg border border-brand-caution/30 bg-brand-caution/10 p-4">
+        <p className="text-sm font-medium text-brand-caution">
+          Route unavailable
+        </p>
+
+        <p className="mt-1 text-xs text-brand-ash">
+          {error}
+        </p>
+      </div>
+    );
+  }
+
+  if (!route) {
+    return null;
+  }
+
+  const displayedDistance =
+    route.route_distance_metres ??
+    route.distance_metres;
+
+  const distanceKilometres =
+    displayedDistance / 1000;
+
+  const etaMinutes =
+    route.eta_seconds === null
+      ? null
+      : Math.max(
+          1,
+          Math.ceil(route.eta_seconds / 60),
+        );
+
+  const googleMapsUrl = createGoogleMapsUrl(route);
+
+  return (
+    <div className="mt-5 rounded-lg border border-border bg-brand-abyss p-4">
+      <p className="text-xs uppercase tracking-wide text-brand-ash">
+        Route to property
+      </p>
+
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-xs text-brand-ash">
+            Distance
+          </p>
+
+          <p className="mt-1 text-lg font-semibold text-brand-frost">
+            {distanceKilometres.toFixed(1)} km
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs text-brand-ash">
+            ETA
+          </p>
+
+          <p className="mt-1 text-lg font-semibold text-brand-frost">
+            {etaMinutes === null
+              ? "Unavailable"
+              : `${etaMinutes} min`}
+          </p>
+        </div>
+      </div>
+
+      {route.routing_error && (
+        <p className="mt-3 text-xs text-brand-caution">
+          {route.routing_error}
+        </p>
+      )}
+
+      <a
+        href={googleMapsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-4 inline-flex w-full items-center justify-center rounded-md bg-brand-green px-4 py-2 text-sm font-semibold text-brand-void transition-colors hover:bg-brand-green/90"
+      >
+        Open in Google Maps
+      </a>
+    </div>
+  );
+}
+
+
 function PropertyAlertsSheet({
   property,
   open,
   onClose,
+  canShowRoute,
+  onShowRoute,
 }: {
   readonly property: PropertyAlertGroup | null;
   readonly open: boolean;
   readonly onClose: () => void;
+  readonly canShowRoute: boolean;
+  readonly onShowRoute: (
+    propertyId: string,
+  ) => void;
 }) {
   if (!property) {
     return null;
@@ -138,6 +269,19 @@ function PropertyAlertsSheet({
               : "alerts"}
           </SheetDescription>
         </SheetHeader>
+
+        {canShowRoute && (
+          <Button
+            type="button"
+            className="mt-5 w-full bg-brand-green text-brand-void hover:bg-brand-green/90"
+            onClick={() =>
+              onShowRoute(property.propertyId)
+            }
+          >
+            Show route
+          </Button>
+        )}
+
 
         <div className="mt-6 space-y-3">
           {visibleAlerts.map((alert) => (
@@ -203,6 +347,7 @@ function PropertyAlertsSheet({
 export default function NeighbourhoodAlertMapPage() {
 
   const [ selectedProperty, setSelectedProperty] = useState<PropertyAlertGroup | null>(null);
+  const [routePropertyId, setRoutePropertyId] = useState<string | null>(null);
 
   const { neighbourhoodId } = useParams<{
     neighbourhoodId: string;
@@ -223,6 +368,15 @@ export default function NeighbourhoodAlertMapPage() {
   const canViewCriticalMap =
     neighbourhoodRole === "SECURITY_OFFICER" ||
     neighbourhoodRole === "NEIGHBOURHOOD_ADMIN";
+
+  const isSecurityOfficer =
+    neighbourhoodRole === "SECURITY_OFFICER";
+
+  useOfficerMapLocationTracking(
+    neighbourhoodId,
+    isSecurityOfficer,
+  );
+
 
 
   const {
@@ -257,6 +411,16 @@ export default function NeighbourhoodAlertMapPage() {
           ),
       }
     : null;
+
+  const {
+    route,
+    routeError,
+    routeLoading,
+  } = useAlertPropertyRoute(
+    routePropertyId,
+    isSecurityOfficer
+  );
+
 
 
   if (userContextLoading) {
@@ -422,13 +586,51 @@ export default function NeighbourhoodAlertMapPage() {
           />
         </section>
 
+        {isSecurityOfficer && routePropertyId && (
+          <section className="mb-5 rounded-lg border border-border bg-brand-depth p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-sm font-semibold text-brand-frost">
+                  Active route
+                </h2>
+
+                <p className="mt-1 text-xs text-brand-ash">
+                  Route from your current location to the
+                  selected alert property.
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  setRoutePropertyId(null)
+                }
+              >
+                Close route
+              </Button>
+            </div>
+
+            <RouteSummary
+              route={route}
+              loading={routeLoading}
+              error={routeError}
+            />
+          </section>
+        )}
+
+
         {loading && mappedAlerts.length === 0 ? (
           <MapLoadingState />
         ) : (
           <CriticalAlertsMap
             alerts={mappedAlerts}
+            route={route}
             selectedPropertyId={
-                currentSelectedProperty?.propertyId ?? null
+              routePropertyId ??
+              currentSelectedProperty?.propertyId ??
+              null
             }
             onSelectProperty={setSelectedProperty}
         />
@@ -436,13 +638,21 @@ export default function NeighbourhoodAlertMapPage() {
         )}
 
         <PropertyAlertsSheet
-            property={currentSelectedProperty}
-            open={
-              currentSelectedProperty !== null &&
-              currentSelectedProperty.alerts.length > 0
-            }
-            onClose={() => setSelectedProperty(null)}
+          property={currentSelectedProperty}
+          canShowRoute={isSecurityOfficer}
+          open={
+            currentSelectedProperty !== null &&
+            currentSelectedProperty.alerts.length > 0
+          }
+          onClose={() =>
+            setSelectedProperty(null)
+          }
+          onShowRoute={(propertyId) => {
+            setRoutePropertyId(propertyId);
+            setSelectedProperty(null);
+          }}
         />
+
 
         
 

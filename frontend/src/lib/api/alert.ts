@@ -6,6 +6,10 @@ import {
   TimePeriod, 
   CriticalAlertMapResSchema, 
   UnlocatedCriticalAlertsResSchema, 
+  AlertDistanceResSchema,
+  AlertRouteResSchema,
+  type AlertRouteRes,
+  type AlertDistanceRes,
   type CriticalAlertMapRes,
   type UnlocatedCriticalAlertsRes
  } from "../validators/alert";
@@ -299,4 +303,30 @@ export async function fetchUnlocatedCriticalAlerts(
   );
 
   return UnlocatedCriticalAlertsResSchema.parse(result);
+}
+
+export async function fetchAlertPropertyDistance(
+  propertyId: string,
+): Promise<AlertDistanceRes> {
+  const result = await apiCall<unknown>(
+    `/alerts/properties/${encodeURIComponent(propertyId)}/distance`,
+    {
+      method: "GET"
+    },
+  );
+
+  return AlertDistanceResSchema.parse(result);
+}
+
+export async function fetchAlertPropertyRoute(
+  propertyId: string,
+): Promise<AlertRouteRes> {
+  const result = await apiCall<unknown>(
+    `/alerts/properties/${encodeURIComponent(propertyId)}/route`,
+    {
+      method: "GET"
+    },
+  );
+
+  return AlertRouteResSchema.parse(result);
 }

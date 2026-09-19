@@ -27,8 +27,18 @@ export function useOfficerLocationTracking(
 					longitude: pos.coords.longitude,
 				})
 			} catch (err) {
-				console.error("Failed to push officer location", err)
-			}
+				const locationError = err as {
+					code?: number;
+					message?: string;
+				};
+
+				console.error("Failed to push officer location", {
+					code: locationError.code,
+					message: locationError.message,
+					error: err,
+				});
+				}
+
 		}
 		pushLocation()
 		intervalRef.current = setInterval(pushLocation, LOCATION_PUSH_INTERVAL_MS)
