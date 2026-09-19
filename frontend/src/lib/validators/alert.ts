@@ -56,7 +56,9 @@ export const CriticalAlertBaseSchema = z.object({
   created_at: z.string().datetime({ offset: true }),
   property_id: DatabaseUuidSchema,
   property_address: z.string(),
-  thumbnail_url: z.string().nullable().optional()
+  thumbnail_url: z.string().nullable().optional(),
+  confidence_score: z.number().finite().nullable().optional(),
+  resolved_at: z.string().datetime({ offset: true }).nullable().optional(),
 });
 
 export const CriticalAlertMapItemSchema =
