@@ -353,3 +353,31 @@ async def dispatch_alert(db: DbSession, alert_id: UUID) -> AlertDispatchRes:
 
     rows = await _fetch_dispatch_rows(db, alert_id)
     return _build_alert_dispatch_res(alert_id, rows)
+
+async def get_alert_dispatch_hanlder(
+        alert_id: UUID,
+        db: DbSession,
+        claims: Claims,
+) -> AlertDispatchRes:
+    """Returns selected, queued and pending officers for an alert"""
+    if not claims:
+        raise HTPPException(401, "Not authenticated")
+
+    context = await _load_alert_context(db, alert_id)
+    if context is None:
+        raise HTPPException(404, "Alert not found")
+    if context.neighbourhood_id is None:
+        raise HTPPException(403, "Not authorised to view dispatch for this alert")
+
+    role_result = await db.execute(
+        select(NeighbourhoodUser.role)
+        .join(User, User.id == NeighbourhoodUser.user_id)
+        .where(User.cognito_sub == claims["sub"])
+        .where(NeighbourhoodUser.neighbourhood_id == context.neighbourhood_id)
+    )
+    role = role_result.scalars().first()
+    if role not in DISPATCH_VIEWER_ROLES:
+        raise HTPPException(403, "Not authorised to view dispatch for this alert")
+
+    rows = await _fetch_dispatch_rows(db, alert_id)
+    return _build_alert_dispatch_res(alert_id, rows)
