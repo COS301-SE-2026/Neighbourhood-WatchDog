@@ -328,6 +328,11 @@ function PropertyAlertsSheet({
 
 
 export default function NeighbourhoodAlertMapPage() {
+  const [
+    selectedProperty,
+    setSelectedProperty,
+  ] = useState<PropertyAlertGroup | null>(null);
+
   function handleSelectProperty(property: PropertyAlertGroup) {
     setSelectedAlert(null);
     setSelectedProperty(property);
