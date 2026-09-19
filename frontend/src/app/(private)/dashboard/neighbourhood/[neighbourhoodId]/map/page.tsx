@@ -26,17 +26,16 @@ import { useCriticalAlerts } from "@/hooks/use-critical-alerts";
 import { useUserContext } from "@/hooks/use-user-context";
 import { usePropertyResidentContext } from "@/hooks/use-property-resident-context";
 import type { PropertyAlertGroup } from "./CriticalAlertsMap";
-import type {
-  CriticalAlertStatus,
-  UnlocatedCriticalAlertItem,
-} from "@/lib/validators/alert";
+import type {CriticalAlertMapItem, CriticalAlertStatus, UnlocatedCriticalAlertItem} from "@/lib/validators/alert";
 import { useState } from "react";
+import {AlertDetailSheet, type Alert} from "@/components/shared/AlertCard";
+import { acknowledgeAlert } from "@/lib/api/alert";
 
 function statusLabel(
   status: CriticalAlertStatus,
 ): string {
   switch (status) {
-    case "OPEN":
+    case "OPEN
       return "Open";
     case "ACKNOWLEDGED":
       return "Acknowledged";
@@ -100,6 +99,26 @@ function MapLoadingState() {
       <RefreshCw className="size-5 animate-spin text-brand-green" />
     </div>
   );
+}
+
+function toAlertDetailModel(alert: CriticalAlertMapItem): Alert {
+  const status: Alert["status"] =
+    alert.status === "OPEN" ? "NEW" : alert.status;
+
+  return {
+    id: alert.id,
+    camera_id: alert.camera_id,
+    frame_timestamp: alert.created_at,
+    detection_type: alert.detection_type,
+    confidence_score: alert.confidence_score ?? undefined,
+    thumbnail_url: alert.thumbnail_url,
+    status,
+    resolved_at: alert.resolved_at ?? undefined,
+    created_at: alert.created_at,
+    property_address: alert.property_address,
+    property_latitude: alert.latitude,
+    property_longitude: alert.longitude,
+  };
 }
 
 function PropertyAlertsSheet({
