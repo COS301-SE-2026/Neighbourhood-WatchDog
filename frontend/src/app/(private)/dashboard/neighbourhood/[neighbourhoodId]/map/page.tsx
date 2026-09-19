@@ -9,7 +9,8 @@ import {
   WifiOff,
   RefreshCw,
   ShieldAlert,
-  Users
+  Users,
+  ChevronDown
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -142,6 +143,10 @@ function PropertyAlertsSheet({
   } = usePropertyResidentContext(
     property?.propertyId ?? null,
   );
+
+  const [residentsExpanded, setResidentsExpanded] =
+    useState(true);
+
   if (!property) {
     return null;
   }
@@ -172,16 +177,24 @@ function PropertyAlertsSheet({
           </SheetDescription>
         </SheetHeader>
         <section className="mt-6 rounded-lg border border-border bg-brand-abyss p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3">
+          <button
+            type="button"
+            className="flex w-full items-start justify-between gap-3 text-left"
+            onClick={() =>
+              setResidentsExpanded((expanded) => !expanded)
+            }
+            aria-expanded={residentsExpanded}
+            aria-controls="property-residents-content"
+          >
+            <span className="flex items-start gap-3">
               <Users className="mt-0.5 size-4 text-brand-green" />
 
-              <div>
-                <h2 className="text-sm font-semibold text-brand-frost">
+              <span>
+                <span className="block text-sm font-semibold text-brand-frost">
                   People at this property
-                </h2>
+                </span>
 
-                <p className="mt-1 text-xs text-brand-ash">
+                <span className="mt-1 block text-xs text-brand-ash">
                   {residentsLoading
                     ? "Loading resident information..."
                     : residentsError
@@ -191,10 +204,20 @@ function PropertyAlertsSheet({
                             ? "person"
                             : "people"
                         }`}
-                </p>
-              </div>
-            </div>
-          </div>
+                </span>
+              </span>
+            </span>
+
+            <ChevronDown
+              className={`mt-0.5 size-4 shrink-0 text-brand-ash transition-transform ${
+                residentsExpanded ? "rotate-180" : ""
+              }`}
+              aria-hidden="true"
+            />
+          </button>
+          
+          
+          
 
           {residentsLoading && (
             <div className="mt-4 space-y-2">
