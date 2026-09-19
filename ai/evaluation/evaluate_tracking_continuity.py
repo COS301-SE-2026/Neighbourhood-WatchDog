@@ -89,5 +89,82 @@ def summarize_track_ids(frame_track_ids: list[list[int]], max_gap_frames: int) -
         "direct_id_switches": direct_id_switches,
         "short_occlusion_recoveries": short_occlusion_recoveries,
         "short_occlusion_breaks": short_occlusion_breaks
+
+    }
+
+
+
+#running a video through our pipeline
+def evaluate_video(video_path: Path, person_model_path: Path, *, max_age: int, n_init: int, max_iou_distance: float) -> dict[str, Any]:
+
+    capture = cv2.VideoCapture(str(video_path))
+
+    if not capture.isOpened():
+        raise RuntimeError(f"Could not open video: {video_path}")
+
+    person_model = YOLO(str(person_model_path))
+
+    tracker = DeepSort(
+        max_age=max_age, #how long someone can survive without detection
+        n_init=n_init,  ##how many detections are needed to confirm a track
+        max_iou_distance=max_iou_distance,
+        embedder="mobilenet",
+        embedder_gpu=False,
+        nms_max_overlap=0.5
+
+    )
+
+    pipeline = CascadedPipeline(
+        person_model=person_model,
+        weapon_model=EmptyWeaponModel(), #replaced the weapon model with this one cause we dont want it to intefer with this evaluation
+        tracker=tracker,
+        config=CascadedPipelineConfig(
+            max_age=max_age,
+            n_init=n_init,
+            max_iou_distance=max_iou_distance
+
+        )
+
+    )
+
+    frame_track_ids: list[list[int]] = []
+    frames_read = 0
+
+    #processign every video frame
+    try:
+        while True:
+            ok, frame = capture.read()
+
+            if not ok:
+                break
+
+            result = pipeline.process_frame(frame, timestamp=float(frames_read))
+
+            ## extracting track ids
+            ids = sorted(
+                int(track["track_id"])
+                for track in result.tracks
+                if track.get("track_id") is not None
+            )
+
+            frame_track_ids.append(ids)
+            frames_read += 1
+    finally:
+        capture.release()
+
+    #summarize tracking
+    summary = summarize_track_ids(frame_track_ids, max_gap_frames=max_age)
+
+    return {
+        "video": str(video_path),
+        "configuration": {
+            "max_age": max_age,
+            "n_init": n_init,
+            "max_iou_distance": max_iou_distance
+
+        },
+        **summary
         
     }
+
+
