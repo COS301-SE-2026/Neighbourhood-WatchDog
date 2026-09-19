@@ -293,16 +293,13 @@ function PropertyAlertsSheet({
                 )}
               </p>
 
-              <Link
-                href={
-                  `/dashboard/neighbourhood/` +
-                  `${alert.neighbourhood_id}/alerts` +
-                  `?alert=${alert.id}`
-                }
-                className="mt-3 inline-block text-xs font-semibold text-brand-green hover:underline"
-              >
-                View alert
-              </Link>
+              <button
+                  type="button"
+                  onClick={() => onSelectAlert(alert)}
+                  className="mt-3 inline-block text-xs font-semibold text-brand-green hover:underline"
+                >
+                  View alert
+                </button>
             </article>
           ))}
         </div>
