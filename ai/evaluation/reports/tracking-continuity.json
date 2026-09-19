@@ -1,35 +1,35 @@
 {
   "baseline": {
-    "video": "tests/footage/clear-presence.mp4",
+    "video": "tests/footage/clear-presence-fixed.mp4",
     "configuration": {
       "max_age": 10,
       "n_init": 3,
       "max_iou_distance": 0.5
     },
-    "frames": 742,
-    "observed_frames": 306,
-    "unique_ids": 8,
-    "direct_id_switches": 3,
-    "short_occlusion_recoveries": 29,
-    "short_occlusion_breaks": 4
+    "frames": 1783,
+    "observed_frames": 780,
+    "unique_ids": 7,
+    "direct_id_switches": 0,
+    "short_occlusion_recoveries": 22,
+    "short_occlusion_breaks": 3
   },
   "candidate": {
-    "video": "tests/footage/clear-presence.mp4",
+    "video": "tests/footage/clear-presence-fixed.mp4",
     "configuration": {
       "max_age": 20,
       "n_init": 3,
       "max_iou_distance": 0.5
     },
-    "frames": 973,
-    "observed_frames": 349,
-    "unique_ids": 9,
-    "direct_id_switches": 3,
-    "short_occlusion_recoveries": 50,
-    "short_occlusion_breaks": 8
+    "frames": 1783,
+    "observed_frames": 771,
+    "unique_ids": 7,
+    "direct_id_switches": 1,
+    "short_occlusion_recoveries": 28,
+    "short_occlusion_breaks": 4
   },
   "comparison": {
-    "recovery_delta": 21,
-    "break_delta": 4,
-    "unique_id_delta": 1
+    "recovery_delta": 6,
+    "break_delta": 1,
+    "unique_id_delta": 0
   }
 }
