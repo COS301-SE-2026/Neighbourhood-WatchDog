@@ -243,4 +243,52 @@ describe("useAlertPropertyRoute", () => {
     },
   );
 
+  test(
+    "does not recalculate when location is unchanged",
+    async () => {
+      mockFetchRoute.mockResolvedValue(
+        routeResponse(
+          FIRST_UPDATE,
+          420,
+        ),
+      );
+
+      mockFetchDistance.mockResolvedValue(
+        distanceResponse(
+          FIRST_UPDATE,
+        ),
+      );
+
+      const { result } = renderHook(() =>
+        useAlertPropertyRoute(
+          PROPERTY_ID,
+          true,
+        ),
+      );
+
+      await waitFor(() => {
+        expect(
+          result.current.route?.eta_seconds,
+        ).toBe(420);
+      });
+
+      triggerLocationCheck();
+
+      await waitFor(() => {
+        expect(
+          mockFetchDistance,
+        ).toHaveBeenCalledTimes(1);
+      });
+
+      expect(
+        mockFetchRoute,
+      ).toHaveBeenCalledTimes(1);
+
+      expect(
+        result.current.route?.eta_seconds,
+      ).toBe(420);
+    },
+  );
+
+
 });
