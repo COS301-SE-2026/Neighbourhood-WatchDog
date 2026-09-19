@@ -1,51 +1,104 @@
-"use client"
+"use client";
 
-import { useEffect, useRef } from "react"
-import { Geolocation } from "@capacitor/geolocation"
-import { updateSecurityLocation } from "@/lib/api/neighbourhood"
+import { useEffect } from "react";
+import { Geolocation } from "@capacitor/geolocation";
 
-const LOCATION_PUSH_INTERVAL_MS = 30_000
+import {
+  updateSecurityLocation,
+} from "@/lib/api/neighbourhood";
+
+const LOCATION_WATCH_INTERVAL_MS = 10_000;
 
 export function useOfficerLocationTracking(
-	neighbourhoodId: string,
-	onDuty: boolean,
-){
-	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  neighbourhoodId: string,
+  onDuty: boolean,
+) {
+  useEffect(() => {
+    if (!onDuty || !neighbourhoodId) {
+      return;
+    }
 
-	useEffect(() => {
-		if (!onDuty) return
+    let watchId: string | null = null;
+    let stopped = false;
+    let updateInProgress = false;
 
-		const pushLocation = async () => {
-			try {
-				const pos = await Geolocation.getCurrentPosition({
-					enableHighAccuracy: true,
-					timeout: 10_000,
-				})
-				await updateSecurityLocation({
-					neighbourhood_id: neighbourhoodId, 
-					latitude: pos.coords.latitude, 
-					longitude: pos.coords.longitude,
-				})
-			} catch (err) {
-				const locationError = err as {
-					code?: number;
-					message?: string;
-				};
+    const startWatching = async () => {
+      try {
+        const id =
+          await Geolocation.watchPosition(
+            {
+              enableHighAccuracy: true,
+              timeout: 15_000,
+              maximumAge: 5_000,
+              minimumUpdateInterval:
+                LOCATION_WATCH_INTERVAL_MS,
+              interval:
+                LOCATION_WATCH_INTERVAL_MS,
+            },
+            (position, error) => {
+              if (
+                stopped ||
+                updateInProgress
+              ) {
+                return;
+              }
 
-				console.error("Failed to push officer location", {
-					code: locationError.code,
-					message: locationError.message,
-					error: err,
-				});
-				}
+              if (error || !position) {
+                console.error(
+                  "Officer location watch failed",
+                  error,
+                );
+                return;
+              }
 
-		}
-		pushLocation()
-		intervalRef.current = setInterval(pushLocation, LOCATION_PUSH_INTERVAL_MS)
-		
-		return () => {
-			if (intervalRef.current) clearInterval(intervalRef.current)
-		}
-	}, [neighbourhoodId, onDuty])
+              updateInProgress = true;
 
+              void updateSecurityLocation({
+                neighbourhood_id:
+                  neighbourhoodId,
+                latitude:
+                  position.coords.latitude,
+                longitude:
+                  position.coords.longitude,
+              })
+                .catch((updateError) => {
+                  console.error(
+                    "Failed to update officer location",
+                    updateError,
+                  );
+                })
+                .finally(() => {
+                  updateInProgress = false;
+                });
+            },
+          );
+
+        if (stopped) {
+          await Geolocation.clearWatch({
+            id,
+          });
+          return;
+        }
+
+        watchId = id;
+      } catch (error) {
+        console.error(
+          "Failed to start officer location tracking",
+          error,
+        );
+      }
+    };
+
+    void startWatching();
+
+    return () => {
+      stopped = true;
+
+      if (watchId) {
+        void Geolocation.clearWatch({
+          id: watchId,
+        });
+      }
+    };
+  }, [neighbourhoodId, onDuty]);
 }
