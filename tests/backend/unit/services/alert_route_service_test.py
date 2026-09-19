@@ -12,6 +12,7 @@ from app.schemas.alert import (
 )
 from app.services.alert_route_service import (
     RoutingServiceUnavailable,
+    _request_osrm_route,
     calculate_property_distance_handler,
     get_property_route_handler,
 )
@@ -217,3 +218,54 @@ class TestPropertyRoute:
         assert result.eta_seconds is None
         assert result.route_geometry is None
         assert result.routing_error == "Route and ETA are temporarily unavailable"
+
+    @pytest.mark.asyncio
+    async def test_requests_and_parses_osrm_route(self):
+        distance = make_distance()
+
+        response = MagicMock()
+        response.json.return_value = {
+            "code": "Ok",
+            "routes": [
+                {
+                    "distance": 3100,
+                    "duration": 420,
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [
+                            [28.2100, -25.7600],
+                            [28.2293, -25.7479],
+                        ],
+                    },
+                }
+            ],
+        }
+
+        client = MagicMock()
+        client.get = AsyncMock(
+            return_value=response,
+        )
+
+        context_manager = MagicMock()
+        context_manager.__aenter__ = AsyncMock(
+            return_value=client,
+        )
+        context_manager.__aexit__ = AsyncMock(
+            return_value=None,
+        )
+
+        with patch(
+            "app.services.alert_route_service."
+            "httpx.AsyncClient",
+            return_value=context_manager,
+        ):
+            route_distance, eta, geometry = (
+                await _request_osrm_route(distance)
+            )
+
+        assert route_distance == 3100
+        assert eta == 420
+        assert geometry.type == "LineString"
+
+        client.get.assert_awaited_once()
+        response.raise_for_status.assert_called_once()
