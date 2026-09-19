@@ -728,7 +728,9 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
             person_iou=PERSON_NMS_IOU_THRESHOLD,
             weapon_confidence=WEAPON_CONFIDENCE_THRESHOLD,
             weapon_iou=WEAPON_NMS_IOU_THRESHOLD,
-            n_init=TEMPORAL_CONFIRMATION_FRAMES,
+            max_age=TRACKING_MAX_AGE,
+            n_init=TRACKING_N_INIT,
+            max_iou_distance=TRACKING_MAX_IOU_DISTANCE,
             loitering_threshold_seconds=float(
                 os.getenv("LOITERING_THRESHOLD_SECONDS", "30")
             ),
