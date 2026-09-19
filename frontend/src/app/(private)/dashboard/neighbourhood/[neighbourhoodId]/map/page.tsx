@@ -22,9 +22,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useCriticalAlerts } from "@/hooks/use-critical-alerts";
+import { useAlertPropertyRoute } from "@/hooks/use-alert-property-route";
+import { useOfficerMapLocationTracking } from "@/hooks/use-officer-map-location-tracking";
 import { useUserContext } from "@/hooks/use-user-context";
 import type { PropertyAlertGroup } from "./CriticalAlertsMap";
 import type {
+  AlertRouteData,
   CriticalAlertStatus,
   UnlocatedCriticalAlertItem,
 } from "@/lib/validators/alert";
@@ -100,14 +103,112 @@ function MapLoadingState() {
   );
 }
 
+function RouteSummary({
+  route,
+  loading,
+  error,
+}: {
+  readonly route: AlertRouteData | null;
+  readonly loading: boolean;
+  readonly error: string | null;
+}) {
+  if (loading) {
+    return (
+      <div className="mt-5 rounded-lg border border-border bg-brand-abyss p-4 text-sm text-brand-ash">
+        Calculating route…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mt-5 rounded-lg border border-brand-caution/30 bg-brand-caution/10 p-4">
+        <p className="text-sm font-medium text-brand-caution">
+          Route unavailable
+        </p>
+
+        <p className="mt-1 text-xs text-brand-ash">
+          {error}
+        </p>
+      </div>
+    );
+  }
+
+  if (!route) {
+    return null;
+  }
+
+  const displayedDistance =
+    route.route_distance_metres ??
+    route.distance_metres;
+
+  const distanceKilometres =
+    displayedDistance / 1000;
+
+  const etaMinutes =
+    route.eta_seconds === null
+      ? null
+      : Math.max(
+          1,
+          Math.ceil(route.eta_seconds / 60),
+        );
+
+  return (
+    <div className="mt-5 rounded-lg border border-border bg-brand-abyss p-4">
+      <p className="text-xs uppercase tracking-wide text-brand-ash">
+        Route to property
+      </p>
+
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-xs text-brand-ash">
+            Distance
+          </p>
+
+          <p className="mt-1 text-lg font-semibold text-brand-frost">
+            {distanceKilometres.toFixed(1)} km
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs text-brand-ash">
+            ETA
+          </p>
+
+          <p className="mt-1 text-lg font-semibold text-brand-frost">
+            {etaMinutes === null
+              ? "Unavailable"
+              : `${etaMinutes} min`}
+          </p>
+        </div>
+      </div>
+
+      {route.routing_error && (
+        <p className="mt-3 text-xs text-brand-caution">
+          {route.routing_error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+
 function PropertyAlertsSheet({
   property,
   open,
   onClose,
+  route,
+  routeLoading,
+  routeError,
+  showRoute,
 }: {
   readonly property: PropertyAlertGroup | null;
   readonly open: boolean;
   readonly onClose: () => void;
+  readonly route: AlertRouteData | null;
+  readonly routeLoading: boolean;
+  readonly routeError: string | null;
+  readonly showRoute: boolean;
 }) {
   if (!property) {
     return null;
@@ -138,6 +239,15 @@ function PropertyAlertsSheet({
               : "alerts"}
           </SheetDescription>
         </SheetHeader>
+
+        {showRoute && (
+          <RouteSummary
+            route={route}
+            loading={routeLoading}
+            error={routeError}
+          />
+        )}
+
 
         <div className="mt-6 space-y-3">
           {visibleAlerts.map((alert) => (
@@ -224,6 +334,15 @@ export default function NeighbourhoodAlertMapPage() {
     neighbourhoodRole === "SECURITY_OFFICER" ||
     neighbourhoodRole === "NEIGHBOURHOOD_ADMIN";
 
+  const isSecurityOfficer =
+    neighbourhoodRole === "SECURITY_OFFICER";
+
+  useOfficerMapLocationTracking(
+    neighbourhoodId,
+    isSecurityOfficer,
+  );
+
+
 
   const {
     mappedAlerts,
@@ -257,6 +376,18 @@ export default function NeighbourhoodAlertMapPage() {
           ),
       }
     : null;
+
+  const selectedPropertyId = currentSelectedProperty?.propertyId ?? null;
+
+  const {
+    route,
+    routeError,
+    routeLoading,
+  } = useAlertPropertyRoute(
+    selectedPropertyId,
+    isSecurityOfficer
+  );
+
 
 
   if (userContextLoading) {
@@ -427,6 +558,7 @@ export default function NeighbourhoodAlertMapPage() {
         ) : (
           <CriticalAlertsMap
             alerts={mappedAlerts}
+            route={route}
             selectedPropertyId={
                 currentSelectedProperty?.propertyId ?? null
             }
@@ -436,12 +568,16 @@ export default function NeighbourhoodAlertMapPage() {
         )}
 
         <PropertyAlertsSheet
-            property={currentSelectedProperty}
-            open={
-              currentSelectedProperty !== null &&
-              currentSelectedProperty.alerts.length > 0
-            }
-            onClose={() => setSelectedProperty(null)}
+          property={currentSelectedProperty}
+          route={route}
+          routeLoading={routeLoading}
+          routeError={routeError}
+          showRoute={isSecurityOfficer}
+          open={
+            currentSelectedProperty !== null &&
+            currentSelectedProperty.alerts.length > 0
+          }
+          onClose={() => setSelectedProperty(null)}
         />
 
         
