@@ -110,6 +110,7 @@ def make_db():
     db = Mock()
     db.execute = AsyncMock()
     db.commit = AsyncMock()
+    db.flush = AsyncMock()
     db.refresh = AsyncMock()
     db.rollback = AsyncMock()
     return db
@@ -1038,6 +1039,133 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
         alert_model.call_args.kwargs["detection_type"]
         == DetectionType.WEAPON_DETECTED
     )
+
+
+@pytest.mark.asyncio
+async def test_create_alert_for_agent_requires_local_track_id_for_embedding():
+    db = make_db()
+    body = CreateInternalAlertRequest(
+        camera_id=str(CAMERA_ID),
+        detection_type="HUMAN_PRESENCE",
+        confidence_score=0.91,
+        frame_timestamp=FRAME_TIMESTAMP.isoformat(),
+        appearance_embedding=[1.0] + [0.0] * 1279,
+        embedding_model="deep_sort_mobilenet_v2_bottleneck",
+    )
+    camera = make_camera()
+    alert = SimpleNamespace(id=ALERT_ID)
+    db.execute.return_value = make_result(scalar=camera)
+
+    with patch("app.services.alert_service.Alert", return_value=alert):
+        with pytest.raises(HTTPException) as exc_info:
+            await service.create_alert_for_agent_handler(
+                body,
+                db,
+                make_edge_credential(),
+            )
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.detail == (
+        "local_track_id is required when an appearance_embedding is provided"
+    )
+    db.flush.assert_awaited_once()
+    db.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_create_alert_for_agent_requires_embedding_model():
+    db = make_db()
+    body = CreateInternalAlertRequest(
+        camera_id=str(CAMERA_ID),
+        detection_type="HUMAN_PRESENCE",
+        confidence_score=0.91,
+        frame_timestamp=FRAME_TIMESTAMP.isoformat(),
+        local_track_id=17,
+        appearance_embedding=[1.0] + [0.0] * 1279,
+    )
+    camera = make_camera()
+    alert = SimpleNamespace(id=ALERT_ID)
+    db.execute.return_value = make_result(scalar=camera)
+
+    with patch("app.services.alert_service.Alert", return_value=alert):
+        with pytest.raises(HTTPException) as exc_info:
+            await service.create_alert_for_agent_handler(
+                body,
+                db,
+                make_edge_credential(),
+            )
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.detail == (
+        "embedding_model is required when an appearance_embedding is provided"
+    )
+    db.flush.assert_awaited_once()
+    db.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_create_alert_for_agent_persists_initial_tracking_sighting():
+    db = make_db()
+    body = CreateInternalAlertRequest(
+        camera_id=str(CAMERA_ID),
+        detection_type="HUMAN_PRESENCE",
+        confidence_score=0.91,
+        frame_timestamp=FRAME_TIMESTAMP.isoformat(),
+        local_track_id=17,
+        appearance_embedding=[1.0] + [0.0] * 1279,
+        embedding_model="deep_sort_mobilenet_v2_bottleneck",
+    )
+    camera = make_camera()
+    alert = SimpleNamespace(
+        id=ALERT_ID,
+        camera_id=CAMERA_ID,
+        frame_timestamp=FRAME_TIMESTAMP,
+        detection_type=DetectionType.HUMAN_PRESENCE,
+    )
+    tracking_subject = SimpleNamespace(id=uuid4())
+    initial_sighting = SimpleNamespace(id=uuid4())
+    db.execute.return_value = make_result(scalar=camera)
+
+    with (
+        patch("app.services.alert_service.Alert", return_value=alert),
+        patch(
+            "app.services.alert_service.TrackingSubject",
+            return_value=tracking_subject,
+        ) as tracking_subject_model,
+        patch(
+            "app.services.alert_service.TrackingSighting",
+            return_value=initial_sighting,
+        ) as tracking_sighting_model,
+        patch(
+            "app.services.alert_service.normalize_appearance_embedding",
+            return_value=[0.5] + [0.0] * 1279,
+        ) as normalise_embedding,
+    ):
+        response = await service.create_alert_for_agent_handler(
+            body,
+            db,
+            make_edge_credential(),
+        )
+
+    assert response.alert_id == ALERT_ID
+    normalise_embedding.assert_called_once_with(body.appearance_embedding)
+    tracking_subject_model.assert_called_once_with(
+        alert_id=ALERT_ID,
+        reference_embedding=[0.5] + [0.0] * 1279,
+        embedding_model=body.embedding_model,
+    )
+    tracking_sighting_model.assert_called_once_with(
+        tracking_subject_id=tracking_subject.id,
+        camera_id=CAMERA_ID,
+        local_track_id=17,
+        observed_at=FRAME_TIMESTAMP,
+        sequence_no=1,
+        match_confidence=None,
+    )
+    assert db.add.call_count == 3
+    assert db.flush.await_count == 2
+    db.commit.assert_awaited_once()
+    db.refresh.assert_awaited_once_with(alert)
 
 
 @pytest.mark.asyncio

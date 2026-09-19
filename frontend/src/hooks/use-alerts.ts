@@ -1,13 +1,29 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 
+
+export interface TrackingSightingPayload {
+  alert_id: string;
+  tracking_subject_id: string;
+  sighting_id: string;
+  camera_id: string;
+  local_track_id: number;
+  observed_at: string;
+  sequence_no: number;
+  match_confidence: number;
+
+}
+
 export interface AlertEvent {
   event: string;
   alert_id?: string;
   camera_id?: string;
   detection_type?: string;
   confidence?: number;
+  payload?: Record<string, unknown> | TrackingSightingPayload;
+
 }
+
 
 export function useAlerts(neighbourhoodId: string) {
   const [alerts, setAlerts] = useState<AlertEvent[]>([]);

@@ -2,7 +2,7 @@ from enum import Enum
 from datetime import datetime
 from uuid import UUID
 from typing import Optional, List, Literal
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AlertCreate(BaseModel):
@@ -137,8 +137,24 @@ class CreateInternalAlertRequest(BaseModel):
     camera_id: str
     detection_type: str
     confidence_score: float
+    local_track_id: int | None = None
     thumbnail_url: str | None = None
     frame_timestamp: str | None = None
+
+
+	#represent 'fingerprints' of object
+    appearance_embedding: list[float] | None = Field(
+		default=None, 
+		min_length=1280, 
+		max_length=1280	
+	)
+
+	#specify the model ie, mobilenet_v2
+    embedding_model: str | None = Field(
+		default=None, 
+		min_length=1, 
+		max_length=128
+	)
 
 
 class UpdateAlertClipRequest(BaseModel):

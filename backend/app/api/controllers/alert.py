@@ -52,6 +52,9 @@ from app.services.alert_service import (
 )
 from app.services.alert_route_service import calculate_property_distance_handler, get_property_route_handler
 
+from app.schemas.tracking import TrackingTimelineResponse
+from app.services.tracking_service import get_tracking_timeline
+
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 _connections: dict[str, set[WebSocket]] = {}
@@ -216,6 +219,24 @@ async def list_property_alerts(
 
 
 @router.get(
+        "/{alert_id}/tracking", 
+        summary="Get the ordered tracking timeline for an alert", 
+        responses={
+            403: {"description": "Only authorized officers can view tracking timelines"}, 
+            404: {"description": "Alert or tracking timeline not found"}
+        }
+)
+async def get_alert_tracking_timeline(alert_id: UUID, db: DbSession, claims: Claims) -> TrackingTimelineResponse:
+
+    return await get_tracking_timeline(
+        db=db, 
+        alert_id=alert_id, 
+        claims=claims
+        
+    )
+
+
+@router.get(
     "/{neighbourhood_id}",
     response_model=ListAlertsRes,
     summary="List alerts for a neighbourhood",
@@ -339,7 +360,6 @@ async def alert_websocket(
 
     finally:
         remove_connection(user_id, websocket)
-
 
 @router.post("/broadcast")
 async def broadcast_neighbourhood_alert(

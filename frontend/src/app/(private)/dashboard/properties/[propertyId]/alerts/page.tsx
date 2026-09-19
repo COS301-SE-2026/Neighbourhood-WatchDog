@@ -225,13 +225,12 @@ export default function PropertyAlertsPage() {
                                     alert={alert}
                                     onAcknowledge={
                                         isPropertyAdmin &&
-                                        getSeverity(
-                                            alert.detection_type,
-                                        ) !== "CRITICAL"
+                                        getSeverity(alert.detection_type) !== "CRITICAL"
                                             ? handleAcknowledge
                                             : undefined
                                     }
                                     broadcasting={false}
+                                    canViewTracking={false}
                                 />
                             ))}
                         </div>
