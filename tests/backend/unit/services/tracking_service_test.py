@@ -490,7 +490,11 @@ async def test_agent_sighting_survives_broadcast_failure():
     neighbourhood_id = uuid4()
     candidate_result = MagicMock()
     candidate_result.one_or_none.return_value = (
-        SimpleNamespace(property_id=property_id),
+        SimpleNamespace(
+            property_id=property_id,
+            name="Back Gate",
+            location="Northern boundary",
+        ),
         SimpleNamespace(neighbourhood_id=neighbourhood_id),
     )
     source_result = MagicMock()

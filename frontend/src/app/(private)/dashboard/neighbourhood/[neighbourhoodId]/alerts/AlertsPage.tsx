@@ -244,7 +244,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
               return;
             }
 
-            const cameraName = typeof payload.camera_name === "string" ? payload.camera_name "another camera";
+            const cameraName = typeof payload.camera_name === "string" ? payload.camera_name : "another camera";
 
             const cameraLocation = typeof payload.camera_location === "string" ? payload.camera_location : "location unavailable";
 
