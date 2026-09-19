@@ -8,7 +8,7 @@ from geoalchemy2 import Geography
 
 from app.auth.authorization import Claims
 from app.core.database import DbSession
-from app.models.alert import Alert, DetectionType
+from app.models.alert import Alert, AlertStatus
 from app.models.camera import Camera
 from app.models.user import User
 from app.models.property import Property
@@ -223,3 +223,24 @@ async def _fetch_neighbourhood_officers(
         )
         for officer_id, availability, updated_at, distance in result.all()
     ]
+
+async def _fetch_workloads(
+        db: DbSession,
+        officer_ids: list[UUID],
+        exclude_alert_id: UUID,
+) -> dict[UUID, int]:
+    """Number of unresolved alerts each officer has"""
+    if not officer_ids:
+        return {}
+    stmt = (
+        select(Dispatch.officer_id, func.count(Dispatch.id))
+        .select_from(Dispatch)
+        .join(Alert, Alert.id == Dispatch.alert_id)
+        .where(Dispatch.officer_id.in_(officer_ids))
+        .where(Dispatch.status.in_(ACTIVE_DISPATCH_STATUS))
+        .where(Dispatch.alert_id != exclude_alert_id)
+        .where(Alert.status != AlertStatus.RESOLVED.value)
+        .group_by(Dispatch.officer_id)
+    )
+    result = await db.execute(stmt)
+    return {officer_id: count for officer_id, count in result.all()}
