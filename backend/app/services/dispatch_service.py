@@ -53,3 +53,29 @@ DISPATCH_VIEWER_ROLES = (
     NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
     NeighbourhoodRole.SECURITY_OFFICER,
 )
+
+@dataclass(frozen=True)
+class AlertContext:
+    alert_id: UUID
+    detction_type: str
+    neighbhood_id: UUID | None
+    latitude: float | None
+    longitude: float | None
+
+@dataclass(frozen=True)
+class OfficerCandidate:
+    officer_id: UUID
+    availability_status: AvailabilityStatus | None
+    location_updated_at: datetime | None
+    distance: float | None
+    workload: int = 0
+
+@dataclass(frozen=True)
+class RankedCandidate:
+    candidate: OfficerCandidate
+    eta: float
+    score: float
+    rank: int
+
+def _enum_value(value) -> str:
+    return str(getattr(value, "value", value))
