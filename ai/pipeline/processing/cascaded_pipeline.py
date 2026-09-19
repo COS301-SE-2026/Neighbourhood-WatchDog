@@ -14,6 +14,7 @@ from threading import Lock
 from typing import Any, Sequence
 
 import time
+import math
 
 
 try:
@@ -58,6 +59,8 @@ class PipelineResult:
     tracks: list[dict[str, Any]] = field(default_factory=list)
     events: list[dict[str, Any]] = field(default_factory=list)
 
+    #keyed by camera-local DeepSORT track ID. These are kept separate from tracks because the annotation endpoint should not receive large appearance vectors on every frame.
+    appearance_embeddings: dict[int, list[float]] = field(default_factory=dict)
 
 
 @dataclass
@@ -121,34 +124,58 @@ class CascadedPipeline:
 
         tracks: list[dict[str, Any]] = []
         events: list[dict[str, Any]] = []
+        appearance_embeddings: dict[int, list[float]] = {}
 
         for track in confirmed_tracks:
             track_id = int(track["track_id"])
-            behaviour = self._classify_behaviour(track, now, frame.shape[:2])
+
+            appearance_embedding = track.get("appearance_embedding")
+
+            #  keep the appearance vector out of the regular annotation payload.
+            public_track = {
+                key: value
+                for key, value in track.items()
+                if key != "appearance_embedding"
+
+
+            }
+
+            behaviour = self._classify_behaviour(
+                public_track,
+                now,
+                frame.shape[:2]
+
+            )
 
             output = {
-                **track,
+                **public_track,
                 **behaviour,
                 "is_confirmed": True
 
-            } #dictionary containing everything from track, behaviour, and appending a 'true confirmation'
-
+            }
 
             tracks.append(output)
+
+            if appearance_embedding is not None:
+                appearance_embeddings[track_id] = appearance_embedding
 
             history = self._histories[track_id]
 
 
             if history.last_emitted_type != output["detection_type"]:
                 events.append(dict(output))
-
                 history.last_emitted_type = output["detection_type"]
+
 
         self._cleanup_histories(now)
 
+        return PipelineResult(
+            tracks=tracks,
+            events=events,
+            appearance_embeddings=appearance_embeddings
 
 
-        return PipelineResult(tracks=tracks, events=events)
+        )
 
 
     def _detect_persons(self, frame: Any) -> list[dict[str, Any]]:
@@ -295,11 +322,12 @@ class CascadedPipeline:
                 "bbox": track_bbox,
                 "confidence": confidence,
 
+                "appearance_embedding": self._get_appearance_embedding(raw_track),
 
                 "weapon_detected": bool(parent and parent["weapon_detected"]),
                 "weapon_type": parent["weapon_type"] if parent else None,
                 "weapon_confidence": parent["weapon_confidence"] if parent else None
-                
+
             })
 
         return confirmed
@@ -419,17 +447,64 @@ class CascadedPipeline:
         for track_id in expired:
             del self._histories[track_id]
 
+
     @staticmethod
+    def _get_appearance_embedding(raw_track: Any) -> list[float] | None:
+        """
+        Return the latest normalized DeepSORT appearance feature.
+
+        The vector is kept in memory only at this stage. It is not persisted
+        or sent through the regular annotation endpoint yet.
+        """
+
+        get_feature = getattr(raw_track, "get_feature", None)
+
+        if not callable(get_feature):
+            return None
+
+        try:
+            raw_feature = get_feature()
+        except (IndexError, TypeError, ValueError):
+            return None
+
+        if raw_feature is None:
+            return None
+
+        try:
+            values = [float(value) for value in raw_feature]
+        except (TypeError, ValueError):
+            return None
+
+        if not values:
+            return None
+
+        if not all(math.isfinite(value) for value in values):
+            return None
+
+        norm = math.sqrt(sum(value * value for value in values))
+
+        if norm <= 0.0:
+            return None
+
+        return [value / norm for value in values]
+
+    @staticmethod 
     def _best_parent(track_bbox: list[float], persons: list[dict[str, Any]]) -> dict[str, Any] | None:
+        ##identify which person in a frame best matches a given object
         if not persons:
             return None
-        
-        return max(
-            persons,
+
+        best_parent = max(
+            persons, 
             key=lambda person: CascadedPipeline._iou(track_bbox, person["bbox"])
-
-
         )
+
+        best_iou = CascadedPipeline._iou(track_bbox, best_parent["bbox"])
+
+        if best_iou <= 0.0:
+            return None
+        
+        return best_parent
 
     @staticmethod
     def _iou(left: list[float], right: list[float]) -> float:

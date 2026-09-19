@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 
 import { AlertFootagePlayer } from "@/components/shared/AlertFootagePlayer";
+import { TrackingTimeline } from "@/components/shared/TrackingTimeline";
 
 
 type AlertLocationMapProps = {
@@ -204,6 +205,8 @@ export interface AlertDetailSheetProps {
   onBack?: () => void;
   onAcknowledge?: (id: string) => Promise<void>;
   acknowledging?: boolean;
+  trackingRefreshKey?: number;
+  canViewTracking: boolean;
 }
 
 export function AlertDetailSheet({
@@ -213,6 +216,8 @@ export function AlertDetailSheet({
   onBack,
   onAcknowledge,
   acknowledging = false,
+  canViewTracking,
+  trackingRefreshKey = 0,
 }: AlertDetailSheetProps) {
   const severity = getSeverity(alert.detection_type);
   const isNew = alert.status === "NEW";
@@ -274,6 +279,20 @@ export function AlertDetailSheet({
               timestamp={alert.created_at}
             />
 
+          )}
+
+          {alert.detection_type === "WEAPON_DETECTED" &&
+            canViewTracking && (
+            <>
+              <TrackingTimeline
+                alertId={alert.id}
+                alertStatus={alert.status}
+                enabled={open}
+                refreshKey={trackingRefreshKey}
+              />
+
+              <Separator className="bg-brand-slate" />
+            </>
           )}
 
           <Separator className="bg-brand-slate" />
@@ -403,9 +422,11 @@ export interface AlertCardProps {
   readonly onAcknowledge?: (id: string) => Promise<void>;
   readonly onBroadcast?: (id: string) => Promise<void>;
   readonly broadcasting: boolean;
+  readonly trackingRefreshKey?: number;
+  readonly canViewTracking: boolean;
 }
 
-export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: AlertCardProps) {
+export function AlertCard({alert, onAcknowledge, onBroadcast, broadcasting, canViewTracking, trackingRefreshKey = 0}: AlertCardProps) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
 
@@ -560,6 +581,8 @@ export function AlertCard({ alert, onAcknowledge, onBroadcast, broadcasting}: Al
         onClose={() => setDetailOpen(false)}
         onAcknowledge={handleAcknowledge}
         acknowledging={acknowledging}
+        canViewTracking={canViewTracking}
+        trackingRefreshKey={trackingRefreshKey}
       />
     </>
   );

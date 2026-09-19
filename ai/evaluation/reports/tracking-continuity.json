@@ -1,0 +1,35 @@
+{
+  "baseline": {
+    "video": "tests/footage/clear-presence-normalized.mp4",
+    "configuration": {
+      "max_age": 10,
+      "n_init": 3,
+      "max_iou_distance": 0.5
+    },
+    "frames": 973,
+    "observed_frames": 388,
+    "unique_ids": 7,
+    "direct_id_switches": 3,
+    "short_occlusion_recoveries": 36,
+    "short_occlusion_breaks": 2
+  },
+  "candidate": {
+    "video": "tests/footage/clear-presence-normalized.mp4",
+    "configuration": {
+      "max_age": 20,
+      "n_init": 3,
+      "max_iou_distance": 0.5
+    },
+    "frames": 973,
+    "observed_frames": 380,
+    "unique_ids": 7,
+    "direct_id_switches": 3,
+    "short_occlusion_recoveries": 40,
+    "short_occlusion_breaks": 4
+  },
+  "comparison": {
+    "recovery_delta": 4,
+    "break_delta": 2,
+    "unique_id_delta": 0
+  }
+}

@@ -38,9 +38,8 @@ const config: Config = {
   },
 
   testMatch: [
-    // '../tests/frontend/**/__tests__/**/*.test.[jt]s?(x)',
-    // '../tests/frontend/**/?(*.)+(spec|test).[jt]s?(x)',
-    "<rootDir>/../tests/frontend/**/*.test.ts",
+    "<rootDir>/../tests/frontend/**/*.test.[jt]s?(x)",
+    "<rootDir>/src/**/*.test.[jt]s?(x)",
   ],
 };
 
