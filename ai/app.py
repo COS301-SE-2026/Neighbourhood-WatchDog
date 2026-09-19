@@ -55,6 +55,22 @@ TEMPORAL_CONFIRMATION_FRAMES = int(os.getenv("TEMPORAL_CONFIRMATION_FRAMES", "3"
 
 APPEARANCE_EMBEDDING_MODEL = "deep_sort_mobilenet_v2_bottleneck"
 
+TEMPORAL_CONFIRMATION_FRAMES = int(os.getenv("TEMPORAL_CONFIRMATION_FRAMES", "3"))
+
+TRACKING_MAX_AGE = int(os.getenv("TRACKING_MAX_AGE", "10"))
+TRACKING_N_INIT = int(os.getenv("TRACKING_N_INIT", str(TEMPORAL_CONFIRMATION_FRAMES)))
+TRACKING_MAX_IOU_DISTANCE = float(os.getenv("TRACKING_MAX_IOU_DISTANCE", "0.5"))
+
+if TRACKING_MAX_AGE < 1:
+    raise ValueError("TRACKING_MAX_AGE must be at least 1")
+
+if TRACKING_N_INIT < 1:
+    raise ValueError("TRACKING_N_INIT must be at least 1")
+
+if not 0.0 <= TRACKING_MAX_IOU_DISTANCE <= 1.0:
+    raise ValueError("TRACKING_MAX_IOU_DISTANCE must be between 0 and 1")
+
+
 # #cache for the camera settings, refresh every 30 seconds ---- still need to test
 # _camera_settings: dict =  {
 #     "confidence_threshold": 0.5,
