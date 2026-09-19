@@ -6,6 +6,13 @@ export const PropertyTypeEnum = z.enum([
   "PUBLIC",
 ]);
 
+const DatabaseUuidSchema = z
+  .string()
+  .regex(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    "Invalid UUID format",
+  );
+
 export const CreatePropertyReqSchema = z.object({
   address: z
     .string({ message: "Address is required" })
@@ -120,15 +127,26 @@ export const PropertyDetailedResSchema = z.object({
 });
 
 export const propertyMemberSchema = z.object({
-  user_id: z.uuid(),
+  user_id: DatabaseUuidSchema,
   first_name: z.string().nullable(),
   last_name: z.string().nullable(),
   email: z.email(),
-  is_admin: z.boolean()
+  is_admin: z.boolean(),
 });
 
 export const propertyMembersSchema = z.object({
   members: z.array(propertyMemberSchema).default([])
+});
+
+export const PropertyResidentContextSchema = z.object({
+  property_id: DatabaseUuidSchema,
+  address: z.string(),
+  property_type: PropertyTypeEnum,
+  neighbourhood_id: DatabaseUuidSchema.nullable(),
+  latitude: z.number().nullable(),
+  longitude: z.number().nullable(),
+  created_at: z.coerce.date(),
+  residents: z.array(propertyMemberSchema).default([]),
 });
 
 export const invitePropertyMemberSchema = z.object({
@@ -152,5 +170,6 @@ export type NeighbourhoodSummary = z.infer<typeof NeighbourhoodSummarySchema>;
 export type PropertyDetailedRes = z.infer<typeof PropertyDetailedResSchema>;
 export type PropertyMember = z.infer<typeof propertyMemberSchema>;
 export type PropertyMembers = z.infer<typeof propertyMembersSchema>;
+export type PropertyResidentContext = z.infer<typeof PropertyResidentContextSchema>;
 export type InvitePropertyMemberInput = z.infer<typeof invitePropertyMemberSchema>;
 export type InvitePropertyMemberResponse = z.infer<typeof invitePropertyMemberResponseSchema>;

@@ -30,6 +30,7 @@ import {
   ChevronRight,
   Loader2,
   Megaphone,
+  ArrowLeft
 } from "lucide-react";
 
 import { AlertFootagePlayer } from "@/components/shared/AlertFootagePlayer";
@@ -65,9 +66,9 @@ export type AlertStatus = "NEW" | "ACKNOWLEDGED" | "RESOLVED";
 export interface Alert {
   id: string;
   camera_id: string;
-  frame_timestamp: string;
+  frame_timestamp?: string;
   detection_type: string;
-  confidence_score: number;
+  confidence_score?: number | null;
   thumbnail_url?: string | null;
   clip_s3_key?: string | null;
   status: AlertStatus;
@@ -77,7 +78,6 @@ export interface Alert {
   property_address?: string | null;
   property_latitude?: number | null;
   property_longitude?: number | null;
-
 }
 
 export function getSeverity(detection_type?: string | null): AlertSeverity {
@@ -198,22 +198,24 @@ export function timeAgo(iso: string): string {
   return formatDateTime(iso);
 }
 
-interface AlertDetailSheetProps {
+export interface AlertDetailSheetProps {
   alert: Alert;
   open: boolean;
   onClose: () => void;
+  onBack?: () => void;
   onAcknowledge?: (id: string) => Promise<void>;
-  acknowledging: boolean;
+  acknowledging?: boolean;
   trackingRefreshKey?: number;
   canViewTracking: boolean;
 }
 
-function AlertDetailSheet({
+export function AlertDetailSheet({
   alert,
   open,
   onClose,
+  onBack,
   onAcknowledge,
-  acknowledging,
+  acknowledging = false,
   canViewTracking,
   trackingRefreshKey = 0,
 }: AlertDetailSheetProps) {
@@ -224,8 +226,21 @@ function AlertDetailSheet({
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
         side="right"
-        className="w-full max-w-lg border-l border-border bg-brand-void text-brand-frost"
+        overlayClassName="z-[1100]"
+        className="z-[1101] w-full max-w-lg border-l border-border bg-brand-void text-brand-frost"
       >
+        {onBack && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="absolute top-3 right-12 text-brand-ash hover:text-brand-frost"
+            onClick={onBack}
+            aria-label="Back to property alerts"
+          >
+            <ArrowLeft className="size-4" />
+          </Button>
+        )}
         <SheetHeader className="mb-4 px-4 pt-6 pb-0 sm:px-6">
           <div className="flex items-center gap-2 mb-1">
             <SeverityBadge severity={severity} />
