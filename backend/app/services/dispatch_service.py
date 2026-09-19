@@ -58,7 +58,7 @@ DISPATCH_VIEWER_ROLES = (
 class AlertContext:
     alert_id: UUID
     detction_type: str
-    neighbhood_id: UUID | None
+    neighbourhood_id: UUID | None
     latitude: float | None
     longitude: float | None
 
@@ -131,3 +131,42 @@ def rank_candidates(
         RankedCandidate(candidate=e, eta=eta, score=score, rank=rank)
         for rank, (e, eta, score) in enumerate(scored, start=1)
     ]
+
+def _build_dispatch_rows(context: AlertContext, ranked: list[RankedCandidate]) -> list[Dispatch]:
+    """Helper to build dispatch table rows"""
+    rows: list[Dispatch] = []
+    has_selected = False
+
+    for r in ranked:
+        c = r.candidate
+        if c.availability_status == AvailabilityStatus.AVAILABLE:
+            status = DispatchStatus.PENDING if has_selected else DispatchStatus.SELECTED
+            has_selected = True
+        else:
+            status = DispatchStatus.QUEUED
+
+        rows.append(
+            Dispatch(
+                alert_id=context.alert_id,
+                neighbourhood_id=context.neighbourhood_id,
+                officer_id=c.officer_id,
+                rank=r.rank,
+                score=r.score,
+                distance=c.distance,
+                eta=r.eta,
+                workload=c.workload,
+                officer_availability=c.availability,
+                officer_location_updated_at=c.location_updated_at,
+                status=status,
+            )
+        )
+
+        if not has_selected:
+            rows.append(
+                Dispatch(
+                    alert_id=context.alert_id,
+                    neighbourhood_id=context.neighbourhood_id,
+                    status=DispatchStatus.NO_CANDIDATE,
+                )
+            )
+        return rows
