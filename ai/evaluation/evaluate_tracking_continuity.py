@@ -164,7 +164,101 @@ def evaluate_video(video_path: Path, person_model_path: Path, *, max_age: int, n
 
         },
         **summary
-        
+
     }
 
 
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Measure single-camera DeepSORT ID continuity.")
+
+    parser.add_argument(
+        "--video",
+        required=True,
+        type=Path,
+        help="Path to a recorded single-camera video."
+
+    )
+
+    parser.add_argument(
+        "--person-model",
+        required=True,
+        type=Path,
+        help="Path to the YOLO person-detection model."
+
+    )
+
+    parser.add_argument(
+        "--baseline-max-age",
+        type=int,
+        default=10
+
+    )
+
+    parser.add_argument(
+        "--candidate-max-age",
+        type=int,
+        default=20
+
+    )
+
+    parser.add_argument(
+        "--n-init",
+        type=int,
+        default=3
+
+    )
+
+    parser.add_argument(
+        "--max-iou-distance",
+        type=float,
+        default=0.5
+
+    )
+
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("tracking-continuity-results.json")
+
+    )
+
+
+    args = parser.parse_args()
+
+    baseline = evaluate_video(
+        args.video,
+        args.person_model,
+        max_age=args.baseline_max_age,
+        n_init=args.n_init,
+        max_iou_distance=args.max_iou_distance
+
+    )
+
+    candidate = evaluate_video(
+        args.video,
+        args.person_model,
+        max_age=args.candidate_max_age,
+        n_init=args.n_init,
+        max_iou_distance=args.max_iou_distance
+
+    )
+
+    result = {
+        "baseline": baseline,
+        "candidate": candidate,
+        "comparison": {
+            "recovery_delta": (candidate["short_occlusion_recoveries"] - baseline["short_occlusion_recoveries"]),
+            "break_delta": (candidate["short_occlusion_breaks"] - baseline["short_occlusion_breaks"]),
+            "unique_id_delta": (candidate["unique_ids"] - baseline["unique_ids"])
+        }
+
+    }
+
+    args.output.write_text(json.dumps(result, indent=2), encoding="utf-8")
+
+
+    print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    main()
