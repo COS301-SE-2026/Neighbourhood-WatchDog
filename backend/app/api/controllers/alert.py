@@ -25,6 +25,7 @@ from app.schemas.alert import (
     AlertFrequencyMetricsRes,
     AlertMetricsRes,
     AlertResponse,
+    AlertRouteRes,
     BroadcastAlertReq,
     CriticalAlertMapRes,
     ListAlertsRes,
@@ -49,7 +50,7 @@ from app.services.alert_service import (
     list_alerts_handler,
     list_property_alerts_handler,
 )
-from app.services.alert_route_service import calculate_property_distance_handler
+from app.services.alert_route_service import calculate_property_distance_handler, get_property_route_handler
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -441,5 +442,44 @@ async def get_alert_distance(
     return AlertDistanceRes(
         status=200,
         message="Distance to property calculated successfully",
+        data=data,
+    )
+
+
+@router.get(
+    "/properties/{property_id}/route",
+    summary="Get the route and ETA to an alert property",
+    responses={
+        401: {
+            "description": "Not authenticated"
+        },
+        404: {
+            "description": (
+                "Property was not found in the officer's neighbourhood"
+            ),
+        },
+        422: {
+            "description": (
+                "Officer or property location is unavailable or stale"
+            ),
+        },
+    },
+)
+async def get_alert_property_route(
+    property_id: UUID,
+    db: DbSession,
+    claims: Claims,
+) -> AlertRouteRes:
+    data = await get_property_route_handler(
+        property_id=property_id,
+        db=db,
+        claims=claims,
+    )
+
+    return AlertRouteRes(
+        status=200,
+        message=(
+            "Alert-property route processed successfully"
+        ),
         data=data,
     )

@@ -7,6 +7,8 @@ import {
   CriticalAlertMapResSchema, 
   UnlocatedCriticalAlertsResSchema, 
   AlertDistanceResSchema,
+  AlertRouteResSchema,
+  type AlertRouteRes,
   type AlertDistanceRes,
   type CriticalAlertMapRes,
   type UnlocatedCriticalAlertsRes
@@ -276,4 +278,17 @@ export async function fetchAlertPropertyDistance(
   );
 
   return AlertDistanceResSchema.parse(result);
+}
+
+export async function fetchAlertPropertyRoute(
+  propertyId: string,
+): Promise<AlertRouteRes> {
+  const result = await apiCall<unknown>(
+    `/alerts/properties/${encodeURIComponent(propertyId)}/route`,
+    {
+      method: "GET"
+    },
+  );
+
+  return AlertRouteResSchema.parse(result);
 }

@@ -118,12 +118,19 @@ export const CriticalAlertMapCacheSchema =
       .datetime({ offset: true }),
   });
 
+
+
+
 export const AlertDistanceDataSchema = z.object({
   property_id: DatabaseUuidSchema,
+  property_address: z.string(),
+  property_latitude: z.number().finite().min(-90).max(90),
+  property_longitude: z.number().finite().min(-180).max(180),
+  officer_latitude: z.number().finite().min(-90).max(90),
+  officer_longitude: z.number().finite().min(-180).max(180),
   distance_metres: z.number().finite().nonnegative(),
   officer_location_updated_at: z.string().datetime({ offset: true }),
 });
-
 
 export const AlertDistanceResSchema = z.object({
   status: z.number().int(),
@@ -131,6 +138,30 @@ export const AlertDistanceResSchema = z.object({
   data: AlertDistanceDataSchema,
 });
 
+
+export const RouteGeometrySchema = z.object({
+  type: z.literal("LineString"),
+  coordinates: z.array(
+    z.tuple([
+      z.number().finite().min(-180).max(180),
+      z.number().finite().min(-90).max(90),
+    ])
+  ),
+});
+
+export const AlertRouteDataSchema =
+  AlertDistanceDataSchema.extend({
+    route_distance_metres: z.number().finite().nonnegative().nullable(),
+    eta_seconds: z.number().finite().nonnegative().nullable(),
+    route_geometry: RouteGeometrySchema.nullable(),
+    routing_error: z.string().nullable()
+  });
+
+export const AlertRouteResSchema = z.object({
+  status: z.number().int(),
+  message: z.string().nullable().optional(),
+  data: AlertRouteDataSchema
+});
 
 
 
@@ -147,3 +178,5 @@ export type UnlocatedCriticalAlertsRes = z.infer<typeof UnlocatedCriticalAlertsR
 export type CriticalAlertMapCache = z.infer<typeof CriticalAlertMapCacheSchema>;
 export type AlertDistanceData = z.infer<typeof AlertDistanceDataSchema>;
 export type AlertDistanceRes = z.infer<typeof AlertDistanceResSchema>;
+export type AlertRouteData = z.infer<typeof AlertRouteDataSchema>;
+export type AlertRouteRes = z.infer<typeof AlertRouteResSchema>;

@@ -145,3 +145,108 @@ async def calculate_property_distance_handler(
         distance_metres=float(row.distance_metres),
         officer_location_updated_at=row.officer_location_updated_at,
     )
+
+def _parse_osrm_route(
+    payload: dict,
+) -> tuple[float, float, RouteGeometry]:
+    if payload.get("code") != "Ok":
+        raise RoutingServiceUnavailable
+
+    routes = payload.get("routes")
+
+    if not isinstance(routes, list) or not routes:
+        raise RoutingServiceUnavailable
+
+    route = routes[0]
+    geometry = route.get("geometry")
+
+    if (
+        not isinstance(geometry, dict)
+        or geometry.get("type") != "LineString"
+        or not isinstance(
+            geometry.get("coordinates"),
+            list,
+        )
+    ):
+        raise RoutingServiceUnavailable
+
+    return (
+        float(route["distance"]),
+        float(route["duration"]),
+        RouteGeometry.model_validate(geometry),
+    )
+
+
+async def _request_osrm_route(
+    distance: AlertDistanceData,
+) -> tuple[float, float, RouteGeometry]:
+    coordinates = (
+        f"{distance.officer_longitude},"
+        f"{distance.officer_latitude};"
+        f"{distance.property_longitude},"
+        f"{distance.property_latitude}"
+    )
+
+    url = (
+        f"{config.osrm_base_url.rstrip('/')}"
+        f"/route/v1/driving/{coordinates}"
+    )
+
+    async with httpx.AsyncClient(
+        timeout=config.osrm_timeout_seconds,
+    ) as client:
+        response = await client.get(
+            url,
+            params={
+                "overview": "full",
+                "geometries": "geojson",
+                "steps": "false",
+            },
+        )
+
+        response.raise_for_status()
+        return _parse_osrm_route(
+            response.json(),
+        )
+
+
+async def get_property_route_handler(
+    property_id: UUID,
+    db: DbSession,
+    claims: dict,
+) -> AlertRouteData:
+    distance = (
+        await calculate_property_distance_handler(
+            property_id=property_id,
+            db=db,
+            claims=claims,
+        )
+    )
+
+    try:
+        (
+            route_distance,
+            duration,
+            geometry,
+        ) = await _request_osrm_route(distance)
+
+        return AlertRouteData(
+            **distance.model_dump(),
+            route_distance_metres=route_distance,
+            eta_seconds=duration,
+            route_geometry=geometry,
+        )
+
+    except (
+        httpx.HTTPError,
+        ValueError,
+        KeyError,
+        TypeError,
+        RoutingServiceUnavailable,
+    ):
+        logger.warning("OSRM could not calculate route for property_id=%s", property_id)
+
+        return AlertRouteData(
+            **distance.model_dump(),
+            routing_error=("Route and ETA are temporarily unavailable"),
+        )
