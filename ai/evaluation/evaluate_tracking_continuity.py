@@ -5,7 +5,7 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
-
+from pipeline.processing.cascaded_pipeline import CascadedPipeline, CascadedPipelineConfig
 import cv2
 
 
@@ -15,7 +15,7 @@ if str(AI_ROOT) not in sys.path:
     sys.path.insert(0, str(AI_ROOT))
 
 
-from pipeline.processing.cascaded_pipeline import CascadedPipeline, CascadedPipelineConfig
+
 
 try:
     from deep_sort_realtime.deepsort_tracker import DeepSort
@@ -258,7 +258,7 @@ def main() -> None:
         max_age=args.candidate_max_age,
         n_init=args.n_init,
         max_iou_distance=args.max_iou_distance
-        
+
     )
 
     result = {
