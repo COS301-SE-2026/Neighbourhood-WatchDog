@@ -186,3 +186,38 @@ def test_confirmed_track_exposes_normalized_appearance_embedding():
 
     assert result.appearance_embeddings[7] == [0.6, 0.8]
     assert "appearance_embedding" not in result.tracks[0]
+
+
+def test_pipeline_preserves_camera_local_id_after_short_occlusion():
+    person_model = FakeModel([FakeBox([10, 20, 50, 70], 0.91, 0)])
+
+    weapon_model = FakeModel([])
+
+    tracker = FakeTracker([
+        [FakeTrack(7, [10, 20, 50, 70])],
+        [],
+        [FakeTrack(7, [12, 22, 52, 72])]
+        
+    ])
+
+    pipeline = CascadedPipeline(
+        person_model=person_model,
+        weapon_model=weapon_model,
+        tracker=tracker,
+        config=CascadedPipelineConfig(
+            max_age=2,
+            n_init=1
+
+        )
+
+    )
+
+    frame = np.zeros((100, 200, 3), dtype=np.uint8)
+
+    first = pipeline.process_frame(frame, timestamp=0.0)
+    during_occlusion = pipeline.process_frame(frame, timestamp=1.0)
+    recovered = pipeline.process_frame(frame, timestamp=2.0)
+
+    assert [track["track_id"] for track in first.tracks] == [7]
+    assert during_occlusion.tracks == []
+    assert [track["track_id"] for track in recovered.tracks] == [7]

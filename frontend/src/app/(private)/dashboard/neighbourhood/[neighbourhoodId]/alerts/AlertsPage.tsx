@@ -30,6 +30,8 @@ import {
   AlertFilters,
   broadcastAlert
 } from "@/lib/api/alert";
+import { toast } from "sonner";
+import { claimTrackingEvent } from "@/lib/tracking-events";
 
 const ALL_SEVERITIES: AlertSeverity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "RESOLVED"];
@@ -113,6 +115,92 @@ interface Props {
   neighbourhoodId: string;
 }
 
+
+type AlertSocketMessage = {
+  event: string;
+  payload?: Record<string, unknown>;
+};
+
+function handleTrackingSightingMessage(
+  payload: Record<string, unknown>,
+  seenEventIds: Set<string>,
+  onRefresh: () => void,
+): void {
+  if (!claimTrackingEvent(payload.event_id, seenEventIds)) {
+    return;
+  }
+
+  const cameraName =
+    typeof payload.camera_name === "string"
+      ? payload.camera_name
+      : "another camera";
+
+  const cameraLocation =
+    typeof payload.camera_location === "string"
+      ? payload.camera_location
+      : "location unavailable";
+
+  const sequenceNumber =
+    typeof payload.sequence_no === "number"
+      ? payload.sequence_no
+      : "?";
+
+  toast.info("Cross-property match detected", {
+    id: `tracking-match-${String(payload.event_id)}`,
+    description: `${cameraName} · ${cameraLocation} · sequence ${sequenceNumber}`,
+  });
+
+  onRefresh();
+}
+
+function handleAlertSocketMessage(message: AlertSocketMessage, isSecurityOfficer: boolean, seenEventIds: Set<string>, dispatch: (action: FetchAction) => void, onTrackingRefresh: () => void): void {
+  if (message.event === "ping") {
+    return;
+  }
+
+  if (message.event === "tracking.sighting") {
+    if (message.payload) {
+      handleTrackingSightingMessage(
+        message.payload,
+        seenEventIds,
+        onTrackingRefresh,
+      );
+    }
+
+    return;
+  }
+
+  if (!message.payload) {
+    return;
+  }
+
+  const incomingAlert = normaliseAlert(message.payload);
+
+  if (message.event === "alert.new") {
+    if (
+      isSecurityOfficer &&
+      getSeverity(incomingAlert.detection_type) !== "CRITICAL"
+    ) {
+      return;
+    }
+
+    dispatch({
+      type: "PREPEND_ALERT",
+      payload: incomingAlert,
+    });
+
+    return;
+  }
+
+  if (message.event === "alert.acknowledged") {
+    dispatch({
+      type: "UPDATE_ALERT",
+      payload: incomingAlert,
+    });
+  }
+}
+
+
 export default function AlertsPage({ neighbourhoodId }: Props) {
 
   const {
@@ -158,6 +246,8 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
   const [historyStartDate, setHisoryStartDate] = useState("");
   const [historyEndDate, setHisoryEndDate] = useState("");
   const [broadcastingAlertId, setBroadcastingAlertId] = useState<string | null>(null);
+
+  const seenTrackingEventIdsRef = useRef<Set<string>>(new Set());
 
   const alertFilters = useMemo<AlertFilters>(() => {
     const base: AlertFilters = {};
@@ -229,30 +319,17 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
       ws.onerror = () => ws.close();
       ws.onmessage = (event) => {
         if (!mountedRef.current) return;
+
         try {
-          const message = JSON.parse(event.data as string) as { event: string; payload?: Record<string, unknown> };
-          if (message.event === "ping") return;
-          
-          if (message.event === "tracking.sighting") {
-            setTrackingRefreshKey((current) => current + 1);
-            return;
-          }
+          const message = JSON.parse(event.data as string) as AlertSocketMessage;
 
-          if (message.event === "alert.new" && message.payload) {
-            const incomingAlert = normaliseAlert(message.payload);
-
-            if (
-              isSecurityOfficer &&
-              getSeverity(incomingAlert.detection_type) !== "CRITICAL"
-            ) {
-              return;
-            }
-
-            dispatch({ type: "PREPEND_ALERT", payload: normaliseAlert(message.payload) });
-          }
-          if (message.event === "alert.acknowledged" && message.payload) {
-            dispatch({ type: "UPDATE_ALERT", payload: normaliseAlert(message.payload) });
-          }
+          handleAlertSocketMessage(
+            message,
+            isSecurityOfficer,
+            seenTrackingEventIdsRef.current,
+            dispatch,
+            () => setTrackingRefreshKey((current) => current + 1),
+          );
         } catch {
           // Ignore malformed WebSocket payloads.
         }

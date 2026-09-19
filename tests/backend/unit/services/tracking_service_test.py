@@ -424,7 +424,12 @@ async def test_agent_sighting_records_and_broadcasts_event():
     sighting = SimpleNamespace(id=uuid4(), sequence_no=2)
     candidate_result = MagicMock()
     candidate_result.one_or_none.return_value = (
-        SimpleNamespace(property_id=property_id),
+        SimpleNamespace(
+            property_id=property_id,
+            name="Back Gate",
+            location="Northern boundary"
+
+        ),
         SimpleNamespace(neighbourhood_id=neighbourhood_id),
     )
     source_result = MagicMock()
@@ -461,6 +466,22 @@ async def test_agent_sighting_records_and_broadcasts_event():
     broadcast.assert_awaited_once()
     assert broadcast.call_args.args[0] == [str(recipient_result.scalars.return_value.all.return_value[0])]
 
+    broadcast_message = broadcast.call_args.args[1]
+
+    assert broadcast_message["event"] == "tracking.sighting"
+
+    payload = broadcast_message["payload"]
+
+    assert payload["event_id"] == str(sighting.id)
+    assert payload["event_type"] == "cross_property_match"
+    assert payload["alert_id"] == str(alert_id)
+    assert payload["tracking_subject_id"] == str(subject_id)
+    assert payload["sighting_id"] == str(sighting.id)
+    assert payload["camera_name"] == "Back Gate"
+    assert payload["camera_location"] == "Northern boundary"
+    assert payload["sequence_no"] == sighting.sequence_no
+    assert payload["match_confidence"] == body.match_confidence
+
 
 @pytest.mark.asyncio
 async def test_agent_sighting_survives_broadcast_failure():
@@ -469,7 +490,11 @@ async def test_agent_sighting_survives_broadcast_failure():
     neighbourhood_id = uuid4()
     candidate_result = MagicMock()
     candidate_result.one_or_none.return_value = (
-        SimpleNamespace(property_id=property_id),
+        SimpleNamespace(
+            property_id=property_id,
+            name="Back Gate",
+            location="Northern boundary",
+        ),
         SimpleNamespace(neighbourhood_id=neighbourhood_id),
     )
     source_result = MagicMock()
