@@ -180,5 +180,67 @@ describe("useAlertPropertyRoute", () => {
     ).toHaveBeenCalledWith(PROPERTY_ID);
   });
 
+  test(
+    "recalculates ETA after officer location changes",
+    async () => {
+      mockFetchRoute
+        .mockResolvedValueOnce(
+          routeResponse(
+            FIRST_UPDATE,
+            420,
+          ),
+        )
+        .mockResolvedValueOnce(
+          routeResponse(
+            SECOND_UPDATE,
+            240,
+          ),
+        );
+
+      mockFetchDistance.mockResolvedValue(
+        distanceResponse(
+          SECOND_UPDATE,
+        ),
+      );
+
+      const { result } = renderHook(() =>
+        useAlertPropertyRoute(
+          PROPERTY_ID,
+          true,
+        ),
+      );
+
+      await waitFor(() => {
+        expect(
+          result.current.route?.eta_seconds,
+        ).toBe(420);
+      });
+
+      triggerLocationCheck();
+
+      await waitFor(() => {
+        expect(
+          mockFetchDistance,
+        ).toHaveBeenCalledWith(
+          PROPERTY_ID,
+        );
+      });
+
+      await waitFor(() => {
+        expect(
+          result.current.route?.eta_seconds,
+        ).toBe(240);
+      });
+
+      expect(
+        result.current.route
+          ?.officer_location_updated_at,
+      ).toBe(SECOND_UPDATE);
+
+      expect(
+        mockFetchRoute,
+      ).toHaveBeenCalledTimes(2);
+    },
+  );
 
 });
