@@ -236,3 +236,7 @@ class TestFilterEligible:
     def test_excludes_officer_with_stale_location(self):
             officer = make_candidate(age=STALE_LOCATION_THRESHOLD_SECONDS + 30)
             assert filter_eligible([officer]) == []
+
+    def test_keeps_officer_within_stale_location_threshold(self):
+            officer = make_candidate(age=STALE_LOCATION_THRESHOLD_SECONDS - 30)
+            assert filter_eligible([officer]) == [officer]
