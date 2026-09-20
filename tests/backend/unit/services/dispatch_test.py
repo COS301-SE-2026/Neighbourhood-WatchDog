@@ -228,3 +228,7 @@ class TestFilterEligible:
     def test_excludes_unavailable_officer(self):
             officer = make_candidate(availability_status=UNAVAILABLE)
             assert filter_eligible([officer]) == []
+
+    def test_excludes_officer_without_availability(self):
+            officer = make_candidate(availability_status=None)
+            assert filter_eligible([officer]) == []
