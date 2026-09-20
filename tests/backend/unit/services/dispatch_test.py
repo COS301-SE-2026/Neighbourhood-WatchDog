@@ -283,3 +283,16 @@ class TestEstimateEta:
 class TestRankCandidates:
     def test_empty_input(self):
         assert rank_candidates([], "WEAPON_DETECTED", now=FIXED_NOW) == []
+
+    def test_nearest_available_officer_ranks_first(self):
+        far = make_candidate(distance=2000.0, now=FIXED_NOW)
+        mid = make_candidate(distance=900.0, now=FIXED_NOW)
+        near = make_candidate(distance=300.0, now=FIXED_NOW)
+
+        ranked = rank_candidates([far, near, mid], "WEAPON_DETECTED", now=FIXED_NOW)
+
+        assert [r.candidate.officer_id for r in ranked] == [
+            near.officer_id,
+            mid.officer_id,
+            far.officer_id
+        ]
