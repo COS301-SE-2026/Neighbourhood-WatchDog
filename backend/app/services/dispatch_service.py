@@ -3,7 +3,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from uuid import UUID
 
-from fastapi import HTPPException
+from fastapi import HTTPException
 from sqlalchemy import select, func, cast
 from sqlalchemy.exc import IntegrityError
 from geoalchemy2 import Geography
@@ -304,7 +304,7 @@ async def dispatch_alert(db: DbSession, alert_id: UUID) -> AlertDispatchRes:
     """Ranks officers for an alert and records dispatch attempts"""
     context = await _load_alert_context(db, alert_id)
     if context is None:
-        raise HTPPException(404, "Alert not found")
+        raise HTTPException(404, "Alert not found")
 
     if context.detction_type not in CRITICAL_DETECTION_TYPES:
         logger.info("dispatch_alert skipped: alert %s (%s) is not critical", alert_id, context.detection_type)
@@ -343,13 +343,13 @@ async def dispatch_alert(db: DbSession, alert_id: UUID) -> AlertDispatchRes:
         if existing:
             return _build_alert_dispatch_res(alert_id, existing)
         logger.exception("dispatch_alert failed for alert %s", alert_id)
-        raise HTPPException(500, "Failed to dispatch alert")
-    except HTPPException:
+        raise HTTPException(500, "Failed to dispatch alert")
+    except HTTPException:
         raise
     except Exception:
         await db.rollback()
         logger.exception("dispatch_alert failed for alert %s", alert_id)
-        raise HTPPException(500, "Failed to dispatch alert")
+        raise HTTPException(500, "Failed to dispatch alert")
 
     rows = await _fetch_dispatch_rows(db, alert_id)
     return _build_alert_dispatch_res(alert_id, rows)
@@ -361,13 +361,13 @@ async def get_alert_dispatch_hanlder(
 ) -> AlertDispatchRes:
     """Returns selected, queued and pending officers for an alert"""
     if not claims:
-        raise HTPPException(401, "Not authenticated")
+        raise HTTPException(401, "Not authenticated")
 
     context = await _load_alert_context(db, alert_id)
     if context is None:
-        raise HTPPException(404, "Alert not found")
+        raise HTTPException(404, "Alert not found")
     if context.neighbourhood_id is None:
-        raise HTPPException(403, "Not authorised to view dispatch for this alert")
+        raise HTTPException(403, "Not authorised to view dispatch for this alert")
 
     role_result = await db.execute(
         select(NeighbourhoodUser.role)
@@ -377,7 +377,7 @@ async def get_alert_dispatch_hanlder(
     )
     role = role_result.scalars().first()
     if role not in DISPATCH_VIEWER_ROLES:
-        raise HTPPException(403, "Not authorised to view dispatch for this alert")
+        raise HTTPException(403, "Not authorised to view dispatch for this alert")
 
     rows = await _fetch_dispatch_rows(db, alert_id)
     return _build_alert_dispatch_res(alert_id, rows)
