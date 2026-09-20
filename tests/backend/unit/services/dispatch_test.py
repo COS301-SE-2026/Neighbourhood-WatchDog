@@ -321,3 +321,9 @@ class TestRankCandidates:
         near = make_candidate(availability_status=BUSY, distance=200.0, now=FIXED_NOW)
         ranked = rank_candidates([far, near], "WEAPON_DETECTED", now=FIXED_NOW)
         assert ranked[0].candidate.officer_id == near.officer_id
+
+    def test_higher_workload_ranks_lower_when_distance_equal(self):
+        loaded = make_candidate(distance=500.0, workload=2, now=FIXED_NOW)
+        idle = make_candidate(distance=500.0, workload=0, now=FIXED_NOW)
+        ranked = rank_candidates([loaded, idle], "WEAPON_DETECTED", now=FIXED_NOW)
+        assert ranked[0].candidate.officer_id == idle.officer_id
