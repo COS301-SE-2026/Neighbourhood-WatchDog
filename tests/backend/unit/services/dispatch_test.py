@@ -360,3 +360,10 @@ class TestRankCandidates:
         expected = 1.5 * (eta / 60.0) + 0.25 * 2 + 0.5 * (60 / STALE_LOCATION_THRESHOLD_SECONDS)
         assert ranked[0].eta == pytest.approx(eta)
         assert ranked[0].score == pytest.approx(expected)
+
+    def test_freshness_is_capped_at_staleness_threshold(self):
+        at_threshold = make_candidate(age=STALE_LOCATION_THRESHOLD_SECONDS, now=FIXED_NOW)
+        past_threshold = make_candidate(age=STALE_LOCATION_THRESHOLD_SECONDS * 5, now=FIXED_NOW)
+        a = rank_candidates([at_threshold], "WEAPON_DETECTED", now=FIXED_NOW)[0]
+        b = rank_candidates([past_threshold], "WEAPON_DETECTED", now=FIXED_NOW)[0]
+        assert a.score == pytest.approx(b.score)
