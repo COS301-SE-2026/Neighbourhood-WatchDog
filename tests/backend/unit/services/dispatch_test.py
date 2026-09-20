@@ -159,3 +159,14 @@ def make_officer_row(candidate):
         candidate.location_updated_at,
         candidate.distance,
     )
+
+@pytest.fixture
+def fixed_weights():
+    with patch.dict(
+        RANKING_WEIGHTS,
+        {
+            "WEAPON_DETECTED": RankingWeights(1.5, 0.25, 0.5),
+            "FALL_DETECTED": RankingWeights(1.5, 0.5, 0.5),
+        },
+    ), patch("app.services.dispatch_service.DEFAULT_WEIGHTS", RankingWeights(1.0, 1.0, 0.5)):
+        yield
