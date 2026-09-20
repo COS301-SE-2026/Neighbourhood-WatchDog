@@ -248,3 +248,6 @@ class TestFilterEligible:
     def test_excludes_officer_without_location(self):
             officer = replace(make_candidate(), distance=None)
             assert filter_eligible([officer]) == []
+
+    def test_empty_input(self):
+         assert filter_eligible([]) == []
