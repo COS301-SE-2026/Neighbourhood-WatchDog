@@ -55,6 +55,9 @@ from app.models.neighbourhood import Neighbourhood
 from app.services.notification_service import _format_whatsapp_message, _notify_users
 from app.models.user import User
 
+from app.models.tracking import TrackingSighting, TrackingSubject
+from app.services.tracking_service import normalize_appearance_embedding
+
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +126,8 @@ def _critical_alert_item_values(
         "latitude": property_obj.latitude,
         "longitude": property_obj.longitude,
         "thumbnail_url": alert.thumbnail_url,
+        "confidence_score": alert.confidence_score,
+        "resolved_at": alert.resolved_at,
     }
 
 
@@ -382,6 +387,7 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
             select(Alert)
             .options(joinedload(Alert.camera).joinedload(Camera.property))
             .where(Alert.id == alert_id)
+            .with_for_update(of=Alert)
         )
         row = result.unique().scalar_one_or_none()
 
@@ -1163,6 +1169,48 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
         )
 
         db.add(alert)
+        await db.flush()
+
+        if body.appearance_embedding is not None and body.local_track_id is None:
+            raise HTTPException(
+                status_code=422,
+                detail="local_track_id is required when an appearance_embedding is provided"
+    
+            )
+
+        if body.appearance_embedding is not None and body.embedding_model is None:
+            raise HTTPException(
+                status_code=422,
+                detail="embedding_model is required when an appearance_embedding is provided"
+    
+            )
+
+        if body.local_track_id is not None:
+
+            reference_embedding = normalize_appearance_embedding(body.appearance_embedding)
+
+            tracking_subject = TrackingSubject(
+                alert_id=alert.id,
+                reference_embedding=reference_embedding,
+                embedding_model=body.embedding_model
+
+            )
+
+            db.add(tracking_subject)
+            await db.flush()
+
+            initial_sighting = TrackingSighting(
+                tracking_subject_id=tracking_subject.id,
+                camera_id=alert.camera_id,
+                local_track_id=body.local_track_id,
+                observed_at=alert.frame_timestamp,
+                sequence_no=1,
+                match_confidence=None
+                
+            )
+
+            db.add(initial_sighting)
+
         await db.commit()
         await db.refresh(alert)
 

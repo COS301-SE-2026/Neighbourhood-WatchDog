@@ -21,9 +21,11 @@ from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.schemas.alert import (
     AcknowledgeAlertRes,
     AlertCreate,
+    AlertDistanceRes,
     AlertFrequencyMetricsRes,
     AlertMetricsRes,
     AlertResponse,
+    AlertRouteRes,
     BroadcastAlertReq,
     CriticalAlertMapRes,
     ListAlertsRes,
@@ -48,6 +50,10 @@ from app.services.alert_service import (
     list_alerts_handler,
     list_property_alerts_handler,
 )
+from app.services.alert_route_service import calculate_property_distance_handler, get_property_route_handler
+
+from app.schemas.tracking import TrackingTimelineResponse
+from app.services.tracking_service import get_tracking_timeline
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -213,6 +219,24 @@ async def list_property_alerts(
 
 
 @router.get(
+        "/{alert_id}/tracking", 
+        summary="Get the ordered tracking timeline for an alert", 
+        responses={
+            403: {"description": "Only authorized officers can view tracking timelines"}, 
+            404: {"description": "Alert or tracking timeline not found"}
+        }
+)
+async def get_alert_tracking_timeline(alert_id: UUID, db: DbSession, claims: Claims) -> TrackingTimelineResponse:
+
+    return await get_tracking_timeline(
+        db=db, 
+        alert_id=alert_id, 
+        claims=claims
+        
+    )
+
+
+@router.get(
     "/{neighbourhood_id}",
     response_model=ListAlertsRes,
     summary="List alerts for a neighbourhood",
@@ -337,7 +361,6 @@ async def alert_websocket(
     finally:
         remove_connection(user_id, websocket)
 
-
 @router.post("/broadcast")
 async def broadcast_neighbourhood_alert(
     req: BroadcastAlertReq,
@@ -404,5 +427,79 @@ async def get_unlocated_critical_alerts(
     return UnlocatedCriticalAlertsRes(
         status=200,
         message="Unlocated critical alerts retrieved successfully",
+        data=data,
+    )
+
+
+@router.get(
+    "/properties/{property_id}/distance",
+    summary=(
+        "Calculate the distance between the officer and an alert property"
+    ),
+    responses={
+        401: {
+            "description": "Not authenticated"
+        },
+        404: {
+            "description": "Property was not found in the officer's neighbourhood"
+        },
+        422: {
+            "description": "Officer or property location is unavailable or stale"
+        },
+    },
+)
+async def get_alert_distance(
+    property_id: UUID,
+    db: DbSession,
+    claims: Claims,
+) -> AlertDistanceRes:
+    data = await calculate_property_distance_handler(
+        property_id=property_id,
+        db=db,
+        claims=claims,
+    )
+
+    return AlertDistanceRes(
+        status=200,
+        message="Distance to property calculated successfully",
+        data=data,
+    )
+
+
+@router.get(
+    "/properties/{property_id}/route",
+    summary="Get the route and ETA to an alert property",
+    responses={
+        401: {
+            "description": "Not authenticated"
+        },
+        404: {
+            "description": (
+                "Property was not found in the officer's neighbourhood"
+            ),
+        },
+        422: {
+            "description": (
+                "Officer or property location is unavailable or stale"
+            ),
+        },
+    },
+)
+async def get_alert_property_route(
+    property_id: UUID,
+    db: DbSession,
+    claims: Claims,
+) -> AlertRouteRes:
+    data = await get_property_route_handler(
+        property_id=property_id,
+        db=db,
+        claims=claims,
+    )
+
+    return AlertRouteRes(
+        status=200,
+        message=(
+            "Alert-property route processed successfully"
+        ),
         data=data,
     )

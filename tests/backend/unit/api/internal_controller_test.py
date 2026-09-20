@@ -9,6 +9,8 @@ from fastapi import HTTPException
 
 from app.api.controllers.internal import (
     create_alert,
+    match_tracking,
+    record_tracking_sighting as record_tracking_sighting_endpoint,
     update_clip,
     upload_clip,
 )
@@ -18,6 +20,12 @@ from app.schemas.alert import (
     CreateInternalAlertRequest,
     InternalAlertCreateRes,
     UpdateAlertClipRequest,
+)
+from app.schemas.tracking import (
+    MatchTrackingEmbeddingRequest,
+    RecordTrackingSightingRequest,
+    TrackingMatchResponse,
+    TrackingSightingCreateResponse,
 )
 from app.tasks.clip_tasks import MAX_CLIP_SIZE_BYTES
 
@@ -44,6 +52,82 @@ def make_update_clip_request():
     return UpdateAlertClipRequest(
         clip_s3_key="clips/example.mp4",
         clip_expires_at="2026-01-08T12:00:00+00:00",
+    )
+
+
+@pytest.mark.asyncio
+async def test_match_tracking_delegates_to_service():
+    body = MatchTrackingEmbeddingRequest(
+        camera_id=CAMERA_ID,
+        appearance_embedding=[1.0] + [0.0] * 1279,
+        embedding_model="deep_sort_mobilenet_v2_bottleneck",
+    )
+    expected_response = TrackingMatchResponse(
+        status=200,
+        message="No active tracking subject matched",
+        data={
+            "matched": False,
+            "tracking_subject_id": None,
+            "similarity": None,
+            "threshold": 0.75,
+        },
+    )
+
+    with patch(
+        "app.api.controllers.internal.match_tracking_embedding",
+        new=AsyncMock(return_value=expected_response),
+    ) as handler:
+        response = await match_tracking(
+            body=body,
+            db=DB,
+            credential=CREDENTIAL,
+        )
+
+    assert response is expected_response
+    handler.assert_awaited_once_with(
+        db=DB,
+        body=body,
+        candidate_property_id=PROPERTY_ID,
+    )
+
+
+@pytest.mark.asyncio
+async def test_record_tracking_sighting_delegates_to_service():
+    body = RecordTrackingSightingRequest(
+        tracking_subject_id=uuid4(),
+        camera_id=CAMERA_ID,
+        local_track_id=17,
+        observed_at=datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc),
+        match_confidence=0.91,
+    )
+    expected_response = TrackingSightingCreateResponse(
+        status=201,
+        message="Tracking sighting recorded and broadcast",
+        data={
+            "alert_id": ALERT_ID,
+            "tracking_subject_id": body.tracking_subject_id,
+            "sighting_id": uuid4(),
+            "camera_id": CAMERA_ID,
+            "sequence_no": 1,
+            "match_confidence": 0.91,
+        },
+    )
+
+    with patch(
+        "app.api.controllers.internal.record_tracking_sighting_for_agent",
+        new=AsyncMock(return_value=expected_response),
+    ) as handler:
+        response = await record_tracking_sighting_endpoint(
+            body=body,
+            db=DB,
+            credential=CREDENTIAL,
+        )
+
+    assert response is expected_response
+    handler.assert_awaited_once_with(
+        db=DB,
+        body=body,
+        candidate_property_id=PROPERTY_ID,
     )
 
 

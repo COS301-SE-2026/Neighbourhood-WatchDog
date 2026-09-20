@@ -177,7 +177,7 @@ async def seed_database(bulk_audit_count: int = 500):
         #create test property
         test_property = Property(
             id=PROPERTY_ID,
-            neighbourhood_id=None,
+            neighbourhood_id=NEIGHBOURHOOD_ID,
             address="123 Test Street\nTest City\nGauteng\n1234",
             property_type=PropertyTypeEnum.PRIVATE,
             latitude=-25.7558,

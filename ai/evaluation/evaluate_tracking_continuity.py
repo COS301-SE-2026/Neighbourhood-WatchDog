@@ -1,0 +1,303 @@
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any
+from pipeline.processing.cascaded_pipeline import CascadedPipeline, CascadedPipelineConfig
+import cv2
+
+
+AI_ROOT = Path(__file__).resolve().parents[1]
+
+if str(AI_ROOT) not in sys.path:
+    sys.path.insert(0, str(AI_ROOT))
+
+
+
+
+try:
+    from deep_sort_realtime.deepsort_tracker import DeepSort
+except ImportError as exc:  # pragma: no cover
+    raise RuntimeError("deep-sort-realtime is required to run this evaluator") from exc
+
+try:
+    from ultralytics import YOLO
+except ImportError as exc:  # pragma: no cover
+    raise RuntimeError("ultralytics is required to run this evaluator") from exc
+
+
+##an evaluation tool for testing whether deepsort keeps the same id for a person when they temporarily disappear
+
+
+class EmptyWeaponModel:
+    """
+    The continuity evaluator only needs person detections.
+    This prevents weapon inference from affecting the measurement.
+    """
+
+    def predict(self, *_args: Any, **kwargs: Any) -> list[Any]:
+        return [] #always return empty, indicating no weapon detection (don't want weapon detection affecting the test)
+
+
+def classify_tracking_transition(previous_id: int | None, current_id: int, gap_frames: int, max_gap_frames: int) -> tuple[int, int, int]:
+    """
+    Return:
+        short_occlusion_recoveries,
+        short_occlusion_breaks,
+        direct_id_switches
+    """
+    if previous_id is None:
+        return 0, 0, 0
+
+    if gap_frames == 0:
+        return (0, 0, 1) if current_id != previous_id else (0, 0, 0)
+
+    if gap_frames <= max_gap_frames:
+        if current_id == previous_id:
+            return 1, 0, 0
+
+        return 0, 1, 0
+
+    return 0, 0, 0
+
+##The function asks: Did the tracker recover the same ID after the person temporarily disappeared?
+def summarize_track_ids(frame_track_ids: list[list[int]], max_gap_frames: int) -> dict[str, str]:
+    """
+    Summarise a single-target recorded clip.
+
+    A frame with exactly one ID is considered an observed target frame.
+    Empty frames represent a possible brief occlusion.
+
+    A recovery means the same ID appears after a gap.
+    A break means a different ID appears after a gap.
+    """
+
+
+    observed_frames = 0 #how mny frames contained one tracked person
+    unique_ids: set[int] = set() #how many different deepsort ids appeared
+    short_occlusion_recoveries = 0  #the same ids that come back after a short gap
+    short_occlusion_breaks = 0 #a different id that appears after a short gap
+    direct_id_switches = 0  #id switches without a gap
+
+    previous_id: int | None = None #remember the last tracked id
+    gap_frames = 0  #counting how many frames had no dtected target
+
+
+    #processing each frame
+    for ids in frame_track_ids:
+        if len(ids) != 1:
+            if previous_id is not None:
+                gap_frames += 1
+            continue
+
+        current_id = ids[0]
+        observed_frames += 1
+        unique_ids.add(current_id)
+
+        recoveries, breaks, switches = classify_tracking_transition(
+            previous_id=previous_id,
+            current_id=current_id,
+            gap_frames=gap_frames,
+            max_gap_frames=max_gap_frames
+            
+        )
+
+        short_occlusion_recoveries += recoveries
+        short_occlusion_breaks += breaks
+        direct_id_switches += switches
+
+        previous_id = current_id
+        gap_frames = 0
+
+    return {
+        "frames": len(frame_track_ids),
+        "observed_frames": observed_frames,
+        "unique_ids": len(unique_ids),
+        "direct_id_switches": direct_id_switches,
+        "short_occlusion_recoveries": short_occlusion_recoveries,
+        "short_occlusion_breaks": short_occlusion_breaks
+
+    }
+
+
+def load_video_frames(video_path: Path) -> list[Any]:
+    capture = cv2.VideoCapture(str(video_path))
+
+    if not capture.isOpened():
+        raise RuntimeError(f"Could not open video: {video_path}")
+
+    frames: list[Any] = []
+
+    try:
+        while True:
+            ok, frame = capture.read()
+
+            if not ok:
+                break
+
+            frames.append(frame)
+    finally:
+        capture.release()
+
+    if not frames:
+        raise RuntimeError(f"No frames could be decoded from video: {video_path}")
+
+    return frames
+
+
+#running a video through our pipeline
+def evaluate_frames( frames: list[Any], video_label: str, person_model_path: Path, *, max_age: int, n_init: int, max_iou_distance: float) -> dict[str, Any]:
+
+    person_model = YOLO(str(person_model_path))
+
+    tracker = DeepSort(
+        max_age=max_age,
+        n_init=n_init,
+        max_iou_distance=max_iou_distance,
+        embedder="mobilenet",
+        embedder_gpu=False,
+        nms_max_overlap=0.5
+
+    )
+
+    pipeline = CascadedPipeline(
+        person_model=person_model,
+        weapon_model=EmptyWeaponModel(),
+        tracker=tracker,
+        config=CascadedPipelineConfig(
+            max_age=max_age,
+            n_init=n_init,
+            max_iou_distance=max_iou_distance
+
+        )
+
+    )
+
+    frame_track_ids: list[list[int]] = []
+
+    for frame_number, frame in enumerate(frames):
+        result = pipeline.process_frame(frame, timestamp=float(frame_number))
+
+        ids = sorted(
+            int(track["track_id"])
+            for track in result.tracks
+            if track.get("track_id") is not None
+        )
+
+        frame_track_ids.append(ids)
+
+    summary = summarize_track_ids(frame_track_ids, max_gap_frames=max_age)
+
+    return {
+        "video": video_label,
+        "configuration": {
+            "max_age": max_age,
+            "n_init": n_init,
+            "max_iou_distance": max_iou_distance
+
+        },
+        **summary
+
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Measure single-camera DeepSORT ID continuity.")
+
+    parser.add_argument(
+        "--video",
+        required=True,
+        type=Path,
+        help="Path to a recorded single-camera video."
+
+    )
+
+    parser.add_argument(
+        "--person-model",
+        required=True,
+        type=Path,
+        help="Path to the YOLO person-detection model."
+
+    )
+
+    parser.add_argument(
+        "--baseline-max-age",
+        type=int,
+        default=10
+
+    )
+
+    parser.add_argument(
+        "--candidate-max-age",
+        type=int,
+        default=20
+
+    )
+
+    parser.add_argument(
+        "--n-init",
+        type=int,
+        default=3
+
+    )
+
+    parser.add_argument(
+        "--max-iou-distance",
+        type=float,
+        default=0.5
+
+    )
+
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("tracking-continuity-results.json")
+
+    )
+
+
+    args = parser.parse_args()
+
+    frames = load_video_frames(args.video)
+
+    baseline = evaluate_frames(
+        frames,
+        str(args.video),
+        args.person_model,
+        max_age=args.baseline_max_age,
+        n_init=args.n_init,
+        max_iou_distance=args.max_iou_distance
+
+    )
+
+    candidate = evaluate_frames(
+        frames,
+        str(args.video),
+        args.person_model,
+        max_age=args.candidate_max_age,
+        n_init=args.n_init,
+        max_iou_distance=args.max_iou_distance
+
+    )
+
+    result = {
+        "baseline": baseline,
+        "candidate": candidate,
+        "comparison": {
+            "recovery_delta": (candidate["short_occlusion_recoveries"] - baseline["short_occlusion_recoveries"]),
+            "break_delta": (candidate["short_occlusion_breaks"] - baseline["short_occlusion_breaks"]),
+            "unique_id_delta": (candidate["unique_ids"] - baseline["unique_ids"])
+        }
+
+    }
+
+    args.output.write_text(json.dumps(result, indent=2), encoding="utf-8")
+
+
+    print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    main()

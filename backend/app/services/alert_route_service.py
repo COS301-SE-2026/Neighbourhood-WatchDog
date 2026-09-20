@@ -1,0 +1,252 @@
+from uuid import UUID
+
+from fastapi import HTTPException, status
+from geoalchemy2 import Geography, Geometry
+from sqlalchemy import cast, func, select
+
+from app.core.database import DbSession
+from app.models.neighbourhood_user import (
+    NeighbourhoodRole,
+    NeighbourhoodUser,
+)
+from app.models.property import Property
+from app.models.security_officer import SecurityOfficer
+from app.models.user import User
+import logging
+
+import httpx
+
+from app.core.config import config
+from app.schemas.alert import (
+    AlertDistanceData,
+    AlertRouteData,
+    RouteGeometry,
+)
+
+from app.services.neighbourhood_service import (
+    is_location_stale,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class RoutingServiceUnavailable(Exception):
+    """Raised when OSRM cannot produce a valid route."""
+
+
+async def calculate_property_distance_handler(
+    property_id: UUID,
+    db: DbSession,
+    claims: dict,
+) -> AlertDistanceData:
+    """Calculate the distance from an officer to an alert property."""
+
+    user_sub = claims.get("sub") if claims else None
+
+    if not user_sub:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+    property_location = cast(
+        func.ST_SetSRID(
+            func.ST_MakePoint(
+                Property.longitude,
+                Property.latitude,
+            ),
+            4326,
+        ),
+        Geography(geometry_type="POINT", srid=4326,)
+    )
+
+    officer_geometry = cast(
+        SecurityOfficer.last_known_location,
+        Geometry(
+            geometry_type="POINT",
+            srid=4326,
+        ),
+    )
+
+
+    distance_metres = func.ST_Distance(
+        SecurityOfficer.last_known_location,
+        property_location,
+    ).label("distance_metres")
+
+    statement = (
+        select(
+            Property.id.label("property_id"),
+            Property.latitude.label(
+                "property_latitude"
+            ),
+            Property.longitude.label(
+                "property_longitude"
+            ),
+            Property.address.label("property_address"),
+            func.ST_Y(officer_geometry).label(
+                "officer_latitude",
+            ),
+            func.ST_X(officer_geometry).label(
+                "officer_longitude",
+            ),
+            SecurityOfficer.last_known_location
+            .is_not(None)
+            .label("has_officer_location"),
+            SecurityOfficer.location_updated_at.label(
+                "officer_location_updated_at"
+            ),
+            distance_metres
+        )
+        .select_from(Property)
+        .join(
+            NeighbourhoodUser,
+            NeighbourhoodUser.neighbourhood_id == Property.neighbourhood_id,
+        )
+        .join(
+            SecurityOfficer,
+            SecurityOfficer.neighbourhood_user_id == NeighbourhoodUser.id,
+        )
+        .join(
+            User,
+            User.id == NeighbourhoodUser.user_id,
+        )
+        .where(
+            Property.id == property_id,
+            User.cognito_sub == user_sub,
+            NeighbourhoodUser.role == NeighbourhoodRole.SECURITY_OFFICER,
+        )
+    )
+
+    result = await db.execute(statement)
+    row = result.one_or_none()
+
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=("Property was not found in the officer's neighbourhood"))
+
+    if (row.property_latitude is None or row.property_longitude is None):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Alert property location is unavailable")
+
+    if not row.has_officer_location:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Officer location is unavailable")
+
+    if is_location_stale(
+        row.officer_location_updated_at,
+    ):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Officer location is stale")
+
+    if row.distance_metres is None:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Distance could not be calculated")
+
+    return AlertDistanceData(
+        property_id=row.property_id,
+        property_address=row.property_address,
+        property_latitude=float(row.property_latitude),
+        property_longitude=float(row.property_longitude),
+        officer_latitude=float(row.officer_latitude),
+        officer_longitude=float(row.officer_longitude),
+        distance_metres=float(row.distance_metres),
+        officer_location_updated_at=row.officer_location_updated_at,
+    )
+
+def _parse_osrm_route(
+    payload: dict,
+) -> tuple[float, float, RouteGeometry]:
+    if payload.get("code") != "Ok":
+        raise RoutingServiceUnavailable
+
+    routes = payload.get("routes")
+
+    if not isinstance(routes, list) or not routes:
+        raise RoutingServiceUnavailable
+
+    route = routes[0]
+    geometry = route.get("geometry")
+
+    if (
+        not isinstance(geometry, dict)
+        or geometry.get("type") != "LineString"
+        or not isinstance(
+            geometry.get("coordinates"),
+            list,
+        )
+    ):
+        raise RoutingServiceUnavailable
+
+    return (
+        float(route["distance"]),
+        float(route["duration"]),
+        RouteGeometry.model_validate(geometry),
+    )
+
+
+async def _request_osrm_route(
+    distance: AlertDistanceData,
+) -> tuple[float, float, RouteGeometry]:
+    coordinates = (
+        f"{distance.officer_longitude},"
+        f"{distance.officer_latitude};"
+        f"{distance.property_longitude},"
+        f"{distance.property_latitude}"
+    )
+
+    url = (
+        f"{config.osrm_base_url.rstrip('/')}"
+        f"/route/v1/driving/{coordinates}"
+    )
+
+    async with httpx.AsyncClient(
+        timeout=config.osrm_timeout_seconds,
+    ) as client:
+        response = await client.get(
+            url,
+            params={
+                "overview": "full",
+                "geometries": "geojson",
+                "steps": "false",
+            },
+        )
+
+        response.raise_for_status()
+        return _parse_osrm_route(
+            response.json(),
+        )
+
+
+async def get_property_route_handler(
+    property_id: UUID,
+    db: DbSession,
+    claims: dict,
+) -> AlertRouteData:
+    distance = (
+        await calculate_property_distance_handler(
+            property_id=property_id,
+            db=db,
+            claims=claims,
+        )
+    )
+
+    try:
+        (
+            route_distance,
+            duration,
+            geometry,
+        ) = await _request_osrm_route(distance)
+
+        return AlertRouteData(
+            **distance.model_dump(),
+            route_distance_metres=route_distance,
+            eta_seconds=duration,
+            route_geometry=geometry,
+        )
+
+    except (
+        httpx.HTTPError,
+        ValueError,
+        KeyError,
+        TypeError,
+        RoutingServiceUnavailable,
+    ):
+        logger.warning("OSRM could not calculate route for property_id=%s", property_id)
+
+        return AlertRouteData(
+            **distance.model_dump(),
+            routing_error=("Route and ETA are temporarily unavailable"),
+        )

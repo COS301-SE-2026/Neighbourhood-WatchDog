@@ -9,6 +9,8 @@ import {
   WifiOff,
   RefreshCw,
   ShieldAlert,
+  Users,
+  ChevronDown
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -22,13 +24,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useCriticalAlerts } from "@/hooks/use-critical-alerts";
+import { useAlertPropertyRoute } from "@/hooks/use-alert-property-route";
+import { useOfficerMapLocationTracking } from "@/hooks/use-officer-map-location-tracking";
 import { useUserContext } from "@/hooks/use-user-context";
+import { usePropertyResidentContext } from "@/hooks/use-property-resident-context";
 import type { PropertyAlertGroup } from "./CriticalAlertsMap";
 import type {
+  CriticalAlertMapItem,
+  AlertRouteData,
   CriticalAlertStatus,
   UnlocatedCriticalAlertItem,
 } from "@/lib/validators/alert";
 import { useState } from "react";
+import {AlertDetailSheet, type Alert} from "@/components/shared/AlertCard";
+import { acknowledgeAlert } from "@/lib/api/alert";
 
 function statusLabel(
   status: CriticalAlertStatus,
@@ -100,15 +109,179 @@ function MapLoadingState() {
   );
 }
 
+function toAlertDetailModel(alert: CriticalAlertMapItem): Alert {
+  const status: Alert["status"] =
+    alert.status === "OPEN" ? "NEW" : alert.status;
+
+  return {
+    id: alert.id,
+    camera_id: alert.camera_id,
+    frame_timestamp: alert.created_at,
+    detection_type: alert.detection_type,
+    confidence_score: alert.confidence_score ?? undefined,
+    thumbnail_url: alert.thumbnail_url,
+    status,
+    resolved_at: alert.resolved_at ?? undefined,
+    created_at: alert.created_at,
+    property_address: alert.property_address,
+    property_latitude: alert.latitude,
+    property_longitude: alert.longitude,
+  };
+}
+
+function createGoogleMapsUrl(
+  route: AlertRouteData,
+): string {
+  const params = new URLSearchParams({
+    api: "1",
+    origin:
+      `${route.officer_latitude},` +
+      `${route.officer_longitude}`,
+    destination:
+      `${route.property_latitude},` +
+      `${route.property_longitude}`,
+    travelmode: "driving",
+  });
+
+  return (
+    "https://www.google.com/maps/dir/?" +
+    params.toString()
+  );
+}
+
+
+function RouteSummary({
+  route,
+  loading,
+  error,
+}: {
+  readonly route: AlertRouteData | null;
+  readonly loading: boolean;
+  readonly error: string | null;
+}) {
+  if (loading) {
+    return (
+      <div className="mt-5 rounded-lg border border-border bg-brand-abyss p-4 text-sm text-brand-ash">
+        Calculating route…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mt-5 rounded-lg border border-brand-caution/30 bg-brand-caution/10 p-4">
+        <p className="text-sm font-medium text-brand-caution">
+          Route unavailable
+        </p>
+
+        <p className="mt-1 text-xs text-brand-ash">
+          {error}
+        </p>
+      </div>
+    );
+  }
+
+  if (!route) {
+    return null;
+  }
+
+  const displayedDistance =
+    route.route_distance_metres ??
+    route.distance_metres;
+
+  const distanceKilometres =
+    displayedDistance / 1000;
+
+  const etaMinutes =
+    route.eta_seconds === null
+      ? null
+      : Math.max(
+          1,
+          Math.ceil(route.eta_seconds / 60),
+        );
+
+  const googleMapsUrl = createGoogleMapsUrl(route);
+
+  return (
+    <div className="mt-5 rounded-lg border border-border bg-brand-abyss p-4">
+      <p className="text-xs uppercase tracking-wide text-brand-ash">
+        Route to property
+      </p>
+
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-xs text-brand-ash">
+            Distance
+          </p>
+
+          <p className="mt-1 text-lg font-semibold text-brand-frost">
+            {distanceKilometres.toFixed(1)} km
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs text-brand-ash">
+            ETA
+          </p>
+
+          <p className="mt-1 text-lg font-semibold text-brand-frost">
+            {etaMinutes === null
+              ? "Unavailable"
+              : `${etaMinutes} min`}
+          </p>
+        </div>
+      </div>
+
+      {route.routing_error && (
+        <p className="mt-3 text-xs text-brand-caution">
+          {route.routing_error}
+        </p>
+      )}
+
+      <a
+        href={googleMapsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-4 inline-flex w-full items-center justify-center rounded-md bg-brand-green px-4 py-2 text-sm font-semibold text-brand-void transition-colors hover:bg-brand-green/90"
+      >
+        Open in Google Maps
+      </a>
+    </div>
+  );
+}
+
+
 function PropertyAlertsSheet({
   property,
   open,
   onClose,
+  onSelectAlert,
+  canShowRoute,
+  onShowRoute,
 }: {
   readonly property: PropertyAlertGroup | null;
   readonly open: boolean;
   readonly onClose: () => void;
+  readonly canShowRoute: boolean;
+  readonly onShowRoute: (
+    propertyId: string,
+  ) => void;
+  readonly onSelectAlert: (
+    alert: CriticalAlertMapItem,
+  ) => void;
 }) {
+  const {
+    data: residentContext,
+    loading: residentsLoading,
+    error: residentsError,
+    retry: retryResidents,
+  } = usePropertyResidentContext(
+    property?.propertyId ?? null,
+  );
+
+  const [residentsExpanded, setResidentsExpanded] =
+    useState(true);
+
   if (!property) {
     return null;
   }
@@ -138,6 +311,138 @@ function PropertyAlertsSheet({
               : "alerts"}
           </SheetDescription>
         </SheetHeader>
+        <section className="mt-6 rounded-lg border border-border bg-brand-abyss p-4">
+          <button
+            type="button"
+            className="flex w-full items-start justify-between gap-3 text-left"
+            onClick={() =>
+              setResidentsExpanded((expanded) => !expanded)
+            }
+            aria-expanded={residentsExpanded}
+            aria-controls="property-residents-content"
+          >
+            <span className="flex items-start gap-3">
+              <Users className="mt-0.5 size-4 text-brand-green" />
+
+              <span>
+                <span className="block text-sm font-semibold text-brand-frost">
+                  People at this property
+                </span>
+
+                <span className="mt-1 block text-xs text-brand-ash">
+                  {residentsLoading
+                    ? "Loading resident information..."
+                    : residentsError
+                      ? "Resident information unavailable"
+                      : `${residentContext?.residents.length ?? 0} linked ${
+                          residentContext?.residents.length === 1
+                            ? "person"
+                            : "people"
+                        }`}
+                </span>
+              </span>
+            </span>
+
+            <ChevronDown
+              className={`mt-0.5 size-4 shrink-0 text-brand-ash transition-transform ${
+                residentsExpanded ? "rotate-180" : ""
+              }`}
+              aria-hidden="true"
+            />
+          </button>
+
+          {residentsExpanded && (
+            <div
+              id="property-residents-content"
+              className="mt-4"
+            >
+              {residentsLoading && (
+                <div className="space-y-2">
+                  <div className="h-10 animate-pulse rounded-md bg-brand-slate" />
+                  <div className="h-10 animate-pulse rounded-md bg-brand-slate" />
+                </div>
+              )}
+
+              {!residentsLoading && residentsError && (
+                <div>
+                  <p className="text-xs text-brand-caution">
+                    {residentsError}
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={retryResidents}
+                    className="mt-2 text-xs font-semibold text-brand-green hover:underline"
+                  >
+                    Try again
+                  </button>
+                </div>
+              )}
+
+              {!residentsLoading &&
+                !residentsError &&
+                residentContext?.residents.length === 0 && (
+                  <p className="text-xs text-brand-ash">
+                    No people are currently linked to this property.
+                  </p>
+                )}
+
+              {!residentsLoading &&
+                !residentsError &&
+                residentContext &&
+                residentContext.residents.length > 0 && (
+                  <ul className="space-y-2">
+                    {residentContext.residents.map((resident) => {
+                      const fullName = [
+                        resident.first_name,
+                        resident.last_name,
+                      ]
+                        .filter(Boolean)
+                        .join(" ");
+
+                      return (
+                        <li
+                          key={resident.user_id}
+                          className="rounded-md border border-border px-3 py-2"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-sm text-brand-frost">
+                              {fullName || resident.email}
+                            </p>
+
+                            {resident.is_admin && (
+                              <span className="shrink-0 rounded-full border border-brand-green/40 px-2 py-0.5 text-[10px] text-brand-green">
+                                Property admin
+                              </span>
+                            )}
+                          </div>
+
+                          {fullName && (
+                            <p className="mt-1 truncate text-xs text-brand-ash">
+                              {resident.email}
+                            </p>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+            </div>
+          )}
+        </section>
+
+        {canShowRoute && (
+          <Button
+            type="button"
+            className="mt-5 w-full bg-brand-green text-brand-void hover:bg-brand-green/90"
+            onClick={() =>
+              onShowRoute(property.propertyId)
+            }
+          >
+            Show route
+          </Button>
+        )}
+
 
         <div className="mt-6 space-y-3">
           {visibleAlerts.map((alert) => (
@@ -167,16 +472,13 @@ function PropertyAlertsSheet({
                 )}
               </p>
 
-              <Link
-                href={
-                  `/dashboard/neighbourhood/` +
-                  `${alert.neighbourhood_id}/alerts` +
-                  `?alert=${alert.id}`
-                }
-                className="mt-3 inline-block text-xs font-semibold text-brand-green hover:underline"
-              >
-                View alert
-              </Link>
+              <button
+                  type="button"
+                  onClick={() => onSelectAlert(alert)}
+                  className="mt-3 inline-block text-xs font-semibold text-brand-green hover:underline"
+                >
+                  View alert
+                </button>
             </article>
           ))}
         </div>
@@ -201,8 +503,37 @@ function PropertyAlertsSheet({
 
 
 export default function NeighbourhoodAlertMapPage() {
+  const [
+    selectedProperty,
+    setSelectedProperty,
+  ] = useState<PropertyAlertGroup | null>(null);
 
-  const [ selectedProperty, setSelectedProperty] = useState<PropertyAlertGroup | null>(null);
+  function handleSelectProperty(property: PropertyAlertGroup) {
+    setSelectedAlert(null);
+    setSelectedProperty(property);
+  }
+
+  async function handleAcknowledgeSelectedAlert(alertId: string) {
+    setAcknowledgingAlert(true);
+
+    try {
+      await acknowledgeAlert(alertId);
+      setSelectedAlert(null);
+      await refetch();
+    } catch (error) {
+      console.error("Failed to acknowledge critical alert:", error);
+    } finally {
+      setAcknowledgingAlert(false);
+    }
+  }
+  const [
+    selectedAlert,
+    setSelectedAlert,
+  ] = useState<CriticalAlertMapItem | null>(null);
+
+  const [acknowledgingAlert, setAcknowledgingAlert] =
+    useState(false);
+  const [routePropertyId, setRoutePropertyId] = useState<string | null>(null);
 
   const { neighbourhoodId } = useParams<{
     neighbourhoodId: string;
@@ -223,6 +554,15 @@ export default function NeighbourhoodAlertMapPage() {
   const canViewCriticalMap =
     neighbourhoodRole === "SECURITY_OFFICER" ||
     neighbourhoodRole === "NEIGHBOURHOOD_ADMIN";
+
+  const isSecurityOfficer =
+    neighbourhoodRole === "SECURITY_OFFICER";
+
+  useOfficerMapLocationTracking(
+    neighbourhoodId,
+    isSecurityOfficer,
+  );
+
 
 
   const {
@@ -257,6 +597,16 @@ export default function NeighbourhoodAlertMapPage() {
           ),
       }
     : null;
+
+  const {
+    route,
+    routeError,
+    routeLoading,
+  } = useAlertPropertyRoute(
+    routePropertyId,
+    isSecurityOfficer
+  );
+
 
 
   if (userContextLoading) {
@@ -422,27 +772,87 @@ export default function NeighbourhoodAlertMapPage() {
           />
         </section>
 
+        {isSecurityOfficer && routePropertyId && (
+          <section className="mb-5 rounded-lg border border-border bg-brand-depth p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-sm font-semibold text-brand-frost">
+                  Active route
+                </h2>
+
+                <p className="mt-1 text-xs text-brand-ash">
+                  Route from your current location to the
+                  selected alert property.
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  setRoutePropertyId(null)
+                }
+              >
+                Close route
+              </Button>
+            </div>
+
+            <RouteSummary
+              route={route}
+              loading={routeLoading}
+              error={routeError}
+            />
+          </section>
+        )}
+
+
         {loading && mappedAlerts.length === 0 ? (
           <MapLoadingState />
         ) : (
           <CriticalAlertsMap
             alerts={mappedAlerts}
+            route={route}
             selectedPropertyId={
-                currentSelectedProperty?.propertyId ?? null
+              routePropertyId ??
+              currentSelectedProperty?.propertyId ??
+              null
             }
-            onSelectProperty={setSelectedProperty}
+            onSelectProperty={handleSelectProperty}
         />
 
         )}
 
         <PropertyAlertsSheet
-            property={currentSelectedProperty}
-            open={
-              currentSelectedProperty !== null &&
-              currentSelectedProperty.alerts.length > 0
-            }
-            onClose={() => setSelectedProperty(null)}
+          property={currentSelectedProperty}
+          canShowRoute={isSecurityOfficer}
+          open={
+            currentSelectedProperty !== null &&
+            currentSelectedProperty.alerts.length > 0
+          }
+          onSelectAlert={setSelectedAlert}
+          onClose={() => {
+            setSelectedAlert(null);
+            setSelectedProperty(null);
+          }}
+          onShowRoute={(propertyId) => {
+            setSelectedAlert(null);
+            setRoutePropertyId(propertyId);
+            setSelectedProperty(null);
+          }}
         />
+
+        {selectedAlert && (
+          <AlertDetailSheet
+            alert={toAlertDetailModel(selectedAlert)}
+            open
+            onBack={() => setSelectedAlert(null)}
+            onClose={() => setSelectedAlert(null)}
+            onAcknowledge={handleAcknowledgeSelectedAlert}
+            acknowledging={acknowledgingAlert}
+            canViewTracking={isSecurityOfficer}
+          />
+        )}
 
         
 

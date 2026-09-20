@@ -56,24 +56,32 @@ jobs:
       FRONTEND_URL: https://testserver
       TESTING: true
 
-    services:
-      postgres:
-        image: postgis/postgis:15-3.4-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: watchdog
-        ports:
-          - "5432:5432"
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Build PostgreSQL test image
+        run: docker build --tag watchdog-postgres ./postgres
+
+      - name: Start PostgreSQL
+        run: |
+          docker run --detach \
+            --name watchdog-postgres \
+            --publish 5432:5432 \
+            --env POSTGRES_USER=postgres \
+            --env POSTGRES_PASSWORD=test_password \
+            --env POSTGRES_DB=watchdog \
+            watchdog-postgres
+
+          for i in {1..30}; do
+            if docker exec watchdog-postgres pg_isready -U postgres -d watchdog; then
+              exit 0
+            fi
+            sleep 2
+          done
+
+          docker logs watchdog-postgres
+          exit 1
 
       - name: Verify Postgres Connection
         env:
@@ -120,7 +128,7 @@ jobs:
         run: pip install pytest-cov
 
       - name: Run backend tests
-        run: cd tests/backend && pytest --cov --cov-branch --cov-report=xml
+        run: cd tests/backend && pytest --cov=app --cov-branch --cov-report=xml
 
       - name: Run frontend tests
         run: cd frontend && npx jest --coverage #pnpm test
@@ -152,7 +160,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@cddd853df119a48c5be31a973f8cd97e12e35e16 # v6.0.1
         with:
-          files: coverage/lcov.info,coverage.xml
+          files: tests/frontend/coverage/lcov.info,tests/backend/coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
 
   build:

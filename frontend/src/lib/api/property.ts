@@ -1,4 +1,4 @@
-import { CreatePropertyReq, CreatePropertyRes, InvitePropertyMemberInput, InvitePropertyMemberResponse, PropertyMembers, PropertyRes } from '@/lib/validators/property'
+import { CreatePropertyReq, CreatePropertyRes, InvitePropertyMemberInput, InvitePropertyMemberResponse, PropertyMembers, PropertyRes, PropertyResidentContext, PropertyResidentContextSchema, } from '@/lib/validators/property'
 import { PropertyDetailedRes } from '@/lib/validators/property'
 import { apiCall } from './client'
 
@@ -23,6 +23,19 @@ export async function getPropertyMembers(propertyId: string):Promise<PropertyMem
   return apiCall<PropertyMembers>(`/properties/${propertyId}/members`, {
     method: "GET"
   })
+}
+
+export async function getPropertyResidentContext(
+  propertyId: string,
+): Promise<PropertyResidentContext> {
+  const result = await apiCall<unknown>(
+    `/properties/${propertyId}/residents`,
+    {
+      method: "GET",
+    },
+  );
+
+  return PropertyResidentContextSchema.parse(result);
 }
 
 export async function invitePropertyMember(

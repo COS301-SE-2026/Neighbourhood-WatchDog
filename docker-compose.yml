@@ -1,6 +1,8 @@
 services:
   postgres:
-    image: postgis/postgis:15-3.4-alpine
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -131,6 +133,8 @@ services:
       REFRESH_COOKIE_SECURE: ${REFRESH_COOKIE_SECURE:-false}
       REFRESH_COOKIE_SAMESITE: ${REFRESH_COOKIE_SAMESITE:-lax}
       REFRESH_COOKIE_MAX_AGE: ${REFRESH_COOKIE_MAX_AGE:-2592000}
+
+      TRACKING_MATCH_MIN_SIMILARITY: ${TRACKING_MATCH_MIN_SIMILARITY:-0.75}
 
     volumes:
       - ./backend:/app
