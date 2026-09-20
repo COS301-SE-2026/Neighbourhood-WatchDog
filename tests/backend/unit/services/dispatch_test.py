@@ -170,3 +170,17 @@ def fixed_weights():
         },
     ), patch("app.services.dispatch_service.DEFAULT_WEIGHTS", RankingWeights(1.0, 1.0, 0.5)):
         yield
+
+def dispatch_steps(
+   context,
+   *,
+   existing=(),
+   officers=None,
+   workloads=None,     
+):
+    steps = [make_first_result(make_alert_row(context)), make_scalars_result(existing)]
+    if officers is not None:
+        steps.append(make_rows_result([make_officer_row(o) for o in officers]))
+    if workloads is not None:
+        steps.append(make_rows_result(list(workloads.items())))
+    return steps
