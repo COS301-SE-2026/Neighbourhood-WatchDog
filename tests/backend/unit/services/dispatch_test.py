@@ -47,3 +47,44 @@ FIXED_NOW = datetime(2026, 9, 20, 0, 0, tzinfo=timezone.utc)
 AVAILABLE = AvailabilityStatus.AVAILABLE
 BUSY = AvailabilityStatus.BUSY
 UNAVAVILABLE = AvailabilityStatus.UNAVAILABLE
+
+def make_mock_db():
+    mock_db = AsyncMock()
+    mock_result = MagicMock()
+    mock_db.execute = AsyncMock(return_value=mock_result)
+    mock_db.add = Mock()
+    mock_db.add_all = Mock()
+    mock_db.commit = AsyncMock()
+    mock_db.flush = AsyncMock()
+    mock_db.rollback = AsyncMock()
+    mock_db.refresh = AsyncMock()
+    return mock_db, mock_result
+
+def make_scalar_result(value):
+    result = MagicMock()
+    result.scalar_one_or_none.return_value = value
+    result.scalar_one.return_value = value
+    result.scalars.return_value.first.return_value = value
+    result.scalars.return_value.all.return_value = [] if value is None else [value]
+    return result
+
+def make_rows_result(rows):
+    result = MagicMock()
+    result.all.return_value = rows
+    return result
+
+def make_first_result(row):
+    result = MagicMock()
+    result.first.return_value = row
+    return result
+
+def make_scalars_result(rows):
+    result = MagicMock()
+    result.scalars.return_value.all.return_value = list(rows)
+    return result
+
+def compiled_params(stmt):
+    return stmt.compile(dialect=postgresql.dialect()).params
+
+def compiled_sql(stmt):
+    return str(stmt.compile(dialect=postgresql.dialect()))
