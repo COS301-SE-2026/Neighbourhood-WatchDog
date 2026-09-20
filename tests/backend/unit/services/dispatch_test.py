@@ -116,3 +116,29 @@ def make_context(**overrides):
         longitude=28.0473,
     )
     return replace(context, **overrides)
+
+def make_dispatch_row(
+    status,
+    *,
+    officer_id=None,
+    rank=None,
+    updated_at=None,
+    **overrides,
+):
+    kwargs = dict(
+        id=uuid4(),
+        alert_id=ALERT_ID,
+        neighbourhood_id=NEIGHBOURHOOD_ID,
+        officer_id=officer_id,
+        rank=rank,
+        score=1.0 if officer_id else None,
+        distance=500.0 if officer_id else None,
+        eta=78.0 if officer_id else None,
+        workload=0 if officer_id else None,
+        officer_availability=AVAILABLE if officer_id else None,
+        officer_location_updated_at=updated_at,
+        status=status,
+        created_at=CREATED_AT,
+    )
+    kwargs.update(overrides)
+    return Dispatch(**kwargs)
