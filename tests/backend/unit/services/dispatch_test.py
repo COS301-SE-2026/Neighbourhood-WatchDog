@@ -1,6 +1,6 @@
 import pytest
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from uuid import UUID, uuid4
 
@@ -88,3 +88,21 @@ def compiled_params(stmt):
 
 def compiled_sql(stmt):
     return str(stmt.compile(dialect=postgresql.dialect()))
+
+def make_candidate(
+    *,
+    officer_id=None,
+    availability_status=AVAILABLE,
+    distance=500.0,
+    age=10,
+    workload=0,
+    now=None,
+):
+    now = now or datetime.now(timezone.utc)
+    return OfficerCandidate(
+        officer_id=officer_id or uuid4(),
+        availability_status=availability_status,
+        location_updated_at=now - timedelta(seconds=age),
+        distance=distance,
+        workload=workload,
+    )
