@@ -391,3 +391,21 @@ class TestRankCandidates:
 
     def test_every_critical_detection_type_has_ranking_profile(self):
          assert CRITICAL_DETECTION_TYPES <= set(RANKING_WEIGHTS)
+
+class TestBuildDispatchRows:
+    def rank(self, *candidates):
+         return rank_candidates(list(candidates), "WEAPON_DETECTED", now=FIXED_NOW)
+
+    def test_nearest_officer_selected_and_others_pending(self):
+        far = make_candidate(distance=3000.0, now=FIXED_NOW)
+        mid = make_candidate(distance=800.0, now=FIXED_NOW)
+        near = make_candidate(distance=200.0, now=FIXED_NOW)
+
+        rows = _build_dispatch_rows(make_context(), self.rank(far, near, mid))
+
+        assert [(r.officer_id, r.status) for r in rows] == [
+            (near.officer_id, DispatchStatus.SELECTED),
+            (mid.officer_id, DispatchStatus.PENDING),
+            (far.officer_id, DispatchStatus.PENDING),
+        ]
+        
