@@ -307,3 +307,11 @@ class TestRankCandidates:
         ranked = rank_candidates(candidates, "WEAPON_DETECTED", now=FIXED_NOW)
         scores = [r.score for r in ranked]
         assert scores == sorted(scores)
+
+    def test_available_officers_rank_ahead_of_busy_officers(self):
+        busy_officer = make_candidate(availability_status=BUSY, distance=50.0, now=FIXED_NOW)
+        available_officer = make_candidate(availability_status=AVAILABLE, distance=5000.0, now=FIXED_NOW)
+        ranked = rank_candidates([busy_officer, available_officer], "WEAPON_DETECTED", now=FIXED_NOW)
+        assert ranked[0].candidate.officer_id == available_officer.officer_id
+        assert ranked[1].candidate.officer_id == busy_officer.officer_id
+        assert ranked[1].score < ranked[0].score
