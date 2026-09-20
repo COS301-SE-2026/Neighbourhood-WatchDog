@@ -278,3 +278,8 @@ class TestEstimateEta:
 
     def test_eta_scales_linearly(self):
         assert estimate_eta_seconds(2000.0) == pytest.approx(2 * estimate_eta_seconds(1000.0))
+
+@pytest.mark.usefixtures("fixed_weights")
+class TestRankCandidates:
+    def test_empty_input(self):
+        assert rank_candidates([], "WEAPON_DETECTED", now=FIXED_NOW) == []
