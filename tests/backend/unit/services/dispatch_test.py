@@ -47,7 +47,7 @@ FIXED_NOW = datetime(2026, 9, 20, 0, 0, tzinfo=timezone.utc)
 
 AVAILABLE = AvailabilityStatus.AVAILABLE
 BUSY = AvailabilityStatus.BUSY
-UNAVAVILABLE = AvailabilityStatus.UNAVAILABLE
+UNAVAILABLE = AvailabilityStatus.UNAVAILABLE
 
 def make_mock_db():
     mock_db = AsyncMock()
@@ -224,3 +224,7 @@ class TestFilterEligible:
     def test_keeps_fresh_busy_officer_for_queuing(self):
             officer = make_candidate(availability_status=BUSY)
             assert filter_eligible([officer]) == [officer]
+
+    def test_excludes_unavailable_officer(self):
+            officer = make_candidate(availability_status=UNAVAILABLE)
+            assert filter_eligible([officer]) == []
