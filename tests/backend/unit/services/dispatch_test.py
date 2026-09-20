@@ -232,3 +232,7 @@ class TestFilterEligible:
     def test_excludes_officer_without_availability(self):
             officer = make_candidate(availability_status=None)
             assert filter_eligible([officer]) == []
+
+    def test_excludes_officer_with_stale_location(self):
+            officer = make_candidate(age=STALE_LOCATION_THRESHOLD_SECONDS + 30)
+            assert filter_eligible([officer]) == []
