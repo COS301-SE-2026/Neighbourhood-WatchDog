@@ -342,3 +342,13 @@ class TestRankCandidates:
         fall = rank_candidates(candidates, "FALL_DETECTED", now=FIXED_NOW)
         assert weapon[0].candidate.officer_id == closer_but_loaded.officer_id
         assert fall[0].candidate.officer_id == farther_but_idle.officer_id
+
+    def test_unkown_detection_type_uses_default_weights(self):
+        candidate = make_candidate(distance=600.0, workload=1, age=10, now=FIXED_NOW)
+        unknown = rank_candidates([candidate], "SOMETHING_NEW", now=FIXED_NOW)
+        expected = (
+            1.0 * estimate_eta_seconds(600.0) / 60.0
+            + 1.0 * 1
+            + 0.5 * (10 / STALE_LOCATION_THRESHOLD_SECONDS)
+        )
+        assert unknown[0].score == pytest.approx(expected)
