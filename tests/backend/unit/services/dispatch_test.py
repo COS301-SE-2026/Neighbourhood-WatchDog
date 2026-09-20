@@ -352,3 +352,11 @@ class TestRankCandidates:
             + 0.5 * (10 / STALE_LOCATION_THRESHOLD_SECONDS)
         )
         assert unknown[0].score == pytest.approx(expected)
+
+    def test_score_matches_formula(self):
+        candidate = make_candidate(distance=1000.0, workload=2, age=60, now=FIXED_NOW)
+        ranked = rank_candidates([candidate], "WEAPON_DETECTED", now=FIXED_NOW)
+        eta = estimate_eta_seconds(1000.0)
+        expected = 1.5 * (eta / 60.0) + 0.25 * 2 + 0.5 * (60 / STALE_LOCATION_THRESHOLD_SECONDS)
+        assert ranked[0].eta == pytest.approx(eta)
+        assert ranked[0].score == pytest.approx(expected)
