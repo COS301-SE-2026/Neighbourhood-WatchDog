@@ -215,3 +215,8 @@ async def run_dispatch(steps, mock_db=None, commit_error=None, refetch=None):
 
     assert not pending, "db.execute results were provided that dispatch_alert never asked for"
     return SimpleNamespace(res=res, db=mock_db, added=added)
+
+class TestFilterEligible:
+    def test_keeps_fresh_available_officer(self):
+        officer = make_candidate(availability_status=AVAILABLE)
+        assert filter_eligible([officer]) == [officer]
