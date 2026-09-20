@@ -335,7 +335,7 @@ class TestRankCandidates:
         assert ranked[0].candidate.officer_id == fresh.officer_id
     
     def test_alert_type_changes_workload_distance_tradeoff(self):
-        closer_but_loaded = make_candidate(distance=500.0, workload=2, now=FIXED_NOW)
+        closer_but_loaded = make_candidate(distance=500.0, workload=1, now=FIXED_NOW)
         farther_but_idle = make_candidate(distance=600.0, workload=0, now=FIXED_NOW)
         candidates = [closer_but_loaded, farther_but_idle]
         weapon = rank_candidates(candidates, "WEAPON_DETECTED", now=FIXED_NOW)
@@ -389,5 +389,5 @@ class TestRankCandidates:
         assert candidates == og
         assert {r.candidate.officer_id for r in ranked} == {o.officer_id for o in og}
 
-    def test_every_critical_detection_type_has_ranking_profile():
-         assert CRITICAL_DETECTION_TYPES <= set(RankingWeights)
+    def test_every_critical_detection_type_has_ranking_profile(self):
+         assert CRITICAL_DETECTION_TYPES <= set(RANKING_WEIGHTS)
