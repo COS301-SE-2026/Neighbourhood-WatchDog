@@ -333,3 +333,12 @@ class TestRankCandidates:
         fresh = make_candidate(age=5, now=FIXED_NOW)
         ranked = rank_candidates([stale, fresh], "WEAPON_DETECTED", now=FIXED_NOW)
         assert ranked[0].candidate.officer_id == fresh.officer_id
+    
+    def test_alert_type_changes_workload_distance_tradeoff(self):
+        closer_but_loaded = make_candidate(distance=500.0, workload=2, now=FIXED_NOW)
+        farther_but_idle = make_candidate(distance=600.0, workload=0, now=FIXED_NOW)
+        candidates = [closer_but_loaded, farther_but_idle]
+        weapon = rank_candidates(candidates, "WEAPON_DETECTED", now=FIXED_NOW)
+        fall = rank_candidates(candidates, "FALL_DETECTED", now=FIXED_NOW)
+        assert weapon[0].candidate.officer_id == closer_but_loaded.officer_id
+        assert fall[0].candidate.officer_id == farther_but_idle.officer_id
