@@ -151,3 +151,11 @@ def make_alert_row(context):
         context.latitude,
         context.longitude,
     )
+
+def make_officer_row(candidate):
+    return (
+        candidate.officer_id,
+        candidate.availability_status,
+        candidate.location_updated_at,
+        candidate.distance,
+    )
