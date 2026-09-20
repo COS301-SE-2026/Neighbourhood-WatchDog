@@ -315,3 +315,9 @@ class TestRankCandidates:
         assert ranked[0].candidate.officer_id == available_officer.officer_id
         assert ranked[1].candidate.officer_id == busy_officer.officer_id
         assert ranked[1].score < ranked[0].score
+
+    def test_busy_officers_are_ranked_by_score(self):
+        far = make_candidate(availability_status=BUSY, distance=2000.0, now=FIXED_NOW)
+        near = make_candidate(availability_status=BUSY, distance=200.0, now=FIXED_NOW)
+        ranked = rank_candidates([far, near], "WEAPON_DETECTED", now=FIXED_NOW)
+        assert ranked[0].candidate.officer_id == near.officer_id
