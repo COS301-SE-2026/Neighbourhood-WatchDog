@@ -220,3 +220,7 @@ class TestFilterEligible:
     def test_keeps_fresh_available_officer(self):
         officer = make_candidate(availability_status=AVAILABLE)
         assert filter_eligible([officer]) == [officer]
+
+    def test_keeps_fresh_busy_officer_for_queuing(self):
+            officer = make_candidate(availability_status=BUSY)
+            assert filter_eligible([officer]) == [officer]
