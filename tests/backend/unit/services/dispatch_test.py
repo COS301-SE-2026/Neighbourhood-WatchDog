@@ -251,3 +251,16 @@ class TestFilterEligible:
 
     def test_empty_input(self):
          assert filter_eligible([]) == []
+
+    def test_filtered_officers_keep_original_order(self):
+        available_officers = make_candidate(availability_status=AVAILABLE)
+        busy_officers = make_candidate(availability_status=BUSY)
+        candidates = [
+            make_candidate(availability_status=UNAVAILABLE),
+            available_officers,
+            make_candidate(age=STALE_LOCATION_THRESHOLD_SECONDS + 60),
+            replace(make_candidate(), distance=None),
+            busy_officers,
+        ]
+
+        assert filter_eligible(candidates) == [available_officers, busy_officers]
