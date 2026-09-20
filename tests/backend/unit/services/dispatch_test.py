@@ -142,3 +142,12 @@ def make_dispatch_row(
     )
     kwargs.update(overrides)
     return Dispatch(**kwargs)
+
+def make_alert_row(context):
+    return (
+        context.alert_id,
+        context.detection_type,
+        context.neighbourhood_id,
+        context.latitude,
+        context.longitude,
+    )
