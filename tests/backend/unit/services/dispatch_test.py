@@ -1,5 +1,6 @@
 import pytest
 from dataclasses import replace
+from types import SimpleNamespace
 from datetime import datetime, timezone, timedelta
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from uuid import UUID, uuid4
@@ -184,3 +185,33 @@ def dispatch_steps(
     if workloads is not None:
         steps.append(make_rows_result(list(workloads.items())))
     return steps
+
+async def run_dispatch(steps, mock_db=None, commit_error=None, refetch=None):
+    if mock_db is None:
+        mock_db, _ = make_mock_db()
+
+    added: list[Dispatch] = []
+
+    def add_all(rows):
+        for row in rows:
+            row.id = uuid4()
+            row.created_at = CREATED_AT
+        added.extend(rows)
+    
+    mock_db.add_all = Mock(side_effect=add_all)
+    if commit_error is not None:
+        mock_db.commit = AsyncMock(side_effect=commit_error)
+
+    pending = list(steps)
+
+    async def fake_execute(_stmt):
+        if pending:
+            return pending.pop(0)
+        return make_scalars_result(added if refetch is None else refetch)
+
+    mock_db.execute = AsyncMock(side_effect=fake_execute)
+
+    res = await dispatch_alert(mock_db, ALERT_ID)
+
+    assert not pending, "db.execute results were provided that dispatch_alert never asked for"
+    return SimpleNamespace(res=res, db=mock_db, added=added)
