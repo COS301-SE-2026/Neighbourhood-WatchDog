@@ -372,3 +372,12 @@ class TestRankCandidates:
         skewed = make_candidate(age=-30, distance=1000.0, now=FIXED_NOW)
         ranked = rank_candidates([skewed], "WEAPON_DETECTED", now=FIXED_NOW)
         assert ranked[0].score == pytest.approx(1.5 * estimate_eta_seconds(1000.0) / 60.0)
+
+    def test_ties_broken_by_officer_id(self):
+        low = make_candidate(officer_id=UUID(int=1), now=FIXED_NOW)
+        high = make_candidate(officer_id=UUID(int=2), now=FIXED_NOW)
+
+        forwards = rank_candidates([low, high],"WEAPON_DETECTED", now=FIXED_NOW)
+        backwards = rank_candidates([high, low],"WEAPON_DETECTED", now=FIXED_NOW)
+        assert [r.candidate.officer_id for r in forwards] == [low.officer_id, high.officer_id]
+        assert [r.candidate.officer_id for r in backwards] == [low.officer_id, high.officer_id]
