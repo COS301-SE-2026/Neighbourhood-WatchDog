@@ -367,3 +367,8 @@ class TestRankCandidates:
         a = rank_candidates([at_threshold], "WEAPON_DETECTED", now=FIXED_NOW)[0]
         b = rank_candidates([past_threshold], "WEAPON_DETECTED", now=FIXED_NOW)[0]
         assert a.score == pytest.approx(b.score)
+
+    def test_future_location_timestamp_gets_no_freshness_penalty(self):
+        skewed = make_candidate(age=-30, distance=1000.0, now=FIXED_NOW)
+        ranked = rank_candidates([skewed], "WEAPON_DETECTED", now=FIXED_NOW)
+        assert ranked[0].score == pytest.approx(1.5 * estimate_eta_seconds(1000.0) / 60.0)
