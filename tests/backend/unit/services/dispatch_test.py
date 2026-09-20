@@ -106,3 +106,13 @@ def make_candidate(
         distance=distance,
         workload=workload,
     )
+
+def make_context(**overrides):
+    context = AlertContext(
+        alert_id=ALERT_ID,
+        detection_type="WEAPON_DETECTED",
+        neighbourhood_id=NEIGHBOURHOOD_ID,
+        latitude=-26.2041,
+        longitude=28.0473,
+    )
+    return replace(context, **overrides)
