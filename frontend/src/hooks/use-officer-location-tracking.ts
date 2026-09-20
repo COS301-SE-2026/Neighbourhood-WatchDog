@@ -1,86 +1,65 @@
 "use client";
 
 import { useEffect } from "react";
-import { Geolocation } from "@capacitor/geolocation";
 
+import { useLocationPermission } from "./use-location-permission";
 import {
   updateSecurityLocation,
 } from "@/lib/api/neighbourhood";
-
-const LOCATION_WATCH_INTERVAL_MS = 10_000;
+import { BackgroundGeolocation } from "@capgo/background-geolocation";
 
 export function useOfficerLocationTracking(
   neighbourhoodId: string,
   onDuty: boolean,
 ) {
+  const { backgroundStatus, requestBackground } = useLocationPermission();
+
   useEffect(() => {
     if (!onDuty || !neighbourhoodId) {
       return;
     }
 
-    let watchId: string | null = null;
     let stopped = false;
     let updateInProgress = false;
 
     const startWatching = async () => {
+      if (backgroundStatus !== "granted"){
+        await requestBackground();
+      }
+      
       try {
-        const id =
-          await Geolocation.watchPosition(
-            {
-              enableHighAccuracy: true,
-              timeout: 15_000,
-              maximumAge: 5_000,
-              minimumUpdateInterval:
-                LOCATION_WATCH_INTERVAL_MS,
-              interval:
-                LOCATION_WATCH_INTERVAL_MS,
-            },
-            (position, error) => {
-              if (
-                stopped ||
-                updateInProgress
-              ) {
-                return;
-              }
+        await BackgroundGeolocation.start(
+          {
+            backgroundMessage: "WatchDog is sharing your location while on duty.",
+            backgroundTitle: "On duty. Sharing location",
+            requestPermissions: false,
+            distanceFilter: 0,
+          },
+          (location, error) => {
+            if (stopped || updateInProgress) {
+              return;
+            }
 
-              if (error || !position) {
-                console.error(
-                  "Officer location watch failed",
-                  error,
-                );
-                return;
-              }
+            if (error || !location) {
+              console.error("Officer location watch failed", error);
+              return;
+            }
 
-              updateInProgress = true;
+            updateInProgress = true;
 
-              void updateSecurityLocation({
-                neighbourhood_id:
-                  neighbourhoodId,
-                latitude:
-                  position.coords.latitude,
-                longitude:
-                  position.coords.longitude,
+            void updateSecurityLocation({
+              neighbourhood_id: neighbourhoodId,
+              latitude: location.latitude,
+              longitude: location.longitude,
+            })
+              .catch((updateError) => {
+                console.error("Failed to update officer location",updateError);
               })
-                .catch((updateError) => {
-                  console.error(
-                    "Failed to update officer location",
-                    updateError,
-                  );
-                })
-                .finally(() => {
-                  updateInProgress = false;
-                });
-            },
-          );
-
-        if (stopped) {
-          await Geolocation.clearWatch({
-            id,
-          });
-          return;
-        }
-
-        watchId = id;
+              .finally(() => {
+                updateInProgress = false;
+              });
+          },
+        );
       } catch (error) {
         console.error(
           "Failed to start officer location tracking",
@@ -94,11 +73,7 @@ export function useOfficerLocationTracking(
     return () => {
       stopped = true;
 
-      if (watchId) {
-        void Geolocation.clearWatch({
-          id: watchId,
-        });
-      }
+      void BackgroundGeolocation.stop();
     };
-  }, [neighbourhoodId, onDuty]);
+  }, [neighbourhoodId, onDuty, backgroundStatus, requestBackground]);
 }

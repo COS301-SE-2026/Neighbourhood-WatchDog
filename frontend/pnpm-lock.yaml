@@ -23,6 +23,9 @@ importers:
       '@capacitor/geolocation':
         specifier: ^8.2.2
         version: 8.2.2(@capacitor/core@8.5.2)
+      '@capgo/background-geolocation':
+        specifier: ^8.4.6
+        version: 8.4.6(@capacitor/core@8.5.2)
       '@serwist/next':
         specifier: ^9.5.12
         version: 9.5.12(next@16.3.4(@babel/core@7.29.7)(@types/node@20.19.39)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
@@ -474,6 +477,11 @@ packages:
 
   '@capacitor/synapse@1.0.4':
     resolution: {integrity: sha512-/C1FUo8/OkKuAT4nCIu/34ny9siNHr9qtFezu4kxm6GY1wNFxrCFWjfYx5C1tUhVGz3fxBABegupkpjXvjCHrw==}
+
+  '@capgo/background-geolocation@8.4.6':
+    resolution: {integrity: sha512-LoneGKm/SAiu1htQrIKtHUnQcPMlYyX3MCakBWXmirlYxt4t1Ii5pDSdlg5T2ZEj7KvZw7W/Lg3/cE6so4E3iw==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -5860,6 +5868,10 @@ snapshots:
       '@capacitor/synapse': 1.0.4
 
   '@capacitor/synapse@1.0.4': {}
+
+  '@capgo/background-geolocation@8.4.6(@capacitor/core@8.5.2)':
+    dependencies:
+      '@capacitor/core': 8.5.2
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
