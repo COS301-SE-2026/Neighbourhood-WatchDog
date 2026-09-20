@@ -301,3 +301,9 @@ class TestRankCandidates:
         candidates = [make_candidate(distance=d, now=FIXED_NOW) for d in (100, 200, 300, 400)]
         ranked = rank_candidates(candidates, "WEAPON_DETECTED", now=FIXED_NOW)
         assert [r.rank for r in ranked] == [1, 2, 3, 4]
+
+    def test_scores_increase_with_rank(self):
+        candidates = [make_candidate(distance=d, now=FIXED_NOW) for d in (900, 100, 500)]
+        ranked = rank_candidates(candidates, "WEAPON_DETECTED", now=FIXED_NOW)
+        scores = [r.score for r in ranked]
+        assert scores == sorted(scores)
