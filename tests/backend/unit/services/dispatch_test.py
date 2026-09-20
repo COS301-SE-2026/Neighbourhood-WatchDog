@@ -264,3 +264,17 @@ class TestFilterEligible:
         ]
 
         assert filter_eligible(candidates) == [available_officers, busy_officers]
+
+class TestEstimateEta:
+    def test_zero_distance_is_zero_seconds(self):
+        assert estimate_eta_seconds(0.0) == 0.0
+
+    def test_uses_route_circuitry_and_avg_speed(self):
+        expected = 1000.0 * ROUTE_CIRCUITRY_FACTOR / OFFICER_AVG_SPEED
+        assert estimate_eta_seconds(1000.0) == pytest.approx(expected)
+
+    def test_eta_increases_with_distance(self):
+        assert estimate_eta_seconds(2000.0) > estimate_eta_seconds(1000.0)
+
+    def test_eta_scales_linearly(self):
+        assert estimate_eta_seconds(2000.0) == pytest.approx(2 * estimate_eta_seconds(1000.0))
