@@ -381,3 +381,13 @@ class TestRankCandidates:
         backwards = rank_candidates([high, low],"WEAPON_DETECTED", now=FIXED_NOW)
         assert [r.candidate.officer_id for r in forwards] == [low.officer_id, high.officer_id]
         assert [r.candidate.officer_id for r in backwards] == [low.officer_id, high.officer_id]
+
+    def test_ranking_does_not_change_or_drop_candidates(self):
+        candidates = [make_candidate(distance=d, now=FIXED_NOW) for d in (300, 100, 200)]
+        og = list(candidates)
+        ranked = rank_candidates(candidates, "WEAPON_DETECTED", now=FIXED_NOW)
+        assert candidates == og
+        assert {r.candidate.officer_id for r in ranked} == {o.officer_id for o in og}
+
+    def test_every_critical_detection_type_has_ranking_profile():
+         assert CRITICAL_DETECTION_TYPES <= set(RankingWeights)
