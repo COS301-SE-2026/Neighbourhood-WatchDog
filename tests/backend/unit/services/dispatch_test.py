@@ -327,3 +327,9 @@ class TestRankCandidates:
         idle = make_candidate(distance=500.0, workload=0, now=FIXED_NOW)
         ranked = rank_candidates([loaded, idle], "WEAPON_DETECTED", now=FIXED_NOW)
         assert ranked[0].candidate.officer_id == idle.officer_id
+
+    def test_fresher_location_ranks_higher_when_everything_else_equal(self):
+        stale = make_candidate(age=100, now=FIXED_NOW)
+        fresh = make_candidate(age=5, now=FIXED_NOW)
+        ranked = rank_candidates([stale, fresh], "WEAPON_DETECTED", now=FIXED_NOW)
+        assert ranked[0].candidate.officer_id == fresh.officer_id
