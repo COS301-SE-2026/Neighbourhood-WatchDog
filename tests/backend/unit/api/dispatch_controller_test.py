@@ -58,3 +58,17 @@ async def test_get_alert_dispatch_delegates_to_service():
         db=DB,
         claims=CLAIMS,
     )
+
+@pytest.mark.asyncio
+async def test_get_alert_dispatch_unchanged_when_returns_empty():
+    expected = make_dispatch_res(alert_id=ALERT_ID, no_candidate=True)
+
+    with patch(
+        "app.api.controllers.dispatch.get_alert_dispatch_handler",
+        new=AsyncMock(return_value=expected),
+    ):
+        res = await get_alert_dispatch(ALERT_ID, DB, CLAIMS)
+
+    assert res is expected
+    assert res.no_candidate is True
+    assert res.selected is None
