@@ -755,3 +755,15 @@ class TestDispatchAlert:
         run = await run_dispatch(dispatch_steps(make_context(), officers=[]))
         assert run.res.no_candidate is True
         assert [row.status for row in run.added] == [DispatchStatus.NO_CANDIDATE]
+
+    @pytest.mark.asyncio
+    async def test_only_officers_from_the_alerts_own_neighbourhood_are_queried(self):
+        run = await run_dispatch(
+            dispatch_steps(make_context(), officers=[make_candidate()], workloads={})
+        )
+        officer_query = run.db.execute.await_args_list[2].args[0]
+        params = compiled_params(officer_query).values()
+ 
+        assert NEIGHBOURHOOD_ID in params
+        assert OTHER_NEIGHBOURHOOD_ID not in params
+        assert NeighbourhoodRole.SECURITY_OFFICER in params
