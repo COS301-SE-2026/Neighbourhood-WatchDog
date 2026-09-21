@@ -439,3 +439,19 @@ class TestBuildDispatchRows:
         assert row.rank is None
         assert row.alert_id == ALERT_ID
         assert row.neighbourhood_id == NEIGHBOURHOOD_ID
+
+    def test_records_selected_officer_and_ranking_inputs(self):
+        officer = make_candidate(distance=750.0, workload=1, age=20, now=FIXED_NOW)
+        ranked = self.rank(officer)
+        row = _build_dispatch_rows(make_context(), ranked)[0]
+        assert row.alert_id == ALERT_ID
+        assert row.neighbourhood_id == NEIGHBOURHOOD_ID
+        assert row.officer_id == officer.officer_id
+        assert row.status == DispatchStatus.SELECTED
+        assert row.rank == 1
+        assert row.score == pytest.approx(ranked[0].score)
+        assert row.distance == 750.0
+        assert row.eta == pytest.approx(ranked[0].eta_seconds)
+        assert row.workload == 1
+        assert row.officer_availability == AVAILABLE
+        assert row.officer_location_updated_at == officer.location_updated_at
