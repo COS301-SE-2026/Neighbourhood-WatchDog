@@ -736,3 +736,16 @@ class TestDispatchAlert:
         dispatched = {row.officer_id for row in run.added if row.officer_id}
         assert dispatched == {eligible_officer.officer_id}
         assert run.res.selected.officer_id == eligible_officer.officer_id
+
+    @pytest.mark.asyncio
+    async def test_no_eligible_officers_records_no_candidate(self):
+        officers = [
+            make_candidate(availability=UNAVAILABLE),
+            make_candidate(age_s=STALE_LOCATION_THRESHOLD_SECONDS + 60),
+        ]
+        run = await run_dispatch(dispatch_steps(make_context(), officers=officers))
+ 
+        assert run.res.no_candidate is True
+        assert run.res.selected is None
+        assert [row.status for row in run.added] == [DispatchStatus.NO_CANDIDATE]
+        run.db.commit.assert_awaited_once()
