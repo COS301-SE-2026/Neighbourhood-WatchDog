@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 import pytest
 
+
 backend_path = Path(__file__).parent.parent.parent / "backend"
 sys.path.insert(0, str(backend_path))
 
@@ -13,11 +14,18 @@ def pytest_collection_modifyitems(
     config: pytest.Config,
     items: list[pytest.Item],
 ) -> None:
-    """Temporarily skip backend integration tests in CI."""
+    """Skip integration tests unless explicitly enabled."""
+
+    run_integration = config.getoption(
+        "--run-integration",
+        default=False,
+    )
+
+    if run_integration:
+        return
+
     skip_integration = pytest.mark.skip(
-        reason=(
-            "Integration tests temporarily disabled"
-        )
+        reason="Integration tests require --run-integration"
     )
 
     for item in items:

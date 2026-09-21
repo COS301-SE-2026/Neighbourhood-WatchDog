@@ -1,0 +1,271 @@
+from datetime import datetime, timezone
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
+
+import pytest
+from fastapi import HTTPException
+
+from app.schemas.alert import (
+    AlertDistanceData,
+    RouteGeometry,
+)
+from app.services.alert_route_service import (
+    RoutingServiceUnavailable,
+    _request_osrm_route,
+    calculate_property_distance_handler,
+    get_property_route_handler,
+)
+
+
+NOW = datetime.now(timezone.utc)
+PROPERTY_ID = uuid4()
+CLAIMS = {"sub": "officer-cognito-sub"}
+
+
+def make_distance() -> AlertDistanceData:
+    return AlertDistanceData(
+        property_id=PROPERTY_ID,
+        property_address="123 Test Street, Pretoria",
+        property_latitude=-25.7479,
+        property_longitude=28.2293,
+        officer_latitude=-25.7600,
+        officer_longitude=28.2100,
+        distance_metres=2500,
+        officer_location_updated_at=NOW,
+    )
+
+
+def make_db_row():
+    return SimpleNamespace(
+        property_id=PROPERTY_ID,
+        property_address="123 Test Street, Pretoria",
+        property_latitude=-25.7479,
+        property_longitude=28.2293,
+        officer_latitude=-25.7600,
+        officer_longitude=28.2100,
+        distance_metres=2500,
+        has_officer_location=True,
+        officer_location_updated_at=NOW,
+    )
+
+
+def make_db(row):
+    result = MagicMock()
+    result.one_or_none.return_value = row
+
+    db = MagicMock()
+    db.execute = AsyncMock(return_value=result)
+
+    return db
+
+
+class TestPropertyDistance:
+    @pytest.mark.asyncio
+    async def test_returns_distance_for_valid_locations(
+        self,
+    ):
+        db = make_db(make_db_row())
+
+        with patch(
+            "app.services.alert_route_service."
+            "is_location_stale",
+            return_value=False,
+        ):
+            result = (
+                await calculate_property_distance_handler(
+                    property_id=PROPERTY_ID,
+                    db=db,
+                    claims=CLAIMS,
+                )
+            )
+
+        assert result.property_id == PROPERTY_ID
+        assert result.distance_metres == 2500
+        assert result.officer_latitude == -25.7600
+        assert result.property_latitude == -25.7479
+        db.execute.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_rejects_missing_authentication(self):
+        db = MagicMock()
+        db.execute = AsyncMock()
+
+        with pytest.raises(
+            HTTPException
+        ) as exc_info:
+            await calculate_property_distance_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims={},
+            )
+
+        assert exc_info.value.status_code == 401
+        db.execute.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_rejects_property_outside_officer_neighbourhood(
+        self,
+    ):
+        db = make_db(None)
+
+        with pytest.raises(
+            HTTPException
+        ) as exc_info:
+            await calculate_property_distance_handler(
+                property_id=PROPERTY_ID,
+                db=db,
+                claims=CLAIMS,
+            )
+
+        assert exc_info.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_rejects_stale_officer_location(
+        self,
+    ):
+        db = make_db(make_db_row())
+
+        with patch(
+            "app.services.alert_route_service."
+            "is_location_stale",
+            return_value=True,
+        ):
+            with pytest.raises(
+                HTTPException
+            ) as exc_info:
+                await calculate_property_distance_handler(
+                    property_id=PROPERTY_ID,
+                    db=db,
+                    claims=CLAIMS,
+                )
+
+        assert exc_info.value.status_code == 422
+        assert exc_info.value.detail == (
+            "Officer location is stale"
+        )
+
+class TestPropertyRoute:
+    @pytest.mark.asyncio
+    async def test_returns_osrm_route_and_eta(self):
+        distance = make_distance()
+
+        geometry = RouteGeometry(
+            type="LineString",
+            coordinates=[
+                (28.2100, -25.7600),
+                (28.2293, -25.7479),
+            ],
+        )
+
+        with (
+            patch(
+                "app.services.alert_route_service."
+                "calculate_property_distance_handler",
+                new=AsyncMock(return_value=distance),
+            ),
+            patch(
+                "app.services.alert_route_service."
+                "_request_osrm_route",
+                new=AsyncMock(
+                    return_value=(
+                        3100,
+                        420,
+                        geometry,
+                    )
+                ),
+            ),
+        ):
+            result = await get_property_route_handler(
+                property_id=PROPERTY_ID,
+                db=MagicMock(),
+                claims=CLAIMS,
+            )
+
+        assert result.route_distance_metres == 3100
+        assert result.eta_seconds == 420
+        assert result.route_geometry == geometry
+        assert result.routing_error is None
+
+    @pytest.mark.asyncio
+    async def test_returns_distance_when_osrm_fails(
+        self,
+    ):
+        distance = make_distance()
+
+        with (
+            patch(
+                "app.services.alert_route_service."
+                "calculate_property_distance_handler",
+                new=AsyncMock(return_value=distance),
+            ),
+            patch(
+                "app.services.alert_route_service."
+                "_request_osrm_route",
+                new=AsyncMock(
+                    side_effect=RoutingServiceUnavailable,
+                ),
+            ),
+        ):
+            result = await get_property_route_handler(
+                property_id=PROPERTY_ID,
+                db=MagicMock(),
+                claims=CLAIMS,
+            )
+
+        assert result.distance_metres == 2500
+        assert result.route_distance_metres is None
+        assert result.eta_seconds is None
+        assert result.route_geometry is None
+        assert result.routing_error == "Route and ETA are temporarily unavailable"
+
+    @pytest.mark.asyncio
+    async def test_requests_and_parses_osrm_route(self):
+        distance = make_distance()
+
+        response = MagicMock()
+        response.json.return_value = {
+            "code": "Ok",
+            "routes": [
+                {
+                    "distance": 3100,
+                    "duration": 420,
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [
+                            [28.2100, -25.7600],
+                            [28.2293, -25.7479],
+                        ],
+                    },
+                }
+            ],
+        }
+
+        client = MagicMock()
+        client.get = AsyncMock(
+            return_value=response,
+        )
+
+        context_manager = MagicMock()
+        context_manager.__aenter__ = AsyncMock(
+            return_value=client,
+        )
+        context_manager.__aexit__ = AsyncMock(
+            return_value=None,
+        )
+
+        with patch(
+            "app.services.alert_route_service."
+            "httpx.AsyncClient",
+            return_value=context_manager,
+        ):
+            route_distance, eta, geometry = (
+                await _request_osrm_route(distance)
+            )
+
+        assert route_distance == 3100
+        assert eta == 420
+        assert geometry.type == "LineString"
+
+        client.get.assert_awaited_once()
+        response.raise_for_status.assert_called_once()

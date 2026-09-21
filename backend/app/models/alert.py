@@ -38,6 +38,8 @@ class Alert(Base):
     camera = relationship("Camera", back_populates="alerts")
     dispatch = relationship("Dispatch", back_populates="alert", cascade="all, delete-orphan", order_by="Dispatch.created_at.desc()")
 
+    tracking_subject = relationship("TrackingSubject", back_populates="alert", uselist=False, cascade="all, delete-orphan")
+
     __table_args__ = (
         CheckConstraint(
             "(status = 'RESOLVED' AND resolved_by IS NOT NULL AND resolved_at IS NOT NULL) "

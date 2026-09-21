@@ -18,6 +18,9 @@ class Config(BaseSettings):
     cognito_client_id: str
 
     frontend_url: str = "http://localhost:3000"
+
+    osrm_base_url: str = "https://router.project-osrm.org"
+    osrm_timeout_seconds: float = 5.0
     
     testing: bool = False
     rtsp_encryption_key: str

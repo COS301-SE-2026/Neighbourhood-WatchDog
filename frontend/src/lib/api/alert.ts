@@ -1,6 +1,18 @@
 import type { Alert, AlertStatus } from "@/components/shared/AlertCard";
 import { getApiBaseUrl, getAuthHeaders } from "@/lib/api/auth";
-import { AlertFrequencyMetricsRes, TimeIntervalsEnum, TimePeriod } from "../validators/alert";
+import { 
+  AlertFrequencyMetricsRes, 
+  TimeIntervalsEnum, 
+  TimePeriod, 
+  CriticalAlertMapResSchema, 
+  UnlocatedCriticalAlertsResSchema, 
+  AlertDistanceResSchema,
+  AlertRouteResSchema,
+  type AlertRouteRes,
+  type AlertDistanceRes,
+  type CriticalAlertMapRes,
+  type UnlocatedCriticalAlertsRes
+ } from "../validators/alert";
 import { apiCall } from "./client";
 
 export { getAuthToken } from "@/lib/api/auth";
@@ -222,4 +234,171 @@ export async function fetchAlertFrequencyData(
     url,
     {method: 'GET'},
   )
+}
+
+
+
+export interface TrackingSighting {
+  id: string;
+  camera_id: string;
+  camera_name: string;
+  camera_location: string;
+  local_track_id: number;
+  observed_at: string;
+  sequence_no: number;
+  match_confidence: number | null;
+
+}
+
+export interface TrackingTimelineData {
+  alert_id: string;
+  tracking_subject_id: string;
+  alert_status: string;
+  sightings: TrackingSighting[];
+
+}
+
+interface TrackingTimelineResponse {
+  status: number;
+  message?: string | null;
+  data?: TrackingTimelineData | null;
+
+}
+
+export async function fetchTrackingTimeline(alertId: string, signal?: AbortSignal): Promise<TrackingTimelineData> {
+  const response = await apiFetch<TrackingTimelineResponse>(`/alerts/${alertId}/tracking`, { signal });
+
+  if (!response.data) {
+    throw new ApiError(response.message ?? "Tracking timeline is unavailable", response.status);
+  }
+
+  
+  return response.data;
+}
+export async function fetchCriticalAlertMap(
+  neighbourhoodId: string,
+): Promise<CriticalAlertMapRes> {
+  const result = await apiCall<unknown>(
+    `/alerts/neighbourhoods/${encodeURIComponent(
+      neighbourhoodId,
+    )}/critical/map`,
+    {
+      method: "GET",
+    },
+  );
+
+  return CriticalAlertMapResSchema.parse(result);
+}
+
+export async function fetchUnlocatedCriticalAlerts(
+  neighbourhoodId: string,
+): Promise<UnlocatedCriticalAlertsRes> {
+  const result = await apiCall<unknown>(
+    `/alerts/neighbourhoods/${encodeURIComponent(
+      neighbourhoodId,
+    )}/critical/unlocated`,
+    {
+      method: "GET",
+    },
+  );
+
+  return UnlocatedCriticalAlertsResSchema.parse(result);
+}
+
+export async function fetchAlertPropertyDistance(
+  propertyId: string,
+): Promise<AlertDistanceRes> {
+  const result = await apiCall<unknown>(
+    `/alerts/properties/${encodeURIComponent(propertyId)}/distance`,
+    {
+      method: "GET"
+    },
+  );
+
+  return AlertDistanceResSchema.parse(result);
+}
+
+export async function fetchAlertPropertyRoute(
+  propertyId: string,
+): Promise<AlertRouteRes> {
+  const result = await apiCall<unknown>(
+    `/alerts/properties/${encodeURIComponent(propertyId)}/route`,
+    {
+      method: "GET"
+    },
+  );
+
+  return AlertRouteResSchema.parse(result);
+}
+
+
+
+export interface SituationalBriefCamera {
+  camera_id: string;
+  camera_name: string;
+  camera_location: string;
+  property_id: string;
+
+}
+
+export interface SituationalBriefAlert {
+  alert_id: string;
+  detection_type: string;
+  confidence_score: number;
+  status: string;
+  observed_at: string;
+  camera_id: string;
+  camera_name: string;
+  camera_location: string;
+
+}
+
+export interface SituationalBriefSighting {
+  sighting_id: string;
+  sequence_no: number;
+  camera_id: string;
+  camera_name: string;
+  camera_location: string;
+  property_id: string;
+  local_track_id: number;
+  observed_at: string;
+  match_confidence: number | null;
+
+}
+
+export interface SituationalBriefData {
+  tracking_subject_id: string;
+  generated_at: string;
+  trigger: string;
+  summary: string;
+  cameras: SituationalBriefCamera[];
+  alerts: SituationalBriefAlert[];
+  sightings: SituationalBriefSighting[];
+  last_known_location: {
+    camera_id: string;
+    camera_name: string;
+    camera_location: string;
+    property_id: string;
+    observed_at: string;
+
+  };
+
+}
+
+interface SituationalBriefResponse {
+  status: number;
+  message?: string | null;
+  data?: SituationalBriefData | null;
+
+}
+
+export async function fetchSituationalBrief(alertId: string, signal?: AbortSignal): Promise<SituationalBriefData> {
+
+  const response = await apiFetch<SituationalBriefResponse>(`/alerts/${alertId}/situational-brief`, { signal });
+
+  if (!response.data) {
+    throw new ApiError(response.message ?? "Situational brief is unavailable", response.status);
+  }
+
+  return response.data;
 }

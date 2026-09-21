@@ -1,8 +1,8 @@
 from enum import Enum
 from datetime import datetime
 from uuid import UUID
-from typing import Optional, List
-from pydantic import BaseModel, ConfigDict
+from typing import Optional, List, Literal
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AlertCreate(BaseModel):
@@ -137,8 +137,24 @@ class CreateInternalAlertRequest(BaseModel):
     camera_id: str
     detection_type: str
     confidence_score: float
+    local_track_id: int | None = None
     thumbnail_url: str | None = None
     frame_timestamp: str | None = None
+
+
+	#represent 'fingerprints' of object
+    appearance_embedding: list[float] | None = Field(
+		default=None, 
+		min_length=1280, 
+		max_length=1280	
+	)
+
+	#specify the model ie, mobilenet_v2
+    embedding_model: str | None = Field(
+		default=None, 
+		min_length=1, 
+		max_length=128
+	)
 
 
 class UpdateAlertClipRequest(BaseModel):
@@ -167,3 +183,78 @@ class ClipUploadAcceptedRes(BaseModel):
 
 	alert_id: UUID
 	status: str
+
+class CriticalAlertBase(BaseModel):
+    id: UUID
+    camera_id: UUID
+    camera_name: str
+    neighbourhood_id: UUID
+    detection_type: str
+    status: str
+    created_at: datetime
+    property_id: UUID
+    property_address: str
+    thumbnail_url: str | None = None
+    confidence_score: float | None = None
+    resolved_at: datetime | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+class CriticalAlertMapItem(CriticalAlertBase):
+	latitude: float 
+	longitude: float
+
+class UnlocatedCriticalAlertItem(CriticalAlertBase):
+	latitude: float | None = None
+	longitude: float | None = None
+
+
+class CriticalAlertMapData(BaseModel):
+    alerts: list[CriticalAlertMapItem]
+    last_updated: datetime
+
+
+class CriticalAlertMapRes(BaseModel):
+    status: int
+    message: str | None = None
+    data: CriticalAlertMapData
+
+class UnlocatedCriticalAlertsData(BaseModel):
+    alerts: list[UnlocatedCriticalAlertItem]
+    last_updated: datetime
+
+class UnlocatedCriticalAlertsRes(BaseModel):
+    status: int
+    message: str | None = None
+    data: UnlocatedCriticalAlertsData
+
+class AlertDistanceData(BaseModel):
+    property_id: UUID
+    property_address: str
+    property_latitude: float
+    property_longitude: float
+    officer_latitude: float
+    officer_longitude: float
+    distance_metres: float
+    officer_location_updated_at: datetime
+
+class RouteGeometry(BaseModel):
+    type: Literal["LineString"]
+    coordinates: list[tuple[float, float]]
+
+
+class AlertRouteData(AlertDistanceData):
+    route_distance_metres: float | None = None
+    eta_seconds: float | None = None
+    route_geometry: RouteGeometry | None = None
+    routing_error: str | None = None
+
+
+class AlertRouteRes(BaseModel):
+    status: int
+    message: str | None = None
+    data: AlertRouteData
+
+class AlertDistanceRes(BaseModel):
+    status: int
+    message: str | None = None
+    data: AlertDistanceData

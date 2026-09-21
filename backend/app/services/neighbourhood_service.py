@@ -3,7 +3,20 @@ from typing import List
 from fastapi import HTTPException
 from app.core.database import DbSession
 from uuid import UUID
-from app.schemas.neighbourhood import NeighbourhoodPropertyRes, NeighbourhoodRes, NeighbourhoodMemberRes, UpdateSecurityAvailabilityRes
+from datetime import datetime, timezone
+from geoalchemy2.elements import WKTElement
+
+from app.auth.authorization import Claims
+from app.schemas.neighbourhood import (
+    NeighbourhoodPropertyRes, 
+    NeighbourhoodRes, 
+    NeighbourhoodMemberRes, 
+    UpdateSecurityAvailabilityRes,
+    UpdateOfficerLocationReq,
+    UpdateOfficerLocationRes,
+    GetSecurityAvailabilityRes,
+    OnDutyStatus,
+)
 from app.models.neighbourhood import Neighbourhood
 from app.models.property import Property
 from app.models.property_user import PropertyUser
@@ -11,15 +24,19 @@ from app.models.user import User
 from app.models.audit_log import TargetEntity
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from app.models.security_officer import SecurityOfficer, AvailabilityStatus
+from app.services.audit_service import create_audit_log_item
+from app.models.audit_log import AuditAction
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 import secrets
 import string
+import logging
 
-from app.services.audit_service import create_audit_log_item
-from app.models.audit_log import AuditAction
+logger = logging.getLogger(__name__)
 
 NOT_AUTHENTICATED_MESSAGE = "Not authenticated"
+SECURITY_OFFICER_NOT_FOUND = "Security officer not found"
+STALE_LOCATION_THRESHOLD_SECONDS = 120
 
 async def create_neighbourhood_handler(name: str, location: str, property_id: UUID, db: DbSession, claims: dict):
     """Creates the neighbourhood
@@ -365,6 +382,27 @@ async def update_neighbourhood_member_role_handler(
 
         member_membership.role = new_role
 
+        if new_role == NeighbourhoodRole.SECURITY_OFFICER:
+            existing_officer = await db.execute(
+                select(SecurityOfficer).where(
+                    SecurityOfficer.neighbourhood_user_id == member_membership.id
+                )
+            )
+            if existing_officer.scalar_one_or_none() is None:
+                db.add(SecurityOfficer(
+                    neighbourhood_user_id=member_membership.id,
+                    availability_status=AvailabilityStatus.UNAVAILABLE
+                ))    
+        elif old_role == NeighbourhoodRole.SECURITY_OFFICER:
+            existing_officer = await db.execute(
+                select(SecurityOfficer).where(
+                    SecurityOfficer.neighbourhood_user_id == member_membership.id
+                )
+            )
+            officer = existing_officer.scalar_one_or_none()
+            if officer is not None:
+                await db.delete(officer)
+
         await create_audit_log_item(
             db=db,
             user_id=current_user_id,
@@ -507,7 +545,7 @@ async def leave_neighbourhood_handler(
 
 async def update_security_availability_handler(
         neighbourhood_id: UUID,
-        new_availability: AvailabilityStatus,
+        new_duty_status: OnDutyStatus,
         db: DbSession,
         claims: dict,
 ) -> UpdateSecurityAvailabilityRes:
@@ -551,10 +589,18 @@ async def update_security_availability_handler(
         if not officer:
             raise HTTPException(
                 status_code=404,
-                detail="Security officer not found"
+                detail=SECURITY_OFFICER_NOT_FOUND
             )
 
         old_status = officer.availability_status
+
+        # It goes straight into avail or unavail coz I dont assume that they will be assigned a new alert upon changing status.
+        # that can happen when the officer's location is shared for the first time
+        new_availability = (
+            AvailabilityStatus.AVAILABLE 
+            if (new_duty_status == new_duty_status.ON_DUTY) 
+            else AvailabilityStatus.UNAVAILABLE
+        )
 
         if old_status == new_availability:
             return UpdateSecurityAvailabilityRes(
@@ -602,4 +648,89 @@ async def update_security_availability_handler(
             status_code=500,
             detail="Failed to update availability status"
         )
-        
+
+def is_location_stale(location_updated_at: datetime | None ) -> bool:
+    if location_updated_at is None:
+        return True
+    age = (datetime.now(timezone.utc) - location_updated_at).total_seconds()
+    return age > STALE_LOCATION_THRESHOLD_SECONDS
+
+async def update_location_handler(
+    req: UpdateOfficerLocationReq,
+    db: DbSession,
+    claims: Claims,
+) -> UpdateOfficerLocationRes:
+    """The handler function which takes the longitude and latitude in the 
+       req and uses them to update the officer's latest position"""
+
+    long = req.longitude
+    lat = req.latitude
+    neighbourhood_id = req.neighbourhood_id
+
+    if not claims:
+        logger.warning("update_location_handler called with no claims")
+        raise HTTPException(401, NOT_AUTHENTICATED_MESSAGE)
+    
+    stmt = (
+        select(SecurityOfficer) # this is what deals with the validation ensuring that the person is an officer
+        .join(NeighbourhoodUser)
+        .join(User)
+        .where(User.cognito_sub == claims['sub'])
+        .where(NeighbourhoodUser.neighbourhood_id == neighbourhood_id)
+    )
+    result = await db.execute(stmt)
+    officer_obj = result.scalars().first() 
+
+    if officer_obj is None:
+        logger.warning("update_location_handler Security officer not found. Failed for user with claim, claims=%s", claims)
+        raise HTTPException(404, SECURITY_OFFICER_NOT_FOUND)
+    
+    try:
+        officer_obj.last_known_location = WKTElement(f"POINT({long} {lat})", srid=4326)
+        officer_obj.location_updated_at = datetime.now(timezone.utc)
+
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        logger.warning("update_location_handler failed for officer with claim, claims=%s", claims)
+        raise HTTPException(500, "Failed to update security officer's location")
+
+    logger.info("update_location_handler successfully updated the officer with claim, claims=%s's ", claims)
+    return UpdateOfficerLocationRes(
+        status=200,
+        message="Successfully updated security officer's location",
+    )
+
+async def get_security_availability_handler(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: Claims,
+) -> GetSecurityAvailabilityRes:
+    """Uses the claims and the neighbourhood id to find the officer's availability from
+    the Security Officer table"""
+
+    if not claims:
+        logger.warning("get_security_availability_handler called with no claims")
+        raise HTTPException(401, NOT_AUTHENTICATED_MESSAGE)
+    
+    stmt = (
+        select(SecurityOfficer) # this is what deals with the validation ensuring that the person is an officer
+        .join(NeighbourhoodUser)
+        .join(User)
+        .where(User.cognito_sub == claims['sub'])
+        .where(NeighbourhoodUser.neighbourhood_id == neighbourhood_id)
+    )
+    result = await db.execute(stmt)
+    officer_obj = result.scalars().first() 
+
+    if officer_obj is None:
+        logger.warning("get_security_availability_handler Security officer not found. Failed for user with claim, claims=%s", claims)
+        raise HTTPException(404, SECURITY_OFFICER_NOT_FOUND)
+
+    logger.info("get_security_availability_handler successfully fetched availability of the officer with claim, claims=%s's ", claims)
+    return GetSecurityAvailabilityRes(
+        status=200,
+        message="Successfully retrieved officer availability",
+        availability=officer_obj.availability_status,
+        location_updated_at=officer_obj.location_updated_at,
+    )

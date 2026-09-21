@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   AlertCard,
   type Alert,
@@ -30,6 +29,16 @@ import {
   AlertFilters,
   broadcastAlert
 } from "@/lib/api/alert";
+import { toast } from "sonner";
+import { claimTrackingEvent } from "@/lib/tracking-events";
+import {
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from "react";
 
 const ALL_SEVERITIES: AlertSeverity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "RESOLVED"];
@@ -113,6 +122,176 @@ interface Props {
   neighbourhoodId: string;
 }
 
+
+type AlertSocketMessage = {
+  event: string;
+  payload?: Record<string, unknown>;
+};
+
+function handleTrackingSightingMessage(
+  payload: Record<string, unknown>,
+  seenEventIds: Set<string>,
+  onRefresh: () => void,
+): void {
+  if (!claimTrackingEvent(payload.event_id, seenEventIds)) {
+    return;
+  }
+
+  const cameraName =
+    typeof payload.camera_name === "string"
+      ? payload.camera_name
+      : "another camera";
+
+  const cameraLocation =
+    typeof payload.camera_location === "string"
+      ? payload.camera_location
+      : "location unavailable";
+
+  const sequenceNumber =
+    typeof payload.sequence_no === "number"
+      ? payload.sequence_no
+      : "?";
+
+  toast.info("Cross-property match detected", {
+    id: `tracking-match-${String(payload.event_id)}`,
+    description: `${cameraName} · ${cameraLocation} · sequence ${sequenceNumber}`,
+  });
+
+  onRefresh();
+}
+
+function handleAlertSocketMessage(message: AlertSocketMessage, isSecurityOfficer: boolean, seenEventIds: Set<string>, dispatch: (action: FetchAction) => void, onTrackingRefresh: () => void): void {
+  if (message.event === "ping") {
+    return;
+  }
+
+  if (message.event === "tracking.sighting") {
+    if (message.payload) {
+      handleTrackingSightingMessage(
+        message.payload,
+        seenEventIds,
+        onTrackingRefresh,
+      );
+    }
+
+    return;
+  }
+
+  if (!message.payload) {
+    return;
+  }
+
+  const incomingAlert = normaliseAlert(message.payload);
+
+  if (message.event === "alert.new") {
+    if (
+      isSecurityOfficer &&
+      getSeverity(incomingAlert.detection_type) !== "CRITICAL"
+    ) {
+      return;
+    }
+
+    dispatch({
+      type: "PREPEND_ALERT",
+      payload: incomingAlert,
+    });
+
+    return;
+  }
+
+  if (message.event === "alert.acknowledged") {
+    dispatch({
+      type: "UPDATE_ALERT",
+      payload: incomingAlert,
+    });
+  }
+}
+
+
+type AlertsWebSocketOptions = {
+  url: string;
+  wsRef: MutableRefObject<WebSocket | null>;
+  mountedRef: MutableRefObject<boolean>;
+  isSecurityOfficer: boolean;
+  seenEventIds: Set<string>;
+  dispatch: (action: FetchAction) => void;
+  onTrackingRefresh: () => void;
+  onConnectionChange: (connected: boolean) => void;
+};
+
+function createAlertsWebSocket({url, wsRef, mountedRef, isSecurityOfficer, seenEventIds, dispatch, onTrackingRefresh, onConnectionChange}: AlertsWebSocketOptions): () => void {
+  let unmounted = false;
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const connect = (): void => {
+    if (unmounted) {
+      return;
+    }
+
+    const ws = new WebSocket(url);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      if (mountedRef.current) {
+        onConnectionChange(true);
+      }
+    };
+
+    ws.onclose = () => {
+      if (mountedRef.current) {
+        onConnectionChange(false);
+      }
+
+      if (!unmounted) {
+        reconnectTimer = setTimeout(connect, 3_000);
+      }
+    };
+
+    ws.onerror = () => {
+      ws.close();
+    };
+
+    ws.onmessage = (event) => {
+      if (!mountedRef.current) {
+        return;
+      }
+
+      try {
+        const message = JSON.parse(event.data as string) as AlertSocketMessage;
+
+        handleAlertSocketMessage(
+          message,
+          isSecurityOfficer,
+          seenEventIds,
+          dispatch,
+          onTrackingRefresh
+
+        );
+      } catch {
+        // Ignore malformed WebSocket payloads.
+      }
+    };
+  };
+
+  connect();
+
+  return () => {
+    unmounted = true;
+
+    if (reconnectTimer !== null) {
+      clearTimeout(reconnectTimer);
+    }
+
+    const ws = wsRef.current;
+
+    if (ws) {
+      ws.onclose = null;
+      ws.close();
+    }
+  };
+}
+
+
 export default function AlertsPage({ neighbourhoodId }: Props) {
 
   const {
@@ -129,6 +308,9 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
     [userContext, neighbourhoodId],
   );
 
+  const isSystemAdmin =
+  userContext?.user.system_role === "SYSTEM_ADMIN";
+
   const isNeighbourhoodAdmin =
     neighbourhoodRole === "NEIGHBOURHOOD_ADMIN";
 
@@ -136,7 +318,10 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
     neighbourhoodRole === "SECURITY_OFFICER";
 
   const canViewAlerts =
-    isNeighbourhoodAdmin || isSecurityOfficer;
+    isSystemAdmin || isNeighbourhoodAdmin || isSecurityOfficer;
+
+  const canViewTracking =
+    isSystemAdmin || isNeighbourhoodAdmin || isSecurityOfficer;
 
   const [{ alerts, loading, error }, dispatch] = useReducer(fetchReducer, initialFetchState);
 
@@ -144,12 +329,16 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
   const [wsConnected, setWsConnected] = useState(false);
   const [fetchTick, setFetchTick] = useState(0);
 
+  const [trackingRefreshKey, setTrackingRefreshKey] = useState(0);
+
   const [selectedSeverities, setSelectedSeverities] = useState<Set<AlertSeverity>>(new Set(ALL_SEVERITIES));
   const [selectedStatus, setSelectedStatus] = useState<AlertStatus | null>(null);
   const [activeTab, setActiveTab] = useState<"current" | "history">("current");
   const [historyStartDate, setHisoryStartDate] = useState("");
   const [historyEndDate, setHisoryEndDate] = useState("");
   const [broadcastingAlertId, setBroadcastingAlertId] = useState<string | null>(null);
+
+  const seenTrackingEventIdsRef = useRef<Set<string>>(new Set());
 
   const alertFilters = useMemo<AlertFilters>(() => {
     const base: AlertFilters = {};
@@ -200,59 +389,25 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
   }, [neighbourhoodId, fetchTick, alertFilters, activeTab, userContextLoading, canViewAlerts]);
 
   useEffect(() => {
-    if (activeTab !== "current" || userContextLoading || !canViewAlerts) return;
+    if (activeTab !== "current" || userContextLoading || !canViewAlerts) {
+      return;
+    }
 
     const token = getAuthToken();
     const url = `${WS_BASE}/alerts/${neighbourhoodId}/ws${token ? `?token=${token}` : ""}`;
 
-    let unmounted = false;
-    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-
-    function connect() {
-      if (unmounted) return;
-      const ws = new WebSocket(url);
-      wsRef.current = ws;
-
-      ws.onopen = () => { if (mountedRef.current) setWsConnected(true); };
-      ws.onclose = () => {
-        if (mountedRef.current) setWsConnected(false);
-        if (!unmounted) reconnectTimer = setTimeout(connect, 3_000);
-      };
-      ws.onerror = () => ws.close();
-      ws.onmessage = (event) => {
-        if (!mountedRef.current) return;
-        try {
-          const message = JSON.parse(event.data as string) as { event: string; payload?: Record<string, unknown> };
-          if (message.event === "ping") return;
-          if (message.event === "alert.new" && message.payload) {
-            const incomingAlert = normaliseAlert(message.payload);
-
-            if (
-              isSecurityOfficer &&
-              getSeverity(incomingAlert.detection_type) !== "CRITICAL"
-            ) {
-              return;
-            }
-
-            dispatch({ type: "PREPEND_ALERT", payload: normaliseAlert(message.payload) });
-          }
-          if (message.event === "alert.acknowledged" && message.payload) {
-            dispatch({ type: "UPDATE_ALERT", payload: normaliseAlert(message.payload) });
-          }
-        } catch {
-          // Ignore malformed WebSocket payloads.
-        }
-      };
-    }
-
-    connect();
-
-    return () => {
-      unmounted = true;
-      if (reconnectTimer !== null) clearTimeout(reconnectTimer);
-      const ws = wsRef.current;
-      if (ws) { ws.onclose = null; ws.close(); }
-    };
+    return createAlertsWebSocket({
+      url,
+      wsRef,
+      mountedRef,
+      isSecurityOfficer,
+      seenEventIds: seenTrackingEventIdsRef.current,
+      dispatch,
+      onTrackingRefresh: () => {
+        setTrackingRefreshKey((current) => current + 1);
+      },
+      onConnectionChange: setWsConnected,
+    });
   }, [neighbourhoodId, activeTab, userContextLoading, canViewAlerts, isSecurityOfficer]);
 
   async function handleAcknowledge(id: string) {
@@ -484,7 +639,17 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
               ) : (
                 <div className="space-y-3">
                   {filtered.map((alert) => (
-                    <AlertCard key={alert.id} alert={alert} onAcknowledge={handleAcknowledge} onBroadcast={isNeighbourhoodAdmin ? handleBroadcast : undefined} broadcasting={broadcastingAlertId === alert.id} />
+                    <AlertCard
+                      key={alert.id}
+                      alert={alert}
+                      onAcknowledge={handleAcknowledge}
+                      onBroadcast={
+                        isNeighbourhoodAdmin ? handleBroadcast : undefined
+                      }
+                      broadcasting={broadcastingAlertId === alert.id}
+                      canViewTracking={canViewTracking}
+                      trackingRefreshKey={trackingRefreshKey}
+                    />
                   ))}
                 </div>
               )}

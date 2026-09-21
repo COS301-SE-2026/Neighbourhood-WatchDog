@@ -22,6 +22,7 @@ from app.models.retention_policy import RetentionPolicy
 from app.models.alert import Alert, AlertStatus, DetectionType
 from app.models.audit_log import AuditLog, AuditAction
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
+from app.models.security_officer import SecurityOfficer, AvailabilityStatus
 from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.services.rtsp_encryption import encrypt_rtsp_url
 
@@ -163,10 +164,20 @@ async def seed_database(bulk_audit_count: int = 500):
         await db.flush()
         print("Created test neighbourhood-admin membership")
 
+        security_officer = SecurityOfficer(
+            neighbourhood_user_id=neighbourhood_membership.id,
+            availability_status=AvailabilityStatus.AVAILABLE,
+            last_known_location=None,
+            location_updated_at=None,
+        )
+        db.add(security_officer)
+        await db.flush()
+        print("Created test security officer")
+
         #create test property
         test_property = Property(
             id=PROPERTY_ID,
-            neighbourhood_id=None,
+            neighbourhood_id=NEIGHBOURHOOD_ID,
             address="123 Test Street\nTest City\nGauteng\n1234",
             property_type=PropertyTypeEnum.PRIVATE,
             latitude=-25.7558,

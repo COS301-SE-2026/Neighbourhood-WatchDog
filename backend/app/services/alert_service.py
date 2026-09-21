@@ -10,8 +10,9 @@ from dateutil.relativedelta import relativedelta
 
 from fastapi import HTTPException, UploadFile
 from uuid import UUID
+from app.core.database import DbSession
 
-from sqlalchemy import select, func
+from sqlalchemy import or_, select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -27,6 +28,7 @@ from app.schemas.alert import (
     AlertClipUpdateRes,
     CreateInternalAlertRequest,
     InternalAlertCreateRes,
+    UnlocatedCriticalAlertsData,
     UpdateAlertClipRequest,
     AlertRes, 
     AlertCreate, 
@@ -40,16 +42,22 @@ from app.schemas.alert import (
     TrendDirection, 
     TrendBucket, 
     TrendData, 
-    AlertResponse
+    AlertResponse,
+    CriticalAlertMapItem,
+    CriticalAlertMapData,
+    UnlocatedCriticalAlertItem
 )
 from app.services.audit_service import create_audit_log_item
 from app.models.audit_log import AuditAction, TargetEntity
-from app.models.alert import Alert, DetectionType
+from app.models.alert import Alert, DetectionType, AlertStatus
 
 from app.models.neighbourhood import Neighbourhood
 from app.services.notification_service import _format_whatsapp_message, _notify_users
 from app.models.user import User
 
+from app.models.tracking import TrackingSighting, TrackingSubject
+from app.services.tracking_service import normalize_appearance_embedding
+from app.services.situational_brief_service import maybe_generate_situational_brief
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +66,7 @@ MAX_PAGE_SIZE = 100
 NO_DATABASE_SESSION = "No database session"
 NOT_AUTHORISED = "Not authorised for this neighbourhood"
 NOT_AUTHENTICATED = "Not authenticated"
+NEIGHBOURHOOD_NOT_FOUND = "Neighbourhood not found"
 ALERT_ID_INVALID = "alert_id is not a valid UUID"
 ALERT_NOT_FOUND = "Alert not found"
 CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
@@ -65,6 +74,61 @@ S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "")
 AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
 CHUNK_SIZE = 256 * 1024
 
+CRITICAL_DETECTION_TYPES = {
+    DetectionType.WEAPON_DETECTED,
+    DetectionType.FALL_DETECTED,
+}
+
+def _critical_neighbourhood_alerts_stmt(
+    neighbourhood_id: UUID,
+):
+    """Build the shared query for neighbourhood critical alerts."""
+
+    return (
+        select(Alert, Camera, Property)
+        .join(
+            Camera,
+            Alert.camera_id == Camera.id,
+        )
+        .join(
+            Property,
+            Camera.property_id == Property.id,
+        )
+        .where(
+            Property.neighbourhood_id == neighbourhood_id,
+            Alert.detection_type.in_(CRITICAL_DETECTION_TYPES),
+            Alert.status == AlertStatus.OPEN.value
+        )
+    )
+
+
+def _critical_alert_item_values(
+    alert: Alert,
+    camera: Camera,
+    property_obj: Property,
+) -> dict:
+    """Convert joined alert data into common response fields."""
+
+    return {
+        "id": alert.id,
+        "camera_id": camera.id,
+        "camera_name": camera.name,
+        "neighbourhood_id": property_obj.neighbourhood_id,
+        "detection_type": (
+            alert.detection_type.value
+            if hasattr(alert.detection_type, "value")
+            else str(alert.detection_type)
+        ),
+        "status": alert.status,
+        "created_at": alert.created_at,
+        "property_id": property_obj.id,
+        "property_address": property_obj.address,
+        "latitude": property_obj.latitude,
+        "longitude": property_obj.longitude,
+        "thumbnail_url": alert.thumbnail_url,
+        "confidence_score": alert.confidence_score,
+        "resolved_at": alert.resolved_at,
+    }
 
 
 def _s3_client():
@@ -282,10 +346,7 @@ def _build_alert_res(alert: Alert) -> AlertRes:
     )
 
 def _is_critical_alert(alert: Alert) -> bool:
-    return alert.detection_type in {
-        DetectionType.WEAPON_DETECTED,
-        DetectionType.FALL_DETECTED,
-    }
+    return alert.detection_type in CRITICAL_DETECTION_TYPES
 
 
 def _can_acknowledge_alert(
@@ -326,6 +387,7 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
             select(Alert)
             .options(joinedload(Alert.camera).joinedload(Camera.property))
             .where(Alert.id == alert_id)
+            .with_for_update(of=Alert)
         )
         row = result.unique().scalar_one_or_none()
 
@@ -993,7 +1055,7 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
     neighbourhood = result.scalar_one_or_none()
     if not neighbourhood:
         logger.warning("broadcast_neighbourhood_alert_service: could not find neighbourhoodcamera linked to alert with alert_id=%s", alert_id)
-        raise HTTPException(status_code=404, detail="Neighbourhood not found")
+        raise HTTPException(status_code=404, detail=NEIGHBOURHOOD_NOT_FOUND)
 
     detection_type = alert.detection_type.value \
     if hasattr(alert.detection_type, "value") \
@@ -1055,7 +1117,25 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
 
     await db.commit()
 
-async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:AsyncSession, credential: EdgeAgentCredential) -> InternalAlertCreateRes:
+def _validate_tracking_payload(body: CreateInternalAlertRequest) -> None:
+
+    if (body.appearance_embedding is not None and body.local_track_id is None):
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "local_track_id is required when an appearance_embedding is provided"
+            )
+        )
+
+    if (body.appearance_embedding is not None and body.embedding_model is None):
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "embedding_model is required when an appearance_embedding is provided"
+            )
+        )
+
+async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:AsyncSession, credential: EdgeAgentCredential, generate_brief: bool = False) -> InternalAlertCreateRes:
     """Create an alert for a camera owned by the authenticated edge agent's property."""
 
     label_map = {
@@ -1107,8 +1187,51 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
         )
 
         db.add(alert)
+        await db.flush()
+
+        _validate_tracking_payload(body)
+
+
+        tracking_subject = None
+
+
+        if body.local_track_id is not None:
+
+            reference_embedding = normalize_appearance_embedding(body.appearance_embedding)
+
+            tracking_subject = TrackingSubject(
+                alert_id=alert.id,
+                reference_embedding=reference_embedding,
+                embedding_model=body.embedding_model
+
+            )
+
+            db.add(tracking_subject)
+            await db.flush()
+
+            initial_sighting = TrackingSighting(
+                tracking_subject_id=tracking_subject.id,
+                camera_id=alert.camera_id,
+                local_track_id=body.local_track_id,
+                observed_at=alert.frame_timestamp,
+                sequence_no=1,
+                match_confidence=None
+                
+            )
+
+            db.add(initial_sighting)
+
         await db.commit()
         await db.refresh(alert)
+
+
+        if generate_brief and tracking_subject is not None:
+            await maybe_generate_situational_brief(
+                db=db, 
+                tracking_subject_id=tracking_subject.id
+
+            )
+        
 
         logger.info(
             "Internal alert created: alert_id=%s, camera_id=%s, detection_type=%s",
@@ -1310,3 +1433,132 @@ async def _read_clip_with_limit(
 
     return b"".join(chunks)
 
+async def get_critical_alerts_map_handler(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: dict,
+) -> CriticalAlertMapData:
+    """Return critical alerts for a security officer's neighbourhood."""
+
+    if not claims:
+        raise HTTPException(status_code=401, detail=NOT_AUTHENTICATED)
+
+    if not db:
+        raise HTTPException(status_code=500, detail=NO_DATABASE_SESSION)
+
+    neighbourhood_result = await db.execute(select(Neighbourhood).where(Neighbourhood.id == neighbourhood_id))
+    neighbourhood = neighbourhood_result.scalar_one_or_none()
+
+    if not neighbourhood:
+        raise HTTPException(status_code=404, detail=NEIGHBOURHOOD_NOT_FOUND)
+
+    
+    stmt = (
+        _critical_neighbourhood_alerts_stmt(neighbourhood_id)
+        .where(
+            Property.latitude.is_not(None),
+            Property.longitude.is_not(None),
+        )
+        .order_by(Alert.created_at.desc())
+    )
+
+    try:
+        result = await db.execute(stmt)
+        rows = result.all()
+
+        alerts = [
+            CriticalAlertMapItem(
+                **_critical_alert_item_values(
+                    alert,
+                    camera,
+                    property_obj,
+                )
+            )
+            for alert, camera, property_obj in rows
+        ]
+
+        return CriticalAlertMapData(
+            alerts=alerts,
+            last_updated=datetime.now(timezone.utc),
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as error:
+        logger.exception(
+            "Failed to retrieve mapped critical alerts "
+            "for neighbourhood_id=%s",
+            neighbourhood_id,
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to retrieve critical alerts for map",
+        ) from error
+
+
+async def get_unlocated_critical_alerts_handler(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: dict,
+) -> UnlocatedCriticalAlertsData:
+    """Return critical alerts missing one or both coordinates."""
+
+    if not claims:
+        raise HTTPException(status_code=401, detail=NOT_AUTHENTICATED)
+    
+    if not db:
+        raise HTTPException(status_code=500, detail=NO_DATABASE_SESSION)
+
+    neighbourhood_result = await db.execute(select(Neighbourhood).where(Neighbourhood.id == neighbourhood_id))
+    neighbourhood = neighbourhood_result.scalar_one_or_none()
+
+    if not neighbourhood:
+        raise HTTPException(status_code=404, detail=NEIGHBOURHOOD_NOT_FOUND)
+
+    stmt = (
+        _critical_neighbourhood_alerts_stmt(neighbourhood_id)
+        .where(
+            or_(
+                Property.latitude.is_(None),
+                Property.longitude.is_(None),
+            )
+        )
+        .order_by(Alert.created_at.desc())
+    )
+
+    try:
+        result = await db.execute(stmt)
+        rows = result.all()
+
+        alerts = [
+            UnlocatedCriticalAlertItem(
+                **_critical_alert_item_values(
+                    alert,
+                    camera,
+                    property_obj,
+                )
+            )
+            for alert, camera, property_obj in rows
+        ]
+
+        return UnlocatedCriticalAlertsData(
+            alerts=alerts,
+            last_updated=datetime.now(timezone.utc),
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as error:
+        logger.exception(
+            "Failed to retrieve unlocated critical alerts "
+            "for neighbourhood_id=%s",
+            neighbourhood_id,
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to retrieve unlocated critical alerts",
+        ) from error
