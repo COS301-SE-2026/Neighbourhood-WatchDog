@@ -10,16 +10,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { LoaderCircle } from "lucide-react"
 
 interface RemoveCameraProps {
+  isDeleting?: boolean
   open: boolean
   name: string
   onOpenChange: (open: boolean) => void
-  onConfirm?: () => void
+  onConfirm?: () => void | Promise<void>
 }
 
 
-export function RemoveCamera({ open, name, onOpenChange, onConfirm }: Readonly<RemoveCameraProps>) {
+export function RemoveCamera({ isDeleting, open, name, onOpenChange, onConfirm }: Readonly<RemoveCameraProps>) {
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -36,7 +38,15 @@ export function RemoveCamera({ open, name, onOpenChange, onConfirm }: Readonly<R
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={onConfirm}>Continue</AlertDialogAction>
+                    <AlertDialogAction 
+											disabled={isDeleting}
+											onClick={(e) => {
+													e.preventDefault()
+													onConfirm?.()
+											}}
+                    >
+											{isDeleting ? <LoaderCircle className="size-4 animate-spin"/> : "Continue"}
+                    </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
