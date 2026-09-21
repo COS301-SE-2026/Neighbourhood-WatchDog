@@ -52,8 +52,10 @@ from app.services.alert_service import (
 )
 from app.services.alert_route_service import calculate_property_distance_handler, get_property_route_handler
 
-from app.schemas.tracking import TrackingTimelineResponse
+from app.schemas.tracking import TrackingTimelineResponse, SituationalBriefResponse
 from app.services.tracking_service import get_tracking_timeline
+from app.services.situational_brief_service import get_situational_brief
+
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -233,6 +235,24 @@ async def get_alert_tracking_timeline(alert_id: UUID, db: DbSession, claims: Cla
         alert_id=alert_id, 
         claims=claims
         
+    )
+
+
+@router.get(
+    "/{alert_id}/situational-brief",
+    response_model=SituationalBriefResponse,
+    summary="Get the situational brief for an alert",
+    responses={
+        403: {"description": ("Only authorized officers can view situational briefs")},
+        404: {"description": ("Alert, tracking subject, or brief not found")}
+    }
+)
+async def get_alert_situational_brief(alert_id: UUID, db: DbSession, claims: Claims) -> SituationalBriefResponse:
+    return await get_situational_brief(
+        db=db,
+        alert_id=alert_id,
+        claims=claims
+
     )
 
 
