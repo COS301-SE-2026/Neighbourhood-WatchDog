@@ -552,3 +552,9 @@ class TestLoadAlertContext:
             latitude=-26.2041,
             longitude=28.0473,
         )
+
+    @pytest.mark.asyncio
+    async def test_returns_none_when_alert_does_not_exist(self):
+        mock_db = AsyncMock()
+        mock_db.execute = AsyncMock(return_value=make_first_result(None))
+        assert await _load_alert_context(mock_db, ALERT_ID) is None
