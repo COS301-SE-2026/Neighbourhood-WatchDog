@@ -749,3 +749,9 @@ class TestDispatchAlert:
         assert run.res.selected is None
         assert [row.status for row in run.added] == [DispatchStatus.NO_CANDIDATE]
         run.db.commit.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_no_officers_records_no_candidate(self):
+        run = await run_dispatch(dispatch_steps(make_context(), officers=[]))
+        assert run.res.no_candidate is True
+        assert [row.status for row in run.added] == [DispatchStatus.NO_CANDIDATE]
