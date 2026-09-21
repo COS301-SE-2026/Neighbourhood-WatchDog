@@ -38,7 +38,12 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
   const [officerStatus, setOfficerStatus] = useState<DutyStatus | null>(null)
   const [locationUpdatedAt, setLocationUpdatedAt] = useState<Date | null>(null)
   
-  const { status: permissionStatus, refresh: refreshPermission } = useLocationPermission()
+  const { 
+    status: permissionStatus, 
+    refresh: refreshPermission,
+    backgroundStatus,
+    requestBackground,
+  } = useLocationPermission()
   const [showPermissionDialog, setShowPermissionDialog] = useState(false)
   const [showUnsupportedNote, setShowUnsupportedNote] = useState(false)
   const [permissionBlocked, setPermissionBlocked] = useState(false)
@@ -218,6 +223,19 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
       <div className="text-sm px-5 py-5 text-brand-ash">
         Going on duty requires the WatchDog mobile app to share your location.
         Please switch to your phone to go on duty.
+      </div>
+    )}
+    {officerStatus === "ON_DUTY" && backgroundStatus !== "granted" && (
+      <div className="flex items-center gap-2 text-sm text-brand-ash px-5">
+        <span>
+          Location will stop sharing if you leave the app. Enable &quot;Allow all the time&quot; to keep sharing while on duty.
+        </span>
+        <button
+          type="button"
+          onClick={() => requestBackground()}
+          className="font-medium underline-offset-2 cursor-pointer whitespace-nowrap">
+            Enable
+        </button>
       </div>
     )}
     <LocationPermissionDialog
