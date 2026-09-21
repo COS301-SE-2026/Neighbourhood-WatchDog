@@ -507,3 +507,13 @@ class TestBuildAlertDispatchRes:
             assert res.selected is None
             assert res.pending == []
             assert res.queued == []
+
+    def test_no_candidate_sets_flag(self):
+        res = _build_alert_dispatch_res(
+            ALERT_ID, [make_dispatch_row(DispatchStatus.NO_CANDIDATE)]
+        )
+
+        assert res.no_candidate is True
+        assert res.selected is None
+        assert res.pending == []
+        assert res.queued == []
