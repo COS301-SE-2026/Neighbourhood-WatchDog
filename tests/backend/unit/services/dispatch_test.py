@@ -428,3 +428,14 @@ class TestBuildDispatchRows:
         rows = _build_dispatch_rows(make_context(), self.rank(*available, busy))
         assert [r.rank for r in rows] == [1, 2, 3]
         assert rows[-1].status == DispatchStatus.QUEUED
+
+    def test_no_candidate_records_no_candidate_row(self):
+        context = make_context()
+        rows = _build_dispatch_rows(context, [])
+        assert len(rows) == 1
+        row = rows[0]
+        assert row.status == DispatchStatus.NO_CANDIDATE
+        assert row.officer_id is None
+        assert row.rank is None
+        assert row.alert_id == ALERT_ID
+        assert row.neighbourhood_id == NEIGHBOURHOOD_ID
