@@ -674,3 +674,13 @@ class TestDispatchAlert:
             assert run.db.execute.await_count == 1
             run.db.add_all.assert_not_called()
             run.db.commit.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_dispatces_critical_alerts(self):
+        for detection_type in sorted(CRITICAL_DETECTION_TYPES):
+            context = make_context(detection_type=detection_type)
+            run = await run_dispatch(dispatch_steps(context, officers=[make_candidate()], workloads={}))
+
+            assert run.res.selected is not None
+            run.db.commit.assert_awaited_once()
+            run.db.commit.assert_not_awaited()
