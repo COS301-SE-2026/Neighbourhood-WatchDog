@@ -533,3 +533,22 @@ class TestBuildAlertDispatchRes:
  
         assert res.selected.is_location_stale is False
         assert res.pending[0].is_location_stale is True
+
+class TestLoadAlertContext:
+    @pytest.mark.asyncio
+    async def test_row_maps_to_alert_context(self):
+        mock_db = AsyncMock()
+        mock_db.execute = AsyncMock(
+            return_value=make_first_result(
+                (ALERT_ID, DetectionType.WEAPON_DETECTED, NEIGHBOURHOOD_ID, -26.2041, 28.0473)
+            )
+        )
+
+        context = await _load_alert_context(mock_db, ALERT_ID)
+        assert context == AlertContext(
+            alert_id=ALERT_ID,
+            detection_type="WEAPON_DETECTED",
+            neighbourhood_id=NEIGHBOURHOOD_ID,
+            latitude=-26.2041,
+            longitude=28.0473,
+        )
