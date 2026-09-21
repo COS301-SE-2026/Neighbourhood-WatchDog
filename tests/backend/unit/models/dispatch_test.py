@@ -59,8 +59,8 @@ class TestDispatchCandidateRes:
             )
         )
         assert candidate.officer_id is None
-        assert candidate.rank == None
-        assert candidate.score == None
+        assert candidate.rank is None
+        assert candidate.score is None
         assert candidate.status == DispatchStatus.NO_CANDIDATE
 
     def test_invalid_status_raises(self):
