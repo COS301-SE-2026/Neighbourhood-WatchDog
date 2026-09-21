@@ -134,7 +134,7 @@ class SituationalBriefData(BaseModel):
     cameras: list[SituationalBriefCamera]
     alerts: list[SituationalBriefAlert]
     sightings: list[SituationalBriefSighting]
-    last_known_location: list[SituationalBriefLastKnownLocation]
+    last_known_location: SituationalBriefLastKnownLocation
 
 
 class SituationalBriefResponse(BaseModel):
