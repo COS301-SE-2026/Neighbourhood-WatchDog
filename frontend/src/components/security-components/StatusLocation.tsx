@@ -100,6 +100,7 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
   })
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (fullyGranted) setPermissionBlocked(false)
   }, [fullyGranted])
 
