@@ -717,3 +717,22 @@ class TestDispatchAlert:
         assert [c.officer_id for c in run.res.queued] == [busy.officer_id]
         assert run.res.no_candidate is True
         assert all(row.status != DispatchStatus.SELECTED for row in run.added)
+
+    @pytest.mark.asyncio
+    async def test_ineligible_officers_are_never_dispatched(self):
+        unavailable_officer = make_candidate(availability=UNAVAILABLE, distance_m=10.0)
+        stale_officer = make_candidate(age_s=STALE_LOCATION_THRESHOLD_SECONDS + 60, distance_m=20.0)
+        no_location = replace(make_candidate(distance_m=30.0), distance_m=None)
+        eligible_officer = make_candidate(distance_m=4000.0)
+ 
+        run = await run_dispatch(
+            dispatch_steps(
+                make_context(),
+                officers=[unavailable_officer, stale_officer, no_location, eligible_officer],
+                workloads={},
+            )
+        )
+ 
+        dispatched = {row.officer_id for row in run.added if row.officer_id}
+        assert dispatched == {eligible_officer.officer_id}
+        assert run.res.selected.officer_id == eligible_officer.officer_id
