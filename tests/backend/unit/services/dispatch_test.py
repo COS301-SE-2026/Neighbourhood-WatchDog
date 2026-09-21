@@ -767,3 +767,22 @@ class TestDispatchAlert:
         assert NEIGHBOURHOOD_ID in params
         assert OTHER_NEIGHBOURHOOD_ID not in params
         assert NeighbourhoodRole.SECURITY_OFFICER in params
+
+    @pytest.mark.asyncio
+    async def test_only_eligible_officers_workload_is_recorded(self):
+        eligible = make_candidate(distance_m=300.0)
+        stale = make_candidate(age_s=STALE_LOCATION_THRESHOLD_SECONDS + 60)
+        run = await run_dispatch(
+            dispatch_steps(
+                make_context(),
+                officers=[eligible, stale],
+                workloads={eligible.officer_id: 2},
+            )
+        )
+ 
+        workload_query = run.db.execute.await_args_list[3].args[0]
+        params = list(compiled_params(workload_query).values())
+ 
+        assert [eligible.officer_id] in params
+        assert ALERT_ID in params
+        assert run.res.selected.workload == 2
