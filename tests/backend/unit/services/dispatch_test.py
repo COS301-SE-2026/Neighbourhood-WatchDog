@@ -684,3 +684,24 @@ class TestDispatchAlert:
             assert run.res.selected is not None
             run.db.commit.assert_awaited_once()
             run.db.commit.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_selects_nearest_available_and_queues_busy(self):
+        near = make_candidate(distance=300.0)
+        far = make_candidate(distance=900)
+        busy = make_candidate(availability_status=BUSY, distance=50.0)
+        run = await run_dispatch(
+            dispatch_steps(
+                make_context(), 
+                officers=[far, busy, near], 
+                workloads={}
+            )
+        )
+
+        assert run.res.selected.officer_id == near.officer_id
+        assert run.res.selected.status == DispatchStatus.SELECTED
+        assert [c.officer_id for c in run.res.pending] == [far.officer_id]
+        assert [c.officer_id for c in run.res.queued] == [busy.officer_id]
+        assert run.res.no_candidate is False
+        run.db.commit.assert_awaited_once()
+        assert run.db.execute.await_count == 5
