@@ -469,3 +469,17 @@ class TestBuildAlertDispatchRes:
         assert res.pending == []
         assert res.queued == []
         assert res.no_candidate is False
+
+    def test_rows_split_into_categories(self):
+        selected, pending, queued = uuid4(), uuid4(), uuid4()
+        rows = [
+            make_dispatch_row(DispatchStatus.SELECTED, officer_id=selected, rank=1),
+            make_dispatch_row(DispatchStatus.PENDING, officer_id=selected, rank=2),
+            make_dispatch_row(DispatchStatus.QUEUED, officer_id=selected, rank=3),
+        ]
+        res = _build_alert_dispatch_res(ALERT_ID, rows)
+
+        assert res.selected.officer_id == selected
+        assert [c.officer_id for c in res.pending] == [pending]
+        assert [c.officer_id for c in res.queued] == [queued]
+        assert res.no_candidate is False
