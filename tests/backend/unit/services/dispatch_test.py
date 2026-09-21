@@ -651,3 +651,12 @@ class TestFetchWorkloads:
         assert ALERT_ID in params  
         assert "RESOLVED" in params
         assert list(ACTIVE_DISPATCH_STATUS) in params
+
+class TestDispatchAlert:
+    @pytest.mark.asyncio
+    async def test_raises_404_when_alert_missing(self):
+        with pytest.raises(HTTPException) as exc_info:
+            await run_dispatch([make_first_result(None)])
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == "Alert not found"
