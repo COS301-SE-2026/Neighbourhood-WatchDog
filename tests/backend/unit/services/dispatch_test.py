@@ -12,7 +12,7 @@ from app.models.alert import DetectionType
 from app.models.dispatch import Dispatch, DispatchStatus
 from app.models.neighbourhood_user import NeighbourhoodRole
 from app.models.security_officer import AvailabilityStatus
-from app.services.security_officer_service import STALE_LOCATION_THRESHOLD_SECONDS
+from app.services.neighbourhood_service import STALE_LOCATION_THRESHOLD_SECONDS
 from app.services.dispatch_service import (
     ACTIVE_DISPATCH_STATUS,
     CRITICAL_DETECTION_TYPES,

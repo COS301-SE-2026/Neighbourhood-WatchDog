@@ -18,7 +18,7 @@ from app.models.dispatch import Dispatch, DispatchStatus
 from app.models.security_officer import SecurityOfficer, AvailabilityStatus
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes
-from app.services.security_officer_service import STALE_LOCATION_THRESHOLD_SECONDS, is_location_stale
+from app.services.neighbourhood_service import STALE_LOCATION_THRESHOLD_SECONDS, is_location_stale
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +113,9 @@ def rank_candidates(
 
     scored: list[tuple[OfficerCandidate, float, float]] = []
     for e in eligible:
+        assert e.distance is not None
+        assert e.location_updated_at is not None
+        assert e.availability_status is not None
         eta = estimate_eta_seconds(e.distance)
         age = max((now - e.location_updated_at).total_seconds(), 0.0)
         freshness_ratio = min(age/STALE_LOCATION_THRESHOLD_SECONDS, 1.0)
@@ -121,11 +124,11 @@ def rank_candidates(
             + weights.workload_weight * e.workload
             + weights.freshness_weight * freshness_ratio
         )
-        scored.append((e, eta, score))
+        scored.append((e, eta, score, _AVAILABILITY_TIER[e.availability_status]))
 
     scored.sort(
         key=lambda t: (
-            _AVAILABILITY_TIER[t[0].availability_status],
+            t[3],
             t[2],
             t[0].distance,
             str(t[0].officer_id),
@@ -133,7 +136,7 @@ def rank_candidates(
     )
     return [
         RankedCandidate(candidate=e, eta=eta, score=score, rank=rank)
-        for rank, (e, eta, score) in enumerate(scored, start=1)
+        for rank, (e, eta, score, _) in enumerate(scored, start=1)
     ]
 
 def _build_dispatch_rows(context: AlertContext, ranked: list[RankedCandidate]) -> list[Dispatch]:

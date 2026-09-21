@@ -121,7 +121,7 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
                 )
 
                 try:
-                    await dispatch_alert(db, alert_id)
+                    await dispatch_alert(db, alert.id)
                 except Exception:
                     logger.exception("Dispatch failed for alert %s", alert.id)
 
