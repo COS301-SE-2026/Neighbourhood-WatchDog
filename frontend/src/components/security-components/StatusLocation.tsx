@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils"
 import { useLocationPermission } from "@/hooks/use-location-permission"
 import { useOfficerLocationTracking } from "@/hooks/use-officer-location-tracking"
 import { LocationPermissionDialog } from "../shared/LocationPermissionDialog"
-import { Capacitor } from "@capacitor/core" 
 
 const STALE_LOCATION_THRESHOLD_MS = 120_000
 
@@ -37,12 +36,11 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
 
   const [officerStatus, setOfficerStatus] = useState<DutyStatus | null>(null)
   const [locationUpdatedAt, setLocationUpdatedAt] = useState<Date | null>(null)
-  
+
   const { 
     status: permissionStatus, 
     refresh: refreshPermission,
-    backgroundStatus,
-    requestBackground,
+    fullyGranted,
   } = useLocationPermission()
   const [showPermissionDialog, setShowPermissionDialog] = useState(false)
   const [showUnsupportedNote, setShowUnsupportedNote] = useState(false)
@@ -101,15 +99,15 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
     return () => clearInterval(interval)
   })
 
-  const handleStatusChange = async (next: DutyStatus) => {
-    if (next === "ON_DUTY" && !Capacitor.isNativePlatform()) {
-      setShowUnsupportedNote(true)
-      return 
-    }
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (fullyGranted) setPermissionBlocked(false)
+  }, [fullyGranted])
 
-    if (next === "ON_DUTY" && permissionStatus !== "granted") {
-      setPermissionBlocked(true)
+  const handleStatusChange = async (next: DutyStatus) => {
+    if (next === "ON_DUTY" && !fullyGranted) {
       setShowPermissionDialog(true)
+      setPermissionBlocked(true)
       return 
     }
 
@@ -208,7 +206,7 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
         </div>
       </CardContent>
     </Card>
-    {permissionBlocked && (
+    {permissionBlocked && !showPermissionDialog && (
       <div className="flex items-center gap-2 text-sm text-destructive">
         <span>Location permission is required to go on duty.</span>
         <button
@@ -223,19 +221,6 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
       <div className="text-sm px-5 py-5 text-brand-ash">
         Going on duty requires the WatchDog mobile app to share your location.
         Please switch to your phone to go on duty.
-      </div>
-    )}
-    {officerStatus === "ON_DUTY" && backgroundStatus !== "granted" && (
-      <div className="flex items-center gap-2 text-sm text-brand-ash px-5">
-        <span>
-          Location will stop sharing if you leave the app. Enable &quot;Allow all the time&quot; to keep sharing while on duty.
-        </span>
-        <button
-          type="button"
-          onClick={() => requestBackground()}
-          className="font-medium underline-offset-2 cursor-pointer whitespace-nowrap">
-            Enable
-        </button>
       </div>
     )}
     <LocationPermissionDialog
