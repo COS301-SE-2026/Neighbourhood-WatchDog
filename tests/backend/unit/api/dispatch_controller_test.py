@@ -37,3 +37,24 @@ def make_dispatch_res():
         responded_at=None,
     )
     return AlertDispatchRes(alert_id=ALERT_ID, selected=selected)
+
+def test_router_exposes_dispatch_route():
+    routes = {(route.path, tuple(sorted(route.methods))) for route in router.routes}
+    assert ("/dispatch/alert/{alert_id}", ("GET",)) in routes
+
+@pytest.mark.asyncio
+async def test_get_alert_dispatch_delegates_to_service():
+    expected = make_dispatch_res()
+
+    with patch(
+        "app.api.controllers.dispatch.get_alert_dispatch_handler",
+        new=AsyncMock(return_value=expected),
+    ) as handler:
+        res = await get_alert_dispatch(ALERT_ID, DB, CLAIMS)
+
+    assert res is expected
+    handler.assert_awaited_once_with(
+        alert_id=ALERT_ID,
+        db=DB,
+        claims=CLAIMS,
+    )
