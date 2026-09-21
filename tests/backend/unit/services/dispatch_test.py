@@ -589,3 +589,15 @@ class TestFetchNeighbourhoodOfficers:
         assert NeighbourhoodRole.SECURITY_OFFICER in params
         assert "neigbourhood_user.neighbourhood" in sql
         assert "neighbourhood_user.role" in sql
+
+    @pytest.mark.asyncio
+    async def test_query_uses_alert_location(self):
+        mock_db = AsyncMock()
+        mock_db.execute = AsyncMock(return_value=make_rows_result([]))
+        await _fetch_neighbourhood_officers(mock_db, NEIGHBOURHOOD_ID, -26.2041, 28.0473)
+
+        stmt = mock_db.execute.await_args.args[0]
+        params = list(compiled_params(stmt).values())
+        
+        assert "ST_Distance" in compiled_sql(stmt)
+        assert params.index(28.0473) < params.index(-26.2041)
