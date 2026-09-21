@@ -55,17 +55,21 @@ export function useLocationPermission() {
 		setLoading(true);
 		setBackgroundError(null);
 		try {
+			if (Capacitor.getPlatform() === "android"){
+				const { status: opened } = await NativeSettings.open({
+					optionAndroid: AndroidSettings.ApplicationDetails,
+					optionIOS: IOSSettings.App,
+				});
+				if (!opened) {
+					setBackgroundError("Could not open settings. Open your phone's Settings app and grant location access manually.")
+				}
+				return backgroundStatus;
+			}
+			
 			const result = await BackgroundGeolocation.requestPermissions({
 				permissions: ["backgroundLocation"],
 			});
 			const resolved: BackgroundPermissionState = result.backgroundLocation ?? "unsupported";
-
-			if (!BACKGROUND_GRANTED_STATES.includes(resolved) && Capacitor.getPlatform() === "android"){
-				await NativeSettings.open({
-					optionAndroid: AndroidSettings.ApplicationDetails,
-					optionIOS: IOSSettings.App,
-				})
-			}
 
 			setBackgroundStatus(resolved);
 			return resolved;
@@ -75,7 +79,7 @@ export function useLocationPermission() {
 		} finally {
 			setLoading(false);
 		}
-	}, [status]);
+	}, [status, backgroundStatus]);
 
 	useEffect(() => {
 		// eslint-disable-next-line react-hooks/set-state-in-effect
