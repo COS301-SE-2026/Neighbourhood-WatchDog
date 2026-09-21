@@ -50,7 +50,7 @@ export function useLocationPermission() {
 	}, []);
 
 	const requestBackground = useCallback(async () => {
-		if (!Capacitor.isNativePlatform() || status !== "granted"){
+		if (!Capacitor.isNativePlatform()){ // && status !== "granted"){ TODO: Change it back
 			return "unsupported" as BackgroundPermissionState;
 		}
 
