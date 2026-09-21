@@ -72,3 +72,21 @@ async def test_get_alert_dispatch_unchanged_when_returns_empty():
     assert res is expected
     assert res.no_candidate is True
     assert res.selected is None
+
+@pytest.mark.asyncio
+async def test_get_alert_dispatch_propagates_unauthenticated_error():
+    error = HTTPException(status_code=401, detail="Not authenticated")
+
+    with patch(
+        "app.api.controllers.dispatch.get_alert_dispatch_handler",
+        new=AsyncMock(side_effect=error),
+    ) as handler:
+        with pytest.raises(HTTPException) as exc_info:
+            await get_alert_dispatch(ALERT_ID, DB, CLAIMS)
+
+    assert exc_info.value is error
+    handler.assert_awaited_once_with(
+        alert_id=ALERT_ID,
+        db=DB,
+        claims=CLAIMS,
+    )
