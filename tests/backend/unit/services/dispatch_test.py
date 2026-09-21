@@ -660,3 +660,17 @@ class TestDispatchAlert:
 
         assert exc_info.value.status_code == 404
         assert exc_info.value.detail == "Alert not found"
+
+    @pytest.mark.asyncio
+    async def test_non_critical_alerts_skipped(self):
+        for detection_type in ("HUMAN_PRESENCE", "LOITERING", "PERIMETER_SCAN"):
+            context = make_context(detection_type=detection_type)
+            run = await run_dispatch([make_first_result(make_alert_row(context))])
+
+            assert run.res.alert_id == ALERT_ID
+            assert run.res.selected is None
+            assert run.res.pending == []
+            assert run.res.queued == []
+            assert run.db.execute.await_count == 1
+            run.db.add_all.assert_not_called()
+            run.db.commit.assert_not_awaited()
