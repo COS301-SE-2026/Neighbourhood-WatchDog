@@ -99,3 +99,110 @@ async def _load_context(db: AsyncSession, tracking_subject_id: UUID,) -> tuple[T
         )
 
     return (tracking_subject, parent_alert, source_camera, source_property, sightings)
+
+
+
+def _build_brief(tracking_subject: TrackingSubject, parent_alert: Alert, source_camera: Camera, source_property: Property, sightings: list[tuple[TrackingSighting, Camera, Property]], trigger: str) -> SituationalBriefData:
+    """constructing the situational brief"""
+
+    generated_at = datetime.now(timezone.utc)
+
+    cameras: dict[UUID, SituationalBriefCamera] = {}
+    brief_sightings: list[SituationalBriefSighting] = [] 
+
+
+    #building camera info
+    for sighting, camera, property_obj in sightings:
+
+        cameras[camera.id] = SituationalBriefCamera(
+            camera_id=camera.id, 
+            camera_name=camera.name,
+            camera_location=camera.location,
+            property_id=property_obj.id
+
+        )
+
+
+        #building sighting info
+        brief_sightings.append(
+            SituationalBriefSighting(
+                sighting_id=sighting.id,
+                sequence_no=sighting.sequence_no,
+                camera_id=camera.id,
+                camera_name=camera.name,
+                camera_location=camera.location,
+                property_id=property_obj.id,
+                local_track_id=sighting.local_track_id,
+                observed_at=sighting.observed_at,
+                match_confidence=sighting.match_confidence
+
+            )
+        )
+
+    ##finding the last known location
+    last_sighting, last_camera, last_property = max(
+        sightings,
+        key=lambda item: (item[0].observed_at, item[0].sequence_no)
+    )
+
+    last_location = SituationalBriefLastKnownLocation(
+        camera_id=last_camera.id,
+        camera_name=last_camera.name,
+        camera_location=last_camera.location,
+        property_id=last_property.id,
+        observed_at=last_sighting.observed_at
+
+    )
+
+
+    # building alert info
+    alert_data = SituationalBriefAlert(
+        alert_id=parent_alert.id,
+        detection_type=_enum_value(parent_alert.detection_type),
+        confidence_score=parent_alert.confidence_score,
+        status=str(parent_alert.status),
+        observed_at=parent_alert.frame_timestamp,
+        camera_id=source_camera.id,
+        camera_name=source_camera.name,
+        camera_location=source_camera.location
+
+    )
+
+
+    #get tracking duration
+    first_seen = min(
+        sighting.observed_at
+        for sighting, _, _ in sightings
+    )
+
+    last_seen = max(
+        sighting.observed_at
+        for sighting, _, _ in sightings
+    )
+
+    duration_seconds = max(0, int((last_seen - first_seen).total_seconds()))
+
+
+    #create the summary
+    camera_count = len(cameras)
+
+    summary = (
+        f"Tracking subject {tracking_subject.id} was observed across "
+        f"{camera_count} camera(s) over approximately {duration_seconds} second(s). "
+        f"Last known location: {last_camera.name} ({last_camera.location})."
+
+    )
+
+
+
+    return SituationalBriefData(
+        tracking_subject_id=tracking_subject.id,
+        generated_at=generated_at,
+        trigger=trigger,
+        summary=summary,
+        cameras=list(cameras.values()),
+        alerts=[alert_data],
+        sightings=brief_sightings,
+        last_known_location=last_location
+        
+    )
