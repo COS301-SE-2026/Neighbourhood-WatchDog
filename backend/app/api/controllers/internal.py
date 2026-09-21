@@ -164,6 +164,7 @@ async def record_tracking_sighting(body: RecordTrackingSightingRequest, db: DbSe
     return await record_tracking_sighting_for_agent(
         db=db,
         body=body,
-        candidate_property_id=credential.property_id
+        candidate_property_id=credential.property_id,
+        generate_brief=True
         
     )

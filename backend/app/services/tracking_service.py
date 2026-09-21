@@ -25,7 +25,7 @@ from app.schemas.tracking import (
     TrackingTimelineData,
     TrackingTimelineResponse
 )
-
+from app.services.situational_brief_service import maybe_generate_situational_brief
 
 logger = logging.getLogger(__name__)
 
@@ -224,7 +224,7 @@ async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUI
         ) from exc
 
 
-async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTrackingSightingRequest, candidate_property_id: UUID) -> TrackingSightingCreateResponse:
+async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTrackingSightingRequest, candidate_property_id: UUID, generate_brief: bool = False) -> TrackingSightingCreateResponse:
     """
     records a cross-camera tracking sighting for an edge agent, but first makes sure the agent is allowed to use the camera and that the tracking subject belongs to the same neighbourhood.
     """
@@ -298,6 +298,13 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
 
 
     )
+
+    if generate_brief:
+        await maybe_generate_situational_brief(
+            db=db,
+            tracking_subject_id=tracking_subject.id
+            
+        )
 
     authorized_recipient_result = await db.execute(
         select(User.id)
