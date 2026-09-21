@@ -90,3 +90,21 @@ async def test_get_alert_dispatch_propagates_unauthenticated_error():
         db=DB,
         claims=CLAIMS,
     )
+
+@pytest.mark.asyncio
+async def test_get_alert_dispatch_propagates_forbidden_error():
+    error = HTTPException(status_code=403, detail="Not authorised to view dispatch for this alert")
+
+    with patch(
+        "app.api.controllers.dispatch.get_alert_dispatch_handler",
+        new=AsyncMock(side_effect=error),
+    ) as handler:
+        with pytest.raises(HTTPException) as exc_info:
+            await get_alert_dispatch(ALERT_ID, DB, CLAIMS)
+
+    assert exc_info.value is error
+    handler.assert_awaited_once_with(
+        alert_id=ALERT_ID,
+        db=DB,
+        claims=CLAIMS,
+    )
