@@ -421,3 +421,10 @@ class TestBuildDispatchRows:
         by_officer = {r.officer_id: r for r in rows}
         assert by_officer[available.officer_id].status == DispatchStatus.SELECTED
         assert by_officer[busy.officer_id].status == DispatchStatus.QUEUED
+
+    def test_queued_officers_rank_after_available(self):
+        available = [make_candidate(distance=d, now=FIXED_NOW) for d in (500, 900)]
+        busy = make_candidate(availability_status=BUSY, distance=10.0, now=FIXED_NOW)
+        rows = _build_dispatch_rows(make_context(), self.rank(*available, busy))
+        assert [r.rank for r in rows] == [1, 2, 3]
+        assert rows[-1].status == DispatchStatus.QUEUED
