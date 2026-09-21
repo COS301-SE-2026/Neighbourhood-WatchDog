@@ -558,3 +558,17 @@ class TestLoadAlertContext:
         mock_db = AsyncMock()
         mock_db.execute = AsyncMock(return_value=make_first_result(None))
         assert await _load_alert_context(mock_db, ALERT_ID) is None
+
+    @pytest.mark.asyncio
+    async def test_property_without_neighbourhood_or_coord_is_none(self):
+        mock_db = AsyncMock()
+        mock_db.execute = AsyncMock(
+            return_value=make_first_result(
+                (ALERT_ID, DetectionType.WEAPON_DETECTED, None, None, None)
+            )
+        )
+
+        context = await _load_alert_context(mock_db, ALERT_ID)
+        assert context.neighbourhood_id is None
+        assert context.latitude is None
+        assert context.longitude is None
