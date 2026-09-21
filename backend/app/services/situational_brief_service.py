@@ -56,3 +56,46 @@ def _get_trigger(alert: Alert, sightings: list[tuple[TrackingSighting, Camera, P
         return "duration_threshold"
 
     return None
+
+
+async def _load_context(db: AsyncSession, tracking_subject_id: UUID,) -> tuple[TrackingSubject, Alert, Camera, Property, list[tuple[TrackingSighting, Camera, Property]]]:
+    """gathering everything needed to generate the breif"""
+
+    subject_result = await db.execute(
+        select(TrackingSubject, Alert, Camera, Property)
+        .join(Alert, Alert.id == TrackingSubject.alert_id)
+        .join(Camera, Camera.id == Alert.camera_id)
+        .join(Property, Property.id == Camera.property_id)
+        .where(TrackingSubject.id == tracking_subject_id)
+
+    )
+
+    subject_row = subject_result.one_or_none()
+
+    if subject_row is None:
+        raise HTTPException(
+            status_code=403, 
+            detail="Tracking subject not found"
+        )
+
+    (tracking_subject, parent_alert, source_camera, source_property) = subject_row
+
+
+    # load all sightings
+    sightings_result = await db.execute(
+        select(TrackingSubject, Camera, Property)
+        .join(Camera, Camera.id == TrackingSighting.camera_id)
+        .join(Property, Property.id == Camera.property_id)
+        .where(TrackingSighting.tracking_subject_id == tracking_subject_id)
+        .order_by(TrackingSighting.sequence_no.asc(), TrackingSighting.observed_at.asc())
+    )
+
+    sightings = list(sightings_result.all())
+
+    if not sightings:
+        raise HTTPException(
+            status_code=404, 
+            detail="Tracking sightings not found" 
+        )
+
+    return (tracking_subject, parent_alert, source_camera, source_property, sightings)
