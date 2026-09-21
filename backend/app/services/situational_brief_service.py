@@ -204,5 +204,42 @@ def _build_brief(tracking_subject: TrackingSubject, parent_alert: Alert, source_
         alerts=[alert_data],
         sightings=brief_sightings,
         last_known_location=last_location
-        
+
     )
+
+
+async def maybe_generate_situational_brief(*, db: AsyncSession, tracking_subject_id: UUID) -> SituationalBriefData | None:
+
+    (tracking_subject, parent_alert, source_camera, source_property, sightings) = await _load_context(db, tracking_subject_id)
+
+
+    #checking if a breif already exists
+    if tracking_subject.brief_data:
+        return SituationalBriefData.model_validate(tracking_subject.brief_data) #effectively makes the brief cached
+
+
+    #checking the trigger
+    trigger = _get_trigger(parent_alert, sightings)
+    if trigger is None:
+        return None
+
+
+    ##if we do have a trigger, then generate a brief
+    brief = _build_brief(
+        tracking_subject=tracking_subject,
+        parent_alert=parent_alert,
+        source_camera=source_camera,
+        source_property=source_property,
+        sightings=sightings,
+        trigger=trigger
+
+    )
+
+    #saving it
+    tracking_subject.brief_generated_at = brief.generated_at
+    tracking_subject.brief_trigger = trigger
+    tracking_subject.brief_data = brief.model_dump(mode="json")
+
+    await db.commit()
+
+    return brief
