@@ -572,3 +572,20 @@ class TestLoadAlertContext:
         assert context.neighbourhood_id is None
         assert context.latitude is None
         assert context.longitude is None
+
+class TestFetchNeighbourhoodOfficers:
+    @pytest.mark.asyncio
+    async def test_query_is_scoped_to_neighbourhood_and_officer(self):
+        mock_db = AsyncMock()
+        mock_db.execute = AsyncMock(return_value=make_rows_result([]))
+        await _fetch_neighbourhood_officers(mock_db, NEIGHBOURHOOD_ID, -26.2041, 28.0473)
+
+        stmt = mock_db.execute.await_args.args[0]
+        params = compiled_params(stmt).values()
+        sql = compiled_sql(stmt)
+
+        assert NEIGHBOURHOOD_ID in params
+        assert OTHER_NEIGHBOURHOOD_ID not in params
+        assert NeighbourhoodRole.SECURITY_OFFICER in params
+        assert "neigbourhood_user.neighbourhood" in sql
+        assert "neighbourhood_user.role" in sql
