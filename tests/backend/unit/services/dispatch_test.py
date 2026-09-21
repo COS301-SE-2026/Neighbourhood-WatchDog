@@ -483,3 +483,16 @@ class TestBuildAlertDispatchRes:
         assert [c.officer_id for c in res.pending] == [pending]
         assert [c.officer_id for c in res.queued] == [queued]
         assert res.no_candidate is False
+
+    def test_active_statuses_count_as_selected(self):
+        for status in (DispatchStatus.SELECTED, DispatchStatus.NOTIFIED, DispatchStatus.ACCEPTED):
+            officer = uuid4()
+            
+            res = _build_alert_dispatch_res(
+                ALERT_ID, [make_dispatch_row(status, officer_id=officer, rank=1)]
+            )
+
+            assert res.selected is not None
+            assert res.selected.officer_id == officer
+            assert res.selected.status == status
+    
