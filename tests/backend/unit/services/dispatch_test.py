@@ -705,3 +705,15 @@ class TestDispatchAlert:
         assert run.res.no_candidate is False
         run.db.commit.assert_awaited_once()
         assert run.db.execute.await_count == 5
+
+    @pytest.mark.asyncio
+    async def test_busy_officer_is_never_given_an_active_alert_automatically(self):
+        busy = make_candidate(availability=BUSY, distance_m=10.0)
+        run = await run_dispatch(
+            dispatch_steps(make_context(), officers=[busy], workloads={})
+        )
+ 
+        assert run.res.selected is None
+        assert [c.officer_id for c in run.res.queued] == [busy.officer_id]
+        assert run.res.no_candidate is True
+        assert all(row.status != DispatchStatus.SELECTED for row in run.added)
