@@ -413,4 +413,11 @@ class TestBuildDispatchRows:
         candidates = [make_candidate(distance=d, now=FIXED_NOW) for d in (100, 200, 300)]
         rows = _build_dispatch_rows(make_context(), self.rank(*candidates))
         assert sum(r.status == DispatchStatus.SELECTED for r in rows) == 1
-        
+
+    def test_busy_officers_are_queued(self):
+        available = make_candidate(availability_status=AVAILABLE, distance=2000.0, now=FIXED_NOW)
+        busy = make_candidate(availability_status=BUSY, distance=50.0, now=FIXED_NOW)
+        rows = _build_dispatch_rows(make_context(), self.rank(available, busy))
+        by_officer = {r.officer_id: r for r in rows}
+        assert by_officer[available.officer_id].status == DispatchStatus.SELECTED
+        assert by_officer[busy.officer_id].status == DispatchStatus.QUEUED
