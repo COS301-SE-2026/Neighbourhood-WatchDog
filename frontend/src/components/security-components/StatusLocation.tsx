@@ -44,6 +44,7 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
     status: permissionStatus, 
     refresh: refreshPermission,
     backgroundStatus,
+    requestBackground,
   } = useLocationPermission()
   const [showPermissionDialog, setShowPermissionDialog] = useState(false)
   const [showUnsupportedNote, setShowUnsupportedNote] = useState(false)
@@ -248,7 +249,9 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
     />
     <BackgroundLocationPermissionDialog
       open={showBackgroundPermissionDialog}
-      onOpenChange={setShowBackgroundPermissionDialog}/>
+      onOpenChange={setShowBackgroundPermissionDialog}
+      requestBackground={requestBackground}
+    />
     </div>
   )
 }

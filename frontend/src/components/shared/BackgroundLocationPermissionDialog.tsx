@@ -11,18 +11,19 @@ import {
 	AlertDialogCancel,
 	AlertDialogAction,
 } from "@/components/ui/alert-dialog"
-import { useLocationPermission } from "@/hooks/use-location-permission"
+import { useLocationPermission, BackgroundPermissionState } from "@/hooks/use-location-permission"
 
 interface BackgroundLocationPermissionInterface {
 	readonly open: boolean;
 	readonly onOpenChange: (open: boolean) => void;
+	readonly requestBackground: () => Promise<BackgroundPermissionState>;
 }
 
 export function BackgroundLocationPermissionDialog({
 	open,
 	onOpenChange,
+	requestBackground,
 }: BackgroundLocationPermissionInterface) {
-	const { requestBackground } = useLocationPermission();
 	const [requesting, setRequesting] = useState(false);
 
 	const handleContinue = async () => {

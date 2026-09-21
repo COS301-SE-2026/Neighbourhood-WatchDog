@@ -90,6 +90,9 @@ export function useLocationPermission() {
 				});
 			}
 		};
+		document.addEventListener("visibilitychange", onVisible);
+
+		return() => document.removeEventListener("visibilitychange", onVisible);
 	}, []);
 
 	return { status, backgroundStatus, loading, backgroundError, refresh, request, requestBackground }
