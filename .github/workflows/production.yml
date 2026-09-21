@@ -7,7 +7,7 @@ env:
 
 on:
   push:
-    branches: [ "main", "feature/background-permission" ]
+    branches: [ "main" ]
 
 jobs:
   Deploy-Production:
