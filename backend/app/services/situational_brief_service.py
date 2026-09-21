@@ -243,3 +243,34 @@ async def maybe_generate_situational_brief(*, db: AsyncSession, tracking_subject
     await db.commit()
 
     return brief
+
+
+async def _require_brief_access(*, db: AsyncSession, claims: dict, neighbourhood_id: UUID) -> None:
+    """authorization permission on viewing briefs"""
+
+    if claims.get("custom:role") == "SYSTEM_ADMIN":
+        return
+
+    try:
+        user_id = UUID(claims["id"])
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated"
+        ) from exc
+
+
+    
+    result = await db.execute(
+        select(NeighbourhoodUser)
+        .where(NeighbourhoodUser.user_id == user_id, NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+            NeighbourhoodUser.role.in_({NeighbourhoodRole.SECURITY_OFFICER, NeighbourhoodRole.NEIGHBOURHOOD_ADMIN}),
+        )
+    )
+
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(
+            status_code=403,
+            detail="Only authorized officers can view situational briefs"
+            
+        )
