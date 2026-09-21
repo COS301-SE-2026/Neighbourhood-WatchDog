@@ -683,7 +683,7 @@ class TestDispatchAlert:
 
             assert run.res.selected is not None
             run.db.commit.assert_awaited_once()
-            run.db.commit.assert_not_awaited()
+            run.db.rollback.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_selects_nearest_available_and_queues_busy(self):
@@ -708,7 +708,7 @@ class TestDispatchAlert:
 
     @pytest.mark.asyncio
     async def test_busy_officer_is_never_given_an_active_alert_automatically(self):
-        busy = make_candidate(availability=BUSY, distance_m=10.0)
+        busy = make_candidate(availability_status=BUSY, distance=10.0)
         run = await run_dispatch(
             dispatch_steps(make_context(), officers=[busy], workloads={})
         )
@@ -720,10 +720,10 @@ class TestDispatchAlert:
 
     @pytest.mark.asyncio
     async def test_ineligible_officers_are_never_dispatched(self):
-        unavailable_officer = make_candidate(availability=UNAVAILABLE, distance_m=10.0)
-        stale_officer = make_candidate(age_s=STALE_LOCATION_THRESHOLD_SECONDS + 60, distance_m=20.0)
-        no_location = replace(make_candidate(distance_m=30.0), distance_m=None)
-        eligible_officer = make_candidate(distance_m=4000.0)
+        unavailable_officer = make_candidate(availability_status=UNAVAILABLE, distance=10.0)
+        stale_officer = make_candidate(age=STALE_LOCATION_THRESHOLD_SECONDS + 60, distance=20.0)
+        no_location = replace(make_candidate(distance=30.0), distance=None)
+        eligible_officer = make_candidate(distance=4000.0)
  
         run = await run_dispatch(
             dispatch_steps(
@@ -740,8 +740,8 @@ class TestDispatchAlert:
     @pytest.mark.asyncio
     async def test_no_eligible_officers_records_no_candidate(self):
         officers = [
-            make_candidate(availability=UNAVAILABLE),
-            make_candidate(age_s=STALE_LOCATION_THRESHOLD_SECONDS + 60),
+            make_candidate(availability_status=UNAVAILABLE),
+            make_candidate(age=STALE_LOCATION_THRESHOLD_SECONDS + 60),
         ]
         run = await run_dispatch(dispatch_steps(make_context(), officers=officers))
  
@@ -770,8 +770,8 @@ class TestDispatchAlert:
 
     @pytest.mark.asyncio
     async def test_only_eligible_officers_workload_is_recorded(self):
-        eligible = make_candidate(distance_m=300.0)
-        stale = make_candidate(age_s=STALE_LOCATION_THRESHOLD_SECONDS + 60)
+        eligible = make_candidate(distance=300.0)
+        stale = make_candidate(age=STALE_LOCATION_THRESHOLD_SECONDS + 60)
         run = await run_dispatch(
             dispatch_steps(
                 make_context(),
@@ -797,8 +797,8 @@ class TestDispatchAlert:
     @pytest.mark.asyncio
     @pytest.mark.usefixtures("fixed_weights")
     async def test_officer_with_lower_workload_selected(self):
-        loaded = make_candidate(distance_m=500.0)
-        idle = make_candidate(distance_m=500.0)
+        loaded = make_candidate(distance=500.0)
+        idle = make_candidate(distance=500.0)
         run = await run_dispatch(
             dispatch_steps(
                 make_context(),

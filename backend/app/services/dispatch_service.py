@@ -306,7 +306,7 @@ async def dispatch_alert(db: DbSession, alert_id: UUID) -> AlertDispatchRes:
     if context is None:
         raise HTTPException(404, "Alert not found")
 
-    if context.detction_type not in CRITICAL_DETECTION_TYPES:
+    if context.detection_type not in CRITICAL_DETECTION_TYPES:
         logger.info("dispatch_alert skipped: alert %s (%s) is not critical", alert_id, context.detection_type)
         return AlertDispatchRes(alert_id=alert_id)
 
@@ -333,7 +333,7 @@ async def dispatch_alert(db: DbSession, alert_id: UUID) -> AlertDispatchRes:
 
             workloads = await _fetch_workloads(db, [e.officer_id for e in eligible], alert_id)
             eligible = [replace(e, workload=workloads.get(e.officer_id, 0)) for e in eligible]
-            ranked = rank_candidates(eligible, context.detction_type)
+            ranked = rank_candidates(eligible, context.detection_type)
 
             db.add_all(_build_dispatch_rows(context, ranked))
             await db.commit()
