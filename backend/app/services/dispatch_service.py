@@ -61,7 +61,7 @@ DISPATCH_VIEWER_ROLES = (
 @dataclass(frozen=True)
 class AlertContext:
     alert_id: UUID
-    detction_type: str
+    detection_type: str
     neighbourhood_id: UUID | None
     latitude: float | None
     longitude: float | None
@@ -159,21 +159,21 @@ def _build_dispatch_rows(context: AlertContext, ranked: list[RankedCandidate]) -
                 distance=c.distance,
                 eta=r.eta,
                 workload=c.workload,
-                officer_availability=c.availability,
+                officer_availability=c.availability_status,
                 officer_location_updated_at=c.location_updated_at,
                 status=status,
             )
         )
 
-        if not has_selected:
-            rows.append(
-                Dispatch(
-                    alert_id=context.alert_id,
-                    neighbourhood_id=context.neighbourhood_id,
-                    status=DispatchStatus.NO_CANDIDATE,
-                )
+    if not has_selected:
+        rows.append(
+            Dispatch(
+                alert_id=context.alert_id,
+                neighbourhood_id=context.neighbourhood_id,
+                status=DispatchStatus.NO_CANDIDATE,
             )
-        return rows
+        )
+    return rows
 
 async def _load_alert_context(db: DbSession, alert_id: UUID) -> AlertContext | None:
     stmt = (
