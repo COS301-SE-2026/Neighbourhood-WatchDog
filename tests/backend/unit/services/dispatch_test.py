@@ -617,3 +617,9 @@ class TestFetchNeighbourhoodOfficers:
             OfficerCandidate(a, AVAILABLE, updated_at, 812.5, 0),
             OfficerCandidate(b, BUSY, None, None, 0),
         ]
+
+    @pytest.mark.asyncio
+    async def test_no_officers_gives_empty_list(self):
+        mock_db = AsyncMock()
+        mock_db.execute = AsyncMock(return_value=make_rows_result([]))
+        assert await _fetch_neighbourhood_officers(mock_db, NEIGHBOURHOOD_ID, -26.2041, 28.0473) == []
