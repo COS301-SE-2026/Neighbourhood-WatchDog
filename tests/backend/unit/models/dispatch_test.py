@@ -171,3 +171,40 @@ class TestRespondDispatchRes:
     def test_missing_status_raises(self):
         with pytest.raises(ValidationError):
             RespondDispatchRes(message="Dispatch accepted", data=None)
+
+class TestDispatchNotificationRes:
+    def make_notifcation(self, **overrides):
+        kwargs = dict(
+            dispatch_id=uuid4(),
+            alert_id=uuid4(),
+            detection_type="WEAPON_DETECTED",
+            confidence_score=0.92,
+            thumbnail_url="https://example.com/thumbnail.jpg",
+            distance=800.0,
+            eta=120.0,
+            frame_timestamp=NOW,
+            notified_at=NOW,
+        )
+        kwargs.update(overrides)
+        return kwargs
+    
+    def test_valid_model(self):
+        notif = self.make_notifcation()
+        res = DispatchNotificationRes(**notif)
+
+        assert res.dispatch_id == notif["dispatch_id"]
+        assert res.detection_type == "WEAPON_DETECTED"
+        assert res.confidence_score == 0.92
+        assert res.distance == 800.0
+
+    def test_missing_required_field_raises(self):
+        for missing in ["dispatch_id", "alert_id", "detection_type", "distance", "notified_at"]:
+            notif = self.make_notifcation()
+            del notif[missing]
+            with pytest.raises(ValidationError):
+                DispatchNotificationRes(**notif)
+ 
+    def test_invalid_uuid_raises(self):
+        notif = self.make_notifcation(dispatch_id="not-a-uuid")
+        with pytest.raises(ValidationError):
+            DispatchNotificationRes(**notif)
