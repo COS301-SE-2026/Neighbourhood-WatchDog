@@ -102,8 +102,8 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
 
   const handleStatusChange = async (next: DutyStatus) => {
     if (next === "ON_DUTY" && !fullyGranted) {
-      setPermissionBlocked(true)
       setShowPermissionDialog(true)
+      setPermissionBlocked(true)
       return 
     }
 

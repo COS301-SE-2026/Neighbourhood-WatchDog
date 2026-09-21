@@ -49,8 +49,9 @@ export function LocationPermissionDialog({
 				<AlertDialogHeader>
 					<AlertDialogTitle>Allow location access</AlertDialogTitle>
 					<AlertDialogDescription>
-						WatchDog uses your location to alert nearby neighbours of an alert,
-						and to show the location of security officers. 
+						To go on duty, you must allow background location permissions. <br/>
+						This will allow WatchDog to use your location even when the app is not open. But only when you are <b>on duty</b> <br/>
+						To do that, click on 'Open Settings'. Select permissions. Location permissions and select 'All the time'.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
