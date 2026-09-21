@@ -408,4 +408,9 @@ class TestBuildDispatchRows:
             (mid.officer_id, DispatchStatus.PENDING),
             (far.officer_id, DispatchStatus.PENDING),
         ]
+
+    def test_exactly_one_officer_is_selected(self):
+        candidates = [make_candidate(distance=d, now=FIXED_NOW) for d in (100, 200, 300)]
+        rows = _build_dispatch_rows(make_context(), self.rank(*candidates))
+        assert sum(r.status == DispatchStatus.SELECTED for r in rows) == 1
         
