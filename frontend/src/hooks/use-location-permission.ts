@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { Geolocation, type PermissionStatus } from "@capacitor/geolocation";
+import { BackgroundGeolocation, type BackgroundLocationPermissionState } from "@capgo/background-geolocation";
 
 export type LocationPermissionState = PermissionStatus["location"] | "unsupported";
+export type BackgroundPermissionState = BackgroundLocationPermissionState | "unsupported";
 
 export function useLocationPermission() {
 	const [status, setStatus] = useState<LocationPermissionState>("prompt");
+	const [backgroundStatus, setBackgroundStatus] = useState<BackgroundPermissionState>("prompt");
 	const [loading, setLoading] = useState(true);
 
 	const refresh = useCallback(async () => {
@@ -40,6 +43,23 @@ export function useLocationPermission() {
 		}
 	}, []);
 
+	const requestBackground = useCallback(async () => {
+		if (!Capacitor.isNativePlatform() || status !== "granted"){
+			return "unsupported" as BackgroundPermissionState;
+		}
+
+		setLoading(true);
+		try {
+			const result = await BackgroundGeolocation.requestPermissions({
+				permissions: ["backgroundLocation"],
+			});
+			const resolved: BackgroundPermissionState = result.backgroundLocation ?? "unsupported";
+			setBackgroundStatus(resolved);
+			return resolved;
+		} finally {
+			setLoading(false);
+		}
+	}, [status]);
 
 	useEffect(() => {
 		// eslint-disable-next-line react-hooks/set-state-in-effect
@@ -47,6 +67,6 @@ export function useLocationPermission() {
 	}, [refresh]);
 
 
-	return { status, loading, refresh, request }
+	return { status, backgroundStatus, loading, refresh, request, requestBackground }
 
 }

@@ -5,11 +5,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 
-import {
-  Geolocation,
-  type Position,
-  type WatchPositionCallback,
-} from "@capacitor/geolocation";
+import type { Location } from "@capgo/background-geolocation";
 
 import {
   updateSecurityLocation,
@@ -17,11 +13,19 @@ import {
 import {
   useOfficerLocationTracking,
 } from "@/hooks/use-officer-location-tracking";
+import {
+  useLocationPermission,
+} from "@/hooks/use-location-permission";
 
-jest.mock("@capacitor/geolocation", () => ({
-  Geolocation: {
-    watchPosition: jest.fn(),
-    clearWatch: jest.fn(),
+type StartCallback = (
+  position?: Location,
+  error?: { message: string; code?: string },
+) => void;
+
+jest.mock("@capgo/background-geolocation", () => ({
+  BackgroundGeolocation: {
+    start: jest.fn(),
+    stop: jest.fn(),
   },
 }));
 
@@ -29,46 +33,71 @@ jest.mock("@/lib/api/neighbourhood", () => ({
   updateSecurityLocation: jest.fn(),
 }));
 
-const NEIGHBOURHOOD_ID =
-  "40a3036a-99ed-455f-891b-166826ff0886";
+jest.mock("@/hooks/use-location-permission", () => ({
+  useLocationPermission: jest.fn(),
+}));
 
-const mockWatchPosition =
-  Geolocation.watchPosition as jest.MockedFunction<
-    typeof Geolocation.watchPosition
-  >;
+const { BackgroundGeolocation } = jest.requireMock(
+  "@capgo/background-geolocation",
+) as {
+  BackgroundGeolocation: {
+    start: jest.Mock;
+    stop: jest.Mock;
+  };
+};
 
-const mockClearWatch =
-  Geolocation.clearWatch as jest.MockedFunction<
-    typeof Geolocation.clearWatch
-  >;
+const mockStart = BackgroundGeolocation.start;
+const mockStop = BackgroundGeolocation.stop;
 
 const mockUpdateLocation =
   updateSecurityLocation as jest.MockedFunction<
     typeof updateSecurityLocation
   >;
 
+const mockUseLocationPermission =
+  useLocationPermission as jest.MockedFunction<
+    typeof useLocationPermission
+  >;
+
+const NEIGHBOURHOOD_ID =
+  "40a3036a-99ed-455f-891b-166826ff0886";
+
 describe("useOfficerLocationTracking", () => {
-  let watchCallback:
-    | WatchPositionCallback
-    | null;
+  let startCallback: StartCallback | null;
+  let mockRequestBackground: jest.Mock;
+
+  const setPermissionState = (
+    backgroundStatus: "granted" | "denied" | "prompt",
+  ) => {
+    mockUseLocationPermission.mockReturnValue({
+      status: "granted",
+      backgroundStatus,
+      loading: false,
+      refresh: jest.fn(),
+      request: jest.fn(),
+      requestBackground: mockRequestBackground,
+    });
+  };
 
   beforeEach(() => {
     jest.resetAllMocks();
-    watchCallback = null;
+    startCallback = null;
+    mockRequestBackground = jest.fn().mockResolvedValue("granted");
 
-    mockWatchPosition.mockImplementation(
-      async (_options, callback) => {
-        watchCallback = callback;
-        return "officer-watch";
+    mockStart.mockImplementation(
+      async (_options: unknown, callback: StartCallback) => {
+        startCallback = callback;
       },
     );
 
-    mockClearWatch.mockResolvedValue();
+    mockStop.mockResolvedValue(undefined);
 
     mockUpdateLocation.mockResolvedValue({
       status: 200,
       message: "Location updated",
     });
+
+    setPermissionState("granted");
   });
 
   afterEach(() => {
@@ -76,7 +105,7 @@ describe("useOfficerLocationTracking", () => {
   });
 
   test(
-    "watches and sends officer location while on duty",
+    "starts background tracking and sends officer location while on duty",
     async () => {
       renderHook(() =>
         useOfficerLocationTracking(
@@ -86,41 +115,29 @@ describe("useOfficerLocationTracking", () => {
       );
 
       await waitFor(() => {
-        expect(
-          mockWatchPosition,
-        ).toHaveBeenCalledTimes(1);
+        expect(mockStart).toHaveBeenCalledTimes(1);
       });
 
-      expect(
-        mockWatchPosition,
-      ).toHaveBeenCalledWith(
+      expect(mockStart).toHaveBeenCalledWith(
         expect.objectContaining({
-          enableHighAccuracy: true,
-          minimumUpdateInterval: 10_000,
-          interval: 10_000,
+          backgroundMessage: expect.any(String),
+          requestPermissions: false,
         }),
         expect.any(Function),
       );
 
-      const position = {
-        coords: {
+      const location = {
           latitude: -25.7479,
           longitude: 28.2293,
-        },
-      } as Position;
+      } as Location;
 
       act(() => {
-        watchCallback?.(
-          position,
-        );
+        startCallback?.(location);
       });
 
       await waitFor(() => {
-        expect(
-          mockUpdateLocation,
-        ).toHaveBeenCalledWith({
-          neighbourhood_id:
-            NEIGHBOURHOOD_ID,
+        expect(mockUpdateLocation).toHaveBeenCalledWith({
+          neighbourhood_id: NEIGHBOURHOOD_ID,
           latitude: -25.7479,
           longitude: 28.2293,
         });
@@ -129,7 +146,29 @@ describe("useOfficerLocationTracking", () => {
   );
 
   test(
-    "clears the location watcher when unmounted",
+    "requests background permission when not already granted",
+    async () => {
+      setPermissionState("denied");
+
+      renderHook(() =>
+        useOfficerLocationTracking(
+          NEIGHBOURHOOD_ID,
+          true,
+        ),
+      );
+
+      await waitFor(() => {
+        expect(mockRequestBackground).toHaveBeenCalledTimes(1);
+      });
+
+      await waitFor(() => {
+        expect(mockStart).toHaveBeenCalledTimes(1);
+      });
+    },
+  );
+
+  test(
+    "stops tracking when unmounted",
     async () => {
       const { unmount } = renderHook(() =>
         useOfficerLocationTracking(
@@ -139,25 +178,19 @@ describe("useOfficerLocationTracking", () => {
       );
 
       await waitFor(() => {
-        expect(
-          mockWatchPosition,
-        ).toHaveBeenCalledTimes(1);
+        expect(mockStart).toHaveBeenCalledTimes(1);
       });
 
       unmount();
 
       await waitFor(() => {
-        expect(
-          mockClearWatch,
-        ).toHaveBeenCalledWith({
-          id: "officer-watch",
-        });
+        expect(mockStop).toHaveBeenCalledTimes(1);
       });
     },
   );
 
   test(
-    "does not watch location while off duty",
+    "does not start tracking while off duty",
     () => {
       renderHook(() =>
         useOfficerLocationTracking(
@@ -166,13 +199,8 @@ describe("useOfficerLocationTracking", () => {
         ),
       );
 
-      expect(
-        mockWatchPosition,
-      ).not.toHaveBeenCalled();
-
-      expect(
-        mockUpdateLocation,
-      ).not.toHaveBeenCalled();
+      expect(mockStart).not.toHaveBeenCalled();
+      expect(mockUpdateLocation).not.toHaveBeenCalled();
     },
   );
 });
