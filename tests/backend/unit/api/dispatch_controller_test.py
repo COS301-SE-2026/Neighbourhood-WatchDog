@@ -61,7 +61,7 @@ async def test_get_alert_dispatch_delegates_to_service():
 
 @pytest.mark.asyncio
 async def test_get_alert_dispatch_unchanged_when_returns_empty():
-    expected = make_dispatch_res(alert_id=ALERT_ID, no_candidate=True)
+    expected = AlertDispatchRes(alert_id=ALERT_ID, no_candidate=True)
 
     with patch(
         "app.api.controllers.dispatch.get_alert_dispatch_handler",
