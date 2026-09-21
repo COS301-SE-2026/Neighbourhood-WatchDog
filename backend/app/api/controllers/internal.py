@@ -52,7 +52,8 @@ async def create_alert(
     return await create_alert_for_agent_handler(
         body=body, 
         credential=credential, 
-        db=db
+        db=db, 
+        generate_brief=True
     )
     
     

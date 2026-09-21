@@ -57,7 +57,7 @@ from app.models.user import User
 
 from app.models.tracking import TrackingSighting, TrackingSubject
 from app.services.tracking_service import normalize_appearance_embedding
-
+from app.services.situational_brief_service import maybe_generate_situational_brief
 
 logger = logging.getLogger(__name__)
 
@@ -1117,7 +1117,7 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
 
     await db.commit()
 
-async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:AsyncSession, credential: EdgeAgentCredential) -> InternalAlertCreateRes:
+async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:AsyncSession, credential: EdgeAgentCredential, generate_brief: bool = False) -> InternalAlertCreateRes:
     """Create an alert for a camera owned by the authenticated edge agent's property."""
 
     label_map = {
@@ -1185,6 +1185,10 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
     
             )
 
+
+        tracking_subject = None
+
+
         if body.local_track_id is not None:
 
             reference_embedding = normalize_appearance_embedding(body.appearance_embedding)
@@ -1213,6 +1217,15 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
 
         await db.commit()
         await db.refresh(alert)
+
+
+        if generate_brief and tracking_subject is not None:
+            await maybe_generate_situational_brief(
+                db=db, 
+                tracking_subject_id=tracking_subject.id
+
+            )
+        
 
         logger.info(
             "Internal alert created: alert_id=%s, camera_id=%s, detection_type=%s",
