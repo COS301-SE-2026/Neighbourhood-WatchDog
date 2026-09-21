@@ -111,7 +111,7 @@ def rank_candidates(
     now = now or datetime.now(timezone.utc)
     weights = RANKING_WEIGHTS.get(detection_type, DEFAULT_WEIGHTS)
 
-    scored: list[tuple[OfficerCandidate, float, float]] = []
+    scored: list[tuple[OfficerCandidate, float, float, int]] = []
     for e in eligible:
         assert e.distance is not None
         assert e.location_updated_at is not None
