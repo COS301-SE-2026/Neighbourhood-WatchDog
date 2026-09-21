@@ -587,7 +587,7 @@ class TestFetchNeighbourhoodOfficers:
         assert NEIGHBOURHOOD_ID in params
         assert OTHER_NEIGHBOURHOOD_ID not in params
         assert NeighbourhoodRole.SECURITY_OFFICER in params
-        assert "neigbourhood_user.neighbourhood" in sql
+        assert "neighbourhood_user.neighbourhood" in sql
         assert "neighbourhood_user.role" in sql
 
     @pytest.mark.asyncio
@@ -623,3 +623,31 @@ class TestFetchNeighbourhoodOfficers:
         mock_db = AsyncMock()
         mock_db.execute = AsyncMock(return_value=make_rows_result([]))
         assert await _fetch_neighbourhood_officers(mock_db, NEIGHBOURHOOD_ID, -26.2041, 28.0473) == []
+
+class TestFetchWorkloads:
+    @pytest.mark.asyncio
+    async def test_no_officers_skips_the_query(self):
+        mock_db = AsyncMock()
+        assert await _fetch_workloads(mock_db, [], ALERT_ID) == {}
+        mock_db.execute.assert_not_awaited()
+ 
+    @pytest.mark.asyncio
+    async def test_returns_counts_per_officer(self):
+        a, b = uuid4(), uuid4()
+        mock_db = AsyncMock()
+        mock_db.execute = AsyncMock(return_value=make_rows_result([(a, 2), (b, 1)]))
+ 
+        workloads = await _fetch_workloads(mock_db, [a, b, uuid4()], ALERT_ID)
+        assert workloads == {a: 2, b: 1}
+ 
+    @pytest.mark.asyncio
+    async def test_only_counts_active_dispatches_on_unresolved_other_alerts(self):
+        mock_db = AsyncMock()
+        mock_db.execute = AsyncMock(return_value=make_rows_result([]))
+        await _fetch_workloads(mock_db, [uuid4()], ALERT_ID)
+ 
+        params = list(compiled_params(mock_db.execute.await_args.args[0]).values())
+ 
+        assert ALERT_ID in params  
+        assert "RESOLVED" in params
+        assert list(ACTIVE_DISPATCH_STATUS) in params
