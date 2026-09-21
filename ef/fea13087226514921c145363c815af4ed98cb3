@@ -1,0 +1,19 @@
+frontend/src/components/camera-dropdown.tsx
+  h_cf6208e37032c0 11-12,31,66,72,79-81
+backend/app/auth/authorization.py
+  h_cf6208e37032c0 590
+frontend/src/components/remove-camera-card.tsx
+  h_cf6208e37032c0 13,16,20,24,42-46,48
+  h_cf6208e37032c0 41,47,49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "effea13087226514921c145363c815af4ed98cb3",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
