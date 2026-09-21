@@ -159,3 +159,15 @@ class TestRespondDispatchReq:
     def test_none_raises(self):
         with pytest.raises(ValidationError):
             RespondDispatchReq(action=None)
+
+class TestRespondDispatchRes:
+    def test_with_data(self):
+        data = DispatchCandidateRes(**make_candidate(status=DispatchStatus.ACCEPTED))
+        res = RespondDispatchRes(status=200, message="Dispatch accepted", data=data)
+        assert res.status == 200
+        assert res.message == "Dispatch accepted"
+        assert res.data == data
+
+    def test_missing_status_raises(self):
+        with pytest.raises(ValidationError):
+            RespondDispatchRes(message="Dispatch accepted", data=None)
