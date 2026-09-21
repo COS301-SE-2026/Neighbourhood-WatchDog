@@ -134,3 +134,28 @@ class TestAlertDispatchRes:
     def test_invalid_pending_raises(self):
         with pytest.raises(ValidationError):
             AlertDispatchRes(alert_id=uuid4(), pending=["not-a-candidate"])
+
+class TestRespondDispatchReq:
+    def test_accept(self):
+        req = RespondDispatchReq(action="ACCEPT")
+        assert req.action == "ACCEPT"
+ 
+    def test_decline(self):
+        req = RespondDispatchReq(action="DECLINE")
+        assert req.action == "DECLINE"
+ 
+    def test_lowercase_raises(self):
+        with pytest.raises(ValidationError):
+            RespondDispatchReq(action="accept")
+ 
+    def test_invalid_raises(self):
+        with pytest.raises(ValidationError):
+            RespondDispatchReq(action="MAYBE")
+ 
+    def test_missing_raises(self):
+        with pytest.raises(ValidationError):
+            RespondDispatchReq()
+ 
+    def test_none_raises(self):
+        with pytest.raises(ValidationError):
+            RespondDispatchReq(action=None)
