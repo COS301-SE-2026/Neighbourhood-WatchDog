@@ -4,8 +4,8 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from app.candidates.dispatch import DispatchStatus
-from app.candidates.security_officer import AvailabilityStatus
+from app.models.dispatch import DispatchStatus
+from app.models.security_officer import AvailabilityStatus
 from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, DispatchNotificationRes, RespondDispatchReq, RespondDispatchRes
 
 NOW = datetime(2026, 1, 1, tzinfo=timezone.utc)
@@ -84,3 +84,53 @@ class TestDispatchCandidateRes:
             del candidate[missing]
             with pytest.raises(ValidationError):
                 DispatchCandidateRes(**candidate)
+
+class TestAlertDispatchRes:
+    def test_default_values_ok(self):
+        """Only alert_id required"""
+        alert_id = uuid4()
+        res = AlertDispatchRes(alert_id=alert_id)
+
+        assert res.alert_id == alert_id
+        assert res.selected is None
+        assert res.pending == []
+        assert res.queued == []
+        assert res.no_candidate is False
+
+    def test_missing_id_raises(self):
+        with pytest.raises(ValidationError):
+            AlertDispatchRes()
+
+    def test_selected_pending_queued(self):
+        alert_id = uuid4()
+        selected = DispatchCandidateRes(**make_candidate(alert_id=alert_id))
+        pending = DispatchCandidateRes(**make_candidate(alert_id=alert_id, rank=2, status=DispatchStatus.PENDING))
+        queued = DispatchCandidateRes(
+            **make_candidate(
+                alert_id=alert_id, 
+                rank=3, 
+                status=DispatchStatus.QUEUED, 
+                officer_availability=AvailabilityStatus.BUSY
+            )
+        )
+
+        res = AlertDispatchRes(
+            alert_id=alert_id,
+            selected=selected,
+            pending=[pending],
+            queued=[queued],
+        )
+
+        assert res.selected == selected
+        assert res.pending == [pending]
+        assert res.queued == [queued]
+        assert res.no_candidate is False
+
+    def test_no_candidate(self):
+        res = AlertDispatchRes(alert_id=uuid4(), no_candidate=True)
+        assert res.no_candidate is True
+        assert res.selected is None
+
+    def test_invalid_pending_raises(self):
+        with pytest.raises(ValidationError):
+            AlertDispatchRes(alert_id=uuid4(), pending=["not-a-candidate"])
