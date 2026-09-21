@@ -84,3 +84,60 @@ class TrackingSightingCreateResponse(BaseModel):
     status: int
     message: str
     data: TrackingSightingCreateData
+
+
+
+##situational briefing
+class SituationalBriefCamera(BaseModel):
+    camera_id: UUID
+    camera_name: str
+    camera_location: str
+    property_id: UUID
+
+
+class SituationalBriefAlert(BaseModel):
+    alert_id: UUID
+    detection_type: str
+    confidence_score: float
+    status: str
+    observed_at: datetime
+    camera_id: UUID
+    camera_name: str
+    camera_location: str
+
+
+class SituationalBriefSighting(BaseModel):
+    sighting_id: UUID
+    sequence_no: int
+    camera_id: UUID
+    camera_name: str
+    camera_location: str
+    property_id: UUID
+    local_track_id: int
+    observed_at: datetime
+    match_confidence: float | None = None
+
+
+class SituationalBriefLastKnownLocation(BaseModel):
+    camera_id: UUID
+    camera_name: str
+    camera_location: str
+    property_id: UUID
+    observed_at: datetime
+
+
+class SituationalBriefData(BaseModel):
+    tracking_subject_id: UUID
+    generated_at: datetime
+    trigger: str
+    summary: str
+    cameras: list[SituationalBriefCamera]
+    alerts: list[SituationalBriefAlert]
+    sightings: list[SituationalBriefSighting]
+    last_known_location: SituationalBriefLastKnownLocation
+
+
+class SituationalBriefResponse(BaseModel):
+    status: int
+    message: str | None = None
+    data: SituationalBriefData | None = None

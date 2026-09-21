@@ -1,7 +1,7 @@
 import uuid
 
 from sqlalchemy import CheckConstraint, Column, DateTime, Float, ForeignKey, Index, Integer, String, UniqueConstraint, text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from pgvector.sqlalchemy import Vector
@@ -23,8 +23,13 @@ class TrackingSubject(Base):
     reference_embedding = Column(Vector(APPEARANCE_EMBEDDING_DIMENSION),nullable=True)
     embedding_model = Column(String(128), nullable=True)
 
+    brief_generated_at = Column(DateTime(timezone=True), nullable=True)
+    brief_trigger = Column(String(64), nullable=True)
+    brief_data = Column(JSONB, nullable=True)
+
     alert = relationship("Alert", back_populates="tracking_subject")
     sightings = relationship("TrackingSighting", back_populates="tracking_subject", cascade="all, delete-orphan", order_by="TrackingSighting.sequence_no")
+
 
 
 #represents one observation of the tracked sighting
