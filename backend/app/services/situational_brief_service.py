@@ -272,5 +272,66 @@ async def _require_brief_access(*, db: AsyncSession, claims: dict, neighbourhood
         raise HTTPException(
             status_code=403,
             detail="Only authorized officers can view situational briefs"
-            
+
         )
+
+
+
+async def get_situational_brief(*, db: AsyncSession, alert_id: UUID, claims: dict) -> SituationalBriefResponse:
+    """find tracking subject associated with alert"""
+
+    result = await db.execute(
+        select(TrackingSubject, Alert, Camera, Property)
+        .join(Alert, Alert.id == TrackingSubject.alert_id)
+        .join(Camera, Camera.id == Alert.camera_id)
+        .join(Property, Property.id == Camera.property_id)
+        .where(Alert.id == alert_id)
+    )
+
+    row = result.one_or_none()
+
+    if row is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Situational brief not found"
+
+        )
+
+
+    tracking_subject, _, _, property_obj = row
+
+    if property_obj.neighbourhood_id is None:
+        raise HTTPException(
+            status_code=403,
+            detail="Alert is not associated with a neighbourhood"
+
+        )
+
+    await _require_brief_access(
+        db=db,
+        claims=claims,
+        neighbourhood_id=property_obj.neighbourhood_id
+
+    )
+
+
+
+    brief = await maybe_generate_situational_brief(
+        db=db,
+        tracking_subject_id=tracking_subject.id
+
+    )
+
+    if brief is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Situational brief threshold has not been reached"
+
+        )
+
+    return SituationalBriefResponse(
+        status=200,
+        message="Situational brief retrieved successfully",
+        data=brief
+        
+    )
