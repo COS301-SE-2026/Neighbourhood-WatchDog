@@ -601,3 +601,19 @@ class TestFetchNeighbourhoodOfficers:
         
         assert "ST_Distance" in compiled_sql(stmt)
         assert params.index(28.0473) < params.index(-26.2041)
+
+    @pytest.mark.asyncio
+    async def test_rows_mapped_to_candidates(self):
+        a, b = uuid4(), uuid4()
+        updated_at = datetime.now(timezone.utc)
+        mock_db = AsyncMock()
+        mock_db.execute = AsyncMock(return_value=make_rows_result([
+            (a, AVAILABLE, updated_at, 812.5),
+            (b, BUSY, None, None),
+        ]))
+        candidates = await _fetch_neighbourhood_officers(mock_db, NEIGHBOURHOOD_ID, -26.2041, 28.0473)
+
+        assert candidates == [
+            OfficerCandidate(a, AVAILABLE, updated_at, 812.5, 0),
+            OfficerCandidate(b, BUSY, None, None, 0),
+        ]
