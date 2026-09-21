@@ -88,6 +88,7 @@ async def test_match_tracking_delegates_to_service():
         db=DB,
         body=body,
         candidate_property_id=PROPERTY_ID,
+        generate_brief=True
     )
 
 
