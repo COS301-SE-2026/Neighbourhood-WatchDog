@@ -788,8 +788,24 @@ class TestDispatchAlert:
         assert run.res.selected.workload == 2
 
     @pytest.mark.asyncio
-    async def test_officers_without_dispatches_get_zero_workload(self):
+    async def test_officers_without_dispatches_have_zero_workload(self):
         run = await run_dispatch(
             dispatch_steps(make_context(), officers=[make_candidate()], workloads={})
         )
         assert run.res.selected.workload == 0
+
+    @pytest.mark.asyncio
+    @pytest.mark.usefixtures("fixed_weights")
+    async def test_officer_with_lower_workload_selected(self):
+        loaded = make_candidate(distance_m=500.0)
+        idle = make_candidate(distance_m=500.0)
+        run = await run_dispatch(
+            dispatch_steps(
+                make_context(),
+                officers=[loaded, idle],
+                workloads={loaded.officer_id: 3},
+            )
+        )
+ 
+        assert run.res.selected.officer_id == idle.officer_id
+        assert [c.officer_id for c in run.res.pending] == [loaded.officer_id]
