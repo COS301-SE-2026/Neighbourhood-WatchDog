@@ -354,7 +354,7 @@ async def dispatch_alert(db: DbSession, alert_id: UUID) -> AlertDispatchRes:
     rows = await _fetch_dispatch_rows(db, alert_id)
     return _build_alert_dispatch_res(alert_id, rows)
 
-async def get_alert_dispatch_hanlder(
+async def get_alert_dispatch_handler(
         alert_id: UUID,
         db: DbSession,
         claims: Claims,

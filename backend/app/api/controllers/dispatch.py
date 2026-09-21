@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from app.auth.authorization import Claims
 from app.core.database import DbSession
 from app.schemas.dispatch import AlertDispatchRes
-from app.services.dispatch_service import get_alert_dispatch_hanlder
+from app.services.dispatch_service import get_alert_dispatch_handler
 
 router = APIRouter(prefix="/dispatch", tags=["dispatch"])
 
@@ -24,7 +24,7 @@ async def get_alert_dispatch(
     db: DbSession,
     claims: Claims,
 ):
-    return await get_alert_dispatch_hanlder(
+    return await get_alert_dispatch_handler(
         alert_id=alert_id,
         db=db,
         claims=claims,

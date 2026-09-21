@@ -7,7 +7,6 @@ from uuid import UUID, uuid4
 
 from fastapi import HTTPException
 from sqlalchemy.dialects import postgresql
-from sqlalchemy.exc import IntegrityError
 
 from app.models.alert import DetectionType
 from app.models.dispatch import Dispatch, DispatchStatus
@@ -31,7 +30,7 @@ from app.services.dispatch_service import (
     dispatch_alert,
     estimate_eta_seconds,
     filter_eligible,
-    get_alert_dispatch_hanlder,
+    get_alert_dispatch_handler,
     rank_candidates,
 )
 
@@ -809,3 +808,57 @@ class TestDispatchAlert:
  
         assert run.res.selected.officer_id == idle.officer_id
         assert [c.officer_id for c in run.res.pending] == [loaded.officer_id]
+
+def _handler_db(context, role=None, rows=()):
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            make_first_result(make_alert_row(context) if context is not None else None),
+            make_scalar_result(role),
+            make_scalars_result(rows),
+        ]
+    )
+    return mock_db
+class TestGetAlertDispatchHandler:
+    @pytest.mark.asyncio
+    async def test_membership_prevents_others_from_viewing_dispatch(self):
+        mock_db = _handler_db(make_context(), role=NeighbourhoodRole.NEIGHBOURHOOD_ADMIN)
+        await get_alert_dispatch_handler(alert_id=ALERT_ID, db=mock_db, claims=CLAIMS)
+
+        membership_query = mock_db.execute.await_args_list[1].args[0]
+        params = compiled_params(membership_query).values()
+
+        assert NEIGHBOURHOOD_ID in params
+        assert OTHER_NEIGHBOURHOOD_ID not in params
+        assert CLAIMS["sub"] in params 
+
+    @pytest.mark.asyncio
+    async def test_allows_neighbourhood_admin(self):
+        officer = uuid4()
+        rows = [make_dispatch_row(DispatchStatus.SELECTED, officer_id=officer, rank=1)]
+        mock_db = _handler_db(make_context(), role=NeighbourhoodRole.NEIGHBOURHOOD_ADMIN, rows=rows)
+        res = await get_alert_dispatch_handler(alert_id=ALERT_ID, db=mock_db, claims=CLAIMS)
+
+        assert res.alert_id == ALERT_ID
+        assert res.selected.officer_id == officer
+        assert mock_db.execute.await_count == 3
+
+    @pytest.mark.asyncio
+    async def test_rejects_non_members(self):
+        mock_db = _handler_db(make_context(), role=None)
+        with pytest.raises(HTTPException) as exc_info:
+            await get_alert_dispatch_handler(alert_id=ALERT_ID, db=mock_db, claims=CLAIMS)
+
+        assert exc_info.value.status_code == 403
+        assert exc_info.value.detail == "Not authorised to view dispatch for this alert"
+        assert mock_db.execute.await_count == 2            
+
+    @pytest.mark.asyncio
+    async def test_rejects_residents(self):
+        mock_db = _handler_db(make_context(), role=NeighbourhoodRole.RESIDENT)
+        with pytest.raises(HTTPException) as exc_info:
+            await get_alert_dispatch_handler(alert_id=ALERT_ID, db=mock_db, claims=CLAIMS)
+
+        assert exc_info.value.status_code == 403
+        assert exc_info.value.detail == "Not authorised to view dispatch for this alert"
+        assert mock_db.execute.await_count == 2            
