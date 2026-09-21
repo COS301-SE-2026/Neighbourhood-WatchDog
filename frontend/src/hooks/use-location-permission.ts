@@ -15,6 +15,8 @@ export function useLocationPermission() {
 	const [loading, setLoading] = useState(true);
 	const [backgroundError, setBackgroundError] = useState<string | null>(null);
 
+	const fullyGranted = status === "granted" && BACKGROUND_GRANTED_STATES.includes(backgroundStatus);
+
 	const refresh = useCallback(async () => {
 		setLoading(true);
 
@@ -99,6 +101,6 @@ export function useLocationPermission() {
 		return() => document.removeEventListener("visibilitychange", onVisible);
 	}, []);
 
-	return { status, backgroundStatus, loading, backgroundError, refresh, request, requestBackground }
+	return { status, backgroundStatus, fullyGranted, loading, backgroundError, refresh, request, requestBackground }
 
 }

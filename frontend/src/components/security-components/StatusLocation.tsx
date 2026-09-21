@@ -17,7 +17,6 @@ import { useLocationPermission } from "@/hooks/use-location-permission"
 import { useOfficerLocationTracking } from "@/hooks/use-officer-location-tracking"
 import { LocationPermissionDialog } from "../shared/LocationPermissionDialog"
 import { Capacitor } from "@capacitor/core" 
-import { BackgroundLocationPermissionDialog } from "../shared/BackgroundLocationPermissionDialog"
 
 const STALE_LOCATION_THRESHOLD_MS = 120_000
 
@@ -38,13 +37,11 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
 
   const [officerStatus, setOfficerStatus] = useState<DutyStatus | null>(null)
   const [locationUpdatedAt, setLocationUpdatedAt] = useState<Date | null>(null)
-  const [showBackgroundPermissionDialog, setShowBackgroundPermissionDialog] = useState<boolean>(false)
 
   const { 
     status: permissionStatus, 
     refresh: refreshPermission,
-    backgroundStatus,
-    requestBackground,
+    fullyGranted,
   } = useLocationPermission()
   const [showPermissionDialog, setShowPermissionDialog] = useState(false)
   const [showUnsupportedNote, setShowUnsupportedNote] = useState(false)
@@ -104,12 +101,7 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
   })
 
   const handleStatusChange = async (next: DutyStatus) => {
-    if (next === "ON_DUTY" && !Capacitor.isNativePlatform()) {
-      setShowUnsupportedNote(true)
-      return 
-    }
-
-    if (next === "ON_DUTY" && permissionStatus !== "granted") {
+    if (next === "ON_DUTY" && !fullyGranted) {
       setPermissionBlocked(true)
       setShowPermissionDialog(true)
       return 
@@ -227,30 +219,12 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
         Please switch to your phone to go on duty.
       </div>
     )}
-    {officerStatus === "ON_DUTY" && backgroundStatus !== "granted" && (
-      <div className="flex items-center gap-2 text-sm text-brand-ash px-5">
-        <span>
-          Location will stop sharing if you leave the app. Enable &quot;Allow all the time&quot; to keep sharing while on duty.
-        </span>
-        <button
-          type="button"
-          onClick={() => setShowBackgroundPermissionDialog(true)}
-          className="font-medium underline-offset-2 cursor-pointer whitespace-nowrap">
-            Enable
-        </button>
-      </div>
-    )}
     <LocationPermissionDialog
       open={showPermissionDialog}
       onOpenChange={(open) => {
         setShowPermissionDialog(open)
         if (!open) refreshPermission()
       }}
-    />
-    <BackgroundLocationPermissionDialog
-      open={showBackgroundPermissionDialog}
-      onOpenChange={setShowBackgroundPermissionDialog}
-      requestBackground={requestBackground}
     />
     </div>
   )
