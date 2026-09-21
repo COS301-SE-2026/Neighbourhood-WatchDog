@@ -474,8 +474,8 @@ class TestBuildAlertDispatchRes:
         selected, pending, queued = uuid4(), uuid4(), uuid4()
         rows = [
             make_dispatch_row(DispatchStatus.SELECTED, officer_id=selected, rank=1),
-            make_dispatch_row(DispatchStatus.PENDING, officer_id=selected, rank=2),
-            make_dispatch_row(DispatchStatus.QUEUED, officer_id=selected, rank=3),
+            make_dispatch_row(DispatchStatus.PENDING, officer_id=pending, rank=2),
+            make_dispatch_row(DispatchStatus.QUEUED, officer_id=queued, rank=3),
         ]
         res = _build_alert_dispatch_res(ALERT_ID, rows)
 
@@ -517,3 +517,19 @@ class TestBuildAlertDispatchRes:
         assert res.selected is None
         assert res.pending == []
         assert res.queued == []
+
+    def test_is_location_stale_reflects_recorded_location_timestamp(self):
+        now = datetime.now(timezone.utc)
+        fresh = make_dispatch_row(
+            DispatchStatus.SELECTED, officer_id=uuid4(), rank=1, updated_at=now - timedelta(seconds=10)
+        )
+        old = make_dispatch_row(
+            DispatchStatus.PENDING,
+            officer_id=uuid4(),
+            rank=2,
+            updated_at=now - timedelta(seconds=STALE_LOCATION_THRESHOLD_SECONDS + 60),
+        )
+        res = _build_alert_dispatch_res(ALERT_ID, [fresh, old])
+ 
+        assert res.selected.is_location_stale is False
+        assert res.pending[0].is_location_stale is True
