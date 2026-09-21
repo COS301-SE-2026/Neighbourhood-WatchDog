@@ -451,7 +451,12 @@ class TestBuildDispatchRows:
         assert row.rank == 1
         assert row.score == pytest.approx(ranked[0].score)
         assert row.distance == 750.0
-        assert row.eta == pytest.approx(ranked[0].eta_seconds)
+        assert row.eta == pytest.approx(ranked[0].eta)
         assert row.workload == 1
         assert row.officer_availability == AVAILABLE
         assert row.officer_location_updated_at == officer.location_updated_at
+
+    def test_every_row_has_alerts_neighbourhood(self):
+        candidates = [make_candidate(now=FIXED_NOW), make_candidate(now=FIXED_NOW)]
+        rows = _build_dispatch_rows(make_context(), self.rank(*candidates))
+        assert {r.neighbourhood_id for r in rows} == {NEIGHBOURHOOD_ID}
