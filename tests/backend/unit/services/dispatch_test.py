@@ -460,3 +460,12 @@ class TestBuildDispatchRows:
         candidates = [make_candidate(now=FIXED_NOW), make_candidate(now=FIXED_NOW)]
         rows = _build_dispatch_rows(make_context(), self.rank(*candidates))
         assert {r.neighbourhood_id for r in rows} == {NEIGHBOURHOOD_ID}
+
+class TestBuildAlertDispatchRes:
+    def test_no_rows_gives_empty_dispatch(self):
+        res = _build_alert_dispatch_res(ALERT_ID, [])
+        assert res.alert_id == ALERT_ID
+        assert res.selected is None
+        assert res.pending == []
+        assert res.queued == []
+        assert res.no_candidate is False
