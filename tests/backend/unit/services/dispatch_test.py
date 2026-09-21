@@ -786,3 +786,10 @@ class TestDispatchAlert:
         assert [eligible.officer_id] in params
         assert ALERT_ID in params
         assert run.res.selected.workload == 2
+
+    @pytest.mark.asyncio
+    async def test_officers_without_dispatches_get_zero_workload(self):
+        run = await run_dispatch(
+            dispatch_steps(make_context(), officers=[make_candidate()], workloads={})
+        )
+        assert run.res.selected.workload == 0
