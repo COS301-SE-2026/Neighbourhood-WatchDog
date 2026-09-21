@@ -17,6 +17,7 @@ import { useLocationPermission } from "@/hooks/use-location-permission"
 import { useOfficerLocationTracking } from "@/hooks/use-officer-location-tracking"
 import { LocationPermissionDialog } from "../shared/LocationPermissionDialog"
 import { Capacitor } from "@capacitor/core" 
+import { BackgroundLocationPermissionDialog } from "../shared/BackgroundLocationPermissionDialog"
 
 const STALE_LOCATION_THRESHOLD_MS = 120_000
 
@@ -37,12 +38,12 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
 
   const [officerStatus, setOfficerStatus] = useState<DutyStatus | null>(null)
   const [locationUpdatedAt, setLocationUpdatedAt] = useState<Date | null>(null)
-  
+  const [showBackgroundPermissionDialog, setShowBackgroundPermissionDialog] = useState<boolean>(false)
+
   const { 
     status: permissionStatus, 
     refresh: refreshPermission,
     backgroundStatus,
-    requestBackground,
   } = useLocationPermission()
   const [showPermissionDialog, setShowPermissionDialog] = useState(false)
   const [showUnsupportedNote, setShowUnsupportedNote] = useState(false)
@@ -232,7 +233,7 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
         </span>
         <button
           type="button"
-          onClick={() => requestBackground()}
+          onClick={() => setShowBackgroundPermissionDialog(true)}
           className="font-medium underline-offset-2 cursor-pointer whitespace-nowrap">
             Enable
         </button>
@@ -245,6 +246,9 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
         if (!open) refreshPermission()
       }}
     />
+    <BackgroundLocationPermissionDialog
+      open={showBackgroundPermissionDialog}
+      onOpenChange={setShowBackgroundPermissionDialog}/>
     </div>
   )
 }

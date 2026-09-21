@@ -18,7 +18,7 @@ interface BackgroundLocationPermissionInterface {
 	readonly onOpenChange: (open: boolean) => void;
 }
 
-export function BackgroundLocationPermission({
+export function BackgroundLocationPermissionDialog({
 	open,
 	onOpenChange,
 }: BackgroundLocationPermissionInterface) {
