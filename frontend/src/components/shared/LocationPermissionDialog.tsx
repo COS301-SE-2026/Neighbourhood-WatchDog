@@ -51,7 +51,7 @@ export function LocationPermissionDialog({
 					<AlertDialogDescription>
 						To go on duty, you must allow background location permissions. <br/>
 						This will allow WatchDog to use your location even when the app is not open. But only when you are <b>on duty</b> <br/>
-						To do that, click on 'Open Settings'. Select permissions. Location permissions and select 'All the time'.
+						To do that, click on 'Open Settings'. Select permissions. Location permissions and select 'Allow all the time'.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>

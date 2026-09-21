@@ -50,7 +50,7 @@ export function useLocationPermission() {
 	}, []);
 
 	const requestBackground = useCallback(async () => {
-		if (!Capacitor.isNativePlatform()){ // && status !== "granted"){ TODO: Change it back
+		if (!Capacitor.isNativePlatform() && status !== "granted"){
 			return "unsupported" as BackgroundPermissionState;
 		}
 
@@ -92,6 +92,7 @@ export function useLocationPermission() {
 		const onVisible = () => {
 			if (document.visibilityState === "visible"){
 				BackgroundGeolocation.checkPermissions().then((result) => {
+					if (result.location) setStatus(result.location);
 					setBackgroundStatus(result.backgroundLocation ?? "unsupported");
 				});
 			}

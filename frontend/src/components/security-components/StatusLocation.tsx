@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils"
 import { useLocationPermission } from "@/hooks/use-location-permission"
 import { useOfficerLocationTracking } from "@/hooks/use-officer-location-tracking"
 import { LocationPermissionDialog } from "../shared/LocationPermissionDialog"
-import { Capacitor } from "@capacitor/core" 
 
 const STALE_LOCATION_THRESHOLD_MS = 120_000
 
@@ -99,6 +98,10 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
     const interval = setInterval(computeStale, 30_000)
     return () => clearInterval(interval)
   })
+
+  useEffect(() => {
+    if (fullyGranted) setPermissionBlocked(false)
+  }, [fullyGranted])
 
   const handleStatusChange = async (next: DutyStatus) => {
     if (next === "ON_DUTY" && !fullyGranted) {
@@ -202,7 +205,7 @@ export default function StatusToggle({ neighbourhoodId }: StatusToggleInterface)
         </div>
       </CardContent>
     </Card>
-    {permissionBlocked && (
+    {permissionBlocked && !showPermissionDialog && (
       <div className="flex items-center gap-2 text-sm text-destructive">
         <span>Location permission is required to go on duty.</span>
         <button
