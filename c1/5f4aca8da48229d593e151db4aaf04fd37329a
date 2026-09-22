@@ -1,0 +1,15 @@
+backend/requirements.txt
+  h_cf6208e37032c0 100,103-105
+  h_cf6208e37032c0 98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c15f4aca8da48229d593e151db4aaf04fd37329a",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
