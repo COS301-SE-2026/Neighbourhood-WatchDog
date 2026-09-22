@@ -8,6 +8,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import { toast } from "sonner"
+import { Spinner } from "./ui/spinner"
 import { useState} from "react"
 import {MoreVertical, Edit, Trash} from "lucide-react"
 import {Button} from "@/components/ui/button"
@@ -26,6 +28,7 @@ export function CameraDropdown({camera_id, camera_name, camera_location, camera_
 
     const [isDelete, setDelete] = useState(false);
     const [isEdit, setEdit] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     
     return (
         <>
@@ -60,19 +63,22 @@ export function CameraDropdown({camera_id, camera_name, camera_location, camera_
 
             {isDelete && (
                 <RemoveCamera 
+                    isDeleting={deleting}
                     open={isDelete}
                     name={camera_name}
                     onOpenChange={setDelete}
                     onConfirm={async () => {
                         console.log("camera with id ", camera_id, " to be deleted")
+                        setDeleting(true)
                         try {
                             await apiDeleteCamera(camera_id)
                             onDeleted(camera_id)
                             setDelete(false)
                             //going to add a toast notification
                         } catch(error) {
-                            console.error("Failed to delete camera:", error)
-                            //going add a toast notification here too
+                            toast.error(error instanceof Error ? error.message : "Failed to delete camera")
+                        } finally {
+                            setDeleting(false)
                         }
 
                     }}

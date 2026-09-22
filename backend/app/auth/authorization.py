@@ -587,7 +587,7 @@ def require_property_resident_context():
 Claims = Annotated[dict, Depends(get_current_user)]#Use this role if you need an endpoint to be accessible by any authenticated user, regardless of their role.
 PropertyAdminClaims = Annotated[dict, Depends(require_property_authorization("PROPERTY_ADMIN", "SYSTEM_ADMIN"))]
 PropertyMemberClaims = Annotated[dict, Depends(require_property_member())]
-CameraAdminClaims = Annotated[dict, Depends(require_camera_authorization("PROPERTY_ADMIN", "SYSTEM_ADMIN"))]
+CameraAdminClaims = Annotated[dict, Depends(require_camera_authorization("PROPERTY_ADMIN", "SYSTEM_ADMIN", "NEIGHBOURHOOD_ADMIN"))]
 CameraAdminAndNeighbourhoodAdminClaims = Annotated[dict, Depends(require_camera_authorization("PROPERTY_ADMIN", "NEIGHBOURHOOD_ADMIN", "SYSTEM_ADMIN"))]
 NeighbourhoodMemberClaims = Annotated[dict, Depends(require_neighbourhood_member())]
 NeighbourhoodAdminClaims = Annotated[dict, Depends(require_neighbourhood_authorization("NEIGHBOURHOOD_ADMIN", "SYSTEM_ADMIN"))]
