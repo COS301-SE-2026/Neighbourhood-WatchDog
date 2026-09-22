@@ -34,5 +34,5 @@ class Neighbourhood(Base):
         cascade=CASCADE,
     )
     user_memberships = relationship("NeighbourhoodUser", back_populates="neighbourhood", cascade="delete")
-    
+    dispatches = relationship("Dispatch", back_populates="neighbourhood")
     
