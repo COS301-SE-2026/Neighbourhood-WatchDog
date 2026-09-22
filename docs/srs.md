@@ -288,6 +288,79 @@ The system concentrates on the integrated development from camera registration a
         R9.4.2 Change the status of the alerts list the alert status here
         R9.4.3 View respondees of the alert
         R9.4.4 View the timeline of the alert and the state changes
+#### R10: Smart Alert Navigation and Neighbourhood Risk Intelligence
+
+R10.1 Critical Alert Map
+    R10.1.1: The system shall display critical alerts from the security officer's current neighbourhood on a map.
+    R10.1.2: Each mapped critical alert shall display its incident type, severity, status, location, and associated camera/property information.
+    R10.1.3: The system shall restrict mapped alerts to the security officer's authorised neighbourhood.
+    R10.1.4: The system shall provide a fallback list of critical alerts when an alert does not contain valid map coordinates.
+R10.2 Resident and Property Context
+    R10.2.1: The system shall allow an authorised security officer to view resident and property information associated with a critical alert.
+    R10.2.2: Resident and property information shall only be accessible to authorised users within the relevant neighbourhood.
+R10.3 Alert Navigation
+    R10.3.1: The system shall calculate the distance between the security officer's latest known location and a critical alert.
+    R10.3.2: The system shall provide a route and estimated arrival time from the security officer's location to the alert.
+    R10.3.3: The system shall update the estimated arrival time when the security officer's location changes.
+    R10.3.4: The system shall allow the security officer to open the route in an external navigation application where supported.
+R10.4 Incident Heat Map
+    R10.4.1: The system shall aggregate confirmed and resolved incidents spatially across the neighbourhood.
+    R10.4.2: The system shall display incident concentration using a heat map.
+    R10.4.3: The system shall allow the user to select the date range used to calculate the incident heat map.
+    R10.4.4: The system shall allow the user to adjust the sensitivity of the incident heat map.
+    R10.4.5: The system shall prevent areas without incidents from being presented as incident hotspots.
+R10.5 Danger-Zone Overlay
+    R10.5.1: The system shall calculate danger zones using incident density and camera coverage.
+    R10.5.2: The system shall display danger zones as an independent map overlay from the incident heat map.
+    R10.5.3: The system shall restrict danger-zone information to the relevant neighbourhood.
+
+#### R11: Intelligent Security Officer Dispatch and Availability
+R11.1 Officer Availability
+    R11.1.1: The system shall allow a security officer to set their availability status to AVAILABLE, BUSY, UNAVAILABLE, or OFFLINE.
+    R11.1.2: Only eligible officers with an appropriate availability status shall be considered for immediate alert dispatch.
+R11.2 Officer Location Sharing
+    R11.2.1: The system shall record the latest known location of a security officer while they are on duty and have location sharing enabled.
+    R11.2.2: The system shall record the timestamp associated with each reported officer location.
+    R11.2.3: The system shall exclude officers whose location is considered stale from location-based dispatch decisions.
+    R11.2.4: Location sharing shall stop when the officer goes off duty, logs out, or revokes location permission.
+R11.3 Intelligent Dispatch
+    R11.3.1: The system shall identify eligible security officers within the neighbourhood associated with a critical alert.
+    R11.3.2: The system shall consider officer availability, location, distance or estimated travel time, workload, alert type, and location freshness when determining dispatch priority.
+    R11.3.3: The system shall record which security officer was selected for a dispatch request.
+R11.4 Dispatch Acceptance
+    R11.4.1: The system shall send dispatch requests to selected security officers.
+    R11.4.2: A security officer shall be able to accept or decline a dispatch request.
+    R11.4.3: An accepted dispatch shall be associated with the responding security officer.
+    R11.4.4: A security officer shall not be able to accept an expired or already-assigned dispatch request.
+R11.5 Reassignment and Escalation
+    R11.5.1: The system shall attempt to reassign a declined or expired dispatch request to another eligible security officer.
+    R11.5.2: The system shall notify an appropriate supervisor or neighbourhood administrator when no eligible officer is available to respond.
+    R11.5.3: The system shall maintain the dispatch state when no eligible officer can be assigned.
+    R11.5.4: An accepted active alert shall not be automatically reassigned.
+    R11.5.5: All dispatch, acceptance, decline, reassignment, and escalation actions shall be recorded in the audit trail.
+
+#### R12: Autonomous Patrol Assistance
+
+R12.1 Single-Camera Tracking Continuity
+    R12.1.1: The system shall maintain a consistent tracking ID for a detected individual through brief detection gaps and occlusions where possible.
+R12.2 Cross-Property Identity Correlation
+    R12.2.1: When a critical alert is generated, the system shall compare the detected individual's appearance embedding against recent embeddings from other properties within the same neighbourhood.
+    R12.2.2: The system shall only perform cross-property identity matching using authorised and neighbourhood-scoped data.
+    R12.2.3: The system shall treat identity comparisons below the configured confidence threshold as a new identity.
+    R12.2.4: A successful identity match shall be recorded against the related alert events.
+R12.3 Consistent Cross-Property Identity
+    R12.3.1: Alert events identified as belonging to the same individual shall share a persistent identity identifier.
+    R12.3.2: Persistent identity information shall be restricted to authorised security officers and neighbourhood administrators.
+R12.4 Cross-Property Event Summary
+    R12.4.1: The system shall maintain a chronological list of alert events associated with a persistent identity.
+    R12.4.2: Each linked event shall include the relevant property, camera, and timestamp.
+    R12.4.3: The event history shall be accessible from the relevant alert detail.
+R12.5 Situational Brief
+    R12.5.1: The system shall generate a plain-English situational brief when a cross-property identity match is confirmed.
+    R12.5.2: The situational brief shall include relevant detection types, properties, timestamps, and match confidence.
+R12.6 Cross-Property Match Notification
+    R12.6.1: The system shall notify authorised security officers when a new cross-property identity match is detected.
+    R12.6.2: The notification shall include the persistent identity identifier, relevant properties, and event timestamps.
 
 
 ## API Service Contracts
@@ -481,6 +554,82 @@ High-Level:
 TUCBW: A user attempts to request playback for a camera stream that they are not permitted to view.
 TUCEW: The platform denies access to the camera stream and does not establish a live playback connection.
 
+R10: Smart Alert Navigation and Neighbourhood Risk Intelligence
+<!-- TODO: Add Use case diagram -->
+UC10.1 - View Critical Alerts on Map (Abstract)
+High-Level:
+TUCBW: A Security Officer opens the alert map for their neighbourhood.
+TUCEW: The Security Officer sees the critical alerts for their authorised neighbourhood displayed on the map.
+
+UC10.2 - View Resident and Property Context (Abstract)
+High-Level:
+TUCBW: A Security Officer selects a critical alert associated with a property.
+TUCEW: The Security Officer sees the authorised resident and property information associated with that alert.
+
+UC10.3 - Navigate to Critical Alert (Abstract)
+High-Level:
+TUCBW: A Security Officer selects a critical alert and requests navigation.
+TUCEW: The Security Officer sees their distance, route, and estimated arrival time to the alert.
+
+UC10.4 - Analyse Incident Heat Map (Abstract)
+High-Level:
+TUCBW: A Security Officer opens the neighbourhood risk map and selects a date range and sensitivity.
+TUCEW: The Security Officer sees incident concentrations represented as a heat map for the selected period.
+
+UC10.5 - View Danger Zones (Abstract)
+High-Level:
+TUCBW: A Security Officer enables the danger-zone overlay.
+TUCEW: The Security Officer sees areas identified using incident density and camera coverage.
+
+R11: Intelligent Security Officer Dispatch and Availability
+<!-- TODO: Add Use case diagram -->
+UC11.1 - Manage Officer Availability (Abstract)
+High-Level:
+TUCBW: A Security Officer opens their availability settings.
+TUCEW: The Security Officer's availability status is updated and used by the dispatch system.
+
+UC11.2 - Share Officer Location (Abstract)
+High-Level:
+TUCBW: A Security Officer enables location sharing while on duty.
+TUCEW: The system records the officer's latest location and timestamp for dispatch decisions.
+
+UC11.3 - Dispatch Critical Alert (Abstract)
+High-Level:
+TUCBW: A critical alert requires a security response.
+TUCEW: The system selects an eligible security officer and sends them a dispatch request.
+
+UC11.4 - Accept or Decline Dispatch (Abstract)
+High-Level:
+TUCBW: A Security Officer receives a dispatch request.
+TUCEW: The Security Officer accepts or declines the request and the alert's dispatch state is updated.
+
+UC11.5 - Reassign or Escalate Dispatch (Abstract)
+High-Level:
+TUCBW: A dispatch request is declined, expires, or has no eligible responding officer.
+TUCEW: The system reassigns the request or escalates it to the appropriate administrator.
+
+R12: Autonomous Patrol Assistance
+<!-- TODO: Add Use case diagram -->
+UC12.1 - Correlate Individual Across Properties (Abstract)
+High-Level:
+TUCBW: A critical alert is generated for a detected individual.
+TUCEW: The system compares recent identity embeddings and identifies whether the individual is likely associated with another alert in the neighbourhood.
+
+UC12.2 - View Cross-Property Event History (Abstract)
+High-Level:
+TUCBW: A Security Officer opens the details of an individual associated with multiple alerts.
+TUCEW: The Security Officer sees a chronological summary of the linked alert events.
+
+UC12.3 - View Situational Brief (Abstract)
+High-Level:
+TUCBW: A cross-property identity match is confirmed.
+TUCEW: The Security Officer sees a plain-English summary of the matched events.
+
+UC12.4 - Receive Cross-Property Match Notification (Abstract)
+High-Level:
+TUCBW: The system confirms a cross-property identity match.
+TUCEW: The Security Officer receives a notification containing the relevant identity and event information.
+
 ---
 
 ## Domain Model
@@ -667,7 +816,7 @@ The system must comply with the Protection of Personal Information Act (POPIA). 
  
 #### Platform
  
-The system must be delivered as a responsive web application accessible via desktop and mobile browsers. A native mobile application is out of scope for the current project. The dashboard must function on the latest versions of Chrome and Firefox as a minimum.
+The system shall be delivered as a responsive web application accessible via desktop and mobile browsers. The officer-facing application may also be packaged as an Android application using a native Android shell around the existing web application to support capabilities such as background location tracking. iOS support is out of scope for the current project.
  
 #### Team
  
