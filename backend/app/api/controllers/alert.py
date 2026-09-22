@@ -28,6 +28,8 @@ from app.schemas.alert import (
     AlertRouteRes,
     BroadcastAlertReq,
     CriticalAlertMapRes,
+    IncidentDensityQuery,
+    IncidentDensityRes,
     ListAlertsRes,
     Pagination,
     TimeIntervalsEnum,
@@ -53,6 +55,7 @@ from app.services.alert_service import (
 from app.services.alert_route_service import calculate_property_distance_handler, get_property_route_handler
 
 from app.schemas.tracking import TrackingTimelineResponse, SituationalBriefResponse
+from app.services.incident_density_service import get_incident_density_handler
 from app.services.tracking_service import get_tracking_timeline
 from app.services.situational_brief_service import get_situational_brief
 
@@ -520,6 +523,48 @@ async def get_alert_property_route(
         status=200,
         message=(
             "Alert-property route processed successfully"
+        ),
+        data=data,
+    )
+
+
+@router.get(
+    "/neighbourhoods/{neighbourhood_id}/incident-density",
+    summary=(
+        "Get neighbourhood incident-density cells"
+    ),
+    responses={
+        401: {"description": "Not authenticated"},
+        403: {
+            "description":
+                "Not a member of this neighbourhood"
+        },
+        422: {
+            "description":
+                "Invalid dates or viewport bounds"
+        }
+    },
+)
+async def get_incident_density(
+    neighbourhood_id: UUID,
+    filters: Annotated[
+        IncidentDensityQuery,
+        Query(),
+    ],
+    db: DbSession,
+    claims: NeighbourhoodMemberClaims,
+) -> IncidentDensityRes:
+    data = await get_incident_density_handler(
+        neighbourhood_id=neighbourhood_id,
+        filters=filters,
+        db=db,
+        claims=claims,
+    )
+
+    return IncidentDensityRes(
+        status=200,
+        message=(
+            "Incident density retrieved successfully"
         ),
         data=data,
     )

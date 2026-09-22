@@ -258,3 +258,56 @@ class AlertDistanceRes(BaseModel):
     status: int
     message: str | None = None
     data: AlertDistanceData
+
+class IncidentDensityQuery(BaseModel):
+    start_at: datetime
+    end_at: datetime
+
+    west: float = Field(ge=-180, le=180)
+    south: float = Field(ge=-90, le=90)
+    east: float = Field(ge=-180, le=180)
+    north: float = Field(ge=-90, le=90)
+
+    @model_validator(mode="after")
+    def validate_range(self):
+        if self.start_at >= self.end_at:
+            raise ValueError(
+                "start_at must be earlier than end_at"
+            )
+
+        if self.west >= self.east:
+            raise ValueError(
+                "west must be less than east"
+            )
+
+        if self.south >= self.north:
+            raise ValueError(
+                "south must be less than north"
+            )
+
+        return self
+
+
+class IncidentDensityCell(BaseModel):
+    cell_id: str
+    grid_x: float
+    grid_y: float
+    latitude: float
+    longitude: float
+    incident_count: int
+
+
+class IncidentDensityData(BaseModel):
+    neighbourhood_id: UUID
+    start_at: datetime
+    end_at: datetime
+    cell_size_metres: int = 100
+    min_count: int
+    max_count: int
+    cells: list[IncidentDensityCell]
+
+
+class IncidentDensityRes(BaseModel):
+    status: int
+    message: str | None = None
+    data: IncidentDensityData
