@@ -26,6 +26,8 @@ CRITICAL_DETECTION_TYPES: frozenset[str] = frozenset({"WEAPON_DETECTED", "FALL_D
 OFFICER_AVG_SPEED = 8.33 #m/s or about 30km/h
 ROUTE_CIRCUITRY_FACTOR = 1.3 #road distance is about 30% longer than straight-line
 
+RESPONSE_TIMEOUT = 120 #officer has 2min to accept a request before expiring
+
 @dataclass(frozen=True)
 class RankingWeights:
     """Score = eta_weight * ETA(min) + workload_weight * workload(no of active alerts) + freshness_weight * location_age_ratio"""
@@ -56,6 +58,13 @@ _AVAILABILITY_TIER: dict[AvailabilityStatus, int] = {
 DISPATCH_VIEWER_ROLES = (
     NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
     NeighbourhoodRole.SECURITY_OFFICER,
+)
+
+#officers who haven't been notified
+_UNCONTACTED_DISPATCH_STATUS = (
+    DispatchStatus.SELECTED,
+    DispatchStatus.PENDING,
+    DispatchStatus.QUEUED,
 )
 
 @dataclass(frozen=True)
@@ -259,6 +268,15 @@ async def _fetch_dispatch_rows(db: DbSession, alert_id: UUID) -> list[Dispatch]:
         .order_by(Dispatch.rank.asc().nulls_last(), Dispatch.created_at.asc())
     )
     return list((await db.execute(stmt)).scalars().all())
+
+async def _get_officer_user_id(db: DbSession, officer_id: UUID) -> str | None:
+    result = await db.execute(
+        select(NeighbourhoodUser.user_id)
+        .join(SecurityOfficer, SecurityOfficer.neighbourhood_user_id == NeighbourhoodUser.id)
+        .where(SecurityOfficer.id == officer_id)
+    )
+    user_id = result.scalar.one_or_none()
+    return str(user_id) if user_id is not None else None
 
 def _build_candidate_res(d: Dispatch) -> DispatchCandidateRes:
     return DispatchCandidateRes(
