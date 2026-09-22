@@ -1,6 +1,9 @@
 import sys
 from pathlib import Path
 import pytest
+import os
+
+os.environ.setdefault("TESTING", "true")
 
 
 backend_path = Path(__file__).parent.parent.parent / "backend"
@@ -8,6 +11,16 @@ sys.path.insert(0, str(backend_path))
 
 
 integration_root = (Path(__file__).parent / "integration").resolve()
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    parser.addoption(
+        "--run-integration",
+        action="store_true",
+        default=False,
+        help="Run backend integration tests against the configured test database"
+
+    )
 
 
 def pytest_collection_modifyitems(
