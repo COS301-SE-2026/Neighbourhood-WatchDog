@@ -1133,6 +1133,9 @@ class TestCriticalAlertMap:
         )
         alert.thumbnail_url = None
 
+        alert.confidence_score = 0.95
+        alert.resolved_at = None
+
         camera = Mock()
         camera.id = self.camera_id
         camera.name = "Front Gate Camera"

@@ -4,5 +4,6 @@ from app.core.config import config
 
 limiter = Limiter(
     key_func=get_remote_address,
-    storage_uri=config.redis_url
+    storage_uri=config.redis_url,
+    enabled=not config.testing,
 )
