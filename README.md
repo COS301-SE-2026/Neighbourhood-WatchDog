@@ -3,7 +3,7 @@
 <br/>
 
 <picture>
-  <img src="assets/logo.png" alt="Neighbourhood WatchDog Logo" width="18%"/>
+  <img src="frontend/public/icon-192.png" alt="Neighbourhood WatchDog Logo" width="18%"/>
 </picture>
 
 <br/><br/>
