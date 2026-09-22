@@ -89,7 +89,7 @@ def _format_match_notification_message(tracking_subject_id: UUID, source_propert
         f"Match confidence: {confidence}\n\n"
         "Open the dashboard to review this match."
 
-        
+
     )
 
 
@@ -486,6 +486,79 @@ def _log_notification(
             error_message=error_message,
         )
     )
+
+
+async def dispatch_tracking_match_notifications(db: DbSession, alert_id: UUID, camera_id: UUID, user_ids: list[UUID], tracking_subject_id: UUID,
+                                                 source_property: str, destination_property: str, source_timestamp, match_timestamp, match_confidence: float | None) -> None:
+    
+    """ notify authorized officers after a committed cross-property match"""
+
+    
+    if os.getenv("NOTIFICATION_ENABLED", "false").lower() != "true":
+        logger.info("Match notification disabled for alert %s", alert_id)
+        return
+
+    try:
+        camera_result = await db.execute(
+            select(Camera)
+            .where(Camera.id == camera_id)
+        )
+
+        camera = camera_result.scalar_one_or_none()
+
+        if not camera:
+            logger.error("Camera with id %s does not exist", camera_id)
+            return
+
+        if not user_ids:
+            logger.info("Match %s has no authorized notification recipients", tracking_subject_id)
+            return
+
+        users_result = await db.execute(
+            select(User)
+            .where(User.id.in_(set(user_ids)))
+        )
+
+        users = list(users_result.scalars().all())
+
+        if not users:
+            logger.info("Match %s recipients did not resolve to users", tracking_subject_id)
+            return
+
+        message = _format_match_notification_message(
+            tracking_subject_id=tracking_subject_id,
+            source_property=source_property,
+            destination_property=destination_property,
+            source_timestamp=source_timestamp,
+            match_timestamp=match_timestamp,
+            camera_name=camera.name,
+            match_confidence=match_confidence
+
+        )
+
+        await _notify_users(
+            db=db,
+            alert_id=alert_id,
+            users=users,
+            whatsapp_message=message,
+            detection_type="CROSS_PROPERTY_MATCH",
+            camera=camera,
+            severity="HIGH",
+            notification_message=message
+
+        )
+
+
+        await db.commit()
+
+    except Exception:
+        await db.rollback()
+        logger.exception(
+            "Failed while dispatching match notification for subject %s",
+            tracking_subject_id
+            
+        )
+
 
 async def dispatch_notifications(
     db: DbSession,
