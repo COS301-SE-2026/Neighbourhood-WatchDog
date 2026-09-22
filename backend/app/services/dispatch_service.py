@@ -404,6 +404,37 @@ async def _expire_stale_dispatch(db: DbSession, dispatch: Dispatch) -> Dispatch:
 
     return dispatch
 
+async def expire_stale_dispatchs(db: DbSession) -> int:
+    """Used to run through every dispatch attempt and sets to timed out"""
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(seconds=RESPONSE_TIMEOUT)
+
+    result = await db.execute(
+        select(Dispatch).where(
+            Dispatch.status == DispatchStatus.NOTIFIED,
+            Dispatch.notified_at < cutoff,
+        )
+    )
+
+    expired = list(result.scalars().all())
+    if not expired:
+        return 0
+
+    alert_ids: set[UUID] = set()
+    for e in expired:
+        e.status = DispatchStatus.TIMED_OUT
+        e.responded_at = now
+        alert_ids.add(e.alert_id)
+    await db.commit()
+
+    for alert_id in alert_ids:
+        try:
+            await _promote_officer(db, alert_id)
+        except Exception:
+            logger.exception("expire_stale_dispatches: failed to promote next officer for alert %s", alert_id)
+
+    return len(expired)
+
 def _build_candidate_res(d: Dispatch) -> DispatchCandidateRes:
     return DispatchCandidateRes(
         id=d.id,
