@@ -66,21 +66,42 @@ The system concentrates on the integrated development from camera registration a
 - **US-29**: As a neighbourhood admin, I want to see how quickly alerts are being acknowledged so that I can identify response time problems and address them.
 - **US-30**: As a neighbourhood admin, I want to see incident trends over time so that I can spot recurring patterns and take preventative action before problems escalate.
 
-### E8: Autonomous Patrol Assistance
+### E8: Agent Workflow
 
-- **US-31**: As a security officer, I want the system to automatically follow a suspicious individual across cameras and show me their movement path so that I can respond without losing track of them.
-- **US-32**: As a security officer, I want to receive a situational brief summarising everything the system knows about a tracked individual so that I can brief my team quickly without reviewing hours of footage.
+- **US-31**: As a resident or property owner, I want my enabled camera automatically connected to the paired WatchDog Agent for streaming and detection so that monitoring does not require manual runtime configuration.
+- **US-32:** As a resident or a property owner, I want to manually disable the agent to temporarily stop monitoring my property when it is not needed.
+- **US-33:** As an authorised user, I want playback to connect only when I select a camera so that video connections and resources are used deliberately.
+- **US-34:** As a security officer, I want a fault or shutdown in one camera runtime not to interrupt other enabled cameras so that a local failure does not blind the property.
 
 ### E9: Predictive Risk Scoring
 
-- **US-33**: As a neighbourhood admin, I want to see predictions of which time windows and camera zones are at highest risk so that I can schedule patrols proactively rather than just reacting to incidents.
-- **US-34**: As a security officer, I want to be notified when a zone's predicted risk level rises significantly so that I can increase my attention to that area before an incident actually occurs.
+- **US-35**: As a neighbourhood admin, I want to see predictions of which time windows and camera zones are at highest risk so that I can schedule patrols proactively rather than just reacting to incidents.
+- **US-36**: As a security officer, I want to be notified when a zone's predicted risk level rises significantly so that I can increase my attention to that area before an incident actually occurs.
 
-### E10: Agent Workflow
-- **US-35**: As a resident or property owner, I want my enabled camera automatically connected to the paired WatchDog Agent for streaming and detection so that monitoring does not require manual runtime configuration.
-- **US-36:** As a resident or a property owner, I want to manually disable the agent to temporarily stop monitoring my property when it is not needed.
-- **US-37:** As an authorised user, I want playback to connect only when I select a camera so that video connections and resources are used deliberately.
-- **US-38:** As a security officer, I want a fault or shutdown in one camera runtime not to interrupt other enabled cameras so that a local failure does not blind the property.
+### E10: Smart Alert Navigation & Neighbourhood Risk Intelligence
+
+- **US-37**: As a security officer, I want to view critical alerts from my neighbourhood on a live map so I can quickly understand where incidents are and what type of incident has been reported.
+- **US-38**: As a security officer, I want to view the relevant resident and property information for a so that I can understand the context of the incident.
+- **US-39**: As a security officer, I want to see my distance, route, and ETA to an alert so that I can determine how quick I can reach the incident and navigate to it.
+- **US-40**: As a security officer, I want to view a heat map showing where confirmed/resolved incidents are concentrated across my neighbourhood so that I can view which areas have higher levels of reported crime.
+- **US-41**: As a security officer, I want to filter the incident heat map by a selected date range and adjust its sensitivity so that I can analyse changes in incident concentration over different periods.
+- **US-42**: As a security officer, I want to view danger zones based on incident density and camera coverage so that I can identify areas where security risks may be higher due to both frequent incidents and limited surveillance coverage.
+
+### E11: Intelligent Security Officer Dispatch & Availability
+
+- **US-43**: As a security officer, I want to manage my availability status so that the system knows whether I am available to respond to incidents.
+- **US-44**: As a security officer, I want to share my location so that my position can be used to determine my proximity to security incidents.
+- **US-45**: As a security officer, I want the system to automatically identify and dispatch a critical alert to the nearest eligible security officer in the relevant neighbourhood so that incidents can be attended to promptly.
+- **US-46**: As a security officer, I want to receive dispatch requests and have the option to accept or decline them so that I can confirm whether I am able to respond to an incident or not.
+- **US-47**: As a neighbourhood administrator, I want unaccepted requests to be automatically reassigned to other eligible security officers and escalated when no one accepts them so that critical incidents do not remain unattended.
+
+### E12: Autonomous Patrol Assistance
+
+- **US-48**: As a security officer, I want the system to identify when a person detected in a critical alert is likely the same individual detected at another property in my neighbourhood so that I can connect related incidents without manually reviewing footage.
+- **US-49**: As a security officer, I want related alerts involving the same individual to share a consistent identity so that I can recognise and investigate connected incidents across properties.
+- **US-50**: As a security officer, I want to view a chronological summary of alerts associated with a tracked individual so that I can understand where and when the individual was detected across the neighbourhood.
+- **US-51**: As a security officer, I want to receive a plain-English situational brief for a matched individual so that I can quickly understand the relevant detections, locations, times, and confidence of the match.
+- **US-52**: As a security officer, I want to be notified when a new cross-property match is detected so that I can respond to potentially related incidents without continuously monitoring the dashboard.
 
 ---
 
