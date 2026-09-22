@@ -340,6 +340,46 @@ async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
             dispatch.officer_id, dispatch.id,
         )
 
+async def _promote_officer(db: DbSession, alert_id: UUID) -> None:
+    """
+    Notifies next ranked officer if the selected officer declines, is unreachable, 
+    or the request times out before a response is received. Picks officers from pending before
+    picking from queued
+    """
+    result = await db.execute(
+        select(Dispatch)
+        .where(Dispatch.alert_id == alert_id)
+        .order_by(Dispatch.rank.asc().nulls_last())
+        .with_for_update()
+    )
+    rows = list(result.scalars().all())
+
+    if not rows:
+        return
+
+    if any(r.status == DispatchStatus.ACCEPTED for r in rows):
+        return
+
+    if any(r.status == DispatchStatus.NOTIFIED for r in rows):
+        return
+
+    officer = next((r for r in rows if r.status in _UNCONTACTED_DISPATCH_STATUS), None)
+
+    if officer is None:
+        if not any(r.status == DispatchStatus.NO_CANDIDATE for r in rows):
+            db.add(
+                Dispatch(
+                    alert_id=alert_id,
+                    neighbourhood_id=rows[0].neighbourhood_id,
+                    status=DispatchStatus.NO_CANDIDATE,
+                )
+            )
+            await db.commit()
+        logger.info("dispatch: no remaining candidates to notify for alert %s", alert_id)
+        return
+
+    await _notify_officer(db, officer)
+
 def _build_candidate_res(d: Dispatch) -> DispatchCandidateRes:
     return DispatchCandidateRes(
         id=d.id,
