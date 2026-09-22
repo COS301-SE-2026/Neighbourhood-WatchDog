@@ -289,6 +289,19 @@ async def get_dispatch_viewer_ids(db: DbSession, neighbourhood_id: UUID | None) 
     )
     return [str(user_id) for user_id in result.scalars().all()]
 
+async def resolve_officer(db: DbSession, claims: Claims) -> SecurityOfficer:
+    result = await db.execute(
+        select(SecurityOfficer)
+        .join(NeighbourhoodUser, NeighbourhoodUser.id == SecurityOfficer.neighbourhood_user_id)
+        .join(User, User.id == NeighbourhoodUser.user_id)
+        .where(User.cognito_sub == claims["sub"])
+    )
+    officer = result.scalar.one_or_none()
+
+    if officer is None:
+        raise HTTPException(403, "Not authorised: no security officer profile for this account")
+    return officer
+
 def _build_candidate_res(d: Dispatch) -> DispatchCandidateRes:
     return DispatchCandidateRes(
         id=d.id,
