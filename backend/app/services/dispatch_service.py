@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass, replace
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -19,6 +19,7 @@ from app.models.security_officer import SecurityOfficer, AvailabilityStatus
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes
 from app.services.neighbourhood_service import STALE_LOCATION_THRESHOLD_SECONDS, is_location_stale
+from app.api.controllers.alert import broadcast
 
 logger = logging.getLogger(__name__)
 
@@ -301,6 +302,43 @@ async def resolve_officer(db: DbSession, claims: Claims) -> SecurityOfficer:
     if officer is None:
         raise HTTPException(403, "Not authorised: no security officer profile for this account")
     return officer
+
+async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
+    """Notifies selected officer of dispatch request over websocket"""
+    now = datetime.now(timezone.utc)
+    dispatch.status = DispatchStatus.NOTIFIED
+    dispatch.notified_at = now
+    await db.commit()
+    await db.refresh(dispatch)
+
+    try:
+        user_id = await _get_officer_user_id(db, dispatch.officer_id)
+        if user_id is None:
+            logger.warning(
+                "dispatch: could not resolve user for officer %s (dispatch %s)",
+                dispatch.officer_id, dispatch.id,
+            )
+            return
+
+        await broadcast(
+            [user_id],
+            {
+                "event": "dispatch.notified",
+                "payload": {
+                    "dispatch_id": str(dispatch.id),
+                    "alert_id": str(dispatch.alert_id),
+                    "distance": dispatch.distance,
+                    "eta": dispatch.eta,
+                    "notified_at": now.isoformat(),
+                    "expires_at": (now + timedelta(seconds=RESPONSE_TIMEOUT)).isoformat(),
+                },
+            },
+        )
+    except Exception:
+        logger.exception(
+            "dispatch: failed to notify officer %s for dispatch %s",
+            dispatch.officer_id, dispatch.id,
+        )
 
 def _build_candidate_res(d: Dispatch) -> DispatchCandidateRes:
     return DispatchCandidateRes(
