@@ -278,6 +278,17 @@ async def _get_officer_user_id(db: DbSession, officer_id: UUID) -> str | None:
     user_id = result.scalar.one_or_none()
     return str(user_id) if user_id is not None else None
 
+async def get_dispatch_viewer_ids(db: DbSession, neighbourhood_id: UUID | None) -> list[str]:
+    if neighbourhood_id is None:
+        return []
+    
+    result = await db.execute(
+        select(NeighbourhoodUser.user_id)
+        .where(NeighbourhoodUser.neighbourhood_id == neighbourhood_id)
+        .where(NeighbourhoodUser.role.in_(DISPATCH_VIEWER_ROLES))
+    )
+    return [str(user_id) for user_id in result.scalars().all()]
+
 def _build_candidate_res(d: Dispatch) -> DispatchCandidateRes:
     return DispatchCandidateRes(
         id=d.id,
