@@ -65,8 +65,15 @@ const STATUS_STYLES: Record<
     colour: "#38bdf8",
     dashArray: "6 4",
   },
+  CONFIRMED: {
+    colour: "#f97316"
+  },
   RESOLVED: {
     colour: "#10b981",
+  },
+  DISMISSED: {
+    colour: "#64748b",
+    dashArray: "3 5",
   },
 };
 
@@ -131,25 +138,37 @@ function propertyDetectionType(
 function propertyStatus(
   alerts: CriticalAlertMapItem[],
 ): CriticalAlertStatus {
-  const hasOpenAlert = alerts.some(
-    (alert) => alert.status === "OPEN",
-  );
-
-  if (hasOpenAlert) {
+  if (alerts.some((alert) => alert.status === "OPEN")) {
     return "OPEN";
   }
 
-  const hasAcknowledgedAlert = alerts.some(
-    (alert) =>
-      alert.status === "ACKNOWLEDGED",
-  );
+  if (
+    alerts.some(
+      (alert) => alert.status === "CONFIRMED",
+    )
+  ) {
+    return "CONFIRMED";
+  }
 
-  if (hasAcknowledgedAlert) {
+  if (
+    alerts.some(
+      (alert) => alert.status === "ACKNOWLEDGED",
+    )
+  ) {
     return "ACKNOWLEDGED";
   }
 
-  return "RESOLVED";
+  if (
+    alerts.some(
+      (alert) => alert.status === "RESOLVED",
+    )
+  ) {
+    return "RESOLVED";
+  }
+
+  return "DISMISSED";
 }
+
 
 function markerRadius(alertCount: number): number {
   return Math.min(10 + alertCount, 18);

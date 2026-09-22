@@ -47,6 +47,10 @@ function statusLabel(
       return "Open";
     case "ACKNOWLEDGED":
       return "Acknowledged";
+    case "CONFIRMED":
+      return "Confirmed";
+    case "DISMISSED":
+      return "Dismissed";
     case "RESOLVED":
       return "Resolved";
   }
