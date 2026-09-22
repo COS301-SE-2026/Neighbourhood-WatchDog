@@ -380,6 +380,30 @@ async def _promote_officer(db: DbSession, alert_id: UUID) -> None:
 
     await _notify_officer(db, officer)
 
+async def _expire_stale_dispatch(db: DbSession, dispatch: Dispatch) -> Dispatch:
+    """
+    Sets a notified dispatch attempt to timed out 
+    if the officer does not accept/decline within the response window
+    """
+    if dispatch.status != DispatchStatus.NOTIFIED or dispatch.notified_at is None:
+        return dispatch
+
+    now = datetime.now(timezone.utc)
+    if (now - dispatch.notified_at).total_seconds() <= RESPONSE_TIMEOUT:
+        return dispatch
+
+    dispatch.status = DispatchStatus.TIMED_OUT
+    dispatch.responded_at = now
+    await db.commit()
+    await db.refresh(dispatch)
+
+    try:
+        await _promote_officer(db, dispatch.alert_id)
+    except Exception:
+        logger.exception("dispatch: failed to promote next officer after time out for alert %s", dispatch.alert_id)
+
+    return dispatch
+
 def _build_candidate_res(d: Dispatch) -> DispatchCandidateRes:
     return DispatchCandidateRes(
         id=d.id,
