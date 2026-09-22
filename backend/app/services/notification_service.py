@@ -543,9 +543,7 @@ async def dispatch_tracking_match_notifications(db: DbSession, alert_id: UUID, c
             whatsapp_message=message,
             detection_type="CROSS_PROPERTY_MATCH",
             camera=camera,
-            severity="HIGH",
-            notification_message=message
-
+            severity="HIGH"
         )
 
 
@@ -556,7 +554,7 @@ async def dispatch_tracking_match_notifications(db: DbSession, alert_id: UUID, c
         logger.exception(
             "Failed while dispatching match notification for subject %s",
             tracking_subject_id
-            
+
         )
 
 
