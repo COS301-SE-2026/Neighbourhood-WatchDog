@@ -66,6 +66,33 @@ def _format_whatsapp_message(
         "Open the dashboard to review this alert."
     )
 
+
+def _format_match_notification_message(tracking_subject_id: UUID, source_property: str, destination_property: str,
+                                       source_timestamp, match_timestamp, camera_name: str, match_confidence: float | None = None) -> str:
+
+    confidence = (
+        f"{match_confidence:.1%}"
+        if match_confidence is not None
+        else "Unknowm"
+    )
+
+
+    return(
+
+        "CROSS-PROPERTY MATCH - Neighbourhood WatchDog\n\n"
+        f"Identity ID: {tracking_subject_id}\n"
+        f"From property: {source_property}\n"
+        f"To property: {destination_property}\n"
+        f"Original sighting: {source_timestamp:%d %b %Y, %H:%M:%S}\n"
+        f"Matched at: {match_timestamp:%d %b %Y, %H:%M:%S}\n"
+        f"Camera: {camera_name}\n"
+        f"Match confidence: {confidence}\n\n"
+        "Open the dashboard to review this match."
+
+        
+    )
+
+
 def _send_whatsapp(to_phone: str, message: str) -> tuple[bool, str | None]:
     """Send whatsapp message using twilio snadbox. Recipient must be part of sandbox to receive messages"""
     try:
