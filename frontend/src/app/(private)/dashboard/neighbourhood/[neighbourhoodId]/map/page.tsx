@@ -517,6 +517,18 @@ function PropertyAlertsSheet({
 
 
 export default function NeighbourhoodAlertMapPage() {
+  const [mapMode, setMapMode] =
+    useState<MapMode>("neighbourhood");
+
+  const [layerState, setLayerState] =
+    useState<MapLayerState>({
+      properties: true,
+      heatmap: false,
+      contours: false,
+      liveAlerts: true,
+      routes: false,
+    });
+    
   const [
     selectedProperty,
     setSelectedProperty,
