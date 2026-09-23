@@ -2,8 +2,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
-import pytest
-from firebase_admin import messaging
 
 from app.tasks.push_tasks import send_push_to_users
 
