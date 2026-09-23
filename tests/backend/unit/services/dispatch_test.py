@@ -209,14 +209,20 @@ async def run_dispatch(steps, mock_db=None, commit_error=None, refetch=None):
     async def fake_execute(_stmt):
         if pending:
             return pending.pop(0)
-        return make_scalars_result(added if refetch is None else refetch)
+        rows = added if refetch is None else refetch
+        result = make_scalars_result(rows)
+        result.scalar_one_or_none.return_value = next(
+            (r for r in rows if r.status == DispatchStatus.SELECTED), None
+        )
+        return result
 
     mock_db.execute = AsyncMock(side_effect=fake_execute)
 
-    res = await dispatch_alert(mock_db, ALERT_ID)
+    with patch("app.services.dispatch_service._notify_officer", new=AsyncMock()) as notify:
+        res = await dispatch_alert(mock_db, ALERT_ID)
 
     assert not pending, "db.execute results were provided that dispatch_alert never asked for"
-    return SimpleNamespace(res=res, db=mock_db, added=added)
+    return SimpleNamespace(res=res, db=mock_db, added=added, notify=notify)
 
 class TestFilterEligible:
     def test_keeps_fresh_available_officer(self):
@@ -706,7 +712,7 @@ class TestDispatchAlert:
         assert [c.officer_id for c in run.res.queued] == [busy.officer_id]
         assert run.res.no_candidate is False
         run.db.commit.assert_awaited_once()
-        assert run.db.execute.await_count == 5
+        assert run.db.execute.await_count == 6
 
     @pytest.mark.asyncio
     async def test_busy_officer_is_never_given_an_active_alert_automatically(self):
@@ -868,8 +874,9 @@ class TestGetAlertDispatchHandler:
 
 def _respond_db(*, officer, dispatch, extra=()):
     mock_db = AsyncMock()
+    mock_db.add = Mock()
     mock_db.execute = AsyncMock(
-        side_eefect=[
+        side_effect=[
             make_scalar_result(officer),
             make_scalar_result(dispatch),
             *extra,
@@ -896,7 +903,7 @@ class TestRespondToDispatchHandler:
             ],
         )  
 
-        with patch("app.api.controllers.alert.broadcast", new=AsyncMock()) as broadcast:
+        with patch("app.services.dispatch_service.broadcast", new=AsyncMock()) as broadcast:
             res = await respond_to_dispatch_handler(dispatch.id, "ACCEPT", mock_db, CLAIMS)
 
         assert dispatch.status == DispatchStatus.ACCEPTED
@@ -915,7 +922,7 @@ class TestRespondToDispatchHandler:
             rank=1,
             notified_at=datetime.now(timezone.utc) - timedelta(seconds=5),
         )
-        next_candidate = make_dispatch_row(DispatchStatus.PENIDNG, officer_id=next_officer_id, rank=2)
+        next_candidate = make_dispatch_row(DispatchStatus.PENDING, officer_id=next_officer_id, rank=2)
         mock_db = _respond_db(
             officer=officer,
             dispatch=dispatch,
@@ -925,7 +932,7 @@ class TestRespondToDispatchHandler:
             ],
         )
 
-        with patch("app.api.controllers.alert.broadcast", new=AsyncMock()) as broadcast:
+        with patch("app.services.dispatch_service.broadcast", new=AsyncMock()) as broadcast:
             res = await respond_to_dispatch_handler(dispatch.id, "DECLINE", mock_db, CLAIMS)
 
         assert dispatch.status == DispatchStatus.DECLINED
@@ -990,7 +997,9 @@ class TestRespondToDispatchHandler:
 
         assert exc_info.value.status_code == 409
         assert dispatch.status == DispatchStatus.TIMED_OUT
-        mock_db.commit.assert_called_once()
+        assert mock_db.commit.await_count == 2
+        mock_db.add.assert_called_once()
+        assert mock_db.add.call_args.args[0].status == DispatchStatus.NO_CANDIDATE
 
 class TestExpireStaleDispatches:
     @pytest.mark.asyncio
@@ -1002,6 +1011,7 @@ class TestExpireStaleDispatches:
             notified_at=datetime.now(timezone.utc) - timedelta(seconds=RESPONSE_TIMEOUT)
         )
         mock_db = AsyncMock()
+        mock_db.add = Mock()
         mock_db.execute = AsyncMock(
             side_effect=[
                 make_scalars_result([stale]),

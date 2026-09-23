@@ -276,7 +276,7 @@ async def _get_officer_user_id(db: DbSession, officer_id: UUID) -> str | None:
         .join(SecurityOfficer, SecurityOfficer.neighbourhood_user_id == NeighbourhoodUser.id)
         .where(SecurityOfficer.id == officer_id)
     )
-    user_id = result.scalar.one_or_none()
+    user_id = result.scalar_one_or_none()
     return str(user_id) if user_id is not None else None
 
 async def get_dispatch_viewer_ids(db: DbSession, neighbourhood_id: UUID | None) -> list[str]:
@@ -297,7 +297,7 @@ async def resolve_officer(db: DbSession, claims: Claims) -> SecurityOfficer:
         .join(User, User.id == NeighbourhoodUser.user_id)
         .where(User.cognito_sub == claims["sub"])
     )
-    officer = result.scalar.one_or_none()
+    officer = result.scalar_one_or_none()
 
     if officer is None:
         raise HTTPException(403, "Not authorised: no security officer profile for this account")
