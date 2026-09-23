@@ -8,7 +8,7 @@ from app.models.alert import Alert, AlertStatus
 from app.core.database import DbSession
 from app.models.camera import Camera
 from app.models.property import Property
-from app.schemas.alert import IncidentDensityQuery
+from app.schemas.alert import IncidentDensityCell, IncidentDensityData, IncidentDensityQuery
 
 CELL_SIZE_METRES = 100
 
@@ -22,7 +22,7 @@ async def get_incident_density_handler(
     filters: IncidentDensityQuery,
     db: DbSession,
     claims: dict,
-):
+) -> IncidentDensityData:
     if not claims:
         raise HTTPException(
             status_code=401, detail="Not authenticated"
@@ -94,4 +94,36 @@ async def get_incident_density_handler(
     except Exception as error:
         raise HTTPException(status_code=500, detail="Failed to calculate incident density") from error
 
-    
+    cells = [
+        IncidentDensityCell(
+            cell_id=(
+                f"{int(row['grid_x'])}:"
+                f"{int(row['grid_y'])}"
+            ),
+            grid_x=float(row["grid_x"]),
+            grid_y=float(row["grid_y"]),
+            latitude=float(row["latitude"]),
+            longitude=float(row["longitude"]),
+            incident_count=int(
+                row["incident_count"]
+            ),
+        )
+        for row in rows
+    ]
+
+    counts = [
+        cell.incident_count
+        for cell in cells
+    ]
+
+    return IncidentDensityData(
+        neighbourhood_id=neighbourhood_id,
+        start_at=filters.start_at,
+        end_at=filters.end_at,
+        cell_size_metres=CELL_SIZE_METRES,
+        min_count=min(counts, default=0),
+        max_count=max(counts, default=0),
+        cells=cells,
+    )
+
+

@@ -83,10 +83,6 @@ LIVE_CRITICAL_ALERT_STATUSES = (
     AlertStatus.ACKNOWLEDGED.value,
     AlertStatus.CONFIRMED.value
 )
-HISTORICAL_INCIDENT_STATUSES = (
-    AlertStatus.CONFIRMED.value,
-    AlertStatus.RESOLVED.value
-)
 
 def _critical_neighbourhood_alerts_stmt(
     neighbourhood_id: UUID,

@@ -2,7 +2,7 @@ from enum import Enum
 from datetime import datetime
 from uuid import UUID
 from typing import Optional, List, Literal
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class AlertCreate(BaseModel):
