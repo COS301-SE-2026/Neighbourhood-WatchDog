@@ -32,6 +32,7 @@ class AlertRes(BaseModel):
     thumbnail_url: str | None = None
     clip_s3_key: str | None = None
     clip_expires_at: datetime | None = None
+    tracking_subject_id: UUID | None = None
     processed: bool
     status: str
     resolved_by: UUID | None = None
@@ -40,8 +41,6 @@ class AlertRes(BaseModel):
     property_address: str | None = None
     property_latitude: float | None = None
     property_longitude: float | None = None
-
-    model_config = {"from_attributes": True}
 
 class AcknowledgeAlertRes(BaseModel):
 	status: int

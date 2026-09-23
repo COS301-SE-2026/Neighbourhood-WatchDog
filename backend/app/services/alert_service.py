@@ -322,13 +322,22 @@ def _build_alert_res(alert: Alert) -> AlertRes:
 
     camera = getattr(alert, "camera", None)
     property_obj = getattr(camera, "property", None)
+    tracking_subject = getattr(alert, "tracking_subject", None)
 
     property_address = getattr(property_obj, "address", None)
     if not isinstance(property_address, str):
         property_address = None
 
+    tracking_subject_id=(
+        tracking_subject.id
+        if tracking_subject is not None
+        else None
+    )
+
     property_latitude = _safe_optional_coordinate(getattr(property_obj, "latitude", None))
     property_longitude = _safe_optional_coordinate(getattr(property_obj, "longitude", None))
+
+    
 
     return AlertRes(
         id=alert.id,
@@ -394,7 +403,10 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
     try:
         result = await db.execute(
             select(Alert)
-            .options(joinedload(Alert.camera).joinedload(Camera.property))
+            .options(
+                joinedload(Alert.camera).joinedload(Camera.property),
+                joinedload(Alert.tracking_subject)
+            )
             .where(Alert.id == alert_id)
             .with_for_update(of=Alert)
         )
@@ -1220,7 +1232,7 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
                 alert_id=existing_alert.id,
                 sighting_id=existing_sighting.id,
                 is_new_alert=False
-                
+
             )
 
         
