@@ -8,7 +8,8 @@ from geoalchemy2.elements import WKTElement
 
 from app.auth.authorization import Claims
 from app.schemas.neighbourhood import (
-    NeighbourhoodPropertyRes, 
+    NeighbourhoodPropertyRes,
+    NeighbourhoodMapPropertyRes, 
     NeighbourhoodRes, 
     NeighbourhoodMemberRes, 
     UpdateSecurityAvailabilityRes,
@@ -204,7 +205,38 @@ async def get_neighbourhood_properties_service(db: DbSession, claims: dict) -> L
         )
         for property_obj, neighbourhood in properties
     ]
-    
+
+async def get_neighbourhood_map_properties_handler(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: dict,
+) -> List[NeighbourhoodMapPropertyRes]:
+    if not claims:
+        raise HTTPException(
+            status_code=401,
+            detail=NOT_AUTHENTICATED_MESSAGE,
+        )
+
+    result = await db.execute(
+        select(Property)
+        .where(
+            Property.neighbourhood_id == neighbourhood_id,
+        )
+        .order_by(Property.address)
+    )
+
+    properties = result.scalars().all()
+
+    return [
+        NeighbourhoodMapPropertyRes(
+            id=property_obj.id,
+            address=property_obj.address,
+            property_type=property_obj.property_type,
+            latitude=property_obj.latitude,
+            longitude=property_obj.longitude,
+        )
+        for property_obj in properties
+    ]
 
 async def get_neighbourhood_members_handler(
     neighbourhood_id: UUID, 
