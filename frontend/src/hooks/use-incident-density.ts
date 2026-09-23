@@ -38,5 +38,71 @@ export function useIncidentDensity({
 
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!enabled || !neighbourhoodId || !viewport) {
+      setLoading(false);
+      setError(null);
 
+      if (!enabled) {
+        setData(null);
+      }
+
+      return;
+    }
+
+    let cancelled = false;
+
+    const timer = window.setTimeout(
+      async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+          const result =
+            await fetchIncidentDensity(
+              neighbourhoodId,
+              {
+                startDate,
+                endDate,
+                ...viewport,
+              },
+            );
+
+          if (!cancelled) {
+            setData(result);
+          }
+        } catch (requestError) {
+          if (!cancelled) {
+            setError(
+              requestError instanceof Error
+                ? requestError.message
+                : "Unable to load incident density",
+            );
+          }
+        } finally {
+          if (!cancelled) {
+            setLoading(false);
+          }
+        }
+      },
+      FETCH_DEBOUNCE_MS,
+    );
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [
+    enabled,
+    neighbourhoodId,
+    startDate,
+    endDate,
+    viewport,
+  ]);
+
+  return {
+    data,
+    loading,
+    error
+  };
 }
