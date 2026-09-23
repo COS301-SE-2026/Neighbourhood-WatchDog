@@ -308,9 +308,14 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
       const width = right - left;
       const height = bottom - top;
 
-      const isWeapon =
-        track.detection_type &&
-        track.detection_type.toLowerCase() !== "person";
+      const detectionType = (track.detection_type ?? "").trim().toUpperCase();
+
+      const isWeapon = detectionType === "WEAPON_DETECTED" || ["GUN", "KNIFE", "GRENADE", "EXPLOSION"].includes(detectionType);
+
+      const displayType =
+        detectionType === "HUMAN_PRESENCE" || detectionType === "PERSON"
+          ? "PERSON"
+          : detectionType || "UNKNOWN";
 
       const styles = getComputedStyle(document.documentElement);
       const threatColour =
@@ -323,9 +328,7 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
       ctx.lineWidth = 2;
       ctx.strokeRect(left, top, width, height);
 
-      const label = `${track.detection_type ?? "unknown"} ${(
-        track.confidence * 100
-      ).toFixed(0)}%`;
+      const label = `${displayType} ${(track.confidence * 100).toFixed(0)}%`;
 
       ctx.font = "bold 14px Arial";
 
