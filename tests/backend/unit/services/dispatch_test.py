@@ -904,3 +904,31 @@ class TestRespondToDispatchHandler:
         assert res.data.status == DispatchStatus.ACCEPTED
         mock_db.commit.assert_awaited_once()
         broadcast.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_decline_promotes_next(self):
+        officer_id, next_officer_id = uuid4(), uuid4()
+        officer = SimpleNamespace(id=officer_id)
+        dispatch = make_dispatch_row(
+            DispatchStatus.NOTIFIED,
+            officer_id=officer_id,
+            rank=1,
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=5),
+        )
+        next_candidate = make_dispatch_row(DispatchStatus.PENIDNG, officer_id=next_officer_id, rank=2)
+        mock_db = _respond_db(
+            officer=officer,
+            dispatch=dispatch,
+            extra=[
+                make_scalars_result([dispatch, next_candidate]),
+                make_scalar_result(str(uuid4())),
+            ],
+        )
+
+        with patch("app.api.controllers.alert.broadcast", new=AsyncMock()) as broadcast:
+            res = await respond_to_dispatch_handler(dispatch.id, "DECLINE", mock_db, CLAIMS)
+
+        assert dispatch.status == DispatchStatus.DECLINED
+        assert res.message == "Declined"
+        assert next_candidate.status == DispatchStatus.NOTIFIED
+        assert next_candidate.notified_at is not None
