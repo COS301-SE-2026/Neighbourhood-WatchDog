@@ -431,6 +431,9 @@ async def test_create_alert_persists_and_broadcasts_to_neighbourhood():
             "app.api.controllers.alert.broadcast",
             new=AsyncMock(),
         ) as broadcast,
+        patch(
+            "app.services.alert_service.send_push_to_users",
+        ) as send_push,
     ):
         response = await service.create_alert(
             db,
@@ -469,6 +472,13 @@ async def test_create_alert_persists_and_broadcasts_to_neighbourhood():
             "detection_type": "HUMAN_PRESENCE",
             "confidence": 0.85,
         },
+    )
+
+    send_push.delay.assert_called_once_with(
+        ["user-one", "user-two"],
+        title="New alert",
+        body="HUMAN_PRESENCE detected",
+        data={"alert_id": str(ALERT_ID), "event": "new_alert"},
     )
 
 

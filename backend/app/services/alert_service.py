@@ -265,7 +265,7 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
                 },
             )
 
-            await send_push_to_users.delay(
+            send_push_to_users.delay(
                 [str(uid) for uid in recipient_ids],
                 title="New alert",
                 body=f"{data.detection_type} detected",
