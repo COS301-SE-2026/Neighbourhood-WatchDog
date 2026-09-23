@@ -625,9 +625,10 @@ export default function NeighbourhoodAlertMapPage() {
       setRoutePropertyId(null);
     }
   }, [mapMode]);
+
   useOfficerMapLocationTracking(
     neighbourhoodId,
-    isSecurityOfficer,
+    isSecurityOfficer && mapMode === "security",
   );
 
 
@@ -644,7 +645,7 @@ export default function NeighbourhoodAlertMapPage() {
     isStale,
     usingCachedData,
   } = useCriticalAlerts(
-    canViewCriticalMap ? neighbourhoodId : "",
+    showSecurityContent ? neighbourhoodId : "",
   );
 
   const currentSelectedProperty =
@@ -684,7 +685,7 @@ export default function NeighbourhoodAlertMapPage() {
     );
   }
 
-  if (!canViewCriticalMap) {
+  if (!canAccessNeighbourhoodMap) {
     return (
       <main className="min-h-full bg-brand-void px-6 py-8 text-brand-frost">
         <div className="mx-auto max-w-6xl">
@@ -694,8 +695,7 @@ export default function NeighbourhoodAlertMapPage() {
             </h1>
 
             <p className="mt-2 text-sm text-brand-ash">
-              The critical-alert map is available only
-              to security officers and neighbourhood administrators.
+              You must be a member of this neighbourhood to view its map.
             </p>
           </Card>
         </div>
