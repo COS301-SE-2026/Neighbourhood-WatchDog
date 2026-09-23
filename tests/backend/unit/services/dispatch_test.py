@@ -19,6 +19,7 @@ from app.services.dispatch_service import (
     OFFICER_AVG_SPEED,
     RANKING_WEIGHTS,
     ROUTE_CIRCUITRY_FACTOR,
+    RESPONSE_TIMEOUT,
     AlertContext,
     OfficerCandidate,
     RankingWeights,
@@ -32,6 +33,8 @@ from app.services.dispatch_service import (
     filter_eligible,
     get_alert_dispatch_handler,
     rank_candidates,
+    respond_to_dispatch_handler,
+    expire_stale_dispatchs,
 )
 
 ALERT_ID = uuid4()
@@ -861,4 +864,43 @@ class TestGetAlertDispatchHandler:
 
         assert exc_info.value.status_code == 403
         assert exc_info.value.detail == "Not authorised to view dispatch for this alert"
-        assert mock_db.execute.await_count == 2            
+        assert mock_db.execute.await_count == 2  
+
+def _respond_db(*, officer, dispatch, extra=()):
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(
+        side_eefect=[
+            make_scalar_result(officer),
+            make_scalar_result(dispatch),
+            *extra,
+        ]
+    )
+    return mock_db
+class TestRespondToDispatchHandler:
+    @pytest.mark.asyncio
+    async def test_accept_marks_dispatch_as_accepted(self): 
+        officer_id = uuid4()
+        officer = SimpleNamespace(id=officer_id)
+        dispatch = make_dispatch_row(
+            DispatchStatus.NOTIFIED,
+            officer_id=officer_id,
+            rank=1,
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=5)
+        )     
+        mock_db = _respond_db(
+            officer=officer,
+            dispatch=dispatch,
+            extra=[
+                make_scalars_result([dispatch]),
+                make_scalars_result([str(uuid4())]),
+            ],
+        )  
+
+        with patch("app.api.controllers.alert.broadcast", new=AsyncMock()) as broadcast:
+            res = await respond_to_dispatch_handler(dispatch.id, "ACCEPT", mock_db, CLAIMS)
+
+        assert dispatch.status == DispatchStatus.ACCEPTED
+        assert res.status == 200
+        assert res.data.status == DispatchStatus.ACCEPTED
+        mock_db.commit.assert_awaited_once()
+        broadcast.assert_awaited_once()
