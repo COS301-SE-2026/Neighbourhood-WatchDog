@@ -587,44 +587,45 @@ export default function NeighbourhoodAlertMapPage() {
   const isSecurityOfficer =
     neighbourhoodRole === "SECURITY_OFFICER";
 
-  const showSecurityContent =
-    mapMode === "security" &&
-    canViewSecurityMap;
-  
-  function handleToggleLayer(layer: MapLayerKey) {
-    if (
-      layer === "liveAlerts" &&
-      layerState.liveAlerts
-    ) {
-      setSelectedAlert(null);
-      setSelectedProperty(null);
-    }
+  const activeMapMode: MapMode =
+  canViewSecurityMap && mapMode === "security"
+    ? "security"
+    : "neighbourhood";
 
-    if (
-      layer === "routes" &&
-      layerState.routes
-    ) {
-      setRoutePropertyId(null);
-    }
+const showSecurityContent =
+  activeMapMode === "security";
 
-    setLayerState((current) => ({
-      ...current,
-      [layer]: !current[layer],
-    }));
+function handleMapModeChange(nextMode: MapMode) {
+  setMapMode(nextMode);
+
+  if (nextMode !== "security") {
+    setSelectedAlert(null);
+    setSelectedProperty(null);
+    setRoutePropertyId(null);
   }
-  useEffect(() => {
-    if (!canViewSecurityMap && mapMode === "security") {
-      setMapMode("neighbourhood");
-    }
-  }, [canViewSecurityMap, mapMode]);
+}
 
-  useEffect(() => {
-    if (mapMode !== "security") {
-      setSelectedAlert(null);
-      setSelectedProperty(null);
-      setRoutePropertyId(null);
-    }
-  }, [mapMode]);
+function handleToggleLayer(layer: MapLayerKey) {
+  if (
+    layer === "liveAlerts" &&
+    layerState.liveAlerts
+  ) {
+    setSelectedAlert(null);
+    setSelectedProperty(null);
+  }
+
+  if (
+    layer === "routes" &&
+    layerState.routes
+  ) {
+    setRoutePropertyId(null);
+  }
+
+  setLayerState((current) => ({
+    ...current,
+    [layer]: !current[layer],
+  }));
+}
 
   useOfficerMapLocationTracking(
     neighbourhoodId,
