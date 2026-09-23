@@ -70,3 +70,41 @@ async def rebuild_incident_density_day(
             longitude
         )
     )
+
+    result = await db.execute(statement)
+    rows = result.mappings().all()
+
+    # Rebuilding the date is idempotent.
+    await db.execute(
+        delete(DailyIncidentDensity).where(
+            DailyIncidentDensity.incident_date == target_date
+        )
+    )
+
+    db.add_all(
+        [
+            DailyIncidentDensity(
+                neighbourhood_id=(
+                    row["neighbourhood_id"]
+                ),
+                incident_date=target_date,
+                cell_size_metres=(CELL_SIZE_METRES),
+                grid_x=int(row["grid_x"]),
+                grid_y=int(row["grid_y"]),
+                latitude=float(
+                    row["latitude"]
+                ),
+                longitude=float(
+                    row["longitude"]
+                ),
+                incident_count=int(
+                    row["incident_count"]
+                ),
+            )
+            for row in rows
+        ]
+    )
+
+    await db.commit()
+
+    return len(rows)
