@@ -899,15 +899,23 @@ export default function NeighbourhoodAlertMapPage() {
           <MapLoadingState />
         ) : (
           <CriticalAlertsMap
-            alerts={mappedAlerts}
-            route={route}
+            alerts={
+              showSecurityContent && layerState.liveAlerts
+                ? mappedAlerts
+                : []
+            }
+            route={
+              showSecurityContent && layerState.routes
+                ? route
+                : null
+            }
             selectedPropertyId={
               routePropertyId ??
               currentSelectedProperty?.propertyId ??
               null
             }
             onSelectProperty={handleSelectProperty}
-        />
+          />
 
         )}
 
