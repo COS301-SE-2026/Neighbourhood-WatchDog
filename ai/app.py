@@ -21,14 +21,14 @@ import httpx
 import logging
 import keyring
 import boto3
+from pathlib import Path
 from runtime.paths import get_resource_dir
 
 RESOURCE_DIR = get_resource_dir()
 
-logger = logging.getLogger("watchdog.ai")
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = ("rtsp_transport;tcp|fflags;nobuffer|flags;low_delay")
+load_dotenv(RESOURCE_DIR / ".env")
 
-THREAT_MODEL_PATH = (
+DEFAULT_THREAT_MODEL_PATH = (
     RESOURCE_DIR
     / "pipeline"
     / "models"
@@ -36,7 +36,7 @@ THREAT_MODEL_PATH = (
     / "best.pt"
 )
 
-PERSON_MODEL_PATH = (
+DEFAULT_PERSON_MODEL_PATH = (
     RESOURCE_DIR
     / "pipeline"
     / "models"
@@ -44,8 +44,28 @@ PERSON_MODEL_PATH = (
     / "yolov8n.pt"
 )
 
+THREAT_MODEL_PATH = Path(
+    os.getenv("THREAT_MODEL_PATH", str(DEFAULT_THREAT_MODEL_PATH))
+).expanduser()
+
+PERSON_MODEL_PATH = Path(
+    os.getenv("PERSON_MODEL_PATH", str(DEFAULT_PERSON_MODEL_PATH))
+).expanduser()
+
+logger = logging.getLogger("watchdog.ai")
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = ("rtsp_transport;tcp|fflags;nobuffer|flags;low_delay")
+
+
+
 threat_model = YOLO(str(THREAT_MODEL_PATH))
 person_model = YOLO(str(PERSON_MODEL_PATH))
+
+logger.info(
+    "Loaded threat model path=%s classes=%s",
+    THREAT_MODEL_PATH,
+    threat_model.names
+    
+)
 
 PERSON_CONFIDENCE_THRESHOLD = float(os.getenv("PERSON_CONFIDENCE_THRESHOLD", "0.25"))
 PERSON_NMS_IOU_THRESHOLD = float(os.getenv("PERSON_NMS_IOU_THRESHOLD", "0.70"))
