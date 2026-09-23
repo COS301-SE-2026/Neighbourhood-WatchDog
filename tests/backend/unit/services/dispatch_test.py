@@ -932,3 +932,15 @@ class TestRespondToDispatchHandler:
         assert res.message == "Declined"
         assert next_candidate.status == DispatchStatus.NOTIFIED
         assert next_candidate.notified_at is not None
+
+    @pytest.mark.asyncio
+    async def test_rejects_response_from_officer_it_was_not_sent_to(self):
+        officer = SimpleNamespace(id=uuid4())
+        dispatch = make_dispatch_row(DispatchStatus.NOTIFIED, officer_id=uuid4(), rank=1)
+        mock_db = _respond_db(officer=officer, dispatch=dispatch)
+
+        with pytest.raises(HTTPException) as exc_info:
+            await respond_to_dispatch_handler(dispatch.id, "ACCEPT", mock_db, CLAIMS)
+
+        assert exc_info.value.status_code == 403
+        mock_db.commit.assert_not_awaited()
