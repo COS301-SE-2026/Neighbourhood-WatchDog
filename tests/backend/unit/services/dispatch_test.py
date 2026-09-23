@@ -991,3 +991,26 @@ class TestRespondToDispatchHandler:
         assert exc_info.value.status_code == 409
         assert dispatch.status == DispatchStatus.TIMED_OUT
         mock_db.commit.assert_called_once()
+
+class TestExpireStaleDispatches:
+    @pytest.mark.asyncio
+    async def test_expires_stale_dispatches(self):
+        stale = make_dispatch_row(
+            DispatchStatus.NOTIFIED,
+            officer_id=uuid4(),
+            rank=1,
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=RESPONSE_TIMEOUT)
+        )
+        mock_db = AsyncMock()
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_scalars_result([stale]),
+                make_scalars_result([stale]),
+            ]
+        )
+
+        expired = await expire_stale_dispatchs(mock_db)
+
+        assert expired == 1
+        assert stale.status == DispatchStatus.TIMED_OUT
+        mock_db.add.assert_called_once()
