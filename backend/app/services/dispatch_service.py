@@ -515,6 +515,17 @@ async def dispatch_alert(db: DbSession, alert_id: UUID) -> AlertDispatchRes:
 
             db.add_all(_build_dispatch_rows(context, ranked))
             await db.commit()
+
+            selected_result = await db.execute(
+                select(Dispatch).where(
+                    Dispatch.alert_id == alert_id,
+                    Dispatch.status == DispatchStatus.SELECTED,
+                )
+            )
+            selected = selected_result.scalar_one_or_none()
+
+            if selected is not None:
+                await _notify_officer(db, selected)
     except IntegrityError:
         await db.rollback()
         existing = await _fetch_dispatch_rows(db, alert_id)
@@ -558,4 +569,11 @@ async def get_alert_dispatch_handler(
         raise HTTPException(403, "Not authorised to view dispatch for this alert")
 
     rows = await _fetch_dispatch_rows(db, alert_id)
+
+    notified = next((d for d in rows if d.status == DispatchStatus.NOTIFIED), None)
+    if notified is not None:
+        expired = await _expire_stale_dispatch(db, notified)
+        if expired.status != DispatchStatus.NOTIFIED:
+            rows = await _fetch_dispatch_rows(db, alert_id)
+            
     return _build_alert_dispatch_res(alert_id, rows)
