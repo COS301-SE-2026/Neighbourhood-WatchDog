@@ -1,0 +1,31 @@
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/map/page.tsx
+  h_3555f7510a5ca8 1040-1044
+  h_3555f7510a5ca8 31,629-638,866-891,1004-1011,1016-1031,1045
+backend/app/api/controllers/neighbourhood.py
+  h_3555f7510a5ca8 6,13,24,83-104
+backend/app/schemas/neighbourhood.py
+  h_3555f7510a5ca8 36-42
+backend/app/services/neighbourhood_service.py
+  h_3555f7510a5ca8 11-12,208-239
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/map/CriticalAlertsMap.tsx
+  h_3555f7510a5ca8 24-29,33-34,194-197,272-273,281,286-316,338-339,362,380-383,401
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/map/PropertyLayer.tsx
+  h_3555f7510a5ca8 1-68
+frontend/src/hooks/use-neighbourhood-map-properties.ts
+  h_3555f7510a5ca8 1-50
+frontend/src/lib/api/neighbourhood.ts
+  h_3555f7510a5ca8 18-19,22,58-74
+frontend/src/lib/validators/neighbourhood.ts
+  h_3555f7510a5ca8 31-45,125-126
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3389bbe958f7caa6b544ad70331bc706508436b5",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
