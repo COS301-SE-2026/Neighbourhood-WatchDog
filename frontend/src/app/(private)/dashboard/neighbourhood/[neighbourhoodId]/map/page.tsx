@@ -612,6 +612,19 @@ export default function NeighbourhoodAlertMapPage() {
       [layer]: !current[layer],
     }));
   }
+  useEffect(() => {
+    if (!canViewSecurityMap && mapMode === "security") {
+      setMapMode("neighbourhood");
+    }
+  }, [canViewSecurityMap, mapMode]);
+
+  useEffect(() => {
+    if (mapMode !== "security") {
+      setSelectedAlert(null);
+      setSelectedProperty(null);
+      setRoutePropertyId(null);
+    }
+  }, [mapMode]);
   useOfficerMapLocationTracking(
     neighbourhoodId,
     isSecurityOfficer,
