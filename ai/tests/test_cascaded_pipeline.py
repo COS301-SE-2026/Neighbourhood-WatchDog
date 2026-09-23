@@ -79,9 +79,9 @@ def test_weapon_model_is_not_called_when_gate_finds_no_person():
     assert tracker.calls == 0
 
 
-def test_weapon_inference_receives_person_crop_and_is_attached_to_parent_track():
+def test_weapon_inference_receives_full_frame_and_is_attached_to_parent_track():
     person_model = FakeModel([FakeBox([10, 20, 50, 70], 0.91, 0)])
-    weapon_model = FakeModel([FakeBox([2, 3, 12, 15], 0.88, 1)])
+    weapon_model = FakeModel([FakeBox([12, 23, 22, 35], 0.88, 1)])
     tracker = FakeTracker([FakeTrack(7, [10, 20, 50, 70])])
     pipeline = CascadedPipeline(
         person_model=person_model,
@@ -92,7 +92,7 @@ def test_weapon_inference_receives_person_crop_and_is_attached_to_parent_track()
 
     result = pipeline.process_frame(np.zeros((100, 200, 3), dtype=np.uint8))
 
-    assert weapon_model.calls[0][0] == (50, 40, 3)
+    assert weapon_model.calls[0][0] == (100, 200, 3)
     assert result.tracks[0]["track_id"] == 7
     assert result.tracks[0]["weapon_detected"] is True
     assert result.tracks[0]["weapon_type"] == "knife"
@@ -221,3 +221,23 @@ def test_pipeline_preserves_camera_local_id_after_short_occlusion():
     assert [track["track_id"] for track in first.tracks] == [7]
     assert during_occlusion.tracks == []
     assert [track["track_id"] for track in recovered.tracks] == [7]
+
+
+def test_weapon_outside_person_is_not_attached():
+    person_model = FakeModel([FakeBox([10, 20, 50, 70], 0.91, 0)])
+    weapon_model = FakeModel([FakeBox([150, 10, 180, 30], 0.88, 1)])
+    tracker = FakeTracker([FakeTrack(7, [10, 20, 50, 70])])
+
+    pipeline = CascadedPipeline(
+        person_model=person_model,
+        weapon_model=weapon_model,
+        tracker=tracker,
+        config=CascadedPipelineConfig(n_init=1),
+    )
+
+    result = pipeline.process_frame(
+        np.zeros((100, 200, 3), dtype=np.uint8)
+    )
+
+    assert result.tracks[0]["weapon_detected"] is False
+    assert result.events[0]["detection_type"] == "HUMAN_PRESENCE"
