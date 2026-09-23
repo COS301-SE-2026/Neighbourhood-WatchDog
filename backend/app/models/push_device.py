@@ -14,4 +14,4 @@ class PushDevice(Base):
     device_token = Column(String,nullable=False, unique=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
-    user = relationship("User", foreign_keys=[user_id], back_populates="push_devices")
+    user = relationship("User", foreign_keys=[user_id], back_populates="push_device")
