@@ -72,3 +72,39 @@ function projectedToLongitudeLatitude(
     latitude,
   ];
 }
+
+function createThresholds(
+  minimum: number,
+  maximum: number,
+  bandCount: number,
+): number[] {
+  if (maximum <= 0) {
+    return [];
+  }
+
+  if (minimum === maximum) {
+    return [maximum];
+  }
+
+  const safeBandCount = Math.min(
+    Math.max(bandCount, 2),
+    10
+  );
+
+  return Array.from(
+    {
+      length: safeBandCount,
+    },
+    (_, index) =>
+      minimum +
+      (
+        (
+          maximum - minimum
+        ) *
+        index
+      ) /
+        (
+          safeBandCount - 1
+        )
+  );
+}
