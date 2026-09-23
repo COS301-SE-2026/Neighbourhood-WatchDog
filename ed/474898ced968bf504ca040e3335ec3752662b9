@@ -1,0 +1,19 @@
+backend/app/core/celery_app.py
+  h_3555f7510a5ca8 4,17-18,24-25,31-47
+  h_3555f7510a5ca8 15-16,19
+backend/app/schemas/alert.py
+  h_3555f7510a5ca8 273,275
+backend/app/services/daily_incident_density_service.py
+  h_3555f7510a5ca8 4,13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ed474898ced968bf504ca040e3335ec3752662b9",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
