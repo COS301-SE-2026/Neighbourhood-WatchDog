@@ -28,6 +28,7 @@ import { useAlertPropertyRoute } from "@/hooks/use-alert-property-route";
 import { useOfficerMapLocationTracking } from "@/hooks/use-officer-map-location-tracking";
 import { useUserContext } from "@/hooks/use-user-context";
 import { usePropertyResidentContext } from "@/hooks/use-property-resident-context";
+import { useNeighbourhoodMapProperties } from "@/hooks/use-neighbourhood-map-properties";
 import type { PropertyAlertGroup } from "./CriticalAlertsMap";
 import type {
   CriticalAlertMapItem,
@@ -625,6 +626,16 @@ export default function NeighbourhoodAlertMapPage() {
   const isSecurityOfficer =
     neighbourhoodRole === "SECURITY_OFFICER";
 
+  const {
+    properties: mapProperties,
+    loading: mapPropertiesLoading,
+    error: mapPropertiesError,
+    retry: retryMapProperties,
+  } = useNeighbourhoodMapProperties(
+    neighbourhoodId,
+    canAccessNeighbourhoodMap,
+  );
+
   const activeMapMode: MapMode =
   canViewSecurityMap && mapMode === "security"
     ? "security"
@@ -852,6 +863,32 @@ function handleToggleLayer(layer: MapLayerKey) {
           </output>
         )}
 
+        {mapPropertiesError && (
+          <div
+            role="alert"
+            className="mb-5 flex items-start gap-3 rounded-lg border border-brand-caution/30 bg-brand-caution/10 px-4 py-3"
+          >
+            <MapPinOff className="mt-0.5 size-4 shrink-0 text-brand-caution" />
+
+            <div>
+              <p className="text-sm font-medium text-brand-caution">
+                Unable to load neighbourhood properties
+              </p>
+
+              <p className="mt-1 text-xs text-brand-ash">
+                {mapPropertiesError}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => void retryMapProperties()}
+                className="mt-2 text-xs font-semibold text-brand-green hover:underline"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div
@@ -964,13 +1001,34 @@ function handleToggleLayer(layer: MapLayerKey) {
         </section>
 
 
-        {loading && mappedAlerts.length === 0 ? (
+        {(
+          mapPropertiesLoading &&
+          mapProperties.length === 0
+        ) || (
+          showSecurityContent &&
+          loading &&
+          mappedAlerts.length === 0
+        ) ? (
           <MapLoadingState />
         ) : (
           <CriticalAlertsMap
             neighbourhoodId={neighbourhoodId}
-            alerts={mappedAlerts}
-            route={route}
+            alerts={
+              showSecurityContent &&
+              layerState.liveAlerts
+                ? mappedAlerts
+                : []
+            }
+            mapProperties={mapProperties}
+            showProperties={
+              layerState.properties
+            }
+            route={
+              showSecurityContent &&
+              layerState.routes
+                ? route
+                : null
+            }
             selectedPropertyId={
               routePropertyId ??
               currentSelectedProperty?.propertyId ??
@@ -979,8 +1037,12 @@ function handleToggleLayer(layer: MapLayerKey) {
             showIncidentContours={
               showIncidentContours
             }
-            densityStartDate={densityStartDate}
-            densityEndDate={densityEndDate}
+            densityStartDate={
+              densityStartDate
+            }
+            densityEndDate={
+              densityEndDate
+            }
             onSelectProperty={
               handleSelectProperty
             }

@@ -21,9 +21,17 @@ import type {
 } from "@/lib/validators/alert";
 import { IncidentContourLayer } from "./IncidentContourLayer";
 
+import type {
+  NeighbourhoodMapProperty,
+} from "@/lib/validators/neighbourhood";
+
+import { PropertyLayer } from "./PropertyLayer";
+
 interface CriticalAlertsMapProps {
   readonly neighbourhoodId: string;
   readonly alerts: CriticalAlertMapItem[];
+  readonly mapProperties: NeighbourhoodMapProperty[];
+  readonly showProperties: boolean;
   readonly route: AlertRouteData | null;
   readonly selectedPropertyId?: string | null;
   readonly showIncidentContours: boolean;
@@ -183,7 +191,10 @@ function markerRadius(alertCount: number): number {
 function FitPropertyBounds({
   properties,
 }: {
-  readonly properties: PropertyAlertGroup[];
+  readonly properties: readonly {
+    latitude: number;
+    longitude: number;
+  }[];
 }) {
   const map = useMap();
 
@@ -258,6 +269,8 @@ function FitRouteBounds({
 export function CriticalAlertsMap({
   neighbourhoodId,
   alerts,
+  mapProperties,
+  showProperties,
   route,
   selectedPropertyId,
   showIncidentContours,
@@ -265,11 +278,41 @@ export function CriticalAlertsMap({
   densityEndDate,
   onSelectProperty,
 }: CriticalAlertsMapProps) {
-
-  const properties = useMemo(
+  const alertProperties = useMemo(
     () => groupAlertsByProperty(alerts),
     [alerts],
   );
+
+  const geocodedMapProperties = useMemo(
+    () =>
+      mapProperties.flatMap((property) => {
+        if (
+          property.latitude === null ||
+          property.longitude === null
+        ) {
+          return [];
+        }
+
+        return [
+          {
+            latitude: property.latitude,
+            longitude: property.longitude,
+          },
+        ];
+      }),
+    [mapProperties],
+  );
+
+  const fitProperties =
+    showProperties &&
+    geocodedMapProperties.length > 0
+      ? geocodedMapProperties
+      : alertProperties;
+
+  const displayedPropertyCount =
+    showProperties
+      ? geocodedMapProperties.length
+      : alertProperties.length;
 
   const routePositions: [number, number][] =
     route?.route_geometry?.coordinates.map(
@@ -292,8 +335,8 @@ export function CriticalAlertsMap({
           </h2>
 
           <p className="mt-1 text-xs text-brand-ash">
-            {properties.length} mapped{" "}
-            {properties.length === 1
+            {displayedPropertyCount} mapped{" "}
+            {displayedPropertyCount === 1
               ? "property"
               : "properties"}
             {" · "}
@@ -316,7 +359,7 @@ export function CriticalAlertsMap({
         className="relative z-0 h-[34rem] w-full"
       >
         <FitPropertyBounds
-          properties={properties}
+          properties={fitProperties}
         />
 
         <TileLayer
@@ -333,6 +376,10 @@ export function CriticalAlertsMap({
           startDate={densityStartDate}
           endDate={densityEndDate}
           enabled={showIncidentContours}
+        />
+        <PropertyLayer
+          properties={mapProperties}
+          visible={showProperties}
         />
 
         <FitRouteBounds route={route} />
@@ -351,7 +398,7 @@ export function CriticalAlertsMap({
         
 
 
-        {properties.map((property) => {
+        {alertProperties.map((property) => {
           const detectionType =
             propertyDetectionType(
               property.alerts,
