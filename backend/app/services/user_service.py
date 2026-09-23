@@ -12,7 +12,7 @@ from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.user import User, UserRole
 from app.models.push_device import PushDevice
-from app.schemas.user import CurrentUserContextRes, CurrentUserNeighbourhood, CurrentUserProperty, CurrentUserSummary, GetUserResSchema, UpdateUserSettingsReq, UserSettingsResSchema, RegisterPushDeviceReq, RegisterPushDeviceRes
+from app.schemas.user import CurrentUserContextRes, CurrentUserNeighbourhood, CurrentUserProperty, CurrentUserSummary, GetUserResSchema, UpdateUserSettingsReq, UserSettingsResSchema, RegisterPushDeviceRes
 from app.services.alert_service import NOT_AUTHENTICATED
 
 logger = logging.getLogger(__name__)
