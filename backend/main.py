@@ -90,8 +90,9 @@ app.include_router(dispatch_router)
 def health_check():
     return {"status": "ok"}
 
-cred = credentials.Certificate(json.loads(config.firebase_credentials_json))
-firebase_admin.initialize_app(cred)
+if config.firebase_credentials_json:
+    cred = credentials.Certificate(json.loads(config.firebase_credentials_json))
+    firebase_admin.initialize_app(cred)
 
 def custom_openapi():
     """This is for the API Service Contract to make sure it returns the full schema, not just a reference"""
