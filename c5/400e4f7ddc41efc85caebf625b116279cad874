@@ -1,0 +1,14 @@
+backend/seed.py
+  h_cf6208e37032c0 171-173
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c5400e4f7ddc41efc85caebf625b116279cad874",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

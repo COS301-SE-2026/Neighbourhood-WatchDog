@@ -1,0 +1,17 @@
+backend/app/services/property_service.py
+  h_cf6208e37032c0 3,10-15,23,42-43,50,59,73,77,80,96-97,104-105,117-118,121,126-127,129-130,132,134-135,137-138,147,152-155,167-168
+  h_cf6208e37032c0 17-22,48-49,51,84-87,114-116,133,136
+backend/app/api/controllers/property.py
+  h_cf6208e37032c0 23-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "04e9a55ef16b859eadd7b34bbe134f9d27ba03f1",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+backend/app/auth/dependencies.py
+  h_cf6208e37032c0 9-10,70-82,89
+  h_cf6208e37032c0 91-92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "fb8c5d178ba503f971abf247399d8a7ff922dfee",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

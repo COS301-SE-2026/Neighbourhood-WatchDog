@@ -1,0 +1,15 @@
+backend/app/core/celery_app.py
+  h_cf6208e37032c0 4,6,8-10
+  h_cf6208e37032c0 2,5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "2724c2f15b4451d9ed1985f0326dfdefbba34fba",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+backend/app/services/camera_service.py
+  h_cf6208e37032c0 327
+backend/app/api/controllers/internal_failover.py
+  h_cf6208e37032c0 20
+  h_cf6208e37032c0 18-19,21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "0abcd69d649faba85191a7eeabbb29e61a16002d",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

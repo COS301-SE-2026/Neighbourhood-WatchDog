@@ -1,0 +1,26 @@
+frontend/android/app/src/main/res/drawable/ic_launcher_background.xml
+  h_cf6208e37032c0 8
+frontend/android/app/src/main/res/drawable/ic_launcher_foreground.xml
+  h_cf6208e37032c0 4-50
+frontend/android/app/src/main/res/drawable/logo_mark_only_cropped.xml
+  h_cf6208e37032c0 1-46
+frontend/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+  h_cf6208e37032c0 4-5
+frontend/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+  h_cf6208e37032c0 4-5
+frontend/android/app/src/main/res/values/ic_launcher_background.xml
+  h_cf6208e37032c0 3
+frontend/src/assets/images/logo-mark-only-cropped.svg
+  h_cf6208e37032c0 1-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e4191b338dc4cf89d64e2849c9e6d54ac5d64b94",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+.github/workflows/deploy-production.yml
+  h_cf6208e37032c0 62-76,78,80-88,90-94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "b39bf3a8ddf5b2b3f80e0afaf629955adbd80b8d",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

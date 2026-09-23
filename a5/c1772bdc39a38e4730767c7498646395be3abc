@@ -1,0 +1,17 @@
+frontend/src/app/(private)/dashboard/security/[officerUserId]/page.tsx
+  h_cf6208e37032c0 1-16
+frontend/src/components/security-components/StatusLocation.tsx
+  h_cf6208e37032c0 5,16-18,40-45,89-101,120-121,135,145-146,193-217
+  h_cf6208e37032c0 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a5c1772bdc39a38e4730767c7498646395be3abc",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

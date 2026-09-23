@@ -1,0 +1,37 @@
+frontend/.gitignore
+  h_cf6208e37032c0 42-47
+frontend/src/app/layout.tsx
+  h_cf6208e37032c0 1,22-30,32-34
+  h_cf6208e37032c0 31
+frontend/src/sw.ts
+  h_cf6208e37032c0 1-23
+frontend/next.config.ts
+  h_cf6208e37032c0 2,18-24
+frontend/src/app/manifest.ts
+  h_cf6208e37032c0 1-25
+frontend/package.json
+  s_446b1645d72e2c::t_698487ba64d876 14,32
+frontend/pnpm-lock.yaml
+  s_446b1645d72e2c::t_131279daefffeb 20-22,74-76,1716-1766,2016-2018,2387-2391,2526-2529,3179-3182,3290-3292,3791-3793,3914-3917,3996-3999,4245-4248,4305-4308,4557-4564,4655-4658,4939-4942,6955-7015,7257-7258,7677-7684,7799-7800,8593-8598,8707-8708,9394-9395,9485-9486,9548-9549,9808-9812,9856-9857,10157,10184-10201,10369-10370,10643-10646,10745-10750
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8d3ed430a269a452c22f10bf82f1381e7fe86b16",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_446b1645d72e2c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7d081488-5f17-413c-8b67-694c1fdf380a",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

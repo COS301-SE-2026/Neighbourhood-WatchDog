@@ -1,0 +1,25 @@
+tests/backend/unit/tasks/risk_score_tasks_test.py
+  h_cf6208e37032c0 1,6-25,28-30,34-35,38-39,50,53,63-65,71,85-86
+  h_cf6208e37032c0 36-37,51-52,54,69-70,72,83-84
+tests/backend/unit/services/properties_test.py
+  h_cf6208e37032c0 21-22,26,146-147,151,158,174
+tests/backend/unit/services/camera_settings_test.py
+  h_cf6208e37032c0 2,35
+backend/app/services/user_service.py
+  h_cf6208e37032c0 74,88
+backend/app/services/property_service.py
+  h_cf6208e37032c0 103
+tests/backend/unit/services/auth_tests.py
+  h_cf6208e37032c0 2,58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "605395421b86e24076ee540e41997264314dff22",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

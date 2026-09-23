@@ -1,0 +1,16 @@
+docker-compose.prod.yml
+  h_cf6208e37032c0 24-25,37-41,75
+.github/workflows/deploy-production.yml
+  h_cf6208e37032c0 19-21,25-26,50-56,58-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "8f395e10bb255be371daff8157ffa4446fbaebb1",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

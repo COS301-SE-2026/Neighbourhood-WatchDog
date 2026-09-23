@@ -1,0 +1,18 @@
+tests/backend/unit/services/security_officer_test.py
+  h_cf6208e37032c0 1-82
+backend/app/services/security_officer_service.py
+  h_cf6208e37032c0 51
+tests/backend/unit/api/auth_controller_test.py
+  h_cf6208e37032c0 3,5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9cc9c967a85718cc1e037783586ebf1d2e5cdf38",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+backend/app/api/controllers/property.py
+  h_cf6208e37032c0 18,21,47,50,68
+tests/backend/unit/services/properties_test.py
+  h_cf6208e37032c0 3,12,21,28-30,109,113,145-146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "405da6b19d46c8bbc49416412e62e80eae32770c",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

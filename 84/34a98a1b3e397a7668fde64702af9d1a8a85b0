@@ -1,0 +1,16 @@
+tests/backend/integration/api/clip_test.py
+  h_cf6208e37032c0 4
+tests/frontend/auth/auth.test.ts
+  h_cf6208e37032c0 197-200
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "8434a98a1b3e397a7668fde64702af9d1a8a85b0",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+backend/app/api/controllers/internal.py
+  h_cf6208e37032c0 3,13,21,23,81-82,95-96,101-114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "469ae827182e44a06561b1f08302835d3c4b1611",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

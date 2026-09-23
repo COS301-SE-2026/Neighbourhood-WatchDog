@@ -1,0 +1,14 @@
+docker-compose.failover.yml
+  h_cf6208e37032c0 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "3110b72622cabd6901b6691a7d48dbb22b9d690d",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+.github/workflows/deploy-mediamtx-prod.yml
+  h_cf6208e37032c0 5-9
+mediamtx/Dockerfile
+  h_cf6208e37032c0 3-4,8-16,18,20
+.gitignore
+  h_cf6208e37032c0 49-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.18",
+  "base_commit_sha": "4855f5d2e2b7fba561acd08b4208b794197671b6",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

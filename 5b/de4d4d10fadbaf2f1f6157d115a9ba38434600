@@ -1,0 +1,24 @@
+.env.example
+  h_cf6208e37032c0 25
+.github/workflows/deploy-staging.yml
+  h_cf6208e37032c0 27,54
+docker-compose.yml
+  h_cf6208e37032c0 109,161
+backend/app/api/controllers/clips.py
+  h_cf6208e37032c0 33
+ai/app.py
+  h_cf6208e37032c0 58,332,334,474,495
+docker-compose.prod.yml
+  h_cf6208e37032c0 28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.18",
+  "base_commit_sha": "5bde4d4d10fadbaf2f1f6157d115a9ba38434600",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+frontend/src/hooks/use-location-permission.ts
+  h_cf6208e37032c0 18-19,104
+frontend/src/components/security-components/StatusLocation.tsx
+  h_cf6208e37032c0 44,104
+frontend/src/components/shared/LocationPermissionDialog.tsx
+  h_cf6208e37032c0 39-42,59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f00a7d1ecaa091c3d602d839176a2059b2b43b88",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

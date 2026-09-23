@@ -1,0 +1,16 @@
+backend/app/schemas/camera.py
+  h_cf6208e37032c0 31
+backend/main.py
+  h_cf6208e37032c0 51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "6e9c0895dd282b769a7eb573736744a410754086",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

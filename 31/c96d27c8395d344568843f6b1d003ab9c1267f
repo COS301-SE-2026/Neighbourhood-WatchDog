@@ -1,0 +1,15 @@
+tests/frontend/unit/hooks/use-officer-location-tracking.test.ts
+  h_cf6208e37032c0 8,16-28,36-38,40-47,49-50,57-64,66-80,84-85,87-89,93,99-100,108,118,121,123-124,129,132,135,149,151-153,159-171,181,187,193,202
+  h_cf6208e37032c0 139-140,150,154-158,203
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "31c96d27c8395d344568843f6b1d003ab9c1267f",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

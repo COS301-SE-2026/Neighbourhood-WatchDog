@@ -1,0 +1,26 @@
+frontend/android/capacitor.settings.gradle
+  h_cf6208e37032c0 3,6-12
+frontend/android/app/capacitor.build.gradle
+  h_cf6208e37032c0 13-14
+frontend/src/components/security-components/StatusLocation.tsx
+  h_cf6208e37032c0 41-46,228-240
+frontend/package.json
+  h_cf6208e37032c0 16
+frontend/src/hooks/use-officer-location-tracking.ts
+  h_cf6208e37032c0 5,9,15-16,26-29,31-41,43-46,48,50-56,58-62,76,78
+frontend/src/hooks/use-location-permission.ts
+  h_cf6208e37032c0 4,7,11,46-62,70
+frontend/pnpm-lock.yaml
+  h_cf6208e37032c0 26-28,481-485,5872-5875
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "99a3dd02f5ede05eeaab82f0cb6e8d19a06af668",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

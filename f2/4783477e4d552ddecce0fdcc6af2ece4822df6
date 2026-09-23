@@ -1,0 +1,14 @@
+frontend/android/app/src/main/AndroidManifest.xml
+  h_cf6208e37032c0 5-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f24783477e4d552ddecce0fdcc6af2ece4822df6",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

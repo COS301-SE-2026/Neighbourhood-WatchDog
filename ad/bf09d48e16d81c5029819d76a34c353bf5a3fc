@@ -1,0 +1,14 @@
+backend/Dockerfile
+  h_cf6208e37032c0 45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.18",
+  "base_commit_sha": "adbf09d48e16d81c5029819d76a34c353bf5a3fc",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

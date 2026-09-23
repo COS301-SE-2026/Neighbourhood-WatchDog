@@ -1,0 +1,15 @@
+tests/backend/unit/services/alert_test.py
+  h_cf6208e37032c0 894-904
+  h_cf6208e37032c0 893
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "26b2568d897d7e4e1e58d0c7b05365fa118efa15",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

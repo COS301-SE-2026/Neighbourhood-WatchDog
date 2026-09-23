@@ -1,0 +1,14 @@
+.github/workflows/zap-baseline.yml
+  h_cf6208e37032c0 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "d3347542f6e3c6e9a007c8d94940f98555a31c8e",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

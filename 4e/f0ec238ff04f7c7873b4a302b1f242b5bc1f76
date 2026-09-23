@@ -1,0 +1,14 @@
+backend/app/models/__init__.py
+  h_cf6208e37032c0 18-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4ef0ec238ff04f7c7873b4a302b1f242b5bc1f76",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

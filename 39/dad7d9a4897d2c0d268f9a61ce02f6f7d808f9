@@ -1,0 +1,15 @@
+backend/app/services/alert_service.py
+  h_cf6208e37032c0 1-2,7,11-12,27-28,30,217-223,248,252,289,305,358,384,388,392,444,509,513,518,547,551,556,563,574,579-580,584,587-590,599,632
+  h_cf6208e37032c0 578,778
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "39dad7d9a4897d2c0d268f9a61ce02f6f7d808f9",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

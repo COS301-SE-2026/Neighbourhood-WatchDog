@@ -1,0 +1,18 @@
+.github/workflows/ci.yml
+  h_cf6208e37032c0 103,120
+ai/Dockerfile
+  h_cf6208e37032c0 12,28
+ai/ai_setup.sh
+  h_cf6208e37032c0 38-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "23bcd22e705f45e2bcbdc2041d7e88fb52eb12a0",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

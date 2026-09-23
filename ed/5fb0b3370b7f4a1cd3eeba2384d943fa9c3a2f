@@ -1,0 +1,14 @@
+docs/srs.md
+  h_cf6208e37032c0 272,561
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "ed5fb0b3370b7f4a1cd3eeba2384d943fa9c3a2f",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

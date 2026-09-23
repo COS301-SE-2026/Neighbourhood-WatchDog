@@ -1,0 +1,16 @@
+frontend/src/lib/api/neighbourhood.ts
+  h_cf6208e37032c0 12,17,103
+frontend/src/components/security-components/StatusLocation.tsx
+  h_cf6208e37032c0 12,18-20,33,45,78,129
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a688014582f07757b3cfceb7c16c26c1fe6e8ce8",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

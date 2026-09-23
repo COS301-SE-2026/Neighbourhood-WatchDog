@@ -1,0 +1,26 @@
+ai/evaluation/tune_person_detector.py
+  h_cf6208e37032c0 18,46-47,52-53,109-111,142
+ai/tools/evaluate_weapon_candidate.py
+  h_cf6208e37032c0 22,111-114
+ai/evaluation/prelabel_persons.py
+  h_cf6208e37032c0 15
+ai/tools/prepare_gun_audit.py
+  h_cf6208e37032c0 11,133-135
+ai/tools/security.py
+  h_cf6208e37032c0 1-23
+ai/tools/evaluate_weapon_baseline.py
+  h_cf6208e37032c0 22,112-115
+ai/evaluation/run_baseline.py
+  h_cf6208e37032c0 22,217-219,237
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "0e8061c94b3eed453c79c83a16f953bbbe2b9d81",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

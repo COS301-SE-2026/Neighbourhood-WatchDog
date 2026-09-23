@@ -1,0 +1,14 @@
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/join-requests/page.tsx
+  h_cf6208e37032c0 33,186-190,254-257,276,342-345,407,414
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "f40ad68091cfcbd5aa23a063c67fe4b1d3c2142c",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}

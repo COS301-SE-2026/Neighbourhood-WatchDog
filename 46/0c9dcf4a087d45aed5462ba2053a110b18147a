@@ -1,0 +1,16 @@
+frontend/src/hooks/use-property-context.ts
+  h_cf6208e37032c0 56
+frontend/src/lib/auth/auth-context.tsx
+  h_cf6208e37032c0 20-21,24-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "460c9dcf4a087d45aed5462ba2053a110b18147a",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
