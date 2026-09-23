@@ -1132,6 +1132,11 @@ class TestCriticalAlertMap:
             timezone.utc
         )
         alert.thumbnail_url = None
+        alert.confidence_score = 0.85
+        alert.resolved_at = None
+
+        alert.confidence_score = 0.95
+        alert.resolved_at = None
 
         camera = Mock()
         camera.id = self.camera_id

@@ -17,3 +17,5 @@ from app.models.edge_agent_credentials import * # noqa: F403
 from app.models.neighbourhood_user import *  # noqa: F403
 from app.models.security_officer import *  # noqa: F403
 from app.models.tracking import *  # noqa: F403
+from app.models.dispatch import * # noqa: F403
+from app.models.push_device import * # noqa: F403

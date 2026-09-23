@@ -35,6 +35,7 @@ import {
 
 import { AlertFootagePlayer } from "@/components/shared/AlertFootagePlayer";
 import { TrackingTimeline } from "@/components/shared/TrackingTimeline";
+import { SituationalBrief } from "@/components/shared/SituationalBrief";
 
 
 type AlertLocationMapProps = {
@@ -283,17 +284,23 @@ export function AlertDetailSheet({
 
           {alert.detection_type === "WEAPON_DETECTED" &&
             canViewTracking && (
-            <>
-              <TrackingTimeline
-                alertId={alert.id}
-                alertStatus={alert.status}
-                enabled={open}
-                refreshKey={trackingRefreshKey}
-              />
+              <>
+                <TrackingTimeline
+                  alertId={alert.id}
+                  alertStatus={alert.status}
+                  enabled={open}
+                  refreshKey={trackingRefreshKey}
+                />
 
-              <Separator className="bg-brand-slate" />
-            </>
-          )}
+                <SituationalBrief
+                  alertId={alert.id}
+                  enabled={open}
+                  refreshKey={trackingRefreshKey}
+                />
+
+                <Separator className="bg-brand-slate" />
+              </>
+            )}
 
           <Separator className="bg-brand-slate" />
 

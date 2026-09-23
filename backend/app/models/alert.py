@@ -36,6 +36,7 @@ class Alert(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
     camera = relationship("Camera", back_populates="alerts")
+    dispatch = relationship("Dispatch", back_populates="alert", cascade="all, delete-orphan", order_by="Dispatch.created_at.desc()")
 
     tracking_subject = relationship("TrackingSubject", back_populates="alert", uselist=False, cascade="all, delete-orphan")
 

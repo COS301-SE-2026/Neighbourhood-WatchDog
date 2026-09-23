@@ -25,7 +25,8 @@ from app.schemas.tracking import (
     TrackingTimelineData,
     TrackingTimelineResponse
 )
-
+from app.services.situational_brief_service import maybe_generate_situational_brief
+from app.services.notification_service import dispatch_tracking_match_notifications
 
 logger = logging.getLogger(__name__)
 
@@ -224,7 +225,7 @@ async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUI
         ) from exc
 
 
-async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTrackingSightingRequest, candidate_property_id: UUID) -> TrackingSightingCreateResponse:
+async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTrackingSightingRequest, candidate_property_id: UUID, generate_brief: bool = False) -> TrackingSightingCreateResponse:
     """
     records a cross-camera tracking sighting for an edge agent, but first makes sure the agent is allowed to use the camera and that the tracking subject belongs to the same neighbourhood.
     """
@@ -299,6 +300,13 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
 
     )
 
+    if generate_brief:
+        await maybe_generate_situational_brief(
+            db=db,
+            tracking_subject_id=tracking_subject.id
+            
+        )
+
     authorized_recipient_result = await db.execute(
         select(User.id)
         .distinct()
@@ -323,10 +331,9 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
         )
     )
 
-    recipient_ids = [
-        str(user_id)
-        for user_id in authorized_recipient_result.scalars().all()
-    ]
+    authorized_recipient_ids = list(set(authorized_recipient_result.scalars().all()))
+
+    recipient_ids = [str(user_id) for user_id in authorized_recipient_ids]
 
 
     tracking_event_payload = {
@@ -344,7 +351,14 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
         "local_track_id": body.local_track_id,
         "observed_at": body.observed_at.isoformat(),
         "sequence_no": sighting.sequence_no,
-        "match_confidence": body.match_confidence
+        "match_confidence": body.match_confidence, 
+
+        "source_property_id": str(source_property.id),
+        "source_property": source_property.address,
+        "source_timestamp": parent_alert.frame_timestamp.isoformat(),
+        "destination_property_id": str(candidate_property.id),
+        "destination_property": candidate_property.address,
+        "match_timestamp": body.observed_at.isoformat()
 
     }
 
@@ -368,6 +382,21 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
             tracking_subject.id
 
         )
+
+
+    await dispatch_tracking_match_notifications(
+        db=db,
+        alert_id=parent_alert.id,
+        camera_id=body.camera_id,
+        user_ids=authorized_recipient_ids,
+        tracking_subject_id=tracking_subject.id,
+        source_property=source_property.address,
+        destination_property=candidate_property.address,
+        source_timestamp=parent_alert.frame_timestamp,
+        match_timestamp=body.observed_at,
+        match_confidence=body.match_confidence
+        
+    )
 
     return TrackingSightingCreateResponse(
         status=201,

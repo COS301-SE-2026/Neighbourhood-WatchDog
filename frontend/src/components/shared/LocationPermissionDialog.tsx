@@ -32,21 +32,15 @@ export function LocationPermissionDialog({
 	open,
 	onOpenChange,
 }: LocationPermissionInterface ){
-	const { status, request } = useLocationPermission();
 	const [requesting, setRequesting] = useState(false);
-	const permanentlyDenied = status === "denied";
 	
 	const handleAllow = async () => {
-		if (permanentlyDenied){
-			openAppSettings();
-			return;
-		}
-
 		setRequesting(true);
-		const result = await request();
+		await NativeSettings.open({
+			optionAndroid: AndroidSettings.ApplicationDetails,
+			optionIOS: IOSSettings.App,
+		})
 		setRequesting(false);
-		if (result === "granted") onOpenChange(false); 
-
 	}
 
 	return (
@@ -55,14 +49,15 @@ export function LocationPermissionDialog({
 				<AlertDialogHeader>
 					<AlertDialogTitle>Allow location access</AlertDialogTitle>
 					<AlertDialogDescription>
-						WatchDog uses your location to alert nearby neighbours of an alert,
-						and to show the location of security officers. 
+						To go on duty, you must allow background location permissions. <br/>
+						This will allow WatchDog to use your location even when the app is not open. But only when you are <b>on duty</b> <br/>
+						To do that, click on &apos;Open Settings&apos;. Select permissions. Location permissions and select &apos;Allow all the time&apos;.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
 					<AlertDialogCancel>Not now</AlertDialogCancel>
 					<AlertDialogAction onClick={handleAllow} disabled={requesting}>
-						{permanentlyDenied ? "Open Settings" : "Allow location access"}
+						Open Settings
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

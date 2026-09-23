@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "645120575353",
+    "project_id": "watchdog-c3dde",
+    "storage_bucket": "watchdog-c3dde.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:645120575353:android:aa39eaf9c4d823bc2e51a8",
+        "android_client_info": {
+          "package_name": "com.intrepid.watchdog"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZiwDwIQVI4oA_Y9izX8DXJn6x_qK3Uhs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

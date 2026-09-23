@@ -1,3 +1,6 @@
+import firebase_admin
+import json
+from firebase_admin import credentials
 from app import models  # noqa: F401  (imported for side effects: model registration)
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
@@ -24,6 +27,7 @@ from app.api.controllers.risk_score_history import router as risk_score_history_
 from app.api.controllers.risk_threshold_config import router as risk_threshold_router
 from app.api.controllers.stream import router as stream_router
 from app.api.controllers.users import router as users_router
+from app.api.controllers.dispatch import router as dispatch_router
 from app.auth.rate_limiter import limiter
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -53,7 +57,7 @@ app.add_middleware(SlowAPIMiddleware) #Rate limiting
 
 app.add_middleware( #CORS (allow requests from frontend)
     CORSMiddleware,
-    allow_origins=[config.frontend_url.rstrip("/"), "http://localhost:3000", "https://neighbourhood-watch-dog-intrepidcapstone-4790-teamintrepid.vercel.app", "https://neighbourhood-watch-dog.vercel.app"],
+    allow_origins=[config.frontend_url.rstrip("/"), "http://localhost:3000", "https://neighbourhood-watch-dog.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -80,11 +84,15 @@ app.include_router(internal_failover_router)
 app.include_router(risk_score_history_router)
 app.include_router(pairing_token_router)
 app.include_router(risk_threshold_router)
+app.include_router(dispatch_router)
 
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
 
+if config.firebase_credentials_json:
+    cred = credentials.Certificate(json.loads(config.firebase_credentials_json))
+    firebase_admin.initialize_app(cred)
 
 def custom_openapi():
     """This is for the API Service Contract to make sure it returns the full schema, not just a reference"""
