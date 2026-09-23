@@ -36,3 +36,13 @@ class TestSendPushToUsers:
         self.mock_db = AsyncMock()
         self.mock_db.commit = AsyncMock()
         self.mock_db.user_id = uuid4()
+
+    def test_returns_early_for_empty_user_ids(self):
+        with patch(
+            "app.tasks.push_tasks.WorkerSessionLocal",
+            return_value=FakeAsyncSessionContext(self.mock_db),
+        ) as worker_session:
+            send_push_to_users([], "title", "body", None)
+
+        worker_session.assert_not_called()
+        self.mock_db.execute.assert_not_called()

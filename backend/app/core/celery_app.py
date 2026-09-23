@@ -11,7 +11,7 @@ def reset_engine_after_fork(**kwargs):
 
 celery = Celery(
     __name__,
-    include=["app.tasks.risk_score_tasks", "app.tasks.clip_tasks"]
+    include=["app.tasks.risk_score_tasks", "app.tasks.clip_tasks", "app.tasks.push_tasks"]
 )
 
 celery.conf.broker_url = os.environ.get("REDIS_URL")

@@ -13,7 +13,7 @@ from app.models.push_device import PushDevice
 
 logger = logging.getLogger(__name__)
 
-@celery.task(bind=True, acks_late=True)
+@celery.task(acks_late=True)
 def send_push_to_users(
     user_ids: list[str],
     title: str,
