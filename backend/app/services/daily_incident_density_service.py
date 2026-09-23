@@ -1,7 +1,7 @@
 from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy import delete, func, select
-
+from zoneinfo import ZoneInfo
 from app.core.database import DbSession
 from app.models.alert import Alert
 from app.models.camera import Camera
@@ -10,7 +10,7 @@ from app.models.property import Property
 from app.services.incident_density_grid import HISTORICAL_INCIDENT_STATUSES, incident_grid_expressions, CELL_SIZE_METRES
 
 
-LOCAL_TIMEZONE = "Africa/Johannesburg"
+LOCAL_TIMEZONE = ZoneInfo("Africa/Johannesburg")
 
 def _utc_day_bounds(target_date: date) -> tuple[datetime, datetime]:
     local_start = datetime.combine(

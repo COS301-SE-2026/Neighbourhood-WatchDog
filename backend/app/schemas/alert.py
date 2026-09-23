@@ -270,9 +270,9 @@ class IncidentDensityQuery(BaseModel):
 
     @model_validator(mode="after")
     def validate_range(self):
-        if self.start_date >= self.end_date:
+        if self.start_date > self.end_date:
             raise ValueError(
-                "start_date must be earlier than end_date"
+                "start_date must not be after end_date"
             )
 
         if self.west >= self.east:
