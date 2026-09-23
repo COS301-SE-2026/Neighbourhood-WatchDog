@@ -1,0 +1,14 @@
+backend/app/services/user_service.py
+  h_cf6208e37032c0 14-16,256-283
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ee63d427b2032de7d27d96d05e194399cba2719f",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
