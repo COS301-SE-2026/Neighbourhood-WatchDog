@@ -1,0 +1,15 @@
+backend/app/services/incident_density_service.py
+  h_3555f7510a5ca8 6,9,54-97
+  h_3555f7510a5ca8 53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "478879dc6cfc85e13789e2628358c86194f5c4f7",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
