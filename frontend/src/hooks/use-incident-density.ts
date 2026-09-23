@@ -38,19 +38,18 @@ export function useIncidentDensity({
 
   const [error, setError] = useState<string | null>(null);
 
+  const requestEnabled =
+    enabled &&
+    neighbourhoodId.length > 0 &&
+    viewport !== null;
+
   useEffect(() => {
-    if (!enabled || !neighbourhoodId || !viewport) {
-      setLoading(false);
-      setError(null);
-
-      if (!enabled) {
-        setData(null);
-      }
-
+    if (!requestEnabled || !viewport) {
       return;
     }
 
     let cancelled = false;
+
 
     const timer = window.setTimeout(
       async () => {
@@ -93,7 +92,7 @@ export function useIncidentDensity({
       window.clearTimeout(timer);
     };
   }, [
-    enabled,
+    requestEnabled,
     neighbourhoodId,
     startDate,
     endDate,
@@ -101,8 +100,8 @@ export function useIncidentDensity({
   ]);
 
   return {
-    data,
-    loading,
-    error
+    data: requestEnabled ? data : null,
+    loading: requestEnabled ? loading : false,
+    error: requestEnabled ? error : null,
   };
 }

@@ -53,6 +53,20 @@ function contourColour(
   return CONTOUR_COLOURS[index];
 }
 
+function getMapViewport(
+  map: ReturnType<typeof useMap>,
+): IncidentDensityViewport {
+  const bounds = map.getBounds();
+
+  return {
+    west: bounds.getWest(),
+    south: bounds.getSouth(),
+    east: bounds.getEast(),
+    north: bounds.getNorth(),
+  };
+}
+
+
 export function IncidentContourLayer({
   neighbourhoodId,
   startDate,
@@ -64,19 +78,13 @@ export function IncidentContourLayer({
   const [
     viewport,
     setViewport,
-  ] = useState<
-    IncidentDensityViewport | null
-  >(null);
+  ] = useState<IncidentDensityViewport>(
+    () => getMapViewport(map),
+  );
+
 
   const updateViewport = useCallback(() => {
-    const bounds = map.getBounds();
-
-    setViewport({
-      west: bounds.getWest(),
-      south: bounds.getSouth(),
-      east: bounds.getEast(),
-      north: bounds.getNorth(),
-    });
+    setViewport(getMapViewport(map));
   }, [map]);
 
   useMapEvents({
@@ -84,9 +92,6 @@ export function IncidentContourLayer({
     zoomend: updateViewport,
   });
 
-  useEffect(() => {
-    updateViewport();
-  }, [updateViewport]);
 
   const {
     data,

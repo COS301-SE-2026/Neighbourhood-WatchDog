@@ -82,13 +82,31 @@ function createThresholds(
     return [];
   }
 
+  /*
+   * Incident counts are integers. Contour thresholds
+   * must sit below the values being enclosed.
+   *
+   * Passing the exact maximum causes d3-contour to
+   * return empty coordinates when only one populated
+   * cell exists.
+   */
+  const lowerThreshold = Math.max(
+    0.5,
+    minimum - 0.5,
+  );
+
   if (minimum === maximum) {
-    return [maximum];
+    return [lowerThreshold];
   }
 
   const safeBandCount = Math.min(
     Math.max(bandCount, 2),
-    10
+    10,
+  );
+
+  const upperThreshold = Math.max(
+    lowerThreshold,
+    maximum - 0.5,
   );
 
   return Array.from(
@@ -96,16 +114,17 @@ function createThresholds(
       length: safeBandCount,
     },
     (_, index) =>
-      minimum +
+      lowerThreshold +
       (
         (
-          maximum - minimum
+          upperThreshold -
+          lowerThreshold
         ) *
         index
       ) /
         (
           safeBandCount - 1
-        )
+        ),
   );
 }
 

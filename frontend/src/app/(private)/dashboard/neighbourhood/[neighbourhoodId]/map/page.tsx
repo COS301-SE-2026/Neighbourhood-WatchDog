@@ -93,6 +93,22 @@ function formatDateTime(value: string): string {
   }).format(date);
 }
 
+function formatDateOnly(
+  date: Date,
+): string {
+  const year = date.getFullYear();
+
+  const month = String(
+    date.getMonth() + 1,
+  ).padStart(2, "0");
+
+  const day = String(
+    date.getDate(),
+  ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 function detectionLabel(
   type: UnlocatedCriticalAlertItem["detection_type"],
 ): string {
@@ -561,6 +577,28 @@ export default function NeighbourhoodAlertMapPage() {
     useState(false);
   const [routePropertyId, setRoutePropertyId] = useState<string | null>(null);
 
+  const [
+    showIncidentContours,
+    setShowIncidentContours,
+  ] = useState(false);
+
+  const [densityEndDate] = useState(
+    () => formatDateOnly(new Date()),
+  );
+
+  const [densityStartDate] = useState(
+    () => {
+      const startDate = new Date();
+
+      startDate.setDate(
+        startDate.getDate() - 30,
+      );
+
+      return formatDateOnly(startDate);
+    },
+  );
+
+
   const { neighbourhoodId } = useParams<{
     neighbourhoodId: string;
   }>();
@@ -895,27 +933,57 @@ function handleToggleLayer(layer: MapLayerKey) {
           </section>
         )}
 
+        <section className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-brand-depth px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-brand-frost">
+              Historical incident contours
+            </p>
+
+            <p className="mt-1 text-xs text-brand-ash">
+              Confirmed and resolved incidents from{" "}
+              {densityStartDate} to {densityEndDate}
+            </p>
+          </div>
+
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            aria-pressed={showIncidentContours}
+            onClick={() =>
+              setShowIncidentContours(
+                (current) => !current,
+              )
+            }
+            className="border-border bg-transparent text-brand-green hover:bg-brand-slate hover:text-brand-frost"
+          >
+            {showIncidentContours
+              ? "Hide contours"
+              : "Show contours"}
+          </Button>
+        </section>
+
 
         {loading && mappedAlerts.length === 0 ? (
           <MapLoadingState />
         ) : (
           <CriticalAlertsMap
-            alerts={
-              showSecurityContent && layerState.liveAlerts
-                ? mappedAlerts
-                : []
-            }
-            route={
-              showSecurityContent && layerState.routes
-                ? route
-                : null
-            }
+            neighbourhoodId={neighbourhoodId}
+            alerts={mappedAlerts}
+            route={route}
             selectedPropertyId={
               routePropertyId ??
               currentSelectedProperty?.propertyId ??
               null
             }
-            onSelectProperty={handleSelectProperty}
+            showIncidentContours={
+              showIncidentContours
+            }
+            densityStartDate={densityStartDate}
+            densityEndDate={densityEndDate}
+            onSelectProperty={
+              handleSelectProperty
+            }
           />
 
         )}

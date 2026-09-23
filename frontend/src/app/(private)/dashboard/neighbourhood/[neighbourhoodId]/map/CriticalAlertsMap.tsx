@@ -19,15 +19,21 @@ import type {
   CriticalAlertMapItem,
   CriticalAlertStatus,
 } from "@/lib/validators/alert";
+import { IncidentContourLayer } from "./IncidentContourLayer";
 
 interface CriticalAlertsMapProps {
+  readonly neighbourhoodId: string;
   readonly alerts: CriticalAlertMapItem[];
   readonly route: AlertRouteData | null;
   readonly selectedPropertyId?: string | null;
+  readonly showIncidentContours: boolean;
+  readonly densityStartDate: string;
+  readonly densityEndDate: string;
   readonly onSelectProperty: (
     property: PropertyAlertGroup,
   ) => void;
 }
+
 
 
 export interface PropertyAlertGroup {
@@ -250,11 +256,16 @@ function FitRouteBounds({
 
 
 export function CriticalAlertsMap({
+  neighbourhoodId,
   alerts,
   route,
   selectedPropertyId,
-  onSelectProperty
+  showIncidentContours,
+  densityStartDate,
+  densityEndDate,
+  onSelectProperty,
 }: CriticalAlertsMapProps) {
+
   const properties = useMemo(
     () => groupAlertsByProperty(alerts),
     [alerts],
@@ -315,6 +326,13 @@ export function CriticalAlertsMap({
             "OpenStreetMap contributors"
           }
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+
+        <IncidentContourLayer
+          neighbourhoodId={neighbourhoodId}
+          startDate={densityStartDate}
+          endDate={densityEndDate}
+          enabled={showIncidentContours}
         />
 
         <FitRouteBounds route={route} />
