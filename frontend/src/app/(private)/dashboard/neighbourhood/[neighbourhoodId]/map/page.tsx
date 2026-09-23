@@ -753,7 +753,28 @@ export default function NeighbourhoodAlertMapPage() {
             {isOnline ? "Refresh" : "Offline"}
           </Button>
         </header>
+        <section className="mb-5 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <MapModeTabs
+              mode={mapMode}
+              securityAvailable={canViewSecurityMap}
+              onChange={setMapMode}
+            />
 
+            {mapMode === "security" && (
+              <p className="text-xs text-brand-ash">
+                Operational security view
+              </p>
+            )}
+          </div>
+
+          <MapLayerControls
+            layers={layerState}
+            showSecurityLayers={showSecurityContent}
+            canViewRoutes={isSecurityOfficer}
+            onToggle={handleToggleLayer}
+          />
+        </section>
         {isStale && (
           <output
             className="mb-5 flex items-start gap-3 rounded-lg border border-brand-caution/30 bg-brand-caution/10 px-4 py-3"
