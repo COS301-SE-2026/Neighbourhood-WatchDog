@@ -56,3 +56,10 @@ class CurrentUserProperty(BaseModel):
 class CurrentUserContextRes(BaseModel):
     user: CurrentUserSummary
     properties: list[CurrentUserProperty]
+
+class RegisterPushDeviceReq(BaseModel):
+    device_token: str
+
+class RegisterPushDeviceRes(BaseModel):
+    status: int
+    message: str
