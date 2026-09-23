@@ -49,6 +49,7 @@ import {
   type MapLayerKey,
   type MapLayerState,
 } from "./MapLayerControls";
+import { DateRangePicker } from "./DateRangePicker";
 
 function statusLabel(
   status: CriticalAlertStatus,
@@ -578,17 +579,13 @@ export default function NeighbourhoodAlertMapPage() {
     useState(false);
   const [routePropertyId, setRoutePropertyId] = useState<string | null>(null);
 
-  const [
-    showIncidentContours,
-    setShowIncidentContours,
-  ] = useState(false);
+  const [densityEndDate, setDensityEndDate] =
+    useState(() =>
+      formatDateOnly(new Date()),
+    );
 
-  const [densityEndDate] = useState(
-    () => formatDateOnly(new Date()),
-  );
-
-  const [densityStartDate] = useState(
-    () => {
+  const [densityStartDate, setDensityStartDate] =
+    useState(() => {
       const startDate = new Date();
 
       startDate.setDate(
@@ -596,8 +593,12 @@ export default function NeighbourhoodAlertMapPage() {
       );
 
       return formatDateOnly(startDate);
-    },
-  );
+    });
+
+  const densityRangeIsValid =
+    densityStartDate.length > 0 &&
+    densityEndDate.length > 0 &&
+    densityStartDate <= densityEndDate;
 
 
   const { neighbourhoodId } = useParams<{
@@ -970,34 +971,13 @@ function handleToggleLayer(layer: MapLayerKey) {
           </section>
         )}
 
-        <section className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-brand-depth px-4 py-3">
-          <div>
-            <p className="text-sm font-medium text-brand-frost">
-              Historical incident contours
-            </p>
-
-            <p className="mt-1 text-xs text-brand-ash">
-              Confirmed and resolved incidents from{" "}
-              {densityStartDate} to {densityEndDate}
-            </p>
-          </div>
-
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            aria-pressed={showIncidentContours}
-            onClick={() =>
-              setShowIncidentContours(
-                (current) => !current,
-              )
-            }
-            className="border-border bg-transparent text-brand-green hover:bg-brand-slate hover:text-brand-frost"
-          >
-            {showIncidentContours
-              ? "Hide contours"
-              : "Show contours"}
-          </Button>
+        <section className="mb-4">
+          <DateRangePicker
+            startDate={densityStartDate}
+            endDate={densityEndDate}
+            onStartDateChange={setDensityStartDate}
+            onEndDateChange={setDensityEndDate}
+          />
         </section>
 
 
@@ -1035,7 +1015,8 @@ function handleToggleLayer(layer: MapLayerKey) {
               null
             }
             showIncidentContours={
-              showIncidentContours
+              layerState.contours &&
+              densityRangeIsValid
             }
             densityStartDate={
               densityStartDate
