@@ -944,3 +944,27 @@ class TestRespondToDispatchHandler:
 
         assert exc_info.value.status_code == 403
         mock_db.commit.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_accept_fails_when_alert_assigned_to_another_officer(self):
+        officer_id = uuid4()
+        officer = SimpleNamespace(id=officer_id)
+        dispatch = make_dispatch_row(
+            DispatchStatus.NOTIFIED,
+            officer_id=officer_id,
+            rank=2,
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=5),
+        )
+        already_accepted = make_dispatch_row(DispatchStatus.ACCEPTED, officer_id=uuid4(), rank=1)
+        mock_db = _respond_db(
+            officer=officer,
+            dispatch=dispatch,
+            extra=[make_scalars_result([already_accepted, dispatch])]
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await respond_to_dispatch_handler(dispatch.id, "ACCEPT", mock_db, CLAIMS)
+
+        assert exc_info.value.status_code == 409
+        assert dispatch.status == DispatchStatus.NOTIFIED
+        mock_db.commit.assert_not_awaited()
