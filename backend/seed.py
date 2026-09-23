@@ -296,7 +296,7 @@ async def seed_database(bulk_audit_count: int = 500):
         num_days = (today - one_year_ago).days
 
         detection_types = list(DetectionType)
-        alert_statuses = [AlertStatus.OPEN, AlertStatus.ACKNOWLEDGED, AlertStatus.RESOLVED]
+        alert_statuses = [AlertStatus.OPEN, AlertStatus.ACKNOWLEDGED, AlertStatus.RESOLVED, AlertStatus.CONFIRMED, AlertStatus.DISMISSED]
         status_weights = [0.3, 0.2, 0.5]
 
         for day_offset in range(num_days):
