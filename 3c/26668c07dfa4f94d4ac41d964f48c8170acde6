@@ -1,0 +1,26 @@
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/map/CriticalAlertsMap.tsx
+  h_3555f7510a5ca8 22,25,29-31,259,263-266,268,331-337
+  h_3555f7510a5ca8 38
+frontend/src/lib/maps/incident-contours.ts
+  h_3555f7510a5ca8 85-97,99,104-109,117,120-121,127
+frontend/src/hooks/use-incident-density.ts
+  h_3555f7510a5ca8 41-44,47,95,103-105
+  h_3555f7510a5ca8 46,53
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/map/IncidentContourLayer.tsx
+  h_3555f7510a5ca8 56-69,82,84,87
+  h_3555f7510a5ca8 81,83
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/map/page.tsx
+  h_3555f7510a5ca8 96-111,580-587,589-601,936-964,971-973,979-985
+  h_3555f7510a5ca8 588,965,986
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3c26668c07dfa4f94d4ac41d964f48c8170acde6",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
