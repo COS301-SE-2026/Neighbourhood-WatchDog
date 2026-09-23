@@ -1,0 +1,14 @@
+backend/alembic/versions/7532e7c9f37e_add_daily_incident_density_aggregates.py
+  h_3555f7510a5ca8 1-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e8f72e149e9cd8653ad2e7f589a886e333f35f26",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
