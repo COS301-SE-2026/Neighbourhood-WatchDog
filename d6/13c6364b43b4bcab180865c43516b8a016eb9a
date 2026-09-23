@@ -1,0 +1,16 @@
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/map/MapLayerControls.tsx
+  h_3555f7510a5ca8 1-140
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/map/MapModeTabs.tsx
+  h_3555f7510a5ca8 1-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d613c6364b43b4bcab180865c43516b8a016eb9a",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
