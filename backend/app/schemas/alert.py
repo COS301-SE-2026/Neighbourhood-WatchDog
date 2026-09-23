@@ -258,3 +258,9 @@ class AlertDistanceRes(BaseModel):
     status: int
     message: str | None = None
     data: AlertDistanceData
+
+
+class InternalAlertCreateRes(BaseModel):
+    alert_id: UUID
+    sighting_id: UUID | None = None
+    is_new_alert: bool = True

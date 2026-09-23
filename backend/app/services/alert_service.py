@@ -1194,6 +1194,36 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
             raise HTTPException(status_code=404,detail=f"Camera {body.camera_id} not found")
 
         
+        existing_stmt = (
+            select(Alert, TrackingSubject, TrackingSighting)
+            .join(TrackingSubject, TrackingSubject.alert_id == Alert.id)
+            .join(TrackingSighting, TrackingSighting.tracking_subject_id == TrackingSubject.id)
+            .where(
+                Alert.camera_id == camera_id,
+                Alert.detection_type == DetectionType.WEAPON_DETECTED,
+                Alert.status == AlertStatus.OPEN.value,
+                TrackingSighting.camera_id == camera_id,
+                TrackingSighting.local_track_id == body.local_track_id
+
+            )
+            .order_by(Alert.frame_timestamp.desc())
+            .limit(1)
+        )
+
+        existing_result = await db.execute(existing_stmt)
+        existing_row = existing_result.first()
+
+        if existing_row is not None:
+            existing_alert, _, existing_sighting = existing_row
+
+            return InternalAlertCreateRes(
+                alert_id=existing_alert.id,
+                sighting_id=existing_sighting.id,
+                is_new_alert=False
+                
+            )
+
+        
         alert = Alert(
             camera_id=camera_id,
             frame_timestamp= frame_timestamp,
