@@ -1,0 +1,14 @@
+backend/seed.py
+  h_3555f7510a5ca8 299
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3ac2334e6bf49206a5175f5a8d68f9bd9f34daa0",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
