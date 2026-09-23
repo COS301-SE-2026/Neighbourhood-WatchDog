@@ -11,7 +11,7 @@ def reset_engine_after_fork(**kwargs):
 
 celery = Celery(
     __name__,
-    include=["app.tasks.risk_score_tasks", "app.tasks.clip_tasks"]
+    include=["app.tasks.risk_score_tasks", "app.tasks.clip_tasks", "app.tasks.dispatch_tasks"]
 )
 
 celery.conf.broker_url = os.environ.get("REDIS_URL")
@@ -21,5 +21,9 @@ celery.conf.beat_schedule = {
     "recalculate-risk-scores-every-5-minutes": {
         "task": "app.tasks.risk_score_tasks.recalculate_all_risk_scores",
         "schedule": timedelta(minutes=5),
+    },
+    "expire-stale-dispatches-every-20-seconds": {
+        "task": "app.tasks.dispatch_tasks.expire_stale_dispatch_requests",
+        "schedule": timedelta(seconds=20),
     }
 }
