@@ -28,6 +28,7 @@ import { useAlertPropertyRoute } from "@/hooks/use-alert-property-route";
 import { useOfficerMapLocationTracking } from "@/hooks/use-officer-map-location-tracking";
 import { useUserContext } from "@/hooks/use-user-context";
 import { usePropertyResidentContext } from "@/hooks/use-property-resident-context";
+import { useNeighbourhoodMapProperties } from "@/hooks/use-neighbourhood-map-properties";
 import type { PropertyAlertGroup } from "./CriticalAlertsMap";
 import type {
   CriticalAlertMapItem,
@@ -586,6 +587,16 @@ export default function NeighbourhoodAlertMapPage() {
 
   const isSecurityOfficer =
     neighbourhoodRole === "SECURITY_OFFICER";
+
+  const {
+    properties: mapProperties,
+    loading: mapPropertiesLoading,
+    error: mapPropertiesError,
+    retry: retryMapProperties,
+  } = useNeighbourhoodMapProperties(
+    neighbourhoodId,
+    canAccessNeighbourhoodMap,
+  );
 
   const activeMapMode: MapMode =
   canViewSecurityMap && mapMode === "security"

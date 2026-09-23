@@ -361,6 +361,11 @@ export function CriticalAlertsMap({
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
+        <PropertyLayer
+          properties={mapProperties}
+          visible={showProperties}
+        />
+
         <FitRouteBounds route={route} />
 
         {routePositions.length > 0 && (
@@ -377,7 +382,7 @@ export function CriticalAlertsMap({
         
 
 
-        {properties.map((property) => {
+        {alertProperties.map((property) => {
           const detectionType =
             propertyDetectionType(
               property.alerts,
