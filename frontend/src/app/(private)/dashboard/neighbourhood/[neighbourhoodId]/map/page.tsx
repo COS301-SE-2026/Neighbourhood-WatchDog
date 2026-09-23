@@ -35,9 +35,19 @@ import type {
   CriticalAlertStatus,
   UnlocatedCriticalAlertItem,
 } from "@/lib/validators/alert";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {AlertDetailSheet, type Alert} from "@/components/shared/AlertCard";
 import { acknowledgeAlert } from "@/lib/api/alert";
+import {
+  MapModeTabs,
+  type MapMode,
+} from "./MapModeTabs";
+
+import {
+  MapLayerControls,
+  type MapLayerKey,
+  type MapLayerState,
+} from "./MapLayerControls";
 
 function statusLabel(
   status: CriticalAlertStatus,
