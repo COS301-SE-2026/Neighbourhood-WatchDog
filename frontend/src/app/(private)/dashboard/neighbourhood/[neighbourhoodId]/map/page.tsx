@@ -629,7 +629,7 @@ function handleToggleLayer(layer: MapLayerKey) {
 
   useOfficerMapLocationTracking(
     neighbourhoodId,
-    isSecurityOfficer && mapMode === "security",
+    isSecurityOfficer && activeMapMode === "security"
   );
 
 
@@ -757,12 +757,12 @@ function handleToggleLayer(layer: MapLayerKey) {
         <section className="mb-5 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <MapModeTabs
-              mode={mapMode}
+              mode={activeMapMode}
               securityAvailable={canViewSecurityMap}
-              onChange={setMapMode}
+              onChange={handleMapModeChange}
             />
 
-            {mapMode === "security" && (
+            {activeMapMode === "security" && (
               <p className="text-xs text-brand-ash">
                 Operational security view
               </p>
