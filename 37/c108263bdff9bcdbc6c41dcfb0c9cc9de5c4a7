@@ -1,0 +1,14 @@
+frontend/src/hooks/use-incident-density.ts
+  h_3555f7510a5ca8 41-44,46-107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "37c108263bdff9bcdbc6c41dcfb0c9cc9de5c4a7",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
