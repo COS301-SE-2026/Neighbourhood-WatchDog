@@ -40,6 +40,9 @@ export function useCameraAnnotations(cameraId: string) {
     const wsRef = useRef<WebSocket | null>(null);
 
     useEffect(() => {
+        setAnnotations(null);
+        setConnected(false);
+        
         const baseUrl = getAnnotationWebSocketBaseUrl();
         const ws = new WebSocket(`${baseUrl}/api/stream/cameras/${cameraId}/annotations/ws`);
 
