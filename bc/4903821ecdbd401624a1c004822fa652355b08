@@ -1,0 +1,28 @@
+frontend/src/lib/validators/incident-density.ts
+  h_3555f7510a5ca8 1-41
+frontend/package.json
+  s_775beeecb7eba0::t_e9c531ac8b26df 25,50-51
+frontend/pnpm-lock.yaml
+  s_775beeecb7eba0::t_eb11b04cede86e 53-55,123-128,2049-2054,2744-2751,3503-3506,7607-7613,8317-8324,9221-9222
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bc4903821ecdbd401624a1c004822fa652355b08",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  },
+  "sessions": {
+    "s_775beeecb7eba0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0671a-1303-7f20-b1dd-25e144b94321",
+        "model": "unknown"
+      },
+      "human_author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
