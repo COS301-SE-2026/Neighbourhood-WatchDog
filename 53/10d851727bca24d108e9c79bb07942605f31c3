@@ -1,0 +1,14 @@
+frontend/src/lib/maps/incident-contours.ts
+  h_3555f7510a5ca8 1-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5310d851727bca24d108e9c79bb07942605f31c3",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
