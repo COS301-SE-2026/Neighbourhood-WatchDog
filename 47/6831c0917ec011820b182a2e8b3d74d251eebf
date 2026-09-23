@@ -1,0 +1,15 @@
+backend/app/models/__init__.py
+  h_3555f7510a5ca8 21
+  h_3555f7510a5ca8 20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "476831c0917ec011820b182a2e8b3d74d251eebf",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
