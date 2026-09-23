@@ -918,27 +918,28 @@ export default function NeighbourhoodAlertMapPage() {
           />
 
         )}
+        {showSecurityContent && (
+          <PropertyAlertsSheet
+            property={currentSelectedProperty}
+            canShowRoute={isSecurityOfficer}
+            open={
+              currentSelectedProperty !== null &&
+              currentSelectedProperty.alerts.length > 0
+            }
+            onSelectAlert={setSelectedAlert}
+            onClose={() => {
+              setSelectedAlert(null);
+              setSelectedProperty(null);
+            }}
+            onShowRoute={(propertyId) => {
+              setSelectedAlert(null);
+              setRoutePropertyId(propertyId);
+              setSelectedProperty(null);
+            }}
+          />
+        )}
 
-        <PropertyAlertsSheet
-          property={currentSelectedProperty}
-          canShowRoute={isSecurityOfficer}
-          open={
-            currentSelectedProperty !== null &&
-            currentSelectedProperty.alerts.length > 0
-          }
-          onSelectAlert={setSelectedAlert}
-          onClose={() => {
-            setSelectedAlert(null);
-            setSelectedProperty(null);
-          }}
-          onShowRoute={(propertyId) => {
-            setSelectedAlert(null);
-            setRoutePropertyId(propertyId);
-            setSelectedProperty(null);
-          }}
-        />
-
-        {selectedAlert && (
+        {showSecurityContent && selectedAlert && (
           <AlertDetailSheet
             alert={toAlertDetailModel(selectedAlert)}
             open
@@ -952,9 +953,11 @@ export default function NeighbourhoodAlertMapPage() {
 
         
 
-        <UnlocatedAlerts
-          alerts={unlocatedAlerts}
-        />
+        {showSecurityContent && (
+          <UnlocatedAlerts
+            alerts={unlocatedAlerts}
+          />
+        )}
       </div>
     </main>
   );
