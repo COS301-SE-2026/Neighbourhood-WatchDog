@@ -84,7 +84,7 @@ The WatchDog colour system is built around deep navy, electric blue, and neutral
 
 ### Accessibility Requirements
 
-All colour combinations used for text must meet WCAG 2.2 AA contrast ratios: 4.5:1 for body text, 3:1 for large text (18pt+) and UI components. Do not rely on colour alone to convey alert severity — always pair with an icon and/or a text label.
+All colour combinations used for text must meet WCAG 2.2 AA contrast ratios: 4.5:1 for body text, 3:1 for large text (18pt+) and UI components. Do not rely on colour alone to convey alert severity - always pair with an icon and/or a text label.
 
 | Combination | Foreground | Background | Contrast Ratio |
 |-------------|------------|------------|----------------|
@@ -223,7 +223,7 @@ Alert badges communicate the severity level of a detection event. They always ap
 
 ### Button
 
-Buttons must have a visible label and a logical action. Never disable a button without explaining why — use a tooltip or helper text instead. All buttons must have a visible focus state (3px Alert Blue outline, 2px offset) for keyboard navigation.
+Buttons must have a visible label and a logical action. Never disable a button without explaining why - use a tooltip or helper text instead. All buttons must have a visible focus state (3px Alert Blue outline, 2px offset) for keyboard navigation.
 
 | Variant | Background | Usage | When to use |
 |---------|------------|-------|-------------|
@@ -250,7 +250,7 @@ The primary navigation is a fixed left sidebar on desktop and a bottom tab bar o
 
 ## 8. Accessibility
 
-WatchDog is a safety-critical application. Accessibility is not optional — it ensures that users operating under stress, in low-light conditions, or with assistive technologies can use the platform reliably. All components must meet WCAG 2.2 AA as a minimum.
+WatchDog is a safety-critical application. Accessibility is not optional - it ensures that users operating under stress, in low-light conditions, or with assistive technologies can use the platform reliably. All components must meet WCAG 2.2 AA as a minimum.
 
 ### POUR Principles
 
@@ -314,7 +314,7 @@ Writing is part of the interface. Every label, error message, confirmation, and 
 
 ## 11. Token Quick Reference
 
-The following CSS custom property declarations represent the complete token set for the WatchDog web dashboard. These should be defined on `:root` and consumed throughout all component styles. Never use raw values — always reference a token.
+The following CSS custom property declarations represent the complete token set for the WatchDog web dashboard. These should be defined on `:root` and consumed throughout all component styles. Never use raw values - always reference a token.
 
 ```css
 :root {

@@ -1126,23 +1126,32 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
 
     await db.commit()
 
-def _validate_tracking_payload(body: CreateInternalAlertRequest) -> None:
+def _validate_tracking_payload(body: CreateInternalAlertRequest, det_type: DetectionType) -> None:
 
-    if (body.appearance_embedding is not None and body.local_track_id is None):
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "local_track_id is required when an appearance_embedding is provided"
-            )
-        )
+    if det_type == DetectionType.WEAPON_DETECTED:
+        if body.local_track_id is None:
+            raise HTTPException(
+                status_code=422,
+                detail="local_track_id is required for weapon alerts"
 
-    if (body.appearance_embedding is not None and body.embedding_model is None):
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "embedding_model is required when an appearance_embedding is provided"
             )
-        )
+
+    if body.appearance_embedding is not None:
+        if body.local_track_id is None:
+            raise HTTPException(
+                status_code=422,
+                detail="local_track_id is required when appearance_embedding is provided"
+
+            )
+
+        if body.embedding_model is None:
+            raise HTTPException(
+                status_code=422,
+                detail="embedding_model is required when appearance_embedding is provided"
+
+            )
+
+        
 
 async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:AsyncSession, credential: EdgeAgentCredential, generate_brief: bool = False) -> InternalAlertCreateRes:
     """Create an alert for a camera owned by the authenticated edge agent's property."""
@@ -1229,6 +1238,7 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
             )
 
             db.add(initial_sighting)
+            await db.flush()
 
         await db.commit()
         await db.refresh(alert)

@@ -178,7 +178,7 @@ The native Agent calls this surface during first-time pairing and when reconcili
 
 The current implementation provides two server-to-browser JSON channels. Both emit `{ "event": "ping" }` after 30 seconds without a received client frame to preserve connection health.
 
-#### Camera annotation channel — `/api/stream/cameras/{camera_id}/annotations/ws`
+#### Camera annotation channel - `/api/stream/cameras/{camera_id}/annotations/ws`
 
 ```json
 {
@@ -203,7 +203,7 @@ The current implementation provides two server-to-browser JSON channels. Both em
 
 The browser renders a detection overlay using `bbox`, `detection_type`, `confidence` and optional tracking data. This Agent-originated payload should be promoted to a Pydantic schema before production.
 
-#### Neighbourhood alert channel — `/alerts/{neighbourhood_id}/ws?token={token}`
+#### Neighbourhood alert channel - `/alerts/{neighbourhood_id}/ws?token={token}`
 
 ```json
 {
@@ -220,11 +220,11 @@ The browser renders a detection overlay using `bbox`, `detection_type`, `confide
 | Server → Browser | `{ "event": "ping" }` | 30 seconds of idle receive time | Connection health |
 | Browser → Server | Any text frame / heartbeat | No client command discriminator exists; acknowledgement is the REST `PATCH /alerts/{alert_id}/acknowledge` call. | R5.1.3 |
 
-> **Security status — In progress:** the alert WebSocket accepts a `token` query parameter but does not yet validate it, and the annotation WebSocket has no visible user authorisation check. Before production, both handshakes must authenticate the user and enforce the same camera/neighbourhood access policy as the REST API.
+> **Security status - In progress:** the alert WebSocket accepts a `token` query parameter but does not yet validate it, and the annotation WebSocket has no visible user authorisation check. Before production, both handshakes must authenticate the user and enforce the same camera/neighbourhood access policy as the REST API.
 
 ### 5.5 Media relay and playback contracts
 
-#### MediaMTX publish-authorisation callback — `POST /internal/mediamtx/auth`
+#### MediaMTX publish-authorisation callback - `POST /internal/mediamtx/auth`
 
 MediaMTX calls the backend before accepting a publisher. It submits a JSON object containing `user`, `password`, `action`, `path`, `protocol`, `ip`, `id` and `query`.
 
@@ -233,7 +233,7 @@ MediaMTX calls the backend before accepting a publisher. It submits a JSON objec
 | MediaMTX | `publish` | Path must match `cameras/<camera-uuid>`. The camera must exist and be enabled. Username is `camera-<camera-uuid>` and password is the HMAC-derived per-camera password. | `204 No Content` when authorised; `401` for invalid camera/path/credential; `403` for unsupported action. |
 | MediaMTX | `read` or `playback` | The current callback permits these actions directly. Browser-side stream authorisation remains an **in-progress security requirement**. | `204 No Content` |
 
-#### Browser WHEP/WebRTC playback — `POST {NEXT_PUBLIC_MEDIAMTX_WEBRTC_URL}/cameras/{camera_id}/whep`
+#### Browser WHEP/WebRTC playback - `POST {NEXT_PUBLIC_MEDIAMTX_WEBRTC_URL}/cameras/{camera_id}/whep`
 
 Playback begins only after explicit camera selection. The dashboard creates a receive-only WebRTC offer and posts its SDP to MediaMTX:
 

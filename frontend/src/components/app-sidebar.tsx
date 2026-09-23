@@ -209,7 +209,7 @@ function NavTile({
         link
       )}
 
-      {/* Children dropdown — only when expanded */}
+      {/* Children dropdown - only when expanded */}
       {isExpanded && item.children && isOpen && (
         <ul className="mt-1 ml-4 overflow-hidden border-l border-border pl-3 animate-in slide-in-from-top-1 fade-in duration-150">
           {item.children.map((child) => {
@@ -396,7 +396,7 @@ export function AppSidebar() {
                 !isExpanded && "justify-center",
               )}
             >
-              {/* Logo mark — always visible */}
+              {/* Logo mark - always visible */}
               <div className="shrink-0">
                 <WatchdogLogo size={28} />
               </div>
