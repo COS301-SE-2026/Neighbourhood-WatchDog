@@ -245,15 +245,15 @@ describe("DateRangePicker", () => {
     );
 
     expect(
-      screen.getByRole("textbox", {
-        name: "Start date",
-      }),
+      screen.getByLabelText("Start date", {
+        exact: true,
+        }),
     ).toHaveValue("2026-08-24");
 
     expect(
-      screen.getByRole("textbox", {
-        name: "End date",
-      }),
+      screen.getByLabelText("End date", {
+        exact: true,
+        }),
     ).toHaveValue("2026-09-23");
 
     expect(
@@ -275,9 +275,9 @@ describe("DateRangePicker", () => {
     );
 
     fireEvent.change(
-      screen.getByRole("textbox", {
-        name: "Start date",
-      }),
+      screen.getByLabelText("Start date", {
+        exact: true,
+        }),
       {
         target: {
           value: "2026-09-01",
@@ -286,9 +286,9 @@ describe("DateRangePicker", () => {
     );
 
     fireEvent.change(
-      screen.getByRole("textbox", {
-        name: "End date",
-      }),
+    screen.getByLabelText("End date", {
+        exact: true,
+        }),
       {
         target: {
           value: "2026-09-20",
