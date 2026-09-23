@@ -60,10 +60,28 @@ def backfill_incident_density(
 async def _rebuild_date(
     target_date: date,
 ) -> None:
-    pass
+    async with WorkerSessionLocal() as db:
+        try:
+            await rebuild_incident_density_day(
+                target_date,
+                db,
+            )
+        except Exception:
+            await db.rollback()
+            logger.exception(
+                "Failed to rebuild incident "
+                "density for date=%s",
+                target_date,
+            )
+            raise
+
 
 async def _backfill_dates(
     start_date: date,
     end_date: date,
 ) -> None:
-    pass
+    current_date = start_date
+
+    while current_date <= end_date:
+        await _rebuild_date(current_date)
+        current_date += timedelta(days=1)
