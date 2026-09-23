@@ -29,4 +29,6 @@ class Config(BaseSettings):
     refresh_cookie_samesite: Literal["lax", "strict", "none"] = "lax"
     refresh_cookie_max_age: int = 60 * 60 * 24 * 30
 
+    firebase_credentials_json: str = ""
+
 config = Config()

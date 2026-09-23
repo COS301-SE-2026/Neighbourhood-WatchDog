@@ -28,3 +28,4 @@ class User(Base):
     neighbourhood_memberships = relationship("NeighbourhoodUser", back_populates="user",cascade="delete")
     # add relationship to property User table as well
     properties = relationship("PropertyUser", back_populates="user")
+    push_device = relationship("PushDevice", back_populates="user", cascade="all, delete-orphan")

@@ -48,6 +48,7 @@ from app.schemas.alert import (
     UnlocatedCriticalAlertItem
 )
 from app.services.audit_service import create_audit_log_item
+from app.tasks.push_tasks import send_push_to_users
 from app.models.audit_log import AuditAction, TargetEntity
 from app.models.alert import Alert, DetectionType, AlertStatus
 
@@ -263,6 +264,14 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
                     "confidence": data.confidence,
                 },
             )
+
+            send_push_to_users.delay(
+                [str(uid) for uid in recipient_ids],
+                title="New alert",
+                body=f"{data.detection_type} detected",
+                data={"alert_id": str(alert.id), "event": "new_alert"}
+            )
+
         else:
             logger.warning(
                 "create_alert: skipped WebSocket broadcast because neighbourhood_id is missing; "
