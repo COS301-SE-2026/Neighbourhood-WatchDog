@@ -105,7 +105,7 @@ async def register_push_device(
     body: RegisterPushDeviceReq,
     db: DbSession,
     claims: Claims,
-) -> RegisterPushDeviceRes:
+):
     return await register_push_device_handler(
         body.device_token,
         db,
