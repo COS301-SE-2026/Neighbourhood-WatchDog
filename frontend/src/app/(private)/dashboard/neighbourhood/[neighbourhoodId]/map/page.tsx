@@ -825,6 +825,32 @@ function handleToggleLayer(layer: MapLayerKey) {
           </output>
         )}
 
+        {mapPropertiesError && (
+          <div
+            role="alert"
+            className="mb-5 flex items-start gap-3 rounded-lg border border-brand-caution/30 bg-brand-caution/10 px-4 py-3"
+          >
+            <MapPinOff className="mt-0.5 size-4 shrink-0 text-brand-caution" />
+
+            <div>
+              <p className="text-sm font-medium text-brand-caution">
+                Unable to load neighbourhood properties
+              </p>
+
+              <p className="mt-1 text-xs text-brand-ash">
+                {mapPropertiesError}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => void retryMapProperties()}
+                className="mt-2 text-xs font-semibold text-brand-green hover:underline"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div
@@ -907,7 +933,14 @@ function handleToggleLayer(layer: MapLayerKey) {
         )}
 
 
-        {loading && mappedAlerts.length === 0 ? (
+        {(
+          mapPropertiesLoading &&
+          mapProperties.length === 0
+        ) || (
+          showSecurityContent &&
+          loading &&
+          mappedAlerts.length === 0
+        ) ? (
           <MapLoadingState />
         ) : (
           <CriticalAlertsMap
@@ -916,6 +949,8 @@ function handleToggleLayer(layer: MapLayerKey) {
                 ? mappedAlerts
                 : []
             }
+            mapProperties={mapProperties}
+            showProperties={layerState.properties}
             route={
               showSecurityContent && layerState.routes
                 ? route
