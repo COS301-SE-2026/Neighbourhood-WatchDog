@@ -108,3 +108,27 @@ function createThresholds(
         )
   );
 }
+
+
+function normalizeValue(
+  value: number,
+  minimum: number,
+  maximum: number,
+): number {
+  if (maximum === minimum) {
+    return maximum > 0 ? 1 : 0;
+  }
+
+  return Math.min(
+    1,
+    Math.max(
+      0,
+      (
+        value - minimum
+      ) /
+        (
+          maximum - minimum
+        ),
+    ),
+  );
+}
