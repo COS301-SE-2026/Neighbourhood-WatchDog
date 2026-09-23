@@ -17,6 +17,16 @@ const WEB_MERCATOR_HALF_WORLD_METRES =
 const DEFAULT_BAND_COUNT = 6;
 const MAX_RASTER_CELLS = 250_000;
 
+const RASTER_PADDING = 1;
+
+
+const SHAPE_SMOOTHING_ITERATIONS = 3;
+
+type RasterPoint = [
+  number,
+  number,
+];
+
 export interface IncidentContourProperties {
   value: number;
   normalizedValue: number;
@@ -73,30 +83,109 @@ function projectedToLongitudeLatitude(
   ];
 }
 
+function smoothClosedRing(
+  ring: number[][],
+  iterations = SHAPE_SMOOTHING_ITERATIONS,
+): RasterPoint[] {
+  if (ring.length < 4) {
+    return ring.map(
+      ([x, y]) => [
+        x,
+        y,
+      ],
+    );
+  }
+
+ 
+  let points: RasterPoint[] = ring
+    .slice(0, -1)
+    .map(
+      ([x, y]): RasterPoint => [
+        x,
+        y,
+      ],
+    );
+
+  if (points.length < 3) {
+    return ring.map(
+      ([x, y]) => [
+        x,
+        y,
+      ],
+    );
+  }
+
+  for (
+    let iteration = 0;
+    iteration < iterations;
+    iteration += 1
+  ) {
+    const nextPoints: RasterPoint[] = [];
+
+    for (
+      let index = 0;
+      index < points.length;
+      index += 1
+    ) {
+      const current = points[index];
+
+      const next =
+        points[
+          (
+            index + 1
+          ) %
+            points.length
+        ];
+
+      
+      nextPoints.push(
+        [
+          0.75 * current[0] +
+            0.25 * next[0],
+
+          0.75 * current[1] +
+            0.25 * next[1],
+        ],
+        [
+          0.25 * current[0] +
+            0.75 * next[0],
+
+          0.25 * current[1] +
+            0.75 * next[1],
+        ],
+      );
+    }
+
+    points = nextPoints;
+  }
+
+  const first = points[0];
+
+
+  return [
+    ...points,
+    [
+      first[0],
+      first[1],
+    ],
+  ];
+}
+
 function createThresholds(
   minimum: number,
   maximum: number,
   bandCount: number,
 ): number[] {
-  if (maximum <= 0) {
+  if (
+    maximum <= 0 ||
+    maximum < minimum
+  ) {
     return [];
   }
 
-  /*
-   * Incident counts are integers. Contour thresholds
-   * must sit below the values being enclosed.
-   *
-   * Passing the exact maximum causes d3-contour to
-   * return empty coordinates when only one populated
-   * cell exists.
-   */
-  const lowerThreshold = Math.max(
-    0.5,
-    minimum - 0.5,
-  );
 
-  if (minimum === maximum) {
-    return [lowerThreshold];
+  if (maximum === minimum) {
+    return [minimum];
   }
 
   const safeBandCount = Math.min(
@@ -104,21 +193,15 @@ function createThresholds(
     10,
   );
 
-  const upperThreshold = Math.max(
-    lowerThreshold,
-    maximum - 0.5,
-  );
-
   return Array.from(
     {
       length: safeBandCount,
     },
     (_, index) =>
-      lowerThreshold +
+      minimum +
       (
         (
-          upperThreshold -
-          lowerThreshold
+          maximum - minimum
         ) *
         index
       ) /
@@ -127,7 +210,6 @@ function createThresholds(
         ),
   );
 }
-
 
 function normalizeValue(
   value: number,
@@ -163,7 +245,8 @@ export function buildIncidentContours(
     return EMPTY_CONTOURS;
   }
 
-  const cellSize = data.cell_size_metres;
+  const cellSize =
+    data.cell_size_metres;
 
   const gridXs = data.cells.map(
     (cell) => cell.grid_x,
@@ -173,31 +256,47 @@ export function buildIncidentContours(
     (cell) => cell.grid_y,
   );
 
-  const minimumGridX = Math.min(...gridXs);
-  const maximumGridX = Math.max(...gridXs);
-  const minimumGridY = Math.min(...gridYs);
-  const maximumGridY = Math.max(...gridYs);
+  const minimumGridX =
+    Math.min(...gridXs);
 
-  /*
-   * One empty-cell border is added around the
-   * returned cells. This allows d3-contour to
-   * close polygons around edge values.
-   */
-  const width =
+  const maximumGridX =
+    Math.max(...gridXs);
+
+  const minimumGridY =
+    Math.min(...gridYs);
+
+  const maximumGridY =
+    Math.max(...gridYs);
+
+  const horizontalCellCount =
     Math.round(
       (
-        maximumGridX - minimumGridX
+        maximumGridX -
+        minimumGridX
       ) / cellSize,
-    ) + 3;
+    ) + 1;
+
+  const verticalCellCount =
+    Math.round(
+      (
+        maximumGridY -
+        minimumGridY
+      ) / cellSize,
+    ) + 1;
+
+  const width =
+    horizontalCellCount +
+    2 * RASTER_PADDING;
 
   const height =
-    Math.round(
-      (
-        maximumGridY - minimumGridY
-      ) / cellSize,
-    ) + 3;
+    verticalCellCount +
+    2 * RASTER_PADDING;
 
-  if (width <= 0 || height <= 0 || width * height > MAX_RASTER_CELLS) {
+  if (
+    width <= 0 ||
+    height <= 0 ||
+    width * height > MAX_RASTER_CELLS
+  ) {
     return EMPTY_CONTOURS;
   }
 
@@ -209,30 +308,43 @@ export function buildIncidentContours(
     const x =
       Math.round(
         (
-          cell.grid_x - minimumGridX
+          cell.grid_x -
+          minimumGridX
         ) / cellSize,
-      ) + 1;
+      ) + RASTER_PADDING;
 
-    /*
-     * Raster Y increases downwards, whereas
-     * Web Mercator Y increases northwards.
-     */
+   
     const y =
       Math.round(
         (
-          maximumGridY - cell.grid_y
+          maximumGridY -
+          cell.grid_y
         ) / cellSize,
-      ) + 1;
+      ) + RASTER_PADDING;
 
-    values[y * width + x] =
+    values[y * width + x] +=
       cell.incident_count;
   }
 
+  const minimumThreshold = Math.max(
+    0.5,
+    data.min_count - 0.5,
+  );
+
+  const maximumThreshold = Math.max(
+    minimumThreshold,
+    data.max_count - 0.5,
+  );
+
   const thresholds = createThresholds(
-    data.min_count,
-    data.max_count,
+    minimumThreshold,
+    maximumThreshold,
     bandCount,
   );
+
+  if (thresholds.length === 0) {
+    return EMPTY_CONTOURS;
+  }
 
   const generatedContours = contours()
     .size([
@@ -244,61 +356,74 @@ export function buildIncidentContours(
   const features: Feature<
     MultiPolygon,
     IncidentContourProperties
-  >[] = generatedContours.map(
-    (generatedContour) => {
-      const coordinates =
-        generatedContour.coordinates.map(
-          (polygon) =>
-            polygon.map((ring) =>
-              ring.map(
-                ([
-                  rasterX,
-                  rasterY,
-                ]) => {
-                  const projectedX =
-                    minimumGridX +
-                    (
-                      rasterX - 1
-                    ) *
-                      cellSize;
+  >[] = generatedContours
+    .filter(
+      (generatedContour) =>
+        generatedContour.coordinates.length > 0,
+    )
+    .map(
+      (generatedContour) => {
+        const coordinates =
+          generatedContour.coordinates.map(
+            (polygon) =>
+              polygon.map((ring) =>
+                smoothClosedRing(
+                  ring,
+                ).map(
+                  ([
+                    rasterX,
+                    rasterY,
+                  ]) => {
+                    const projectedX =
+                      minimumGridX +
+                      (
+                        rasterX -
+                        RASTER_PADDING
+                      ) *
+                        cellSize;
 
-                  const projectedY =
-                    maximumGridY +
-                    (
-                      2 - rasterY
-                    ) *
-                      cellSize;
+                    const projectedY =
+                      maximumGridY +
+                      (
+                        RASTER_PADDING +
+                        1 -
+                        rasterY
+                      ) *
+                        cellSize;
 
-                  return projectedToLongitudeLatitude(
-                    projectedX,
-                    projectedY,
-                  );
-                },
+                    return projectedToLongitudeLatitude(
+                      projectedX,
+                      projectedY,
+                    );
+                  },
+                ),
               ),
-            ),
-        );
+          );
 
-      return {
-        type: "Feature",
-        properties: {
-          value: generatedContour.value,
-          normalizedValue: normalizeValue(
-            generatedContour.value,
-            data.min_count,
-            data.max_count,
-          ),
-        },
-        geometry: {
-          type: "MultiPolygon",
-          coordinates,
-        },
-      };
-    },
-  );
+        return {
+          type: "Feature",
+          properties: {
+            value:
+              generatedContour.value,
+
+            normalizedValue:
+              normalizeValue(
+                generatedContour.value,
+                minimumThreshold,
+                maximumThreshold,
+              ),
+          },
+          geometry: {
+            type: "MultiPolygon",
+            coordinates,
+          },
+        };
+      },
+    );
 
   /*
-   * Lower-value polygons must render first so
-   * hotter nested contours remain visible.
+   * Draw cooler, larger contours first. Hotter,
+   * smaller contours then appear above them.
    */
   features.sort(
     (first, second) =>
@@ -311,4 +436,3 @@ export function buildIncidentContours(
     features,
   };
 }
-
