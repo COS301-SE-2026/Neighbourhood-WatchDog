@@ -528,7 +528,7 @@ export default function NeighbourhoodAlertMapPage() {
       liveAlerts: true,
       routes: false,
     });
-    
+
   const [
     selectedProperty,
     setSelectedProperty,
@@ -577,12 +577,19 @@ export default function NeighbourhoodAlertMapPage() {
         neighbourhoodId,
     )?.neighbourhood?.role ?? null;
 
-  const canViewCriticalMap =
+  const canViewSecurityMap =
     neighbourhoodRole === "SECURITY_OFFICER" ||
     neighbourhoodRole === "NEIGHBOURHOOD_ADMIN";
 
+  const canAccessNeighbourhoodMap =
+    neighbourhoodRole !== null;
+
   const isSecurityOfficer =
     neighbourhoodRole === "SECURITY_OFFICER";
+
+  const showSecurityContent =
+    mapMode === "security" &&
+    canViewSecurityMap;
 
   useOfficerMapLocationTracking(
     neighbourhoodId,
