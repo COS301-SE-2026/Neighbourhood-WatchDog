@@ -590,7 +590,28 @@ export default function NeighbourhoodAlertMapPage() {
   const showSecurityContent =
     mapMode === "security" &&
     canViewSecurityMap;
+  
+  function handleToggleLayer(layer: MapLayerKey) {
+    if (
+      layer === "liveAlerts" &&
+      layerState.liveAlerts
+    ) {
+      setSelectedAlert(null);
+      setSelectedProperty(null);
+    }
 
+    if (
+      layer === "routes" &&
+      layerState.routes
+    ) {
+      setRoutePropertyId(null);
+    }
+
+    setLayerState((current) => ({
+      ...current,
+      [layer]: !current[layer],
+    }));
+  }
   useOfficerMapLocationTracking(
     neighbourhoodId,
     isSecurityOfficer,
