@@ -1,5 +1,5 @@
 from enum import Enum
-from datetime import datetime
+from datetime import datetime, date
 from uuid import UUID
 from typing import Optional, List, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -260,8 +260,8 @@ class AlertDistanceRes(BaseModel):
     data: AlertDistanceData
 
 class IncidentDensityQuery(BaseModel):
-    start_at: datetime
-    end_at: datetime
+    start_date: date
+    end_date: date
 
     west: float = Field(ge=-180, le=180)
     south: float = Field(ge=-90, le=90)
@@ -270,9 +270,9 @@ class IncidentDensityQuery(BaseModel):
 
     @model_validator(mode="after")
     def validate_range(self):
-        if self.start_at >= self.end_at:
+        if self.start_date >= self.end_date:
             raise ValueError(
-                "start_at must be earlier than end_at"
+                "start_date must be earlier than end_date"
             )
 
         if self.west >= self.east:
@@ -299,8 +299,8 @@ class IncidentDensityCell(BaseModel):
 
 class IncidentDensityData(BaseModel):
     neighbourhood_id: UUID
-    start_at: datetime
-    end_at: datetime
+    start_date: date
+    end_date: date
     cell_size_metres: int = 100
     min_count: int
     max_count: int
