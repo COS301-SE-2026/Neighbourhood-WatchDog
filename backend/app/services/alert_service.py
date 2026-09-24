@@ -478,9 +478,15 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
             new_values={
                 "status": alert.status,
                 "acknowledged_by": (
-                    str(alert.resolved_by) if alert.resolved_by else None
+                    str(alert.acknowledged_by)
+                    if alert.acknowledged_by
+                    else None
                 ),
-                "acknowledged_at": alert.resolved_at.isoformat(),
+                "acknowledged_at": (
+                    alert.acknowledged_at.isoformat()
+                    if alert.acknowledged_at
+                    else None
+                ),
             },
         )
 
