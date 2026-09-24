@@ -1014,6 +1014,8 @@ async def test_create_alert_for_agent_maps_known_detection_label():
     assert response.alert_id == ALERT_ID
     alert_model.assert_called_once()
 
+    mock_send_push.delay.assert_called_once()
+
     call_kwargs = alert_model.call_args.kwargs
     assert call_kwargs["camera_id"] == CAMERA_ID
     assert call_kwargs["detection_type"] == DetectionType.WEAPON_DETECTED
@@ -1067,6 +1069,7 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
         alert_model.call_args.kwargs["detection_type"]
         == DetectionType.WEAPON_DETECTED
     )
+    mock_send_push.delay.assert_called_once()
 
 
 @pytest.mark.asyncio
