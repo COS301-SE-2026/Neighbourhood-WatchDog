@@ -449,6 +449,43 @@ async def expire_stale_dispatchs(db: DbSession) -> int:
 
     return len(expired)
 
+async def _escalate_dispatch(db: DbSession, dispatch: Dispatch, reason: str) -> None:
+    """Informs admin of critical alert no officer was able to attend to"""
+    now = datetime.now(timezone.utc)
+    dispatch.notified_at = now
+    await db.commit()
+    await db.refresh(dispatch)
+
+    try:
+        admin_ids = await get_dispatch_viewer_ids(
+            db, dispatch.neighbourhood_id, roles=(NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,)
+        )
+        if not admin_ids:
+            logger.warning(
+                "dispatch: no neighbourhood admin to notify about alert %s", 
+                dispatch.alert_id,
+            )
+            return
+        
+        await broadcast(
+            admin_ids,
+            {
+                "event": "dispatch.escalated",
+                "payload": {
+                    "dispatch_id": str(dispatch.id),
+                    "alert_id": str(dispatch.alert_id),
+                    "neighbourhood_id": str(dispatch.neighbourhood_id) if dispatch.neighbourhood_id else None,
+                    "reason": reason,
+                    "notified_at": now.isoformat(),
+                },
+            },
+        )
+    except Exception:
+        logger.exception(
+            "dispatch: failed to broadcast escalation for alert %s",
+            dispatch.alert_id,
+        )
+
 def _build_candidate_res(d: Dispatch) -> DispatchCandidateRes:
     return DispatchCandidateRes(
         id=d.id,
