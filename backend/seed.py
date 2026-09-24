@@ -289,7 +289,6 @@ async def seed_database(bulk_audit_count: int = 500):
             print("Global default risk threshold config already exists")
 
         alerts_created = 0
-        detection_events_created = 0
 
         today = datetime.now()
         one_year_ago = today - timedelta(days=365)
@@ -297,7 +296,7 @@ async def seed_database(bulk_audit_count: int = 500):
 
         detection_types = list(DetectionType)
         alert_statuses = [AlertStatus.OPEN, AlertStatus.ACKNOWLEDGED, AlertStatus.RESOLVED, AlertStatus.CONFIRMED, AlertStatus.DISMISSED]
-        status_weights = [0.3, 0.2, 0.5]
+        status_weights = [0.25, 0.15, 0.25, 0.25, 0.10]
 
         for day_offset in range(num_days):
             day = one_year_ago + timedelta(days=day_offset)
@@ -311,22 +310,6 @@ async def seed_database(bulk_audit_count: int = 500):
                     minutes=random.randint(0, 59), #noqa
                     seconds=random.randint(0, 59), #noqa
                 )
-
-                alert = Alert(
-                    id=uuid4(),
-                    camera_id=CAMERA_ID,
-                    frame_timestamp=event_time,
-                    detection_type=random.choice(detection_types), #noqa
-                    confidence_score=round(random.uniform(0.55, 0.99), 2),
-                    thumbnail_url=None,
-                    processed=True,
-                    status=AlertStatus.OPEN.value,
-                    created_at=event_time
-                )
-
-                db.add(alert)
-                await db.flush()  # need detection_event.id for the FK below
-                detection_events_created += 1
  
                 status = random.choices(alert_statuses, weights=status_weights)[0] #noqa
  
@@ -356,7 +339,6 @@ async def seed_database(bulk_audit_count: int = 500):
                 await db.flush()
 
         await db.flush()
-        print(f"Created {detection_events_created} test detection events")
         print(f"Created {alerts_created} test alerts spread across the last year")
         audit_create = AuditLog(
             id=AUDIT_LOG_ID,
