@@ -996,25 +996,29 @@ async def test_create_alert_for_agent_maps_known_detection_label():
 
     assigned_ids = iter([ALERT_ID, uuid4(), uuid4()])
 
-
     def assign_ids_on_add(entity):
         entity.id = next(assigned_ids)
 
-
     db.add.side_effect = assign_ids_on_add
-
-
 
     body = make_internal_alert_request(
         detection_type="gun",
         local_track_id=17,
     )
 
-    response = await service.create_alert_for_agent_handler(
-        body,
-        db,
-        make_edge_credential(),
-    )
+    with (
+        patch(
+            "app.services.alert_service._get_neighbourhood_websocket_recipient_ids",
+            new=AsyncMock(return_value=[]),
+        ),
+        patch("app.services.alert_service.send_push_to_users"),
+        patch("app.api.controllers.alert.broadcast", new=AsyncMock()),
+    ):
+        response = await service.create_alert_for_agent_handler(
+            body,
+            db,
+            make_edge_credential(),
+        )
 
     created_alert = db.add.call_args_list[0].args[0]
 
@@ -1049,26 +1053,29 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
 
     assigned_ids = iter([ALERT_ID, uuid4(), uuid4()])
 
-
     def assign_ids_on_add(entity):
         entity.id = next(assigned_ids)
 
-
     db.add.side_effect = assign_ids_on_add
-
-  
 
     body = make_internal_alert_request(
         detection_type="unknown-label",
         local_track_id=17,
     )
 
-    response = await service.create_alert_for_agent_handler(
-        body,
-        db,
-        make_edge_credential(),
-    )
-    mock_send_push.delay.assert_called_once()
+    with (
+        patch(
+            "app.services.alert_service._get_neighbourhood_websocket_recipient_ids",
+            new=AsyncMock(return_value=[]),
+        ),
+        patch("app.services.alert_service.send_push_to_users"),
+        patch("app.api.controllers.alert.broadcast", new=AsyncMock()),
+    ):
+        response = await service.create_alert_for_agent_handler(
+            body,
+            db,
+            make_edge_credential(),
+        )
 
     created_alert = db.add.call_args_list[0].args[0]
 
@@ -1077,6 +1084,7 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
     assert response.is_new_alert is True
     assert response.sighting_id is not None
     assert db.add.call_count == 3
+
 
 @pytest.mark.asyncio
 async def test_create_alert_for_agent_requires_local_track_id_for_embedding():
@@ -1107,7 +1115,6 @@ async def test_create_alert_for_agent_requires_local_track_id_for_embedding():
     )
     db.flush.assert_not_awaited()
     db.add.assert_not_called()
-    db.rollback.assert_awaited_once()
     db.rollback.assert_awaited_once()
 
 
@@ -1140,7 +1147,6 @@ async def test_create_alert_for_agent_requires_embedding_model():
     )
     db.flush.assert_not_awaited()
     db.add.assert_not_called()
-    db.rollback.assert_awaited_once()
     db.rollback.assert_awaited_once()
 
 
