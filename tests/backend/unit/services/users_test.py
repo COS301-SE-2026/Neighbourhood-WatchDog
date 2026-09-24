@@ -2,7 +2,6 @@ import pytest
 from fastapi import HTTPException
 from unittest.mock import Mock, patch, AsyncMock
 from app.models.user import UserRole
-from app.models.push_device import PushDevice
 from app.schemas.user import UpdateUserSettingsReq
 from app.services.user_service import create_user, get_current_user_settings_handler, update_current_user_settings_handler, register_push_device_handler
 
