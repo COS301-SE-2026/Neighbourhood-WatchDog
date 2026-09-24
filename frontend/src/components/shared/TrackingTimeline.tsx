@@ -8,6 +8,7 @@ import {
   fetchTrackingTimeline,
   type TrackingTimelineData,
 } from "@/lib/api/alert";
+import { AlertFootagePlayer } from "@/components/shared/AlertFootagePlayer";
 
 interface TrackingTimelineProps {
   readonly alertId: string;
@@ -169,6 +170,20 @@ export function TrackingTimeline({
                       </span>
                     )}
                   </div>
+
+                  {sighting.clip_s3_key ? (
+                    <div className="mt-3">
+                      <AlertFootagePlayer
+                        alertId={sighting.id}
+                        timestamp={sighting.observed_at}
+                        clipKind="tracking-sighting"
+                      />
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-xs text-brand-ash/70">
+                      No footage was recorded for this camera sighting.
+                    </p>
+                  )}
                 </li>
               ))}
             </ol>
