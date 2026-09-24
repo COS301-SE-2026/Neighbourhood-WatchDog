@@ -35,46 +35,94 @@ function getAnnotationWebSocketBaseUrl(): string{
 
 
 export function useCameraAnnotations(cameraId: string) {
-    const [annotations, setAnnotations] = useState<AnnotationData | null>(null);
-    const [connected, setConnected] = useState(false);
+    const [annotations, setAnnotations] =
+        useState<AnnotationData | null>(null);
+
+    const [connection, setConnection] = useState<{
+        cameraId: string | null;
+        connected: boolean;
+    }>({
+        cameraId: null,
+        connected: false,
+    });
+
     const wsRef = useRef<WebSocket | null>(null);
 
     useEffect(() => {
         const baseUrl = getAnnotationWebSocketBaseUrl();
-        const ws = new WebSocket(`${baseUrl}/api/stream/cameras/${cameraId}/annotations/ws`);
 
+        const ws = new WebSocket(
+            `${baseUrl}/api/stream/cameras/${cameraId}/annotations/ws`,
+        );
 
-         //clearing canvas if no data comes for 2 seconds
-        let clearTimer: ReturnType<typeof setTimeout>;
+        let clearTimer: ReturnType<typeof setTimeout> | undefined;
 
-        ws.onopen = () => setConnected(true);
-        ws.onclose = () => setConnected(false);
+        ws.onopen = () => {
+            setConnection({
+                cameraId,
+                connected: true,
+            });
+        };
 
-        ws.onerror = () => setConnected(false);
+        ws.onclose = () => {
+            setConnection((previous) =>
+                previous.cameraId === cameraId
+                    ? {
+                          cameraId,
+                          connected: false,
+                      }
+                    : previous,
+            );
+        };
 
-
-    
+        ws.onerror = () => {
+            setConnection((previous) =>
+                previous.cameraId === cameraId
+                    ? {
+                          cameraId,
+                          connected: false,
+                      }
+                    : previous,
+            );
+        };
 
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data) as AnnotationData;
-            if (data.event === "ping") return;
+
+            if (data.event === "ping") {
+                return;
+            }
+
             setAnnotations(data);
 
-            //clearing annotations 2 seconds after the last update
-            if (clearTimer) clearTimeout(clearTimer);
-            
+            if (clearTimer) {
+                clearTimeout(clearTimer);
+            }
+
             clearTimer = setTimeout(() => {
                 setAnnotations(null);
             }, 2000);
-
         };
 
         wsRef.current = ws;
+
         return () => {
-            if (clearTimer) clearTimeout(clearTimer);
+            if (clearTimer) {
+                clearTimeout(clearTimer);
+            }
+
             ws.close();
-        }
+        };
     }, [cameraId]);
 
-    return { annotations, connected };
+    const currentAnnotations =
+        annotations?.camera_id === cameraId ? annotations : null;
+
+    const currentConnected =
+        connection.cameraId === cameraId && connection.connected;
+
+    return {
+        annotations: currentAnnotations,
+        connected: currentConnected,
+    };
 }

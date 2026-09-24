@@ -424,20 +424,38 @@ async def test_agent_sighting_records_and_broadcasts_event():
     sighting = SimpleNamespace(id=uuid4(), sequence_no=2)
     candidate_result = MagicMock()
     candidate_result.one_or_none.return_value = (
-        SimpleNamespace(
-            property_id=property_id,
-            name="Back Gate",
-            location="Northern boundary"
-
-        ),
-        SimpleNamespace(neighbourhood_id=neighbourhood_id),
+    SimpleNamespace(
+        property_id=property_id,
+        name="Back Gate",
+        location="Northern boundary",
+    ),
+    SimpleNamespace(
+        id=uuid4(),
+        address="Destination property",
+        neighbourhood_id=neighbourhood_id,
+    ),
     )
+
     source_result = MagicMock()
     source_result.one_or_none.return_value = (
         SimpleNamespace(id=subject_id),
-        SimpleNamespace(id=alert_id),
+        SimpleNamespace(
+            id=alert_id,
+            frame_timestamp=datetime(
+                2026,
+                9,
+                22,
+                7,
+                0,
+                tzinfo=timezone.utc,
+            ),
+        ),
         SimpleNamespace(),
-        SimpleNamespace(neighbourhood_id=neighbourhood_id),
+        SimpleNamespace(
+            id=uuid4(),
+            address="Source property",
+            neighbourhood_id=neighbourhood_id,
+        ),
     )
     recipient_result = MagicMock()
     recipient_result.scalars.return_value.all.return_value = [uuid4()]
@@ -453,6 +471,10 @@ async def test_agent_sighting_records_and_broadcasts_event():
             "app.api.controllers.alert.broadcast",
             new=AsyncMock(),
         ) as broadcast,
+        patch(
+            "app.services.tracking_service.dispatch_tracking_match_notifications",
+            new=AsyncMock(),
+        ) as notify_match,
     ):
         response = await record_tracking_sighting_for_agent(
             db=db,
@@ -464,6 +486,12 @@ async def test_agent_sighting_records_and_broadcasts_event():
     assert response.data.sighting_id == sighting.id
     record_sighting.assert_awaited_once()
     broadcast.assert_awaited_once()
+
+    notify_match.assert_awaited_once()
+    assert notify_match.await_args.kwargs["tracking_subject_id"] == subject_id
+    assert (notify_match.await_args.kwargs["source_property"] == "Source property")
+    assert (notify_match.await_args.kwargs["destination_property"] == "Destination property")
+
     assert broadcast.call_args.args[0] == [str(recipient_result.scalars.return_value.all.return_value[0])]
 
     broadcast_message = broadcast.call_args.args[1]
@@ -491,18 +519,38 @@ async def test_agent_sighting_survives_broadcast_failure():
     candidate_result = MagicMock()
     candidate_result.one_or_none.return_value = (
         SimpleNamespace(
+            id=uuid4(),
             property_id=property_id,
             name="Back Gate",
             location="Northern boundary",
         ),
-        SimpleNamespace(neighbourhood_id=neighbourhood_id),
+        SimpleNamespace(
+            id=uuid4(),
+            address="Destination property",
+            neighbourhood_id=neighbourhood_id,
+        ),
     )
+
     source_result = MagicMock()
     source_result.one_or_none.return_value = (
         SimpleNamespace(id=body.tracking_subject_id),
-        SimpleNamespace(id=uuid4()),
+        SimpleNamespace(
+            id=uuid4(),
+            frame_timestamp=datetime(
+                2026,
+                9,
+                22,
+                7,
+                0,
+                tzinfo=timezone.utc,
+            ),
+        ),
         SimpleNamespace(),
-        SimpleNamespace(neighbourhood_id=neighbourhood_id),
+        SimpleNamespace(
+            id=uuid4(),
+            address="Source property",
+            neighbourhood_id=neighbourhood_id,
+        ),
     )
     recipient_result = MagicMock()
     recipient_result.scalars.return_value.all.return_value = []
@@ -512,11 +560,22 @@ async def test_agent_sighting_survives_broadcast_failure():
     with (
         patch(
             "app.services.tracking_service.record_tracking_sighting",
-            new=AsyncMock(return_value=SimpleNamespace(id=uuid4(), sequence_no=1)),
+            new=AsyncMock(
+                return_value=SimpleNamespace(
+                    id=uuid4(),
+                    sequence_no=1,
+                )
+            ),
         ),
         patch(
             "app.api.controllers.alert.broadcast",
-            new=AsyncMock(side_effect=RuntimeError("websocket unavailable")),
+            new=AsyncMock(
+                side_effect=RuntimeError("websocket unavailable")
+            ),
+        ),
+        patch(
+            "app.services.tracking_service.dispatch_tracking_match_notifications",
+            new=AsyncMock(),
         ),
     ):
         response = await record_tracking_sighting_for_agent(

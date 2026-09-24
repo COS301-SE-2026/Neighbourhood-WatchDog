@@ -1,3 +1,6 @@
+import firebase_admin
+import json
+from firebase_admin import credentials
 from app import models  # noqa: F401  (imported for side effects: model registration)
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
@@ -54,7 +57,7 @@ app.add_middleware(SlowAPIMiddleware) #Rate limiting
 
 app.add_middleware( #CORS (allow requests from frontend)
     CORSMiddleware,
-    allow_origins=[config.frontend_url.rstrip("/"), "http://localhost:3000", "https://neighbourhood-watch-dog-intrepidcapstone-4790-teamintrepid.vercel.app", "https://neighbourhood-watch-dog.vercel.app"],
+    allow_origins=[config.frontend_url.rstrip("/"), "http://localhost:3000", "https://neighbourhood-watch-dog.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -87,6 +90,9 @@ app.include_router(dispatch_router)
 def health_check():
     return {"status": "ok"}
 
+if config.firebase_credentials_json:
+    cred = credentials.Certificate(json.loads(config.firebase_credentials_json))
+    firebase_admin.initialize_app(cred)
 
 def custom_openapi():
     """This is for the API Service Contract to make sure it returns the full schema, not just a reference"""
