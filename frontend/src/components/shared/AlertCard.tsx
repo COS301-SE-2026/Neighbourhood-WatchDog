@@ -62,7 +62,7 @@ const AlertLocationMap = dynamic<AlertLocationMapProps>(
 
 
 export type AlertSeverity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
-export type AlertStatus = "NEW" | "ACKNOWLEDGED" | "RESOLVED";
+export type AlertStatus = "NEW" | "ACKNOWLEDGED" | "RESOLVED" | "CONFIRMED" | "DISMISSED";
 
 export interface Alert {
   id: string;
@@ -132,12 +132,24 @@ const STATUS_CONFIG: Record<AlertStatus, { bg: string; textColor: string; label:
     label: "Acknowledged",
     icon: <CheckCheck className="h-3 w-3" />,
   },
+  CONFIRMED: {
+    bg: "bg-brand-caution/15 border border-brand-caution/40",
+    textColor: "text-brand-caution",
+    label: "Confirmed",
+    icon: <ShieldAlert className="h-3 w-3" />,
+  },
   RESOLVED: {
     bg: "bg-brand-green/15 border border-brand-green/40",
     textColor: "text-brand-green",
     label: "Resolved",
     icon: <CheckCircle2 className="h-3 w-3" />,
   },
+  DISMISSED: {
+    bg: "bg-brand-slate border border-brand-gunmetal/20",
+    textColor: "text-brand-ash",
+    label: "Dismissed",
+    icon: <CheckCircle2 className="h-3 w-3" />,
+  }
 };
 
 export function SeverityBadge({ severity }: { severity: AlertSeverity }) {

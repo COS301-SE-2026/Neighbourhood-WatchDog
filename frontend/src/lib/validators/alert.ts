@@ -23,7 +23,9 @@ export const CriticalDetectionTypeSchema = z.enum([
 export const CriticalAlertStatusSchema = z.enum([
   "OPEN",
   "ACKNOWLEDGED",
-  "RESOLVED"
+  "CONFIRMED",
+  "RESOLVED",
+  "DISMISSED"
 ]);
 
 const DatabaseUuidSchema = z

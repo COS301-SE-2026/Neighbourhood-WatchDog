@@ -15,7 +15,10 @@ import {
   UpdateSecurityLocationReq,
   UpdateSecurityLocationRes,
   DutyStatus,
+  NeighbourhoodMapPropertiesRes,
+  NeighbourhoodMapPropertiesResSchema
 } from '../validators/neighbourhood'
+
 
 export async function addNeighbourhood(data: CreateNeighbourhoodReq): Promise<NeighbourhoodRes> {
   const result = await apiCall<CreateNeighbourhoodRes>('/neighbourhood/create-neighbourhood', {
@@ -50,6 +53,23 @@ export async function getNeighbourhoodPropertyDetails(): Promise<NeighbourProper
     `/neighbourhood/properties`, 
     {method: 'GET'},
   )
+}
+
+export async function getNeighbourhoodMapProperties(
+  neighbourhoodId: string,
+): Promise<NeighbourhoodMapPropertiesRes> {
+  const result = await apiCall<unknown>(
+    `/neighbourhood/${encodeURIComponent(
+      neighbourhoodId,
+    )}/map/properties`,
+    {
+      method: "GET",
+    },
+  );
+
+  return NeighbourhoodMapPropertiesResSchema.parse(
+    result,
+  );
 }
 
 
