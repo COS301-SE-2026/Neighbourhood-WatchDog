@@ -261,6 +261,7 @@ async def register_push_device_handler(
     claims: dict,
 ) -> RegisterPushDeviceRes:
     if not claims:
+        logger.error("register_push_device_handler: no claims provided")
         raise HTTPException(status_code=401, detail=NOT_AUTHENTICATED)
 
     user_id = UUID(claims["id"])
@@ -272,8 +273,10 @@ async def register_push_device_handler(
     if device is None:
         device = PushDevice(user_id=user_id, device_token=device_token)
         db.add(device)
+        logger.info("register_push_device_handler: registered new device for user_id=%s", user_id)
     else:
         device.user_id = user_id
+        logger.info("register_push_device_handler: re-pointed existing device to user_id=%s", user_id)
 
     await db.commit()
 

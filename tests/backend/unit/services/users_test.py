@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from unittest.mock import Mock, patch, AsyncMock
 from app.models.user import UserRole
 from app.schemas.user import UpdateUserSettingsReq
-from app.services.user_service import create_user, get_current_user_settings_handler, update_current_user_settings_handler
+from app.services.user_service import create_user, get_current_user_settings_handler, update_current_user_settings_handler, register_push_device_handler
 
 from datetime import datetime
 from types import SimpleNamespace
@@ -535,3 +535,49 @@ async def test_update_user_settings_rejects_missing_user():
     )
     db.commit.assert_not_awaited()
     db.refresh.assert_not_awaited()
+
+@pytest.mark.asyncio
+async def test_reg_push_device_rejects_missing_claims():
+    db = Mock()
+    db.execute = AsyncMock()
+    db.commit = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await register_push_device_handler(
+            device_token="token-123",
+            db=db,
+            claims=None,
+        )
+
+    assert exc_info.value.status_code == 401
+    db.execute.assert_not_awaited()
+    db.commit.assert_not_awaited()
+
+@pytest.mark.asyncio
+async def test_reg_push_device_repoints_to_new_user():
+    original_user_id = uuid4()
+    new_user_id = uuid4()
+
+    existing_device = SimpleNamespace(
+        id=uuid4(),
+        user_id=original_user_id,
+        device_token="token-123",
+    )
+
+    result = Mock()
+    result.scalar_one_or_none.return_value = existing_device
+
+    db = Mock()
+    db.execute = AsyncMock(return_value=result)
+    db.add = Mock()
+    db.commit = AsyncMock()
+
+    response = await register_push_device_handler(
+        device_token="token-123",
+        db=db,
+        claims={"id": str(new_user_id)},
+    )
+
+
+    assert response.status == 200
+    db.commit.assert_awaited_once()
