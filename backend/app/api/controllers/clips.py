@@ -26,6 +26,7 @@ from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
 from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.user import User, UserRole
+from app.models.tracking import TrackingSighting
 
 router = APIRouter(prefix="/api/clips", tags=["clips"])
 
@@ -118,6 +119,77 @@ async def _check_rbac(claims: dict, camera: Camera, property_obj: Property, db: 
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Residents can only view public-camera footage.")
 
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to view footage.")
+
+
+@router.get("/tracking/sightings/{sighting_id}/clip")
+async def get_tracking_sighting_clip_url(sighting_id: UUID, db: DbSession, claims: Claims):
+
+    if not S3_BUCKET:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Clip storage has not been configured"
+        )
+
+    result = await db.execute(
+        select(TrackingSighting, Camera, Property)
+        .join(Camera, Camera.id == TrackingSighting.camera_id)
+        .join(Property, Property.id == Camera.property_id)
+        .where(TrackingSighting.id == sighting_id)
+    )
+
+    record = result.one_or_none()
+
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tracking sighting was not found"
+        )
+
+    sighting, camera, property_obj = record
+
+    if not sighting.clip_s3_key:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No clip is available for this tracking sighting"
+
+        )
+
+    if (sighting.clip_expires_at and sighting.clip_expires_at < datetime.now(timezone.utc)):
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail="This clip has expired"
+
+        )
+
+    await _check_rbac(
+        claims=claims,
+        camera=camera,
+        property_obj=property_obj,
+        db=db
+
+    )
+
+    try:
+        url = _s3_client().generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": S3_BUCKET,
+                "Key": sighting.clip_s3_key
+            },
+            ExpiresIn=PRESIGN_TTL,
+        )
+    except (BotoCoreError, ClientError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Could not generate a temporary clip URL"
+        ) from exc
+
+    return {
+        "url": url,
+        "expires_in": PRESIGN_TTL
+        
+    }
+
 
 @router.get("/{alert_id}")
 async def get_clip_url(
