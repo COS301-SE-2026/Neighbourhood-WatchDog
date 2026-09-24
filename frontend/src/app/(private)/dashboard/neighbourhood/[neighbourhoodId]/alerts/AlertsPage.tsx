@@ -292,6 +292,26 @@ function createAlertsWebSocket({url, wsRef, mountedRef, isSecurityOfficer, seenE
 }
 
 
+function groupAlertsByIncident(alerts: Alert[]): Alert[] {
+  const seenSubjects = new Set<string>();
+
+  return alerts.filter((alert) => {
+    if (!alert.tracking_subject_id) {
+      return true; //historical/untracked alerts remain separate
+    }
+
+    if (seenSubjects.has(alert.tracking_subject_id)) {
+      return false;
+    }
+
+    seenSubjects.add(alert.tracking_subject_id);
+    return true;
+  });
+}
+
+const groupedAlerts = useMemo(() => groupAlertsByIncident(filtered), [filtered]);
+
+
 export default function AlertsPage({ neighbourhoodId }: Props) {
 
   const {
@@ -638,7 +658,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
                 <EmptyState />
               ) : (
                 <div className="space-y-3">
-                  {filtered.map((alert) => (
+                  {groupedAlerts.map((alert) => (
                     <AlertCard
                       key={alert.id}
                       alert={alert}
