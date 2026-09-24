@@ -42,6 +42,8 @@ class AlertRes(BaseModel):
     property_latitude: float | None = None
     property_longitude: float | None = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 class AcknowledgeAlertRes(BaseModel):
 	status: int
 	message: str | None = None

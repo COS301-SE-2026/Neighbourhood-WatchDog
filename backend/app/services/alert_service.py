@@ -358,6 +358,7 @@ def _build_alert_res(alert: Alert) -> AlertRes:
         thumbnail_url=alert.thumbnail_url,
         clip_s3_key=alert.clip_s3_key,
         clip_expires_at=alert.clip_expires_at,
+        tracking_subject_id=tracking_subject_id,
         processed=alert.processed,
         status=alert.status,
         resolved_by=alert.resolved_by,
@@ -365,7 +366,7 @@ def _build_alert_res(alert: Alert) -> AlertRes:
         created_at=alert.created_at,
         property_address=property_address,
         property_latitude=property_latitude,
-        property_longitude=property_longitude 
+        property_longitude=property_longitude
 
     )
 
@@ -1158,14 +1159,14 @@ def _validate_tracking_payload(body: CreateInternalAlertRequest, det_type: Detec
         if body.local_track_id is None:
             raise HTTPException(
                 status_code=422,
-                detail="local_track_id is required when appearance_embedding is provided"
+                detail="local_track_id is required when an appearance_embedding is provided"
 
             )
 
         if body.embedding_model is None:
             raise HTTPException(
                 status_code=422,
-                detail="embedding_model is required when appearance_embedding is provided"
+                detail="embedding_model is required when an appearance_embedding is provided"
 
             )
 
@@ -1299,7 +1300,6 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
             )
 
             db.add(initial_sighting)
-            await db.flush()
 
         await db.commit()
         await db.refresh(alert)
