@@ -10,6 +10,13 @@ from app.services.daily_incident_density_service import (
     rebuild_incident_density_day,
 )
 
+def make_db():
+    db = MagicMock()
+    db.execute = AsyncMock()
+    db.commit = AsyncMock()
+    db.add_all = MagicMock()
+    return db
+
 
 TARGET_DATE = date(2026, 9, 1)
 
@@ -75,7 +82,7 @@ async def test_rebuild_adds_density_rows_and_commits():
         },
     ]
 
-    db = AsyncMock()
+    db = make_db()
     db.execute.side_effect = [
         make_query_result(rows),
         MagicMock(),
@@ -113,7 +120,7 @@ async def test_rebuild_adds_density_rows_and_commits():
 
 @pytest.mark.asyncio
 async def test_rebuild_is_idempotent_for_empty_results():
-    db = AsyncMock()
+    db = make_db()
     db.execute.side_effect = [
         make_query_result([]),
         MagicMock(),
@@ -137,7 +144,7 @@ async def test_rebuild_is_idempotent_for_empty_results():
 
 @pytest.mark.asyncio
 async def test_rebuild_deletes_existing_rows_for_target_date():
-    db = AsyncMock()
+    db = make_db()
     db.execute.side_effect = [
         make_query_result([]),
         MagicMock(),
@@ -162,7 +169,7 @@ async def test_rebuild_deletes_existing_rows_for_target_date():
 
 @pytest.mark.asyncio
 async def test_rebuild_propagates_database_errors():
-    db = AsyncMock()
+    db = make_db()
     db.execute.side_effect = RuntimeError(
         "database unavailable",
     )
