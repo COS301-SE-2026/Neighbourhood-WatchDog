@@ -200,8 +200,9 @@ jobs:
             '.containerDefinitions[0].image = $IMAGE
             | .containerDefinitions[0].secrets = (
                 (.containerDefinitions[0].secrets // [])
-                | map(select(.name != "S3_BUCKET_NAME"))
+                | map(select(.name != "S3_BUCKET_NAME" and .name != "FIREBASE_CREDENTIALS_JSON"))
                 + [{"name": "S3_BUCKET_NAME", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:S3_BUCKET_NAME::"}]
+                + [{"name": "FIREBASE_CREDENTIALS_JSON", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:FIREBASE_CREDENTIALS_JSON::"}]
               )
             | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
             worker-task-def.json)

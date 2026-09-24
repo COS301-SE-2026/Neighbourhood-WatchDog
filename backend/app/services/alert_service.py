@@ -16,6 +16,7 @@ from sqlalchemy import or_, select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
+
 from app.models.neighbourhood_user import (
     NeighbourhoodRole,
     NeighbourhoodUser,
@@ -1144,7 +1145,12 @@ def _validate_tracking_payload(body: CreateInternalAlertRequest) -> None:
             )
         )
 
-async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:AsyncSession, credential: EdgeAgentCredential, generate_brief: bool = False) -> InternalAlertCreateRes:
+async def create_alert_for_agent_handler(
+    body: CreateInternalAlertRequest, 
+    db:AsyncSession, 
+    credential: EdgeAgentCredential, 
+    generate_brief: bool = False
+) -> InternalAlertCreateRes:
     """Create an alert for a camera owned by the authenticated edge agent's property."""
 
     label_map = {
@@ -1176,7 +1182,10 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
 
     try:
 
-        stmt = select(Camera).where(Camera.id == body.camera_id)
+        stmt = (select(Camera)
+            .options(joinedload(Camera.property))
+            .where(Camera.id == body.camera_id)
+        )
         result = await db.execute(stmt)
         camera: Camera | None = result.scalar_one_or_none()
 
@@ -1233,12 +1242,48 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
         await db.commit()
         await db.refresh(alert)
 
+        neighbourhood_id = camera.property.neighbourhood_id if camera.property else None
+
+        # Sending a push notification in the case of a weapon detection
+        if neighbourhood_id is not None:
+            if alert.detection_type == DetectionType.WEAPON_DETECTED:
+
+                from app.api.controllers.alert import broadcast
+
+                recipient_ids = await _get_neighbourhood_websocket_recipient_ids(db, neighbourhood_id)
+
+                await broadcast(
+                    recipient_ids,
+                    {
+                        "event": "new_alert",
+                        "alert_id": str(alert.id),
+                        "camera_id": str(alert.camera_id),
+                        "detection_type": alert.detection_type.value if hasattr(alert.detection_type, "value") else str(alert.detection_type),
+                        "confidence": alert.confidence_score,
+                    },
+                )
+
+                send_push_to_users.delay(
+                    [str(uid) for uid in recipient_ids],
+                    title="New alert",
+                    body=f"{det_type.value if hasattr(det_type, 'value') else det_type} detected",
+                    data={"alert_id": str(alert.id), "event": "new_alert"},
+                )
+            else: # detection is not a weapon
+                logger.warning(
+                    "create_alert_for_agent_handler: skipped broadcast/push because detection type was not a weapon; alert_id=%s",
+                    alert.id,
+                )
+        else: # neighbourhood is None
+            logger.warning(
+                "create_alert_for_agent_handler: skipped broadcast/push because camera has no neighbourhood; alert_id=%s",
+                alert.id,
+            )
 
         if generate_brief and tracking_subject is not None:
             await maybe_generate_situational_brief(
                 db=db, 
                 tracking_subject_id=tracking_subject.id
-
             )
         
 
