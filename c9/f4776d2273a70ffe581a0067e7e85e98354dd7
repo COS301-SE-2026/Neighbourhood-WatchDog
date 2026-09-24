@@ -1,0 +1,17 @@
+tests/backend/unit/services/users_test.py
+  h_cf6208e37032c0 5,7,539-584
+  h_cf6208e37032c0 538
+backend/app/services/user_service.py
+  h_cf6208e37032c0 264,276,279
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c9f4776d2273a70ffe581a0067e7e85e98354dd7",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
