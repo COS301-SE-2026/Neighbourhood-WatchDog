@@ -10,7 +10,9 @@ class NotificationPolicyBuilder:
         recipient_resolver: Callable,
         severity_fn: Callable,
     ):
-        pass
+        self.channels = channels
+        self.recipient_resolver = recipient_resolver
+        self.severity_fn = severity_fn
 
     async def with_channel(NotificationChannel):
         pass #TODO we finna add to this

@@ -14,7 +14,9 @@ class NotificationPolicy:
         recipient_resolver: Callable,
         severity_fn: Callable | None = None,
     ):
-        pass
+        self.channels = channels
+        self.recipient_resolver = recipient_resolver
+        self.severity_fn = severity_fn
 
     async def notify(
         self,
