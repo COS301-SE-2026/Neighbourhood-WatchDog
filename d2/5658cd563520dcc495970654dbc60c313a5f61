@@ -1,0 +1,14 @@
+backend/app/services/notifications/policy_builder.py
+  h_cf6208e37032c0 1-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d25658cd563520dcc495970654dbc60c313a5f61",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
