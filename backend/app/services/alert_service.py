@@ -17,7 +17,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from app.api.controllers.alert import broadcast
 from app.models.neighbourhood_user import (
     NeighbourhoodRole,
     NeighbourhoodUser,
@@ -1248,6 +1247,9 @@ async def create_alert_for_agent_handler(
         # Sending a push notification in the case of a weapon detection
         if neighbourhood_id is not None:
             if alert.detection_type == DetectionType.WEAPON_DETECTED:
+
+                from app.api.controllers.alert import broadcast
+
                 recipient_ids = await _get_neighbourhood_websocket_recipient_ids(db, neighbourhood_id)
 
                 await broadcast(

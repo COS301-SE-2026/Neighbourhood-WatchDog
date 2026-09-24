@@ -1,4 +1,3 @@
-from firebase_admin import credentials
 from app import models  # noqa: F401  (imported for side effects: model registration)
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi

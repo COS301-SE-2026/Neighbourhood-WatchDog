@@ -986,22 +986,31 @@ async def test_create_alert_for_agent_maps_known_detection_label():
         id=ALERT_ID,
         camera_id=CAMERA_ID,
         detection_type=DetectionType.WEAPON_DETECTED,
+        confidence_score=0.91,
     )
 
     body = make_internal_alert_request(
         detection_type="gun",
     )
 
-    with patch(
-        "app.services.alert_service.Alert",
-        return_value=alert,
-    ) as alert_model:
+    with (
+        patch(
+            "app.services.alert_service.Alert",
+            return_value=alert,
+        ) as alert_model,
+        patch(
+            "app.services.alert_service._get_neighbourhood_websocket_recipient_ids",
+            new=AsyncMock(return_value=[]),
+        ),
+        patch("app.services.alert_service.send_push_to_users") as mock_send_push,
+        patch("app.api.controllers.alert.broadcast", new=AsyncMock()),
+    ):
         response = await service.create_alert_for_agent_handler(
             body,
             db,
             make_edge_credential(),
         )
-
+    
     assert response.alert_id == ALERT_ID
     alert_model.assert_called_once()
 
@@ -1028,16 +1037,25 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
         id=ALERT_ID,
         camera_id=CAMERA_ID,
         detection_type=DetectionType.WEAPON_DETECTED,
+        confidence_score=0.91,
     )
 
     body = make_internal_alert_request(
         detection_type="unknown-label",
     )
 
-    with patch(
-        "app.services.alert_service.Alert",
-        return_value=alert,
-    ) as alert_model:
+    with (
+        patch(
+            "app.services.alert_service.Alert",
+            return_value=alert,
+        ) as alert_model,
+        patch(
+            "app.services.alert_service._get_neighbourhood_websocket_recipient_ids",
+            new=AsyncMock(return_value=[]),
+        ),
+        patch("app.services.alert_service.send_push_to_users") as mock_send_push,
+        patch("app.api.controllers.alert.broadcast", new=AsyncMock()),
+    ):
         response = await service.create_alert_for_agent_handler(
             body,
             db,
