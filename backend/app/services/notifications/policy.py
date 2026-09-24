@@ -2,6 +2,7 @@ import logging
 
 from collections.abc import Callable
 
+from app.core.database import DbSession
 from app.services.notifications.channel import NotificationChannel
 
 logger = logging.getLogger(__name__)
