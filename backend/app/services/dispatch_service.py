@@ -581,6 +581,16 @@ async def dispatch_alert(db: DbSession, alert_id: UUID) -> AlertDispatchRes:
 
             if selected is not None:
                 await _notify_officer(db, selected)
+            else:
+                no_candidate_result = await db.execute(
+                    select(Dispatch).where(
+                        Dispatch.alert_id == alert_id,
+                        Dispatch.status == DispatchStatus.NO_CANDIDATE,
+                    )
+                )
+                no_candidate = no_candidate_result.scalar_one_or_none()
+                if no_candidate is not None:
+                    await _escalate_dispatch(db, no_candidate, reason="no_eligible_officers")
     except IntegrityError:
         await db.rollback()
         existing = await _fetch_dispatch_rows(db, alert_id)
