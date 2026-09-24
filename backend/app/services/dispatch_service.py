@@ -394,6 +394,14 @@ async def _expire_stale_dispatch(db: DbSession, dispatch: Dispatch) -> Dispatch:
     if dispatch.status != DispatchStatus.NOTIFIED or dispatch.notified_at is None:
         return dispatch
 
+    locked_result = await db.execute(
+        select(Dispatch).where(Dispatch.id == dispatch.id).with_for_update()
+    )
+    dispatch = locked_result.scalar_one()
+
+    if dispatch.status != DispatchStatus.NOTIFIED or dispatch.notified_at is None:
+        return dispatch
+
     now = datetime.now(timezone.utc)
     if (now - dispatch.notified_at).total_seconds() <= RESPONSE_TIMEOUT:
         return dispatch
