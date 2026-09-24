@@ -279,14 +279,18 @@ async def _get_officer_user_id(db: DbSession, officer_id: UUID) -> str | None:
     user_id = result.scalar_one_or_none()
     return str(user_id) if user_id is not None else None
 
-async def get_dispatch_viewer_ids(db: DbSession, neighbourhood_id: UUID | None) -> list[str]:
+async def get_dispatch_viewer_ids(
+        db: DbSession, 
+        neighbourhood_id: UUID | None,
+        roles: tuple[NeighbourhoodRole, ...] = DISPATCH_VIEWER_ROLES,
+        ) -> list[str]:
     if neighbourhood_id is None:
         return []
     
     result = await db.execute(
         select(NeighbourhoodUser.user_id)
         .where(NeighbourhoodUser.neighbourhood_id == neighbourhood_id)
-        .where(NeighbourhoodUser.role.in_(DISPATCH_VIEWER_ROLES))
+        .where(NeighbourhoodUser.role.in_(roles))
     )
     return [str(user_id) for user_id in result.scalars().all()]
 
