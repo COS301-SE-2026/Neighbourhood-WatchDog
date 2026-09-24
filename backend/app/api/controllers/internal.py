@@ -21,9 +21,9 @@ from app.services.alert_service import (
     get_alert_for_agent,
     _read_clip_with_limit,
 )
-from app.tasks.clip_tasks import MAX_CLIP_SIZE_BYTES, upload_alert_clip_task
-from app.schemas.tracking import MatchTrackingEmbeddingRequest, RecordTrackingSightingRequest, TrackingMatchResponse, TrackingSightingCreateResponse
-from app.services.tracking_service import match_tracking_embedding, record_tracking_sighting_for_agent
+from app.tasks.clip_tasks import MAX_CLIP_SIZE_BYTES, upload_alert_clip_task, upload_tracking_sighting_clip_task
+from app.schemas.tracking import MatchTrackingEmbeddingRequest, RecordTrackingSightingRequest, TrackingMatchResponse, TrackingSightingCreateResponse, TrackingSightingClipUploadAcceptedRes
+from app.services.tracking_service import match_tracking_embedding, record_tracking_sighting_for_agent, get_tracking_sighting_for_agent
 
 
 
@@ -56,7 +56,55 @@ async def create_alert(
         generate_brief=True
     )
     
-    
+
+
+@router.post(
+    "/tracking/sightings/{sighting_id}/clip",
+    status_code=202,
+    response_model=TrackingSightingClipUploadAcceptedRes
+
+)
+async def upload_tracking_sighting_clip(sighting_id: str, db: DbSession, credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)], clip: Annotated[UploadFile, File(...)]) -> TrackingSightingClipUploadAcceptedRes:
+
+    if clip.content_type not in {"video/mp4", "application/octet-stream"}:
+        raise HTTPException(
+            status_code=400,
+            detail="Clip upload must use video/mp4 content type"
+        )
+
+    clip_bytes = await _read_clip_with_limit(clip, MAX_CLIP_SIZE_BYTES)
+
+    if not clip_bytes:
+        raise HTTPException(
+            status_code=400,
+            detail="The uploaded clip is empty"
+        )
+
+    sighting = await get_tracking_sighting_for_agent(
+        sighting_id=sighting_id,
+        candidate_property_id=credential.property_id,
+        db=db
+    )
+
+    if sighting is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Tracking sighting not found"
+        )
+
+    clip_b64 = base64.b64encode(clip_bytes).decode("ascii")
+
+    upload_tracking_sighting_clip_task.delay(
+        str(sighting.id),
+        clip_b64,
+        clip.content_type or "video/mp4"
+    )
+
+    return TrackingSightingClipUploadAcceptedRes(
+        sighting_id=sighting.id,
+        status="queued"
+    )
+
 
 @router.patch("/alerts/{alert_id}/clip", 
     response_model=AlertClipUpdateRes,
