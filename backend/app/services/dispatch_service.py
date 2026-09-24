@@ -156,9 +156,11 @@ def _build_dispatch_rows(context: AlertContext, ranked: list[RankedCandidate]) -
 
     for r in ranked:
         c = r.candidate
-        if c.availability_status == AvailabilityStatus.AVAILABLE:
-            status = DispatchStatus.PENDING if has_selected else DispatchStatus.SELECTED
+        if not has_selected:
+            status = DispatchStatus.SELECTED
             has_selected = True
+        elif c.availability_status == AvailabilityStatus.AVAILABLE:
+            status = DispatchStatus.PENDING
         else:
             status = DispatchStatus.QUEUED
 
