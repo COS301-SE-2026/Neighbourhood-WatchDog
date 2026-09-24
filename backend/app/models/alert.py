@@ -19,6 +19,8 @@ class DetectionType(str, Enum):
 	WEAPON_DETECTED = "WEAPON_DETECTED"
 	FALL_DETECTED = "FALL_DETECTED"
 
+USER_ID_FOREIGN_KEY = "users.id"
+
 class Alert(Base):
     __tablename__ = "alert"
 
@@ -33,11 +35,11 @@ class Alert(Base):
     clip_s3_key = Column(String, nullable=True)
     clip_expires_at = Column(DateTime(timezone=True), nullable=True)
     status = Column(String, nullable=False, server_default="OPEN")
-    acknowledged_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    acknowledged_by = Column(UUID(as_uuid=True), ForeignKey(USER_ID_FOREIGN_KEY), nullable=True)
     acknowledged_at = Column(TIMESTAMP(timezone=True), nullable=True)
-    confirmed_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    confirmed_by = Column(UUID(as_uuid=True), ForeignKey(USER_ID_FOREIGN_KEY), nullable=True)
     confirmed_at = Column(TIMESTAMP(timezone=True), nullable=True)
-    resolved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
+    resolved_by = Column(UUID(as_uuid=True), ForeignKey(USER_ID_FOREIGN_KEY), nullable=True, index=True)
     resolved_at = Column(TIMESTAMP(timezone=True), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
