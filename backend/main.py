@@ -1,5 +1,3 @@
-import firebase_admin
-import json
 from firebase_admin import credentials
 from app import models  # noqa: F401  (imported for side effects: model registration)
 from fastapi import FastAPI
@@ -7,6 +5,7 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.app_logging import configure_logging
 from app.core.config import config
+from app.core.firebase import init_firebase
 from app.auth.middleware import AuthMiddleware
 from app.api.controllers.auth import router as auth_router
 from app.api.controllers.neighbourhood_join import router as neighbourhood_join_router
@@ -90,9 +89,7 @@ app.include_router(dispatch_router)
 def health_check():
     return {"status": "ok"}
 
-if config.firebase_credentials_json:
-    cred = credentials.Certificate(json.loads(config.firebase_credentials_json))
-    firebase_admin.initialize_app(cred)
+init_firebase()
 
 def custom_openapi():
     """This is for the API Service Contract to make sure it returns the full schema, not just a reference"""
