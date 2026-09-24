@@ -163,12 +163,6 @@ class UpdateAlertClipRequest(BaseModel):
     clip_expires_at: str
 
 
-class InternalAlertCreateRes(BaseModel):
-    """Represent the identifier of an alert created by an AI agent."""
-
-    alert_id: UUID
-
-
 class AlertClipUpdateRes(BaseModel):
     """Represent an alert after its clip details have been updated."""
 
@@ -260,6 +254,8 @@ class AlertDistanceRes(BaseModel):
 
 
 class InternalAlertCreateRes(BaseModel):
+    """Represent the identifier of an alert created by an AI agent."""
+
     alert_id: UUID
     sighting_id: UUID | None = None
     is_new_alert: bool = True

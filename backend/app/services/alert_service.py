@@ -155,7 +155,10 @@ def _neighbourhood_alert_stmt(neighbourhood_id: UUID):
     """Build the base alert query scoped through Camera → Property."""
     return (
         select(Alert)
-        .options(joinedload(Alert.camera).joinedload(Camera.property))
+        .options(
+            joinedload(Alert.camera).joinedload(Camera.property),
+            joinedload(Alert.tracking_subject),
+        )
         .join(Camera, Alert.camera_id == Camera.id)
         .join(Property, Camera.property_id == Property.id)
         .where(Property.neighbourhood_id == neighbourhood_id)
@@ -166,7 +169,10 @@ def _property_alert_stmt(property_id: UUID):
 
     return (
         select(Alert)
-        .options(joinedload(Alert.camera).joinedload(Camera.property))
+        .options(
+            joinedload(Alert.camera).joinedload(Camera.property),
+            joinedload(Alert.tracking_subject),
+        )
         .join(Camera, Alert.camera_id == Camera.id)
         .where(Camera.property_id == property_id)
     )
@@ -1206,24 +1212,35 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
             raise HTTPException(status_code=404,detail=f"Camera {body.camera_id} not found")
 
         
-        existing_stmt = (
-            select(Alert, TrackingSubject, TrackingSighting)
-            .join(TrackingSubject, TrackingSubject.alert_id == Alert.id)
-            .join(TrackingSighting, TrackingSighting.tracking_subject_id == TrackingSubject.id)
-            .where(
-                Alert.camera_id == camera_id,
-                Alert.detection_type == DetectionType.WEAPON_DETECTED,
-                Alert.status == AlertStatus.OPEN.value,
-                TrackingSighting.camera_id == camera_id,
-                TrackingSighting.local_track_id == body.local_track_id
+        _validate_tracking_payload(body, det_type)
 
+        existing_row = None
+
+        if (det_type == DetectionType.WEAPON_DETECTED and body.local_track_id is not None):
+            existing_stmt = (
+                select(Alert, TrackingSubject, TrackingSighting)
+                .join(
+                    TrackingSubject,
+                    TrackingSubject.alert_id == Alert.id,
+                )
+                .join(
+                    TrackingSighting,
+                    TrackingSighting.tracking_subject_id == TrackingSubject.id,
+                )
+                .where(
+                    Alert.camera_id == camera_id,
+                    Alert.detection_type == DetectionType.WEAPON_DETECTED,
+                    Alert.status == AlertStatus.OPEN.value,
+                    TrackingSighting.camera_id == camera_id,
+                    TrackingSighting.local_track_id == body.local_track_id,
+                )
+                .order_by(Alert.frame_timestamp.desc())
+                .limit(1)
             )
-            .order_by(Alert.frame_timestamp.desc())
-            .limit(1)
-        )
 
-        existing_result = await db.execute(existing_stmt)
-        existing_row = existing_result.first()
+            existing_result = await db.execute(existing_stmt)
+            existing_row = existing_result.first()
+
 
         if existing_row is not None:
             existing_alert, _, existing_sighting = existing_row
@@ -1234,6 +1251,8 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
                 is_new_alert=False
 
             )
+
+
 
         
         alert = Alert(
@@ -1249,9 +1268,9 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
         db.add(alert)
         await db.flush()
 
-        _validate_tracking_payload(body)
 
 
+        initial_sighting = None
         tracking_subject = None
 
 
@@ -1301,7 +1320,16 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
             alert.detection_type,
         )
 
-        return InternalAlertCreateRes(alert_id=alert.id)
+        return InternalAlertCreateRes(
+            alert_id=alert.id,
+            sighting_id=(
+                initial_sighting.id
+                if initial_sighting is not None
+                else None
+            ),
+            is_new_alert=True
+            
+        )
 
     
     except HTTPException:
