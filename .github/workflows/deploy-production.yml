@@ -231,7 +231,16 @@ jobs:
             --region ${AWS_REGION} > beat-task-def.json
 
           NEW_BEAT_TASK_DEF=$(jq --arg IMAGE "778312248988.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
-            '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
+            --arg REGION "${AWS_REGION}" \
+            '.containerDefinitions[0].image = $IMAGE 
+            | .containerDefinitions[0].secrets = (
+                (.containerDefinitions[0].secrets // [])
+                | map(select(.name != "COGNITO_REGION" and .name != "COGNITO_USER_POOL_ID" and .name != "COGNITO_CLIENT_ID"))
+                + [{"name": "COGNITO_REGION", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_REGION::"}]
+                + [{"name": "COGNITO_USER_POOL_ID", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_USER_POOL_ID::"}]
+                + [{"name": "COGNITO_CLIENT_ID", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_CLIENT_ID::"}]
+              )
+            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
             beat-task-def.json)
 
           echo "$NEW_BEAT_TASK_DEF" > new-beat-task-def.json
