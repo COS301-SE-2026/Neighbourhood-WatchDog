@@ -3,13 +3,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 
-from app.auth.authorization import Claims, NeighbourhoodAdminClaims, PropertyAdminClaims, is_property_admin
+from app.auth.authorization import Claims, NeighbourhoodAdminClaims,NeighbourhoodMemberClaims, PropertyAdminClaims, is_property_admin
 from app.core.database import DbSession
 from app.schemas.neighbourhood import (
     CreateNeighbourhoodReq,
     CreateNeighbourhoodRes,
     NeighbourhoodMemberRes,
     NeighbourhoodPropertyRes,
+    NeighbourhoodMapPropertyRes,
     UpdateMemberRoleReq,
     UpdateMemberRoleRes,
     UpdateSecurityAvailabilityRes,
@@ -20,6 +21,7 @@ from app.schemas.neighbourhood import (
 )
 from app.services.neighbourhood_service import (
     create_neighbourhood_handler,
+    get_neighbourhood_map_properties_handler,
     get_neighbourhood_members_handler,
     get_neighbourhood_properties_service,
     update_neighbourhood_member_role_handler,
@@ -77,6 +79,28 @@ async def get_neighbourhood_properties(db: DbSession, claims: Claims ):
     properties = await get_neighbourhood_properties_service(db = db, claims = claims)
 
     return properties
+
+@router.get(
+    "/{neighbourhood_id}/map/properties",
+    response_model=List[NeighbourhoodMapPropertyRes],
+    status_code=200,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "User is not a member of this neighbourhood"},
+    },
+)
+async def get_neighbourhood_map_properties(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: NeighbourhoodMemberClaims,
+):
+    """Return all geocoded and ungeocoded properties in a neighbourhood."""
+
+    return await get_neighbourhood_map_properties_handler(
+        neighbourhood_id=neighbourhood_id,
+        db=db,
+        claims=claims,
+    )
 
 @router.get(
     "/{neighbourhood_id}/members",

@@ -8,7 +8,9 @@ from app.core.database import Base
 class AlertStatus(str, Enum):
     OPEN = "OPEN"
     ACKNOWLEDGED = "ACKNOWLEDGED"
+    CONFIRMED = "CONFIRMED"
     RESOLVED = "RESOLVED"
+    DISMISSED = "DISMISSED"
 
 class DetectionType(str, Enum):
 	HUMAN_PRESENCE = "HUMAN_PRESENCE"
@@ -16,6 +18,8 @@ class DetectionType(str, Enum):
 	PERIMETER_SCAN = "PERIMETER_SCAN"
 	WEAPON_DETECTED = "WEAPON_DETECTED"
 	FALL_DETECTED = "FALL_DETECTED"
+
+USER_ID_FOREIGN_KEY = "users.id"
 
 class Alert(Base):
     __tablename__ = "alert"
@@ -31,7 +35,11 @@ class Alert(Base):
     clip_s3_key = Column(String, nullable=True)
     clip_expires_at = Column(DateTime(timezone=True), nullable=True)
     status = Column(String, nullable=False, server_default="OPEN")
-    resolved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
+    acknowledged_by = Column(UUID(as_uuid=True), ForeignKey(USER_ID_FOREIGN_KEY), nullable=True)
+    acknowledged_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    confirmed_by = Column(UUID(as_uuid=True), ForeignKey(USER_ID_FOREIGN_KEY), nullable=True)
+    confirmed_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    resolved_by = Column(UUID(as_uuid=True), ForeignKey(USER_ID_FOREIGN_KEY), nullable=True, index=True)
     resolved_at = Column(TIMESTAMP(timezone=True), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
@@ -41,6 +49,36 @@ class Alert(Base):
     tracking_subject = relationship("TrackingSubject", back_populates="alert", uselist=False, cascade="all, delete-orphan")
 
     __table_args__ = (
+        CheckConstraint(
+            "status IN ("
+            "'OPEN', "
+            "'ACKNOWLEDGED', "
+            "'CONFIRMED', "
+            "'RESOLVED', "
+            "'DISMISSED'"
+            ")",
+            name="ck_alert_status",
+        ),
+        CheckConstraint(
+            "("
+            "acknowledged_by IS NULL "
+            "AND acknowledged_at IS NULL"
+            ") OR ("
+            "acknowledged_by IS NOT NULL "
+            "AND acknowledged_at IS NOT NULL"
+            ")",
+            name="ck_alert_acknowledged_fields_pair",
+        ),
+        CheckConstraint(
+            "("
+            "confirmed_by IS NULL "
+            "AND confirmed_at IS NULL"
+            ") OR ("
+            "confirmed_by IS NOT NULL "
+            "AND confirmed_at IS NOT NULL"
+            ")",
+            name="ck_alert_confirmed_fields_pair",
+        ),
         CheckConstraint(
             "(status = 'RESOLVED' AND resolved_by IS NOT NULL AND resolved_at IS NOT NULL) "
             "OR status != 'RESOLVED'",

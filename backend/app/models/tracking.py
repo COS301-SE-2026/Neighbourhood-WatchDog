@@ -51,6 +51,9 @@ class TrackingSighting(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=text("now()"))
     tracking_subject = relationship("TrackingSubject", back_populates="sightings")
 
+    clip_s3_key = Column(String(512), nullable=True)
+    clip_expires_at = Column(DateTime(timezone=True), nullable=True)
+
 
     camera = relationship("Camera")
 

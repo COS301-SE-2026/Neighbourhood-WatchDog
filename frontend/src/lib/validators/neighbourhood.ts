@@ -28,6 +28,21 @@ export const NeighbourPropertychema = z.object({
   neighbourhood_name: z.string().optional(),
 })
 
+export const NeighbourhoodMapPropertySchema =
+  z.object({
+    id: z.string(),
+    address: z.string(),
+    property_type: z.enum([
+      "PUBLIC",
+      "PRIVATE",
+    ]),
+    latitude: z.number().finite().min(-90).max(90).nullable(),
+    longitude: z.number().finite().min(-180).max(180).nullable(),
+  });
+
+export const NeighbourhoodMapPropertiesResSchema =
+  z.array(NeighbourhoodMapPropertySchema);
+
 export const NeighbourPropertiesResSchema = z.array(NeighbourPropertychema)
 
 export const NeighbourhoodMemberResSchema = z.object({
@@ -107,6 +122,8 @@ export type CreateNeighbourhoodReq = z.infer<typeof CreateNeighbourhoodReqSchema
 export type NeighbourhoodRes = z.infer<typeof NeighbourhoodResSchema>;
 export type CreateNeighbourhoodRes = z.infer<typeof CreateNeighbourhoodResSchema>;
 export type NeighbourPropertiesRes = z.infer<typeof NeighbourPropertiesResSchema>;
+export type NeighbourhoodMapProperty = z.infer<typeof NeighbourhoodMapPropertySchema>;
+export type NeighbourhoodMapPropertiesRes = z.infer<typeof NeighbourhoodMapPropertiesResSchema>;
 export type NeighbourhoodMemberRes = z.infer<typeof NeighbourhoodMemberResSchema>;
 export type NeighbourhoodMembersRes = z.infer<typeof NeighbourhoodMembersResSchema>;
 export type UpdateMemberRoleReq = z.infer<typeof UpdateMemberRoleReqSchema>;

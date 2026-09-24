@@ -90,13 +90,13 @@ export function AlertMetrics({
         <Card className="p-4 bg-card border">
           <p className="text-xs text-muted-foreground mb-1">Pending</p>
           <p className="text-2xl font-bold text-brand-caution">
-            {loading ? "—" : (metrics?.pending_count ?? 0)}
+            {loading ? "-" : (metrics?.pending_count ?? 0)}
           </p>
         </Card>
         <Card className="p-4 bg-card border">
           <p className="text-xs text-muted-foreground mb-1">Acknowledged</p>
           <p className="text-2xl font-bold text-brand-green">
-            {loading ? "—" : (metrics?.acknowledged_count ?? 0)}
+            {loading ? "-" : (metrics?.acknowledged_count ?? 0)}
           </p>
         </Card>
       </div>
