@@ -270,7 +270,7 @@ async def register_push_device_handler(
     device = result.scalar_one_or_none()
 
     if device is None:
-        device = PushDevice(user_id, device_token=device_token)
+        device = PushDevice(user_id=user_id, device_token=device_token)
         db.add(device)
     else:
         device.user_id = user_id
