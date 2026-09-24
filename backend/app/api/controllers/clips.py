@@ -176,7 +176,7 @@ async def get_tracking_sighting_clip_url(sighting_id: UUID, db: DbSession, claim
                 "Bucket": S3_BUCKET,
                 "Key": sighting.clip_s3_key
             },
-            ExpiresIn=PRESIGN_TTL,
+            ExpiresIn=PRESIGN_TTL
         )
     except (BotoCoreError, ClientError) as exc:
         raise HTTPException(
@@ -187,7 +187,7 @@ async def get_tracking_sighting_clip_url(sighting_id: UUID, db: DbSession, claim
     return {
         "url": url,
         "expires_in": PRESIGN_TTL
-        
+
     }
 
 

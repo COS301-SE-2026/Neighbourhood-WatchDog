@@ -23,6 +23,14 @@ import keyring
 import boto3
 from pathlib import Path
 from runtime.paths import get_resource_dir
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class IncidentClipTarget:
+    alert_id: str
+    sighting_id: str | None
+    clip_owner: str #clip owner will be alert/sighting/none
 
 RESOURCE_DIR = get_resource_dir()
 
@@ -327,7 +335,7 @@ def _match_tracking_subject(camera: CameraSpec, appearance_embedding: list[float
 
 
 
-def _record_tracking_sighting(camera: CameraSpec, local_track_id: int, observed_at: str, tracking_subject_id: str, match_confidence: float, api_key: str) -> str | None:
+def _record_tracking_sighting(camera: CameraSpec, local_track_id: int, observed_at: str, tracking_subject_id: str, match_confidence: float, api_key: str) -> IncidentClipTarget | None:    
     """
     Persist a validated cross-camera sighting.
 
@@ -357,22 +365,19 @@ def _record_tracking_sighting(camera: CameraSpec, local_track_id: int, observed_
 
         response_data = response.json()
         sighting_data = response_data.get("data") or {}
+
         alert_id = sighting_data.get("alert_id")
+        sighting_id = sighting_data.get("sighting_id")
 
-        if not alert_id:
-            raise RuntimeError("Tracking sighting endpoint returned 2xx without alert_id")
+        if not alert_id or not sighting_id:
+            raise RuntimeError("Tracking sighting endpoint returned 2xx without alert_id and sighting_id")
 
-        logger.info(
-            "Recorded tracking sighting: alert=%s subject=%s camera=%s "
-            "confidence=%.4f",
-            alert_id,
-            tracking_subject_id,
-            camera.id,
-            match_confidence
+        return IncidentClipTarget(
+            alert_id=str(alert_id),
+            sighting_id=str(sighting_id),
+            clip_owner="sighting"
 
         )
-
-        return str(alert_id)
 
     except httpx.HTTPStatusError as error:
         logger.exception(
@@ -406,7 +411,7 @@ def _record_tracking_sighting(camera: CameraSpec, local_track_id: int, observed_
         return None
 
 
-def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: float, local_track_id: int, appearance_embedding: list[float] | None = None) -> str | None:
+def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: float, local_track_id: int, appearance_embedding: list[float] | None = None) -> IncidentClipTarget | None:
     """
     Match a detection to an existing incident before creating a new alert.
 
@@ -488,22 +493,38 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
 
         response.raise_for_status()
 
-        alert_id = response.json().get("alert_id")
+        response_data = response.json()
+
+        alert_id = response_data.get("alert_id")
+        sighting_id = response_data.get("sighting_id")
+        is_new_alert = response_data.get("is_new_alert", True)
 
         if not alert_id:
-            raise RuntimeError(f"Weapon alert API returned 2xx but no alert_id: {response.text}")
+            raise RuntimeError(
+                f"Weapon alert API returned 2xx but no alert_id: "
+                f"{response.text}"
+            )
 
-        logger.info(
-            "Created weapon alert %s for camera %s (%s, %.2f)",
-            alert_id,
-            camera.id,
-            weapon_label,
-            confidence
+        if is_new_alert:
+            return IncidentClipTarget(
+                alert_id=str(alert_id),
+                sighting_id=str(sighting_id)
+                if sighting_id
+                else None,
+                clip_owner="alert"
+
+            )
+
+        #backend reused an existing same-camera incident
+        #  don't upload another clip to the existing sighting
+        return IncidentClipTarget(
+            alert_id=str(alert_id),
+            sighting_id=str(sighting_id)
+            if sighting_id
+            else None,
+            clip_owner="none"
 
         )
-        
-
-        return str(alert_id)
 
     except httpx.HTTPStatusError as error:
         logger.exception(
@@ -553,27 +574,30 @@ def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer
 
         _clips_cooldowns[cooldown_key] = now
 
-    alert_id = _create_weapon_alert(
+    target = _create_weapon_alert(
         camera=camera,
         weapon_label=label,
         confidence=confidence,
         local_track_id=local_track_id,
         appearance_embedding=appearance_embedding
 
-
     )
 
-    if alert_id is None:
+    if target is None:
         with _cooldown_lock:
             if _clips_cooldowns.get(cooldown_key) == now:
                 _clips_cooldowns.pop(cooldown_key, None)
 
         return
 
+    if target.clip_owner == "none":
+        logger.info("Existing incident reused; no additional clip uploaded: alert=%s", target.alert_id)
+        return
+
     threading.Thread(
         target=_save_weapon_clip,
         args=(
-            alert_id,
+            target,
             camera,
             frame_buffer,
             trigger_sequence,
@@ -581,15 +605,13 @@ def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer
         ),
         name=f"watchdog-clip-{camera.id}-{label}",
         daemon=True
-
-
     ).start()
+
 
 
     logger.info(
         "Scheduled annotated footage capture for weapon alert %s on camera %s: "
         "label=%s, confidence=%.2f, trigger_sequence=%s",
-        alert_id,
         camera.id,
         label,
         confidence,
@@ -597,7 +619,7 @@ def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer
         
     )
 
-def _save_weapon_clip(alert_id: str, camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, stop_event: threading.Event) -> None:
+def _save_weapon_clip(target: IncidentClipTarget, camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, stop_event: threading.Event) -> None:    
     """
     Build a clip from frames already annotated by the detection loop.
 
@@ -629,7 +651,7 @@ def _save_weapon_clip(alert_id: str, camera: CameraSpec, frame_buffer: Annotated
     if not all_frames:
         logger.warning(
             "No annotated frames available for footage of alert %s / camera %s",
-            alert_id,
+            target.alert_id,
             camera.id
         )
         return
@@ -645,7 +667,7 @@ def _save_weapon_clip(alert_id: str, camera: CameraSpec, frame_buffer: Annotated
     if not all_frames:
         logger.warning(
             "No consistently sized frames available for alert %s / camera %s",
-            alert_id,
+            target.alert_id,
             camera.id
         )
         return
@@ -699,9 +721,24 @@ def _save_weapon_clip(alert_id: str, camera: CameraSpec, frame_buffer: Annotated
             text=True,
         )
 
+        
+        if target.clip_owner == "sighting":
+            if not target.sighting_id:
+                raise RuntimeError("Sighting clip target has no sighting_id")
+
+            upload_url = (
+                f"{BACKEND_URL}/internal/tracking/sightings/"
+                f"{target.sighting_id}/clip"
+            )
+        else:
+            upload_url = (
+                f"{BACKEND_URL}/internal/alerts/"
+                f"{target.alert_id}/clip"
+            )
+
         with open(h264_path, "rb") as clip_file:
             upload_response = httpx.post(
-                f"{BACKEND_URL}/internal/alerts/{alert_id}/clip",
+                upload_url,
                 headers=headers,
                 files={
                     "clip": (
@@ -713,16 +750,15 @@ def _save_weapon_clip(alert_id: str, camera: CameraSpec, frame_buffer: Annotated
                 timeout=30.0
             )
 
-
         upload_response.raise_for_status()
 
-        logger.info("Annotated clip uploaded through backend and linked to alert %s", alert_id)
+        logger.info("Annotated clip uploaded through backend and linked to alert %s", target.alert_id)
 
     except Exception:
         logger.exception(
             "Annotated footage capture/backend upload failed "
             "for alert %s / camera %s",
-            alert_id,
+            target.alert_id,
             camera.id 
             
         )
