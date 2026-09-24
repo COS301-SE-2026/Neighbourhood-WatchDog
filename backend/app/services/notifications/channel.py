@@ -5,7 +5,7 @@ from app.core.database import DbSession
 from app.models.user import User
 
 class NotificationChannel(ABC):
-    """The abstract parent class for the notifcation channels"""
+    """The abstract parent class for the notifcation channels"""        
     @abstractmethod
     async def send(
         self,
