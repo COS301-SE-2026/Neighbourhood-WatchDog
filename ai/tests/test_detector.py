@@ -68,7 +68,7 @@ class LatestFrameCapture:
                 with self._lock:
                     self._frame = frame
             else:
-                print("Frame read failed — reconnecting")
+                print("Frame read failed - reconnecting")
                 cap.release()
                 cap = None
                 time.sleep(1)
@@ -80,7 +80,7 @@ class LatestFrameCapture:
         new_cap = cv2.VideoCapture(self.url, cv2.CAP_FFMPEG)
         new_cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         if not new_cap.isOpened():
-            print("Failed to connect — retrying in 3s")
+            print("Failed to connect - retrying in 3s")
             time.sleep(3)
             return None
         print("Stream connected")
@@ -173,7 +173,7 @@ def main():
     print("Waiting for first frame…")
     while capture.get() is None:
         time.sleep(0.1)
-    print("Stream ready — detection starting")
+    print("Stream ready - detection starting")
 
     unique_ids: set = set()
     alerted_ids: set = set()

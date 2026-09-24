@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { apiFetch, ApiError } from "@/lib/api/alert";
 
 export type ClipStatus = "idle"| "loading" | "ready"  | "unavailable" | "expired"  | "forbidden" | "error" | "processing";
+export type ClipKind = "alert" | "tracking-sighting";
 
 interface ClipState {
     url: string | null;
@@ -73,9 +74,8 @@ const handleApiError = (
     }
 };
 
-export function useClip(
-    alertId: string | null,
-): UseClipResult {
+
+export function useClip(clipId: string | null, clipKind: ClipKind = "alert"): UseClipResult {
     const [state, setState] = useState<ClipState>({
         url: null,
         status: "idle",
@@ -84,7 +84,7 @@ export function useClip(
 
     const requestClip = useCallback(
         async (): Promise<ClipRequestResult> => {
-            if (!alertId) {
+            if (!clipId) {
                 return "stop";
             }
 
@@ -98,10 +98,9 @@ export function useClip(
             }));
 
             try {
-                const data = await apiFetch<{
-                    url: string;
-                    expires_in: number;
-                }>(`/api/clips/${alertId}`);
+                const endpoint = clipKind === "tracking-sighting" ? `/api/clips/tracking/sightings/${clipId}/clip` : `/api/clips/${clipId}`;
+
+                const data = await apiFetch<{url: string; expires_in: number;}>(endpoint);
 
                 setState({
                     url: data.url,
@@ -125,7 +124,7 @@ export function useClip(
                 return setGenericError(setState);
             }
         },
-        [alertId],
+        [clipId, clipKind]
     );
 
     const loadClip = useCallback(async () => {
@@ -133,7 +132,7 @@ export function useClip(
     }, [requestClip]);
 
     useEffect(() => {
-        if (!alertId) {
+        if (!clipId) {
             return;
         }
 
@@ -175,7 +174,7 @@ export function useClip(
                 clearTimeout(timeoutId);
             }
         };
-    }, [alertId, requestClip]);
+    }, [clipId, clipKind, requestClip]);
 
     return { ...state, loadClip };
 }

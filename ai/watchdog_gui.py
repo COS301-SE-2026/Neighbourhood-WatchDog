@@ -894,7 +894,7 @@ class WatchDogAgentApp(ttk.Frame):
         if model_is_valid(model):
             self.emit(
                 "log",
-                f"{model['name']} already exists and passed size validation — skipping.",
+                f"{model['name']} already exists and passed size validation - skipping.",
             )
             self.emit("progress", progress_start + progress_span)
             return

@@ -14,7 +14,7 @@ Version 1.0 · 2026
 1. Overview
 2. Architecture Overview
 3. Prerequisites
-4. Infrastructure — AWS Setup
+4. Infrastructure - AWS Setup
 5. Repository and Environment Setup
 6. Services Reference
 7. Deployment Steps
@@ -64,7 +64,7 @@ docker --version
 docker compose version
 ```
 
-## 4. Infrastructure — AWS Setup
+## 4. Infrastructure - AWS Setup
 ### EC2 Instance
 The system runs in `af-south-1 (Cape Town)`.
 

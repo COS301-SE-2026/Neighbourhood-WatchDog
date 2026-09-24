@@ -2,15 +2,15 @@
 
 
 import { Film, Loader2, Ban, Lock, VideoOff } from "lucide-react";
-import { useClip  } from "@/hooks/use-clip";
+import { useClip, type ClipKind } from "@/hooks/use-clip";
 
 
 interface AlertFootagePlayerProps {
-    readonly alertId: string;
-    readonly timestamp: string;
+  readonly alertId: string;
+  readonly timestamp: string;
+  readonly clipKind?: ClipKind;
 
 }
-
 /**
  * 
  * inline video player for detection events
@@ -18,10 +18,10 @@ interface AlertFootagePlayerProps {
  *
  */
 
-export function AlertFootagePlayer({ alertId, timestamp }: AlertFootagePlayerProps) {
+export function AlertFootagePlayer({ alertId, timestamp, clipKind = "alert" }: AlertFootagePlayerProps) {
     // const videoRef = useRef<HTMLVideoElement>(null);
 
-    const { url, status, errorMessage, loadClip } = useClip(alertId);
+    const { url, status, errorMessage } = useClip(alertId, clipKind);
 
     const formattedTs = (() => {
         try {

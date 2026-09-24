@@ -10,6 +10,7 @@ from sqlalchemy import select
 from app.core.celery_app import celery
 from app.core.database import WorkerSessionLocal
 from app.models.alert import Alert
+from app.models.tracking import TrackingSighting
 from app.services.alert_service import CLIP_RETENTION_DAYS, S3_BUCKET_NAME, _clip_s3_key, _s3_client
 
 
@@ -69,3 +70,70 @@ async def _upload_and_link(alert_id: str, clip_b64: str, content_type: str) -> N
         await db.commit()
 
         logger.info("Uploaded and linked clip for alert %s: s3://%s/%s", alert_id, S3_BUCKET_NAME, s3_key)
+
+
+def _tracking_sighting_clip_s3_key(sighting: TrackingSighting, timestamp: datetime) -> str:
+    return (
+        f"clips/{sighting.camera_id}/{timestamp:%Y/%m/%d}/"
+        f"tracking_{timestamp:%Y%m%dT%H%M%SZ}_{sighting.id}.mp4"
+    )
+
+
+@celery.task(bind=True, max_retries=5, acks_late=True)
+def upload_tracking_sighting_clip_task(self, sighting_id: str, clip_b64: str, content_type: str) -> None:
+    try:
+        asyncio.run(
+            _upload_tracking_sighting_clip(
+                sighting_id,
+                clip_b64,
+                content_type
+            )
+        )
+
+    except (BotoCoreError, ClientError) as exc:
+        logger.warning("Transient S3 error for tracking sighting %s", sighting_id)
+        raise self.retry(exc=exc, countdown=min(2 ** self.request.retries, 60))
+    except Exception:
+        logger.exception("Permanent failure uploading clip for tracking sighting %s", sighting_id)
+        raise
+
+async def _upload_tracking_sighting_clip(sighting_id: str, clip_b64: str, content_type: str) -> None:
+
+    clip_bytes = base64.b64decode(clip_b64)
+
+    if not clip_bytes or len(clip_bytes) > MAX_CLIP_SIZE_BYTES:
+        logger.error("Invalid clip size for tracking sighting %s", sighting_id)
+        return
+
+    async with WorkerSessionLocal() as db:
+        result = await db.execute(
+            select(TrackingSighting)
+            .where(TrackingSighting.id == UUID(sighting_id))
+        )
+        sighting = result.scalar_one_or_none()
+
+        if sighting is None:
+            logger.error("Tracking sighting %s not found", sighting_id)
+            return
+
+        timestamp = datetime.now(timezone.utc)
+        s3_key = _tracking_sighting_clip_s3_key(sighting, timestamp)
+
+        expires_at = timestamp + timedelta(days=CLIP_RETENTION_DAYS)
+
+        await asyncio.to_thread(
+            _s3_client().put_object,
+            Bucket=S3_BUCKET_NAME,
+            Key=s3_key,
+            Body=clip_bytes,
+            ContentType=content_type or "video/mp4",
+            ServerSideEncryption="AES256"
+
+        )
+
+        sighting.clip_s3_key = s3_key
+        sighting.clip_expires_at = expires_at
+
+        await db.commit()
+
+        logger.info("Uploaded and linked clip for tracking sighting %s", sighting_id)

@@ -294,6 +294,24 @@ function createAlertsWebSocket({url, wsRef, mountedRef, isSecurityOfficer, seenE
 }
 
 
+function groupAlertsByIncident(alerts: Alert[]): Alert[] {
+  const seenSubjects = new Set<string>();
+
+  return alerts.filter((alert) => {
+    if (!alert.tracking_subject_id) {
+      return true; //historical/untracked alerts remain separate
+    }
+
+    if (seenSubjects.has(alert.tracking_subject_id)) {
+      return false;
+    }
+
+    seenSubjects.add(alert.tracking_subject_id);
+    return true;
+  });
+}
+
+
 export default function AlertsPage({ neighbourhoodId }: Props) {
 
   const {
@@ -452,14 +470,24 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
     [alerts, selectedSeverities],
   );
 
+  const groupedAlerts = useMemo(
+    () => groupAlertsByIncident(filtered),
+    [filtered],
+  );
+
   const hasActiveFilters =
     selectedSeverities.size < ALL_SEVERITIES.length ||
     selectedStatus !== null ||
     (activeTab === "history" && (historyStartDate !== "" || historyEndDate !== ""));
 
-  const newCount = alerts.filter((alert) => alert.status === "NEW").length;
-  const criticalCount = alerts.filter(
-    (alert) => getSeverity(alert.detection_type) === "CRITICAL" && alert.status === "NEW",
+  const newCount = groupedAlerts.filter(
+    (alert) => alert.status === "NEW",
+  ).length;
+
+  const criticalCount = groupedAlerts.filter(
+    (alert) =>
+      getSeverity(alert.detection_type) === "CRITICAL" &&
+      alert.status === "NEW",
   ).length;
 
   if (userContextLoading) {
@@ -636,11 +664,11 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
                 </div>
               ) : error ? (
                 <ErrorState message={error} onRetry={() => setFetchTick((tick) => tick + 1)} />
-              ) : filtered.length === 0 ? (
+              ) : groupedAlerts.length === 0 ? (
                 <EmptyState />
               ) : (
                 <div className="space-y-3">
-                  {filtered.map((alert) => (
+                  {groupedAlerts.map((alert) => (
                     <AlertCard
                       key={alert.id}
                       alert={alert}

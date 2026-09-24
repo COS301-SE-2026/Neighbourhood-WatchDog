@@ -9,7 +9,7 @@ from app.auth.jwt import get_authenticated_claims
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
 
-        # BaseHTTPMiddleware cannot handle WebSocket upgrades — pass them straight through.
+        # BaseHTTPMiddleware cannot handle WebSocket upgrades - pass them straight through.
         # Without this, the middleware kills the WS handshake and clients get code 1006.
         if request.headers.get("upgrade", "").lower() == "websocket":
             return await call_next(request)
