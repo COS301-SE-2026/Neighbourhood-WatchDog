@@ -14,4 +14,5 @@ class NotificationChannel(ABC):
         recipients: list[User],
         context: dict,
     ) -> None:
-        
+        pass
+
