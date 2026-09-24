@@ -207,7 +207,10 @@ class TestAcknowledgeAlert:
 
         assert result.status == "ACKNOWLEDGED"
         assert alert.status == "ACKNOWLEDGED"
-        assert alert.resolved_by == self.user_id
+        assert alert.acknowledged_by == self.user_id
+        assert alert.acknowledged_at is not None
+        assert alert.resolved_by is None
+        assert alert.resolved_at is None
 
         self.mock_db.commit.assert_awaited_once()
         mock_audit.assert_awaited_once()
@@ -216,7 +219,7 @@ class TestAcknowledgeAlert:
 
     @pytest.mark.asyncio
     async def test_acknowledge_records_timestamps(self):
-        """Acknowledging an alert sets resolved_at and resolved_by."""
+        """Acknowledging an alert sets acknowledged_at and acknowledged_by."""
         alert = self._make_alert(status="OPEN")
 
         self.mock_db.execute.side_effect = self._make_alert_context(alert)
@@ -239,8 +242,10 @@ class TestAcknowledgeAlert:
             )
 
         assert alert.status == "ACKNOWLEDGED"
-        assert alert.resolved_at is not None
-        assert alert.resolved_by == self.user_id
+        assert alert.acknowledged_at is not None
+        assert alert.acknowledged_by == self.user_id
+        assert alert.resolved_at is None
+        assert alert.resolved_by is None
 
 
     @pytest.mark.asyncio
@@ -272,7 +277,8 @@ class TestAcknowledgeAlert:
 
         assert result.status == "ACKNOWLEDGED"
         assert alert.status == "ACKNOWLEDGED"
-        assert alert.resolved_by == self.user_id
+        assert alert.acknowledged_by == self.user_id
+        assert alert.acknowledged_at is not None
         self.mock_db.commit.assert_awaited_once()
 
     @pytest.mark.asyncio
@@ -372,7 +378,8 @@ class TestAcknowledgeAlert:
 
         assert result.status == "ACKNOWLEDGED"
         assert alert.status == "ACKNOWLEDGED"
-        assert alert.resolved_by == self.user_id
+        assert alert.acknowledged_by == self.user_id
+        assert alert.acknowledged_at is not None
 
         self.mock_db.commit.assert_awaited_once()
 
@@ -1235,7 +1242,7 @@ class TestCriticalAlertMap:
             "alert.detection_type IN"
             in query_text
         )
-        assert "alert.status =" in query_text
+        assert "alert.status IN" in query_text
 
     @pytest.mark.asyncio
     async def test_get_unlocated_alerts_happy_path(

@@ -80,6 +80,11 @@ CRITICAL_DETECTION_TYPES = {
     DetectionType.WEAPON_DETECTED,
     DetectionType.FALL_DETECTED,
 }
+LIVE_CRITICAL_ALERT_STATUSES = (
+    AlertStatus.OPEN.value,
+    AlertStatus.ACKNOWLEDGED.value,
+    AlertStatus.CONFIRMED.value
+)
 
 def _critical_neighbourhood_alerts_stmt(
     neighbourhood_id: UUID,
@@ -99,7 +104,7 @@ def _critical_neighbourhood_alerts_stmt(
         .where(
             Property.neighbourhood_id == neighbourhood_id,
             Alert.detection_type.in_(CRITICAL_DETECTION_TYPES),
-            Alert.status == AlertStatus.OPEN.value
+            Alert.status.in_(LIVE_CRITICAL_ALERT_STATUSES)
         )
     )
 
@@ -477,9 +482,9 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
             ),
         }
 
-        alert.status = "ACKNOWLEDGED"
-        alert.resolved_at = datetime.now(timezone.utc)
-        alert.resolved_by = resolver_id
+        alert.status = AlertStatus.ACKNOWLEDGED.value
+        alert.acknowledged_at = datetime.now(timezone.utc)
+        alert.acknowledged_by = resolver_id
 
         await create_audit_log_item(
             db=db,
@@ -490,10 +495,16 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
             old_values=old_values,
             new_values={
                 "status": alert.status,
-                "resolved_by": (
-                    str(alert.resolved_by) if alert.resolved_by else None
+                "acknowledged_by": (
+                    str(alert.acknowledged_by)
+                    if alert.acknowledged_by
+                    else None
                 ),
-                "resolved_at": alert.resolved_at.isoformat(),
+                "acknowledged_at": (
+                    alert.acknowledged_at.isoformat()
+                    if alert.acknowledged_at
+                    else None
+                ),
             },
         )
 

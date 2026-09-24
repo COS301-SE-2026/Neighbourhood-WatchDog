@@ -33,6 +33,13 @@ class NeighbourhoodPropertyRes(BaseModel):
     neighbourhood_id: UUID | None = None
     neighbourhood_name: str | None = None
 
+class NeighbourhoodMapPropertyRes(BaseModel):
+    id: UUID
+    address: NonEmptyString
+    property_type: Literal["PRIVATE", "PUBLIC"]
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+
 
 class UpdateMemberRoleReq(BaseModel):
     role: NeighbourhoodRole

@@ -41,7 +41,7 @@ import {
 } from "react";
 
 const ALL_SEVERITIES: AlertSeverity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
-const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "RESOLVED"];
+const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "CONFIRMED", "RESOLVED", "RESOLVED"];
 const CURRENT_CUTOFF = 24 * 60 * 60 * 1000; // 24h
 
 const SEVERITY_LABELS: Record<AlertSeverity, string> = {
@@ -54,7 +54,9 @@ const SEVERITY_LABELS: Record<AlertSeverity, string> = {
 const STATUS_LABELS: Record<AlertStatus, string> = {
   NEW: "New",
   ACKNOWLEDGED: "Acknowledged",
+  CONFIRMED: "Confirmed",
   RESOLVED: "Resolved",
+  DISMISSED: "Dismissed"
 };
 
 function EmptyState() {
