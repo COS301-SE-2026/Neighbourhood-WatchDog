@@ -1,0 +1,14 @@
+backend/app/models/alert.py
+  h_3555f7510a5ca8 22-23,38,40,42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3cace61517716c9f05ae88c2fbe8240a5cbd2a7f",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
