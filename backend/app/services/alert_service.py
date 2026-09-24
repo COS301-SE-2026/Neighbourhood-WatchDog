@@ -334,11 +334,9 @@ def _build_alert_res(alert: Alert) -> AlertRes:
     if not isinstance(property_address, str):
         property_address = None
 
-    tracking_subject_id=(
-        tracking_subject.id
-        if tracking_subject is not None
-        else None
-    )
+    tracking_subject_id = getattr(tracking_subject, "id", None)
+    if not isinstance(tracking_subject_id, UUID):
+        tracking_subject_id = None
 
     property_latitude = _safe_optional_coordinate(getattr(property_obj, "latitude", None))
     property_longitude = _safe_optional_coordinate(getattr(property_obj, "longitude", None))
