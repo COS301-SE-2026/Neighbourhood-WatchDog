@@ -1068,6 +1068,7 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
         db,
         make_edge_credential(),
     )
+    mock_send_push.delay.assert_called_once()
 
     created_alert = db.add.call_args_list[0].args[0]
 

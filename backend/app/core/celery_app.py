@@ -4,6 +4,9 @@ from celery import Celery
 from celery.signals import worker_process_init
 
 from app.core.database import worker_engine
+from app.core.firebase import init_firebase
+
+init_firebase()
 
 @worker_process_init.connect
 def reset_engine_after_fork(**kwargs):

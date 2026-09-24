@@ -11,7 +11,9 @@ from app.models.neighbourhood_user import NeighbourhoodUser
 from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.user import User, UserRole
-from app.schemas.user import CurrentUserContextRes, CurrentUserNeighbourhood, CurrentUserProperty, CurrentUserSummary, GetUserResSchema, UpdateUserSettingsReq, UserSettingsResSchema
+from app.models.push_device import PushDevice
+from app.schemas.user import CurrentUserContextRes, CurrentUserNeighbourhood, CurrentUserProperty, CurrentUserSummary, GetUserResSchema, UpdateUserSettingsReq, UserSettingsResSchema, RegisterPushDeviceRes
+from app.services.alert_service import NOT_AUTHENTICATED
 
 logger = logging.getLogger(__name__)
 
@@ -250,4 +252,35 @@ async def update_current_user_settings_handler(data: UpdateUserSettingsReq, clai
         email=user.email,
         phone_number=user.phone_number,
         system_role=user.system_role,
+    )
+
+
+async def register_push_device_handler(
+    device_token: str,
+    db: DbSession,
+    claims: dict,
+) -> RegisterPushDeviceRes:
+    if not claims:
+        logger.error("register_push_device_handler: no claims provided")
+        raise HTTPException(status_code=401, detail=NOT_AUTHENTICATED)
+
+    user_id = UUID(claims["id"])
+
+    stmt = select(PushDevice).where(PushDevice.device_token == device_token)
+    result = await db.execute(stmt)
+    device = result.scalar_one_or_none()
+
+    if device is None:
+        device = PushDevice(user_id=user_id, device_token=device_token)
+        db.add(device)
+        logger.info("register_push_device_handler: registered new device for user_id=%s", user_id)
+    else:
+        device.user_id = user_id
+        logger.info("register_push_device_handler: re-pointed existing device to user_id=%s", user_id)
+
+    await db.commit()
+
+    return RegisterPushDeviceRes(
+        status=200, 
+        message="Device registered",
     )
