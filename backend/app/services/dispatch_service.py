@@ -427,7 +427,7 @@ async def expire_stale_dispatchs(db: DbSession) -> int:
         select(Dispatch).where(
             Dispatch.status == DispatchStatus.NOTIFIED,
             Dispatch.notified_at < cutoff,
-        )
+        ).with_for_update(skip_locked=True)
     )
 
     expired = list(result.scalars().all())
