@@ -373,15 +373,19 @@ async def _promote_officer(db: DbSession, alert_id: UUID) -> None:
 
     if officer is None:
         if not any(r.status == DispatchStatus.NO_CANDIDATE for r in rows):
-            db.add(
-                Dispatch(
-                    alert_id=alert_id,
-                    neighbourhood_id=rows[0].neighbourhood_id,
-                    status=DispatchStatus.NO_CANDIDATE,
-                )
+            no_candidate = Dispatch(
+                alert_id=alert_id,
+                neighbourhood_id=rows[0].neighbourhood_id,
+                status=DispatchStatus.NO_CANDIDATE,
             )
+            db.add(no_candidate)
             await db.commit()
-        logger.info("dispatch: no remaining candidates to notify for alert %s", alert_id)
+            await db.refresh(no_candidate)
+            logger.info(
+                "dispatch: no remaining candidates to notify for alert %s, escalating to neighbourhood_admin", 
+                alert_id,
+            )
+            await _escalate_dispatch(db, no_candidate, reason="no_candidates")
         return
 
     await _notify_officer(db, officer)
