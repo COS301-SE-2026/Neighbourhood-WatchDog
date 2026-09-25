@@ -1124,3 +1124,12 @@ class TestPromoteOfficer:
         assert no_candidate.alert_id == ALERT_ID
         assert no_candidate.neighbourhood_id == NEIGHBOURHOOD_ID
         run.escalate.assert_awaited_once_with(run.db, no_candidate, reason="no_available_officer")
+
+    @pytest.mark.asyncio
+    async def test_no_duplicate_candidate_row_when_no_officers(self):
+        declined = make_dispatch_row(DispatchStatus.DECLINED, officer_id=uuid4(), rank=1)
+        no_candidate = make_dispatch_row(DispatchStatus.NO_CANDIDATE, officer_id=uuid4(), rank=None)
+
+        run = await self.promote([declined, no_candidate])
+        run.db.add.assert_not_called()
+        run.escalate.assert_not_awaited()
