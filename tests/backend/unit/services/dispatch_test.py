@@ -1110,3 +1110,17 @@ class TestPromoteOfficer:
         queued = make_dispatch_row(DispatchStatus.QUEUED, officer_id=uuid4(), rank=2)
         run = await self.promote([declined, queued])
         run.notify.assert_awaited_once_with(run.db, queued)
+
+    @pytest.mark.asyncio
+    async def test_no_candidates_escalates(self):
+        declined = make_dispatch_row(DispatchStatus.DECLINED, officer_id=uuid4(), rank=1)
+        expired = make_dispatch_row(DispatchStatus.TIMED_OUT, officer_id=uuid4(), rank=2)
+        run = await self.promote([declined, expired])
+
+        run.notify.assert_not_awaited()
+        run.db.add.assert_called_once()
+        no_candidate = run.db.add.call_args.args[0]
+        assert no_candidate.status == DispatchStatus.NO_CANDIDATE
+        assert no_candidate.alert_id == ALERT_ID
+        assert no_candidate.neighbourhood_id == NEIGHBOURHOOD_ID
+        run.escalate.assert_awaited_once_with(run.db, no_candidate, reason="no_available_officer")
