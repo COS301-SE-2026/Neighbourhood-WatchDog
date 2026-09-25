@@ -1151,3 +1151,25 @@ class TestEscalateDispatch:
         assert row.notified_at is not None
         mock_db.commit.assert_awaited_once()
         mock_db.refresh.assert_awaited_once_with(row)
+
+    @pytest.mark.asyncio
+    async def test_broadcasts_to_admins(self):
+        admin_id = str(uuid4())
+        mock_db, _ = make_mock_db()
+        mock_db.execute = AsyncMock(return_value=make_scalars_result([admin_id]))
+        row = self.make_row()
+
+        with patch("app.services.dispatch_service.broadcast", new=AsyncMock()) as broadcast:
+            await _escalate_dispatch(mock_db, row, reason="no_available_officer")
+
+        params = compiled_params(mock_db.execute.await_args.args[0]).values()
+        assert NeighbourhoodRole.NEIGHBOURHOOD_ADMIN in params
+        assert NeighbourhoodRole.SECURITY_OFFICER not in params
+
+        broadcast.assert_awaited_once()
+        receivers, message = broadcast.await_args.args
+        assert receivers == [admin_id]
+        assert message["event"] == "dispatch.escalated"
+        assert message["payload"]["dispatch_id"] == str(row.id)
+        assert message["payload"]["alert_id"] == str(row.alert_id)
+        assert message["payload"]["reason"] == "no_available_officer"
