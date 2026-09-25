@@ -1103,3 +1103,10 @@ class TestPromoteOfficer:
         
         run.notify.assert_awaited_once_with(run.db, pending)
         run.escalate.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_queued_officer(self):
+        declined = make_dispatch_row(DispatchStatus.DECLINED, officer_id=uuid4(), rank=1)
+        queued = make_dispatch_row(DispatchStatus.QUEUED, officer_id=uuid4(), rank=2)
+        run = await self.promote([declined, queued])
+        run.notify.assert_awaited_once_with(run.db, queued)
