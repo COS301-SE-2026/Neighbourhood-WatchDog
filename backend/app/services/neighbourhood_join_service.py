@@ -1,7 +1,8 @@
-from datetime import datetime, timezone
+import os
 import secrets
 import string
 from uuid import UUID
+from datetime import datetime, timezone
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -18,6 +19,12 @@ from app.models.neighbourhood import Neighbourhood
 from app.models.neighbourhood_join_request import JoinRequestStatus, NeighbourhoodJoinRequest
 from app.models.user import User
 from app.schemas.neighbourhood_join import JoinCodeRes, JoinRequestRes, RegenerateJoinCodeRes
+
+from app.services.notifications.factory import NotificationPolicyFactory
+from app.schemas.notification import EventType
+
+
+FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 async def request_to_join_handler(property_id: UUID, join_code: str, db: DbSession, claims: dict) -> JoinRequestRes:
     """Requesting to join a neighbourhood"""
@@ -93,6 +100,18 @@ async def request_to_join_handler(property_id: UUID, join_code: str, db: DbSessi
             status=JoinRequestStatus.PENDING,
         )
         db.add(join_request)
+
+        prop: Property = property_obj
+        event_context = {
+            "property_address": prop.address,
+            "neighbourhood_name": neighbourhood.name,
+            "neighbourhood_id": neighbourhood.id,
+            "dashboard_url": FRONTEND_URL if FRONTEND_URL is not None else "neighbourhoodwatchdog.co.za",
+        }
+
+        await (NotificationPolicyFactory  
+            .get(EventType.JOIN_REQUEST)
+            .notify(db, event_context))
 
         await db.flush()
 
