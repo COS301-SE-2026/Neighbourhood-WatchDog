@@ -58,7 +58,7 @@ def _plain_body(context: dict) -> str:
             f"Please review footage and confirm the response."
         )
 
-    if event_type in ("WEAPON_DETECTED", "GENERAL_DETECTION", "TRACKING_MATCH"):
+    if event_type == "PROPERTY_INVITE":
         return (
             f"{context['inviter_name']} added you to a property on Neighbourhood WatchDog. \n\n"
             f"Property: {context['property_address']}\n\n"
