@@ -3,6 +3,7 @@ from math import asin, atan2, cos, degrees, radians, sin
 EARTH_RADIUS_METRES = 6_371_000.0
 MAX_CAMERA_ORIGIN_DISTANCE_METRES = 100.0
 MAX_CAMERA_COVERAGE_RANGE_METRES = 200.0
+COVERAGE_ARC_SEGMENTS = 24
 
 
 def haversine_distance_metres(
@@ -65,22 +66,30 @@ def coverage_polygon(
     angle_degrees: float,
     range_metres: float,
 ) -> list[list[float]]:
-    """Build a triangular geographic POV polygon in [latitude, longitude] order."""
-    left_endpoint = destination_point(
+    """Build a geographic POV sector in [latitude, longitude] order."""
+    start_bearing = bearing_degrees - angle_degrees / 2
+
+    arc_points = [
+        destination_point(
+            origin_latitude,
+            origin_longitude,
+            start_bearing
+            + angle_degrees * index / COVERAGE_ARC_SEGMENTS,
+            range_metres,
+        )
+        for index in range(COVERAGE_ARC_SEGMENTS + 1)
+    ]
+
+    origin = [
         origin_latitude,
         origin_longitude,
-        bearing_degrees - angle_degrees / 2,
-        range_metres,
-    )
-    right_endpoint = destination_point(
-        origin_latitude,
-        origin_longitude,
-        bearing_degrees + angle_degrees / 2,
-        range_metres,
-    )
+    ]
 
     return [
-        [origin_latitude, origin_longitude],
-        [left_endpoint[0], left_endpoint[1]],
-        [right_endpoint[0], right_endpoint[1]],
+        origin,
+        *[
+            [latitude, longitude]
+            for latitude, longitude in arc_points
+        ],
+        origin,
     ]
