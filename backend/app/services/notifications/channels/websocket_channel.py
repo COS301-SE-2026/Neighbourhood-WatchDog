@@ -1,5 +1,3 @@
-import logging
-from fastapi import HTTPException
 from uuid import UUID
 
 from app.core.database import DbSession
@@ -8,8 +6,6 @@ from app.models.notification import Notification, NotificationChannelEnum, Notif
 from app.services.notifications.channel import NotificationChannel
 from app.services.notifications.factory import EventType
 from app.websocket.manager import ConnectionManager
-
-logger = logging.getLogger(__name__)
 
 _manager = ConnectionManager()
 
@@ -23,8 +19,7 @@ class WebSocketChannel(NotificationChannel):
     ):
 
         if context["event_type"] in {EventType.PROPERTY_INVITE, EventType.JOIN_REQUEST, EventType.JOIN_REQUEST_RESOLVED }:
-            logger.exception("WebSocketChannel: failed to send websocket for notification id=%s", notification_id if notification_id is not None else "<id is None>")
-            raise HTTPException(500, "Failed to send websocket notification")
+            return
  
         recipient_ids = [str(user.id) for user in recipients]
 
@@ -45,7 +40,7 @@ class WebSocketChannel(NotificationChannel):
             db.add(Notification(
                 alert_id=notification_id,
                 user_id=user.id,
-                channel=NotificationChannelEnum.PUSH,
+                channel=NotificationChannelEnum.WEBSOCKET,
                 status=NotificationStatus.SENT,
                 error_message=None,
             ))

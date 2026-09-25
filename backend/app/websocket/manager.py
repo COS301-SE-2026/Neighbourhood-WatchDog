@@ -25,9 +25,9 @@ class ConnectionManager:
     ) -> None:
         payload = json.dumps(message)
         for key in keys:
-            connections = self._connections.get(key)
+            connections = self._connections.get(key, set())
             dead: set[WebSocket] = set()
-
+            
             for ws in connections:
                 try:
                     await ws.send_text(payload)
