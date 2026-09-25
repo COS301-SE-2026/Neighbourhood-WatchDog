@@ -15,7 +15,6 @@ from app.services.incident_density_grid import CELL_SIZE_METRES
 
 WEB_MERCATOR_RADIUS_METRES = 6_378_137.0
 WEB_MERCATOR_MAX_LATITUDE = 85.05112878
-SECTOR_ARC_SEGMENTS = 36
 
 
 @dataclass(frozen=True)
