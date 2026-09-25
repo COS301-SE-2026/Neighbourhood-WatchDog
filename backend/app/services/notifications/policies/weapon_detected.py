@@ -5,7 +5,7 @@ from app.services.notifications.channels.websocket_channel import WebSocketChann
 from app.services.notifications.channels.push_channel import PushChannel
 from app.services.notifications.channels.whatsapp_channel import WhatsAppChannel
 from app.services.notifications.recipients import (
-    resolve_neighbourhood_officers
+    resolve_neighbourhood_admins_officers_and_property_users
 )
 
 def build_weapon_detected_policy() -> NotificationPolicy:
@@ -15,6 +15,6 @@ def build_weapon_detected_policy() -> NotificationPolicy:
         .with_channel(PushChannel())
         .with_channel(EmailChannel())
         .with_channel(WhatsAppChannel())
-        .with_recipient_resolver(resolve_neighbourhood_officers)
+        .with_recipient_resolver(resolve_neighbourhood_admins_officers_and_property_users)
         .build()
     )

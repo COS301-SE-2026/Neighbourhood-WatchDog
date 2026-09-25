@@ -5,13 +5,13 @@ from app.services.notifications.channels.websocket_channel import WebSocketChann
 from app.services.notifications.channels.push_channel import PushChannel
 from app.services.notifications.channels.whatsapp_channel import WhatsAppChannel
 from app.services.notifications.recipients import (
-    resolve_neighbourhood_officers
+    resolve_neighbourhood_admins_officers_and_property_users
 )
 
 def build_tracking_match_policy() -> NotificationPolicy:
     return (
         NotificationPolicyBuilder()
         .with_channel(WebSocketChannel())
-        .with_recipient_resolver(resolve_neighbourhood_officers)
+        .with_recipient_resolver(resolve_neighbourhood_admins_officers_and_property_users)
         .build()
     )

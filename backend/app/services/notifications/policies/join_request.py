@@ -10,6 +10,7 @@ from app.services.notifications.recipients import (
     resolve_neighbourhood_residents,
     resolve_neighbourhood_admins,
     resolve_neighbourhood_admins_and_officers,
+    resolve_property_members,
     resolve_single_user,
     resolve_users_by_id,
 )
@@ -17,21 +18,19 @@ from app.services.notifications.recipients import (
 def build_join_request_policy() -> NotificationPolicy:
     return (
         NotificationPolicyBuilder()
-        .with_channel(WebSocketChannel())
         .with_channel(PushChannel())
         .with_channel(EmailChannel())
         .with_channel(WhatsAppChannel())
-        .with_recipient_resolver(resolve_neighbourhood_officers)
+        .with_recipient_resolver(resolve_neighbourhood_admins)
         .build()
     )
 
 def build_join_request_resolved_policy() -> NotificationPolicy:
     return (
         NotificationPolicyBuilder()
-        .with_channel(WebSocketChannel())
         .with_channel(PushChannel())
         .with_channel(EmailChannel())
         .with_channel(WhatsAppChannel())
-        .with_recipient_resolver(resolve_neighbourhood_officers)
+        .with_recipient_resolver(resolve_property_members)
         .build()
     )
