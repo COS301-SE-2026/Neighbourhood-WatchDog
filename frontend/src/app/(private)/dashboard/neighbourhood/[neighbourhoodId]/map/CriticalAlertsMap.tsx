@@ -20,7 +20,7 @@ import type {
   CriticalAlertStatus,
 } from "@/lib/validators/alert";
 import { IncidentContourLayer } from "./IncidentContourLayer";
-
+import { DangerZoneLayer } from "./DangerZoneLayer";
 import type {
   NeighbourhoodMapProperty,
 } from "@/lib/validators/neighbourhood";
@@ -35,6 +35,7 @@ interface CriticalAlertsMapProps {
   readonly route: AlertRouteData | null;
   readonly selectedPropertyId?: string | null;
   readonly showIncidentContours: boolean;
+  readonly showDangerZones: boolean;
   readonly densityStartDate: string;
   readonly densityEndDate: string;
   readonly onSelectProperty: (
@@ -276,6 +277,7 @@ export function CriticalAlertsMap({
   showIncidentContours,
   densityStartDate,
   densityEndDate,
+  showDangerZones,
   onSelectProperty,
 }: CriticalAlertsMapProps) {
   const alertProperties = useMemo(
@@ -369,6 +371,11 @@ export function CriticalAlertsMap({
             "OpenStreetMap contributors"
           }
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+
+        <DangerZoneLayer
+          neighbourhoodId={neighbourhoodId}
+          enabled={showDangerZones}
         />
 
         <IncidentContourLayer
