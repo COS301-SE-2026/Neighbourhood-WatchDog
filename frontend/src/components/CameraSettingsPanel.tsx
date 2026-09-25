@@ -1,18 +1,25 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useCameraSettings } from "@/hooks/use-camera-settings";
 import { ZoneEditor } from "./ZoneEditor";
 import { Button } from "./ui/button";
 import { Slider } from "@/components/ui/slider";
 import { LoaderCircle, Trash2, PlusCircle } from "lucide-react";
+import {
+    deleteCameraCoverage,
+    getCameraCoverage,
+    saveCameraCoverage,
+} from "@/lib/api/camera";
+import type { CameraCoverageInput } from "@/lib/validators/camera-coverage";
+import { CameraCoverageEditor } from "./CameraCoverageEditor";
 
 
 interface CameraSettingsPanelProps {
-
     readonly cameraId: string;
     readonly userRole: string;
     readonly videoRef: React.RefObject<HTMLVideoElement | null>;
-
+    readonly propertyLatitude: number | null;
+    readonly propertyLongitude: number | null;
 }
 
 
@@ -22,13 +29,60 @@ const ADMIN_ROLES = new Set(["NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_AD
 
 export function CameraSettingsPanel({
     cameraId,
-    userRole, 
-    videoRef
+    userRole,
+    videoRef,
+    propertyLatitude,
+    propertyLongitude,
 }: CameraSettingsPanelProps) {
     const { settings, loading, updateThreshold, createZone, deleteZone, zoneMutation } = useCameraSettings(cameraId);
 
     const [drawingZone, setDrawingZone] = useState(false);
     const [threshold, setThreshold] = useState<number | null>(null);
+    const [coverage, setCoverage] = useState<
+        CameraCoverageInput | undefined
+    >();
+    const [coverageLoading, setCoverageLoading] = useState(true);
+    const [coverageSaving, setCoverageSaving] = useState(false);
+    const [coverageMessage, setCoverageMessage] = useState<string | null>(null);
+    const [coverageError, setCoverageError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!ADMIN_ROLES.has(userRole)) {
+            return;
+        }
+
+        let cancelled = false;
+
+        setCoverageLoading(true);
+        setCoverageMessage(null);
+        setCoverageError(null);
+
+        void getCameraCoverage(cameraId)
+            .then((savedCoverage) => {
+                if (cancelled) {
+                    return;
+                }
+
+                setCoverage(savedCoverage ?? undefined);
+            })
+            .catch((error) => {
+                if (cancelled) {
+                    return;
+                }
+
+                console.error("Failed to load camera POV", error);
+                setCoverageError("Failed to load camera POV.");
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setCoverageLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [cameraId, userRole]);
 
     // resident role cannot see the panel
     if (!ADMIN_ROLES.has(userRole)) return null;

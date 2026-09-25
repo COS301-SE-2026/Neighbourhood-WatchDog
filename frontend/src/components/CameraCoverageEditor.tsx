@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Circle,
   CircleMarker,
@@ -208,6 +208,42 @@ export function CameraCoverageEditor({
   const [rangeMetres, setRangeMetres] = useState(
     value?.coverage_range_metres ?? 100,
   );
+  useEffect(() => {
+        if (!value) {
+            return;
+        }
+
+        const nextOrigin: Coordinate = [
+            value.origin_latitude,
+            value.origin_longitude,
+        ];
+
+        const leftBearing =
+            value.coverage_bearing_degrees -
+            value.coverage_angle_degrees / 2;
+
+        const rightBearing =
+            value.coverage_bearing_degrees +
+            value.coverage_angle_degrees / 2;
+
+        setOrigin(nextOrigin);
+        setLeftEdge(
+            destinationPoint(
+            nextOrigin,
+            leftBearing,
+            value.coverage_range_metres,
+            ),
+        );
+        setRightEdge(
+            destinationPoint(
+            nextOrigin,
+            rightBearing,
+            value.coverage_range_metres,
+            ),
+        );
+        setRangeMetres(value.coverage_range_metres);
+    }, [value]);
+
   const [message, setMessage] = useState<string | null>(null);
 
   const derivedDirection = useMemo(() => {

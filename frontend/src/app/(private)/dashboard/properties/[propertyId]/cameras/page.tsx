@@ -266,6 +266,8 @@ export default function PropertyCamerasPage() {
                                     visibility={camera.visibility}
                                     enabled={camera.enabled}
                                     userRole={activeContext.role === "Neighbourhood Admin" ? "NEIGHBOURHOOD_ADMIN" : "RESIDENT"}
+                                    propertyLatitude={propertyCoordinates.latitude}
+                                    propertyLongitude={propertyCoordinates.longitude}
                                     onDeleted={(deletedCameraId) => {
                                         setCameras((currentCameras) =>
                                             currentCameras.filter(
