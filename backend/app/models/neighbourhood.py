@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy import (
     Column,
     Text,
@@ -13,7 +14,7 @@ class Neighbourhood(Base):
     CASCADE = "all, delete-orphan"
 
     __tablename__ = "neighbourhood"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(UUID(as_uuid=True),primary_key=True,default=uuid.uuid4)
     name = Column(Text, nullable=False)
     location = Column(Text, nullable=False)
     join_code = Column(Text, unique=True, nullable=False)

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -12,6 +12,7 @@ from app.api.controllers.alert import (
     get_critical_alerts_map,
     get_danger_zones,
     get_unlocated_critical_alerts,
+    get_alert_tracking_timeline,
 )
 
 from app.schemas.alert import (

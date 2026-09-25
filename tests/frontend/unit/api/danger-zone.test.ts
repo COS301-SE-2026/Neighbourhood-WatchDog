@@ -13,7 +13,7 @@ jest.mock("@/lib/api/client", () => ({
 const mockedApiCall = jest.mocked(apiCall);
 
 const NEIGHBOURHOOD_ID =
-  "00000000-0000-0000-0000-000000000001";
+  "00000000-0000-4000-8000-000000000001";
 
 const RESPONSE = {
   status: 200,
