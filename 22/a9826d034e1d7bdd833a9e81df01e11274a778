@@ -1,0 +1,14 @@
+backend/app/services/danger_zone_service.py
+  h_3555f7510a5ca8 1-172
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "22a9826d034e1d7bdd833a9e81df01e11274a778",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
