@@ -1,0 +1,17 @@
+backend/app/services/camera_coverage_grid.py
+  h_3555f7510a5ca8 1-262
+backend/requirements.txt
+  h_3555f7510a5ca8 106-108
+  h_3555f7510a5ca8 105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "05d685f770a75654c4f6979018e5b841a4d776e0",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
