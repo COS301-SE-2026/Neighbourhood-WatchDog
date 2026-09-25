@@ -1,0 +1,22 @@
+backend/app/services/notifications/templates/property_invite_email.html.j2
+  h_cf6208e37032c0 1-31
+backend/app/services/notifications/templates/alert_email.html.j2
+  h_cf6208e37032c0 1-44,47-145
+  h_cf6208e37032c0 45-46
+backend/app/services/notifications/channels/email_channel.py
+  h_cf6208e37032c0 2,8-12,22
+  h_cf6208e37032c0 21
+backend/app/services/notifications/templates/join_request_email.html.j2
+  h_cf6208e37032c0 1-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0cf50293764c13e1a193dd2fc3e9621e5f2f5c03",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
