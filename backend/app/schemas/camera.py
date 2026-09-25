@@ -3,6 +3,7 @@ from app.schemas.property import NonEmptyString
 from app.models.camera import CameraVisibilityEnum
 from uuid import UUID
 from datetime import datetime
+from app.schemas.camera_coverage import CameraCoverageInput
 
 class RegisterCameraReq(BaseModel):
     name: NonEmptyString
@@ -10,6 +11,7 @@ class RegisterCameraReq(BaseModel):
     location: NonEmptyString
     visibility: CameraVisibilityEnum
     property_id: UUID
+    coverage: CameraCoverageInput | None = None
 
 class CameraListItemRes(BaseModel):
     model_config = ConfigDict(from_attributes=True)

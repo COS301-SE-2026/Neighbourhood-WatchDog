@@ -3,6 +3,7 @@
 export type MapLayerKey =
   | "properties"
   | "heatmap"
+  | "dangerZones"
   | "contours"
   | "liveAlerts"
   | "routes";
@@ -107,6 +108,13 @@ export function MapLayerControls({
           description="Show aggregated confirmed and resolved incidents."
           checked={layers.heatmap}
           onChange={() => onToggle("heatmap")}
+        />
+
+        <LayerToggle
+            label="Danger zones"
+            description={"Show areas combining incident history and camera sparsity."}
+            checked={layers.dangerZones}
+            onChange={() => onToggle("dangerZones")}
         />
 
         <LayerToggle

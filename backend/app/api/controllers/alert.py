@@ -38,6 +38,11 @@ from app.schemas.alert import (
     TrendResponse,
     UnlocatedCriticalAlertsRes,
 )
+
+from app.schemas.danger_zone import (
+    DangerZoneQuery,
+    DangerZoneResponse,
+)
 from app.services import alert_service
 from app.services.alert_service import (
     DEFAULT_PAGE_SIZE,
@@ -56,6 +61,7 @@ from app.services.alert_route_service import calculate_property_distance_handler
 
 from app.schemas.tracking import TrackingTimelineResponse, SituationalBriefResponse
 from app.services.incident_density_service import get_incident_density_handler
+from app.services.danger_zone_query_service import ( get_danger_zones_handler)
 from app.services.tracking_service import get_tracking_timeline
 from app.services.situational_brief_service import get_situational_brief
 
@@ -565,6 +571,50 @@ async def get_incident_density(
         status=200,
         message=(
             "Incident density retrieved successfully"
+        ),
+        data=data,
+    )
+
+@router.get(
+    "/neighbourhoods/{neighbourhood_id}/danger-zones",
+    response_model=DangerZoneResponse,
+    summary="Get cached neighbourhood danger-zone cells",
+    responses={
+        401: {
+            "description": "Not authenticated",
+        },
+        403: {
+            "description": (
+                "Not a member of this neighbourhood"
+            ),
+        },
+        422: {
+            "description": (
+                "Invalid viewport bounds"
+            ),
+        },
+    },
+)
+async def get_danger_zones(
+    neighbourhood_id: UUID,
+    filters: Annotated[
+        DangerZoneQuery,
+        Query(),
+    ],
+    db: DbSession,
+    claims: NeighbourhoodMemberClaims,
+) -> DangerZoneResponse:
+    data = await get_danger_zones_handler(
+        neighbourhood_id=neighbourhood_id,
+        filters=filters,
+        db=db,
+        claims=claims,
+    )
+
+    return DangerZoneResponse(
+        status=200,
+        message=(
+            "Danger zones retrieved successfully"
         ),
         data=data,
     )

@@ -14,6 +14,8 @@ class CameraVisibilityEnum(str, Enum):
 class Camera(Base):
     __tablename__ = "camera"
 
+    CASCADE_DELETE_ORPHAN = "all, delete-orphan"
+
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False, server_default=text("gen_random_uuid()"))
     property_id = Column(UUID(as_uuid=True), ForeignKey("property.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)
@@ -30,9 +32,16 @@ class Camera(Base):
         "RetentionPolicy", 
         back_populates="camera", 
         uselist=False,
-        cascade="all, delete-orphan",
+        cascade=CASCADE_DELETE_ORPHAN,
         passive_deletes=True,)
-    detection_zones = relationship("CameraDetectionZone", back_populates="camera", cascade="all, delete-orphan")
+    detection_zones = relationship("CameraDetectionZone", back_populates="camera", cascade=CASCADE_DELETE_ORPHAN)
+    coverage = relationship(
+        "CameraCoverage",
+        back_populates="camera",
+        uselist=False,
+        cascade=CASCADE_DELETE_ORPHAN,
+        passive_deletes=True,
+    )
     property = relationship("Property", back_populates="cameras")
 
     __table_args__ = (

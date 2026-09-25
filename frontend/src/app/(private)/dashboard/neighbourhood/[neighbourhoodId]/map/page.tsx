@@ -542,6 +542,7 @@ export default function NeighbourhoodAlertMapPage() {
     useState<MapLayerState>({
       properties: true,
       heatmap: false,
+      dangerZones: false,
       contours: false,
       liveAlerts: true,
       routes: false,
@@ -1014,9 +1015,16 @@ function handleToggleLayer(layer: MapLayerKey) {
               currentSelectedProperty?.propertyId ??
               null
             }
+            showIncidentHeatmap={
+              layerState.heatmap &&
+              densityRangeIsValid
+            }
             showIncidentContours={
               layerState.contours &&
               densityRangeIsValid
+            }
+            showDangerZones={
+              layerState.dangerZones
             }
             densityStartDate={
               densityStartDate
