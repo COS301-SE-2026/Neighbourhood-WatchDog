@@ -20,9 +20,12 @@ from app.models.user import User
 from app.schemas.property import (InvitePropertyReq, PropertyMember, PropertyMembers, PropertyResidentContextRes)
 from app.services.audit_service import create_audit_log_item
 from app.services.notifications.notification_service import send_property_invite_email
+from app.services.notifications.factory import NotificationPolicyFactory
+from app.schemas.notification import EventType
 
 logger = logging.getLogger(__name__)
 
+FRONTEND_URL = os.getenv("FRONTEND_URL")
 NOT_AUTHENTICATED_LITERAL = "Not authenticated"
 NOT_AUTHORIZED_LITERAL = "Not authorized"
 
@@ -400,19 +403,27 @@ async def invite_property_member_handler(req: InvitePropertyReq, property_id: UU
         if not inviter_name:
             inviter_name = inviter.email
 
-        success, error = await asyncio.to_thread(
-            send_property_invite_email,
-            invited_user.email,
-            property_obj.address,
-            inviter_name
-        )
+        email_queued = True
+        try: 
+            event_context = {
+                "event_type": "PROPERTY_INVITE",
+                "notification_source_id": None,
+                "user_id": invited_user.id,
+                "inviter_name": inviter_name,
+                "property_address": property_obj.address,
+                "dashboard_url": FRONTEND_URL if FRONTEND_URL is not None else "neighbourhoodwatchdog.co.za/auth/login",
+            }
 
-        if not success:
-            logger.warning("Property invite email failed: %s", error)
+            await (NotificationPolicyFactory
+                .get(EventType.PROPERTY_INVITE)
+                .notify(db, event_context))
+        except Exception:
+            logger.exception("Property invite notification dispatch failed for user_id=%s", invited_user.id)
+            email_queued = False
 
         return {
             "message": "Property member invited successfully",
-            "email_sent": success
+            "email_sent": email_queued
         }
 
     except HTTPException:
