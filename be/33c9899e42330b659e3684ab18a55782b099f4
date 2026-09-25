@@ -1,0 +1,14 @@
+backend/app/services/notifications/channels/email_channel.py
+  h_cf6208e37032c0 7,13-55,65-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "be33c9899e42330b659e3684ab18a55782b099f4",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
