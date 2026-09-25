@@ -95,7 +95,11 @@ psutil==7.2.2
 # GeoAlchemy2
 geoalchemy2==0.18.0
 
-#Twilio
+# Twilio
 twilio==9.3.6
+
 # Setup Tools
 setuptools==83.0.0
+
+# Firebase
+firebase-admin==7.6.0

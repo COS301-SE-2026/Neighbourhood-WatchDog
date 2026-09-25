@@ -119,7 +119,7 @@ class CascadedPipeline:
             self._cleanup_histories(now)
             return PipelineResult()
 
-        enriched_persons = self._enrich_with_weapons(persons)
+        enriched_persons = self._enrich_with_weapons(frame, persons)
         confirmed_tracks = self._track(frame, enriched_persons)
 
         tracks: list[dict[str, Any]] = []
@@ -218,68 +218,75 @@ class CascadedPipeline:
                 
         return persons
 
-    def _enrich_with_weapons(self, persons: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _enrich_with_weapons(self, frame: Any, persons: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Run weapon inference on the full frame and attach detections to people.
 
-        enriched: list[dict[str, Any]] = []
+        Full-frame inference preserves the pre-cascade model input distribution.
+        A weapon is only promoted when its box overlaps a detected person box, so
+        an isolated weapon on a table is not emitted as a weapon event
+        """
+        enriched = [
+            {
+                **person,
+                "weapon_detected": False,
+                "weapon_type": None,
+                "weapon_confidence": None,
+            }
+            for person in persons
+        ]
 
-        for person in persons:
-            x1, y1, _, _ = [int(value) for value in person["bbox"]]
+        if not enriched or frame is None or getattr(frame, "size", 0) == 0:
+            return enriched
 
-            crop = person["crop"]
+        with self._inference_guard():
+            results = self.weapon_model.predict(
+                frame,
+                verbose=False,
+                conf=self.config.weapon_confidence,
+                iou=self.config.weapon_iou,
+                imgsz=self.config.weapon_imgsz,
+            )
 
-            if crop is None or crop.size == 0:
-                enriched.append(person)
+        weapon_detections: list[tuple[float, str, list[float]]] = []
+
+        for box in self._boxes_from_result(results):
+            confidence = float(self._scalar(box.conf[0]))
+            if confidence < self.config.weapon_confidence:
                 continue
 
-            with self._inference_guard():
+            weapon_bbox = self._xyxy(box)
+            if not self._valid_bbox(weapon_bbox):
+                continue
 
-                results = self.weapon_model.predict(
-                    crop,
-                    verbose=False,
-                    conf=self.config.weapon_confidence,
-                    iou=self.config.weapon_iou,
-                    imgsz=self.config.weapon_imgsz
+            class_id = int(self._scalar(box.cls[0]))
+            label = self._class_name(self.weapon_model, class_id)
+            weapon_detections.append((confidence, label, weapon_bbox))
 
+        for confidence, label, weapon_bbox in weapon_detections:
+            parent_index = max(
+                range(len(enriched)),
+                key=lambda index: self._iou(
+                    weapon_bbox,
+                    enriched[index]["bbox"],
+                ),
+            )
+            overlap = self._iou(
+                weapon_bbox,
+                enriched[parent_index]["bbox"],
+            )
+
+            if overlap <= 0.0:
+                continue
+
+            current_confidence = enriched[parent_index]["weapon_confidence"]
+            if current_confidence is None or confidence > current_confidence:
+                enriched[parent_index].update(
+                    {
+                        "weapon_detected": True,
+                        "weapon_type": label,
+                        "weapon_confidence": confidence,
+                    }
                 )
-
-            best_weapon: tuple[float, str, list[float]] | None = None
-
-            
-            for box in self._boxes_from_result(results):
-                confidence = float(self._scalar(box.conf[0]))
-
-
-                if confidence < self.config.weapon_confidence:
-                    continue
-
-                local_bbox = self._xyxy(box)
-                absolute_bbox = [
-                    local_bbox[0] + x1,
-                    local_bbox[1] + y1,
-                    local_bbox[2] + x1,
-                    local_bbox[3] + y1
-                ]
-
-                class_id = int(self._scalar(box.cls[0]))
-                label = self._class_name(self.weapon_model, class_id)
-
-                if best_weapon is None or confidence > best_weapon[0]:
-                    best_weapon = (confidence, label, absolute_bbox)
-
-            item = dict(person)
-
-            if best_weapon is not None:
-                confidence, label, _ = best_weapon
-                item.update({
-                    "weapon_detected": True,
-                    "weapon_type": label,
-                    "weapon_confidence": confidence
-
-
-                })
-
-
-            enriched.append(item)
 
         return enriched
 

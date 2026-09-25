@@ -1010,6 +1010,8 @@ async def test_get_tracking_timeline_returns_ordered_data():
         observed_at=datetime.now(timezone.utc),
         sequence_no=1,
         match_confidence=0.95,
+        clip_s3_key=None,
+        clip_expires_at=None,
     )
     sighting_camera = SimpleNamespace(
         id=uuid4(),

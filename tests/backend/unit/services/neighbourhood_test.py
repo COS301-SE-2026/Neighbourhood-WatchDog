@@ -519,6 +519,7 @@ class TestUpdateNeighbourhoodMemberRole:
     @pytest.mark.asyncio
     async def test_admin_can_update_member_role_and_create_audit_log(self):
         mock_db = AsyncMock()
+        mock_db.add = Mock()
 
         neighbourhood_id = uuid4()
         admin_id = uuid4()

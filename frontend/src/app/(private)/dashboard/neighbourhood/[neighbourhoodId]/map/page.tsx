@@ -28,6 +28,7 @@ import { useAlertPropertyRoute } from "@/hooks/use-alert-property-route";
 import { useOfficerMapLocationTracking } from "@/hooks/use-officer-map-location-tracking";
 import { useUserContext } from "@/hooks/use-user-context";
 import { usePropertyResidentContext } from "@/hooks/use-property-resident-context";
+import { useNeighbourhoodMapProperties } from "@/hooks/use-neighbourhood-map-properties";
 import type { PropertyAlertGroup } from "./CriticalAlertsMap";
 import type {
   CriticalAlertMapItem,
@@ -38,6 +39,17 @@ import type {
 import { useState } from "react";
 import {AlertDetailSheet, type Alert} from "@/components/shared/AlertCard";
 import { acknowledgeAlert } from "@/lib/api/alert";
+import {
+  MapModeTabs,
+  type MapMode,
+} from "./MapModeTabs";
+
+import {
+  MapLayerControls,
+  type MapLayerKey,
+  type MapLayerState,
+} from "./MapLayerControls";
+import { DateRangePicker } from "./DateRangePicker";
 
 function statusLabel(
   status: CriticalAlertStatus,
@@ -47,6 +59,10 @@ function statusLabel(
       return "Open";
     case "ACKNOWLEDGED":
       return "Acknowledged";
+    case "CONFIRMED":
+      return "Confirmed";
+    case "DISMISSED":
+      return "Dismissed";
     case "RESOLVED":
       return "Resolved";
   }
@@ -77,6 +93,22 @@ function formatDateTime(value: string): string {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
+}
+
+function formatDateOnly(
+  date: Date,
+): string {
+  const year = date.getFullYear();
+
+  const month = String(
+    date.getMonth() + 1,
+  ).padStart(2, "0");
+
+  const day = String(
+    date.getDate(),
+  ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 function detectionLabel(
@@ -503,6 +535,18 @@ function PropertyAlertsSheet({
 
 
 export default function NeighbourhoodAlertMapPage() {
+  const [mapMode, setMapMode] =
+    useState<MapMode>("neighbourhood");
+
+  const [layerState, setLayerState] =
+    useState<MapLayerState>({
+      properties: true,
+      heatmap: false,
+      contours: false,
+      liveAlerts: true,
+      routes: false,
+    });
+
   const [
     selectedProperty,
     setSelectedProperty,
@@ -535,6 +579,28 @@ export default function NeighbourhoodAlertMapPage() {
     useState(false);
   const [routePropertyId, setRoutePropertyId] = useState<string | null>(null);
 
+  const [densityEndDate, setDensityEndDate] =
+    useState(() =>
+      formatDateOnly(new Date()),
+    );
+
+  const [densityStartDate, setDensityStartDate] =
+    useState(() => {
+      const startDate = new Date();
+
+      startDate.setDate(
+        startDate.getDate() - 30,
+      );
+
+      return formatDateOnly(startDate);
+    });
+
+  const densityRangeIsValid =
+    densityStartDate.length > 0 &&
+    densityEndDate.length > 0 &&
+    densityStartDate <= densityEndDate;
+
+
   const { neighbourhoodId } = useParams<{
     neighbourhoodId: string;
   }>();
@@ -551,16 +617,69 @@ export default function NeighbourhoodAlertMapPage() {
         neighbourhoodId,
     )?.neighbourhood?.role ?? null;
 
-  const canViewCriticalMap =
+  const canViewSecurityMap =
     neighbourhoodRole === "SECURITY_OFFICER" ||
     neighbourhoodRole === "NEIGHBOURHOOD_ADMIN";
+
+  const canAccessNeighbourhoodMap =
+    neighbourhoodRole !== null;
 
   const isSecurityOfficer =
     neighbourhoodRole === "SECURITY_OFFICER";
 
+  const {
+    properties: mapProperties,
+    loading: mapPropertiesLoading,
+    error: mapPropertiesError,
+    retry: retryMapProperties,
+  } = useNeighbourhoodMapProperties(
+    neighbourhoodId,
+    canAccessNeighbourhoodMap,
+  );
+
+  const activeMapMode: MapMode =
+  canViewSecurityMap && mapMode === "security"
+    ? "security"
+    : "neighbourhood";
+
+const showSecurityContent =
+  activeMapMode === "security";
+
+function handleMapModeChange(nextMode: MapMode) {
+  setMapMode(nextMode);
+
+  if (nextMode !== "security") {
+    setSelectedAlert(null);
+    setSelectedProperty(null);
+    setRoutePropertyId(null);
+  }
+}
+
+function handleToggleLayer(layer: MapLayerKey) {
+  if (
+    layer === "liveAlerts" &&
+    layerState.liveAlerts
+  ) {
+    setSelectedAlert(null);
+    setSelectedProperty(null);
+  }
+
+  if (
+    layer === "routes" &&
+    layerState.routes
+  ) {
+    setRoutePropertyId(null);
+  }
+
+  setLayerState((current) => ({
+    ...current,
+    [layer]: !current[layer],
+  }));
+}
+
   useOfficerMapLocationTracking(
     neighbourhoodId,
-    isSecurityOfficer,
+    isSecurityOfficer && activeMapMode === "security"
   );
 
 
@@ -577,7 +696,7 @@ export default function NeighbourhoodAlertMapPage() {
     isStale,
     usingCachedData,
   } = useCriticalAlerts(
-    canViewCriticalMap ? neighbourhoodId : "",
+    showSecurityContent ? neighbourhoodId : "",
   );
 
   const currentSelectedProperty =
@@ -617,7 +736,7 @@ export default function NeighbourhoodAlertMapPage() {
     );
   }
 
-  if (!canViewCriticalMap) {
+  if (!canAccessNeighbourhoodMap) {
     return (
       <main className="min-h-full bg-brand-void px-6 py-8 text-brand-frost">
         <div className="mx-auto max-w-6xl">
@@ -627,8 +746,7 @@ export default function NeighbourhoodAlertMapPage() {
             </h1>
 
             <p className="mt-2 text-sm text-brand-ash">
-              The critical-alert map is available only
-              to security officers and neighbourhood administrators.
+              You must be a member of this neighbourhood to view its map.
             </p>
           </Card>
         </div>
@@ -686,7 +804,28 @@ export default function NeighbourhoodAlertMapPage() {
             {isOnline ? "Refresh" : "Offline"}
           </Button>
         </header>
+        <section className="mb-5 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <MapModeTabs
+              mode={activeMapMode}
+              securityAvailable={canViewSecurityMap}
+              onChange={handleMapModeChange}
+            />
 
+            {activeMapMode === "security" && (
+              <p className="text-xs text-brand-ash">
+                Operational security view
+              </p>
+            )}
+          </div>
+
+          <MapLayerControls
+            layers={layerState}
+            showSecurityLayers={showSecurityContent}
+            canViewRoutes={isSecurityOfficer}
+            onToggle={handleToggleLayer}
+          />
+        </section>
         {isStale && (
           <output
             className="mb-5 flex items-start gap-3 rounded-lg border border-brand-caution/30 bg-brand-caution/10 px-4 py-3"
@@ -725,6 +864,32 @@ export default function NeighbourhoodAlertMapPage() {
           </output>
         )}
 
+        {mapPropertiesError && (
+          <div
+            role="alert"
+            className="mb-5 flex items-start gap-3 rounded-lg border border-brand-caution/30 bg-brand-caution/10 px-4 py-3"
+          >
+            <MapPinOff className="mt-0.5 size-4 shrink-0 text-brand-caution" />
+
+            <div>
+              <p className="text-sm font-medium text-brand-caution">
+                Unable to load neighbourhood properties
+              </p>
+
+              <p className="mt-1 text-xs text-brand-ash">
+                {mapPropertiesError}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => void retryMapProperties()}
+                className="mt-2 text-xs font-semibold text-brand-green hover:underline"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div
@@ -806,43 +971,87 @@ export default function NeighbourhoodAlertMapPage() {
           </section>
         )}
 
+        <section className="mb-4">
+          <DateRangePicker
+            startDate={densityStartDate}
+            endDate={densityEndDate}
+            onStartDateChange={setDensityStartDate}
+            onEndDateChange={setDensityEndDate}
+          />
+        </section>
 
-        {loading && mappedAlerts.length === 0 ? (
+
+        {(
+          mapPropertiesLoading &&
+          mapProperties.length === 0
+        ) || (
+          showSecurityContent &&
+          loading &&
+          mappedAlerts.length === 0
+        ) ? (
           <MapLoadingState />
         ) : (
           <CriticalAlertsMap
-            alerts={mappedAlerts}
-            route={route}
+            neighbourhoodId={neighbourhoodId}
+            alerts={
+              showSecurityContent &&
+              layerState.liveAlerts
+                ? mappedAlerts
+                : []
+            }
+            mapProperties={mapProperties}
+            showProperties={
+              layerState.properties
+            }
+            route={
+              showSecurityContent &&
+              layerState.routes
+                ? route
+                : null
+            }
             selectedPropertyId={
               routePropertyId ??
               currentSelectedProperty?.propertyId ??
               null
             }
-            onSelectProperty={handleSelectProperty}
-        />
+            showIncidentContours={
+              layerState.contours &&
+              densityRangeIsValid
+            }
+            densityStartDate={
+              densityStartDate
+            }
+            densityEndDate={
+              densityEndDate
+            }
+            onSelectProperty={
+              handleSelectProperty
+            }
+          />
 
         )}
+        {showSecurityContent && (
+          <PropertyAlertsSheet
+            property={currentSelectedProperty}
+            canShowRoute={isSecurityOfficer}
+            open={
+              currentSelectedProperty !== null &&
+              currentSelectedProperty.alerts.length > 0
+            }
+            onSelectAlert={setSelectedAlert}
+            onClose={() => {
+              setSelectedAlert(null);
+              setSelectedProperty(null);
+            }}
+            onShowRoute={(propertyId) => {
+              setSelectedAlert(null);
+              setRoutePropertyId(propertyId);
+              setSelectedProperty(null);
+            }}
+          />
+        )}
 
-        <PropertyAlertsSheet
-          property={currentSelectedProperty}
-          canShowRoute={isSecurityOfficer}
-          open={
-            currentSelectedProperty !== null &&
-            currentSelectedProperty.alerts.length > 0
-          }
-          onSelectAlert={setSelectedAlert}
-          onClose={() => {
-            setSelectedAlert(null);
-            setSelectedProperty(null);
-          }}
-          onShowRoute={(propertyId) => {
-            setSelectedAlert(null);
-            setRoutePropertyId(propertyId);
-            setSelectedProperty(null);
-          }}
-        />
-
-        {selectedAlert && (
+        {showSecurityContent && selectedAlert && (
           <AlertDetailSheet
             alert={toAlertDetailModel(selectedAlert)}
             open
@@ -856,9 +1065,11 @@ export default function NeighbourhoodAlertMapPage() {
 
         
 
-        <UnlocatedAlerts
-          alerts={unlocatedAlerts}
-        />
+        {showSecurityContent && (
+          <UnlocatedAlerts
+            alerts={unlocatedAlerts}
+          />
+        )}
       </div>
     </main>
   );

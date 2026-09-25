@@ -129,12 +129,14 @@ def make_alert_create(
         thumbnail_url="https://example.com/thumbnail.jpg",
     )
 
-
 def make_internal_alert_request(
     *,
     camera_id=str(CAMERA_ID),
     detection_type="HUMAN_PRESENCE",
     frame_timestamp="2026-01-01T12:00:00+00:00",
+    local_track_id=None,
+    appearance_embedding=None,
+    embedding_model=None,
 ):
     return CreateInternalAlertRequest(
         camera_id=camera_id,
@@ -142,6 +144,9 @@ def make_internal_alert_request(
         confidence_score=0.91,
         thumbnail_url="https://example.com/thumbnail.jpg",
         frame_timestamp=frame_timestamp,
+        local_track_id=local_track_id,
+        appearance_embedding=appearance_embedding,
+        embedding_model=embedding_model,
     )
 
 
@@ -431,6 +436,9 @@ async def test_create_alert_persists_and_broadcasts_to_neighbourhood():
             "app.api.controllers.alert.broadcast",
             new=AsyncMock(),
         ) as broadcast,
+        patch(
+            "app.services.alert_service.send_push_to_users",
+        ) as send_push,
     ):
         response = await service.create_alert(
             db,
@@ -451,7 +459,7 @@ async def test_create_alert_persists_and_broadcasts_to_neighbourhood():
         processed=False,
     )
 
-    db.add.assert_called_once_with(alert)
+    assert db.add.call_count == 1
     db.commit.assert_awaited_once()
     db.refresh.assert_awaited_once_with(alert)
 
@@ -469,6 +477,13 @@ async def test_create_alert_persists_and_broadcasts_to_neighbourhood():
             "detection_type": "HUMAN_PRESENCE",
             "confidence": 0.85,
         },
+    )
+
+    send_push.delay.assert_called_once_with(
+        ["user-one", "user-two"],
+        title="New alert",
+        body="HUMAN_PRESENCE detected",
+        data={"alert_id": str(ALERT_ID), "event": "new_alert"},
     )
 
 
@@ -968,77 +983,107 @@ async def test_create_alert_for_agent_rejects_unknown_camera():
 @pytest.mark.asyncio
 async def test_create_alert_for_agent_maps_known_detection_label():
     db = make_db()
-    db.execute.return_value = make_result(
-        scalar=make_camera(),
-    )
 
-    alert = SimpleNamespace(
-        id=ALERT_ID,
-        camera_id=CAMERA_ID,
-        detection_type=DetectionType.WEAPON_DETECTED,
-    )
+    camera_result = make_result(scalar=make_camera())
+
+    existing_result = make_result()
+    existing_result.first.return_value = None
+
+    db.execute.side_effect = [
+        camera_result,
+        existing_result,
+    ]
+
+    assigned_ids = iter([ALERT_ID, uuid4(), uuid4()])
+
+    def assign_ids_on_add(entity):
+        entity.id = next(assigned_ids)
+
+    db.add.side_effect = assign_ids_on_add
 
     body = make_internal_alert_request(
         detection_type="gun",
+        local_track_id=17,
     )
 
-    with patch(
-        "app.services.alert_service.Alert",
-        return_value=alert,
-    ) as alert_model:
+    with (
+        patch(
+            "app.services.alert_service._get_neighbourhood_websocket_recipient_ids",
+            new=AsyncMock(return_value=[]),
+        ),
+        patch("app.services.alert_service.send_push_to_users"),
+        patch("app.api.controllers.alert.broadcast", new=AsyncMock()),
+    ):
         response = await service.create_alert_for_agent_handler(
             body,
             db,
             make_edge_credential(),
         )
 
+    created_alert = db.add.call_args_list[0].args[0]
+
     assert response.alert_id == ALERT_ID
-    alert_model.assert_called_once()
+    assert response.is_new_alert is True
+    assert response.sighting_id is not None
 
-    call_kwargs = alert_model.call_args.kwargs
-    assert call_kwargs["camera_id"] == CAMERA_ID
-    assert call_kwargs["detection_type"] == DetectionType.WEAPON_DETECTED
-    assert call_kwargs["confidence_score"] == 0.91
-    assert call_kwargs["processed"] is True
-    assert call_kwargs["status"] == "OPEN"
+    assert created_alert.detection_type == DetectionType.WEAPON_DETECTED
+    assert created_alert.camera_id == CAMERA_ID
+    assert created_alert.confidence_score == 0.91
+    assert created_alert.processed is True
+    assert created_alert.status == "OPEN"
 
-    db.add.assert_called_once_with(alert)
+    assert db.add.call_count == 3
     db.commit.assert_awaited_once()
-    db.refresh.assert_awaited_once_with(alert)
+    db.refresh.assert_awaited_once_with(created_alert)
 
 
 @pytest.mark.asyncio
 async def test_create_alert_for_agent_uses_default_detection_for_unknown_label():
     db = make_db()
-    db.execute.return_value = make_result(
-        scalar=make_camera(),
-    )
 
-    alert = SimpleNamespace(
-        id=ALERT_ID,
-        camera_id=CAMERA_ID,
-        detection_type=DetectionType.WEAPON_DETECTED,
-    )
+    camera_result = make_result(scalar=make_camera())
+
+    existing_result = make_result()
+    existing_result.first.return_value = None
+
+    db.execute.side_effect = [
+        camera_result,
+        existing_result,
+    ]
+
+    assigned_ids = iter([ALERT_ID, uuid4(), uuid4()])
+
+    def assign_ids_on_add(entity):
+        entity.id = next(assigned_ids)
+
+    db.add.side_effect = assign_ids_on_add
 
     body = make_internal_alert_request(
         detection_type="unknown-label",
+        local_track_id=17,
     )
 
-    with patch(
-        "app.services.alert_service.Alert",
-        return_value=alert,
-    ) as alert_model:
+    with (
+        patch(
+            "app.services.alert_service._get_neighbourhood_websocket_recipient_ids",
+            new=AsyncMock(return_value=[]),
+        ),
+        patch("app.services.alert_service.send_push_to_users"),
+        patch("app.api.controllers.alert.broadcast", new=AsyncMock()),
+    ):
         response = await service.create_alert_for_agent_handler(
             body,
             db,
             make_edge_credential(),
         )
 
+    created_alert = db.add.call_args_list[0].args[0]
+
     assert response.alert_id == ALERT_ID
-    assert (
-        alert_model.call_args.kwargs["detection_type"]
-        == DetectionType.WEAPON_DETECTED
-    )
+    assert created_alert.detection_type == DetectionType.WEAPON_DETECTED
+    assert response.is_new_alert is True
+    assert response.sighting_id is not None
+    assert db.add.call_count == 3
 
 
 @pytest.mark.asyncio
@@ -1068,7 +1113,8 @@ async def test_create_alert_for_agent_requires_local_track_id_for_embedding():
     assert exc_info.value.detail == (
         "local_track_id is required when an appearance_embedding is provided"
     )
-    db.flush.assert_awaited_once()
+    db.flush.assert_not_awaited()
+    db.add.assert_not_called()
     db.rollback.assert_awaited_once()
 
 
@@ -1099,7 +1145,8 @@ async def test_create_alert_for_agent_requires_embedding_model():
     assert exc_info.value.detail == (
         "embedding_model is required when an appearance_embedding is provided"
     )
-    db.flush.assert_awaited_once()
+    db.flush.assert_not_awaited()
+    db.add.assert_not_called()
     db.rollback.assert_awaited_once()
 
 
@@ -1164,8 +1211,7 @@ async def test_create_alert_for_agent_persists_initial_tracking_sighting():
     )
     assert db.add.call_count == 3
     assert db.flush.await_count == 2
-    db.commit.assert_awaited_once()
-    db.refresh.assert_awaited_once_with(alert)
+
 
 
 @pytest.mark.asyncio

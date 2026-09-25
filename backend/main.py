@@ -4,6 +4,7 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.app_logging import configure_logging
 from app.core.config import config
+from app.core.firebase import init_firebase
 from app.auth.middleware import AuthMiddleware
 from app.api.controllers.auth import router as auth_router
 from app.api.controllers.neighbourhood_join import router as neighbourhood_join_router
@@ -54,7 +55,7 @@ app.add_middleware(SlowAPIMiddleware) #Rate limiting
 
 app.add_middleware( #CORS (allow requests from frontend)
     CORSMiddleware,
-    allow_origins=[config.frontend_url.rstrip("/"), "http://localhost:3000", "https://neighbourhood-watch-dog-intrepidcapstone-4790-teamintrepid.vercel.app", "https://neighbourhood-watch-dog.vercel.app"],
+    allow_origins=[config.frontend_url.rstrip("/"), "http://localhost:3000", "https://neighbourhood-watch-dog.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -87,6 +88,7 @@ app.include_router(dispatch_router)
 def health_check():
     return {"status": "ok"}
 
+init_firebase()
 
 def custom_openapi():
     """This is for the API Service Contract to make sure it returns the full schema, not just a reference"""

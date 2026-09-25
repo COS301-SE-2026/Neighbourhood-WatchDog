@@ -16,6 +16,7 @@ from sqlalchemy import or_, select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
+
 from app.models.neighbourhood_user import (
     NeighbourhoodRole,
     NeighbourhoodUser,
@@ -48,6 +49,7 @@ from app.schemas.alert import (
     UnlocatedCriticalAlertItem
 )
 from app.services.audit_service import create_audit_log_item
+from app.tasks.push_tasks import send_push_to_users
 from app.models.audit_log import AuditAction, TargetEntity
 from app.models.alert import Alert, DetectionType, AlertStatus
 
@@ -78,6 +80,11 @@ CRITICAL_DETECTION_TYPES = {
     DetectionType.WEAPON_DETECTED,
     DetectionType.FALL_DETECTED,
 }
+LIVE_CRITICAL_ALERT_STATUSES = (
+    AlertStatus.OPEN.value,
+    AlertStatus.ACKNOWLEDGED.value,
+    AlertStatus.CONFIRMED.value
+)
 
 def _critical_neighbourhood_alerts_stmt(
     neighbourhood_id: UUID,
@@ -97,7 +104,7 @@ def _critical_neighbourhood_alerts_stmt(
         .where(
             Property.neighbourhood_id == neighbourhood_id,
             Alert.detection_type.in_(CRITICAL_DETECTION_TYPES),
-            Alert.status == AlertStatus.OPEN.value
+            Alert.status.in_(LIVE_CRITICAL_ALERT_STATUSES)
         )
     )
 
@@ -154,7 +161,10 @@ def _neighbourhood_alert_stmt(neighbourhood_id: UUID):
     """Build the base alert query scoped through Camera → Property."""
     return (
         select(Alert)
-        .options(joinedload(Alert.camera).joinedload(Camera.property))
+        .options(
+            joinedload(Alert.camera).joinedload(Camera.property),
+            joinedload(Alert.tracking_subject),
+        )
         .join(Camera, Alert.camera_id == Camera.id)
         .join(Property, Camera.property_id == Property.id)
         .where(Property.neighbourhood_id == neighbourhood_id)
@@ -165,7 +175,10 @@ def _property_alert_stmt(property_id: UUID):
 
     return (
         select(Alert)
-        .options(joinedload(Alert.camera).joinedload(Camera.property))
+        .options(
+            joinedload(Alert.camera).joinedload(Camera.property),
+            joinedload(Alert.tracking_subject),
+        )
         .join(Camera, Alert.camera_id == Camera.id)
         .where(Camera.property_id == property_id)
     )
@@ -263,6 +276,14 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
                     "confidence": data.confidence,
                 },
             )
+
+            send_push_to_users.delay(
+                [str(uid) for uid in recipient_ids],
+                title="New alert",
+                body=f"{data.detection_type} detected",
+                data={"alert_id": str(alert.id), "event": "new_alert"}
+            )
+
         else:
             logger.warning(
                 "create_alert: skipped WebSocket broadcast because neighbourhood_id is missing; "
@@ -313,13 +334,20 @@ def _build_alert_res(alert: Alert) -> AlertRes:
 
     camera = getattr(alert, "camera", None)
     property_obj = getattr(camera, "property", None)
+    tracking_subject = getattr(alert, "tracking_subject", None)
 
     property_address = getattr(property_obj, "address", None)
     if not isinstance(property_address, str):
         property_address = None
 
+    tracking_subject_id = getattr(tracking_subject, "id", None)
+    if not isinstance(tracking_subject_id, UUID):
+        tracking_subject_id = None
+
     property_latitude = _safe_optional_coordinate(getattr(property_obj, "latitude", None))
     property_longitude = _safe_optional_coordinate(getattr(property_obj, "longitude", None))
+
+    
 
     return AlertRes(
         id=alert.id,
@@ -334,6 +362,7 @@ def _build_alert_res(alert: Alert) -> AlertRes:
         thumbnail_url=alert.thumbnail_url,
         clip_s3_key=alert.clip_s3_key,
         clip_expires_at=alert.clip_expires_at,
+        tracking_subject_id=tracking_subject_id,
         processed=alert.processed,
         status=alert.status,
         resolved_by=alert.resolved_by,
@@ -341,7 +370,7 @@ def _build_alert_res(alert: Alert) -> AlertRes:
         created_at=alert.created_at,
         property_address=property_address,
         property_latitude=property_latitude,
-        property_longitude=property_longitude 
+        property_longitude=property_longitude
 
     )
 
@@ -385,7 +414,10 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
     try:
         result = await db.execute(
             select(Alert)
-            .options(joinedload(Alert.camera).joinedload(Camera.property))
+            .options(
+                joinedload(Alert.camera).joinedload(Camera.property),
+                joinedload(Alert.tracking_subject)
+            )
             .where(Alert.id == alert_id)
             .with_for_update(of=Alert)
         )
@@ -450,9 +482,9 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
             ),
         }
 
-        alert.status = "ACKNOWLEDGED"
-        alert.resolved_at = datetime.now(timezone.utc)
-        alert.resolved_by = resolver_id
+        alert.status = AlertStatus.ACKNOWLEDGED.value
+        alert.acknowledged_at = datetime.now(timezone.utc)
+        alert.acknowledged_by = resolver_id
 
         await create_audit_log_item(
             db=db,
@@ -463,10 +495,16 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
             old_values=old_values,
             new_values={
                 "status": alert.status,
-                "resolved_by": (
-                    str(alert.resolved_by) if alert.resolved_by else None
+                "acknowledged_by": (
+                    str(alert.acknowledged_by)
+                    if alert.acknowledged_by
+                    else None
                 ),
-                "resolved_at": alert.resolved_at.isoformat(),
+                "acknowledged_at": (
+                    alert.acknowledged_at.isoformat()
+                    if alert.acknowledged_at
+                    else None
+                ),
             },
         )
 
@@ -1117,25 +1155,39 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
 
     await db.commit()
 
-def _validate_tracking_payload(body: CreateInternalAlertRequest) -> None:
+def _validate_tracking_payload(body: CreateInternalAlertRequest, det_type: DetectionType) -> None:
 
-    if (body.appearance_embedding is not None and body.local_track_id is None):
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "local_track_id is required when an appearance_embedding is provided"
+    if det_type == DetectionType.WEAPON_DETECTED:
+        if body.local_track_id is None:
+            raise HTTPException(
+                status_code=422,
+                detail="local_track_id is required for weapon alerts"
+
             )
-        )
 
-    if (body.appearance_embedding is not None and body.embedding_model is None):
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "embedding_model is required when an appearance_embedding is provided"
+    if body.appearance_embedding is not None:
+        if body.local_track_id is None:
+            raise HTTPException(
+                status_code=422,
+                detail="local_track_id is required when an appearance_embedding is provided"
+
             )
-        )
 
-async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:AsyncSession, credential: EdgeAgentCredential, generate_brief: bool = False) -> InternalAlertCreateRes:
+        if body.embedding_model is None:
+            raise HTTPException(
+                status_code=422,
+                detail="embedding_model is required when an appearance_embedding is provided"
+
+            )
+
+        
+
+async def create_alert_for_agent_handler(
+    body: CreateInternalAlertRequest, 
+    db:AsyncSession, 
+    credential: EdgeAgentCredential, 
+    generate_brief: bool = False
+) -> InternalAlertCreateRes:
     """Create an alert for a camera owned by the authenticated edge agent's property."""
 
     label_map = {
@@ -1167,13 +1219,59 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
 
     try:
 
-        stmt = select(Camera).where(Camera.id == body.camera_id)
+        stmt = (select(Camera)
+            .options(joinedload(Camera.property))
+            .where(Camera.id == body.camera_id)
+        )
         result = await db.execute(stmt)
         camera: Camera | None = result.scalar_one_or_none()
 
         if not camera:
             logger.warning("internal create_alert: no camera found for camera_id=%s", body.camera_id)
             raise HTTPException(status_code=404,detail=f"Camera {body.camera_id} not found")
+
+        
+        _validate_tracking_payload(body, det_type)
+
+        existing_row = None
+
+        if (det_type == DetectionType.WEAPON_DETECTED and body.local_track_id is not None):
+            existing_stmt = (
+                select(Alert, TrackingSubject, TrackingSighting)
+                .join(
+                    TrackingSubject,
+                    TrackingSubject.alert_id == Alert.id,
+                )
+                .join(
+                    TrackingSighting,
+                    TrackingSighting.tracking_subject_id == TrackingSubject.id,
+                )
+                .where(
+                    Alert.camera_id == camera_id,
+                    Alert.detection_type == DetectionType.WEAPON_DETECTED,
+                    Alert.status == AlertStatus.OPEN.value,
+                    TrackingSighting.camera_id == camera_id,
+                    TrackingSighting.local_track_id == body.local_track_id,
+                )
+                .order_by(Alert.frame_timestamp.desc())
+                .limit(1)
+            )
+
+            existing_result = await db.execute(existing_stmt)
+            existing_row = existing_result.first()
+
+
+        if existing_row is not None:
+            existing_alert, _, existing_sighting = existing_row
+
+            return InternalAlertCreateRes(
+                alert_id=existing_alert.id,
+                sighting_id=existing_sighting.id,
+                is_new_alert=False
+
+            )
+
+
 
         
         alert = Alert(
@@ -1189,9 +1287,9 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
         db.add(alert)
         await db.flush()
 
-        _validate_tracking_payload(body)
 
 
+        initial_sighting = None
         tracking_subject = None
 
 
@@ -1224,12 +1322,48 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
         await db.commit()
         await db.refresh(alert)
 
+        neighbourhood_id = camera.property.neighbourhood_id if camera.property else None
+
+        # Sending a push notification in the case of a weapon detection
+        if neighbourhood_id is not None:
+            if alert.detection_type == DetectionType.WEAPON_DETECTED:
+
+                from app.api.controllers.alert import broadcast
+
+                recipient_ids = await _get_neighbourhood_websocket_recipient_ids(db, neighbourhood_id)
+
+                await broadcast(
+                    recipient_ids,
+                    {
+                        "event": "new_alert",
+                        "alert_id": str(alert.id),
+                        "camera_id": str(alert.camera_id),
+                        "detection_type": alert.detection_type.value if hasattr(alert.detection_type, "value") else str(alert.detection_type),
+                        "confidence": alert.confidence_score,
+                    },
+                )
+
+                send_push_to_users.delay(
+                    [str(uid) for uid in recipient_ids],
+                    title="New alert",
+                    body=f"{det_type.value if hasattr(det_type, 'value') else det_type} detected",
+                    data={"alert_id": str(alert.id), "event": "new_alert"},
+                )
+            else: # detection is not a weapon
+                logger.warning(
+                    "create_alert_for_agent_handler: skipped broadcast/push because detection type was not a weapon; alert_id=%s",
+                    alert.id,
+                )
+        else: # neighbourhood is None
+            logger.warning(
+                "create_alert_for_agent_handler: skipped broadcast/push because camera has no neighbourhood; alert_id=%s",
+                alert.id,
+            )
 
         if generate_brief and tracking_subject is not None:
             await maybe_generate_situational_brief(
                 db=db, 
                 tracking_subject_id=tracking_subject.id
-
             )
         
 
@@ -1240,7 +1374,16 @@ async def create_alert_for_agent_handler(body: CreateInternalAlertRequest, db:As
             alert.detection_type,
         )
 
-        return InternalAlertCreateRes(alert_id=alert.id)
+        return InternalAlertCreateRes(
+            alert_id=alert.id,
+            sighting_id=(
+                initial_sighting.id
+                if initial_sighting is not None
+                else None
+            ),
+            is_new_alert=True
+            
+        )
 
     
     except HTTPException:

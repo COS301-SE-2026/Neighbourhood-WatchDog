@@ -659,7 +659,8 @@ async def get_tracking_timeline(*, db: AsyncSession, alert_id: UUID, claims: dic
             observed_at=sighting.observed_at,
             sequence_no=sighting.sequence_no,
             match_confidence=sighting.match_confidence,
-
+            clip_s3_key=sighting.clip_s3_key,
+            clip_expires_at=sighting.clip_expires_at
             
         )
         for sighting, sighting_camera in sightings_result.all()
@@ -680,3 +681,24 @@ async def get_tracking_timeline(*, db: AsyncSession, alert_id: UUID, claims: dic
         )
         
     )
+
+
+
+async def get_tracking_sighting_for_agent(*, sighting_id: str, candidate_property_id: UUID, db: AsyncSession) -> TrackingSighting | None:
+
+    try:
+        sighting_uuid = UUID(sighting_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="sighting_id is not a valid UUID"
+
+        ) from exc
+
+    result = await db.execute(
+        select(TrackingSighting)
+        .join(Camera, Camera.id == TrackingSighting.camera_id)
+        .where(TrackingSighting.id == sighting_uuid, Camera.property_id == candidate_property_id)
+    )
+
+    return result.scalar_one_or_none()

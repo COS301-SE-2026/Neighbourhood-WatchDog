@@ -1,6 +1,7 @@
 import logging
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import IntegrityError
 
 from app.core.database import DbSession
@@ -88,7 +89,9 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
         if alert:
             await db.refresh(alert)
             camera_result = await db.execute(
-                select(Camera).where(Camera.id == alert.camera_id)
+                select(Camera)
+                .options(joinedload(Camera.property))
+                .where(Camera.id == alert.camera_id)
             )
             camera = camera_result.scalar_one_or_none()
             if camera:

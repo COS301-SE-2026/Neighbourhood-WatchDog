@@ -9,12 +9,15 @@ from app.schemas.user import (
     GetUserResSchema,
     UpdateUserSettingsReq,
     UserSettingsResSchema,
+    RegisterPushDeviceReq, 
+    RegisterPushDeviceRes,
 )
 from app.services.user_service import (
     get_current_user_context_handler,
     get_current_user_settings_handler,
     get_user_by_id_handler,
     update_current_user_settings_handler,
+    register_push_device_handler,
 )
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -90,3 +93,21 @@ async def update_my_settings(
     db: DbSession,
 ):
     return await update_current_user_settings_handler(data, claims, db)
+
+@router.post(
+    "/me/push-device",
+    response_model=RegisterPushDeviceRes,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+    }
+)
+async def register_push_device(
+    body: RegisterPushDeviceReq,
+    db: DbSession,
+    claims: Claims,
+):
+    return await register_push_device_handler(
+        body.device_token,
+        db,
+        claims
+    )

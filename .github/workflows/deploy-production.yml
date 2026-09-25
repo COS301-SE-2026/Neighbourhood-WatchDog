@@ -24,43 +24,112 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Update secret in Secrets Manager
+        env: 
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
+          COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
+          COGNITO_REGION: ${{ secrets.COGNITO_REGION }}
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_WHATSAPP_FROM: ${{ secrets.TWILIO_WHATSAPP_FROM }}
+          NOTIFICATION_ENABLED: ${{ secrets.NOTIFICATION_ENABLED }}
+          RTSP_ENCRYPTION_KEY: ${{ secrets.RTSP_ENCRYPTION_KEY }}
+          MEDIAMTX_PUBLISH_MASTER_KEY: ${{ secrets.MEDIAMTX_PUBLISH_MASTER_KEY }}
+          TESTING: ${{ secrets.TESTING }}
+          DEBUG: ${{ secrets.DEBUG }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          DETECTION_CONFIDENCE_THRESHOLD: ${{ secrets.DETECTION_CONFIDENCE_THRESHOLD }}
+          FAILOVER_CONTROLLER_TOKEN: ${{ secrets.FAILOVER_CONTROLLER_TOKEN }}
+          GO2RTC_API_USERNAME: ${{ secrets.GO2RTC_API_USERNAME }}
+          GO2RTC_API_PASSWORD: ${{ secrets.GO2RTC_API_PASSWORD }}
+          FAILOVER_POLL_SECONDS: ${{ secrets.FAILOVER_POLL_SECONDS }}
+          FAILOVER_FAILURE_PROBES: ${{ secrets.FAILOVER_FAILURE_PROBES }}
+          SMTP_SENDER_EMAIL: ${{ secrets.SMTP_SENDER_EMAIL }}
+          SMTP_APP_PASSWORD: ${{ secrets.SMTP_APP_PASSWORD }}
+          REFRESH_COOKIE_SECURE: ${{ secrets.REFRESH_COOKIE_SECURE }}
+          REFRESH_COOKIE_SAMESITE: ${{ secrets.REFRESH_COOKIE_SAMESITE }}
+          REFRESH_COOKIE_MAX_AGE: ${{ secrets.REFRESH_COOKIE_MAX_AGE }}
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
         run: |
+          jq -n \
+              --arg "SECRET_KEY" "$SECRET_KEY" \
+              --arg "DATABASE_URL" "$DATABASE_URL" \
+              --arg "REDIS_URL" "$REDIS_URL" \
+              --arg "AWS_REGION" "$AWS_REGION" \
+              --arg "S3_BUCKET_NAME" "$S3_BUCKET_NAME" \
+              --arg "COGNITO_USER_POOL_ID" "$COGNITO_USER_POOL_ID" \
+              --arg "COGNITO_CLIENT_ID" "$COGNITO_CLIENT_ID" \
+              --arg "COGNITO_REGION" "$COGNITO_REGION" \
+              --arg "TWILIO_ACCOUNT_SID" "$TWILIO_ACCOUNT_SID" \
+              --arg "TWILIO_AUTH_TOKEN" "$TWILIO_AUTH_TOKEN" \
+              --arg "TWILIO_WHATSAPP_FROM" "$TWILIO_WHATSAPP_FROM" \
+              --arg "NOTIFICATION_ENABLED" "$NOTIFICATION_ENABLED" \
+              --arg "RTSP_ENCRYPTION_KEY" "$RTSP_ENCRYPTION_KEY" \
+              --arg "MEDIAMTX_PUBLISH_MASTER_KEY" "$MEDIAMTX_PUBLISH_MASTER_KEY" \
+              --arg "TESTING" "$TESTING" \
+              --arg "DEBUG" "$DEBUG" \
+              --arg "POSTGRES_PASSWORD" "$POSTGRES_PASSWORD" \
+              --arg "POSTGRES_USER" "$POSTGRES_USER" \
+              --arg "POSTGRES_DB" "$POSTGRES_DB" \
+              --arg "FRONTEND_URL" "$FRONTEND_URL" \
+              --arg "DETECTION_CONFIDENCE_THRESHOLD" "$DETECTION_CONFIDENCE_THRESHOLD" \
+              --arg "FAILOVER_CONTROLLER_TOKEN" "$FAILOVER_CONTROLLER_TOKEN" \
+              --arg "GO2RTC_API_USERNAME" "$GO2RTC_API_USERNAME" \
+              --arg "GO2RTC_API_PASSWORD" "$GO2RTC_API_PASSWORD" \
+              --arg "FAILOVER_POLL_SECONDS" "$FAILOVER_POLL_SECONDS" \
+              --arg "FAILOVER_FAILURE_PROBES" "$FAILOVER_FAILURE_PROBES" \
+              --arg "SMTP_SENDER_EMAIL" "$SMTP_SENDER_EMAIL" \
+              --arg "SMTP_APP_PASSWORD" "$SMTP_APP_PASSWORD" \
+              --arg "REFRESH_COOKIE_SECURE" "$REFRESH_COOKIE_SECURE" \
+              --arg "REFRESH_COOKIE_SAMESITE" "$REFRESH_COOKIE_SAMESITE" \
+              --arg "REFRESH_COOKIE_MAX_AGE" "$REFRESH_COOKIE_MAX_AGE" \
+              --arg "FIREBASE_CREDENTIALS_JSON" "$FIREBASE_CREDENTIALS_JSON" \
+              '{
+                SECRET_KEY: $SECRET_KEY,
+                DATABASE_URL: $DATABASE_URL,
+                REDIS_URL: $REDIS_URL,
+                AWS_REGION: $AWS_REGION,
+                S3_BUCKET_NAME: $S3_BUCKET_NAME,
+                COGNITO_USER_POOL_ID: $COGNITO_USER_POOL_ID,
+                COGNITO_CLIENT_ID: $COGNITO_CLIENT_ID,
+                COGNITO_REGION: $COGNITO_REGION,
+                TWILIO_ACCOUNT_SID: $TWILIO_ACCOUNT_SID,
+                TWILIO_AUTH_TOKEN: $TWILIO_AUTH_TOKEN,
+                TWILIO_WHATSAPP_FROM: $TWILIO_WHATSAPP_FROM,
+                NOTIFICATION_ENABLED: $NOTIFICATION_ENABLED,
+                RTSP_ENCRYPTION_KEY: $RTSP_ENCRYPTION_KEY,
+                MEDIAMTX_PUBLISH_MASTER_KEY: $MEDIAMTX_PUBLISH_MASTER_KEY,
+                TESTING: $TESTING,
+                DEBUG: $DEBUG,
+                POSTGRES_PASSWORD: $POSTGRES_PASSWORD,
+                POSTGRES_USER: $POSTGRES_USER,
+                POSTGRES_DB: $POSTGRES_DB,
+                FRONTEND_URL: $FRONTEND_URL,
+                DETECTION_CONFIDENCE_THRESHOLD: $DETECTION_CONFIDENCE_THRESHOLD,
+                FAILOVER_CONTROLLER_TOKEN: $FAILOVER_CONTROLLER_TOKEN,
+                GO2RTC_API_USERNAME: $GO2RTC_API_USERNAME,
+                GO2RTC_API_PASSWORD: $GO2RTC_API_PASSWORD,
+                FAILOVER_POLL_SECONDS: $FAILOVER_POLL_SECONDS,
+                FAILOVER_FAILURE_PROBES: $FAILOVER_FAILURE_PROBES,
+                SMTP_SENDER_EMAIL: $SMTP_SENDER_EMAIL,
+                SMTP_APP_PASSWORD: $SMTP_APP_PASSWORD,
+                REFRESH_COOKIE_SECURE: $REFRESH_COOKIE_SECURE,
+                REFRESH_COOKIE_SAMESITE: $REFRESH_COOKIE_SAMESITE,
+                REFRESH_COOKIE_MAX_AGE: $REFRESH_COOKIE_MAX_AGE,
+                FIREBASE_CREDENTIALS_JSON: $FIREBASE_CREDENTIALS_JSON
+              }' > secret-payload.json
+          
           aws secretsmanager put-secret-value \
             --secret-id watchdog/prod/env \
-            --secret-string '{
-              "SECRET_KEY": "${{ secrets.SECRET_KEY }}",
-              "DATABASE_URL": "${{ secrets.DATABASE_URL }}",
-              "REDIS_URL": "${{ secrets.REDIS_URL }}",
-              "AWS_REGION": "${{ secrets.AWS_REGION }}",
-              "S3_BUCKET_NAME": "${{ secrets.S3_BUCKET_NAME }}",
-              "COGNITO_USER_POOL_ID": "${{ secrets.COGNITO_USER_POOL_ID }}",
-              "COGNITO_CLIENT_ID": "${{ secrets.COGNITO_CLIENT_ID }}",
-              "COGNITO_REGION": "${{ secrets.COGNITO_REGION }}",
-              "TWILIO_ACCOUNT_SID": "${{ secrets.TWILIO_ACCOUNT_SID }}",
-              "TWILIO_AUTH_TOKEN": "${{ secrets.TWILIO_AUTH_TOKEN }}",
-              "TWILIO_WHATSAPP_FROM": "${{ secrets.TWILIO_WHATSAPP_FROM }}",
-              "NOTIFICATION_ENABLED": "${{ secrets.NOTIFICATION_ENABLED }}",
-              "RTSP_ENCRYPTION_KEY": "${{ secrets.RTSP_ENCRYPTION_KEY }}",
-              "MEDIAMTX_PUBLISH_MASTER_KEY": "${{ secrets.MEDIAMTX_PUBLISH_MASTER_KEY }}",
-              "TESTING": "${{ secrets.TESTING }}",
-              "DEBUG": "${{ secrets.DEBUG }}",
-              "POSTGRES_PASSWORD": "${{ secrets.POSTGRES_PASSWORD }}",
-              "POSTGRES_USER": "${{ secrets.POSTGRES_USER }}",
-              "POSTGRES_DB": "${{ secrets.POSTGRES_DB }}",
-              "FRONTEND_URL": "${{ secrets.FRONTEND_URL }}",
-              "DETECTION_CONFIDENCE_THRESHOLD": "${{ secrets.DETECTION_CONFIDENCE_THRESHOLD }}",
-              "FAILOVER_CONTROLLER_TOKEN": "${{ secrets.FAILOVER_CONTROLLER_TOKEN }}",
-              "GO2RTC_API_USERNAME": "${{ secrets.GO2RTC_API_USERNAME }}",
-              "GO2RTC_API_PASSWORD": "${{ secrets.GO2RTC_API_PASSWORD }}",
-              "FAILOVER_POLL_SECONDS": "${{ secrets.FAILOVER_POLL_SECONDS }}",
-              "FAILOVER_FAILURE_PROBES": "${{ secrets.FAILOVER_FAILURE_PROBES }}",
-              "SMTP_SENDER_EMAIL": "${{ secrets.SMTP_SENDER_EMAIL }}",
-              "SMTP_APP_PASSWORD": "${{ secrets.SMTP_APP_PASSWORD }}",
-              "REFRESH_COOKIE_SECURE": "${{ secrets.REFRESH_COOKIE_SECURE }}",
-              "REFRESH_COOKIE_SAMESITE": "${{ secrets.REFRESH_COOKIE_SAMESITE }}",
-              "REFRESH_COOKIE_MAX_AGE": "${{ secrets.REFRESH_COOKIE_MAX_AGE }}"
-            }'
-      
+            --secret-string file://secret-payload.json
+
       - name: Build, tag, and push image to ECR
         env: 
           AWS_REGION: ${{ secrets.AWS_REGION }}
@@ -89,7 +158,7 @@ jobs:
               '.containerDefinitions[0].image = $IMAGE
               | .containerDefinitions[0].secrets = (
                 (.containerDefinitions[0].secrets // [])
-                | map(select(.name != "FAILOVER_CONTROLLER_TOKEN" and .name != "GO2RTC_API_USERNAME" and .name != "GO2RTC_API_PASSWORD" and .name != "SMTP_SENDER_EMAIL" and .name != "SMTP_APP_PASSWORD" and .name != "REFRESH_COOKIE_SECURE" and .name != "REFRESH_COOKIE_SAMESITE" and .name != "REFRESH_COOKIE_MAX_AGE"))
+                | map(select(.name != "FAILOVER_CONTROLLER_TOKEN" and .name != "GO2RTC_API_USERNAME" and .name != "GO2RTC_API_PASSWORD" and .name != "SMTP_SENDER_EMAIL" and .name != "SMTP_APP_PASSWORD" and .name != "REFRESH_COOKIE_SECURE" and .name != "REFRESH_COOKIE_SAMESITE" and .name != "REFRESH_COOKIE_MAX_AGE" and .name != "FIREBASE_CREDENTIALS_JSON"))
                 + [
                     {"name": "FAILOVER_CONTROLLER_TOKEN", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:FAILOVER_CONTROLLER_TOKEN::"},
                     {"name": "GO2RTC_API_USERNAME", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:GO2RTC_API_USERNAME::"},
@@ -98,7 +167,8 @@ jobs:
                     {"name": "SMTP_APP_PASSWORD", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:SMTP_APP_PASSWORD::"},
                     {"name": "REFRESH_COOKIE_SECURE", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:REFRESH_COOKIE_SECURE::"},
                     {"name": "REFRESH_COOKIE_SAMESITE", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:REFRESH_COOKIE_SAMESITE::"},
-                    {"name": "REFRESH_COOKIE_MAX_AGE", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:REFRESH_COOKIE_MAX_AGE::"}
+                    {"name": "REFRESH_COOKIE_MAX_AGE", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:REFRESH_COOKIE_MAX_AGE::"},
+                    {"name": "FIREBASE_CREDENTIALS_JSON", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:FIREBASE_CREDENTIALS_JSON::"}
                   ]
               )
               | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
@@ -128,10 +198,15 @@ jobs:
           NEW_WORKER_TASK_DEF=$(jq --arg IMAGE "778312248988.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
             --arg REGION "${AWS_REGION}" \
             '.containerDefinitions[0].image = $IMAGE
+            | .containerDefinitions[0].command = ["celery", "-A", "app.core.celery_app", "worker", "--loglevel=info", "--pool=threads", "--concurrency=4"]
             | .containerDefinitions[0].secrets = (
                 (.containerDefinitions[0].secrets // [])
-                | map(select(.name != "S3_BUCKET_NAME"))
+                | map(select(.name != "S3_BUCKET_NAME" and .name != "FIREBASE_CREDENTIALS_JSON" and .name != "COGNITO_REGION" and .name != "COGNITO_USER_POOL_ID" and .name != "COGNITO_CLIENT_ID"))
                 + [{"name": "S3_BUCKET_NAME", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:S3_BUCKET_NAME::"}]
+                + [{"name": "FIREBASE_CREDENTIALS_JSON", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:FIREBASE_CREDENTIALS_JSON::"}]
+                + [{"name": "COGNITO_REGION", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_REGION::"}]
+                + [{"name": "COGNITO_USER_POOL_ID", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_USER_POOL_ID::"}]
+                + [{"name": "COGNITO_CLIENT_ID", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_CLIENT_ID::"}]
               )
             | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
             worker-task-def.json)
@@ -157,7 +232,16 @@ jobs:
             --region ${AWS_REGION} > beat-task-def.json
 
           NEW_BEAT_TASK_DEF=$(jq --arg IMAGE "778312248988.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
-            '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
+            --arg REGION "${AWS_REGION}" \
+            '.containerDefinitions[0].image = $IMAGE 
+            | .containerDefinitions[0].secrets = (
+                (.containerDefinitions[0].secrets // [])
+                | map(select(.name != "COGNITO_REGION" and .name != "COGNITO_USER_POOL_ID" and .name != "COGNITO_CLIENT_ID"))
+                + [{"name": "COGNITO_REGION", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_REGION::"}]
+                + [{"name": "COGNITO_USER_POOL_ID", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_USER_POOL_ID::"}]
+                + [{"name": "COGNITO_CLIENT_ID", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_CLIENT_ID::"}]
+              )
+            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
             beat-task-def.json)
 
           echo "$NEW_BEAT_TASK_DEF" > new-beat-task-def.json
