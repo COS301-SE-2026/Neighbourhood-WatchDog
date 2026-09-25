@@ -3,7 +3,8 @@ from math import asin, atan2, cos, degrees, radians, sin
 EARTH_RADIUS_METRES = 6_371_000.0
 MAX_CAMERA_ORIGIN_DISTANCE_METRES = 100.0
 MAX_CAMERA_COVERAGE_RANGE_METRES = 200.0
-SECTOR_ARC_SEGMENTS = 36
+COVERAGE_ARC_SEGMENTS = 24
+
 
 def haversine_distance_metres(
     latitude_one: float,
@@ -73,13 +74,16 @@ def coverage_polygon(
             origin_latitude,
             origin_longitude,
             start_bearing
-            + angle_degrees * index / SECTOR_ARC_SEGMENTS,
+            + angle_degrees * index / COVERAGE_ARC_SEGMENTS,
             range_metres,
         )
-        for index in range(SECTOR_ARC_SEGMENTS + 1)
+        for index in range(COVERAGE_ARC_SEGMENTS + 1)
     ]
 
-    origin = [origin_latitude, origin_longitude]
+    origin = [
+        origin_latitude,
+        origin_longitude,
+    ]
 
     return [
         origin,

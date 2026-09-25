@@ -412,7 +412,7 @@ export function CameraCoverageEditor({
                     Number.isFinite(nextValue)
                         ? nextValue
                         : 0,
-                );
+                    );
 
                 setMessage(null);
                 onChange(undefined);
