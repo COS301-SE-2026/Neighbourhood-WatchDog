@@ -33,7 +33,7 @@ async def resolve_neighbourhood_residents(db: DbSession, event_context: dict) ->
 
 
 async def resolve_neighbourhood_admins(db: DbSession, event_context: dict) -> list[User]:
-    """Admins only"""
+    """Neighbourhood admins only"""
     neighbourhood_id: UUID = event_context["neighbourhood_id"]
 
     result = await db.execute(
@@ -47,7 +47,7 @@ async def resolve_neighbourhood_admins(db: DbSession, event_context: dict) -> li
     return list(result.scalars().all())
 
 async def resolve_neighbourhood_officers(db: DbSession, event_context: dict) -> list[User]:
-    """Admins only"""
+    """Officers only"""
     neighbourhood_id: UUID = event_context["neighbourhood_id"]
 
     result = await db.execute(
@@ -56,6 +56,21 @@ async def resolve_neighbourhood_officers(db: DbSession, event_context: dict) -> 
         .where(
             NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
             NeighbourhoodUser.role == NeighbourhoodRole.SECURITY_OFFICER,
+        )
+    )
+    return list(result.scalars().all())
+
+async def resolve_neighbourhood_admins_and_officers(db: DbSession, event_context: dict) -> list[User]:
+    """Officers and Neighbourhood admins"""
+    neighbourhood_id: UUID = event_context["neighbourhood_id"]
+
+    result = await db.execute(
+        select(User)
+        .join(NeighbourhoodUser, NeighbourhoodUser.user_id == User.id)
+        .where(
+            NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+            NeighbourhoodUser.role == NeighbourhoodRole.SECURITY_OFFICER 
+                or NeighbourhoodUser.role == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
         )
     )
     return list(result.scalars().all())
