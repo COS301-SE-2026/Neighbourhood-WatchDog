@@ -15,6 +15,7 @@ import type { CameraInput } from "@/lib/validators/camera";
 import { NewCameraCard } from "@/components/new-camera-card";
 import CameraCard from "@/components/CameraCard";
 import { usePropertyContext } from "@/hooks/use-property-context";
+import { useUserContext } from "@/hooks/use-user-context";
 
 interface CameraProp {
     id: string;
@@ -27,7 +28,12 @@ interface CameraProp {
 }
 
 export default function PropertyCamerasPage() {
-    const { activeContext, isLoading: isLoadingProperty } = usePropertyContext();
+    const {
+        activeContext,
+        isLoading: isLoadingProperty,
+    } = usePropertyContext();
+
+    const { data: userContext } = useUserContext();
 
     const [cameras, setCameras] = useState<CameraProp[]>([]);
     const [resolvedPropertyId, setResolvedPropertyId] = useState<string | null>(null);
@@ -38,6 +44,18 @@ export default function PropertyCamerasPage() {
     }>({ latitude: null, longitude: null });
 
     const propertyId = activeContext?.propertyId ?? null;
+    const activePropertyRecord = userContext?.properties.find(
+        (property) => property.id === propertyId,
+    );
+
+    const cameraUserRole =
+        userContext?.user.system_role === "SYSTEM_ADMIN"
+            ? "SYSTEM_ADMIN"
+            : activePropertyRecord?.is_admin
+                ? "PROPERTY_ADMIN"
+                : activeContext?.role === "Neighbourhood Admin"
+                    ? "NEIGHBOURHOOD_ADMIN"
+                    : "RESIDENT";
 
     const isLoadingCameras = propertyId !== null && resolvedPropertyId !== propertyId;
 
@@ -265,7 +283,7 @@ export default function PropertyCamerasPage() {
                                     location={camera.location}
                                     visibility={camera.visibility}
                                     enabled={camera.enabled}
-                                    userRole={activeContext.role === "Neighbourhood Admin" ? "NEIGHBOURHOOD_ADMIN" : "RESIDENT"}
+                                    userRole={cameraUserRole}
                                     propertyLatitude={propertyCoordinates.latitude}
                                     propertyLongitude={propertyCoordinates.longitude}
                                     onDeleted={(deletedCameraId) => {
