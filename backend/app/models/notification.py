@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 class NotificationChannel(str, Enum):
-    """These notification channels should be in allignment with what 
+    """These notification channels should be in alignment with what 
        is in the notification service"""
     WHATSAPP = "WHATSAPP"
     EMAIL = "EMAIL"
