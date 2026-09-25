@@ -1,0 +1,17 @@
+backend/app/models/danger_zone.py
+  h_3555f7510a5ca8 1-78
+backend/app/models/__init__.py
+  h_3555f7510a5ca8 24
+  h_3555f7510a5ca8 23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "25edeb7b5811a4ebc4d1b4a3b65c68b026aefba6",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
