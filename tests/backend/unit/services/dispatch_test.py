@@ -1173,3 +1173,15 @@ class TestEscalateDispatch:
         assert message["payload"]["dispatch_id"] == str(row.id)
         assert message["payload"]["alert_id"] == str(row.alert_id)
         assert message["payload"]["reason"] == "no_available_officer"
+
+    @pytest.mark.asyncio
+    async def test_no_admins_no_broadcast(self):
+        mock_db, _ = make_mock_db()
+        mock_db.execute = AsyncMock(return_value=make_scalars_result([]))
+        row = self.make_row()
+
+        with patch("app.services.dispatch_service.broadcast", new=AsyncMock()) as broadcast:
+            await _escalate_dispatch(mock_db, row, reason="no_available_officer")
+
+        broadcast.assert_not_awaited()
+        assert row.notified_at is not None
