@@ -7,12 +7,13 @@ from sqlalchemy.exc import IntegrityError
 from app.core.database import DbSession
 from app.models.alert import Alert
 from app.models.camera import Camera
-from app.models.property_user import PropertyUser
 from app.models.zone import GeospatialZone
 from app.schemas.detection import DetectionIngestReq, DetectionIngestRes
 from app.services.alert_service import _build_alert_res
-from app.services.notifications.notification_service import dispatch_notifications
 from app.services.dispatch_service import dispatch_alert
+from app.services.notifications.factory import NotificationPolicyFactory
+from app.schemas.notification import EventType
+
 
 logger = logging.getLogger(__name__)
 
@@ -95,33 +96,24 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
             )
             camera = camera_result.scalar_one_or_none()
             if camera:
-                from app.api.controllers.alert import broadcast
 
-                recipient_result = await db.execute(
-                    select(PropertyUser.user_id).where(
-                        PropertyUser.property_id == camera.property_id
-                    )
-                )
+                event_type = "WEAPON_DETECTED" if data.detection_type == "WEAPON_DETECTED" else "GENERAL_DETECTION"
+                event_context = {
+                    "event_type": event_type,
+                    "notification_source_id": alert.id,
+                    "neighbourhood_id": camera.property.neighbourhood_id if camera.property else None,
+                    "property_id": camera.property_id,
+                    "alert_type": data.detection_type,
+                    "camera_name": camera.name,
+                    "location": camera.location,
+                    "risk_level": "CRITICAL" if event_type == "WEAPON_DETECTED" else "MEDIUM",
+                    "timestamp": data.frame_timestamp.strftime("%d %b %Y %H:%M"),
+                    "websocket_payload": _build_alert_res(alert).model_dump(mode="json"),
+                }
 
-                recipient_user_ids = list(
-                    set(recipient_result.scalars().all())
-                )
-
-                alert_res = _build_alert_res(alert)
-                await broadcast(
-                    user_ids=[str(user_id) for user_id in recipient_user_ids],
-                    message={"event": "alert.new", "payload": alert_res.model_dump(mode="json")},
-                )
-
-                await dispatch_notifications(
-                    db=db,
-                    alert_id=alert.id,
-                    camera_id=alert.camera_id,
-                    user_ids=recipient_user_ids,
-                    detection_type=data.detection_type,
-                    confidence_score=data.confidence_score,
-                    frame_timestamp=data.frame_timestamp,
-                )
+                await (NotificationPolicyFactory
+                    .get(EventType(event_type))
+                    .notify(db, event_context))
 
                 try:
                     await dispatch_alert(db, alert.id)

@@ -5,10 +5,9 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import and_, exists, func, or_, select
+from sqlalchemy import exists, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.user import User, UserRole
 from app.models.alert import Alert
 from app.models.tracking import TrackingSighting, TrackingSubject, APPEARANCE_EMBEDDING_DIMENSION, APPEARANCE_EMBEDDING_MODEL
 from app.models.camera import Camera
@@ -26,7 +25,8 @@ from app.schemas.tracking import (
     TrackingTimelineResponse
 )
 from app.services.situational_brief_service import maybe_generate_situational_brief
-from app.services.notifications.notification_service import dispatch_tracking_match_notifications
+from app.services.notifications.factory import NotificationPolicyFactory
+from app.schemas.notification import EventType
 
 logger = logging.getLogger(__name__)
 
@@ -307,35 +307,6 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
             
         )
 
-    authorized_recipient_result = await db.execute(
-        select(User.id)
-        .distinct()
-        .outerjoin(
-            NeighbourhoodUser,
-            NeighbourhoodUser.user_id == User.id,
-        )
-        .where(
-            or_(
-                User.system_role == UserRole.SYSTEM_ADMIN,
-                and_(
-                    NeighbourhoodUser.neighbourhood_id
-                    == candidate_property.neighbourhood_id,
-                    NeighbourhoodUser.role.in_(
-                        {
-                            NeighbourhoodRole.SECURITY_OFFICER,
-                            NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
-                        }
-                    ),
-                ),
-            )
-        )
-    )
-
-    authorized_recipient_ids = list(set(authorized_recipient_result.scalars().all()))
-
-    recipient_ids = [str(user_id) for user_id in authorized_recipient_ids]
-
-
     tracking_event_payload = {
         #the sighting ID is the idempotency key for this event.
         "event_id": str(sighting.id),
@@ -362,41 +333,25 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
 
     }
 
-    #  imported locally to avoid a module level circular import.
-    from app.api.controllers.alert import broadcast
+    event_type = "WEAPON_DETECTED" if data.detection_type == "WEAPON_DETECTED" else "GENERAL_DETECTION"
+    event_context = {
+        "event_type": "TRACKING_MATCH",
+        "notification_source_id": parent_alert.id,
+        "neighbourhood_id": candidate_property.neighbourhood_id,
+        "property_id": candidate_property.id,
+        "alert_type": "CROSS_PROPERTY_MATCH",
+        "camera_name": candidate_camera.name,
+        "location": candidate_camera.location,
+        "risk_level": "HIGH",
+        "timestamp": body.observed_at.strftime("%d %b %Y %H:%M"),
+        "source_property": source_property.address,
+        "destination_property": candidate_property.address,
+        "websocket_payload": tracking_event_payload,
+    }
 
-    try:
-        await broadcast(
-            recipient_ids,
-            {
-                "event": "tracking.sighting",
-                "payload": tracking_event_payload
-            } 
-
-        )
-
-    except Exception:
-        logger.exception(
-            "Tracking sighting committed but WebSocket broadcast failed: sighting_id=%s subject_id=%s",
-            sighting.id,
-            tracking_subject.id
-
-        )
-
-
-    await dispatch_tracking_match_notifications(
-        db=db,
-        alert_id=parent_alert.id,
-        camera_id=body.camera_id,
-        user_ids=authorized_recipient_ids,
-        tracking_subject_id=tracking_subject.id,
-        source_property=source_property.address,
-        destination_property=candidate_property.address,
-        source_timestamp=parent_alert.frame_timestamp,
-        match_timestamp=body.observed_at,
-        match_confidence=body.match_confidence
-        
-    )
+    await (NotificationPolicyFactory
+        .get(EventType(event_type))
+        .notify(db, event_context))
 
     return TrackingSightingCreateResponse(
         status=201,
