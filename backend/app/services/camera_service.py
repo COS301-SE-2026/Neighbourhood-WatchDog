@@ -20,6 +20,8 @@ from app.schemas.camera import (
     ListEnabledCameras,
     MediaMtxAuthRequest,
 )
+from app.models.camera_coverage import CameraCoverage
+from app.services.camera_coverage_service import _validate_origin_near_property
 import base64
 import hashlib
 import hmac
@@ -88,7 +90,18 @@ async def register_camera_handler(req, db, claims):
 
         # Get ID before commit
         await db.flush()
+        
+        if req.coverage is not None:
+            _validate_origin_near_property(req.coverage, property_obj)
 
+            db.add(
+                CameraCoverage(
+                    camera_id=new_camera.id,
+                    **req.coverage.model_dump(),
+                )
+            )
+
+            await db.flush()
         await create_audit_log_item(
             db=db,
             user_id=UUID(claims["id"]),
