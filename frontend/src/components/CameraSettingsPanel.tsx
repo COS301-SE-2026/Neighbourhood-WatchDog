@@ -106,7 +106,7 @@ export function CameraSettingsPanel({
         await updateThreshold(val[0]);
 
     };
-    
+
     const handleCoverageChange = (
         nextCoverage: CameraCoverageInput | undefined,
     ) => {
@@ -261,6 +261,82 @@ export function CameraSettingsPanel({
                     </div>
                 )}
             </div>
+
+            <div className="space-y-3 border-t border-border pt-4">
+                <div>
+                    <h3 className="text-sm font-semibold text-brand-frost">
+                        Geographic camera POV
+                    </h3>
+
+                    <p className="mt-1 text-xs text-brand-ash">
+                        Choose the camera position within 100 metres of the
+                        property, then select the left and right viewing edges.
+                    </p>
+                </div>
+
+                {coverageLoading && (
+                    <div
+                        role="status"
+                        className="flex items-center gap-2 text-xs text-brand-ash"
+                    >
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                        Loading camera POV…
+                    </div>
+                )}
+
+                {!coverageLoading && (
+                    <>
+                        <CameraCoverageEditor
+                            propertyLatitude={propertyLatitude}
+                            propertyLongitude={propertyLongitude}
+                            value={coverage}
+                            onChange={handleCoverageChange}
+                        />
+
+                        <div className="flex flex-wrap gap-2">
+                            <Button
+                                type="button"
+                                disabled={!coverage || coverageSaving}
+                                onClick={() => void handleCoverageSave()}
+                                className="bg-brand-green text-brand-void"
+                            >
+                                {coverageSaving
+                                    ? "Saving POV…"
+                                    : "Save camera POV"}
+                            </Button>
+
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={!coverage || coverageSaving}
+                                onClick={() => void handleCoverageDelete()}
+                                className="border-border bg-transparent text-brand-frost"
+                            >
+                                Remove saved POV
+                            </Button>
+                        </div>
+                    </>
+                )}
+
+                {coverageMessage && (
+                    <p
+                        role="status"
+                        className="text-xs text-brand-green"
+                    >
+                        {coverageMessage}
+                    </p>
+                )}
+
+                {coverageError && (
+                    <p
+                        role="alert"
+                        className="text-xs text-brand-threat"
+                    >
+                        {coverageError}
+                    </p>
+                )}
+            </div>
+
         </div>
     );
 }
