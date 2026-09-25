@@ -397,10 +397,17 @@ export function CameraCoverageEditor({
           step={1}
           value={rangeMetres}
           onChange={(event) => {
-            const nextValue = Number(event.target.value);
-            setRangeMetres(Number.isFinite(nextValue) ? nextValue : 0);
-            setMessage(null);
-          }}
+                const nextValue = Number(event.target.value);
+
+                setRangeMetres(
+                    Number.isFinite(nextValue)
+                        ? nextValue
+                        : 0,
+                );
+
+                setMessage(null);
+                onChange(undefined);
+            }}
           className="h-9 rounded-md border border-border bg-mist/10 px-3 text-brand-frost"
         />
         <span className="text-xs text-brand-ash">
