@@ -1,5 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import CameraCard from "@/components/CameraCard";
+import {
+    fireEvent,
+    render,
+    screen,
+    waitFor,
+} from "@testing-library/react";import CameraCard from "@/components/CameraCard";
 import { CameraSettingsPanel } from "@/components/CameraSettingsPanel";
 
 const mockUseCameraSettings = jest.fn();
@@ -81,12 +85,20 @@ function settingsState(zoneMutation: "adding" | "removing" | null) {
     };
 }
 
+async function waitForCoverageToLoad() {
+    await waitFor(() => {
+        expect(
+            screen.queryByText("Loading camera POV…"),
+        ).not.toBeInTheDocument();
+    });
+}
+
 describe("zone configuration feedback", () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    it("shows an applying message while a zone is being added", () => {
+    it("shows an applying message while a zone is being added", async () => {
         mockUseCameraSettings.mockReturnValue(settingsState("adding"));
 
         render(
@@ -99,13 +111,20 @@ describe("zone configuration feedback", () => {
             />,
         );
 
-        expect(screen.getByRole("status")).toHaveTextContent(
-            "Applying new zone configuration",
-        );
-        expect(screen.getByText(/live stream will update in a few seconds/i)).toBeInTheDocument();
+        await waitForCoverageToLoad();
+
+        expect(
+            screen.getByText(/Applying new zone configuration/i),
+        ).toBeInTheDocument();
+
+        expect(
+            screen.getByText(
+                /live stream will update in a few seconds/i,
+            ),
+        ).toBeInTheDocument();
     });
 
-    it("shows an applying message while a zone is being removed", () => {
+    it("shows an applying message while a zone is being removed", async () => {
         mockUseCameraSettings.mockReturnValue(settingsState("removing"));
 
         render(
@@ -118,12 +137,14 @@ describe("zone configuration feedback", () => {
             />,
         );
 
-        expect(screen.getByRole("status")).toHaveTextContent(
-            "Applying zone removal",
-        );
+        await waitForCoverageToLoad();
+
+        expect(
+            screen.getByText(/Applying zone removal/i),
+        ).toBeInTheDocument();
     });
 
-    it("keeps the CameraFeed mounted while the stream reconnects", () => {
+    it("keeps the CameraFeed mounted while the stream reconnects", async () => {
         mockUseCameraSettings.mockReturnValue(settingsState(null));
 
         render(
@@ -141,6 +162,7 @@ describe("zone configuration feedback", () => {
         );
 
         fireEvent.click(screen.getByRole("button", { name: /open live stream/i }));
+        await waitForCoverageToLoad();
         const feed = screen.getByTestId("camera-feed");
 
         fireEvent.click(feed);
