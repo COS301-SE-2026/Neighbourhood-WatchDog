@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 import os
 
-from app.services.notification_service import(
+from app.services.notifications.notification_service import(
     _classify_severity,
     _format_whatsapp_message,
     _log_notification,

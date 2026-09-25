@@ -11,7 +11,7 @@ from app.models.property_user import PropertyUser
 from app.models.zone import GeospatialZone
 from app.schemas.detection import DetectionIngestReq, DetectionIngestRes
 from app.services.alert_service import _build_alert_res
-from app.services.notification_service import dispatch_notifications
+from app.services.notifications.notification_service import dispatch_notifications
 from app.services.dispatch_service import dispatch_alert
 
 logger = logging.getLogger(__name__)

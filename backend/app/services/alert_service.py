@@ -54,7 +54,7 @@ from app.models.audit_log import AuditAction, TargetEntity
 from app.models.alert import Alert, DetectionType, AlertStatus
 
 from app.models.neighbourhood import Neighbourhood
-from app.services.notification_service import _format_whatsapp_message, _notify_users
+from app.services.notifications.notification_service import _format_whatsapp_message, _notify_users
 from app.models.user import User
 
 from app.models.tracking import TrackingSighting, TrackingSubject

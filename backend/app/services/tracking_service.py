@@ -26,7 +26,7 @@ from app.schemas.tracking import (
     TrackingTimelineResponse
 )
 from app.services.situational_brief_service import maybe_generate_situational_brief
-from app.services.notification_service import dispatch_tracking_match_notifications
+from app.services.notifications.notification_service import dispatch_tracking_match_notifications
 
 logger = logging.getLogger(__name__)
 

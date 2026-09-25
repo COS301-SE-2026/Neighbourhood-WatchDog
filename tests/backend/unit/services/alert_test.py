@@ -24,7 +24,7 @@ from app.services.alert_service import (
     get_alert_frequency_metrics_handler,
     get_alert_for_agent,
 )
-from app.services.notification_service import send_alert_email_bcc
+from app.services.notifications.notification_service import send_alert_email_bcc
 
 class TestAcknowledgeAlert:
     def setup_method(self):
