@@ -12,11 +12,32 @@ jest.mock("@/components/ZoneEditor", () => ({
     ZoneEditor: () => <div data-testid="zone-editor" />,
 }));
 
+jest.mock("@/components/CameraCoverageEditor", () => ({
+    CameraCoverageEditor: ({
+        onChange,
+    }: {
+        onChange: (value: unknown) => void;
+    }) => (
+        <button
+            type="button"
+            onClick={() => onChange(undefined)}
+        >
+            Mock camera POV editor
+        </button>
+    ),
+}));
+
 jest.mock("@/components/camera-dropdown", () => {
     return function MockCameraDropdown() {
         return <div data-testid="camera-dropdown" />;
     };
 });
+
+jest.mock("@/lib/api/camera", () => ({
+    getCameraCoverage: jest.fn().mockResolvedValue(null),
+    saveCameraCoverage: jest.fn(),
+    deleteCameraCoverage: jest.fn(),
+}));
 
 jest.mock("@/components/CameraFeed", () => {
     return function MockCameraFeed({
