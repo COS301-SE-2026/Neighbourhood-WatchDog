@@ -18,7 +18,7 @@ import {
 } from "@/lib/validators/camera-coverage";
 
 const EARTH_RADIUS_METRES = 6_371_000;
-const SECTOR_ARC_SEGMENTS = 36;
+const SECTOR_ARC_SEGMENTS = 24;
 
 type Coordinate = [number, number];
 
