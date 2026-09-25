@@ -1076,9 +1076,18 @@ class TestPromoteOfficer:
     @pytest.mark.asyncio
     async def test_already_accepted_stops_reassignment(self):
         accepted = make_dispatch_row(DispatchStatus.ACCEPTED, officer_id=uuid4(), rank=1)
-        pending = make_dispatch_row(DispatchStatus.ACCEPTED, officer_id=uuid4(), rank=2)
+        pending = make_dispatch_row(DispatchStatus.PENDING, officer_id=uuid4(), rank=2)
         run = await self.promote([accepted, pending])
 
         run.notify.assert_not_awaited()
         run.escalate.assert_not_awaited()
         run.db.add.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_does_not_double_notify(self):
+        notified = make_dispatch_row(DispatchStatus.NOTIFIEDD, officer_id=uuid4(), rank=1)
+        pending = make_dispatch_row(DispatchStatus.PENDING, officer_id=uuid4(), rank=2)
+        run = await self.promote([notified, pending])
+
+        run.notify.assert_not_awaited()
+        run.escalate.assert_not_awaited()
