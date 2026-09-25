@@ -1,0 +1,14 @@
+backend/app/models/camera.py
+  h_3555f7510a5ca8 17-18,35,37,42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4e13c673794e46eae04e6e7ba3290dd301c13b7a",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
