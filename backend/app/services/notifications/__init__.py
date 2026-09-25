@@ -1,3 +1,3 @@
-from app.services.notifications.factory import EventType, NotificationPolicyFactory
+from app.services.notifications.factory import NotificationPolicyFactory
 
-__all__ = ["NotificationPolicyFactory", "EventType"]
+__all__ = ["NotificationPolicyFactory"]
