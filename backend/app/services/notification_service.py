@@ -93,7 +93,7 @@ def _format_match_notification_message(tracking_subject_id: UUID, source_propert
     )
 
 
-def _send_whatsapp(to_phone: str, message: str) -> tuple[bool, str | None]:
+def send_whatsapp(to_phone: str, message: str) -> tuple[bool, str | None]:
     """Send whatsapp message using twilio snadbox. Recipient must be part of sandbox to receive messages"""
     try:
         from twilio.rest import Client
@@ -672,7 +672,7 @@ async def _notify_users_by_whatsapp(
 ) -> None:
     for user in users:
         if user.phone_number:
-            success, error = await asyncio.to_thread(_send_whatsapp, user.phone_number, whatsapp_message)
+            success, error = await asyncio.to_thread(send_whatsapp, user.phone_number, whatsapp_message)
             _log_notification(db, alert_id, user.id, NotificationChannel.WHATSAPP, success, error)
             if success:
                 logger.info(f"Whatsapp sent successfully to user {user.id}")
@@ -779,4 +779,36 @@ async def _notify_users(
             severity,
         )
 
-        
+
+
+
+# KEEP THIS AFTER THE REFACTORING:
+def send_email_smtp(
+    recipient_email: str,
+    subject: str,
+    html_body: str,
+    plain_body: str,
+) -> tuple[bool, str | None]:
+    if not SENDER_EMAIL or not SENDER_PASSWORD:
+        return False, SMTP_ERROR
+
+    try: 
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+
+        msg = MIMEMultipart("alternative")
+        msg["From"] = f"Neighbourhood WatchDog <{SENDER_EMAIL}>"
+        msg["To"] = recipient_email
+        msg["Subject"] = subject
+        msg.attach(MIMEText(plain_body, "plain"))
+        msg.attach(MIMEText(html_body, "html"))
+
+
+        server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
+        server.quit()
+        return True, None
+
+    except Exception as e:
+        logger.exception("Error sending email to %s" , recipient_email)
+        return False, str(e)

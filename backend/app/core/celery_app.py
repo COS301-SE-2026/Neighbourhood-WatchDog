@@ -17,7 +17,9 @@ celery = Celery(
     __name__,
     include=[
         "app.tasks.risk_score_tasks", 
-        "app.tasks.clip_tasks", "app.tasks.push_tasks",
+        "app.tasks.clip_tasks", 
+        "app.tasks.push_tasks",
+        "app.tasks.notification_tasks",
         "app.tasks.incident_density_tasks"
     ]
 )
