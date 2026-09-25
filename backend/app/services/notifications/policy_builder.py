@@ -4,17 +4,25 @@ from app.services.notifications.channel import NotificationChannel
 from app.services.notifications.policy import NotificationPolicy
 
 class NotificationPolicyBuilder:
+    channels = []
+    resolver: Callable = None
+    severity_fn: Callable = None,
+
     def with_channel(self, channel: NotificationChannel):
-        pass #TODO we finna add to this
+        self.channels.append(channel)
         return self
 
     def with_recipient_resolver(self, fn):
-        pass #TODO: implement
+        self.resolver = fn
         return self
 
     def with_severity(self, fn):
-        pass #TODO: implement
+        self.severity_fn = fn
         return self
 
     def build(self) -> NotificationPolicy:
-        pass # TODO: implement
+        return NotificationPolicy(
+            channels=self.channels,
+            recipient_resolver=self.resolver,
+            severity_fn=self.severity_fn
+        )
