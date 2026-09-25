@@ -1,0 +1,21 @@
+backend/app/services/notifications/policies/property_invite.py
+  h_cf6208e37032c0 13
+  h_cf6208e37032c0 14
+backend/app/services/notifications/policies/join_request.py
+  h_cf6208e37032c0 13,24,34
+backend/app/services/notifications/policies/tracking_match.py
+  h_cf6208e37032c0 8,15
+backend/app/services/notifications/policies/weapon_detected.py
+  h_cf6208e37032c0 8,18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e67e6f88d839377e06bd11925d8909d13a8e16f9",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
