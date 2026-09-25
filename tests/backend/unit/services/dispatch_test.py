@@ -35,7 +35,6 @@ from app.services.dispatch_service import (
     rank_candidates,
     respond_to_dispatch_handler,
     expire_stale_dispatchs,
-    _escalate_dispatch,
 )
 
 ALERT_ID = uuid4()

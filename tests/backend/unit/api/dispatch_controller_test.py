@@ -38,7 +38,7 @@ def make_dispatch_res():
     )
     return AlertDispatchRes(alert_id=ALERT_ID, selected=selected)
 
-def test_router_exposes_dispatch_route():
+def test_router_exposes_get_dispatch_route():
     routes = {(route.path, tuple(sorted(route.methods))) for route in router.routes}
     assert ("/dispatch/alert/{alert_id}", ("GET",)) in routes
 
@@ -127,7 +127,7 @@ async def test_get_alert_dispatch_propagates_not_found_error():
         claims=CLAIMS,
     )
 
-def test_router_exposes_dispatch_route():
+def test_router_exposes_respond_dispatch_route():
     routes = {(route.path, tuple(sorted(route.methods))) for route in router.routes}
     assert ("/dispatch/{dispatch_id}/respond", ("POST",)) in routes
 
