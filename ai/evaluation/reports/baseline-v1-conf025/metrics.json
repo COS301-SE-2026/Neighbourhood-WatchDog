@@ -1,6 +1,6 @@
 {
   "dataset": "watchdog-real-footage-baseline-v1",
-  "evaluation_date": "2026-09-25T20:58:02.870491+00:00",
+  "evaluation_date": "2026-09-25T21:10:48.169484+00:00",
   "evaluation_item_count": 24,
   "manifest": "evaluation/dataset_manifest.csv",
   "iou_match_threshold": 0.5,
