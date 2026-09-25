@@ -21,3 +21,4 @@ from app.models.tracking import *  # noqa: F403
 from app.models.dispatch import * # noqa: F403
 from app.models.push_device import * # noqa: F403
 from app.models.incident_density import * # noqa: F403
+from app.models.danger_zone import * # noqa: F403
