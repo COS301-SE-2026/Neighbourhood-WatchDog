@@ -33,6 +33,13 @@ class Camera(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,)
     detection_zones = relationship("CameraDetectionZone", back_populates="camera", cascade="all, delete-orphan")
+    coverage = relationship(
+        "CameraCoverage",
+        back_populates="camera",
+        uselist=False,
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
     property = relationship("Property", back_populates="cameras")
 
     __table_args__ = (
