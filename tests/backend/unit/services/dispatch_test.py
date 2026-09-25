@@ -205,24 +205,31 @@ async def run_dispatch(steps, mock_db=None, commit_error=None, refetch=None):
         mock_db.commit = AsyncMock(side_effect=commit_error)
 
     pending = list(steps)
+    fallback_calls = 0
 
     async def fake_execute(_stmt):
+        nonlocal fallback_calls
         if pending:
             return pending.pop(0)
         rows = added if refetch is None else refetch
+        fallback_calls += 1
         result = make_scalars_result(rows)
+        target_status = DispatchStatus.SELECTED if fallback_calls == 1 else DispatchStatus.NO_CANDIDATE
         result.scalar_one_or_none.return_value = next(
-            (r for r in rows if r.status == DispatchStatus.SELECTED), None
+            (r for r in rows if r.status == target_status), None
         )
         return result
 
     mock_db.execute = AsyncMock(side_effect=fake_execute)
 
-    with patch("app.services.dispatch_service._notify_officer", new=AsyncMock()) as notify:
+    with (
+        patch("app.services.dispatch_service._notify_officer", new=AsyncMock()) as notify, 
+        patch("app.services.dispatch_service._escalate_dispatch", new=AsyncMock()) as escalate,
+    ):
         res = await dispatch_alert(mock_db, ALERT_ID)
 
     assert not pending, "db.execute results were provided that dispatch_alert never asked for"
-    return SimpleNamespace(res=res, db=mock_db, added=added, notify=notify)
+    return SimpleNamespace(res=res, db=mock_db, added=added, notify=notify, escalate=escalate)
 
 class TestFilterEligible:
     def test_keeps_fresh_available_officer(self):
