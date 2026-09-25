@@ -944,6 +944,7 @@ class TestRespondToDispatchHandler:
             extra=[
                 make_scalars_result([dispatch, next_candidate]),
                 make_scalar_result(str(uuid4())),
+                make_scalar_result("WEAPON_DETECTED"),
             ],
         )
 
@@ -954,6 +955,8 @@ class TestRespondToDispatchHandler:
         assert res.message == "Declined"
         assert next_candidate.status == DispatchStatus.NOTIFIED
         assert next_candidate.notified_at is not None
+        broadcast.assert_awaited_once()
+        assert broadcast.await_args.args[1]["payload"]["detection_type"] == "WEAPON_DETECTED"
 
     @pytest.mark.asyncio
     async def test_rejects_response_from_officer_it_was_not_sent_to(self):

@@ -324,6 +324,10 @@ async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
             )
             return
 
+        detection_type = (
+            await db.execute(select(Alert.detection_type).where(Alert.id == dispatch.alert_id))
+        ).scalar_one_or_none()
+
         await broadcast(
             [user_id],
             {
@@ -331,6 +335,7 @@ async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
                 "payload": {
                     "dispatch_id": str(dispatch.id),
                     "alert_id": str(dispatch.alert_id),
+                    "detection_type": detection_type,
                     "distance": dispatch.distance,
                     "eta": dispatch.eta,
                     "notified_at": now.isoformat(),
