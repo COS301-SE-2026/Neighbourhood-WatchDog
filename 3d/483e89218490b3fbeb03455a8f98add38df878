@@ -1,0 +1,28 @@
+backend/app/core/camera_coverage.py
+  h_3555f7510a5ca8 6-7,77,80,83-86
+backend/app/services/camera_service.py
+  h_3555f7510a5ca8 93,141-143
+frontend/src/components/CameraCoverageEditor.tsx
+  h_3555f7510a5ca8 415
+tests/backend/unit/authorization/camera_coverage_authorization_test.py
+  h_3555f7510a5ca8 1-202
+tests/backend/unit/services/camera_coverage_service_test.py
+  h_3555f7510a5ca8 147-155
+tests/backend/unit/services/camera_test.py
+  h_3555f7510a5ca8 10-11,559-851
+tests/frontend/components/camera-coverage-editor.test.tsx
+  h_3555f7510a5ca8 1-227
+tests/frontend/components/new-camera-card.test.tsx
+  h_3555f7510a5ca8 1-254
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3d483e89218490b3fbeb03455a8f98add38df878",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
