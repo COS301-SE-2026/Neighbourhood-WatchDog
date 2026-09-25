@@ -400,9 +400,9 @@ export function CameraCoverageEditor({
                 const nextValue = Number(event.target.value);
 
                 setRangeMetres(
-                    Number.isFinite(nextValue)
-                        ? nextValue
-                        : 0,
+                Number.isFinite(nextValue)
+                    ? nextValue
+                    : 0,
                 );
 
                 setMessage(null);
