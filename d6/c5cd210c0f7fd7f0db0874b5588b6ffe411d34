@@ -1,0 +1,19 @@
+backend/app/services/neighbourhood_join_service.py
+  h_cf6208e37032c0 9,105-106,109-110,114,349,352,354-355,369,371-372,376-381,397-413
+  h_cf6208e37032c0 350-351,353,357-361,363-367,373-374
+backend/app/services/notifications/recipients.py
+  h_cf6208e37032c0 88
+backend/app/services/notifications/channels/email_channel.py
+  h_cf6208e37032c0 1-2,12-13,53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d6c5cd210c0f7fd7f0db0874b5588b6ffe411d34",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
