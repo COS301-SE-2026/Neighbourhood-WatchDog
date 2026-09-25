@@ -1,3 +1,5 @@
+import logging
+
 from uuid import UUID
 from datetime import datetime
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -6,6 +8,8 @@ from app.core.database import DbSession
 from app.models.user import User
 from app.services.notifications.channel import NotificationChannel
 from app.tasks.notification_tasks import send_email_task
+
+logger = logging.getLogger(__name__)
 
 _env = Environment(
     loader=FileSystemLoader("app/services/notifications/templates"),
@@ -46,6 +50,7 @@ class EmailChannel(NotificationChannel):
                 html_body,
                 plain_body,
             )
+    
 
 ALERT_TEMPLATE_FILENAME = "alert_email.html.j2"
 

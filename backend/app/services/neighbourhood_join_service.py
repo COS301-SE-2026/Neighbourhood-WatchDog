@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import IntegrityError
 
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
@@ -101,12 +102,16 @@ async def request_to_join_handler(property_id: UUID, join_code: str, db: DbSessi
         )
         db.add(join_request)
 
+
+        # sending the notification to the admin
         prop: Property = property_obj
         event_context = {
+            "event_type": "JOIN_REQUEST",
+            "notification_source_id": None,
             "property_address": prop.address,
             "neighbourhood_name": neighbourhood.name,
             "neighbourhood_id": neighbourhood.id,
-            "dashboard_url": FRONTEND_URL if FRONTEND_URL is not None else "neighbourhoodwatchdog.co.za",
+            "dashboard_url": FRONTEND_URL if FRONTEND_URL is not None else "neighbourhoodwatchdog.co.za/auth/login",
         }
 
         await (NotificationPolicyFactory  
@@ -341,37 +346,39 @@ async def resolve_join_request_handler(request_id: UUID, action: str, db: DbSess
             "status": join_request.status,
         }
 
+    
+        property_result = await db.execute(
+            select(Property)
+            .options(joinedload(Property.neighbourhood))
+            .where(Property.id == join_request.property_id)
+        )
+        property_obj = property_result.scalar_one_or_none()
+
+        if not property_obj:
+            raise HTTPException(
+                404,
+                "Property associateed with this join request no longer exists",
+            )
+
+        if property_obj.neighbourhood_id is not None:
+            raise HTTPException(
+                409,
+                "The selected property already belongs to a neighbourhood",
+            )
+
+        property_obj.neighbourhood_id = join_request.neighbourhood_id
+
+        existing_membership_result = await db.execute(
+            select(NeighbourhoodUser).where(
+                NeighbourhoodUser.user_id == join_request.user_id,
+                NeighbourhoodUser.neighbourhood_id == join_request.neighbourhood_id,
+            )
+        )
+        existing_membership = (
+            existing_membership_result.scalar_one_or_none()
+        )
+        
         if action == "APPROVE":
-            property_result = await db.execute(
-                select(Property)
-                .where(Property.id == join_request.property_id)
-            )
-            property_obj = property_result.scalar_one_or_none()
-
-            if not property_obj:
-                raise HTTPException(
-                    404,
-                    "Property associateed with this join request no longer exists",
-                )
-
-            if property_obj.neighbourhood_id is not None:
-                raise HTTPException(
-                    409,
-                    "The selected property already belongs to a neighbourhood",
-                )
-
-            property_obj.neighbourhood_id = join_request.neighbourhood_id
-
-            existing_membership_result = await db.execute(
-                select(NeighbourhoodUser).where(
-                    NeighbourhoodUser.user_id == join_request.user_id,
-                    NeighbourhoodUser.neighbourhood_id == join_request.neighbourhood_id,
-                )
-            )
-            existing_membership = (
-                existing_membership_result.scalar_one_or_none()
-            )
-
             if not existing_membership:
                 db.add(
                     NeighbourhoodUser(
@@ -386,6 +393,23 @@ async def resolve_join_request_handler(request_id: UUID, action: str, db: DbSess
             join_request.status = JoinRequestStatus.REJECTED
 
         join_request.resolved_at = datetime.now(timezone.utc)
+
+        # sending the notification to the admin
+        neighbourhood = property_obj.neighbourhood
+        event_context = {
+            "event_type": "JOIN_REQUEST_RESOLVED",
+            "notification_source_id": None,
+            "property_address": property_obj.address,
+            "property_id": property_obj.id,
+            "neighbourhood_name": neighbourhood.name,
+            "neighbourhood_id": neighbourhood.id,
+            "approved": (join_request.status == JoinRequestStatus.APPROVED),
+            "dashboard_url": FRONTEND_URL if FRONTEND_URL is not None else "neighbourhoodwatchdog.co.za/auth/login",
+        }
+
+        await (NotificationPolicyFactory  
+            .get(EventType.JOIN_REQUEST_RESOLVED)
+            .notify(db, event_context))
 
         await create_audit_log_item(
             db=db,

@@ -85,7 +85,7 @@ async def resolve_property_members(db: DbSession, event_context: dict) -> list[U
         select(User)
         .join(PropertyUser)
         .where(
-            NeighbourhoodUser.property_id == property_id
+            PropertyUser.property_id == property_id
         )
     )
     return list(result.scalars().all())
