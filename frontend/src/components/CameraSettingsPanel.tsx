@@ -106,6 +106,59 @@ export function CameraSettingsPanel({
         await updateThreshold(val[0]);
 
     };
+    
+    const handleCoverageChange = (
+        nextCoverage: CameraCoverageInput | undefined,
+    ) => {
+        setCoverage(nextCoverage);
+        setCoverageMessage(null);
+        setCoverageError(null);
+    };
+
+    const handleCoverageSave = async () => {
+        if (!coverage) {
+            setCoverageError(
+                "Complete the camera POV before saving it.",
+            );
+            return;
+        }
+
+        setCoverageSaving(true);
+        setCoverageMessage(null);
+        setCoverageError(null);
+
+        try {
+            const savedCoverage = await saveCameraCoverage(
+                cameraId,
+                coverage,
+            );
+
+            setCoverage(savedCoverage);
+            setCoverageMessage("Camera POV saved successfully.");
+        } catch (error) {
+            console.error("Failed to save camera POV", error);
+            setCoverageError("Failed to save camera POV.");
+        } finally {
+            setCoverageSaving(false);
+        }
+    };
+
+    const handleCoverageDelete = async () => {
+        setCoverageSaving(true);
+        setCoverageMessage(null);
+        setCoverageError(null);
+
+        try {
+            await deleteCameraCoverage(cameraId);
+            setCoverage(undefined);
+            setCoverageMessage("Camera POV removed.");
+        } catch (error) {
+            console.error("Failed to remove camera POV", error);
+            setCoverageError("Failed to remove camera POV.");
+        } finally {
+            setCoverageSaving(false);
+        }
+    };
 
 
     return (
