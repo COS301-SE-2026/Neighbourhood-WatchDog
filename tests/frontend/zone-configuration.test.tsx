@@ -73,6 +73,8 @@ describe("zone configuration feedback", () => {
                 cameraId="00000000-0000-0000-0000-000000000001"
                 userRole="PROPERTY_ADMIN"
                 videoRef={{ current: null }}
+                propertyLatitude={-25.7479}
+                propertyLongitude={28.2293}
             />,
         );
 
@@ -90,6 +92,8 @@ describe("zone configuration feedback", () => {
                 cameraId="00000000-0000-0000-0000-000000000001"
                 userRole="PROPERTY_ADMIN"
                 videoRef={{ current: null }}
+                propertyLatitude={-25.7479}
+                propertyLongitude={28.2293}
             />,
         );
 
