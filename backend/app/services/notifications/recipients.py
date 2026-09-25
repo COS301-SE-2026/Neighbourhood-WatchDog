@@ -3,6 +3,8 @@ from sqlalchemy import select
 
 from app.core.database import DbSession
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
+from app.models.property_user import PropertyUser
+from app.models.property import Property
 from app.models.user import User
 
 async def resolve_neighbourhood_members(db: DbSession, event_context: dict) -> list[User]:
@@ -74,6 +76,26 @@ async def resolve_neighbourhood_admins_and_officers(db: DbSession, event_context
         )
     )
     return list(result.scalars().all())
+
+async def resolve_property_members(db: DbSession, event_context: dict) -> list[User]:
+    """Returns the users in a property"""
+    property_id: UUID = event_context["property_id"]
+
+    result = await db.execute(
+        select(User)
+        .join(PropertyUser)
+        .where(
+            NeighbourhoodUser.property_id == property_id
+        )
+    )
+    return list(result.scalars().all())
+
+async def resolve_neighbourhood_admins_officers_and_property_users(db: DbSession, event_context: dict) -> list[User]:
+    """Officers and Neighbourhood admins and the users in a property"""
+    list1 = await resolve_property_members(db, event_context)
+    list2 = await resolve_neighbourhood_admins_and_officers(db, event_context)
+
+    return (list1.append(list2))
 
 async def resolve_users_by_id(db: DbSession, event_context: dict) -> list[User]:
     """For policies handed pre-resolved ids"""
