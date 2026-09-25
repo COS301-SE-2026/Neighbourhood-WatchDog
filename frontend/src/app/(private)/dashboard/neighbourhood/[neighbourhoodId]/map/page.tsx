@@ -1015,6 +1015,10 @@ function handleToggleLayer(layer: MapLayerKey) {
               currentSelectedProperty?.propertyId ??
               null
             }
+            showIncidentHeatmap={
+              layerState.heatmap &&
+              densityRangeIsValid
+            }
             showIncidentContours={
               layerState.contours &&
               densityRangeIsValid
