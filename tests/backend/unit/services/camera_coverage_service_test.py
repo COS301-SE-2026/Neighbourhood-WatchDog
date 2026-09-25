@@ -157,6 +157,11 @@ async def test_get_camera_coverage_returns_saved_coverage():
         PROPERTY_LATITUDE,
         PROPERTY_LONGITUDE,
     ]
+    assert result.polygon[-1] == [
+        PROPERTY_LATITUDE,
+        PROPERTY_LONGITUDE,
+    ]
+
 
 
 @pytest.mark.asyncio
