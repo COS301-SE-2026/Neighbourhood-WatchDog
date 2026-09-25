@@ -8,7 +8,7 @@ class WhatsAppChannel(NotificationChannel):
     async def send(
         self,
         db: DbSession,
-        notification_id: UUID,
+        notification_id: UUID | None,
         recipients: list[User],
         context: dict,
     ):
