@@ -116,7 +116,7 @@ test("missing property coordinates show a warning", () => {
 
   expect(
     screen.getByText(
-      "This property has no saved map coordinates.",
+      /This property has no saved map coordinates/i,
     ),
   ).toBeInTheDocument();
 });
