@@ -14,7 +14,7 @@ from sqlalchemy import select
 from app.core.database import DbSession
 
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
-from app.models.notification import Notification, NotificationChannel, NotificationStatus
+from app.models.notification import Notification, NotificationChannelEnum, NotificationStatus
 from app.models.property import Property
 from app.models.user import User
 from app.models.camera import Camera
@@ -469,7 +469,7 @@ def _log_notification(
     db: DbSession,
     alert_id: UUID,
     user_id: UUID,
-    channel: NotificationChannel,
+    channel: NotificationChannelEnum,
     success: bool,
     error_message: str | None,
 ) -> None:
@@ -673,7 +673,7 @@ async def _notify_users_by_whatsapp(
     for user in users:
         if user.phone_number:
             success, error = await asyncio.to_thread(send_whatsapp, user.phone_number, whatsapp_message)
-            _log_notification(db, alert_id, user.id, NotificationChannel.WHATSAPP, success, error)
+            _log_notification(db, alert_id, user.id, NotificationChannelEnum.WHATSAPP, success, error)
             if success:
                 logger.info(f"Whatsapp sent successfully to user {user.id}")
             else:
@@ -716,7 +716,7 @@ async def _notify_users_by_bcc_email(
         )
 
         for user in batch_users:
-            _log_notification(db, alert_id, user.id, NotificationChannel.EMAIL, success, error)
+            _log_notification(db, alert_id, user.id, NotificationChannelEnum.EMAIL, success, error)
 
             if success:
                 logger.info("BCC email sent successfully to user %s", user.id)
@@ -735,7 +735,7 @@ async def _notify_users_by_individual_email(
     for user in users:                
         if user.email:
             success, error = await asyncio.to_thread(send_alert_email, user.email, detection_type, camera.name, camera.location, severity)
-            _log_notification(db, alert_id, user.id, NotificationChannel.EMAIL, success, error)
+            _log_notification(db, alert_id, user.id, NotificationChannelEnum.EMAIL, success, error)
             if success:
                 logger.info(f"Email sent successfully to user {user.id}")
             else:

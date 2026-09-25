@@ -18,7 +18,7 @@ from app.services.notifications.notification_service import(
     send_alert_email_bcc, 
     _notify_users_by_bcc_email
 )
-from app.models.notification import NotificationChannel, NotificationStatus
+from app.models.notification import NotificationChannelEnum, NotificationStatus
 
 WHATSAPP_TEST_NUMBER = "whatsapp:+27821234567"
 class TestClassifySeverity:
@@ -335,7 +335,7 @@ class TestNotifyUsersBcc:
         assert mock_bcc.call_args_list[1].args[0] == ["three@example.com"]
 
         assert mock_log.call_count == 3
-        assert mock_log.call_args_list[0].args[3] == NotificationChannel.EMAIL
+        assert mock_log.call_args_list[0].args[3] == NotificationChannelEnum.EMAIL
         assert mock_log.call_args_list[0].args[4] is True
         assert mock_log.call_args_list[1].args[4] is True
         assert mock_log.call_args_list[2].args[4] is False
@@ -394,7 +394,7 @@ class TestLogNotification:
         self.mock_db = Mock()
  
     def test_success_creates_sent_record(self):
-        _log_notification(self.mock_db, uuid.uuid4(), uuid.uuid4(), NotificationChannel.WHATSAPP, True, None)
+        _log_notification(self.mock_db, uuid.uuid4(), uuid.uuid4(), NotificationChannelEnum.WHATSAPP, True, None)
  
         self.mock_db.add.assert_called_once()
         record = self.mock_db.add.call_args.args[0]
@@ -404,7 +404,7 @@ class TestLogNotification:
         self.mock_db.rollback.assert_not_called()
  
     def test_failure_creates_failed_record_with_error(self):
-        _log_notification(self.mock_db, uuid.uuid4(), uuid.uuid4(), NotificationChannel.WHATSAPP, False, "send failed")
+        _log_notification(self.mock_db, uuid.uuid4(), uuid.uuid4(), NotificationChannelEnum.WHATSAPP, False, "send failed")
 
         self.mock_db.add.assert_called_once()
         record = self.mock_db.add.call_args.args[0]
@@ -734,7 +734,7 @@ class TestDispatchNotifications:
         mock_log.assert_called_once()
         args = mock_log.call_args.args
 
-        assert args[3] == NotificationChannel.WHATSAPP
+        assert args[3] == NotificationChannelEnum.WHATSAPP
         assert args[4] is False
         assert args[5] == "twilio error"
 
@@ -766,7 +766,7 @@ class TestDispatchNotifications:
         mock_log.assert_called_once()
         args = mock_log.call_args.args
 
-        assert args[3] == NotificationChannel.EMAIL
+        assert args[3] == NotificationChannelEnum.EMAIL
         assert args[4] is False
         assert args[5] == "smtp error"
 
@@ -833,7 +833,7 @@ class TestNotifyUsers:
         mock_email.assert_called_once()  
         assert mock_log.call_count == 2
         whatsapp_log_call = mock_log.call_args_list[0]
-        assert whatsapp_log_call.args[3] == NotificationChannel.WHATSAPP
+        assert whatsapp_log_call.args[3] == NotificationChannelEnum.WHATSAPP
         assert whatsapp_log_call.args[4] is False
         assert whatsapp_log_call.args[5] == "twilio error"
 
