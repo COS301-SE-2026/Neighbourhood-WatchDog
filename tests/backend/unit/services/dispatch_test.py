@@ -1133,3 +1133,21 @@ class TestPromoteOfficer:
         run = await self.promote([declined, no_candidate])
         run.db.add.assert_not_called()
         run.escalate.assert_not_awaited()
+
+class TestEscalateDispatch:
+    def make_row(self, **overrides):
+        return make_dispatch_row(DispatchStatus.NO_CANDIDATE, rank=None, **overrides)
+
+    @pytest.mark.asyncio
+    async def test_records_notified_at(self):
+        mock_db, _ = make_mock_db()
+        mock_db.execute = AsyncMock(return_value=make_scalars_result([str(uuid4())]))
+        row = self.make_row()
+        assert row.notified_at is None
+
+        with patch("app.services.dispatch_service.broadcast", new=AsyncMock()):
+            await _escalate_dispatch(mock_db, row, reason="no_available_officer")
+
+        assert row.notified_at is not None
+        mock_db.commit.assert_awaited_once()
+        mock_db.refresh.assert_awaited_once_with(row)
