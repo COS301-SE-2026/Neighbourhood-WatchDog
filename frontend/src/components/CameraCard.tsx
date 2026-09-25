@@ -14,6 +14,8 @@ interface CameraCardProps {
     readonly enabled: boolean;
     readonly userRole?: string;
     readonly onDeleted: (cameraId: string) => void;
+    readonly propertyLatitude?: number | null;
+    readonly propertyLongitude?: number | null;
 }
 
 function getStatusLabel(enabled: boolean, streamState: CameraStreamState): string {
@@ -39,7 +41,7 @@ function getStatusDotClass(enabled: boolean, streamState: CameraStreamState): st
     return "bg-emerald-400";
 }
 
-export default function CameraCard({ id, name, location, visibility, enabled, userRole = "RESIDENT", onDeleted }: CameraCardProps) {
+export default function CameraCard({ id, name, location, visibility, enabled, userRole = "RESIDENT", onDeleted, propertyLatitude, propertyLongitude, }: CameraCardProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [open, setOpen] = useState(false);
     const [streamState, setStreamState] = useState<CameraStreamState>("idle");
@@ -160,6 +162,8 @@ export default function CameraCard({ id, name, location, visibility, enabled, us
                     cameraId={id}
                     userRole={userRole}
                     videoRef={videoRef}
+                    propertyLatitude={propertyLatitude ?? null}
+                    propertyLongitude={propertyLongitude ?? null}
                 />
             </DialogContent>
         </Dialog>
