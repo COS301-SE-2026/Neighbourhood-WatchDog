@@ -43,7 +43,6 @@ export default function PropertyCamerasPage() {
 
     useEffect(() => {
         if (!propertyId) {
-            setPropertyCoordinates({ latitude: null, longitude: null });
             return;
         }
 
