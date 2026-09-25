@@ -9,10 +9,13 @@ import {
     addCamera as apiAddCamera,
     fetchCameras as apiFetchCameras
 } from "@/lib/api/camera";
+import { getPropertyDetails } from "@/lib/api/property";
+import type { CameraInput } from "@/lib/validators/camera";
 
 import { NewCameraCard } from "@/components/new-camera-card";
 import CameraCard from "@/components/CameraCard";
 import { usePropertyContext } from "@/hooks/use-property-context";
+import { useUserContext } from "@/hooks/use-user-context";
 
 interface CameraProp {
     id: string;
@@ -25,15 +28,66 @@ interface CameraProp {
 }
 
 export default function PropertyCamerasPage() {
-    const { activeContext, isLoading: isLoadingProperty } = usePropertyContext();
+    const {
+        activeContext,
+        isLoading: isLoadingProperty,
+    } = usePropertyContext();
+
+    const { data: userContext } = useUserContext();
 
     const [cameras, setCameras] = useState<CameraProp[]>([]);
     const [resolvedPropertyId, setResolvedPropertyId] = useState<string | null>(null);
     const [showCard, setShowCard] = useState(false);
+    const [propertyCoordinates, setPropertyCoordinates] = useState<{
+        latitude: number | null;
+        longitude: number | null;
+    }>({ latitude: null, longitude: null });
 
     const propertyId = activeContext?.propertyId ?? null;
+    const activePropertyRecord = userContext?.properties.find(
+        (property) => property.id === propertyId,
+    );
+
+    const cameraUserRole =
+        userContext?.user.system_role === "SYSTEM_ADMIN"
+            ? "SYSTEM_ADMIN"
+            : activePropertyRecord?.is_admin
+                ? "PROPERTY_ADMIN"
+                : activeContext?.role === "Neighbourhood Admin"
+                    ? "NEIGHBOURHOOD_ADMIN"
+                    : "RESIDENT";
 
     const isLoadingCameras = propertyId !== null && resolvedPropertyId !== propertyId;
+
+    useEffect(() => {
+        if (!propertyId) {
+            return;
+        }
+
+        let cancelled = false;
+
+        const loadPropertyDetails = async () => {
+            try {
+                const details = await getPropertyDetails(propertyId);
+                if (cancelled) return;
+
+                setPropertyCoordinates({
+                    latitude: details.latitude,
+                    longitude: details.longitude,
+                });
+            } catch (error) {
+                if (cancelled) return;
+                console.error("Failed to load property coordinates", error);
+                setPropertyCoordinates({ latitude: null, longitude: null });
+            }
+        };
+
+        void loadPropertyDetails();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [propertyId]);
 
     useEffect(() => {
         if (!propertyId) {
@@ -83,7 +137,14 @@ export default function PropertyCamerasPage() {
 
     }, [propertyId]);
 
-    const handleAddCamera = async (data: { name: string, location: string, rtspUrl: string }) => {
+    const handleAddCamera = async (data: {
+        name: string;
+        location: string;
+        rtsp_url: string;
+        property_id: string;
+        visibility: "PRIVATE";
+        coverage?: CameraInput["coverage"];
+    }) => {
         if (!propertyId) {
             toast.error("Select a property before adding a camera");
             return;
@@ -93,9 +154,10 @@ export default function PropertyCamerasPage() {
             const newCamera = await apiAddCamera({
                 name: data.name,
                 location: data.location,
-                visibility: "PRIVATE",
-                rtsp_url: data.rtspUrl,
-                property_id: propertyId
+                visibility: data.visibility,
+                rtsp_url: data.rtsp_url,
+                property_id: data.property_id,
+                ...(data.coverage ? { coverage: data.coverage } : {}),
             });
             setCameras((prev) => [...prev,
                 {
@@ -221,7 +283,9 @@ export default function PropertyCamerasPage() {
                                     location={camera.location}
                                     visibility={camera.visibility}
                                     enabled={camera.enabled}
-                                    userRole={activeContext.role === "Neighbourhood Admin" ? "NEIGHBOURHOOD_ADMIN" : "RESIDENT"}
+                                    userRole={cameraUserRole}
+                                    propertyLatitude={propertyCoordinates.latitude}
+                                    propertyLongitude={propertyCoordinates.longitude}
                                     onDeleted={(deletedCameraId) => {
                                         setCameras((currentCameras) =>
                                             currentCameras.filter(
@@ -239,7 +303,18 @@ export default function PropertyCamerasPage() {
             {showCard && (
                 <NewCameraCard
                     onClose={() => setShowCard(false)}
-                    onAcknowledge={handleAddCamera}
+                    onAcknowledge={(data) => {
+                        void handleAddCamera({
+                            name: data.name,
+                            location: data.location,
+                            rtsp_url: data.rtspUrl,
+                            property_id: propertyId ?? "",
+                            visibility: "PRIVATE",
+                            ...(data.coverage ? { coverage: data.coverage } : {}),
+                        });
+                    }}
+                    propertyLatitude={propertyCoordinates.latitude}
+                    propertyLongitude={propertyCoordinates.longitude}
                 />
             )}
         </main>

@@ -1,5 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import CameraCard from "@/components/CameraCard";
+import {
+    fireEvent,
+    render,
+    screen,
+    waitFor,
+} from "@testing-library/react";import CameraCard from "@/components/CameraCard";
 import { CameraSettingsPanel } from "@/components/CameraSettingsPanel";
 
 const mockUseCameraSettings = jest.fn();
@@ -12,11 +16,32 @@ jest.mock("@/components/ZoneEditor", () => ({
     ZoneEditor: () => <div data-testid="zone-editor" />,
 }));
 
+jest.mock("@/components/CameraCoverageEditor", () => ({
+    CameraCoverageEditor: ({
+        onChange,
+    }: {
+        onChange: (value: unknown) => void;
+    }) => (
+        <button
+            type="button"
+            onClick={() => onChange(undefined)}
+        >
+            Mock camera POV editor
+        </button>
+    ),
+}));
+
 jest.mock("@/components/camera-dropdown", () => {
     return function MockCameraDropdown() {
         return <div data-testid="camera-dropdown" />;
     };
 });
+
+jest.mock("@/lib/api/camera", () => ({
+    getCameraCoverage: jest.fn().mockResolvedValue(null),
+    saveCameraCoverage: jest.fn(),
+    deleteCameraCoverage: jest.fn(),
+}));
 
 jest.mock("@/components/CameraFeed", () => {
     return function MockCameraFeed({
@@ -60,12 +85,20 @@ function settingsState(zoneMutation: "adding" | "removing" | null) {
     };
 }
 
+async function waitForCoverageToLoad() {
+    await waitFor(() => {
+        expect(
+            screen.queryByText("Loading camera POV…"),
+        ).not.toBeInTheDocument();
+    });
+}
+
 describe("zone configuration feedback", () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    it("shows an applying message while a zone is being added", () => {
+    it("shows an applying message while a zone is being added", async () => {
         mockUseCameraSettings.mockReturnValue(settingsState("adding"));
 
         render(
@@ -73,16 +106,25 @@ describe("zone configuration feedback", () => {
                 cameraId="00000000-0000-0000-0000-000000000001"
                 userRole="PROPERTY_ADMIN"
                 videoRef={{ current: null }}
+                propertyLatitude={-25.7479}
+                propertyLongitude={28.2293}
             />,
         );
 
-        expect(screen.getByRole("status")).toHaveTextContent(
-            "Applying new zone configuration",
-        );
-        expect(screen.getByText(/live stream will update in a few seconds/i)).toBeInTheDocument();
+        await waitForCoverageToLoad();
+
+        expect(
+            screen.getByText(/Applying new zone configuration/i),
+        ).toBeInTheDocument();
+
+        expect(
+            screen.getByText(
+                /live stream will update in a few seconds/i,
+            ),
+        ).toBeInTheDocument();
     });
 
-    it("shows an applying message while a zone is being removed", () => {
+    it("shows an applying message while a zone is being removed", async () => {
         mockUseCameraSettings.mockReturnValue(settingsState("removing"));
 
         render(
@@ -90,15 +132,19 @@ describe("zone configuration feedback", () => {
                 cameraId="00000000-0000-0000-0000-000000000001"
                 userRole="PROPERTY_ADMIN"
                 videoRef={{ current: null }}
+                propertyLatitude={-25.7479}
+                propertyLongitude={28.2293}
             />,
         );
 
-        expect(screen.getByRole("status")).toHaveTextContent(
-            "Applying zone removal",
-        );
+        await waitForCoverageToLoad();
+
+        expect(
+            screen.getByText(/Applying zone removal/i),
+        ).toBeInTheDocument();
     });
 
-    it("keeps the CameraFeed mounted while the stream reconnects", () => {
+    it("keeps the CameraFeed mounted while the stream reconnects", async () => {
         mockUseCameraSettings.mockReturnValue(settingsState(null));
 
         render(
@@ -110,10 +156,13 @@ describe("zone configuration feedback", () => {
                 enabled
                 userRole="PROPERTY_ADMIN"
                 onDeleted={jest.fn()}
+                propertyLatitude={-25.7479}
+                propertyLongitude={28.2293}
             />,
         );
 
         fireEvent.click(screen.getByRole("button", { name: /open live stream/i }));
+        await waitForCoverageToLoad();
         const feed = screen.getByTestId("camera-feed");
 
         fireEvent.click(feed);

@@ -83,10 +83,11 @@ describe("MapLayerControls", () => {
   const layers: MapLayerState = {
     properties: true,
     heatmap: false,
+    dangerZones: false,
     contours: false,
     liveAlerts: true,
     routes: false,
-  };
+    };
 
   test("shows neighbourhood layers outside security mode", () => {
     render(
@@ -108,6 +109,12 @@ describe("MapLayerControls", () => {
       screen.getByRole("switch", {
         name: /Incident heatmap/,
       }),
+    ).toBeInTheDocument();
+
+    expect(
+        screen.getByRole("switch", {
+            name: /Danger zones/,
+        }),
     ).toBeInTheDocument();
 
     expect(
@@ -177,6 +184,12 @@ describe("MapLayerControls", () => {
     );
 
     fireEvent.click(
+        screen.getByRole("switch", {
+            name: /Danger zones/,
+        }),
+    );
+
+    fireEvent.click(
       screen.getByRole("switch", {
         name: /Contours/,
       }),
@@ -197,6 +210,7 @@ describe("MapLayerControls", () => {
     expect(onToggle.mock.calls).toEqual([
       ["properties"],
       ["heatmap"],
+      ["dangerZones"],
       ["contours"],
       ["liveAlerts"],
       ["routes"],
