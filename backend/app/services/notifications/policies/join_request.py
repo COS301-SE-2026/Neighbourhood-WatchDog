@@ -22,6 +22,7 @@ def build_join_request_policy() -> NotificationPolicy:
         .with_channel(EmailChannel())
         .with_channel(WhatsAppChannel())
         .with_recipient_resolver(resolve_neighbourhood_officers)
+        .build()
     )
 
 def build_join_request_resolved_policy() -> NotificationPolicy:
@@ -32,4 +33,5 @@ def build_join_request_resolved_policy() -> NotificationPolicy:
         .with_channel(EmailChannel())
         .with_channel(WhatsAppChannel())
         .with_recipient_resolver(resolve_neighbourhood_officers)
+        .build()
     )

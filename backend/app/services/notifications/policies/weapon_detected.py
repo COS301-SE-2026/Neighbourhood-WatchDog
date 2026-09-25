@@ -16,4 +16,5 @@ def build_weapon_detected_policy() -> NotificationPolicy:
         .with_channel(EmailChannel())
         .with_channel(WhatsAppChannel())
         .with_recipient_resolver(resolve_neighbourhood_officers)
+        .build()
     )

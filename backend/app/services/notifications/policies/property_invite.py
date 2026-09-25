@@ -15,5 +15,6 @@ def build_property_invite_policy() -> NotificationPolicy:
         .with_channel(PushChannel())
         .with_channel(EmailChannel())
         .with_channel(WhatsAppChannel())
-        .with_recipient_resolver()
+        .with_recipient_resolver(resolve_neighbourhood_officers)
+        .build()
     )

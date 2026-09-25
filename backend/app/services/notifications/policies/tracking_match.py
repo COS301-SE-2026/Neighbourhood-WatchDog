@@ -13,4 +13,5 @@ def build_tracking_match_policy() -> NotificationPolicy:
         NotificationPolicyBuilder()
         .with_channel(WebSocketChannel())
         .with_recipient_resolver(resolve_neighbourhood_officers)
+        .build()
     )
