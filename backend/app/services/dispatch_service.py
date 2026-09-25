@@ -156,11 +156,9 @@ def _build_dispatch_rows(context: AlertContext, ranked: list[RankedCandidate]) -
 
     for r in ranked:
         c = r.candidate
-        if not has_selected:
-            status = DispatchStatus.SELECTED
+        if c.availability_status == AvailabilityStatus.AVAILABLE:
+            status = DispatchStatus.PENDING if has_selected else DispatchStatus.SELECTED
             has_selected = True
-        elif c.availability_status == AvailabilityStatus.AVAILABLE:
-            status = DispatchStatus.PENDING
         else:
             status = DispatchStatus.QUEUED
 
@@ -385,7 +383,7 @@ async def _promote_officer(db: DbSession, alert_id: UUID) -> None:
                 "dispatch: no remaining candidates to notify for alert %s, escalating to neighbourhood_admin", 
                 alert_id,
             )
-            await _escalate_dispatch(db, no_candidate, reason="no_candidates")
+            await _escalate_dispatch(db, no_candidate, reason="no_available_officer")
         return
 
     await _notify_officer(db, officer)
@@ -590,7 +588,7 @@ async def dispatch_alert(db: DbSession, alert_id: UUID) -> AlertDispatchRes:
                 )
                 no_candidate = no_candidate_result.scalar_one_or_none()
                 if no_candidate is not None:
-                    await _escalate_dispatch(db, no_candidate, reason="no_eligible_officers")
+                    await _escalate_dispatch(db, no_candidate, reason="no_available_officer")
     except IntegrityError:
         await db.rollback()
         existing = await _fetch_dispatch_rows(db, alert_id)

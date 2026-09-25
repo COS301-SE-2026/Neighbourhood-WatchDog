@@ -35,6 +35,7 @@ from app.services.dispatch_service import (
     rank_candidates,
     respond_to_dispatch_handler,
     expire_stale_dispatchs,
+    _escalate_dispatch,
 )
 
 ALERT_ID = uuid4()
@@ -732,6 +733,8 @@ class TestDispatchAlert:
         assert [c.officer_id for c in run.res.queued] == [busy.officer_id]
         assert run.res.no_candidate is True
         assert all(row.status != DispatchStatus.SELECTED for row in run.added)
+        run.escalate.assert_awaited_once()
+        assert run.escalate.await_args.kwargs["reason"] == "no_available_officer"
 
     @pytest.mark.asyncio
     async def test_ineligible_officers_are_never_dispatched(self):
@@ -764,12 +767,17 @@ class TestDispatchAlert:
         assert run.res.selected is None
         assert [row.status for row in run.added] == [DispatchStatus.NO_CANDIDATE]
         run.db.commit.assert_awaited_once()
+        run.escalate.assert_awaited_once()
+        no_candidate_row, kwargs = run.escalate.await_args.args[1], run.escalate.await_args.kwargs
+        assert no_candidate_row.status == DispatchStatus.NO_CANDIDATE
+        assert kwargs["reason"] == "no_available_officer"
 
     @pytest.mark.asyncio
     async def test_no_officers_records_no_candidate(self):
         run = await run_dispatch(dispatch_steps(make_context(), officers=[]))
         assert run.res.no_candidate is True
         assert [row.status for row in run.added] == [DispatchStatus.NO_CANDIDATE]
+        run.escalate.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_only_officers_from_the_alerts_own_neighbourhood_are_queried(self):
@@ -999,14 +1007,17 @@ class TestRespondToDispatchHandler:
             extra=[make_scalars_result([dispatch])],
         )
 
-        with pytest.raises(HTTPException) as exc_info:
-            await respond_to_dispatch_handler(dispatch.id, "ACCEPT", mock_db, CLAIMS)
+        with patch("app.services.dispatch_service._escalate_dispatch", new=AsyncMock()) as escalate:
+            with pytest.raises(HTTPException) as exc_info:
+                await respond_to_dispatch_handler(dispatch.id, "ACCEPT", mock_db, CLAIMS)
 
         assert exc_info.value.status_code == 409
         assert dispatch.status == DispatchStatus.TIMED_OUT
         assert mock_db.commit.await_count == 2
         mock_db.add.assert_called_once()
         assert mock_db.add.call_args.args[0].status == DispatchStatus.NO_CANDIDATE
+        escalate.assert_awaited_once()
+        assert escalate.await_args.kwargs["reason"] == "no_available_officer"
 
 class TestExpireStaleDispatches:
     @pytest.mark.asyncio
@@ -1026,8 +1037,10 @@ class TestExpireStaleDispatches:
             ]
         )
 
-        expired = await expire_stale_dispatchs(mock_db)
+        with patch("app.services.dispatch_service._escalate_dispatch", new=AsyncMock()) as escalate:
+            expired = await expire_stale_dispatchs(mock_db)
 
         assert expired == 1
         assert stale.status == DispatchStatus.TIMED_OUT
         mock_db.add.assert_called_once()
+        escalate.assert_awaited_once()
