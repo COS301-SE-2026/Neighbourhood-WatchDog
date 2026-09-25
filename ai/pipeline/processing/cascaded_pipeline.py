@@ -116,8 +116,30 @@ class CascadedPipeline:
         persons = self._detect_persons(frame)
 
         if not persons:
+            weapon_detections = self._detect_weapons(frame)
             self._cleanup_histories(now)
-            return PipelineResult()
+
+            weapon_events = [
+                {
+                    "track_id": None,
+                    "bbox": detection["bbox"],
+                    "confidence": detection["confidence"],
+                    "weapon_detected": True,
+                    "weapon_type": detection["weapon_type"],
+                    "weapon_confidence": detection["confidence"],
+                    "detection_type": DETECTION_WEAPON,
+                    "severity": SEVERITY_CRITICAL,
+                    "loitering_duration_seconds": None,
+                    "scan_crossing_count": None,
+                    "zone_id": None
+
+                }
+
+                
+                for detection in weapon_detections
+            ]
+
+            return PipelineResult(events=weapon_events)
 
         enriched_persons = self._enrich_with_weapons(frame, persons)
         confirmed_tracks = self._track(frame, enriched_persons)
@@ -178,45 +200,46 @@ class CascadedPipeline:
         )
 
 
-    def _detect_persons(self, frame: Any) -> list[dict[str, Any]]:
+    def _detect_weapons(self, frame: Any) -> list[dict[str, Any]]:
+
+        if frame is None or getattr(frame, "size", 0) == 0:
+            return []
 
         with self._inference_guard():
-
-            results = self.person_model.predict(
+            results = self.weapon_model.predict(
                 frame,
                 verbose=False,
-                conf=self.config.person_confidence,
-                iou=self.config.person_iou,
-                imgsz=self.config.person_imgsz,
-                classes=[PERSON_CLASS_ID]
+                conf=self.config.weapon_confidence,
+                iou=self.config.weapon_iou,
+                imgsz=self.config.weapon_imgsz
 
             )
 
-        persons: list[dict[str, Any]] = []
+        detections: list[dict[str, Any]] = []
 
         for box in self._boxes_from_result(results):
-
-            class_id = int(self._scalar(box.cls[0]))
             confidence = float(self._scalar(box.conf[0]))
 
-            if class_id != PERSON_CLASS_ID or confidence < self.config.person_confidence:
+            if confidence < self.config.weapon_confidence:
                 continue
 
             bbox = self._xyxy(box)
-            if self._valid_bbox(bbox):
-                persons.append({
+
+            if not self._valid_bbox(bbox):
+                continue
+
+            class_id = int(self._scalar(box.cls[0]))
+
+            detections.append(
+                {
                     "bbox": bbox,
                     "confidence": confidence,
-                    "crop": self._crop(frame, bbox),
+                    "weapon_type": self._class_name(self.weapon_model, class_id)
 
-                    "weapon_detected": False,
-                    "weapon_type": None,
-                    "weapon_confidence": None
+                }
+            )
 
-                })
-
-                
-        return persons
+        return detections
 
     def _enrich_with_weapons(self, frame: Any, persons: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Run weapon inference on the full frame and attach detections to people.
