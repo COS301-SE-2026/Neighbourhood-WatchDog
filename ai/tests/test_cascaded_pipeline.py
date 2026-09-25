@@ -60,7 +60,7 @@ class FakeTracker:
         return self.tracks[self.calls - 1] if isinstance(self.tracks[0], list) else self.tracks
 
 
-def test_weapon_model_is_not_called_when_gate_finds_no_person():
+def test_weapon_model_runs_when_person_detector_finds_no_person():
     person_model = FakeModel([])
     weapon_model = FakeModel([FakeBox([0, 0, 5, 5], 0.99, 1)])
     tracker = FakeTracker([])
@@ -73,9 +73,12 @@ def test_weapon_model_is_not_called_when_gate_finds_no_person():
     result = pipeline.process_frame(np.zeros((100, 200, 3), dtype=np.uint8))
 
     assert result.tracks == []
-    assert result.events == []
+    assert len(result.events) == 1
+    assert result.events[0]["detection_type"] == "WEAPON_DETECTED"
+    assert result.events[0]["track_id"] is None
+    assert result.events[0]["weapon_detected"] is True
     assert len(person_model.calls) == 1
-    assert len(weapon_model.calls) == 0
+    assert len(weapon_model.calls) == 1
     assert tracker.calls == 0
 
 
