@@ -1,0 +1,24 @@
+backend/app/services/camera_coverage_grid.py
+  h_3555f7510a5ca8 10,162-167
+frontend/src/components/CameraCoverageEditor.tsx
+  h_3555f7510a5ca8 21-22,226-240,244-246,248
+  h_3555f7510a5ca8 241,247
+backend/app/core/camera_coverage.py
+  h_3555f7510a5ca8 6,68-71,75-76,78-82,85-88,90
+  h_3555f7510a5ca8 72-74,77,89,91
+backend/app/services/camera_coverage_calculation_service.py
+  h_3555f7510a5ca8 1-108
+tests/backend/unit/services/camera_coverage_service_test.py
+  h_3555f7510a5ca8 147,152-156
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ca14fdfd3ed4edc3fe15f2c6c3928eb3a2b6161e",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
