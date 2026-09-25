@@ -30,8 +30,8 @@ def upgrade() -> None:
                nullable=True)
     op.drop_column('tracking_sighting', 'clip_s3_key')
     op.drop_column('tracking_sighting', 'clip_expires_at')
-    op.execute("ALTER TYPE notification_channel AND VALUE IF NOT EXISTS 'PUSH")
-    op.execute("ALTER TYPE notification_channel AND VALUE IF NOT EXISTS 'WEBSOCKET")
+    op.execute("ALTER TYPE notification_channel ADD VALUE IF NOT EXISTS 'PUSH'")
+    op.execute("ALTER TYPE notification_channel ADD VALUE IF NOT EXISTS 'WEBSOCKET'")
     # ### end Alembic commands ###
 
 
