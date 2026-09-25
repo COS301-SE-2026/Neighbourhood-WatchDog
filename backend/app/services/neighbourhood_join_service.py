@@ -395,7 +395,10 @@ async def resolve_join_request_handler(request_id: UUID, action: str, db: DbSess
         join_request.resolved_at = datetime.now(timezone.utc)
 
         # sending the notification to the admin
-        neighbourhood = property_obj.neighbourhood
+        neighbourhood_result = await db.execute(
+            select(Neighbourhood).where(Neighbourhood.id == join_request.neighbourhood_id)
+        )
+        neighbourhood = neighbourhood_result.scalar_one_or_none()
         event_context = {
             "event_type": "JOIN_REQUEST_RESOLVED",
             "notification_source_id": None,
