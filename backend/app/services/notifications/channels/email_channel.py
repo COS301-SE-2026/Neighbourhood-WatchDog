@@ -1,4 +1,5 @@
 from uuid import UUID
+from datetime import datetime
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from app.core.database import DbSession
@@ -21,7 +22,17 @@ class EmailChannel(NotificationChannel):
     ):
         template_name, subject = _TEMPLATES[context["event_type"]]
         template = _env.get_template(template_name)
-        html_body = template.render(**context)
+        
+        render_context = dict(context)
+        if template_name == ALERT_TEMPLATE_FILENAME:
+            severity_colour, severity_background = _SEVERITY_COLOURS.get(
+                context["risk_level"].upper(), ("#F59E0B", "#2A1D08")
+            )
+            render_context["severity_colour"] = severity_colour
+            render_context["severity_background"] = severity_background
+            render_context.setdefault("timestamp", datetime.now().strftime("%d %b %Y %H:%M"))
+            
+        html_body = template.render(**render_context)
         plain_body = _plain_body(context)
 
         for user in recipients:
@@ -46,6 +57,13 @@ _TEMPLATES: dict[str, tuple[str, str]] = {
     "PROPERTY_INVITE": ("property_invite_email.html.j2", "You've been added to a property"),
     "JOIN_REQUEST": ("join_request_email.html.j2", "New join request"),
     "JOIN_REQUEST_RESOLVED": ("join_request_email.html.j2", "Your join request has been resolved")
+}
+
+_SEVERITY_COLOURS = {
+    "CRITICAL": ("#EF4444", "#2A1111"),
+    "HIGH": ("#F59E0B", "#2A1D08"),
+    "MEDIUM": ("#F59E0B", "#2A1D08"),
+    "LOW": ("#6AB0FF", "#10233A"),
 }
 
 def _plain_body(context: dict) -> str:
