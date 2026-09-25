@@ -1,0 +1,22 @@
+backend/app/services/notifications/factory.py
+  h_cf6208e37032c0 10,25-26
+backend/app/services/notifications/policies/general_detection.py
+  h_cf6208e37032c0 1-16
+backend/app/services/alert_service.py
+  h_cf6208e37032c0 63-64,258-268
+backend/app/services/notifications/recipients.py
+  h_cf6208e37032c0 95-96,98-99
+backend/app/schemas/notification.py
+  h_cf6208e37032c0 24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3c39c691145d8749d5ffd5401f422500281e1b57",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
