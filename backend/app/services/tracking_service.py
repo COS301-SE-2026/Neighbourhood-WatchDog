@@ -333,7 +333,6 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
 
     }
 
-    event_type = "WEAPON_DETECTED" if data.detection_type == "WEAPON_DETECTED" else "GENERAL_DETECTION"
     event_context = {
         "event_type": "TRACKING_MATCH",
         "notification_source_id": parent_alert.id,
@@ -349,9 +348,16 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
         "websocket_payload": tracking_event_payload,
     }
 
-    await (NotificationPolicyFactory
-        .get(EventType(event_type))
-        .notify(db, event_context))
+    try:
+        await (NotificationPolicyFactory
+            .get(EventType.TRACKING_MATCH)
+            .notify(db, event_context))
+    except Exception:
+        logger.exception(
+            "Tracking sighting committed but notification dispatch failed: sighting_id=%s subject_id=%s",
+            sighting.id,
+            tracking_subject.id,
+        )
 
     return TrackingSightingCreateResponse(
         status=201,
