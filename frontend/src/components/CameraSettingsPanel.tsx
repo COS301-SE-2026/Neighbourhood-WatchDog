@@ -41,7 +41,9 @@ export function CameraSettingsPanel({
     const [coverage, setCoverage] = useState<
         CameraCoverageInput | undefined
     >();
-    const [coverageLoading, setCoverageLoading] = useState(true);
+    const [coverageLoadedForCameraId, setCoverageLoadedForCameraId] = useState<string | null>(null);
+
+    const coverageLoading = coverageLoadedForCameraId !== cameraId;
     const [coverageSaving, setCoverageSaving] = useState(false);
     const [coverageMessage, setCoverageMessage] = useState<string | null>(null);
     const [coverageError, setCoverageError] = useState<string | null>(null);
@@ -53,10 +55,6 @@ export function CameraSettingsPanel({
 
         let cancelled = false;
 
-        setCoverageLoading(true);
-        setCoverageMessage(null);
-        setCoverageError(null);
-
         void getCameraCoverage(cameraId)
             .then((savedCoverage) => {
                 if (cancelled) {
@@ -64,6 +62,9 @@ export function CameraSettingsPanel({
                 }
 
                 setCoverage(savedCoverage ?? undefined);
+                setCoverageMessage(null);
+                setCoverageError(null);
+                setCoverageLoadedForCameraId(cameraId);
             })
             .catch((error) => {
                 if (cancelled) {
@@ -72,11 +73,7 @@ export function CameraSettingsPanel({
 
                 console.error("Failed to load camera POV", error);
                 setCoverageError("Failed to load camera POV.");
-            })
-            .finally(() => {
-                if (!cancelled) {
-                    setCoverageLoading(false);
-                }
+                setCoverageLoadedForCameraId(cameraId);
             });
 
         return () => {
