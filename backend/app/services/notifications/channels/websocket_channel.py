@@ -1,8 +1,17 @@
+import logging
+from fastapi import HTTPException
 from uuid import UUID
 
 from app.core.database import DbSession
 from app.models.user import User
+from app.models.notification import Notification, NotificationChannelEnum, NotificationStatus
 from app.services.notifications.channel import NotificationChannel
+from app.services.notifications.factory import EventType
+from app.websocket.manager import ConnectionManager
+
+logger = logging.getLogger(__name__)
+
+_manager = ConnectionManager()
 
 class WebSocketChannel(NotificationChannel):
     async def send(
@@ -12,4 +21,42 @@ class WebSocketChannel(NotificationChannel):
         recipients: list[User],
         context: dict,
     ):
-        pass #TODO: implement. This one aint adding to the queue this one sends straight via WebSocket
+
+        if context["event_type"] in {EventType.PROPERTY_INVITE, EventType.JOIN_REQUEST, EventType.JOIN_REQUEST_RESOLVED }:
+            logger.exception("WebSocketChannel: failed to send websocket for notification id=%s", notification_id if notification_id is not None else "<id is None>")
+            raise HTTPException(500, "Failed to send websocket notification")
+ 
+        recipient_ids = [str(user.id) for user in recipients]
+
+        if not recipient_ids:
+            return
+
+        event = _WEBSOCKET_EVENTS[context['event_type']]
+
+        await _manager.broadcast(
+            recipient_ids,
+            {
+                "event": event,
+                "payload": context["websocket_payload"]
+            }
+        )
+
+        for user in recipients:
+            db.add(Notification(
+                alert_id=notification_id,
+                user_id=user.id,
+                channel=NotificationChannelEnum.PUSH,
+                status=NotificationStatus.SENT,
+                error_message=None,
+            ))
+
+
+_WEBSOCKET_EVENTS: dict[str, str] = {
+    "WEAPON_DETECTED": "alert.new",
+    "GENERAL_DETECTION": "alert.new",
+    "TRACKING_MATCH": "tracking.sighting",
+    # there is no frontend handler for these so I wont include them rn:
+    # - PROPERTY_INVITE
+    # - JOIN_REQUEST
+    # - JOIN_REQUEST_RESOLVED
+}
