@@ -1247,28 +1247,22 @@ async def create_alert_for_agent_handler(
         # Sending a push notification in the case of a weapon detection
         if neighbourhood_id is not None:
             if alert.detection_type == DetectionType.WEAPON_DETECTED:
-
-                from app.api.controllers.alert import broadcast
-
-                recipient_ids = await _get_neighbourhood_websocket_recipient_ids(db, neighbourhood_id)
-
-                await broadcast(
-                    recipient_ids,
-                    {
-                        "event": "new_alert",
-                        "alert_id": str(alert.id),
-                        "camera_id": str(alert.camera_id),
-                        "detection_type": alert.detection_type.value if hasattr(alert.detection_type, "value") else str(alert.detection_type),
-                        "confidence": alert.confidence_score,
-                    },
-                )
-
-                send_push_to_users.delay(
-                    [str(uid) for uid in recipient_ids],
-                    title="New alert",
-                    body=f"{det_type.value if hasattr(det_type, 'value') else det_type} detected",
-                    data={"alert_id": str(alert.id), "event": "new_alert"},
-                )
+                event_context = {
+                    "event_type": "WEAPON_DETECTED",
+                    "notification_source_id": alert.id,
+                    "neighbourhood_id": neighbourhood_id,
+                    "property_id": camera.property_id,
+                    "alert_type": alert.detection_type.value if hasattr(alert.detection_type, "value") else str(alert.detection_type),
+                    "camera_name": camera.name,
+                    "location": camera.location,
+                    "risk_level": "CRITICAL",
+                    "timestamp": alert.frame_timestamp.strftime("%d %b %Y %H:%M"),
+                    "websocket_payload": _build_alert_res(alert).model_dump(mode="json"),
+                }
+            
+                await (NotificationPolicyFactory
+                    .get(EventType.WEAPON_DETECTED)
+                    .notify(db, event_context))
             else: # detection is not a weapon
                 logger.warning(
                     "create_alert_for_agent_handler: skipped broadcast/push because detection type was not a weapon; alert_id=%s",
