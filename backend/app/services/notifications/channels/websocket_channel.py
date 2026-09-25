@@ -4,7 +4,7 @@ from app.core.database import DbSession
 from app.models.user import User
 from app.models.notification import Notification, NotificationChannelEnum, NotificationStatus
 from app.services.notifications.channel import NotificationChannel
-from app.services.notifications.factory import EventType
+from app.schemas.notification import EventType
 from app.websocket.manager import ConnectionManager
 
 _manager = ConnectionManager()
