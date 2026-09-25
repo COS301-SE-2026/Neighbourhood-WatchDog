@@ -6,7 +6,7 @@ from uuid import UUID
 
 from app.core.celery_app import celery
 from app.core.database import WorkerSessionLocal
-from app.models.notification import Notification, NotificationChannel, NotificationStatus
+from app.models.notification import Notification, NotificationChannelEnum, NotificationStatus
 from app.services.notifications.notification_service import send_email_smtp, send_whatsapp
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ async def _send_and_log_email(
         db.add(Notification(
             alert_id=UUID(source_id) if source_id else None,
             user_id=UUID(user_id),
-            channel=NotificationChannel.EMAIL,
+            channel=NotificationChannelEnum.EMAIL,
             status=NotificationStatus.SENT if success else NotificationStatus.FAILED,
             error_message=error,
         ))
@@ -88,7 +88,7 @@ async def _send_and_log_whatsapp(
         db.add(Notification(
             alert_id=UUID(source_id) if source_id else None,
             user_id=UUID(user_id),
-            channel=NotificationChannel.WHATSAPP,
+            channel=NotificationChannelEnum.WHATSAPP,
             status=NotificationStatus.SENT if success else NotificationStatus.FAILED,
             error_message=error,
         ))
