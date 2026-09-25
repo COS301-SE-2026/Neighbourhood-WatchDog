@@ -1,0 +1,16 @@
+backend/app/services/notifications/channels/websocket_channel.py
+  h_cf6208e37032c0 22,43
+backend/app/websocket/manager.py
+  h_cf6208e37032c0 28,30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "cb932237814ecd24914e7d1db4f8c9c1767cd343",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
