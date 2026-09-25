@@ -1,0 +1,14 @@
+backend/app/models/notification.py
+  h_cf6208e37032c0 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2f7dfabbc5c0eeef762479a4c7b3ce8640e1e1b8",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
