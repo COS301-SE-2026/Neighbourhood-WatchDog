@@ -7,7 +7,7 @@ from uuid import UUID
 from app.core.celery_app import celery
 from app.core.database import WorkerSessionLocal
 from app.models.notification import Notification, NotificationChannel, NotificationStatus
-from app.services.notification_service import send_email_smtp, send_whatsapp
+from app.services.notifications.notification_service import send_email_smtp, send_whatsapp
 
 logger = logging.getLogger(__name__)
 
