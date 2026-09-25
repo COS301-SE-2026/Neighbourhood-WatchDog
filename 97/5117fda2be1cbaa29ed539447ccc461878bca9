@@ -1,0 +1,17 @@
+backend/app/services/notifications/policies/property_invite.py
+  h_cf6208e37032c0 7,16
+  h_cf6208e37032c0 13
+backend/app/services/property_service.py
+  h_cf6208e37032c0 23-24,28,406-415,417-422,426
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "975117fda2be1cbaa29ed539447ccc461878bca9",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
