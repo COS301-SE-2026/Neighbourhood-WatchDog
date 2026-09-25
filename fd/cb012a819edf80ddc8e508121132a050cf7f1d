@@ -1,0 +1,17 @@
+backend/app/services/detection_service.py
+  h_cf6208e37032c0 115
+backend/app/services/tracking_service.py
+  h_cf6208e37032c0 351,353-360
+  h_cf6208e37032c0 352
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "fdcb012a819edf80ddc8e508121132a050cf7f1d",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
