@@ -1,0 +1,16 @@
+tests/backend/unit/services/camera_coverage_calculation_service_test.py
+  h_3555f7510a5ca8 1-69
+frontend/src/components/CameraCoverageEditor.tsx
+  h_3555f7510a5ca8 21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "259fc8bba30063f4445d2798b4b149c824e973ff",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}

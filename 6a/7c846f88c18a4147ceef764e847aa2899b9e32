@@ -1,0 +1,14 @@
+tests/backend/unit/services/camera_coverage_grid_test.py
+  h_3555f7510a5ca8 1-212
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6a7c846f88c18a4147ceef764e847aa2899b9e32",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
