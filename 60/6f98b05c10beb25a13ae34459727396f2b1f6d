@@ -1,0 +1,14 @@
+backend/app/tasks/danger_zone_tasks.py
+  h_3555f7510a5ca8 1-179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "606f98b05c10beb25a13ae34459727396f2b1f6d",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
