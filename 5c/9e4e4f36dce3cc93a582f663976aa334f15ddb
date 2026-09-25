@@ -1,0 +1,14 @@
+tests/backend/unit/services/danger_score_calculator_test.py
+  h_3555f7510a5ca8 1-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5c9e4e4f36dce3cc93a582f663976aa334f15ddb",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
