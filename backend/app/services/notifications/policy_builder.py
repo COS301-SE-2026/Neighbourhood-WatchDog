@@ -4,9 +4,11 @@ from app.services.notifications.channel import NotificationChannel
 from app.services.notifications.policy import NotificationPolicy
 
 class NotificationPolicyBuilder:
-    channels = []
     resolver: Callable = None
-    severity_fn: Callable = None,
+    severity_fn: Callable = None
+
+    def __init__(self):
+        self.channels = []
 
     def with_channel(self, channel: NotificationChannel):
         self.channels.append(channel)
