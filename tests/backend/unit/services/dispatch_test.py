@@ -1044,3 +1044,16 @@ class TestExpireStaleDispatches:
         assert stale.status == DispatchStatus.TIMED_OUT
         mock_db.add.assert_called_once()
         escalate.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_rows_locked_and_skips_already_locked(self):
+        mock_db = AsyncMock()
+        mock_db.add = Mock()
+        mock_db.execute = AsyncMock(return_value=make_scalars_result([]))
+
+        await expire_stale_dispatchs(mock_db)
+
+        stmt = mock_db.execute.await_args.args[0]
+        sql = compiled_sql(stmt)
+        assert "FOR UPDATE" in sql.upper()
+        assert "SKIP LOCKED" in sql.upper()
