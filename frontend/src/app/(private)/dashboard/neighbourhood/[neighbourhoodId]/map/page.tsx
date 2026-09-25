@@ -1019,6 +1019,9 @@ function handleToggleLayer(layer: MapLayerKey) {
               layerState.contours &&
               densityRangeIsValid
             }
+            showDangerZones={
+              layerState.dangerZones
+            }
             densityStartDate={
               densityStartDate
             }
