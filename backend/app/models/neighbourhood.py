@@ -1,9 +1,15 @@
 import uuid
 
-from sqlalchemy import Column, Text, text, TIMESTAMP
+from sqlalchemy import (
+    Column,
+    Text,
+    text,
+    TIMESTAMP,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+from geoalchemy2 import Geometry
 
 class Neighbourhood(Base):
 
@@ -15,7 +21,13 @@ class Neighbourhood(Base):
     location = Column(Text, nullable=False)
     join_code = Column(Text, unique=True, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
-
+    boundary_polygon = Column(
+        Geometry(
+            geometry_type="POLYGON",
+            srid=4326,
+        ),
+        nullable=True,
+    )
     properties = relationship("Property", back_populates="neighbourhood")
     zones   = relationship("GeospatialZone", back_populates="neighbourhood")
     risk_scores = relationship(
