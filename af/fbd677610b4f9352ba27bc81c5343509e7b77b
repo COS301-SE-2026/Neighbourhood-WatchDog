@@ -1,0 +1,14 @@
+backend/app/core/celery_app.py
+  h_3555f7510a5ca8 21-22,43-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "affbd677610b4f9352ba27bc81c5343509e7b77b",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
