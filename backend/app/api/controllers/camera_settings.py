@@ -2,7 +2,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 
-from app.auth.authorization import CameraAdminClaims
 from app.core.database import DbSession
 from app.schemas.camera_settings import (
     CameraSettingsResponse,
@@ -22,6 +21,10 @@ from app.services.camera_coverage_service import (
     delete_camera_coverage_handler,
     get_camera_coverage_handler,
     upsert_camera_coverage_handler,
+)
+from app.auth.authorization import (
+    CameraAdminClaims,
+    CameraCoverageAdminClaims,
 )
 
 router = APIRouter(prefix="/cameras", tags=["camera-settings"])
@@ -80,7 +83,7 @@ async def update_settings(
 async def get_coverage(
     camera_id: UUID,
     db: DbSession,
-    claims: CameraAdminClaims,
+    claims: CameraCoverageAdminClaims,
 ):
     return await get_camera_coverage_handler(camera_id, db, claims)
 
@@ -100,7 +103,7 @@ async def put_coverage(
     camera_id: UUID,
     payload: CameraCoverageInput,
     db: DbSession,
-    claims: CameraAdminClaims,
+    claims: CameraCoverageAdminClaims,
 ):
     return await upsert_camera_coverage_handler(camera_id, payload, db, claims)
 
@@ -117,7 +120,7 @@ async def put_coverage(
 async def delete_coverage(
     camera_id: UUID,
     db: DbSession,
-    claims: CameraAdminClaims,
+    claims: CameraCoverageAdminClaims,
 ):
     await delete_camera_coverage_handler(camera_id, db, claims)
 
