@@ -18,6 +18,8 @@ import {
 } from "@/lib/validators/camera-coverage";
 
 const EARTH_RADIUS_METRES = 6_371_000;
+const SECTOR_ARC_SEGMENTS = 36;
+
 type Coordinate = [number, number];
 
 type CameraCoverageEditorProps = {
@@ -221,22 +223,29 @@ export function CameraCoverageEditor({
       return null;
     }
 
+    const startBearing =
+      derivedDirection.coverage_bearing_degrees -
+      derivedDirection.coverage_angle_degrees / 2;
+
+    const arcPoints = Array.from(
+      { length: SECTOR_ARC_SEGMENTS + 1 },
+      (_, index): Coordinate =>
+        destinationPoint(
+          origin,
+          startBearing +
+            (derivedDirection.coverage_angle_degrees * index) /
+              SECTOR_ARC_SEGMENTS,
+          rangeMetres,
+        ),
+    );
+
     return [
       origin,
-      destinationPoint(
-        origin,
-        derivedDirection.coverage_bearing_degrees -
-          derivedDirection.coverage_angle_degrees / 2,
-        rangeMetres,
-      ),
-      destinationPoint(
-        origin,
-        derivedDirection.coverage_bearing_degrees +
-          derivedDirection.coverage_angle_degrees / 2,
-        rangeMetres,
-      ),
-    ] as Coordinate[];
-  }, [origin, derivedDirection, rangeMetres]);
+      ...arcPoints,
+      origin,
+    ] satisfies Coordinate[];
+    }, [origin, derivedDirection, rangeMetres]);
+
 
   if (!property) {
     return (

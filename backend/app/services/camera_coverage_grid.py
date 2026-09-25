@@ -7,7 +7,7 @@ from shapely.ops import unary_union
 from app.core.camera_coverage import (
     MAX_CAMERA_COVERAGE_RANGE_METRES,
     MAX_CAMERA_ORIGIN_DISTANCE_METRES,
-    destination_point,
+    coverage_polygon,
     haversine_distance_metres,
 )
 from app.services.incident_density_grid import CELL_SIZE_METRES
@@ -159,35 +159,13 @@ def camera_coverage_is_valid(
 def _projected_sector(
     record: CameraCoverageRecord,
 ) -> Polygon:
-    start_bearing = (
-        record.coverage_bearing_degrees
-        - record.coverage_angle_degrees / 2
+    geographic_points = coverage_polygon(
+        origin_latitude=record.origin_latitude,
+        origin_longitude=record.origin_longitude,
+        bearing_degrees=record.coverage_bearing_degrees,
+        angle_degrees=record.coverage_angle_degrees,
+        range_metres=record.coverage_range_metres,
     )
-
-    arc_points = [
-        destination_point(
-            record.origin_latitude,
-            record.origin_longitude,
-            start_bearing
-            + record.coverage_angle_degrees
-            * index
-            / SECTOR_ARC_SEGMENTS,
-            record.coverage_range_metres,
-        )
-        for index in range(SECTOR_ARC_SEGMENTS + 1)
-    ]
-
-    geographic_points = [
-        (
-            record.origin_latitude,
-            record.origin_longitude,
-        ),
-        *arc_points,
-        (
-            record.origin_latitude,
-            record.origin_longitude,
-        ),
-    ]
 
     return Polygon(
         [

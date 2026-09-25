@@ -144,11 +144,16 @@ async def test_get_camera_coverage_returns_saved_coverage():
     assert result.coverage_angle_degrees == 60.0
     assert result.coverage_range_metres == 100.0
 
-    assert len(result.polygon) == 3
+    assert len(result.polygon) > 3
     assert result.polygon[0] == [
         PROPERTY_LATITUDE,
         PROPERTY_LONGITUDE,
     ]
+    assert result.polygon[-1] == [
+        PROPERTY_LATITUDE,
+        PROPERTY_LONGITUDE,
+    ]
+
 
 
 @pytest.mark.asyncio
