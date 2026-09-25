@@ -135,6 +135,8 @@ describe("zone configuration feedback", () => {
                 enabled
                 userRole="PROPERTY_ADMIN"
                 onDeleted={jest.fn()}
+                propertyLatitude={-25.7479}
+                propertyLongitude={28.2293}
             />,
         );
 
