@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass, replace
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -17,14 +17,17 @@ from app.models.property import Property
 from app.models.dispatch import Dispatch, DispatchStatus
 from app.models.security_officer import SecurityOfficer, AvailabilityStatus
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
-from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes
+from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, RespondDispatchRes
 from app.services.neighbourhood_service import STALE_LOCATION_THRESHOLD_SECONDS, is_location_stale
+from app.api.controllers.alert import broadcast
 
 logger = logging.getLogger(__name__)
 
 CRITICAL_DETECTION_TYPES: frozenset[str] = frozenset({"WEAPON_DETECTED", "FALL_DETECTED"})
 OFFICER_AVG_SPEED = 8.33 #m/s or about 30km/h
 ROUTE_CIRCUITRY_FACTOR = 1.3 #road distance is about 30% longer than straight-line
+
+RESPONSE_TIMEOUT = 120 #officer has 2min to accept a request before expiring
 
 @dataclass(frozen=True)
 class RankingWeights:
@@ -56,6 +59,13 @@ _AVAILABILITY_TIER: dict[AvailabilityStatus, int] = {
 DISPATCH_VIEWER_ROLES = (
     NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
     NeighbourhoodRole.SECURITY_OFFICER,
+)
+
+#officers who haven't been notified
+_UNCONTACTED_DISPATCH_STATUS = (
+    DispatchStatus.SELECTED,
+    DispatchStatus.PENDING,
+    DispatchStatus.QUEUED,
 )
 
 @dataclass(frozen=True)
@@ -260,6 +270,229 @@ async def _fetch_dispatch_rows(db: DbSession, alert_id: UUID) -> list[Dispatch]:
     )
     return list((await db.execute(stmt)).scalars().all())
 
+async def _get_officer_user_id(db: DbSession, officer_id: UUID) -> str | None:
+    result = await db.execute(
+        select(NeighbourhoodUser.user_id)
+        .join(SecurityOfficer, SecurityOfficer.neighbourhood_user_id == NeighbourhoodUser.id)
+        .where(SecurityOfficer.id == officer_id)
+    )
+    user_id = result.scalar_one_or_none()
+    return str(user_id) if user_id is not None else None
+
+async def get_dispatch_viewer_ids(
+        db: DbSession, 
+        neighbourhood_id: UUID | None,
+        roles: tuple[NeighbourhoodRole, ...] = DISPATCH_VIEWER_ROLES,
+        ) -> list[str]:
+    if neighbourhood_id is None:
+        return []
+    
+    result = await db.execute(
+        select(NeighbourhoodUser.user_id)
+        .where(NeighbourhoodUser.neighbourhood_id == neighbourhood_id)
+        .where(NeighbourhoodUser.role.in_(roles))
+    )
+    return [str(user_id) for user_id in result.scalars().all()]
+
+async def resolve_officer(db: DbSession, claims: Claims) -> SecurityOfficer:
+    result = await db.execute(
+        select(SecurityOfficer)
+        .join(NeighbourhoodUser, NeighbourhoodUser.id == SecurityOfficer.neighbourhood_user_id)
+        .join(User, User.id == NeighbourhoodUser.user_id)
+        .where(User.cognito_sub == claims["sub"])
+    )
+    officer = result.scalar_one_or_none()
+
+    if officer is None:
+        raise HTTPException(403, "Not authorised: no security officer profile for this account")
+    return officer
+
+async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
+    """Notifies selected officer of dispatch request over websocket"""
+    now = datetime.now(timezone.utc)
+    dispatch.status = DispatchStatus.NOTIFIED
+    dispatch.notified_at = now
+    await db.commit()
+    await db.refresh(dispatch)
+
+    try:
+        user_id = await _get_officer_user_id(db, dispatch.officer_id)
+        if user_id is None:
+            logger.warning(
+                "dispatch: could not resolve user for officer %s (dispatch %s)",
+                dispatch.officer_id, dispatch.id,
+            )
+            return
+
+        detection_type = (
+            await db.execute(select(Alert.detection_type).where(Alert.id == dispatch.alert_id))
+        ).scalar_one_or_none()
+
+        await broadcast(
+            [user_id],
+            {
+                "event": "dispatch.notified",
+                "payload": {
+                    "dispatch_id": str(dispatch.id),
+                    "alert_id": str(dispatch.alert_id),
+                    "detection_type": detection_type,
+                    "distance": dispatch.distance,
+                    "eta": dispatch.eta,
+                    "notified_at": now.isoformat(),
+                    "expires_at": (now + timedelta(seconds=RESPONSE_TIMEOUT)).isoformat(),
+                },
+            },
+        )
+    except Exception:
+        logger.exception(
+            "dispatch: failed to notify officer %s for dispatch %s",
+            dispatch.officer_id, dispatch.id,
+        )
+
+async def _promote_officer(db: DbSession, alert_id: UUID) -> None:
+    """
+    Notifies next ranked officer if the selected officer declines, is unreachable, 
+    or the request times out before a response is received. Picks officers from pending before
+    picking from queued
+    """
+    result = await db.execute(
+        select(Dispatch)
+        .where(Dispatch.alert_id == alert_id)
+        .order_by(Dispatch.rank.asc().nulls_last())
+        .with_for_update()
+    )
+    rows = list(result.scalars().all())
+
+    if not rows:
+        return
+
+    if any(r.status == DispatchStatus.ACCEPTED for r in rows):
+        return
+
+    if any(r.status == DispatchStatus.NOTIFIED for r in rows):
+        return
+
+    officer = next((r for r in rows if r.status in _UNCONTACTED_DISPATCH_STATUS), None)
+
+    if officer is None:
+        if not any(r.status == DispatchStatus.NO_CANDIDATE for r in rows):
+            no_candidate = Dispatch(
+                alert_id=alert_id,
+                neighbourhood_id=rows[0].neighbourhood_id,
+                status=DispatchStatus.NO_CANDIDATE,
+            )
+            db.add(no_candidate)
+            await db.commit()
+            await db.refresh(no_candidate)
+            logger.info(
+                "dispatch: no remaining candidates to notify for alert %s, escalating to neighbourhood_admin", 
+                alert_id,
+            )
+            await _escalate_dispatch(db, no_candidate, reason="no_available_officer")
+        return
+
+    await _notify_officer(db, officer)
+
+async def _expire_stale_dispatch(db: DbSession, dispatch: Dispatch) -> Dispatch:
+    """
+    Sets a notified dispatch attempt to timed out 
+    if the officer does not accept/decline within the response window
+    """
+    if dispatch.status != DispatchStatus.NOTIFIED or dispatch.notified_at is None:
+        return dispatch
+
+    locked_result = await db.execute(
+        select(Dispatch).where(Dispatch.id == dispatch.id).with_for_update()
+    )
+    dispatch = locked_result.scalar_one()
+
+    if dispatch.status != DispatchStatus.NOTIFIED or dispatch.notified_at is None:
+        return dispatch
+
+    now = datetime.now(timezone.utc)
+    if (now - dispatch.notified_at).total_seconds() <= RESPONSE_TIMEOUT:
+        return dispatch
+
+    dispatch.status = DispatchStatus.TIMED_OUT
+    dispatch.responded_at = now
+    await db.commit()
+    await db.refresh(dispatch)
+
+    try:
+        await _promote_officer(db, dispatch.alert_id)
+    except Exception:
+        logger.exception("dispatch: failed to promote next officer after time out for alert %s", dispatch.alert_id)
+
+    return dispatch
+
+async def expire_stale_dispatchs(db: DbSession) -> int:
+    """Used to run through every dispatch attempt and sets to timed out"""
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(seconds=RESPONSE_TIMEOUT)
+
+    result = await db.execute(
+        select(Dispatch).where(
+            Dispatch.status == DispatchStatus.NOTIFIED,
+            Dispatch.notified_at < cutoff,
+        ).with_for_update(skip_locked=True)
+    )
+
+    expired = list(result.scalars().all())
+    if not expired:
+        return 0
+
+    alert_ids: set[UUID] = set()
+    for e in expired:
+        e.status = DispatchStatus.TIMED_OUT
+        e.responded_at = now
+        alert_ids.add(e.alert_id)
+    await db.commit()
+
+    for alert_id in alert_ids:
+        try:
+            await _promote_officer(db, alert_id)
+        except Exception:
+            logger.exception("expire_stale_dispatches: failed to promote next officer for alert %s", alert_id)
+
+    return len(expired)
+
+async def _escalate_dispatch(db: DbSession, dispatch: Dispatch, reason: str) -> None:
+    """Informs admin of critical alert no officer was able to attend to"""
+    now = datetime.now(timezone.utc)
+    dispatch.notified_at = now
+    await db.commit()
+    await db.refresh(dispatch)
+
+    try:
+        admin_ids = await get_dispatch_viewer_ids(
+            db, dispatch.neighbourhood_id, roles=(NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,)
+        )
+        if not admin_ids:
+            logger.warning(
+                "dispatch: no neighbourhood admin to notify about alert %s", 
+                dispatch.alert_id,
+            )
+            return
+        
+        await broadcast(
+            admin_ids,
+            {
+                "event": "dispatch.escalated",
+                "payload": {
+                    "dispatch_id": str(dispatch.id),
+                    "alert_id": str(dispatch.alert_id),
+                    "neighbourhood_id": str(dispatch.neighbourhood_id) if dispatch.neighbourhood_id else None,
+                    "reason": reason,
+                    "notified_at": now.isoformat(),
+                },
+            },
+        )
+    except Exception:
+        logger.exception(
+            "dispatch: failed to broadcast escalation for alert %s",
+            dispatch.alert_id,
+        )
+
 def _build_candidate_res(d: Dispatch) -> DispatchCandidateRes:
     return DispatchCandidateRes(
         id=d.id,
@@ -340,6 +573,27 @@ async def dispatch_alert(db: DbSession, alert_id: UUID) -> AlertDispatchRes:
 
             db.add_all(_build_dispatch_rows(context, ranked))
             await db.commit()
+
+            selected_result = await db.execute(
+                select(Dispatch).where(
+                    Dispatch.alert_id == alert_id,
+                    Dispatch.status == DispatchStatus.SELECTED,
+                )
+            )
+            selected = selected_result.scalar_one_or_none()
+
+            if selected is not None:
+                await _notify_officer(db, selected)
+            else:
+                no_candidate_result = await db.execute(
+                    select(Dispatch).where(
+                        Dispatch.alert_id == alert_id,
+                        Dispatch.status == DispatchStatus.NO_CANDIDATE,
+                    )
+                )
+                no_candidate = no_candidate_result.scalar_one_or_none()
+                if no_candidate is not None:
+                    await _escalate_dispatch(db, no_candidate, reason="no_available_officer")
     except IntegrityError:
         await db.rollback()
         existing = await _fetch_dispatch_rows(db, alert_id)
@@ -383,4 +637,117 @@ async def get_alert_dispatch_handler(
         raise HTTPException(403, "Not authorised to view dispatch for this alert")
 
     rows = await _fetch_dispatch_rows(db, alert_id)
+
+    notified = next((d for d in rows if d.status == DispatchStatus.NOTIFIED), None)
+    if notified is not None:
+        expired = await _expire_stale_dispatch(db, notified)
+        if expired.status != DispatchStatus.NOTIFIED:
+            rows = await _fetch_dispatch_rows(db, alert_id)
+
     return _build_alert_dispatch_res(alert_id, rows)
+
+async def respond_to_dispatch_handler(
+        dispatch_id: UUID,
+        action: str,
+        db: DbSession,
+        claims: Claims,
+) -> RespondDispatchRes:
+    """Handles officer response to dispatch requests"""
+    if not claims:
+        raise HTTPException(401, "Not authenticated")
+
+    officer = await resolve_officer(db, claims)
+
+    result = await db.execute(
+        select(Dispatch).where(Dispatch.id == dispatch_id).with_for_update()
+    )
+    dispatch = result.scalar_one_or_none()
+    if dispatch is None:
+        raise HTTPException(404, "Dispatch request not found")
+
+    if dispatch.officer_id != officer.id:
+        raise HTTPException(403, "This dispatch request was not sent to you")
+
+    if dispatch.status == DispatchStatus.ACCEPTED:
+        raise HTTPException(409, "This dispatch request has already been assigned")
+    
+    if dispatch.status in (DispatchStatus.DECLINED, DispatchStatus.TIMED_OUT):
+        raise HTTPException(409, "This dispatch request is no longer available")
+    
+    if dispatch.status != DispatchStatus.NOTIFIED:
+        raise HTTPException(409, "This dispatch request has not been offered to you yet")
+
+    now = datetime.now(timezone.utc)
+    if dispatch.notified_at is not None and (now - dispatch.notified_at).total_seconds() > RESPONSE_TIMEOUT:
+        dispatch.status = DispatchStatus.TIMED_OUT
+        dispatch.responded_at = now
+        await db.commit()
+        try:
+            await _promote_officer(db, dispatch.alert_id)
+        except Exception:
+            logger.exception(
+                "respond_to_dispatch: failed to promote next officer after expiry for alert %s", 
+                dispatch.alert_id,
+            )
+        raise HTTPException(409, "This dispatch request has expired")
+
+    if action == "DECLINE":
+        dispatch.status = DispatchStatus.DECLINED
+        dispatch.responded_at = now
+        await db.commit()
+        await db.refresh(dispatch)
+
+        try:
+            await _promote_officer(db, dispatch.alert_id)
+        except Exception:
+            logger.exception(
+                "respond_to_dispatch: failed to promote next officer after declining alert %s",
+                dispatch.alert_id,
+            )
+
+        return RespondDispatchRes(status=200, message="Declined", data=_build_candidate_res(dispatch))
+
+    if action == "ACCEPT":
+        lock_result = await db.execute(
+            select(Dispatch)
+            .where(Dispatch.alert_id == dispatch.alert_id)
+            .with_for_update()
+        )
+        alert_rows = lock_result.scalars().all()
+
+        if any(r.status == DispatchStatus.ACCEPTED and r.id != dispatch.id for r in alert_rows):
+            raise HTTPException(409, "This alert has already been assigned to another officer")
+
+        dispatch.status = DispatchStatus.ACCEPTED
+        dispatch.responded_at = now
+
+        try:
+            await db.commit()
+        except IntegrityError:
+            await db.rollback()
+            raise HTTPException(409, "This alert has already been assigned to another officer")
+
+        await db.refresh(dispatch)
+
+        try:
+            user_ids = await get_dispatch_viewer_ids(db, dispatch.neighbourhood_id)
+            if user_ids:
+                await broadcast(
+                    user_ids,
+                    {
+                        "event": "dispatch.accepted",
+                        "payload": {
+                            "dispatch_id": str(dispatch.id),
+                            "alert_id": str(dispatch.alert_id),
+                        },
+                    },
+                )
+        except Exception:
+            logger.exception(
+                "respond_to_dispatch: failed to broadcast acceptance for dispatch %s",
+                dispatch.id,
+            )
+
+        return RespondDispatchRes(status=200, message="Accepted", data=_build_candidate_res(dispatch))
+
+    raise HTTPException(400, "Unsupported action")

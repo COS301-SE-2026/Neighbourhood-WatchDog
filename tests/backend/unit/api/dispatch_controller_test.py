@@ -5,10 +5,10 @@ from uuid import uuid4
 import pytest
 from fastapi import HTTPException
 
-from app.api.controllers.dispatch import get_alert_dispatch, router
+from app.api.controllers.dispatch import get_alert_dispatch, router, respond_to_dispatch
 from app.models.dispatch import DispatchStatus
 from app.models.security_officer import AvailabilityStatus
-from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes
+from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, RespondDispatchReq, RespondDispatchRes
 
 ALERT_ID = uuid4()
 OFFICER_ID = uuid4()
@@ -38,7 +38,7 @@ def make_dispatch_res():
     )
     return AlertDispatchRes(alert_id=ALERT_ID, selected=selected)
 
-def test_router_exposes_dispatch_route():
+def test_router_exposes_get_dispatch_route():
     routes = {(route.path, tuple(sorted(route.methods))) for route in router.routes}
     assert ("/dispatch/alert/{alert_id}", ("GET",)) in routes
 
@@ -126,3 +126,57 @@ async def test_get_alert_dispatch_propagates_not_found_error():
         db=DB,
         claims=CLAIMS,
     )
+
+def test_router_exposes_respond_dispatch_route():
+    routes = {(route.path, tuple(sorted(route.methods))) for route in router.routes}
+    assert ("/dispatch/{dispatch_id}/respond", ("POST",)) in routes
+
+@pytest.mark.asyncio
+async def test_respond_to_dispatch_delegates_to_service():
+    dispatch_id = uuid4()
+    body = RespondDispatchReq(action="ACCEPT")
+    expected = RespondDispatchRes(status=200, message="Accepted", data=None)
+
+    with patch(
+        "app.api.controllers.dispatch.respond_to_dispatch_handler",
+        new=AsyncMock(return_value=expected),
+    ) as handler:
+        res = await respond_to_dispatch(dispatch_id, body, DB, CLAIMS)
+
+    assert res is expected
+    handler.assert_awaited_once_with(
+        dispatch_id=dispatch_id,
+        action="ACCEPT",
+        db=DB,
+        claims=CLAIMS,
+    )
+
+@pytest.mark.asyncio
+async def test_respond_to_dispatch_propagates_forbidden_error():
+    dispatch_id = uuid4()
+    body = RespondDispatchReq(action="ACCEPT")
+    error = HTTPException(status_code=403, detail="This dispatch request was not sent to you")
+
+    with patch(
+        "app.api.controllers.dispatch.respond_to_dispatch_handler",
+        new=AsyncMock(side_effect=error),
+    ):
+        with pytest.raises(HTTPException) as exc_info:
+            await respond_to_dispatch(dispatch_id, body, DB, CLAIMS)
+
+    assert exc_info.value is error
+
+@pytest.mark.asyncio
+async def test_respond_to_dispatch_propagates_conflict_error():
+    dispatch_id = uuid4()
+    body = RespondDispatchReq(action="ACCEPT")
+    error = HTTPException(status_code=409, detail="This alert has already been assigned to another officer")
+
+    with patch(
+        "app.api.controllers.dispatch.respond_to_dispatch_handler",
+        new=AsyncMock(side_effect=error),
+    ):
+        with pytest.raises(HTTPException) as exc_info:
+            await respond_to_dispatch(dispatch_id, body, DB, CLAIMS)
+
+    assert exc_info.value is error
