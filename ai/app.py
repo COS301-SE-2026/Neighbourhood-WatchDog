@@ -335,7 +335,7 @@ def _match_tracking_subject(camera: CameraSpec, appearance_embedding: list[float
 
 
 
-def _record_tracking_sighting(camera: CameraSpec, local_track_id: int, observed_at: str, tracking_subject_id: str, match_confidence: float, api_key: str) -> IncidentClipTarget | None:    
+def _record_tracking_sighting(camera: CameraSpec, local_track_id: int | None, observed_at: str, tracking_subject_id: str, match_confidence: float, api_key: str) -> IncidentClipTarget | None:    
     """
     Persist a validated cross-camera sighting.
 
@@ -411,7 +411,7 @@ def _record_tracking_sighting(camera: CameraSpec, local_track_id: int, observed_
         return None
 
 
-def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: float, local_track_id: int, appearance_embedding: list[float] | None = None) -> IncidentClipTarget | None:
+def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: float, local_track_id: int | None, appearance_embedding: list[float] | None = None) -> IncidentClipTarget | None:
     """
     Match a detection to an existing incident before creating a new alert.
 
@@ -835,9 +835,14 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
 
 
                 if event["detection_type"] == "WEAPON_DETECTED":
-                    local_track_id = int(event["track_id"])
+                    
+                    local_track_id = event.get("track_id")
 
-                    appearance_embedding = result.appearance_embeddings.get(local_track_id)
+                    appearance_embedding = (
+                        result.appearance_embeddings.get(local_track_id)
+                        if local_track_id is not None
+                        else None
+                    )
 
                     _schedule_weapon_clip(
                         camera=camera,
