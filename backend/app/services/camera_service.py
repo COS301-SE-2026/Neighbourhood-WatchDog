@@ -90,7 +90,7 @@ async def register_camera_handler(req, db, claims):
 
         # Get ID before commit
         await db.flush()
-        
+
         if req.coverage is not None:
             _validate_origin_near_property(req.coverage, property_obj)
 
@@ -138,6 +138,9 @@ async def register_camera_handler(req, db, claims):
     except HTTPException as he:
         await db.rollback()
         raise he
+    except Exception:
+        await db.rollback()
+        raise HTTPException(500, "Could not register camera")
 
 async def deregister_camera_handler(camera_id, db, claims):
     """Remove an authorised user's camera and audit the deletion."""
