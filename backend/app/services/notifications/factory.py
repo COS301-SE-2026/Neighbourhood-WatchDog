@@ -2,10 +2,10 @@ from enum import Enum
 
 from app.models.alert import DetectionType
 from app.services.notifications.policy import NotificationPolicy
-from app.services.notifications.policies.join_request import JoinRequest
-from app.services.notifications.policies.property_invite import PropertyInvite
-from app.services.notifications.policies.tracking_match import TrackingMatch
-from app.services.notifications.policies.weapon_detected import WeaponDetected
+from app.services.notifications.policies.join_request import build_join_request_policy, build_join_request_resolved_policy
+from app.services.notifications.policies.property_invite import build_property_invite_policy
+from app.services.notifications.policies.tracking_match import build_tracking_match_policy
+from app.services.notifications.policies.weapon_detected import build_weapon_detected_policy
 
 class EventType(str, Enum):
     WEAPON_DETECTED = "WEAPON_DETECTED"
