@@ -46,6 +46,19 @@ async def resolve_neighbourhood_admins(db: DbSession, event_context: dict) -> li
     )
     return list(result.scalars().all())
 
+async def resolve_neighbourhood_officers(db: DbSession, event_context: dict) -> list[User]:
+    """Admins only"""
+    neighbourhood_id: UUID = event_context["neighbourhood_id"]
+
+    result = await db.execute(
+        select(User)
+        .join(NeighbourhoodUser, NeighbourhoodUser.user_id == User.id)
+        .where(
+            NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+            NeighbourhoodUser.role == NeighbourhoodRole.SECURITY_OFFICER,
+        )
+    )
+    return list(result.scalars().all())
 
 async def resolve_users_by_id(db: DbSession, event_context: dict) -> list[User]:
     """For policies handed pre-resolved ids"""
