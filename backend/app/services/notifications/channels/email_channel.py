@@ -10,6 +10,32 @@ _env = Environment(
     loader=FileSystemLoader("app/services/notifications/templates"),
     autoescape=select_autoescape(["html"]),
 )
+
+class EmailChannel(NotificationChannel):
+    async def send(
+        self,
+        db: DbSession,
+        notification_id: UUID | None,
+        recipients: list[User],
+        context: dict,
+    ):
+        template_name, subject = _TEMPLATES[context["event_type"]]
+        template = _env.get_template(template_name)
+        html_body = template.render(**context)
+        plain_body = _plain_body(context)
+
+        for user in recipients:
+            if not user.email:
+                continue
+            send_email_task.delay(
+                str(notification_id) if notification_id else None,
+                str(user.id),
+                user.email,
+                subject.format(**context),
+                html_body,
+                plain_body,
+            )
+
 ALERT_TEMPLATE_FILENAME = "alert_email.html.j2"
 
 _TEMPLATES: dict[str, tuple[str, str]] = {
@@ -53,28 +79,3 @@ def _plain_body(context: dict) -> str:
         )
 
     raise ValueError(f"No plain-body handler for event type: {event_type}")
-
-class EmailChannel(NotificationChannel):
-    async def send(
-        self,
-        db: DbSession,
-        notification_id: UUID,
-        recipients: list[User],
-        context: dict,
-    ):
-        template_name, subject = _TEMPLATES[context["event_type"]]
-        template = _env.get_template(template_name)
-        html_body = template.render(**context)
-        plain_body = _plain_body(context)
-
-        for user in recipients:
-            if not user.email:
-                continue
-            send_email_task.delay(
-                str(notification_id) if notification_id else None,
-                str(user.id),
-                user.email,
-                subject.format(**context),
-                html_body,
-                plain_body,
-            )
