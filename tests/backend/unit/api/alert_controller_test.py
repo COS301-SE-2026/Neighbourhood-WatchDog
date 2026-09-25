@@ -9,8 +9,8 @@ from app.api.controllers.alert import (
     alert_websocket,
     get_alert_distance,
     get_alert_property_route,
-    get_alert_tracking_timeline,
     get_critical_alerts_map,
+    get_danger_zones,
     get_unlocated_critical_alerts,
 )
 
@@ -21,6 +21,10 @@ from app.schemas.alert import (
     UnlocatedCriticalAlertsData,
 )
 from app.schemas.tracking import TrackingTimelineResponse
+from app.schemas.danger_zone import (
+    DangerZoneData,
+    DangerZoneQuery,
+)
 
 
 @pytest.mark.asyncio
@@ -293,5 +297,61 @@ async def test_get_alert_tracking_timeline_delegates_to_service():
     tracking_service.assert_awaited_once_with(
         db=db,
         alert_id=alert_id,
+        claims=claims,
+    )
+
+@pytest.mark.asyncio
+async def test_get_danger_zones_delegates_to_query_handler():
+    neighbourhood_id = uuid4()
+    db = MagicMock()
+    claims = {"sub": "member-sub"}
+
+    filters = DangerZoneQuery(
+        west=28.20,
+        south=-25.80,
+        east=28.30,
+        north=-25.70,
+    )
+
+    data = DangerZoneData(
+        neighbourhood_id=neighbourhood_id,
+        window_start=date(2026, 8, 27),
+        window_end=date(2026, 9, 25),
+        calculated_at=datetime(
+            2026,
+            9,
+            25,
+            14,
+            0,
+            tzinfo=timezone.utc,
+        ),
+        cell_size_metres=100,
+        min_score=0.15,
+        max_score=0.90,
+        cells=[],
+    )
+
+    with patch(
+        "app.api.controllers.alert."
+        "get_danger_zones_handler",
+        new=AsyncMock(return_value=data),
+    ) as handler:
+        response = await get_danger_zones(
+            neighbourhood_id=neighbourhood_id,
+            filters=filters,
+            db=db,
+            claims=claims,
+        )
+
+    assert response.status == 200
+    assert response.message == (
+        "Danger zones retrieved successfully"
+    )
+    assert response.data == data
+
+    handler.assert_awaited_once_with(
+        neighbourhood_id=neighbourhood_id,
+        filters=filters,
+        db=db,
         claims=claims,
     )
