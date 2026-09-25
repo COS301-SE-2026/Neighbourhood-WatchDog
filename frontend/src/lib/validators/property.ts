@@ -120,6 +120,8 @@ export const PropertyDetailedResSchema = z.object({
     .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i),
   address: z.string(),
   property_type: z.string(),
+  latitude: z.number().finite().min(-90).max(90).nullable(),
+  longitude: z.number().finite().min(-180).max(180).nullable(),
   created_at: z.coerce.date(),
   users: z.array(UserSummarySchema),
   neighbourhood: NeighbourhoodSummarySchema.nullable(),
