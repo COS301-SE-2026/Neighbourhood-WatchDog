@@ -78,6 +78,7 @@ logger.info(
 PERSON_CONFIDENCE_THRESHOLD = float(os.getenv("PERSON_CONFIDENCE_THRESHOLD", "0.25"))
 PERSON_NMS_IOU_THRESHOLD = float(os.getenv("PERSON_NMS_IOU_THRESHOLD", "0.70"))
 WEAPON_CONFIDENCE_THRESHOLD = float(os.getenv("WEAPON_CONFIDENCE_THRESHOLD", "0.50"))
+WEAPON_IMAGE_SIZE = int(os.getenv("WEAPON_IMAGE_SIZE", "640"))
 WEAPON_NMS_IOU_THRESHOLD = float(os.getenv("WEAPON_NMS_IOU_THRESHOLD", "0.50"))
 TEMPORAL_CONFIRMATION_FRAMES = int(os.getenv("TEMPORAL_CONFIRMATION_FRAMES", "3"))
 
@@ -783,6 +784,7 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
             person_confidence=camera.confidence_threshold,
             person_iou=PERSON_NMS_IOU_THRESHOLD,
             weapon_confidence=WEAPON_CONFIDENCE_THRESHOLD,
+            weapon_imgsz=WEAPON_IMAGE_SIZE,
             weapon_iou=WEAPON_NMS_IOU_THRESHOLD,
             max_age=TRACKING_MAX_AGE,
             n_init=TRACKING_N_INIT,
@@ -835,7 +837,7 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
 
 
                 if event["detection_type"] == "WEAPON_DETECTED":
-                    
+
                     local_track_id = event.get("track_id")
 
                     appearance_embedding = (
@@ -940,6 +942,7 @@ def annotated_mjpeg(rtsp_url: str):
         config=CascadedPipelineConfig(
             person_confidence=PERSON_CONFIDENCE_THRESHOLD,
             weapon_confidence=WEAPON_CONFIDENCE_THRESHOLD,
+            weapon_imgsz=WEAPON_IMAGE_SIZE
         ),
 
         inference_lock=_model_lock

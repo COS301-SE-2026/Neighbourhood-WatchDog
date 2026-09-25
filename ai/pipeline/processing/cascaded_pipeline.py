@@ -44,7 +44,7 @@ class CascadedPipelineConfig:
     person_imgsz: int = 640
     weapon_confidence: float = 0.50
     weapon_iou: float = 0.50
-    weapon_imgsz: int = 512
+    weapon_imgsz: int = 640
     max_age: int = 10
     n_init: int = 3
     max_iou_distance: float = 0.5
@@ -135,7 +135,7 @@ class CascadedPipeline:
 
                 }
 
-                
+
                 for detection in weapon_detections
             ]
 
