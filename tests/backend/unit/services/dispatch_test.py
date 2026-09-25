@@ -35,6 +35,8 @@ from app.services.dispatch_service import (
     rank_candidates,
     respond_to_dispatch_handler,
     expire_stale_dispatchs,
+    _promote_officer,
+    _escalate_dispatch,
 )
 
 ALERT_ID = uuid4()
@@ -1059,3 +1061,24 @@ class TestExpireStaleDispatches:
         sql = compiled_sql(stmt)
         assert "FOR UPDATE" in sql.upper()
         assert "SKIP LOCKED" in sql.upper()
+
+class TestPromoteOfficer:
+    async def promote(self, rows):
+        mock_db, _ = make_mock_db()
+        mock_db.execute = AsyncMock(return_value=make_scalars_result(rows))
+        with (
+            patch("app.services.dispatch_service._notify_officer", new=AsyncMock()) as notify, 
+            patch("app.services.dispatch_service._escalate_dispatch", new=AsyncMock()) as escalate,
+        ):
+            await _promote_officer(mock_db, ALERT_ID)
+        return SimpleNamespace(db=mock_db, notify=notify, escalate=escalate)
+
+    @pytest.mark.asyncio
+    async def test_already_accepted_stops_reassignment(self):
+        accepted = make_dispatch_row(DispatchStatus.ACCEPTED, officer_id=uuid4(), rank=1)
+        pending = make_dispatch_row(DispatchStatus.ACCEPTED, officer_id=uuid4(), rank=2)
+        run = await self.promote([accepted, pending])
+
+        run.notify.assert_not_awaited()
+        run.escalate.assert_not_awaited()
+        run.db.add.assert_not_called()
