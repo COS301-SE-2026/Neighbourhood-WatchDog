@@ -27,7 +27,7 @@ class PushChannel(NotificationChannel):
         send_push_to_users.delay(
             recip_ids,
             title=title,
-            body = context.get("situational_summary") or body_template.format(**format_context),
+            body = format_context.get("situational_summary") or body_template.format(**format_context),
             data={"event_type": context["event_type"]}
         )
 
