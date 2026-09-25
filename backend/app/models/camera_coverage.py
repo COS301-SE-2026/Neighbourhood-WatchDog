@@ -1,4 +1,13 @@
-from sqlalchemy import Column, Float, ForeignKey, TIMESTAMP, UniqueConstraint, text
+from sqlalchemy import (
+    CheckConstraint,
+    Column,
+    Float,
+    ForeignKey,
+    TIMESTAMP,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -33,10 +42,35 @@ class CameraCoverage(Base):
         TIMESTAMP(timezone=True),
         nullable=False,
         server_default=text("now()"),
+        onupdate=func.now(),
     )
 
     camera = relationship("Camera", back_populates="coverage")
 
     __table_args__ = (
-        UniqueConstraint("camera_id", name="uq_camera_coverage_camera_id"),
+        UniqueConstraint(
+            "camera_id",
+            name="uq_camera_coverage_camera_id",
+        ),
+        CheckConstraint(
+            "origin_latitude BETWEEN -90 AND 90",
+            name="ck_camera_coverage_latitude",
+        ),
+        CheckConstraint(
+            "origin_longitude BETWEEN -180 AND 180",
+            name="ck_camera_coverage_longitude",
+        ),
+        CheckConstraint(
+            "coverage_bearing_degrees >= 0 "
+            "AND coverage_bearing_degrees < 360",
+            name="ck_camera_coverage_bearing",
+        ),
+        CheckConstraint(
+            "coverage_angle_degrees BETWEEN 1 AND 180",
+            name="ck_camera_coverage_angle",
+        ),
+        CheckConstraint(
+            "coverage_range_metres BETWEEN 1 AND 200",
+            name="ck_camera_coverage_range",
+        ),
     )
