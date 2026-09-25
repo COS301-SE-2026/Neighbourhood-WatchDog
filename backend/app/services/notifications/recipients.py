@@ -92,10 +92,11 @@ async def resolve_property_members(db: DbSession, event_context: dict) -> list[U
 
 async def resolve_neighbourhood_admins_officers_and_property_users(db: DbSession, event_context: dict) -> list[User]:
     """Officers and Neighbourhood admins and the users in a property"""
-    list1 = await resolve_property_members(db, event_context)
-    list2 = await resolve_neighbourhood_admins_and_officers(db, event_context)
+    property_members = await resolve_property_members(db, event_context)
+    admins_and_officers = await resolve_neighbourhood_admins_and_officers(db, event_context)
 
-    return (list1.append(list2))
+    combined = {user.id: user for user in property_members + admins_and_officers}
+    return list(combined.values())
 
 async def resolve_users_by_id(db: DbSession, event_context: dict) -> list[User]:
     """For policies handed pre-resolved ids"""

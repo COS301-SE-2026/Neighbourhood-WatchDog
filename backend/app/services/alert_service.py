@@ -60,7 +60,8 @@ from app.models.user import User
 from app.models.tracking import TrackingSighting, TrackingSubject
 from app.services.tracking_service import normalize_appearance_embedding
 from app.services.situational_brief_service import maybe_generate_situational_brief
-
+from app.services.notifications.factory import NotificationPolicyFactory
+from app.schemas.notification import EventType
 logger = logging.getLogger(__name__)
 
 DEFAULT_PAGE_SIZE = 25
@@ -252,31 +253,19 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
         await db.refresh(alert)
 
 
-        from app.api.controllers.alert import broadcast
-
         if data.neighbourhood_id is not None:
-            recipient_ids = await _get_neighbourhood_websocket_recipient_ids(
-                db,
-                data.neighbourhood_id,
-            )
 
-            await broadcast(
-                recipient_ids,
-                {
-                    "event": "new_alert",
-                    "alert_id": str(alert.id),
-                    "camera_id": str(data.camera_id),
-                    "detection_type": data.detection_type,
-                    "confidence": data.confidence,
-                },
-            )
-
-            send_push_to_users.delay(
-                [str(uid) for uid in recipient_ids],
-                title="New alert",
-                body=f"{data.detection_type} detected",
-                data={"alert_id": str(alert.id), "event": "new_alert"}
-            )
+            event_context = {
+                "event_type": "GENERAL_DETECTION",
+                "notification_source_id": alert.id,
+                "neighbourhood_id": data.neighbourhood_id,
+                "alert_type": data.detection_type,
+                "websocket_payload": _build_alert_res(alert).model_dump(mode="json"),
+            }
+        
+            await (NotificationPolicyFactory
+                .get(EventType.GENERAL_DETECTION)
+                .notify(db, event_context))
 
         else:
             logger.warning(
