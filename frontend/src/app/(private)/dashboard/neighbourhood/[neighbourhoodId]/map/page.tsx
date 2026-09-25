@@ -542,6 +542,7 @@ export default function NeighbourhoodAlertMapPage() {
     useState<MapLayerState>({
       properties: true,
       heatmap: false,
+      dangerZones: false,
       contours: false,
       liveAlerts: true,
       routes: false,
