@@ -198,16 +198,58 @@ export function CameraCoverageEditor({
     return [propertyLatitude, propertyLongitude];
   }, [propertyLatitude, propertyLongitude]);
 
-  const [origin, setOrigin] = useState<Coordinate | undefined>(
-    value
-      ? [value.origin_latitude, value.origin_longitude]
-      : undefined,
-  );
-  const [leftEdge, setLeftEdge] = useState<Coordinate | undefined>();
-  const [rightEdge, setRightEdge] = useState<Coordinate | undefined>();
-  const [rangeMetres, setRangeMetres] = useState(
-    value?.coverage_range_metres ?? 100,
-  );
+  const initialCoveragePoints = useMemo(() => {
+  if (!value) {
+    return {
+      origin: undefined,
+      leftEdge: undefined,
+      rightEdge: undefined,
+    };
+  }
+
+  const origin: Coordinate = [
+    value.origin_latitude,
+    value.origin_longitude,
+  ];
+
+  const leftBearing =
+    value.coverage_bearing_degrees -
+    value.coverage_angle_degrees / 2;
+
+  const rightBearing =
+    value.coverage_bearing_degrees +
+    value.coverage_angle_degrees / 2;
+
+  return {
+    origin,
+    leftEdge: destinationPoint(
+      origin,
+      leftBearing,
+      value.coverage_range_metres,
+    ),
+    rightEdge: destinationPoint(
+      origin,
+      rightBearing,
+      value.coverage_range_metres,
+    ),
+  };
+}, [value]);
+
+const [origin, setOrigin] = useState<Coordinate | undefined>(
+  initialCoveragePoints.origin,
+);
+
+const [leftEdge, setLeftEdge] = useState<Coordinate | undefined>(
+  initialCoveragePoints.leftEdge,
+);
+
+const [rightEdge, setRightEdge] = useState<Coordinate | undefined>(
+  initialCoveragePoints.rightEdge,
+);
+
+const [rangeMetres, setRangeMetres] = useState(
+  value?.coverage_range_metres ?? 100,
+);
 
   const [message, setMessage] = useState<string | null>(null);
 
