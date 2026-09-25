@@ -1085,9 +1085,21 @@ class TestPromoteOfficer:
 
     @pytest.mark.asyncio
     async def test_does_not_double_notify(self):
-        notified = make_dispatch_row(DispatchStatus.NOTIFIEDD, officer_id=uuid4(), rank=1)
+        notified = make_dispatch_row(DispatchStatus.NOTIFIED, officer_id=uuid4(), rank=1)
         pending = make_dispatch_row(DispatchStatus.PENDING, officer_id=uuid4(), rank=2)
         run = await self.promote([notified, pending])
 
         run.notify.assert_not_awaited()
+        run.escalate.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_promotes_next_officer_in_line(self):
+        declined = make_dispatch_row(DispatchStatus.DECLINED, officer_id=uuid4(), rank=1)
+        expired = make_dispatch_row(DispatchStatus.TIMED_OUT, officer_id=uuid4(), rank=2)
+        pending = make_dispatch_row(DispatchStatus.PENDING, officer_id=uuid4(), rank=3)
+        queued = make_dispatch_row(DispatchStatus.QUEUED, officer_id=uuid4(), rank=4)
+
+        run = await self.promote([declined, expired, pending, queued])
+        
+        run.notify.assert_awaited_once_with(run.db, pending)
         run.escalate.assert_not_awaited()
