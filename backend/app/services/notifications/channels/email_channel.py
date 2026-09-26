@@ -7,7 +7,8 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from app.core.database import DbSession
 from app.models.user import User
 from app.services.notifications.channel import NotificationChannel
-from app.tasks.notification_tasks import send_email_task
+from app.tasks.notification_tasks import send_email_task, send_email_bcc_task
+from app.services.notifications.notification_service import MAX_EMAIL_BATCH_SIZE
 
 logger = logging.getLogger(__name__)
 
@@ -38,26 +39,44 @@ class EmailChannel(NotificationChannel):
             
         html_body = template.render(**render_context)
         plain_body = _plain_body(context)
+        subject_line = subject.format(**context)
 
-        for user in recipients:
-            if not user.email:
-                continue
-            send_email_task.delay(
-                str(notification_id) if notification_id else None,
-                str(user.id),
-                user.email,
-                subject.format(**context),
-                html_body,
-                plain_body,
-            )
+        email_recipients = [user for user in recipients if user.email]
+        if not email_recipients:
+            return
+
+        if context["event_type"] in _BCC_EVENTS:
+            for i in range(0, len(email_recipients), MAX_EMAIL_BATCH_SIZE):
+                batch = email_recipients[i:i + MAX_EMAIL_BATCH_SIZE]
+                send_email_bcc_task.delay(
+                    str(notification_id) if notification_id else None,
+                    [str(user.id) for user in batch],
+                    [str(user.email) for user in batch],
+                    subject_line,
+                    html_body,
+                    plain_body,
+                )
+        else:
+            for user in recipients:
+                if not user.email:
+                    continue
+                send_email_task.delay(
+                    str(notification_id) if notification_id else None,
+                    str(user.id),
+                    user.email,
+                    subject_line,
+                    html_body,
+                    plain_body,
+                )
     
 
 ALERT_TEMPLATE_FILENAME = "alert_email.html.j2"
 
 _TEMPLATES: dict[str, tuple[str, str]] = {
     # event_type: (template filename, subject line)
-    "WEAPON_DETECTED": (ALERT_TEMPLATE_FILENAME, "{risk_level} severity alert: {alert_type}"),
+    "WEAPON_DETECTED": (ALERT_TEMPLATE_FILENAME, "{risk_level} severity alert: {alert_type}"), #noqa
     "GENERAL_DETECTION": (ALERT_TEMPLATE_FILENAME, "{risk_level} severity alert: {alert_type}"),
+    "NEIGHBOURHOOD_BROADCAST": (ALERT_TEMPLATE_FILENAME, "{risk_level} severity alert: {alert_type}"),
     "TRACKING_MATCH": (ALERT_TEMPLATE_FILENAME, "Cross-property thread match detected"),
     "PROPERTY_INVITE": ("property_invite_email.html.j2", "You've been added to a property"),
     "JOIN_REQUEST": ("join_request_email.html.j2", "New join request"),
@@ -71,10 +90,13 @@ _SEVERITY_COLOURS = {
     "LOW": ("#6AB0FF", "#10233A"),
 }
 
+_BCC_EVENTS: set[str] = {"NEIGHBOURHOOD_BROADCAST"}
+
+
 def _plain_body(context: dict) -> str:
     event_type = context["event_type"]
 
-    if event_type in ("WEAPON_DETECTED", "GENERAL_DETECTION", "TRACKING_MATCH"):
+    if event_type in ("WEAPON_DETECTED", "GENERAL_DETECTION", "TRACKING_MATCH", "NEIGHBOURHOOD_BROADCAST"):
         return (
             f"{context['alert_type']} detected at {context['camera_name']} ({context['location']}).\n"
             f"Risk level: {context['risk_level']}\n"
