@@ -86,9 +86,10 @@ class TestRequestToJoinAdditional:
 
     @pytest.mark.asyncio
     async def test_property_admin_can_create_pending_request(self):
-        neighbourhood = SimpleNamespace(id=NEIGHBOURHOOD_ID)
+        neighbourhood = SimpleNamespace(id=NEIGHBOURHOOD_ID, name="Elm Street")
         user = SimpleNamespace(id=USER_ID)
-        property_obj = SimpleNamespace(neighbourhood_id=None)
+        property_obj = SimpleNamespace(neighbourhood_id=None, address="123 Elm Street")
+
         property_user = SimpleNamespace(is_admin=True)
         db = make_db([
             result(scalar=neighbourhood),
@@ -103,10 +104,14 @@ class TestRequestToJoinAdditional:
                 obj.created_at = datetime.now(timezone.utc)
 
         db.add.side_effect = add
-        with patch.object(service, "create_audit_log_item", new=AsyncMock()):
+        with (
+            patch.object(service, "create_audit_log_item", new=AsyncMock()),
+            patch("app.services.neighbourhood_join_service.NotificationPolicyFactory.get") as mock_get,
+        ):
+            mock_get.return_value.notify = AsyncMock()
             response = await service.request_to_join_handler(
                 PROPERTY_ID, " ABC123 ", db, claims()
-            )
+            )    
 
         assert response.id == REQUEST_ID
         assert response.property_id == PROPERTY_ID
@@ -155,15 +160,18 @@ class TestRequestToJoinAdditional:
 
     @pytest.mark.asyncio
     async def test_integrity_error_is_converted_to_conflict(self):
+        neighbourhood = SimpleNamespace(id=NEIGHBOURHOOD_ID, name="Elm Street")
         db = make_db([
-            result(scalar=SimpleNamespace(id=NEIGHBOURHOOD_ID)),
+            result(scalar=neighbourhood),
             result(scalar=SimpleNamespace(id=USER_ID)),
-            result(first=(SimpleNamespace(neighbourhood_id=None), SimpleNamespace())),
+            result(first=(SimpleNamespace(neighbourhood_id=None, address="123 Elm Street"), SimpleNamespace())),
             result(scalar=None),
         ])
         db.flush.side_effect = IntegrityError("insert", {}, Exception("duplicate"))
-        with pytest.raises(HTTPException) as exc:
-            await service.request_to_join_handler(PROPERTY_ID, "ABC123", db, claims())
+        with patch("app.services.neighbourhood_join_service.NotificationPolicyFactory.get") as mock_get:
+            mock_get.return_value.notify = AsyncMock()
+            with pytest.raises(HTTPException) as exc:
+                await service.request_to_join_handler(PROPERTY_ID, "ABC123", db, claims())
         assert exc.value.status_code == 409
         db.rollback.assert_awaited_once()
 
@@ -216,15 +224,20 @@ class TestResolveJoinRequestAdditional:
     @pytest.mark.asyncio
     async def test_approve_updates_property_and_adds_resident_membership(self):
         join_request = make_request()
-        property_obj = SimpleNamespace(id=PROPERTY_ID, neighbourhood_id=None)
+        property_obj = SimpleNamespace(id=PROPERTY_ID, neighbourhood_id=None, address="123 Elm Street")
         db = make_db([
             result(scalar=join_request),
             result(scalar=SimpleNamespace(role=NeighbourhoodRole.NEIGHBOURHOOD_ADMIN)),
             result(scalar=property_obj),
             result(scalar=None),
+            result(scalar=SimpleNamespace(id=NEIGHBOURHOOD_ID, name="Elm Street")),
         ])
 
-        with patch.object(service, "create_audit_log_item", new=AsyncMock()):
+        with (
+            patch.object(service, "create_audit_log_item", new=AsyncMock()),
+            patch("app.services.neighbourhood_join_service.NotificationPolicyFactory.get") as mock_get,
+        ):
+            mock_get.return_value.notify = AsyncMock()
             response = await service.resolve_join_request_handler(
                 REQUEST_ID, "APPROVE", db, self.ADMIN_CLAIMS
             )
@@ -269,12 +282,20 @@ class TestResolveJoinRequestAdditional:
     @pytest.mark.asyncio
     async def test_deny_marks_request_rejected(self):
         join_request = make_request()
+        property_obj = SimpleNamespace(id=PROPERTY_ID, neighbourhood_id=None, address="123 Elm Street")
         db = make_db([
             result(scalar=join_request),
             result(scalar=SimpleNamespace(role=NeighbourhoodRole.NEIGHBOURHOOD_ADMIN)),
+            result(scalar=property_obj),
+            result(scalar=None),
+            result(scalar=SimpleNamespace(id=NEIGHBOURHOOD_ID, name="Elm Street")),
         ])
 
-        with patch.object(service, "create_audit_log_item", new=AsyncMock()):
+        with (
+            patch.object(service, "create_audit_log_item", new=AsyncMock()),
+            patch("app.services.neighbourhood_join_service.NotificationPolicyFactory.get") as mock_get,
+        ):
+            mock_get.return_value.notify = AsyncMock()
             response = await service.resolve_join_request_handler(
                 REQUEST_ID, "DENY", db, self.ADMIN_CLAIMS
             )

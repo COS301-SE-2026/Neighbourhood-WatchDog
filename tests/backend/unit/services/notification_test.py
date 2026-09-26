@@ -17,8 +17,6 @@ from app.services.notifications.notification_service import (
     build_alert_email,
     send_alert_email_bcc,
     _notify_users_by_bcc_email,
-    send_email_smtp,
-    send_email_bcc_smtp,
 )
 from app.models.notification import NotificationChannelEnum, NotificationStatus
 

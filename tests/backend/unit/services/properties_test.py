@@ -643,9 +643,9 @@ async def test_invite_property_member_returns_email_sent_true():
     )
 
     with patch(
-        "app.services.property_service.asyncio.to_thread",
-        new=AsyncMock(return_value=(True, None)),
-    ) as send_email:
+        "app.services.property_service.NotificationPolicyFactory.get",
+    ) as mock_get:
+        mock_get.return_value.notify = AsyncMock()
         response = await property_service_module.invite_property_member_handler(
             req=request,
             property_id=PROPERTY_ID,
@@ -660,7 +660,7 @@ async def test_invite_property_member_returns_email_sent_true():
 
     db.add.assert_called_once()
     db.commit.assert_awaited_once()
-    send_email.assert_awaited_once()
+    mock_get.return_value.notify.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -689,9 +689,11 @@ async def test_invite_property_member_handles_email_failure():
     )
 
     with patch(
-        "app.services.property_service.asyncio.to_thread",
-        new=AsyncMock(return_value=(False, "SMTP unavailable")),
-    ):
+        "app.services.property_service.NotificationPolicyFactory.get",
+    ) as mock_get:
+        mock_get.return_value.notify = AsyncMock(
+            side_effect=Exception("SMTP unavailable")
+        )
         response = await property_service_module.invite_property_member_handler(
             req=request,
             property_id=PROPERTY_ID,

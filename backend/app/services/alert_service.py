@@ -293,7 +293,7 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
     except HTTPException:
         await db.rollback()
         raise
-    except Exception:
+    except Exception as e:
         await db.rollback()
 
         logger.exception(
@@ -302,7 +302,7 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
         )
         raise HTTPException(
             status_code=500,
-            detail="Failed to create alert"
+            detail=f"Failed to create alert: {str(e)}"
         )
 
 
@@ -1070,7 +1070,7 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
         raise HTTPException(status_code=404, detail=NEIGHBOURHOOD_NOT_FOUND)
 
     detection_type = (
-        alert.detection_type.value
+        alert.detection_type.value 
         if hasattr(alert.detection_type, "value")
         else str(alert.detection_type)
     )              

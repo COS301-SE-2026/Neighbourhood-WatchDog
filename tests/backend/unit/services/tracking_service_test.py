@@ -19,7 +19,7 @@ from app.services.tracking_service import (
     record_tracking_sighting,
     record_tracking_sighting_for_agent,
 )
-
+from app.schemas.notification import EventType
 
 def test_normalise_appearance_embedding_returns_unit_vector():
     result = normalize_appearance_embedding([3.0, 4.0] + [0.0] * 1278)
@@ -468,14 +468,12 @@ async def test_agent_sighting_records_and_broadcasts_event():
             new=AsyncMock(return_value=sighting),
         ) as record_sighting,
         patch(
-            "app.api.controllers.alert.broadcast",
-            new=AsyncMock(),
-        ) as broadcast,
-        patch(
-            "app.services.tracking_service.dispatch_tracking_match_notifications",
-            new=AsyncMock(),
-        ) as notify_match,
+            "app.services.tracking_service.NotificationPolicyFactory.get",
+        ) as mock_get
     ):
+        mock_policy = mock_get.return_value
+        mock_policy.notify = AsyncMock()
+
         response = await record_tracking_sighting_for_agent(
             db=db,
             body=body,
@@ -485,20 +483,12 @@ async def test_agent_sighting_records_and_broadcasts_event():
     assert response.status == 201
     assert response.data.sighting_id == sighting.id
     record_sighting.assert_awaited_once()
-    broadcast.assert_awaited_once()
 
-    notify_match.assert_awaited_once()
-    assert notify_match.await_args.kwargs["tracking_subject_id"] == subject_id
-    assert (notify_match.await_args.kwargs["source_property"] == "Source property")
-    assert (notify_match.await_args.kwargs["destination_property"] == "Destination property")
+    mock_get.assert_called_once_with(EventType.TRACKING_MATCH)
+    mock_policy.notify.assert_awaited_once()
 
-    assert broadcast.call_args.args[0] == [str(recipient_result.scalars.return_value.all.return_value[0])]
-
-    broadcast_message = broadcast.call_args.args[1]
-
-    assert broadcast_message["event"] == "tracking.sighting"
-
-    payload = broadcast_message["payload"]
+    event_context = mock_policy.notify.await_args.args[1]
+    payload = event_context["websocket_payload"]
 
     assert payload["event_id"] == str(sighting.id)
     assert payload["event_type"] == "cross_property_match"
@@ -574,7 +564,7 @@ async def test_agent_sighting_survives_broadcast_failure():
             ),
         ),
         patch(
-            "app.services.tracking_service.dispatch_tracking_match_notifications",
+            "app.services.alert_service.NotificationPolicyFactory.get",
             new=AsyncMock(),
         ),
     ):

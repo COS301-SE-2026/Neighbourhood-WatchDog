@@ -85,14 +85,15 @@ class TestIngestDetection:
 
         with (
             patch(
-                "app.api.controllers.alert.broadcast",
+                "app.services.detection_service.dispatch_alert",
                 new_callable=AsyncMock,
-            ) as mock_broadcast,
+            ) as mock_dispatch_alert,
             patch(
-                "app.services.detection_service.dispatch_notifications",
-                new_callable=AsyncMock,
+                "app.services.alert_service.NotificationPolicyFactory.get",
             ) as mock_dispatch,
         ):
+            mock_dispatch.return_value.notify = AsyncMock()
+
             result = await ingest_detection_handler(
                 data,
                 self.mock_db,
@@ -107,8 +108,7 @@ class TestIngestDetection:
         assert self.mock_db.add.call_count == 1
         assert self.mock_db.commit.call_count == 1
 
-        mock_broadcast.assert_awaited_once()
-        mock_dispatch.assert_awaited_once()
+        mock_dispatch.return_value.notify.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_below_threshold_creates_no_alert(self):
