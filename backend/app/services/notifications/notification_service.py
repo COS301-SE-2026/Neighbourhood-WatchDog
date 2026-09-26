@@ -812,3 +812,37 @@ def send_email_smtp(
     except Exception as e:
         logger.exception("Error sending email to %s" , recipient_email)
         return False, str(e)
+
+def send_email_bcc_smtp(
+    recipient_emails: list[str],
+    subject: str,
+    html_body: str,
+    plain_body: str,
+) -> tuple[bool, str | None]:
+    if not recipient_emails:
+        return False, "No email recipients provided"
+    if not SENDER_EMAIL or not SENDER_PASSWORD:
+        return False, SMTP_ERROR
+
+    try: 
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+
+        msg = MIMEMultipart("alternative")
+        msg["From"] = f"Neighbourhood WatchDog <{SENDER_EMAIL}>"
+        msg["To"] = f"WatchDog Alerts <{SENDER_EMAIL}>"
+        msg["Bcc"] = ", ".join(recipient_emails)
+        msg["Subject"] = subject
+        msg.attach(MIMEText(plain_body, "plain"))
+        msg.attach(MIMEText(html_body, "html"))
+
+
+        server.sendmail(SENDER_EMAIL, recipient_emails, msg.as_string())
+        server.quit()
+        return True, None
+
+    except Exception as e:
+        logger.exception("Error sending email to %s" , len(recipient_emails))
+        return False, str(e)
+
