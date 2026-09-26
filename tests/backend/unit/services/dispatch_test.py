@@ -37,6 +37,7 @@ from app.services.dispatch_service import (
     expire_stale_dispatchs,
     _promote_officer,
     _escalate_dispatch,
+    _expire_stale_dispatch,
 )
 
 ALERT_ID = uuid4()
@@ -1185,3 +1186,30 @@ class TestEscalateDispatch:
 
         broadcast.assert_not_awaited()
         assert row.notified_at is not None
+
+class TestExpireStaleDispatch:
+    @pytest.mark.asyncio
+    async def test_skips_row_when_no_longer_notified_after_lock(self):
+        stale = make_dispatch_row(
+            DispatchStatus.NOTIFIED,
+            officer_id=uuid4(),
+            rank=1,
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=RESPONSE_TIMEOUT + 30)
+        )
+        accepted = make_dispatch_row(
+            DispatchStatus.ACCEPTED,
+            officer_id=stale.officer_id,
+            rank=1,
+        )
+        accepted.id = stale.id
+
+        mock_db, _ = make_mock_db()
+        mock_db.execute = AsyncMock(return_value=make_scalar_result())
+
+        with patch("app.services.dispatch_service._promote_officer", new=AsyncMock()) as promote:
+            result = await _expire_stale_dispatch(mock_db, stale)
+
+        assert result is accepted
+        assert result.status == DispatchStatus.ACCEPTED
+        mock_db.commit.assert_not_awaited() 
+        promote.assert_not_awaited()
