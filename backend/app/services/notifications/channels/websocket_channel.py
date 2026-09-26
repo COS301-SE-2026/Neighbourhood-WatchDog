@@ -54,6 +54,7 @@ _WEBSOCKET_EVENTS: dict[str, str] = {
     "WEAPON_DETECTED": "alert.new",
     "GENERAL_DETECTION": "alert.new",
     "TRACKING_MATCH": "tracking.sighting",
+    "NEIGHBOURHOOD_BROADCAST": "alert.broadcast",
     # there is no frontend handler for these so I wont include them rn:
     # - PROPERTY_INVITE
     # - JOIN_REQUEST

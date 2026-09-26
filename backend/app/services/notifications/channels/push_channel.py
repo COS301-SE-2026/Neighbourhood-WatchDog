@@ -43,11 +43,12 @@ class PushChannel(NotificationChannel):
 
 _PUSHES: dict[str, tuple[str, str]] = {
     # event_type: (title, body template)
-    "WEAPON_DETECTED": ("New alert", "{alert_type} detected"),
+    "WEAPON_DETECTED": ("New alert", "{alert_type} detected"), #noqa
     "GENERAL_DETECTION": ("New alert", "{alert_type} detected"),
     "TRACKING_MATCH": ("Cross-property match", "A tracked identity was seen on another property"),
     "PROPERTY_INVITE": ("Property invite", "You've been added to a property"),
     "JOIN_REQUEST": ("New join request", "{property_address} wants to join {neighbourhood_name}"),
     "JOIN_REQUEST_RESOLVED": ("Join request resolved", "Your request for {property_address} was {outcome}"),
+    "NEIGHBOURHOOD_BROADCAST": ("New alert", "{alert_type} detected"),
 }
 
