@@ -49,7 +49,6 @@ from app.schemas.alert import (
     UnlocatedCriticalAlertItem
 )
 from app.services.audit_service import create_audit_log_item
-from app.tasks.push_tasks import send_push_to_users
 from app.models.audit_log import AuditAction, TargetEntity
 from app.models.alert import Alert, DetectionType, AlertStatus
 
@@ -296,7 +295,7 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
     except HTTPException:
         await db.rollback()
         raise
-    except Exception as e:
+    except Exception:
         await db.rollback()
 
         logger.exception(
@@ -1074,46 +1073,23 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
         raise HTTPException(status_code=404, detail=NEIGHBOURHOOD_NOT_FOUND)
 
     detection_type = alert.detection_type.value \
-    if hasattr(alert.detection_type, "value") \
-    else str(alert.detection_type)
 
-    alert_res = _build_alert_res(alert)
-    recipient_ids = await _get_neighbourhood_websocket_recipient_ids(
-        db,
-        neighbourhood_id,
-    )
+    event_context = {
+        "event_type": "WEAPON_DETECTED",
+        "notification_source_id": alert.id,
+        "neighbourhood_id": neighbourhood_id,
+        "alert_type": detection_type,
+        "camera_name": camera.name,
+        "location": camera.location,
+        "risk_level": "CRITICAL",
+        "timestamp": alert.frame_timestamp.strftime("%d %b %Y %H:%M"),
+        "websocket_payload": _build_alert_res(alert).model_dump(mode="json"),
+    }
 
-    await broadcast(
-        recipient_ids,
-        {
-            "event": "alert.broadcast",
-            "payload": alert_res.model_dump(mode="json"),
-        },
-    )
-
-    result = await db.execute(
-        select(User)
-        .join(
-            NeighbourhoodUser,
-            NeighbourhoodUser.user_id == User.id,
-        )
-        .where(
-            NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
-            NeighbourhoodUser.role.in_(
-                [
-                    NeighbourhoodRole.RESIDENT,
-                    NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
-                ]
-            ),
-        )
-    )
-
-    residents = result.scalars().all()
-
-    timestamp_str = alert.frame_timestamp.strftime("%d %b %Y, %H:%M:%S")
-    whatsapp_message = _format_whatsapp_message("CRITICAL", detection_type, camera.name, timestamp_str)
-    await _notify_users(db, alert.id, residents, whatsapp_message, detection_type, camera, "CRITICAL", email_bcc=True) #imma need to store val to know if failed or not
-
+    await (NotificationPolicyFactory
+        .get(EventType.NEIGHBOURHOOD_BROADCAST)
+        .notify(db, event_context))
+    
     admin_user_id = UUID(claims["id"])
     
     await create_audit_log_item(
