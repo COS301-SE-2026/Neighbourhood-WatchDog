@@ -23,6 +23,10 @@ class NotificationPolicyBuilder:
         return self
 
     def build(self) -> NotificationPolicy:
+        if self.resolver is None:
+            raise ValueError("recipient_resolver must be set before building a NotificationPolicy")
+
+
         return NotificationPolicy(
             channels=self.channels,
             recipient_resolver=self.resolver,
