@@ -133,7 +133,7 @@ def _s3_client():
 
 
 #cooldown tracker per weapon class
-_clips_cooldowns: dict[tuple[str, int, str], float] = {}
+_clips_cooldowns: dict[tuple[str, int | None, str], float] = {}
 _cooldown_lock = threading.Lock()
 
 
@@ -423,7 +423,7 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
     api_key = keyring.get_password("WatchDog", "api_key") or INTERNAL_API_TOKEN
     observed_at = datetime.now(timezone.utc).isoformat()
 
-    if appearance_embedding is not None:
+    if (appearance_embedding is not None and local_track_id is not None):
         matcher_succeeded, tracking_subject_id, similarity = (
             _match_tracking_subject(camera=camera, appearance_embedding=appearance_embedding, api_key=api_key)
         )

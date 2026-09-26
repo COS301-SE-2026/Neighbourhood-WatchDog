@@ -104,6 +104,23 @@ class CascadedPipeline:
             )
 
         self._histories: dict[int, _TrackHistory] = {}
+        self._last_untracked_weapon_events: dict[tuple[str, int, int], float] = {}
+
+
+        @staticmethod
+        def _untracked_weapon_key(detection: dict[str, Any]) -> tuple[str, int, int]:
+            
+            bbox = detection["bbox"]
+
+            centre_x = int(round(((bbox[0] + bbox[2]) / 2.0) / 50.0))
+            centre_y = int(round(((bbox[1] + bbox[3]) / 2.0) / 50.0))
+
+            return (
+                str(detection["weapon_type"]),
+                centre_x,
+                centre_y
+
+            )
 
     
     def process_frame(self, frame: Any, *, timestamp: float | None = None) -> PipelineResult:
@@ -119,24 +136,33 @@ class CascadedPipeline:
         if not persons:
             self._cleanup_histories(now)
 
-            weapon_events = [
-                {
-                    "track_id": None,
-                    "bbox": detection["bbox"],
-                    "confidence": detection["confidence"],
-                    "weapon_detected": True,
-                    "weapon_type": detection["weapon_type"],
-                    "weapon_confidence": detection["confidence"],
-                    "detection_type": DETECTION_WEAPON,
-                    "severity": SEVERITY_CRITICAL,
-                    "loitering_duration_seconds": None,
-                    "scan_crossing_count": None,
-                    "zone_id": None
+            weapon_events: list[dict[str, Any]] = []
 
-                }
+            for detection in weapon_detections:
+                key = self._untracked_weapon_key(detection)
+                previous_time = self._last_untracked_weapon_events.get(key)
 
-                for detection in weapon_detections
-            ]
+                if (previous_time is not None and now - previous_time < self.config.untracked_weapon_cooldown_seconds):
+                    continue
+
+                self._last_untracked_weapon_events[key] = now
+
+                weapon_events.append(
+                    {
+                        "track_id": None,
+                        "bbox": detection["bbox"],
+                        "confidence": detection["confidence"],
+                        "weapon_detected": True,
+                        "weapon_type": detection["weapon_type"],
+                        "weapon_confidence": detection["confidence"],
+                        "detection_type": DETECTION_WEAPON,
+                        "severity": SEVERITY_CRITICAL,
+                        "loitering_duration_seconds": None,
+                        "scan_crossing_count": None,
+                        "zone_id": None
+                        
+                    }
+                )
 
             return PipelineResult(events=weapon_events)
 
@@ -175,7 +201,7 @@ class CascadedPipeline:
                 "is_confirmed": bool(
                     track.get("is_confirmed", True)
                 )
-                
+
             }
 
             tracks.append(output)
