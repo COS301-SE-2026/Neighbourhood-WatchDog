@@ -78,6 +78,7 @@ logger.info(
 PERSON_CONFIDENCE_THRESHOLD = float(os.getenv("PERSON_CONFIDENCE_THRESHOLD", "0.25"))
 PERSON_NMS_IOU_THRESHOLD = float(os.getenv("PERSON_NMS_IOU_THRESHOLD", "0.70"))
 WEAPON_CONFIDENCE_THRESHOLD = float(os.getenv("WEAPON_CONFIDENCE_THRESHOLD", "0.50"))
+WEAPON_IMAGE_SIZE = int(os.getenv("WEAPON_IMAGE_SIZE", "640"))
 WEAPON_NMS_IOU_THRESHOLD = float(os.getenv("WEAPON_NMS_IOU_THRESHOLD", "0.50"))
 TEMPORAL_CONFIRMATION_FRAMES = int(os.getenv("TEMPORAL_CONFIRMATION_FRAMES", "3"))
 
@@ -132,7 +133,7 @@ def _s3_client():
 
 
 #cooldown tracker per weapon class
-_clips_cooldowns: dict[tuple[str, int, str], float] = {}
+_clips_cooldowns: dict[tuple[str, int | None, str], float] = {}
 _cooldown_lock = threading.Lock()
 
 
@@ -335,7 +336,7 @@ def _match_tracking_subject(camera: CameraSpec, appearance_embedding: list[float
 
 
 
-def _record_tracking_sighting(camera: CameraSpec, local_track_id: int, observed_at: str, tracking_subject_id: str, match_confidence: float, api_key: str) -> IncidentClipTarget | None:    
+def _record_tracking_sighting(camera: CameraSpec, local_track_id: int | None, observed_at: str, tracking_subject_id: str, match_confidence: float, api_key: str) -> IncidentClipTarget | None:    
     """
     Persist a validated cross-camera sighting.
 
@@ -411,7 +412,7 @@ def _record_tracking_sighting(camera: CameraSpec, local_track_id: int, observed_
         return None
 
 
-def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: float, local_track_id: int, appearance_embedding: list[float] | None = None) -> IncidentClipTarget | None:
+def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: float, local_track_id: int | None, appearance_embedding: list[float] | None = None) -> IncidentClipTarget | None:
     """
     Match a detection to an existing incident before creating a new alert.
 
@@ -422,7 +423,7 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
     api_key = keyring.get_password("WatchDog", "api_key") or INTERNAL_API_TOKEN
     observed_at = datetime.now(timezone.utc).isoformat()
 
-    if appearance_embedding is not None:
+    if (appearance_embedding is not None and local_track_id is not None):
         matcher_succeeded, tracking_subject_id, similarity = (
             _match_tracking_subject(camera=camera, appearance_embedding=appearance_embedding, api_key=api_key)
         )
@@ -554,7 +555,7 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
     
 
 def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, weapon_label: str, 
-                          confidence: float, local_track_id: int, stop_event: threading.Event, appearance_embedding: list[float] | None = None) -> None:
+                          confidence: float, local_track_id: int | None, stop_event: threading.Event, appearance_embedding: list[float] | None = None) -> None:
     
     label = weapon_label.lower()
     cooldown_key = (camera.id, local_track_id, label)
@@ -783,6 +784,7 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
             person_confidence=camera.confidence_threshold,
             person_iou=PERSON_NMS_IOU_THRESHOLD,
             weapon_confidence=WEAPON_CONFIDENCE_THRESHOLD,
+            weapon_imgsz=WEAPON_IMAGE_SIZE,
             weapon_iou=WEAPON_NMS_IOU_THRESHOLD,
             max_age=TRACKING_MAX_AGE,
             n_init=TRACKING_N_INIT,
@@ -835,9 +837,14 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
 
 
                 if event["detection_type"] == "WEAPON_DETECTED":
-                    local_track_id = int(event["track_id"])
 
-                    appearance_embedding = result.appearance_embeddings.get(local_track_id)
+                    local_track_id = event.get("track_id")
+
+                    appearance_embedding = (
+                        result.appearance_embeddings.get(local_track_id)
+                        if local_track_id is not None
+                        else None
+                    )
 
                     _schedule_weapon_clip(
                         camera=camera,
@@ -935,6 +942,7 @@ def annotated_mjpeg(rtsp_url: str):
         config=CascadedPipelineConfig(
             person_confidence=PERSON_CONFIDENCE_THRESHOLD,
             weapon_confidence=WEAPON_CONFIDENCE_THRESHOLD,
+            weapon_imgsz=WEAPON_IMAGE_SIZE
         ),
 
         inference_lock=_model_lock

@@ -1,6 +1,6 @@
 # WatchDog Detection Baseline v1
 
-- **Run date:** 2026-09-25T20:58:02.870491+00:00
+- **Run date:** 2026-09-25T21:10:48.169484+00:00
 - **Evaluation frames/images:** 24
 - **IoU match threshold:** 0.5
 - **Person model:** `pipeline/models/weights/yolov8n.pt` (confidence `0.25`)

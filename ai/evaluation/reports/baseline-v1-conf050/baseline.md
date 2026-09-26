@@ -1,21 +1,21 @@
 # WatchDog Detection Baseline v1
 
-- **Run date:** 2026-09-25T20:58:02.870491+00:00
+- **Run date:** 2026-09-25T21:06:39.715762+00:00
 - **Evaluation frames/images:** 24
 - **IoU match threshold:** 0.5
 - **Person model:** `pipeline/models/weights/yolov8n.pt` (confidence `0.25`)
-- **Threat model:** `pipeline/models/weights/best.pt` (confidence `0.25`)
+- **Threat model:** `pipeline/models/weights/best.pt` (confidence `0.5`)
 
 ## Metrics
 
 | Class | TP | FP | FN | Precision | Recall | F1 | Status |
 |---|---:|---:|---:|---:|---:|---:|---|
 | person | 30 | 0 | 0 | 1.0000 | 1.0000 | 1.0000 | measurable |
-| Gun | 0 | 4 | 0 | 0.0000 | 0.0000 | 0.0000 | not_measurable_no_ground_truth_positive |
-| explosion | 0 | 2 | 0 | 0.0000 | 0.0000 | 0.0000 | not_measurable_no_ground_truth_positive |
+| Gun | 0 | 0 | 0 | 0.0000 | 0.0000 | 0.0000 | not_measurable_no_ground_truth_positive |
+| explosion | 0 | 0 | 0 | 0.0000 | 0.0000 | 0.0000 | not_measurable_no_ground_truth_positive |
 | grenade | 0 | 0 | 0 | 0.0000 | 0.0000 | 0.0000 | not_measurable_no_ground_truth_positive |
 | knife | 0 | 0 | 0 | 0.0000 | 0.0000 | 0.0000 | not_measurable_no_ground_truth_positive |
-| weapon | 0 | 6 | 0 | 0.0000 | 0.0000 | 0.0000 | not_measurable_no_ground_truth_positive |
+| weapon | 0 | 0 | 0 | 0.0000 | 0.0000 | 0.0000 | not_measurable_no_ground_truth_positive |
 
 ## Interpretation
 
