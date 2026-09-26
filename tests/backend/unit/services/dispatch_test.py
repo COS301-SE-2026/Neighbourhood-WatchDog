@@ -1232,3 +1232,23 @@ class TestExpireStaleDispatch:
         assert result.status == DispatchStatus.TIMED_OUT
         mock_db.commit.assert_awaited_once() 
         promote.assert_awaited_once_with(mock_db, stale.alert_id)
+
+    @pytest.mark.asyncio
+    async def test_within_window_nothing_happens(self):
+        fresh = make_dispatch_row(
+            DispatchStatus.NOTIFIED,
+            officer_id=uuid4(),
+            rank=1,
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=5)
+        )
+
+        mock_db, _ = make_mock_db()
+        mock_db.execute = AsyncMock(return_value=make_scalar_result(fresh))
+
+        with patch("app.services.dispatch_service._promote_officer", new=AsyncMock()) as promote:
+            result = await _expire_stale_dispatch(mock_db, fresh)
+
+        assert result is fresh
+        assert result.status == DispatchStatus.NOTIFIED
+        mock_db.commit.assert_not_awaited() 
+        promote.assert_not_awaited()
