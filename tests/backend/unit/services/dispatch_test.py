@@ -1163,9 +1163,10 @@ class TestEscalateDispatch:
         with patch("app.services.dispatch_service.broadcast", new=AsyncMock()) as broadcast:
             await _escalate_dispatch(mock_db, row, reason="no_available_officer")
 
-        params = compiled_params(mock_db.execute.await_args.args[0]).values()
-        assert NeighbourhoodRole.NEIGHBOURHOOD_ADMIN in params
-        assert NeighbourhoodRole.SECURITY_OFFICER not in params
+        params = compiled_params(mock_db.execute.await_args.args[0])
+        roles_param = next(v for v in params.values() if isinstance(v, list))
+        assert NeighbourhoodRole.NEIGHBOURHOOD_ADMIN in roles_param
+        assert NeighbourhoodRole.SECURITY_OFFICER not in roles_param
 
         broadcast.assert_awaited_once()
         receivers, message = broadcast.await_args.args
