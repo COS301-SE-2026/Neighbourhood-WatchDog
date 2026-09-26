@@ -112,7 +112,7 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
                 }
 
                 await (NotificationPolicyFactory
-                    .get(EventType(event_context))
+                    .get(EventType(event_context["event_type"]))
                     .notify(db, event_context))
 
                 try:

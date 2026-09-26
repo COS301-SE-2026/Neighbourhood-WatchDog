@@ -26,7 +26,10 @@ class WebSocketChannel(NotificationChannel):
         if not recipient_ids:
             return
 
-        event = _WEBSOCKET_EVENTS[context['event_type']]
+        event = _WEBSOCKET_EVENTS[context["event_type"]]
+
+        await db.commit()
+        await db.close()
 
         await _manager.broadcast(
             recipient_ids,
@@ -44,6 +47,7 @@ class WebSocketChannel(NotificationChannel):
                 status=NotificationStatus.SENT,
                 error_message=None,
             ))
+        await db.commit()
 
 
 _WEBSOCKET_EVENTS: dict[str, str] = {
