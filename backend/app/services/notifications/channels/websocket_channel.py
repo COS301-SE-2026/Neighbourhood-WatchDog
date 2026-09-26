@@ -5,9 +5,7 @@ from app.models.user import User
 from app.models.notification import Notification, NotificationChannelEnum, NotificationStatus
 from app.services.notifications.channel import NotificationChannel
 from app.schemas.notification import EventType
-from app.websocket.manager import ConnectionManager
-
-_manager = ConnectionManager()
+from app.websocket.manager import alert_connection_manager as _manager
 
 class WebSocketChannel(NotificationChannel):
     async def send(

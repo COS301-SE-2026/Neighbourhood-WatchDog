@@ -36,3 +36,5 @@ class ConnectionManager:
 
             for ws in dead:
                 connections.discard(ws)
+
+alert_connection_manager = ConnectionManager()

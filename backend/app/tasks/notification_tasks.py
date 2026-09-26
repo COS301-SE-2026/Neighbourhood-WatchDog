@@ -60,7 +60,7 @@ async def _send_and_log_email(
 @celery.task(acks_late=True)
 def send_email_bcc_task(
     source_id: str | None,
-    user_id: str,
+    user_id: list[str],
     recipient_emails: list[str],
     subject: str,
     html_body: str,
@@ -81,7 +81,7 @@ def send_email_bcc_task(
 
 async def _send_and_log_email_bcc(
     source_id,
-    user_id,
+    user_ids,
     recipient_emails,
     subject,
     html_body,
@@ -90,13 +90,14 @@ async def _send_and_log_email_bcc(
     success, error = await asyncio.to_thread(send_email_bcc_smtp, recipient_emails, subject, html_body, plain_body)
 
     async with worker_session() as db:
-        db.add(Notification(
-            alert_id=UUID(source_id) if source_id else None,
-            user_id=UUID(user_id),
-            channel=NotificationChannelEnum.EMAIL,
-            status=NotificationStatus.SENT if success else NotificationStatus.FAILED,
-            error_message=error,
-        ))
+        for user_id in user_ids:
+            db.add(Notification(
+                alert_id=UUID(source_id) if source_id else None,
+                user_id=UUID(user_id),
+                channel=NotificationChannelEnum.EMAIL,
+                status=NotificationStatus.SENT if success else NotificationStatus.FAILED,
+                error_message=error,
+            ))
         await db.commit()
 
 
