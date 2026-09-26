@@ -1,4 +1,5 @@
 import { CameraInput, Camera, CameraEditInput } from '@/lib/validators/camera'
+import type { CameraCoverageInput } from "@/lib/validators/camera-coverage";
 import { apiCall } from './client'
 
 interface RegisterCameraRes {
@@ -44,4 +45,39 @@ export async function editCamera(id: string, data: CameraEditInput): Promise<Cam
   })
   if (!result.data) throw new Error(result.message || 'No data returned')
   return result.data
+}
+
+export async function getCameraCoverage(
+  cameraId: string,
+): Promise<CameraCoverageInput | null> {
+  return apiCall<CameraCoverageInput | null>(
+    `/cameras/${cameraId}/coverage`,
+    {
+      method: "GET",
+    },
+  );
+}
+
+export async function saveCameraCoverage(
+  cameraId: string,
+  coverage: CameraCoverageInput,
+): Promise<CameraCoverageInput> {
+  return apiCall<CameraCoverageInput>(
+    `/cameras/${cameraId}/coverage`,
+    {
+      method: "PUT",
+      body: coverage,
+    },
+  );
+}
+
+export async function deleteCameraCoverage(
+  cameraId: string,
+): Promise<void> {
+  await apiCall<void>(
+    `/cameras/${cameraId}/coverage`,
+    {
+      method: "DELETE",
+    },
+  );
 }

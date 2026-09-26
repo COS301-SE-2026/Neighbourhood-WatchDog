@@ -103,3 +103,6 @@ setuptools==83.0.0
 
 # Firebase
 firebase-admin==7.6.0
+
+#Shapely
+shapely==2.1.2

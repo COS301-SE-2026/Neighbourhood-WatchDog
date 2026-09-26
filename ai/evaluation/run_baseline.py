@@ -215,7 +215,7 @@ def main() -> None:
     args = parser.parse_args()
 
     args.manifest = _resolve_within(EVALUATION_DIR, args.manifest, "--manifest")
-    args.manifest = _resolve_within(EVALUATION_DIR, args.labels_dir, "--labels-dir")
+    args.labels_dir = _resolve_within(EVALUATION_DIR, args.labels_dir, "--labels-dir")
 
     if not 0 < args.person_conf <= 1 or not 0 < args.weapon_conf <= 1 or not 0 < args.match_iou <= 1:
         parser.error("confidence and IoU values must be greater than 0 and no more than 1")

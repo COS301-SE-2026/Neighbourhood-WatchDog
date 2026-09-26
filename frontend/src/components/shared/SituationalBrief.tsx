@@ -162,7 +162,7 @@ export function SituationalBrief({alertId, enabled, refreshKey = 0}: Situational
               </span>
               <p className="mt-1 text-brand-frost">
                 {brief.last_known_location.camera_name}
-                {" — "}
+                {" - "}
                 {brief.last_known_location.camera_location}
               </p>
             </div>
@@ -177,7 +177,7 @@ export function SituationalBrief({alertId, enabled, refreshKey = 0}: Situational
               {brief.cameras.map((camera) => (
                 <li key={camera.camera_id}>
                   {camera.camera_name}
-                  {" — "}
+                  {" - "}
                   {camera.camera_location}
                 </li>
               ))}
@@ -193,9 +193,9 @@ export function SituationalBrief({alertId, enabled, refreshKey = 0}: Situational
               {brief.alerts.map((alert) => (
                 <li key={alert.alert_id}>
                   {alert.detection_type}
-                  {" — "}
+                  {" - "}
                   {formatBriefDate(alert.observed_at)}
-                  {" — "}
+                  {" - "}
                   {(alert.confidence_score * 100).toFixed(1)}%
                   {" confidence"}
                 </li>
@@ -212,9 +212,9 @@ export function SituationalBrief({alertId, enabled, refreshKey = 0}: Situational
               {brief.sightings.map((sighting) => (
                 <li key={sighting.sighting_id}>
                   #{sighting.sequence_no}
-                  {" — "}
+                  {" - "}
                   {sighting.camera_name}
-                  {" — "}
+                  {" - "}
                   {formatBriefDate(sighting.observed_at)}
                 </li>
               ))}

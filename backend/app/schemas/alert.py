@@ -32,6 +32,7 @@ class AlertRes(BaseModel):
     thumbnail_url: str | None = None
     clip_s3_key: str | None = None
     clip_expires_at: datetime | None = None
+    tracking_subject_id: UUID | None = None
     processed: bool
     status: str
     resolved_by: UUID | None = None
@@ -41,7 +42,7 @@ class AlertRes(BaseModel):
     property_latitude: float | None = None
     property_longitude: float | None = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 class AcknowledgeAlertRes(BaseModel):
 	status: int
@@ -164,12 +165,6 @@ class UpdateAlertClipRequest(BaseModel):
     clip_expires_at: str
 
 
-class InternalAlertCreateRes(BaseModel):
-    """Represent the identifier of an alert created by an AI agent."""
-
-    alert_id: UUID
-
-
 class AlertClipUpdateRes(BaseModel):
     """Represent an alert after its clip details have been updated."""
 
@@ -259,6 +254,13 @@ class AlertDistanceRes(BaseModel):
     message: str | None = None
     data: AlertDistanceData
 
+
+class InternalAlertCreateRes(BaseModel):
+    """Represent the identifier of an alert created by an AI agent."""
+
+    alert_id: UUID
+    sighting_id: UUID | None = None
+    is_new_alert: bool = True
 class IncidentDensityQuery(BaseModel):
     start_date: date
     end_date: date

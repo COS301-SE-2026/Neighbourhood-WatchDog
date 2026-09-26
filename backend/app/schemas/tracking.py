@@ -14,6 +14,9 @@ class TrackingSightingResponse(BaseModel):
     sequence_no: int
     match_confidence: float | None = None
 
+    clip_s3_key: str | None = None
+    clip_expires_at: datetime | None = None
+
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -84,6 +87,11 @@ class TrackingSightingCreateResponse(BaseModel):
     status: int
     message: str
     data: TrackingSightingCreateData
+
+
+class TrackingSightingClipUploadAcceptedRes(BaseModel):
+    sighting_id: UUID
+    status: str
 
 
 

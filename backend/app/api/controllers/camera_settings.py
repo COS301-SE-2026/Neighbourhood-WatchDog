@@ -2,7 +2,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 
-from app.auth.authorization import CameraAdminClaims
 from app.core.database import DbSession
 from app.schemas.camera_settings import (
     CameraSettingsResponse,
@@ -16,6 +15,16 @@ from app.services.camera_settings_service import (
     delete_zone_handler,
     get_camera_settings_handler,
     update_camera_settings_handler,
+)
+from app.schemas.camera_coverage import CameraCoverageInput, CameraCoverageResponse
+from app.services.camera_coverage_service import (
+    delete_camera_coverage_handler,
+    get_camera_coverage_handler,
+    upsert_camera_coverage_handler,
+)
+from app.auth.authorization import (
+    CameraAdminClaims,
+    CameraCoverageAdminClaims,
 )
 
 router = APIRouter(prefix="/cameras", tags=["camera-settings"])
@@ -62,6 +71,58 @@ async def update_settings(
         raise HTTPException(400, "confidence_threshold is required")
     return await update_camera_settings_handler(camera_id, payload.confidence_threshold, db, claims)
 
+@router.get(
+    "/{camera_id}/coverage",
+    response_model=CameraCoverageResponse | None,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions"},
+        404: {"description": "Camera not found"},
+    },
+)
+async def get_coverage(
+    camera_id: UUID,
+    db: DbSession,
+    claims: CameraCoverageAdminClaims,
+):
+    return await get_camera_coverage_handler(camera_id, db, claims)
+
+
+@router.put(
+    "/{camera_id}/coverage",
+    response_model=CameraCoverageResponse,
+    status_code=200,
+    responses={
+        400: {"description": "Invalid coordinates or camera origin is too far from the property"},
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions"},
+        404: {"description": "Camera not found"},
+    },
+)
+async def put_coverage(
+    camera_id: UUID,
+    payload: CameraCoverageInput,
+    db: DbSession,
+    claims: CameraCoverageAdminClaims,
+):
+    return await upsert_camera_coverage_handler(camera_id, payload, db, claims)
+
+
+@router.delete(
+    "/{camera_id}/coverage",
+    status_code=204,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions"},
+        404: {"description": "Camera not found"},
+    },
+)
+async def delete_coverage(
+    camera_id: UUID,
+    db: DbSession,
+    claims: CameraCoverageAdminClaims,
+):
+    await delete_camera_coverage_handler(camera_id, db, claims)
 
 @router.post("/{camera_id}/zones", response_model=ZoneResponse, status_code=201,
     responses={

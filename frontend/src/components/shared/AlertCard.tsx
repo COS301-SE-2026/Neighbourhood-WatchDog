@@ -79,6 +79,9 @@ export interface Alert {
   property_address?: string | null;
   property_latitude?: number | null;
   property_longitude?: number | null;
+
+  tracking_subject_id?: string | null;
+  clip_expires_at?: string | null;
 }
 
 export function getSeverity(detection_type?: string | null): AlertSeverity {

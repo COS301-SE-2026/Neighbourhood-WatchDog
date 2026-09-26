@@ -8,6 +8,7 @@ import {
   fetchTrackingTimeline,
   type TrackingTimelineData,
 } from "@/lib/api/alert";
+import { AlertFootagePlayer } from "@/components/shared/AlertFootagePlayer";
 
 interface TrackingTimelineProps {
   readonly alertId: string;
@@ -168,6 +169,14 @@ export function TrackingTimeline({
                         {(sighting.match_confidence * 100).toFixed(1)}%
                       </span>
                     )}
+                  </div>
+
+                  <div className="mt-3">
+                    <AlertFootagePlayer
+                      alertId={sighting.id}
+                      timestamp={sighting.observed_at}
+                      clipKind="tracking-sighting"
+                    />
                   </div>
                 </li>
               ))}

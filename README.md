@@ -60,7 +60,7 @@
 
 The system integrates community CCTV infrastructure with real-time AI-driven video analysis to detect suspicious activity and surface actionable alerts to security personnel through a unified monitoring dashboard.
 
-Existing CCTV cameras and alarm systems operate in isolation and respond only **after** an incident has occurred. Neighbourhood WatchDog shifts communities from **incident response** toward **incident prevention** — detecting threats before they escalate, tracking individuals across cameras, and generating predictive risk scores for high-risk zones and time windows.
+Existing CCTV cameras and alarm systems operate in isolation and respond only **after** an incident has occurred. Neighbourhood WatchDog shifts communities from **incident response** toward **incident prevention** - detecting threats before they escalate, tracking individuals across cameras, and generating predictive risk scores for high-risk zones and time windows.
 
 [![Project Board](https://img.shields.io/badge/Project_Board-GitHub_Projects-10B981?style=flat-square&logo=github&logoColor=white&labelColor=0D1B2A)](https://github.com/orgs/COS301-SE-2026/projects/)
 
@@ -492,7 +492,7 @@ flowchart LR
 | Branch | Purpose |
 |:---|:---|
 | `main` | Production-ready releases only |
-| `dev` | Integration branch — all features merge here first |
+| `dev` | Integration branch - all features merge here first |
 | `feature/<name>` | Individual feature branches, branched from `dev` |
 | `fix/<name>` | Bug fix branches, branched from `dev` |
 

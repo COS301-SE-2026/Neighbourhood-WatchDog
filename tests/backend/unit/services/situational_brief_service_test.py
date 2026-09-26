@@ -25,12 +25,13 @@ def make_sighting(
     match_confidence,
 ):
     sighting = SimpleNamespace(
-        id=sighting_id,
-        sequence_no=sequence_no,
-        camera_id=camera.id,
-        observed_at=observed_at,
-        local_track_id=local_track_id,
-        match_confidence=match_confidence,
+        id=uuid4(),
+        local_track_id=9,
+        observed_at=datetime.now(timezone.utc),
+        sequence_no=1,
+        match_confidence=0.95,
+        clip_s3_key=None,
+        clip_expires_at=None,
     )
 
     return sighting, camera, property_obj

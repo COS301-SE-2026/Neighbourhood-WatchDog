@@ -68,7 +68,7 @@
 
  Once deployed, the stack exports:
 
- - `bucket_name` — the ID of the created S3 bucket.
+ - `bucket_name` - the ID of the created S3 bucket.
 
  Retrieve outputs with:
  ```bash

@@ -16,7 +16,7 @@ echo "============================================"
 echo ""
 echo "[1/5] Creating symlink ~/watchdog -> $REPO_DIR"
 if [[ -L "$SYMLINK" ]]; then
-    echo "      Symlink already exists — skipping"
+    echo "      Symlink already exists - skipping"
 else
     ln -s "$REPO_DIR" "$SYMLINK"
     echo "      Done: ~/watchdog -> $REPO_DIR"
@@ -28,7 +28,7 @@ echo "[2/5] Setting up Python virtual environment"
 cd ~/watchdog/ai
 
 if [[ -d ".venv" ]]; then
-    echo "      .venv already exists — skipping creation"
+    echo "      .venv already exists - skipping creation"
 else
     python3 -m venv .venv
     echo "      .venv created"
@@ -47,7 +47,7 @@ WEIGHTS_DIR=~/watchdog/ai/pipeline/models/weights
 mkdir -p "$WEIGHTS_DIR"
 
 if [[ -f "$WEIGHTS_DIR/best.pt" ]]; then
-    echo "      best.pt already exists — skipping"
+    echo "      best.pt already exists - skipping"
 else
     echo "      Downloading threat detection model from HuggingFace..."
     python3 - << 'PYEOF'
@@ -63,7 +63,7 @@ PYEOF
 fi
 
 if [[ -f "$WEIGHTS_DIR/yolov8n.pt" ]]; then
-    echo "      yolov8n.pt already exists — skipping"
+    echo "      yolov8n.pt already exists - skipping"
 else
     echo "      Downloading YOLOv8n (person detection) from Ultralytics..."
     python3 -c "from ultralytics import YOLO; YOLO('yolov8n.pt')" 2>/dev/null
@@ -84,14 +84,14 @@ filepath = os.path.expanduser(
 )
 
 if not os.path.exists(filepath):
-    print("      File not found — skipping patch (may be a different Python version)")
+    print("      File not found - skipping patch (may be a different Python version)")
     exit(0)
 
 with open(filepath) as f:
     content = f.read()
 
 if "pkg_resources" not in content:
-    print("      Already patched — skipping")
+    print("      Already patched - skipping")
     exit(0)
 
 content = content.replace("import pkg_resources", "import os as _os")
@@ -114,7 +114,7 @@ echo "[5/5] Installing frontend dependencies"
 cd ~/watchdog/frontend
 
 if [[ -d "node_modules" ]]; then
-    echo "      node_modules already exists — skipping"
+    echo "      node_modules already exists - skipping"
 else
     npm install --silent
     echo "      Done"

@@ -756,7 +756,7 @@ The quality requirements are derived directly from the non-functional requiremen
 
 #### Microservices Architecture
  
-Neighbourhood WatchDog is structured as a set of independently deployable microservices, each responsible for a single bounded context. The six primary subsystems — Video Ingestion, AI Detection, Alert Management, User and Access Control, the Monitoring Dashboard, and Data Storage — are deployed as separate containerised services. This allows each subsystem to be scaled, updated, and maintained independently without affecting the others. For example, AI detection workers can be scaled horizontally during high-traffic periods without redeploying the dashboard or authentication services.
+Neighbourhood WatchDog is structured as a set of independently deployable microservices, each responsible for a single bounded context. The six primary subsystems - Video Ingestion, AI Detection, Alert Management, User and Access Control, the Monitoring Dashboard, and Data Storage - are deployed as separate containerised services. This allows each subsystem to be scaled, updated, and maintained independently without affecting the others. For example, AI detection workers can be scaled horizontally during high-traffic periods without redeploying the dashboard or authentication services.
  
 #### Event-Driven Architecture
  
@@ -768,7 +768,7 @@ The monitoring dashboard follows a layered architecture internally: a presentati
  
 #### Repository Pattern (Data Access)
  
-All database access is abstracted behind repository classes in the FastAPI backend. No route handler interacts with PostgreSQL directly — it calls a repository method which encapsulates the query logic. This makes it straightforward to swap or mock the database layer during testing and keeps business logic out of SQL queries.
+All database access is abstracted behind repository classes in the FastAPI backend. No route handler interacts with PostgreSQL directly - it calls a repository method which encapsulates the query logic. This makes it straightforward to swap or mock the database layer during testing and keeps business logic out of SQL queries.
  
 ---
  
@@ -780,7 +780,7 @@ The real-time alert delivery system is built on the Observer pattern. The dashbo
  
 #### Strategy Pattern
  
-Behaviour classification in the AI pipeline uses the Strategy pattern. Each behaviour type — loitering, perimeter scanning, weapon detection, fall detection — is implemented as a separate classification strategy. The classifier selects the appropriate strategy at runtime based on the detection event type. This makes it straightforward to add new behaviour types without modifying existing classification logic.
+Behaviour classification in the AI pipeline uses the Strategy pattern. Each behaviour type - loitering, perimeter scanning, weapon detection, fall detection - is implemented as a separate classification strategy. The classifier selects the appropriate strategy at runtime based on the detection event type. This makes it straightforward to add new behaviour types without modifying existing classification logic.
  
 #### Factory Pattern
  
@@ -820,7 +820,7 @@ The system shall be delivered as a responsive web application accessible via des
  
 #### Team
  
-The system is developed by a team of five third-year Computer Science students. Architectural decisions must account for the team's existing skill set. Technologies requiring significant upskilling — such as real-time video processing and Kafka stream management — are introduced incrementally across sprints rather than all at once, and foundational upskilling is prioritised before Sprint 1 development begins.
+The system is developed by a team of five third-year Computer Science students. Architectural decisions must account for the team's existing skill set. Technologies requiring significant upskilling - such as real-time video processing and Kafka stream management - are introduced incrementally across sprints rather than all at once, and foundational upskilling is prioritised before Sprint 1 development begins.
  
 ---
  
@@ -848,7 +848,7 @@ The system is developed by a team of five third-year Computer Science students. 
  
 ### AI/ML Pipeline
  
-**YOLOv8 (Ultralytics):** The system must detect human presence within defined zones and identify potential intrusions. YOLOv8 is the current industry standard for real-time object detection, offering the best balance of speed and accuracy. It runs fast enough for near-real-time frame analysis on both GPU and modern CPU, and supports fine-tuning on custom datasets — necessary given the constrained CCTV datasets provided.
+**YOLOv8 (Ultralytics):** The system must detect human presence within defined zones and identify potential intrusions. YOLOv8 is the current industry standard for real-time object detection, offering the best balance of speed and accuracy. It runs fast enough for near-real-time frame analysis on both GPU and modern CPU, and supports fine-tuning on custom datasets - necessary given the constrained CCTV datasets provided.
  
 **DeepSORT:** Autonomous patrol assistance mode requires tracking an individual across multiple cameras and generating a movement path summary. DeepSORT is a multi-object tracking algorithm that pairs directly with YOLO detections, assigning persistent IDs to detected persons across frames and camera feeds.
  
@@ -858,7 +858,7 @@ The system is developed by a team of five third-year Computer Science students. 
  
 **FFmpeg:** The system must ingest both live RTSP streams from cameras and recorded video files. FFmpeg handles format conversion, frame extraction, and re-encoding across a wide range of camera types and input sources. Both live RTSP streams and recorded video files are supported.
  
-**MediaMTX:** Acts as an RTSP relay server sitting between cameras and the backend. Rather than each backend service connecting directly to cameras — which creates tight coupling and limits how many consumers can access a stream — MediaMTX receives camera streams once and distributes them to multiple subscribers. Outputs HLS natively, feeding directly into HLS.js for dashboard stream preview.
+**MediaMTX:** Acts as an RTSP relay server sitting between cameras and the backend. Rather than each backend service connecting directly to cameras - which creates tight coupling and limits how many consumers can access a stream - MediaMTX receives camera streams once and distributes them to multiple subscribers. Outputs HLS natively, feeding directly into HLS.js for dashboard stream preview.
  
 ### Database
  

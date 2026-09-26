@@ -44,7 +44,7 @@ class CascadedPipelineConfig:
     person_imgsz: int = 640
     weapon_confidence: float = 0.50
     weapon_iou: float = 0.50
-    weapon_imgsz: int = 512
+    weapon_imgsz: int = 640
     max_age: int = 10
     n_init: int = 3
     max_iou_distance: float = 0.5
@@ -52,6 +52,7 @@ class CascadedPipelineConfig:
     scan_time_window_seconds: float = 30.0
     scan_crossing_threshold: int = 3
     history_retention_seconds: float = 300.0
+    untracked_weapon_cooldown_seconds: float = 5.0
 
 
 @dataclass
@@ -104,6 +105,23 @@ class CascadedPipeline:
             )
 
         self._histories: dict[int, _TrackHistory] = {}
+        self._last_untracked_weapon_events: dict[tuple[str, int, int], float] = {}
+
+
+    @staticmethod
+    def _untracked_weapon_key(detection: dict[str, Any]) -> tuple[str, int, int]:
+        
+        bbox = detection["bbox"]
+
+        centre_x = int(round(((bbox[0] + bbox[2]) / 2.0) / 50.0))
+        centre_y = int(round(((bbox[1] + bbox[3]) / 2.0) / 50.0))
+
+        return (
+            str(detection["weapon_type"]),
+            centre_x,
+            centre_y
+
+        )
 
     
     def process_frame(self, frame: Any, *, timestamp: float | None = None) -> PipelineResult:
@@ -114,12 +132,43 @@ class CascadedPipeline:
         now = time.monotonic() if timestamp is None else float(timestamp)
 
         persons = self._detect_persons(frame)
+        weapon_detections = self._detect_weapons(frame)
 
         if not persons:
             self._cleanup_histories(now)
-            return PipelineResult()
 
-        enriched_persons = self._enrich_with_weapons(frame, persons)
+            weapon_events: list[dict[str, Any]] = []
+
+            for detection in weapon_detections:
+                key = self._untracked_weapon_key(detection)
+                previous_time = self._last_untracked_weapon_events.get(key)
+
+                if (previous_time is not None and now - previous_time < self.config.untracked_weapon_cooldown_seconds):
+                    continue
+
+                self._last_untracked_weapon_events[key] = now
+
+                weapon_events.append(
+                    {
+                        "track_id": None,
+                        "bbox": detection["bbox"],
+                        "confidence": detection["confidence"],
+                        "weapon_detected": True,
+                        "weapon_type": detection["weapon_type"],
+                        "weapon_confidence": detection["confidence"],
+                        "detection_type": DETECTION_WEAPON,
+                        "severity": SEVERITY_CRITICAL,
+                        "loitering_duration_seconds": None,
+                        "scan_crossing_count": None,
+                        "zone_id": None
+
+                    }
+                )
+
+            return PipelineResult(events=weapon_events)
+
+        enriched_persons = self._enrich_with_weapons(persons, weapon_detections)
+
         confirmed_tracks = self._track(frame, enriched_persons)
 
         tracks: list[dict[str, Any]] = []
@@ -150,7 +199,9 @@ class CascadedPipeline:
             output = {
                 **public_track,
                 **behaviour,
-                "is_confirmed": True
+                "is_confirmed": bool(
+                    track.get("is_confirmed", True)
+                )
 
             }
 
@@ -177,11 +228,9 @@ class CascadedPipeline:
 
         )
 
-
     def _detect_persons(self, frame: Any) -> list[dict[str, Any]]:
 
         with self._inference_guard():
-
             results = self.person_model.predict(
                 frame,
                 verbose=False,
@@ -195,48 +244,36 @@ class CascadedPipeline:
         persons: list[dict[str, Any]] = []
 
         for box in self._boxes_from_result(results):
-
             class_id = int(self._scalar(box.cls[0]))
             confidence = float(self._scalar(box.conf[0]))
 
-            if class_id != PERSON_CLASS_ID or confidence < self.config.person_confidence:
+            if (class_id != PERSON_CLASS_ID or confidence < self.config.person_confidence):
                 continue
 
             bbox = self._xyxy(box)
-            if self._valid_bbox(bbox):
-                persons.append({
+
+            if not self._valid_bbox(bbox):
+                continue
+
+            persons.append(
+                {
                     "bbox": bbox,
                     "confidence": confidence,
                     "crop": self._crop(frame, bbox),
-
                     "weapon_detected": False,
                     "weapon_type": None,
                     "weapon_confidence": None
 
-                })
+                }
+            )
 
-                
         return persons
 
-    def _enrich_with_weapons(self, frame: Any, persons: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Run weapon inference on the full frame and attach detections to people.
 
-        Full-frame inference preserves the pre-cascade model input distribution.
-        A weapon is only promoted when its box overlaps a detected person box, so
-        an isolated weapon on a table is not emitted as a weapon event
-        """
-        enriched = [
-            {
-                **person,
-                "weapon_detected": False,
-                "weapon_type": None,
-                "weapon_confidence": None,
-            }
-            for person in persons
-        ]
+    def _detect_weapons(self, frame: Any) -> list[dict[str, Any]]:
 
-        if not enriched or frame is None or getattr(frame, "size", 0) == 0:
-            return enriched
+        if frame is None or getattr(frame, "size", 0) == 0:
+            return []
 
         with self._inference_guard():
             results = self.weapon_model.predict(
@@ -244,47 +281,73 @@ class CascadedPipeline:
                 verbose=False,
                 conf=self.config.weapon_confidence,
                 iou=self.config.weapon_iou,
-                imgsz=self.config.weapon_imgsz,
+                imgsz=self.config.weapon_imgsz
+
             )
 
-        weapon_detections: list[tuple[float, str, list[float]]] = []
+        detections: list[dict[str, Any]] = []
 
         for box in self._boxes_from_result(results):
             confidence = float(self._scalar(box.conf[0]))
+
             if confidence < self.config.weapon_confidence:
                 continue
 
-            weapon_bbox = self._xyxy(box)
-            if not self._valid_bbox(weapon_bbox):
+            bbox = self._xyxy(box)
+
+            if not self._valid_bbox(bbox):
                 continue
 
             class_id = int(self._scalar(box.cls[0]))
-            label = self._class_name(self.weapon_model, class_id)
-            weapon_detections.append((confidence, label, weapon_bbox))
 
-        for confidence, label, weapon_bbox in weapon_detections:
+            detections.append(
+                {
+                    "bbox": bbox,
+                    "confidence": confidence,
+                    "weapon_type": self._class_name(self.weapon_model, class_id)
+
+                }
+            )
+
+        return detections
+
+    def _enrich_with_weapons(self, persons: list[dict[str, Any]], weapon_detections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        
+        enriched = [
+            {
+                **person,
+                "weapon_detected": False,
+                "weapon_type": None,
+                "weapon_confidence": None
+
+            }
+            for person in persons
+        ]
+
+        if not enriched:
+            return enriched
+
+        for weapon in weapon_detections:
+            weapon_bbox = weapon["bbox"]
+
             parent_index = max(
                 range(len(enriched)),
-                key=lambda index: self._iou(
-                    weapon_bbox,
-                    enriched[index]["bbox"],
-                ),
-            )
-            overlap = self._iou(
-                weapon_bbox,
-                enriched[parent_index]["bbox"],
+                key=lambda index: self._intersection_over_weapon(weapon_bbox, enriched[index]["bbox"])
             )
 
-            if overlap <= 0.0:
+            overlap = self._intersection_over_weapon(weapon_bbox, enriched[parent_index]["bbox"])
+
+            if overlap < 0.15:
                 continue
 
             current_confidence = enriched[parent_index]["weapon_confidence"]
-            if current_confidence is None or confidence > current_confidence:
+
+            if (current_confidence is None or weapon["confidence"] > current_confidence):
                 enriched[parent_index].update(
                     {
                         "weapon_detected": True,
-                        "weapon_type": label,
-                        "weapon_confidence": confidence,
+                        "weapon_type": weapon["weapon_type"],
+                        "weapon_confidence": weapon["confidence"]
                     }
                 )
 
@@ -308,15 +371,21 @@ class CascadedPipeline:
         confirmed: list[dict[str, Any]] = []
 
         for raw_track in raw_tracks:
-            if not raw_track.is_confirmed():
-                continue
+            
+            is_confirmed = raw_track.is_confirmed()
 
             if getattr(raw_track, "time_since_update", 0) > 0:
                 continue
 
-            track_bbox = [float(value) for value in raw_track.to_ltrb()]
+            track_bbox = [
+                float(value)
+                for value in raw_track.to_ltrb()
+            ]
 
             parent = self._best_parent(track_bbox, persons)
+
+            if not is_confirmed and not (parent is not None and parent["weapon_detected"]):
+                continue
 
             confidence = (
                 float(raw_track.det_conf)
@@ -324,18 +393,30 @@ class CascadedPipeline:
                 else float(parent["confidence"] if parent else 0.0)
             )
 
-            confirmed.append({
-                "track_id": int(raw_track.track_id),
-                "bbox": track_bbox,
-                "confidence": confidence,
-
-                "appearance_embedding": self._get_appearance_embedding(raw_track),
-
-                "weapon_detected": bool(parent and parent["weapon_detected"]),
-                "weapon_type": parent["weapon_type"] if parent else None,
-                "weapon_confidence": parent["weapon_confidence"] if parent else None
-
-            })
+            confirmed.append(
+                {
+                    "track_id": int(raw_track.track_id),
+                    "bbox": track_bbox,
+                    "confidence": confidence,
+                    "is_confirmed": is_confirmed,
+                    "appearance_embedding": self._get_appearance_embedding(raw_track),
+                    
+                    "weapon_detected": bool(parent and parent["weapon_detected"]),
+                    
+                    "weapon_type": (
+                        parent["weapon_type"]
+                        if parent
+                        else None
+                    ),
+                    
+                    "weapon_confidence": (
+                        parent["weapon_confidence"]
+                        if parent
+                        else None
+                    )
+                    
+                }
+            )
 
         return confirmed
 
@@ -533,6 +614,20 @@ class CascadedPipeline:
 
 
         return intersection / union if union else 0.0
+
+
+    @staticmethod
+    def _intersection_over_weapon(weapon_bbox: list[float], person_bbox: list[float]) -> float:
+        ix1 = max(weapon_bbox[0], person_bbox[0])
+        iy1 = max(weapon_bbox[1], person_bbox[1])
+        ix2 = min(weapon_bbox[2], person_bbox[2])
+        iy2 = min(weapon_bbox[3], person_bbox[3])
+
+        intersection = (max(0.0, ix2 - ix1) * max(0.0, iy2 - iy1))
+
+        weapon_area = (max(0.0, weapon_bbox[2] - weapon_bbox[0]) * max(0.0, weapon_bbox[3] - weapon_bbox[1]))
+
+        return intersection / weapon_area if weapon_area else 0.0
 
     @staticmethod
     def _point_in_polygon(px: float, py: float, polygon: Sequence[Sequence[float]]) -> bool:

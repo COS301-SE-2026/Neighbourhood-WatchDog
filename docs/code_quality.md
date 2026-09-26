@@ -162,9 +162,9 @@ cd frontend && pnpm lint
 | Utility functions | `camelCase` | `formatDateTime`, `timeAgo` |
 | Types / interfaces | `PascalCase` | `AlertCardProps`, `ClipStatus` |
 | Constants | `UPPER_SNAKE_CASE` | `CLIP_PRE_EVENT_SECS` |
-| Files — components | `PascalCase.tsx` | `AlertCard.tsx` |
-| Files — hooks | `kebab-case.ts` | `use-clip.ts` |
-| Files — utilities | `kebab-case.ts` | `alert.ts`, `auth.ts` |
+| Files - components | `PascalCase.tsx` | `AlertCard.tsx` |
+| Files - hooks | `kebab-case.ts` | `use-clip.ts` |
+| Files - utilities | `kebab-case.ts` | `alert.ts`, `auth.ts` |
 
 ### 4.3 Props - Read-only
 
@@ -310,7 +310,7 @@ cd backend && pytest
 
 E2E tests live in `tests/e2e/` and cover critical user flows. The frontend must be running before tests execute. Configure `playwright.config.ts` with a `webServer` block so CI starts the server automatically.
 
-### Required E2E Coverage — Planned
+### Required E2E Coverage - Planned
 
 Playwright infrastructure is present and invoked in CI. However, as of the
 verification date, the repository contains only the default Playwright example
