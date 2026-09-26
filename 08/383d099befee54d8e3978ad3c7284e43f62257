@@ -1,0 +1,40 @@
+tests/backend/unit/services/properties_test.py
+  h_cf6208e37032c0 646-648,663,692-695
+  h_cf6208e37032c0 696
+tests/backend/unit/services/detection_test.py
+  h_cf6208e37032c0 88,90,92,95-96,111
+tests/backend/unit/services/alert_service_additional_test.py
+  h_cf6208e37032c0 69-70,76-77,424,427-428,430-432,434,441,945,960,963,973,994,1009,1012-1013,1021
+  h_cf6208e37032c0 433
+tests/backend/unit/services/alert_test.py
+  h_cf6208e37032c0 17,936,943,945-946,948-950,953-961,963-964,982-985,987-989
+  h_cf6208e37032c0 947
+tests/backend/unit/services/tracking_service_test.py
+  h_cf6208e37032c0 22,471-472,474-476,487-488,490-491,567
+tests/backend/unit/services/property_member_test.py
+  h_cf6208e37032c0 270-272,304-307
+  h_cf6208e37032c0 308
+tests/backend/unit/services/push_tasks_test.py
+  h_cf6208e37032c0 9,40,55
+tests/backend/unit/services/clip_task_test.py
+  h_cf6208e37032c0 40,51,72,106,124
+tests/backend/unit/services/neighbourhood_join_service_additional_test.py
+  h_cf6208e37032c0 89,91-92,107,109-111,114,163,165,167,171-173,227,233,236-240,285,289-291,294-296,298
+  h_cf6208e37032c0 108,174,297
+tests/backend/unit/tasks/risk_score_tasks_test.py
+  h_cf6208e37032c0 37,52,70,84
+backend/app/services/alert_service.py
+  h_cf6208e37032c0 296,305
+  h_cf6208e37032c0 1073
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "08383d099befee54d8e3978ad3c7284e43f62257",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
