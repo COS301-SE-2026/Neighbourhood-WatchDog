@@ -1,0 +1,20 @@
+backend/app/tasks/notification_tasks.py
+  h_cf6208e37032c0 8,48,87
+backend/app/tasks/clip_tasks.py
+  h_cf6208e37032c0 11,44
+backend/app/tasks/risk_score_tasks.py
+  h_cf6208e37032c0 8,36
+backend/app/tasks/push_tasks.py
+  h_cf6208e37032c0 11,40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0e62b2d24c7b4150a673d8fd7abcbd37b01338d1",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
