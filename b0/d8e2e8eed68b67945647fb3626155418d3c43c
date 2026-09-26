@@ -1,0 +1,15 @@
+backend/app/tasks/notification_tasks.py
+  h_cf6208e37032c0 10,12,60-80,82,85,90
+  h_cf6208e37032c0 11,81,83-84,86-89,91-101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b0d8e2e8eed68b67945647fb3626155418d3c43c",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
