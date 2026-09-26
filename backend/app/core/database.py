@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from typing import Annotated, AsyncGenerator
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
@@ -48,3 +49,18 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await db.close()
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
+
+@asynccontextmanager
+async def worker_session() -> AsyncGenerator[AsyncGenerator, None]:
+    engine = create_async_engine(DATABASE_URL, poolclass=NullPool)
+    session_local = async_sessionmaker(
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False
+    )
+
+    try:
+        async with session_local() as db:
+            yield db
+    finally:
+        await engine.dispose()
