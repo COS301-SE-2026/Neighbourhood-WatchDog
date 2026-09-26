@@ -1,0 +1,25 @@
+backend/app/services/alert_service.py
+  h_cf6208e37032c0 1072,1074-1076,1079
+  s_090af22f1f5661::t_5058bb81bd64b4 1073
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "21a0d6096cf3193da9479833eb71a97c0ba75016",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_090af22f1f5661": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bd4df90b-4d7d-491c-a95b-9f32bb5aa10b",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
