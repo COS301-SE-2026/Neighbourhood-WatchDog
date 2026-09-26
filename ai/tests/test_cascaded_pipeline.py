@@ -33,18 +33,19 @@ class FakeModel:
 
 
 class FakeTrack:
-    def __init__(self, track_id, bbox, confidence=0.9, feature=None):
+    def __init__(self, track_id, bbox, confidence=0.9, feature=None, confirmed=True):
         self.track_id = track_id
         self._bbox = bbox
         self.det_conf = confidence
         self.time_since_update = 0
         self._feature = feature
+        self._confirmed = confirmed
 
     def get_feature(self):
         return self._feature
 
     def is_confirmed(self):
-        return True
+        return self._confirmed
 
     def to_ltrb(self):
         return np.array(self._bbox, dtype=float)
@@ -244,3 +245,52 @@ def test_weapon_outside_person_is_not_attached():
 
     assert result.tracks[0]["weapon_detected"] is False
     assert result.events[0]["detection_type"] == "HUMAN_PRESENCE"
+
+def test_tentative_weapon_track_is_retained():
+    person_model = FakeModel([FakeBox([10, 20, 50, 70], 0.91, 0)])
+
+    weapon_model = FakeModel([FakeBox([12, 23, 22, 35], 0.88, 1)])
+
+    tracker = FakeTracker([FakeTrack(7, [10, 20, 50, 70], confirmed=False)])
+
+    pipeline = CascadedPipeline(
+        person_model=person_model,
+        weapon_model=weapon_model,
+        tracker=tracker,
+        config=CascadedPipelineConfig(n_init=3)
+
+    )
+
+    result = pipeline.process_frame(
+        np.zeros((100, 200, 3), dtype=np.uint8)
+    )
+
+    assert len(result.tracks) == 1
+    assert result.tracks[0]["weapon_detected"] is True
+    assert result.tracks[0]["is_confirmed"] is False
+    assert result.events[0]["detection_type"] == "WEAPON_DETECTED"
+
+
+def test_tentative_human_track_is_discarded():
+    person_model = FakeModel([FakeBox([10, 20, 50, 70], 0.91, 0)])
+
+    weapon_model = FakeModel([])
+    tracker = FakeTracker([FakeTrack(7, [10, 20, 50, 70], confirmed=False)])
+
+    pipeline = CascadedPipeline(
+        person_model=person_model,
+        weapon_model=weapon_model,
+        tracker=tracker
+
+    )
+
+    result = pipeline.process_frame(
+        np.zeros(
+            (100, 200, 3),
+            dtype=np.uint8
+            
+        )
+    )
+
+    assert result.tracks == []
+    assert result.events == []  

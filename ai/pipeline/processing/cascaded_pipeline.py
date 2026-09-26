@@ -52,6 +52,7 @@ class CascadedPipelineConfig:
     scan_time_window_seconds: float = 30.0
     scan_crossing_threshold: int = 3
     history_retention_seconds: float = 300.0
+    untracked_weapon_cooldown_seconds: float = 5.0
 
 
 @dataclass
@@ -107,20 +108,20 @@ class CascadedPipeline:
         self._last_untracked_weapon_events: dict[tuple[str, int, int], float] = {}
 
 
-        @staticmethod
-        def _untracked_weapon_key(detection: dict[str, Any]) -> tuple[str, int, int]:
-            
-            bbox = detection["bbox"]
+    @staticmethod
+    def _untracked_weapon_key(detection: dict[str, Any]) -> tuple[str, int, int]:
+        
+        bbox = detection["bbox"]
 
-            centre_x = int(round(((bbox[0] + bbox[2]) / 2.0) / 50.0))
-            centre_y = int(round(((bbox[1] + bbox[3]) / 2.0) / 50.0))
+        centre_x = int(round(((bbox[0] + bbox[2]) / 2.0) / 50.0))
+        centre_y = int(round(((bbox[1] + bbox[3]) / 2.0) / 50.0))
 
-            return (
-                str(detection["weapon_type"]),
-                centre_x,
-                centre_y
+        return (
+            str(detection["weapon_type"]),
+            centre_x,
+            centre_y
 
-            )
+        )
 
     
     def process_frame(self, frame: Any, *, timestamp: float | None = None) -> PipelineResult:
@@ -160,7 +161,7 @@ class CascadedPipeline:
                         "loitering_duration_seconds": None,
                         "scan_crossing_count": None,
                         "zone_id": None
-                        
+
                     }
                 )
 
@@ -392,18 +393,30 @@ class CascadedPipeline:
                 else float(parent["confidence"] if parent else 0.0)
             )
 
-            confirmed.append({
-                "track_id": int(raw_track.track_id),
-                "bbox": track_bbox,
-                "confidence": confidence,
-
-                "appearance_embedding": self._get_appearance_embedding(raw_track),
-
-                "weapon_detected": bool(parent and parent["weapon_detected"]),
-                "weapon_type": parent["weapon_type"] if parent else None,
-                "weapon_confidence": parent["weapon_confidence"] if parent else None
-
-            })
+            confirmed.append(
+                {
+                    "track_id": int(raw_track.track_id),
+                    "bbox": track_bbox,
+                    "confidence": confidence,
+                    "is_confirmed": is_confirmed,
+                    "appearance_embedding": self._get_appearance_embedding(raw_track),
+                    
+                    "weapon_detected": bool(parent and parent["weapon_detected"]),
+                    
+                    "weapon_type": (
+                        parent["weapon_type"]
+                        if parent
+                        else None
+                    ),
+                    
+                    "weapon_confidence": (
+                        parent["weapon_confidence"]
+                        if parent
+                        else None
+                    )
+                    
+                }
+            )
 
         return confirmed
 
