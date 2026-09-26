@@ -1,0 +1,24 @@
+backend/app/websocket/manager.py
+  h_cf6208e37032c0 39-40
+  h_cf6208e37032c0 38
+backend/app/api/controllers/stream.py
+  h_cf6208e37032c0 8,12,15,18,22
+backend/app/tasks/notification_tasks.py
+  h_cf6208e37032c0 63,84,93
+  h_cf6208e37032c0 94-100
+backend/app/api/controllers/alert.py
+  h_cf6208e37032c0 61,68,72,76
+backend/app/services/notifications/channels/websocket_channel.py
+  h_cf6208e37032c0 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "cc2f04f2223fbca09a60b94130fa3dd20ffd3d27",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
