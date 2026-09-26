@@ -254,6 +254,12 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
 
 
         if data.neighbourhood_id is not None:
+            alert_result = await db.execute(
+                select(Alert)
+                .options(joinedload(Alert.camera).joinedload(Camera.property))
+                .where(Alert.id == alert.id)
+            )
+            alert = alert_result.scalar_one_or_none()
 
             event_context = {
                 "event_type": "GENERAL_DETECTION",
@@ -299,7 +305,7 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
         )
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to create alert: {str(e)}"
+            detail="Failed to create alert"
         )
 
 
