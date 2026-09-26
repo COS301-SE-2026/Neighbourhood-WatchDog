@@ -85,10 +85,6 @@ class TestIngestDetection:
 
         with (
             patch(
-                "app.services.detection_service.dispatch_alert",
-                new_callable=AsyncMock,
-            ) as mock_dispatch_alert,
-            patch(
                 "app.services.alert_service.NotificationPolicyFactory.get",
             ) as mock_dispatch,
         ):

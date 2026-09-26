@@ -1019,6 +1019,7 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
 
     assert response.alert_id == ALERT_ID
     mock_send_push.return_value.notify.assert_called_once()
+    alert_model
 
 
 @pytest.mark.asyncio

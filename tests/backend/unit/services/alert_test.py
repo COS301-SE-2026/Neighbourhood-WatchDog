@@ -2,7 +2,7 @@ import hashlib
 import uuid
 from uuid import UUID, uuid4
 from datetime import datetime, timezone
-from unittest.mock import ANY, AsyncMock, Mock, patch, MagicMock
+from unittest.mock import AsyncMock, Mock, patch, MagicMock
 
 import pytest
 from fastapi import HTTPException
