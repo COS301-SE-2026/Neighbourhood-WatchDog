@@ -4,7 +4,6 @@ from sqlalchemy import select
 from app.core.database import DbSession
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
 from app.models.property_user import PropertyUser
-from app.models.property import Property
 from app.models.user import User
 
 async def resolve_neighbourhood_members(db: DbSession, event_context: dict) -> list[User]:

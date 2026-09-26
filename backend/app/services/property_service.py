@@ -1,6 +1,5 @@
 import os
 import logging
-import asyncio
 from typing import List
 from uuid import UUID
 
@@ -20,7 +19,6 @@ from app.models.property_user import PropertyUser
 from app.models.user import User
 from app.schemas.property import (InvitePropertyReq, PropertyMember, PropertyMembers, PropertyResidentContextRes)
 from app.services.audit_service import create_audit_log_item
-from app.services.notifications.notification_service import send_property_invite_email
 from app.services.notifications.factory import NotificationPolicyFactory
 from app.schemas.notification import EventType
 

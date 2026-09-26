@@ -24,7 +24,8 @@ class NotificationPolicy:
         event_context: dict,
     ) -> None:
         recipients = await self.recipient_resolver(db, event_context)
-        if not recipients: return
+        if not recipients:
+            return
 
         for channel in self.channels:
             try:

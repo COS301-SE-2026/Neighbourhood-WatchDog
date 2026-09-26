@@ -1,6 +1,4 @@
-from enum import Enum
 
-from app.models.alert import DetectionType
 from app.services.notifications.policy import NotificationPolicy
 from app.services.notifications.policies.join_request import build_join_request_policy, build_join_request_resolved_policy
 from app.services.notifications.policies.property_invite import build_property_invite_policy

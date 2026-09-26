@@ -19,7 +19,7 @@ def recalculate_all_risk_scores():
 
 
 async def _recalculate_all_risk_scores():
-    async with WorkerSessionLocal() as db:
+    async with worker_session() as db:
         result = await db.execute(select(Neighbourhood.id))
         neighbourhood_ids = result.scalars().all()
 
