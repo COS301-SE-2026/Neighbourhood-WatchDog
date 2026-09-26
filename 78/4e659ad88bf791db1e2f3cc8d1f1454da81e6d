@@ -1,0 +1,20 @@
+backend/app/core/database.py
+  h_cf6208e37032c0 54
+backend/app/services/notifications/policy_builder.py
+  h_cf6208e37032c0 2,7-8
+backend/app/tasks/clip_tasks.py
+  h_cf6208e37032c0 108
+tests/backend/unit/services/alert_service_additional_test.py
+  h_cf6208e37032c0 946,1006
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "784e659ad88bf791db1e2f3cc8d1f1454da81e6d",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
