@@ -1,0 +1,26 @@
+backend/app/tasks/risk_score_tasks.py
+  h_cf6208e37032c0 22
+backend/app/services/notifications/policy.py
+  s_090af22f1f5661::t_58b3015bd89a3a 27-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e374a98f0737406fb17b889eadc811b59e751727",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_090af22f1f5661": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bd4df90b-4d7d-491c-a95b-9f32bb5aa10b",
+        "model": "unknown"
+      },
+      "human_author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
