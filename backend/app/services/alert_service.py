@@ -53,8 +53,6 @@ from app.models.audit_log import AuditAction, TargetEntity
 from app.models.alert import Alert, DetectionType, AlertStatus
 
 from app.models.neighbourhood import Neighbourhood
-from app.services.notifications.notification_service import _format_whatsapp_message, _notify_users
-from app.models.user import User
 
 from app.models.tracking import TrackingSighting, TrackingSubject
 from app.services.tracking_service import normalize_appearance_embedding
@@ -1023,7 +1021,6 @@ async def get_trends_handler(
 async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession, claims: dict):
     """Broadcast an alert and notify eligible residents in its neighbourhood."""
     
-    from app.api.controllers.alert import broadcast
 
     result = await db.execute(
         select(Alert).where(Alert.id == alert_id)
@@ -1072,10 +1069,14 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
         logger.warning("broadcast_neighbourhood_alert_service: could not find neighbourhoodcamera linked to alert with alert_id=%s", alert_id)
         raise HTTPException(status_code=404, detail=NEIGHBOURHOOD_NOT_FOUND)
 
-    detection_type = alert.detection_type.value \
+    detection_type = (
+        alert.detection_type.value
+        if hasattr(alert.detection_type, "value")
+        else str(alert.detection_type)
+    )              
 
     event_context = {
-        "event_type": "WEAPON_DETECTED",
+        "event_type": "NEIGHBOURHOOD_BROADCAST",
         "notification_source_id": alert.id,
         "neighbourhood_id": neighbourhood_id,
         "alert_type": detection_type,

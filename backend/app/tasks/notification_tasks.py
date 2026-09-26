@@ -9,7 +9,6 @@ from app.core.database import worker_session
 from app.models.notification import Notification, NotificationChannelEnum, NotificationStatus
 from app.services.notifications.notification_service import send_email_smtp, send_email_bcc_smtp, send_whatsapp
 
-from app.schemas.notification import EventType
 
 logger = logging.getLogger(__name__)
 
