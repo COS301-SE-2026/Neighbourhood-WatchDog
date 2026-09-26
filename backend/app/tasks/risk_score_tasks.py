@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 
 from app.core.celery_app import celery
-from app.core.database import WorkerSessionLocal
+from app.core.database import worker_session
 from app.models.neighbourhood import Neighbourhood
 from app.services.risk_score_service import calculate_risk_score_handler
 
@@ -33,7 +33,7 @@ def calculate_risk_score_task(neighbourhood_id: str):
     asyncio.run(_calculate_risk_score_task(neighbourhood_id))
 
 async def _calculate_risk_score_task(neighbourhood_id: str):
-    async with WorkerSessionLocal() as db:
+    async with worker_session() as db:
         try:
             await calculate_risk_score_handler(UUID(neighbourhood_id), db)
 
