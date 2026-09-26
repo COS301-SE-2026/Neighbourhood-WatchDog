@@ -5,19 +5,24 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 import os
 
-from app.services.notifications.notification_service import(
+from app.services.notifications.notification_service import (
     _classify_severity,
     _format_whatsapp_message,
     _log_notification,
     dispatch_notifications,
     should_notify,
     send_alert_email,
+    send_whatsapp,
     _notify_users,
-    build_alert_email, 
-    send_alert_email_bcc, 
-    _notify_users_by_bcc_email
+    build_alert_email,
+    send_alert_email_bcc,
+    _notify_users_by_bcc_email,
+    send_email_smtp,
+    send_email_bcc_smtp,
 )
 from app.models.notification import NotificationChannelEnum, NotificationStatus
+
+NOTIFICATION_SERVICE_PATH = "app.services.notifications.notification_service"
 
 WHATSAPP_TEST_NUMBER = "whatsapp:+27821234567"
 class TestClassifySeverity:
@@ -107,62 +112,62 @@ class TestSendWhatsapp:
     def test_successful_send(self, mock_client_cls):
         mock_client = Mock()
         mock_client_cls.return_value = mock_client
- 
-        success, error = _send_whatsapp("0821234567", "hello")
- 
+
+        success, error = send_whatsapp("0821234567", "hello")
+
         assert success is True
         assert error is None
         mock_client.messages.create.assert_called_once()
         call_kwargs = mock_client.messages.create.call_args.kwargs
         assert call_kwargs["to"] == WHATSAPP_TEST_NUMBER
- 
+
     @patch.dict(os.environ, {"TWILIO_ACCOUNT_SID": "sid", "TWILIO_AUTH_TOKEN": "token"})
     @patch("twilio.rest.Client")
     def test_number_already_has_whatsapp_prefix_untouched(self, mock_client_cls):
         mock_client = Mock()
         mock_client_cls.return_value = mock_client
- 
-        success, _ = _send_whatsapp(WHATSAPP_TEST_NUMBER, "hello")
- 
+
+        success, _ = send_whatsapp(WHATSAPP_TEST_NUMBER, "hello")
+
         assert success is True
         call_kwargs = mock_client.messages.create.call_args.kwargs
         assert call_kwargs["to"] == WHATSAPP_TEST_NUMBER
- 
+
     @patch.dict(os.environ, {"TWILIO_ACCOUNT_SID": "sid", "TWILIO_AUTH_TOKEN": "token"})
     @patch("twilio.rest.Client")
     def test_international_number_with_plus_kept(self, mock_client_cls):
         mock_client = Mock()
         mock_client_cls.return_value = mock_client
- 
-        success, _ = _send_whatsapp("+447911123456", "hello")
- 
+
+        success, _ = send_whatsapp("+447911123456", "hello")
+
         assert success is True
         call_kwargs = mock_client.messages.create.call_args.kwargs
         assert call_kwargs["to"] == "whatsapp:+447911123456"
- 
+
     @patch.dict(os.environ, {}, clear=True)
     def test_missing_credentials_returns_failure(self):
-        success, error = _send_whatsapp("0821234567", "hello")
- 
+        success, error = send_whatsapp("0821234567", "hello")
+
         assert success is False
         assert error == "Twilio credentials not configured"
- 
+
     @patch.dict(os.environ, {"TWILIO_ACCOUNT_SID": "sid", "TWILIO_AUTH_TOKEN": "token"})
     @patch("twilio.rest.Client")
     def test_twilio_exception_returns_failure(self, mock_client_cls):
         mock_client = Mock()
         mock_client.messages.create.side_effect = Exception("network error")
         mock_client_cls.return_value = mock_client
- 
-        success, error = _send_whatsapp("0821234567", "hello")
- 
+
+        success, error = send_whatsapp("0821234567", "hello")
+
         assert success is False
         assert error == "network error"
 
 class TestSendAlertEmail:
-    @patch("app.services.notification_service.SENDER_EMAIL", "bot@watchdog.com")
-    @patch("app.services.notification_service.SENDER_PASSWORD", "pw")
-    @patch("app.services.notification_service.smtplib.SMTP")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.SENDER_EMAIL", "bot@watchdog.com")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.SENDER_PASSWORD", "pw")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.smtplib.SMTP")
     def test_successful_send_returns_true(self, mock_smtp_cls):
         mock_server = Mock()
         mock_smtp_cls.return_value = mock_server
@@ -176,8 +181,8 @@ class TestSendAlertEmail:
         mock_server.sendmail.assert_called_once()
         mock_server.quit.assert_called_once()
 
-    @patch("app.services.notification_service.SENDER_EMAIL", None)
-    @patch("app.services.notification_service.SENDER_PASSWORD", None)
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.SENDER_EMAIL", None)
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.SENDER_PASSWORD", None)
     def test_missing_smtp_credentials_returns_failure(self, *_):
         success, error = send_alert_email(
             "resident@example.com", "WEAPON_DETECTED", "CAM 03", "Front Gate", "CRITICAL"
@@ -186,9 +191,9 @@ class TestSendAlertEmail:
         assert success is False
         assert error == "SMTP credentials not configured"
 
-    @patch("app.services.notification_service.SENDER_EMAIL", "bot@watchdog.com")
-    @patch("app.services.notification_service.SENDER_PASSWORD", "pw")
-    @patch("app.services.notification_service.smtplib.SMTP")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.SENDER_EMAIL", "bot@watchdog.com")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.SENDER_PASSWORD", "pw")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.smtplib.SMTP")
     def test_smtp_exception_returns_failure(self, mock_smtp_cls):
         mock_server = Mock()
         mock_server.sendmail.side_effect = Exception("smtp connection refused")
@@ -200,7 +205,6 @@ class TestSendAlertEmail:
 
         assert success is False
         assert error == "smtp connection refused"
-
 
 
 class TestBuildAlertEmail:
@@ -253,9 +257,9 @@ class TestSendAlertEmailBcc:
         assert success is False
         assert error == "No email recipients provided"
 
-    @patch("app.services.notification_service.SENDER_EMAIL", None)
-    @patch("app.services.notification_service.SENDER_PASSWORD", None)
-    def test_missing_smtp_credentials_returns_failure(self):
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.SENDER_EMAIL", None)
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.SENDER_PASSWORD", None)
+    def test_missing_smtp_credentials_returns_failure(self, *_):
         success, error = send_alert_email_bcc(
             ["resident@example.com"],
             "WEAPON_DETECTED",
@@ -267,9 +271,9 @@ class TestSendAlertEmailBcc:
         assert success is False
         assert error == "SMTP credentials not configured"
 
-    @patch("app.services.notification_service.SENDER_EMAIL", "bot@watchdog.com")
-    @patch("app.services.notification_service.SENDER_PASSWORD", "pw")
-    @patch("app.services.notification_service.smtplib.SMTP")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.SENDER_EMAIL", "bot@watchdog.com")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.SENDER_PASSWORD", "pw")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.smtplib.SMTP")
     def test_smtp_exception_returns_failure(self, mock_smtp_cls):
         mock_server = Mock()
         mock_server.sendmail.side_effect = Exception("smtp connection refused")
@@ -303,9 +307,9 @@ class TestNotifyUsersBcc:
         return user
 
     @pytest.mark.asyncio
-    @patch("app.services.notification_service._log_notification")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}._log_notification")
     @patch(
-        "app.services.notification_service.send_alert_email_bcc",
+        f"{NOTIFICATION_SERVICE_PATH}.send_alert_email_bcc",
         side_effect=[(True, None), (False, "smtp error")],
     )
     async def test_bcc_batches_and_logs_each_user_result(self, mock_bcc, mock_log):
@@ -316,7 +320,7 @@ class TestNotifyUsersBcc:
             self._make_user(None),
         ]
 
-        with patch("app.services.notification_service.MAX_EMAIL_BATCH_SIZE", 2):
+        with patch(f"{NOTIFICATION_SERVICE_PATH}.MAX_EMAIL_BATCH_SIZE", 2):
             await _notify_users_by_bcc_email(
                 self.mock_db,
                 self.alert_id,
@@ -341,8 +345,8 @@ class TestNotifyUsersBcc:
         assert mock_log.call_args_list[2].args[5] == "smtp error"
 
     @pytest.mark.asyncio
-    @patch("app.services.notification_service._log_notification")
-    @patch("app.services.notification_service.send_alert_email_bcc")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}._log_notification")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_alert_email_bcc")
     async def test_bcc_skips_users_without_email(self, mock_bcc, mock_log):
         await _notify_users_by_bcc_email(
             self.mock_db,
@@ -357,8 +361,8 @@ class TestNotifyUsersBcc:
         mock_log.assert_not_called()
 
     @pytest.mark.asyncio
-    @patch("app.services.notification_service._notify_users_by_bcc_email", new_callable=AsyncMock)
-    @patch("app.services.notification_service._notify_users_by_whatsapp", new_callable=AsyncMock)
+    @patch(f"{NOTIFICATION_SERVICE_PATH}._notify_users_by_bcc_email", new_callable=AsyncMock)
+    @patch(f"{NOTIFICATION_SERVICE_PATH}._notify_users_by_whatsapp", new_callable=AsyncMock)
     async def test_notify_users_routes_to_bcc_branch(self, mock_whatsapp, mock_bcc):
         user = self._make_user("resident@example.com")
 
@@ -391,17 +395,17 @@ class TestNotifyUsersBcc:
 class TestLogNotification:
     def setup_method(self):
         self.mock_db = Mock()
- 
+
     def test_success_creates_sent_record(self):
         _log_notification(self.mock_db, uuid.uuid4(), uuid.uuid4(), NotificationChannelEnum.WHATSAPP, True, None)
- 
+
         self.mock_db.add.assert_called_once()
         record = self.mock_db.add.call_args.args[0]
         assert record.status == NotificationStatus.SENT
         assert record.error_message is None
         self.mock_db.commit.assert_not_called()
         self.mock_db.rollback.assert_not_called()
- 
+
     def test_failure_creates_failed_record_with_error(self):
         _log_notification(self.mock_db, uuid.uuid4(), uuid.uuid4(), NotificationChannelEnum.WHATSAPP, False, "send failed")
 
@@ -442,9 +446,9 @@ class TestDispatchNotifications:
         result = Mock()
         result.scalars.return_value.all.return_value = values
         return result
- 
+
     def _make_resident(
-            self, _id: uuid.UUID | None = None, 
+            self, _id: uuid.UUID | None = None,
             phone_number: str | None = "0821234567",
             email: str | None = "resident@gmail.com"
     ):
@@ -491,7 +495,7 @@ class TestDispatchNotifications:
         )
         self.mock_db.execute.assert_not_awaited()
         self.mock_db.commit.assert_not_awaited()
- 
+
     @pytest.mark.asyncio
     async def test_notifications_disabled_skips_entirely(self):
         with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "false"}):
@@ -512,8 +516,8 @@ class TestDispatchNotifications:
         self.mock_db.execute.return_value = self._scalar_result(None)
 
         with patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}), \
-             patch("app.services.notification_service._send_whatsapp") as mock_send, \
-             patch("app.services.notification_service.send_alert_email") as mock_email:
+             patch(f"{NOTIFICATION_SERVICE_PATH}.send_whatsapp") as mock_send, \
+             patch(f"{NOTIFICATION_SERVICE_PATH}.send_alert_email") as mock_email:
             await dispatch_notifications(
                 db=self.mock_db,
                 alert_id=self.alert_id,
@@ -529,8 +533,8 @@ class TestDispatchNotifications:
 
 
     @pytest.mark.asyncio
-    @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
-    @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_alert_email", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_whatsapp", return_value=(True, None))
     async def test_critical_type_notifies_neighbourhood_via_both_channels(self, mock_send, mock_email):
         direct_resident = self._make_resident()
         neighbourhood_resident = self._make_resident()
@@ -557,8 +561,8 @@ class TestDispatchNotifications:
 
 
     @pytest.mark.asyncio
-    @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
-    @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_alert_email", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_whatsapp", return_value=(True, None))
     async def test_non_critical_high_confidence_still_notifies_both_channels(self, mock_send, mock_email):
         resident = self._make_resident()
         self._configure_high_recipients([resident])
@@ -580,8 +584,8 @@ class TestDispatchNotifications:
 
 
     @pytest.mark.asyncio
-    @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
-    @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_alert_email", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_whatsapp", return_value=(True, None))
     async def test_notifies_all_direct_property_users_with_phone_numbers(self, mock_send, mock_email):
         residents = [
             self._make_resident(),
@@ -605,8 +609,8 @@ class TestDispatchNotifications:
 
 
     @pytest.mark.asyncio
-    @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
-    @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_alert_email", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_whatsapp", return_value=(True, None))
     async def test_skips_residents_without_phone_number(self, mock_send, mock_email):
         residents = [
             self._make_resident(phone_number=None),
@@ -630,8 +634,8 @@ class TestDispatchNotifications:
 
 
     @pytest.mark.asyncio
-    @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
-    @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_alert_email", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_whatsapp", return_value=(True, None))
     async def test_skips_residents_without_email(self, mock_send, mock_email):
         residents = [
             self._make_resident(email=None),
@@ -664,10 +668,10 @@ class TestDispatchNotifications:
         with (
             patch.dict(os.environ, {"NOTIFICATION_ENABLED": "true"}),
             patch(
-                "app.services.notification_service._send_whatsapp",
+                f"{NOTIFICATION_SERVICE_PATH}.send_whatsapp",
             ) as mock_send,
             patch(
-                "app.services.notification_service.send_alert_email",
+                f"{NOTIFICATION_SERVICE_PATH}.send_alert_email",
             ) as mock_email,
         ):
             await dispatch_notifications(
@@ -707,9 +711,9 @@ class TestDispatchNotifications:
 
 
     @pytest.mark.asyncio
-    @patch("app.services.notification_service._log_notification")
-    @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
-    @patch("app.services.notification_service._send_whatsapp", return_value=(False, "twilio error"))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}._log_notification")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_alert_email", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_whatsapp", return_value=(False, "twilio error"))
     async def test_failed_whatsapp_send_is_logged(
         self,
         mock_send,
@@ -739,9 +743,9 @@ class TestDispatchNotifications:
 
 
     @pytest.mark.asyncio
-    @patch("app.services.notification_service._log_notification")
-    @patch("app.services.notification_service.send_alert_email", return_value=(False, "smtp error"))
-    @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}._log_notification")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_alert_email", return_value=(False, "smtp error"))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_whatsapp", return_value=(True, None))
     async def test_failed_email_send_is_logged(
         self,
         mock_send,
@@ -786,9 +790,9 @@ class TestNotifyUsers:
         return user
 
     @pytest.mark.asyncio
-    @patch("app.services.notification_service._log_notification")
-    @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
-    @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}._log_notification")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_alert_email", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_whatsapp", return_value=(True, None))
     async def test_user_with_both_channels_gets_both_sends_and_logs(self, mock_send, mock_email, mock_log):
         user = self._make_user()
 
@@ -802,9 +806,9 @@ class TestNotifyUsers:
         assert mock_log.call_count == 2
 
     @pytest.mark.asyncio
-    @patch("app.services.notification_service._log_notification")
-    @patch("app.services.notification_service.send_alert_email")
-    @patch("app.services.notification_service._send_whatsapp")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}._log_notification")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_alert_email")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_whatsapp")
     async def test_user_with_no_contact_info_skips_both_channels(self, mock_send, mock_email, mock_log):
         user = self._make_user(phone_number=None, email=None)
 
@@ -818,9 +822,9 @@ class TestNotifyUsers:
         mock_log.assert_not_called()
 
     @pytest.mark.asyncio
-    @patch("app.services.notification_service._log_notification")
-    @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
-    @patch("app.services.notification_service._send_whatsapp", return_value=(False, "twilio error"))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}._log_notification")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_alert_email", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_whatsapp", return_value=(False, "twilio error"))
     async def test_whatsapp_failure_still_attempts_email_independently(self, mock_send, mock_email, mock_log):
         user = self._make_user()
 
@@ -837,9 +841,9 @@ class TestNotifyUsers:
         assert whatsapp_log_call.args[5] == "twilio error"
 
     @pytest.mark.asyncio
-    @patch("app.services.notification_service._log_notification")
-    @patch("app.services.notification_service.send_alert_email", return_value=(True, None))
-    @patch("app.services.notification_service._send_whatsapp", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}._log_notification")
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_alert_email", return_value=(True, None))
+    @patch(f"{NOTIFICATION_SERVICE_PATH}.send_whatsapp", return_value=(True, None))
     async def test_multiple_users_processed_independently(self, mock_send, mock_email, mock_log):
         users = [self._make_user(), self._make_user(phone_number=None), self._make_user(email=None)]
 
@@ -848,6 +852,6 @@ class TestNotifyUsers:
             "LOITERING", self.camera, "HIGH",
         )
 
-        assert mock_send.call_count == 2  
-        assert mock_email.call_count == 2  
+        assert mock_send.call_count == 2
+        assert mock_email.call_count == 2
         assert mock_log.call_count == 4
