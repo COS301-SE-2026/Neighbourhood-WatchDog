@@ -64,6 +64,12 @@ services:
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
       COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
       RTSP_ENCRYPTION_KEY: ${RTSP_ENCRYPTION_KEY}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM}
+      NOTIFICATION_ENABLED: ${NOTIFICATION_ENABLED}
+      SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL}
+      SMTP_APP_PASSWORD: ${SMTP_APP_PASSWORD}
     volumes:
       - ./backend:/app
     command: celery -A app.core.celery_app.celery worker --loglevel=info --pool=threads --concurrency=4
