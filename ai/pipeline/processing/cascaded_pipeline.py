@@ -114,9 +114,9 @@ class CascadedPipeline:
         now = time.monotonic() if timestamp is None else float(timestamp)
 
         persons = self._detect_persons(frame)
+        weapon_detections = self._detect_weapons(frame)
 
         if not persons:
-            weapon_detections = self._detect_weapons(frame)
             self._cleanup_histories(now)
 
             weapon_events = [
@@ -135,13 +135,13 @@ class CascadedPipeline:
 
                 }
 
-
                 for detection in weapon_detections
             ]
 
             return PipelineResult(events=weapon_events)
 
-        enriched_persons = self._enrich_with_weapons(frame, persons)
+        enriched_persons = self._enrich_with_weapons(persons, weapon_detections)
+
         confirmed_tracks = self._track(frame, enriched_persons)
 
         tracks: list[dict[str, Any]] = []
@@ -172,8 +172,10 @@ class CascadedPipeline:
             output = {
                 **public_track,
                 **behaviour,
-                "is_confirmed": True
-
+                "is_confirmed": bool(
+                    track.get("is_confirmed", True)
+                )
+                
             }
 
             tracks.append(output)
@@ -234,7 +236,7 @@ class CascadedPipeline:
                     "weapon_detected": False,
                     "weapon_type": None,
                     "weapon_confidence": None
-                    
+
                 }
             )
 
@@ -282,73 +284,43 @@ class CascadedPipeline:
 
         return detections
 
-    def _enrich_with_weapons(self, frame: Any, persons: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Run weapon inference on the full frame and attach detections to people.
-
-        Full-frame inference preserves the pre-cascade model input distribution.
-        A weapon is only promoted when its box overlaps a detected person box, so
-        an isolated weapon on a table is not emitted as a weapon event
-        """
+    def _enrich_with_weapons(self, persons: list[dict[str, Any]], weapon_detections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        
         enriched = [
             {
                 **person,
                 "weapon_detected": False,
                 "weapon_type": None,
-                "weapon_confidence": None,
+                "weapon_confidence": None
+
             }
             for person in persons
         ]
 
-        if not enriched or frame is None or getattr(frame, "size", 0) == 0:
+        if not enriched:
             return enriched
 
-        with self._inference_guard():
-            results = self.weapon_model.predict(
-                frame,
-                verbose=False,
-                conf=self.config.weapon_confidence,
-                iou=self.config.weapon_iou,
-                imgsz=self.config.weapon_imgsz,
-            )
+        for weapon in weapon_detections:
+            weapon_bbox = weapon["bbox"]
 
-        weapon_detections: list[tuple[float, str, list[float]]] = []
-
-        for box in self._boxes_from_result(results):
-            confidence = float(self._scalar(box.conf[0]))
-            if confidence < self.config.weapon_confidence:
-                continue
-
-            weapon_bbox = self._xyxy(box)
-            if not self._valid_bbox(weapon_bbox):
-                continue
-
-            class_id = int(self._scalar(box.cls[0]))
-            label = self._class_name(self.weapon_model, class_id)
-            weapon_detections.append((confidence, label, weapon_bbox))
-
-        for confidence, label, weapon_bbox in weapon_detections:
             parent_index = max(
                 range(len(enriched)),
-                key=lambda index: self._iou(
-                    weapon_bbox,
-                    enriched[index]["bbox"],
-                ),
-            )
-            overlap = self._iou(
-                weapon_bbox,
-                enriched[parent_index]["bbox"],
+                key=lambda index: self._intersection_over_weapon(weapon_bbox, enriched[index]["bbox"])
             )
 
-            if overlap <= 0.0:
+            overlap = self._intersection_over_weapon(weapon_bbox, enriched[parent_index]["bbox"])
+
+            if overlap < 0.15:
                 continue
 
             current_confidence = enriched[parent_index]["weapon_confidence"]
-            if current_confidence is None or confidence > current_confidence:
+
+            if (current_confidence is None or weapon["confidence"] > current_confidence):
                 enriched[parent_index].update(
                     {
                         "weapon_detected": True,
-                        "weapon_type": label,
-                        "weapon_confidence": confidence,
+                        "weapon_type": weapon["weapon_type"],
+                        "weapon_confidence": weapon["confidence"]
                     }
                 )
 
@@ -372,15 +344,21 @@ class CascadedPipeline:
         confirmed: list[dict[str, Any]] = []
 
         for raw_track in raw_tracks:
-            if not raw_track.is_confirmed():
-                continue
+            
+            is_confirmed = raw_track.is_confirmed()
 
             if getattr(raw_track, "time_since_update", 0) > 0:
                 continue
 
-            track_bbox = [float(value) for value in raw_track.to_ltrb()]
+            track_bbox = [
+                float(value)
+                for value in raw_track.to_ltrb()
+            ]
 
             parent = self._best_parent(track_bbox, persons)
+
+            if not is_confirmed and not (parent is not None and parent["weapon_detected"]):
+                continue
 
             confidence = (
                 float(raw_track.det_conf)
@@ -597,6 +575,20 @@ class CascadedPipeline:
 
 
         return intersection / union if union else 0.0
+
+
+    @staticmethod
+    def _intersection_over_weapon(weapon_bbox: list[float], person_bbox: list[float]) -> float:
+        ix1 = max(weapon_bbox[0], person_bbox[0])
+        iy1 = max(weapon_bbox[1], person_bbox[1])
+        ix2 = min(weapon_bbox[2], person_bbox[2])
+        iy2 = min(weapon_bbox[3], person_bbox[3])
+
+        intersection = (max(0.0, ix2 - ix1) * max(0.0, iy2 - iy1))
+
+        weapon_area = (max(0.0, weapon_bbox[2] - weapon_bbox[0]) * max(0.0, weapon_bbox[3] - weapon_bbox[1]))
+
+        return intersection / weapon_area if weapon_area else 0.0
 
     @staticmethod
     def _point_in_polygon(px: float, py: float, polygon: Sequence[Sequence[float]]) -> bool:

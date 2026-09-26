@@ -555,7 +555,7 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
     
 
 def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, weapon_label: str, 
-                          confidence: float, local_track_id: int, stop_event: threading.Event, appearance_embedding: list[float] | None = None) -> None:
+                          confidence: float, local_track_id: int | None, stop_event: threading.Event, appearance_embedding: list[float] | None = None) -> None:
     
     label = weapon_label.lower()
     cooldown_key = (camera.id, local_track_id, label)
