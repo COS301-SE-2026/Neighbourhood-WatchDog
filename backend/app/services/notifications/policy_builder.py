@@ -1,11 +1,11 @@
 from collections.abc import Callable
-
+from typing import Optional
 from app.services.notifications.channel import NotificationChannel
 from app.services.notifications.policy import NotificationPolicy
 
 class NotificationPolicyBuilder:
-    resolver: Callable = None
-    severity_fn: Callable = None
+    resolver: Optional[Callable] = None
+    severity_fn: Optional[Callable] = None
 
     def __init__(self):
         self.channels = []

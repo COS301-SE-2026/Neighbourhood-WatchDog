@@ -105,7 +105,7 @@ async def _upload_tracking_sighting_clip(sighting_id: str, clip_b64: str, conten
         logger.error("Invalid clip size for tracking sighting %s", sighting_id)
         return
 
-    async with WorkerSessionLocal() as db:
+    async with worker_session() as db:
         result = await db.execute(
             select(TrackingSighting)
             .where(TrackingSighting.id == UUID(sighting_id))

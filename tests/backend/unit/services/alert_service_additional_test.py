@@ -943,8 +943,8 @@ async def test_create_alert_for_agent_rejects_unknown_camera():
 @pytest.mark.asyncio
 async def test_create_alert_for_agent_maps_known_detection_label():
     db = make_db()
+    db.refresh = AsyncMock(side_effect=lambda entity: setattr(entity, "created_at", entity.frame_timestamp))
 
-    alert = make_alert(detection_type=DetectionType.WEAPON_DETECTED)
     camera_result = make_result(scalar=make_camera())
 
     existing_result = make_result()
@@ -973,7 +973,6 @@ async def test_create_alert_for_agent_maps_known_detection_label():
             new=AsyncMock(return_value=[]),
         ),
         patch("app.services.alert_service.NotificationPolicyFactory.get") as mock_send_push,
-        patch("app.services.alert_service.send_push_to_users"),
         patch("app.api.controllers.alert.broadcast", new=AsyncMock()),
     ):
         mock_send_push.return_value.notify = AsyncMock()
@@ -1004,8 +1003,8 @@ async def test_create_alert_for_agent_maps_known_detection_label():
 @pytest.mark.asyncio
 async def test_create_alert_for_agent_uses_default_detection_for_unknown_label():
     db = make_db()
+    db.refresh = AsyncMock(side_effect=lambda entity: setattr(entity, "created_at", entity.frame_timestamp))
 
-    alert = make_alert(detection_type=DetectionType.WEAPON_DETECTED)
     camera_result = make_result(scalar=make_camera())
 
     existing_result = make_result()
@@ -1034,7 +1033,6 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
             new=AsyncMock(return_value=[]),
         ),
         patch("app.services.alert_service.NotificationPolicyFactory.get") as mock_send_push,
-        patch("app.services.alert_service.send_push_to_users"),
         patch("app.api.controllers.alert.broadcast", new=AsyncMock()),
     ):
         mock_send_push.return_value.notify = AsyncMock()
@@ -1049,7 +1047,6 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
 
     assert response.alert_id == ALERT_ID
     mock_send_push.return_value.notify.assert_called_once()
-    alert_model
     assert created_alert.detection_type == DetectionType.WEAPON_DETECTED
     assert response.is_new_alert is True
     assert response.sighting_id is not None

@@ -51,7 +51,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
 @asynccontextmanager
-async def worker_session() -> AsyncGenerator[AsyncGenerator, None]:
+async def worker_session() -> AsyncGenerator[AsyncSession, None]:
     engine = create_async_engine(DATABASE_URL, poolclass=NullPool)
     session_local = async_sessionmaker(
         engine,
