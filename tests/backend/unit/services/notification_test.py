@@ -9,7 +9,6 @@ from app.services.notifications.notification_service import(
     _classify_severity,
     _format_whatsapp_message,
     _log_notification,
-    _send_whatsapp,
     dispatch_notifications,
     should_notify,
     send_alert_email,
