@@ -1194,7 +1194,7 @@ class TestExpireStaleDispatch:
             DispatchStatus.NOTIFIED,
             officer_id=uuid4(),
             rank=1,
-            notified_at=datetime.now(timezone.utc) - timedelta(seconds=RESPONSE_TIMEOUT + 30)
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=RESPONSE_TIMEOUT + 30),
         )
         accepted = make_dispatch_row(
             DispatchStatus.ACCEPTED,
@@ -1204,7 +1204,7 @@ class TestExpireStaleDispatch:
         accepted.id = stale.id
 
         mock_db, _ = make_mock_db()
-        mock_db.execute = AsyncMock(return_value=make_scalar_result())
+        mock_db.execute = AsyncMock(return_value=make_scalar_result(accepted))
 
         with patch("app.services.dispatch_service._promote_officer", new=AsyncMock()) as promote:
             result = await _expire_stale_dispatch(mock_db, stale)
@@ -1213,3 +1213,22 @@ class TestExpireStaleDispatch:
         assert result.status == DispatchStatus.ACCEPTED
         mock_db.commit.assert_not_awaited() 
         promote.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_expires_when_still_notified_after_lock(self):
+        stale = make_dispatch_row(
+            DispatchStatus.NOTIFIED,
+            officer_id=uuid4(),
+            rank=1,
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=RESPONSE_TIMEOUT + 30)
+        )
+
+        mock_db, _ = make_mock_db()
+        mock_db.execute = AsyncMock(return_value=make_scalar_result(stale))
+
+        with patch("app.services.dispatch_service._promote_officer", new=AsyncMock()) as promote:
+            result = await _expire_stale_dispatch(mock_db, stale)
+
+        assert result.status == DispatchStatus.TIMED_OUT
+        mock_db.commit.assert_awaited_once() 
+        promote.assert_awaited_once_with(mock_db, stale.alert_id)
