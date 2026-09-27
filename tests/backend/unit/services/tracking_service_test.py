@@ -1008,12 +1008,18 @@ async def test_get_tracking_timeline_returns_ordered_data():
         name="Front Gate",
         location="North entrance",
     )
+    sighting_property = SimpleNamespace(
+        latitude=-26.2041,
+        longitude=28.0473
+    )
     alert_result = MagicMock()
     alert_result.one_or_none.return_value = (alert, camera, property_obj)
     subject_result = MagicMock()
     subject_result.scalar_one_or_none.return_value = subject
     sightings_result = MagicMock()
-    sightings_result.all.return_value = [(sighting, sighting_camera)]
+    sightings_result.all.return_value = [
+        (sighting, sighting_camera, sighting_property)
+    ]
     db = MagicMock()
     db.execute = AsyncMock(side_effect=[alert_result, subject_result, sightings_result])
 

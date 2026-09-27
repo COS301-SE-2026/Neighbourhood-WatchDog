@@ -17,6 +17,9 @@ class TrackingSightingResponse(BaseModel):
     clip_s3_key: str | None = None
     clip_expires_at: datetime | None = None
 
+    latitude: float | None = None
+    longitude: float | None = None
+
 
     model_config = ConfigDict(from_attributes=True)
 

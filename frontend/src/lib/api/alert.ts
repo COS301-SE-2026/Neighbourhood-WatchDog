@@ -249,6 +249,8 @@ export interface TrackingSighting {
   match_confidence: number | null;
   clip_s3_key: string | null;
   clip_expires_at: string | null;
+  latitude: number | null;
+  longitude: number | null;
   
 }
 
