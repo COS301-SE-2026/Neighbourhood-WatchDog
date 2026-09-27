@@ -86,7 +86,7 @@ class TestUploadAndLink:
         to_thread.assert_awaited_once()
         assert to_thread.await_args.args[0] is s3_client.put_object
         assert to_thread.await_args.kwargs == {
-            "Bucket": service.S3_BUCKET_NAME,
+            "Bucket": "test-bucket",
             "Key": "clips/test.mp4",
             "Body": b"clip-data",
             "ContentType": "video/mp4",
