@@ -29,10 +29,10 @@ def make_session(alert):
 def make_alert():
     return SimpleNamespace(
         id=uuid.UUID(ALERT_ID),
+        frame_timestamp=datetime(2026, 1, 1, tzinfo=timezone.utc),
         clip_s3_key=None,
         clip_expires_at=None,
     )
-
 
 class TestUploadAndLink:
     @pytest.mark.asyncio
