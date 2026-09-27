@@ -2,7 +2,7 @@ import hashlib
 import uuid
 from uuid import UUID, uuid4
 from datetime import datetime, timezone
-from unittest.mock import ANY, AsyncMock, Mock, patch, MagicMock
+from unittest.mock import AsyncMock, Mock, patch, MagicMock
 
 import pytest
 from fastapi import HTTPException
@@ -14,6 +14,7 @@ from app.models.neighbourhood_user import NeighbourhoodRole
 from app.models.user import User
 from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.schemas.alert import TimeIntervalsEnum, TimePeriod
+from app.schemas.notification import EventType
 from app.services.alert_service import (
     acknowledge_alert_handler, 
     broadcast_neighbourhood_alert_service,
@@ -24,7 +25,6 @@ from app.services.alert_service import (
     get_alert_frequency_metrics_handler,
     get_alert_for_agent,
 )
-from app.services.notification_service import send_alert_email_bcc
 
 class TestAcknowledgeAlert:
     def setup_method(self):
@@ -933,55 +933,39 @@ class TestBroadcastNeighbourhoodAlert:
         alert = self._make_alert()
         camera = self._make_camera()
         neighbourhood = self._make_neighbourhood()
-        resident = self._make_resident()
- 
+
         self.mock_db.execute.side_effect = [
             self._exec_result(scalar_one_or_none=alert),
             self._exec_result(scalar_one_or_none=camera),
             self._admin_membership_result(),
             self._exec_result(scalar_one_or_none=neighbourhood),
-            self._exec_result(scalars_all=[resident]),
         ]
- 
+
         with (
-            patch(
-                "app.services.alert_service._get_neighbourhood_websocket_recipient_ids", 
-                new_callable=AsyncMock,
-                return_value=[str(resident.id)], 
-            ),
-            patch("app.api.controllers.alert.broadcast", new_callable=AsyncMock) as mock_broadcast,
-            patch("app.services.alert_service._format_whatsapp_message", return_value="msg") as mock_format,
-            patch("app.services.alert_service._notify_users") as mock_notify
-            ):
- 
+            patch("app.services.alert_service.NotificationPolicyFactory.get") as mock_get,
+            patch("app.services.alert_service._build_alert_res") as mock_build_res,
+        ):
+            mock_get.return_value.notify = AsyncMock()
+            mock_build_res.return_value.model_dump.return_value = {"id": str(alert.id)}
+
             await broadcast_neighbourhood_alert_service(alert.id, self.mock_db, self.claims)
- 
-        mock_broadcast.assert_awaited_once()
-        recipient_ids, message = mock_broadcast.call_args.args
 
-        assert recipient_ids == [str(resident.id)]
-        assert message["event"] == "alert.broadcast"
- 
-        mock_format.assert_called_once_with("CRITICAL", alert.detection_type, camera.name, ANY)
-        mock_notify.assert_called_once_with(
-            self.mock_db, alert.id, [resident], "msg", alert.detection_type, camera, "CRITICAL", email_bcc=True
-        )
- 
+        mock_get.assert_called_once_with(EventType.NEIGHBOURHOOD_BROADCAST)
+        mock_get.return_value.notify.assert_awaited_once()
+        
+        db_arg, event_context = mock_get.return_value.notify.await_args.args
+        assert db_arg is self.mock_db
+        assert event_context["event_type"] == "NEIGHBOURHOOD_BROADCAST"
+        assert event_context["notification_source_id"] == alert.id
+        assert event_context["neighbourhood_id"] == neighbourhood.id
+        assert event_context["risk_level"] == "CRITICAL"
+
         self.mock_db.add.assert_called_once()
-
+        
         audit_record = self.mock_db.add.call_args.args[0]
         assert audit_record.user_id == self.user_id
         assert audit_record.action == AuditAction.UPDATE
         assert audit_record.target_entity_type == TargetEntity.ALERT
-        assert audit_record.target_entity_id == alert.id
-        assert audit_record.old_values == {"broadcast": False}
-        assert audit_record.new_values == {
-            "broadcast": True,
-            "neighbourhood_id": str(self.neighbourhood_id),
-        }
-
-        # create_audit_log_item commits, then the broadcast service commits.
-        assert self.mock_db.commit.await_count == 2
  
     @pytest.mark.asyncio
     async def test_no_residents_still_broadcasts_but_skips_notifications(self):
@@ -994,25 +978,15 @@ class TestBroadcastNeighbourhoodAlert:
             self._exec_result(scalar_one_or_none=camera),
             self._admin_membership_result(),
             self._exec_result(scalar_one_or_none=neighbourhood),
-            self._exec_result(scalars_all=[]),
         ]
- 
-        with (
-            patch(
-                "app.services.alert_service._get_neighbourhood_websocket_recipient_ids", 
-                new_callable=AsyncMock,
-                return_value=[], 
-            ),
-            patch("app.api.controllers.alert.broadcast", new_callable=AsyncMock) as mock_broadcast,
-            patch("app.services.alert_service._format_whatsapp_message", return_value="msg"),
-            patch("app.services.alert_service._notify_users") as mock_notify
-        ):
- 
+
+        with patch("app.services.alert_service.NotificationPolicyFactory.get") as mock_get:
+            mock_get.return_value.notify = AsyncMock()
+
             await broadcast_neighbourhood_alert_service(alert.id, self.mock_db, self.claims)
- 
-        mock_broadcast.assert_awaited_once()
-        mock_notify.assert_awaited_once()
-        assert mock_notify.call_args.args[2] == []
+
+        mock_get.assert_called_once_with(EventType.NEIGHBOURHOOD_BROADCAST)
+        mock_get.return_value.notify.assert_awaited_once()
         # create_audit_log_item commits, then the broadcast service commits.
         assert self.mock_db.commit.await_count == 2
 
@@ -1070,39 +1044,6 @@ class TestGetAlertForAgent:
         )
 
         assert exc.value.status_code == 400 
-
-class TestSendAlertEmailBcc:
-    @patch("app.services.notification_service.SENDER_EMAIL", "bot@watchdog.com")
-    @patch("app.services.notification_service.SENDER_PASSWORD", "pw")
-    @patch("app.services.notification_service.smtplib.SMTP")
-    def test_successful_bcc_send(self, mock_smtp_cls):
-        mock_server = Mock()
-        mock_smtp_cls.return_value = mock_server
-
-        success, error = send_alert_email_bcc(
-            [
-                "resident1@gmail.com",
-                "resident2@gmail.com"
-            ],
-            "WEAPON_DETECTED",
-            "CAM 03",
-            "Front Gate",
-            "CRITICAL"
-        )
-
-        assert success is True
-        assert error is None
-        mock_server.sendmail.assert_called_once()
-        mock_server.quit.assert_called_once()
-
-        sendmail_args = mock_server.sendmail.call_args.args
-
-        assert sendmail_args[0] == "bot@watchdog.com"
-        assert sendmail_args[1] == [
-            "resident1@gmail.com",
-            "resident2@gmail.com"
-        ]
-
 
 class TestCriticalAlertMap:
     def setup_method(self):

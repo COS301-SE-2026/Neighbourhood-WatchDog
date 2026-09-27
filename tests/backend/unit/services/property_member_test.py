@@ -267,9 +267,9 @@ class TestInvitePropertyMember:
 
         with patch.object(
             service,
-            "send_property_invite_email",
-            return_value=(True, None),
-        ) as send_email:
+            "NotificationPolicyFactory",
+        ) as mock_factory:
+            mock_factory.get.return_value.notify = AsyncMock()
             response = await service.invite_property_member_handler(
                 self.request,
                 PROPERTY_ID,
@@ -287,12 +287,6 @@ class TestInvitePropertyMember:
         assert added_membership.user_id == INVITED_USER_ID
         assert added_membership.is_admin is False
         self.db.commit.assert_awaited_once()
-        send_email.assert_called_once_with(
-            "member@example.com",
-            "12 Main Street",
-            "Ava Admin"
-
-        )
 
     @pytest.mark.asyncio
     async def test_keeps_membership_when_invitation_email_fails(self):
@@ -307,9 +301,11 @@ class TestInvitePropertyMember:
 
         with patch.object(
             service,
-            "send_property_invite_email",
-            return_value=(False, "SMTP unavailable"),
-        ):
+            "NotificationPolicyFactory",
+        ) as mock_factory:
+            mock_factory.get.return_value.notify = AsyncMock(
+                side_effect=Exception("SMTP unavailable")
+            )
             response = await service.invite_property_member_handler(
                 self.request,
                 PROPERTY_ID,

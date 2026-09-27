@@ -201,12 +201,17 @@ jobs:
             | .containerDefinitions[0].command = ["celery", "-A", "app.core.celery_app", "worker", "--loglevel=info", "--pool=threads", "--concurrency=4"]
             | .containerDefinitions[0].secrets = (
                 (.containerDefinitions[0].secrets // [])
-                | map(select(.name != "S3_BUCKET_NAME" and .name != "FIREBASE_CREDENTIALS_JSON" and .name != "COGNITO_REGION" and .name != "COGNITO_USER_POOL_ID" and .name != "COGNITO_CLIENT_ID"))
+                | map(select(.name != "S3_BUCKET_NAME" and .name != "FIREBASE_CREDENTIALS_JSON" and .name != "COGNITO_REGION" and .name != "COGNITO_USER_POOL_ID" and .name != "COGNITO_CLIENT_ID" and .name != "SMTP_SENDER_EMAIL" and .name != "SMTP_APP_PASSWORD" and .name != "TWILIO_ACCOUNT_SID" and .name != "TWILIO_AUTH_TOKEN" and .name != "TWILIO_WHATSAPP_FROM"))
                 + [{"name": "S3_BUCKET_NAME", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:S3_BUCKET_NAME::"}]
                 + [{"name": "FIREBASE_CREDENTIALS_JSON", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:FIREBASE_CREDENTIALS_JSON::"}]
                 + [{"name": "COGNITO_REGION", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_REGION::"}]
                 + [{"name": "COGNITO_USER_POOL_ID", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_USER_POOL_ID::"}]
                 + [{"name": "COGNITO_CLIENT_ID", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_CLIENT_ID::"}]
+                + [{"name": "SMTP_SENDER_EMAIL", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:SMTP_SENDER_EMAIL::"}]
+                + [{"name": "SMTP_APP_PASSWORD", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:SMTP_APP_PASSWORD::"}]
+                + [{"name": "TWILIO_ACCOUNT_SID", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:TWILIO_ACCOUNT_SID::"}]
+                + [{"name": "TWILIO_AUTH_TOKEN", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:TWILIO_AUTH_TOKEN::"}]
+                + [{"name": "TWILIO_WHATSAPP_FROM", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:TWILIO_WHATSAPP_FROM::"}]
               )
             | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
             worker-task-def.json)

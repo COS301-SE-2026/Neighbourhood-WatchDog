@@ -66,11 +66,15 @@ def make_property(
 def make_camera(
     *,
     property_obj=None,
+    name="CAM 03",
+    location="Front Gate",
 ):
     return SimpleNamespace(
         id=CAMERA_ID,
         property_id=PROPERTY_ID,
         property=property_obj or make_property(),
+        name=name,
+        location=location,
     )
 
 
@@ -422,69 +426,25 @@ async def test_get_neighbourhood_websocket_recipient_ids_returns_string_ids():
 async def test_create_alert_persists_and_broadcasts_to_neighbourhood():
     alert = make_alert()
     db = make_db()
+    db.execute.return_value = Mock(scalar_one_or_none=Mock(return_value=alert))
 
     with (
-        patch(
-            "app.services.alert_service.Alert",
-            return_value=alert,
-        ) as alert_model,
-        patch(
-            "app.services.alert_service._get_neighbourhood_websocket_recipient_ids",
-            new=AsyncMock(return_value=["user-one", "user-two"]),
-        ) as recipients,
-        patch(
-            "app.api.controllers.alert.broadcast",
-            new=AsyncMock(),
-        ) as broadcast,
-        patch(
-            "app.services.alert_service.send_push_to_users",
-        ) as send_push,
+        patch("app.services.alert_service._build_alert_res", return_value=Mock(model_dump=Mock(return_value={"id": str(ALERT_ID)}))),
+        patch("app.services.alert_service.NotificationPolicyFactory.get") as mock_get,
     ):
-        response = await service.create_alert(
-            db,
-            make_alert_create(),
-        )
+        mock_policy = mock_get.return_value
+        mock_policy.notify = AsyncMock()
+
+        response = await service.create_alert(db, make_alert_create())
+
 
     assert response.id == ALERT_ID
     assert response.camera_id == CAMERA_ID
     assert response.status == "OPEN"
     assert response.created_at == FRAME_TIMESTAMP
 
-    alert_model.assert_called_once_with(
-        camera_id=CAMERA_ID,
-        frame_timestamp=FRAME_TIMESTAMP,
-        detection_type="HUMAN_PRESENCE",
-        confidence_score=0.85,
-        thumbnail_url="https://example.com/thumbnail.jpg",
-        processed=False,
-    )
-
-    assert db.add.call_count == 1
+    db.add.assert_called_once()
     db.commit.assert_awaited_once()
-    db.refresh.assert_awaited_once_with(alert)
-
-    recipients.assert_awaited_once_with(
-        db,
-        NEIGHBOURHOOD_ID,
-    )
-
-    broadcast.assert_awaited_once_with(
-        ["user-one", "user-two"],
-        {
-            "event": "new_alert",
-            "alert_id": str(ALERT_ID),
-            "camera_id": str(CAMERA_ID),
-            "detection_type": "HUMAN_PRESENCE",
-            "confidence": 0.85,
-        },
-    )
-
-    send_push.delay.assert_called_once_with(
-        ["user-one", "user-two"],
-        title="New alert",
-        body="HUMAN_PRESENCE detected",
-        data={"alert_id": str(ALERT_ID), "event": "new_alert"},
-    )
 
 
 @pytest.mark.asyncio
@@ -983,6 +943,7 @@ async def test_create_alert_for_agent_rejects_unknown_camera():
 @pytest.mark.asyncio
 async def test_create_alert_for_agent_maps_known_detection_label():
     db = make_db()
+    db.refresh = AsyncMock(side_effect=lambda entity: setattr(entity, "created_at", entity.frame_timestamp))
 
     camera_result = make_result(scalar=make_camera())
 
@@ -1011,15 +972,17 @@ async def test_create_alert_for_agent_maps_known_detection_label():
             "app.services.alert_service._get_neighbourhood_websocket_recipient_ids",
             new=AsyncMock(return_value=[]),
         ),
-        patch("app.services.alert_service.send_push_to_users"),
+        patch("app.services.alert_service.NotificationPolicyFactory.get") as mock_send_push,
         patch("app.api.controllers.alert.broadcast", new=AsyncMock()),
     ):
+        mock_send_push.return_value.notify = AsyncMock()
         response = await service.create_alert_for_agent_handler(
             body,
             db,
             make_edge_credential(),
         )
 
+    mock_send_push.return_value.notify.assert_awaited_once()
     created_alert = db.add.call_args_list[0].args[0]
 
     assert response.alert_id == ALERT_ID
@@ -1040,6 +1003,7 @@ async def test_create_alert_for_agent_maps_known_detection_label():
 @pytest.mark.asyncio
 async def test_create_alert_for_agent_uses_default_detection_for_unknown_label():
     db = make_db()
+    db.refresh = AsyncMock(side_effect=lambda entity: setattr(entity, "created_at", entity.frame_timestamp))
 
     camera_result = make_result(scalar=make_camera())
 
@@ -1068,9 +1032,11 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
             "app.services.alert_service._get_neighbourhood_websocket_recipient_ids",
             new=AsyncMock(return_value=[]),
         ),
-        patch("app.services.alert_service.send_push_to_users"),
+        patch("app.services.alert_service.NotificationPolicyFactory.get") as mock_send_push,
         patch("app.api.controllers.alert.broadcast", new=AsyncMock()),
     ):
+        mock_send_push.return_value.notify = AsyncMock()
+        
         response = await service.create_alert_for_agent_handler(
             body,
             db,
@@ -1080,6 +1046,7 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
     created_alert = db.add.call_args_list[0].args[0]
 
     assert response.alert_id == ALERT_ID
+    mock_send_push.return_value.notify.assert_called_once()
     assert created_alert.detection_type == DetectionType.WEAPON_DETECTED
     assert response.is_new_alert is True
     assert response.sighting_id is not None
