@@ -52,9 +52,31 @@ async def _upload_and_link(alert_id: str, clip_b64: str, content_type: str) -> N
             logger.error("Alert %s not found when processing queued clip upload", alert_id)
             return
 
-        timestamp = datetime.now(timezone.utc)
+        if not S3_BUCKET_NAME:
+            raise RuntimeError("S3 bucket is not configured")
+
+        now = datetime.now(timezone.utc)
+
+        # avoid uploading the same alert clip again while the existing S3 link is active
+        existing_expires_at = alert.clip_expires_at
+
+        if existing_expires_at is not None and existing_expires_at.tzinfo is None:
+            existing_expires_at = existing_expires_at.replace(tzinfo=timezone.utc)
+
+        if (alert.clip_s3_key and existing_expires_at is not None and existing_expires_at > now):
+            logger.info("Alert %s already has an active clip; skipping duplicate upload", alert_id)
+            return
+
+        #frame_timestamp is stable for the alert, so retries generate the same S3 key
+        timestamp = alert.frame_timestamp
+
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=timezone.utc)
+        else:
+            timestamp = timestamp.astimezone(timezone.utc)
+
         s3_key = _clip_s3_key(alert, timestamp)
-        expires_at = timestamp + timedelta(days=CLIP_RETENTION_DAYS)
+        expires_at = now + timedelta(days=CLIP_RETENTION_DAYS)
 
         await asyncio.to_thread(
             _s3_client().put_object,
@@ -62,7 +84,8 @@ async def _upload_and_link(alert_id: str, clip_b64: str, content_type: str) -> N
             Key=s3_key,
             Body=clip_bytes,
             ContentType=content_type or "video/mp4",
-            ServerSideEncryption="AES256",
+            ServerSideEncryption="AES256"
+            
         )
 
         alert.clip_s3_key = s3_key
@@ -116,12 +139,27 @@ async def _upload_tracking_sighting_clip(sighting_id: str, clip_b64: str, conten
             logger.error("Tracking sighting %s not found", sighting_id)
             return
 
-        timestamp = datetime.now(timezone.utc)
+        timestamp = sighting.observed_at
+
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=timezone.utc)
+        else:
+            timestamp = timestamp.astimezone(timezone.utc)
+
         s3_key = _tracking_sighting_clip_s3_key(sighting, timestamp)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=CLIP_RETENTION_DAYS)
 
-        expires_at = timestamp + timedelta(days=CLIP_RETENTION_DAYS)
+        if (sighting.clip_s3_key and sighting.clip_expires_at and sighting.clip_expires_at > datetime.now(timezone.utc)):
+            logger.info(
+                "Tracking sighting %s already has an active clip; skipping duplicate upload", sighting_id)
+            return
 
+
+        if not S3_BUCKET_NAME:
+            raise RuntimeError("S3 bucket is not configured")
+        
         await asyncio.to_thread(
+            
             _s3_client().put_object,
             Bucket=S3_BUCKET_NAME,
             Key=s3_key,

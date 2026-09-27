@@ -9,6 +9,7 @@ import {
   type TrackingTimelineData,
 } from "@/lib/api/alert";
 import { AlertFootagePlayer } from "@/components/shared/AlertFootagePlayer";
+import { TrackingMovementMap } from "@/components/shared/TrackingMovementMap";
 
 interface TrackingTimelineProps {
   readonly alertId: string;
@@ -87,6 +88,22 @@ export function TrackingTimeline({
     return () => controller.abort();
     }, [alertId, enabled, refreshKey]);
 
+
+  const orderedSightings = timeline ? [...timeline.sightings].sort((left, right) => {
+
+      const timeDifference =new Date(left.observed_at).getTime() - new Date(right.observed_at).getTime();
+
+      if (timeDifference !== 0) {
+        return timeDifference;
+      }
+
+      if (left.sequence_no !== right.sequence_no) {
+        return left.sequence_no - right.sequence_no;
+      }
+
+      return left.id.localeCompare(right.id);
+    }): [];
+
   return (
     <Card className="border-border bg-brand-depth p-4">
       <div className="mb-4 flex items-center gap-2">
@@ -140,7 +157,14 @@ export function TrackingTimeline({
             </p>
           ) : (
             <ol className="space-y-3">
-              {timeline.sightings.map((sighting) => (
+              <div className="mb-4">
+                <h4 className="mb-2 text-sm font-semibold text-brand-frost">
+                  Movement path
+                </h4>
+
+                <TrackingMovementMap sightings={orderedSightings} />
+              </div>
+              {orderedSightings.map((sighting) => (
                 <li
                   key={sighting.id}
                   className="relative border-l border-brand-green/40 pl-4"

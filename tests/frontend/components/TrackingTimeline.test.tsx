@@ -1,3 +1,34 @@
+
+jest.mock("react-leaflet", () => {
+  const React = require("react");
+
+  return {
+    MapContainer: ({
+      children,
+      ...props
+    }: {
+      children?: React.ReactNode;
+      [key: string]: unknown;
+    }) =>
+      React.createElement(
+        "div",
+        {
+          ...props,
+          "data-testid": "tracking-movement-map",
+        },
+        children,
+      ),
+
+    TileLayer: () => null,
+    Polyline: () => null,
+    CircleMarker: () => null,
+
+    useMap: () => ({
+      fitBounds: jest.fn(),
+    }),
+  };
+});
+
 import { render, screen, waitFor } from "@testing-library/react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { ApiError, fetchTrackingTimeline } from "../../../frontend/src/lib/api/alert";
