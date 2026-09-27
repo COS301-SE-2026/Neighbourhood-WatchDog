@@ -8,7 +8,7 @@ from firebase_admin import messaging
 from sqlalchemy import select
 
 from app.core.celery_app import celery
-from app.core.database import WorkerSessionLocal
+from app.core.database import worker_session
 from app.models.push_device import PushDevice
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ async def _send_to_users(
 
     user_uuids = [UUID(u) for u in user_ids]
 
-    async with WorkerSessionLocal() as db:
+    async with worker_session() as db:
         stmt = select(PushDevice).where(PushDevice.user_id.in_(user_uuids))
         result = await db.execute(stmt)
         devices = result.scalars().all()

@@ -38,6 +38,11 @@ from app.schemas.alert import (
     TrendResponse,
     UnlocatedCriticalAlertsRes,
 )
+
+from app.schemas.danger_zone import (
+    DangerZoneQuery,
+    DangerZoneResponse,
+)
 from app.services import alert_service
 from app.services.alert_service import (
     DEFAULT_PAGE_SIZE,
@@ -56,52 +61,25 @@ from app.services.alert_route_service import calculate_property_distance_handler
 
 from app.schemas.tracking import TrackingTimelineResponse, SituationalBriefResponse
 from app.services.incident_density_service import get_incident_density_handler
+from app.services.danger_zone_query_service import ( get_danger_zones_handler)
 from app.services.tracking_service import get_tracking_timeline
 from app.services.situational_brief_service import get_situational_brief
-
+from app.websocket.manager import alert_connection_manager
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
-_connections: dict[str, set[WebSocket]] = {}
 #TODO: NOTHING HERE SHOULD BE PUBLIC, NEED TO MAKE EVERYTHING PRIVATE 
 
-def _get_bucket(user_id: str) -> set[WebSocket]:
-    if user_id not in _connections:
-        _connections[user_id] = set()
-    return _connections[user_id]
-
-
 def register_connection(user_id: str, websocket: WebSocket) -> None:
-    _get_bucket(user_id).add(websocket)
+    alert_connection_manager.register(user_id, websocket)
 
 
 def remove_connection(user_id: str, websocket: WebSocket) -> None:
-    connections = _connections.get(user_id)
-
-    if not connections:
-        return
-
-    connections.discard(websocket)
-
-    if not connections:
-        _connections.pop(user_id, None)
+    alert_connection_manager.remove(user_id, websocket)
 
 
 async def broadcast(user_ids: list[str], message: dict) -> None:
-    payload = json.dumps(message)
-
-    for user_id in user_ids:
-        connections = _connections.get(user_id, set())
-        dead: set[WebSocket] = set()
-
-        for ws in connections:
-            try:
-                await ws.send_text(payload)
-            except Exception:
-                dead.add(ws)
-
-        for ws in dead:
-            connections.discard(ws)
+    await alert_connection_manager.broadcast(user_ids, message)
 
 
 
@@ -565,6 +543,50 @@ async def get_incident_density(
         status=200,
         message=(
             "Incident density retrieved successfully"
+        ),
+        data=data,
+    )
+
+@router.get(
+    "/neighbourhoods/{neighbourhood_id}/danger-zones",
+    response_model=DangerZoneResponse,
+    summary="Get cached neighbourhood danger-zone cells",
+    responses={
+        401: {
+            "description": "Not authenticated",
+        },
+        403: {
+            "description": (
+                "Not a member of this neighbourhood"
+            ),
+        },
+        422: {
+            "description": (
+                "Invalid viewport bounds"
+            ),
+        },
+    },
+)
+async def get_danger_zones(
+    neighbourhood_id: UUID,
+    filters: Annotated[
+        DangerZoneQuery,
+        Query(),
+    ],
+    db: DbSession,
+    claims: NeighbourhoodMemberClaims,
+) -> DangerZoneResponse:
+    data = await get_danger_zones_handler(
+        neighbourhood_id=neighbourhood_id,
+        filters=filters,
+        db=db,
+        claims=claims,
+    )
+
+    return DangerZoneResponse(
+        status=200,
+        message=(
+            "Danger zones retrieved successfully"
         ),
         data=data,
     )

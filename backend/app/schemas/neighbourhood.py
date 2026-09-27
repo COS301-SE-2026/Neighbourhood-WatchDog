@@ -1,4 +1,8 @@
-from pydantic import BaseModel, StringConstraints, Field
+from pydantic import (
+    BaseModel,
+    Field,
+    StringConstraints,
+)
 from typing import Annotated, Literal
 from uuid import UUID
 from enum import Enum
@@ -92,4 +96,4 @@ class OfficerLocationRes(BaseModel):
     longitude: float
     location_updated_at: datetime
     is_stale: bool
-    
+

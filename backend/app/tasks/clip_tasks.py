@@ -8,7 +8,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 from sqlalchemy import select
 
 from app.core.celery_app import celery
-from app.core.database import WorkerSessionLocal
+from app.core.database import worker_session
 from app.models.alert import Alert
 from app.models.tracking import TrackingSighting
 from app.services.alert_service import CLIP_RETENTION_DAYS, S3_BUCKET_NAME, _clip_s3_key, _s3_client
@@ -42,7 +42,7 @@ async def _upload_and_link(alert_id: str, clip_b64: str, content_type: str) -> N
         )
         return
 
-    async with WorkerSessionLocal() as db:
+    async with worker_session() as db:
         alert_uuid = UUID(alert_id)
         stmt = select(Alert).where(Alert.id == alert_uuid)
         result = await db.execute(stmt)
@@ -105,7 +105,7 @@ async def _upload_tracking_sighting_clip(sighting_id: str, clip_b64: str, conten
         logger.error("Invalid clip size for tracking sighting %s", sighting_id)
         return
 
-    async with WorkerSessionLocal() as db:
+    async with worker_session() as db:
         result = await db.execute(
             select(TrackingSighting)
             .where(TrackingSighting.id == UUID(sighting_id))

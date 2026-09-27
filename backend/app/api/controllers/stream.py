@@ -5,42 +5,21 @@ from fastapi import APIRouter, Depends,WebSocket
 
 from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.api.controllers.internal_cameras import get_authenticated_edge_agent
+from app.websocket.manager import ConnectionManager
 
 router = APIRouter(prefix="/api/stream", tags=["stream"])
 
-# Camera annotation connections: {camera_id: set[WebSocket]}
-_annotation_connections: dict[str, set[WebSocket]] = {}
-
-
-def _get_camera_bucket(camera_id: str) -> set[WebSocket]:
-    if camera_id not in _annotation_connections:
-        _annotation_connections[camera_id] = set()
-    return _annotation_connections[camera_id]
-
+_manager = ConnectionManager()
 
 def register_camera_connection(camera_id: str, websocket: WebSocket) -> None:
-    _get_camera_bucket(camera_id).add(websocket)
-
+    _manager.register(camera_id, websocket)
 
 def remove_camera_connection(camera_id: str, websocket: WebSocket) -> None:
-    _get_camera_bucket(camera_id, ).discard(websocket)
-
+    _manager.remove(camera_id, websocket)
 
 async def broadcast_annotation(camera_id: str, annotation_data: dict) -> None: #TODO: make private, only accessible by internal services
     """Broadcast annotation data (bounding boxes, confidence, etc) to all connected clients"""
-    connections = _get_camera_bucket(camera_id)
-    dead: set[WebSocket] = set()
-
-    payload = json.dumps(annotation_data)
-
-    for ws in connections:
-        try:
-            await ws.send_text(payload)
-        except Exception:
-            dead.add(ws)
-
-    for ws in dead:
-        connections.discard(ws)
+    await _manager.broadcast([camera_id], annotation_data)
 
 
 @router.post("/cameras/{camera_id}/annotations") #TODO: make private, only accessible by internal services

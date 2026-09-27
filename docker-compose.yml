@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    ports: 
+    ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -64,9 +64,15 @@ services:
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
       COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
       RTSP_ENCRYPTION_KEY: ${RTSP_ENCRYPTION_KEY}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM}
+      NOTIFICATION_ENABLED: ${NOTIFICATION_ENABLED}
+      SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL}
+      SMTP_APP_PASSWORD: ${SMTP_APP_PASSWORD}
     volumes:
       - ./backend:/app
-    command: celery -A app.core.celery_app.celery worker --loglevel=info --pool=threads --concurrency=4`
+    command: celery -A app.core.celery_app.celery worker --loglevel=info --pool=threads --concurrency=4
     depends_on:
       postgres:
         condition: service_healthy
@@ -102,7 +108,7 @@ services:
       context: ./backend
       target: development
     ports:
-      - "8000:8000" # TODO: Remove 
+      - "8000:8000" # TODO: Remove
     environment:
       APP_ENV: development
       DEBUG: "true"
@@ -197,8 +203,8 @@ services:
     build:
       context: ./mediamtx
     ports:
-      - "8554:8554"    # RTSP
-      - "8889:8889"    # WebRTC
+      - "8554:8554" # RTSP
+      - "8889:8889" # WebRTC
       - "8189:8189/udp"
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx/mediamtx.yml

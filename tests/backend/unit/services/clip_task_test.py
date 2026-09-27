@@ -37,7 +37,7 @@ def make_alert():
 class TestUploadAndLink:
     @pytest.mark.asyncio
     async def test_empty_clip_is_skipped_before_database_access(self):
-        with patch.object(service, "WorkerSessionLocal") as session_factory:
+        with patch.object(service, "worker_session") as session_factory:
             await service._upload_and_link(ALERT_ID, "", "video/mp4")
 
         session_factory.assert_not_called()
@@ -48,7 +48,7 @@ class TestUploadAndLink:
         s3_client = Mock()
 
         with (
-            patch.object(service, "WorkerSessionLocal", return_value=session_context),
+            patch.object(service, "worker_session", return_value=session_context),
             patch.object(service, "_s3_client", return_value=s3_client),
         ):
             await service._upload_and_link(
@@ -69,7 +69,7 @@ class TestUploadAndLink:
         timestamp = datetime(2026, 1, 1, tzinfo=timezone.utc)
 
         with (
-            patch.object(service, "WorkerSessionLocal", return_value=session_context),
+            patch.object(service, "worker_session", return_value=session_context),
             patch.object(service, "_s3_client", return_value=s3_client),
             patch.object(service, "_clip_s3_key", return_value="clips/test.mp4"),
             patch.object(service, "datetime") as datetime_module,
@@ -103,7 +103,7 @@ class TestUploadAndLink:
         to_thread = AsyncMock()
 
         with (
-            patch.object(service, "WorkerSessionLocal", return_value=session_context),
+            patch.object(service, "worker_session", return_value=session_context),
             patch.object(service, "_s3_client", return_value=s3_client),
             patch.object(service, "_clip_s3_key", return_value="clips/test.webm"),
             patch.object(service.asyncio, "to_thread", new=to_thread),
@@ -121,7 +121,7 @@ class TestUploadAndLink:
     async def test_invalid_alert_id_raises_before_commit(self):
         db, session_context = make_session(make_alert())
 
-        with patch.object(service, "WorkerSessionLocal", return_value=session_context):
+        with patch.object(service, "worker_session", return_value=session_context):
             with pytest.raises(ValueError):
                 await service._upload_and_link(
                     "not-a-uuid",

@@ -11,6 +11,7 @@ from app.models.risk_score_history import *  # noqa: F403
 from app.models.risk_threshold_config import *  # noqa: F403
 from app.models.zone import *  # noqa: F403
 from app.models.camera_detection_zone import *  # noqa: F403
+from app.models.camera_coverage import *  # noqa: F403
 from app.models.notification import * # noqa: F403
 from app.models.pairing_token import * # noqa: F403
 from app.models.edge_agent_credentials import * # noqa: F403
@@ -20,3 +21,4 @@ from app.models.tracking import *  # noqa: F403
 from app.models.dispatch import * # noqa: F403
 from app.models.push_device import * # noqa: F403
 from app.models.incident_density import * # noqa: F403
+from app.models.danger_zone import * # noqa: F403

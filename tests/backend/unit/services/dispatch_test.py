@@ -19,6 +19,7 @@ from app.services.dispatch_service import (
     OFFICER_AVG_SPEED,
     RANKING_WEIGHTS,
     ROUTE_CIRCUITRY_FACTOR,
+    RESPONSE_TIMEOUT,
     AlertContext,
     OfficerCandidate,
     RankingWeights,
@@ -32,6 +33,11 @@ from app.services.dispatch_service import (
     filter_eligible,
     get_alert_dispatch_handler,
     rank_candidates,
+    respond_to_dispatch_handler,
+    expire_stale_dispatchs,
+    _promote_officer,
+    _escalate_dispatch,
+    _expire_stale_dispatch,
 )
 
 ALERT_ID = uuid4()
@@ -202,18 +208,31 @@ async def run_dispatch(steps, mock_db=None, commit_error=None, refetch=None):
         mock_db.commit = AsyncMock(side_effect=commit_error)
 
     pending = list(steps)
+    fallback_calls = 0
 
     async def fake_execute(_stmt):
+        nonlocal fallback_calls
         if pending:
             return pending.pop(0)
-        return make_scalars_result(added if refetch is None else refetch)
+        rows = added if refetch is None else refetch
+        fallback_calls += 1
+        result = make_scalars_result(rows)
+        target_status = DispatchStatus.SELECTED if fallback_calls == 1 else DispatchStatus.NO_CANDIDATE
+        result.scalar_one_or_none.return_value = next(
+            (r for r in rows if r.status == target_status), None
+        )
+        return result
 
     mock_db.execute = AsyncMock(side_effect=fake_execute)
 
-    res = await dispatch_alert(mock_db, ALERT_ID)
+    with (
+        patch("app.services.dispatch_service._notify_officer", new=AsyncMock()) as notify, 
+        patch("app.services.dispatch_service._escalate_dispatch", new=AsyncMock()) as escalate,
+    ):
+        res = await dispatch_alert(mock_db, ALERT_ID)
 
     assert not pending, "db.execute results were provided that dispatch_alert never asked for"
-    return SimpleNamespace(res=res, db=mock_db, added=added)
+    return SimpleNamespace(res=res, db=mock_db, added=added, notify=notify, escalate=escalate)
 
 class TestFilterEligible:
     def test_keeps_fresh_available_officer(self):
@@ -703,7 +722,7 @@ class TestDispatchAlert:
         assert [c.officer_id for c in run.res.queued] == [busy.officer_id]
         assert run.res.no_candidate is False
         run.db.commit.assert_awaited_once()
-        assert run.db.execute.await_count == 5
+        assert run.db.execute.await_count == 6
 
     @pytest.mark.asyncio
     async def test_busy_officer_is_never_given_an_active_alert_automatically(self):
@@ -716,6 +735,8 @@ class TestDispatchAlert:
         assert [c.officer_id for c in run.res.queued] == [busy.officer_id]
         assert run.res.no_candidate is True
         assert all(row.status != DispatchStatus.SELECTED for row in run.added)
+        run.escalate.assert_awaited_once()
+        assert run.escalate.await_args.kwargs["reason"] == "no_available_officer"
 
     @pytest.mark.asyncio
     async def test_ineligible_officers_are_never_dispatched(self):
@@ -748,12 +769,17 @@ class TestDispatchAlert:
         assert run.res.selected is None
         assert [row.status for row in run.added] == [DispatchStatus.NO_CANDIDATE]
         run.db.commit.assert_awaited_once()
+        run.escalate.assert_awaited_once()
+        no_candidate_row, kwargs = run.escalate.await_args.args[1], run.escalate.await_args.kwargs
+        assert no_candidate_row.status == DispatchStatus.NO_CANDIDATE
+        assert kwargs["reason"] == "no_available_officer"
 
     @pytest.mark.asyncio
     async def test_no_officers_records_no_candidate(self):
         run = await run_dispatch(dispatch_steps(make_context(), officers=[]))
         assert run.res.no_candidate is True
         assert [row.status for row in run.added] == [DispatchStatus.NO_CANDIDATE]
+        run.escalate.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_only_officers_from_the_alerts_own_neighbourhood_are_queried(self):
@@ -861,4 +887,369 @@ class TestGetAlertDispatchHandler:
 
         assert exc_info.value.status_code == 403
         assert exc_info.value.detail == "Not authorised to view dispatch for this alert"
-        assert mock_db.execute.await_count == 2            
+        assert mock_db.execute.await_count == 2  
+
+def _respond_db(*, officer, dispatch, extra=()):
+    mock_db = AsyncMock()
+    mock_db.add = Mock()
+    mock_db.execute = AsyncMock(
+        side_effect=[
+            make_scalar_result(officer),
+            make_scalar_result(dispatch),
+            *extra,
+        ]
+    )
+    return mock_db
+class TestRespondToDispatchHandler:
+    @pytest.mark.asyncio
+    async def test_accept_marks_dispatch_as_accepted(self): 
+        officer_id = uuid4()
+        officer = SimpleNamespace(id=officer_id)
+        dispatch = make_dispatch_row(
+            DispatchStatus.NOTIFIED,
+            officer_id=officer_id,
+            rank=1,
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=5)
+        )     
+        mock_db = _respond_db(
+            officer=officer,
+            dispatch=dispatch,
+            extra=[
+                make_scalars_result([dispatch]),
+                make_scalars_result([str(uuid4())]),
+            ],
+        )  
+
+        with patch("app.services.dispatch_service.broadcast", new=AsyncMock()) as broadcast:
+            res = await respond_to_dispatch_handler(dispatch.id, "ACCEPT", mock_db, CLAIMS)
+
+        assert dispatch.status == DispatchStatus.ACCEPTED
+        assert res.status == 200
+        assert res.data.status == DispatchStatus.ACCEPTED
+        mock_db.commit.assert_awaited_once()
+        broadcast.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_decline_promotes_next(self):
+        officer_id, next_officer_id = uuid4(), uuid4()
+        officer = SimpleNamespace(id=officer_id)
+        dispatch = make_dispatch_row(
+            DispatchStatus.NOTIFIED,
+            officer_id=officer_id,
+            rank=1,
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=5),
+        )
+        next_candidate = make_dispatch_row(DispatchStatus.PENDING, officer_id=next_officer_id, rank=2)
+        mock_db = _respond_db(
+            officer=officer,
+            dispatch=dispatch,
+            extra=[
+                make_scalars_result([dispatch, next_candidate]),
+                make_scalar_result(str(uuid4())),
+                make_scalar_result("WEAPON_DETECTED"),
+            ],
+        )
+
+        with patch("app.services.dispatch_service.broadcast", new=AsyncMock()) as broadcast:
+            res = await respond_to_dispatch_handler(dispatch.id, "DECLINE", mock_db, CLAIMS)
+
+        assert dispatch.status == DispatchStatus.DECLINED
+        assert res.message == "Declined"
+        assert next_candidate.status == DispatchStatus.NOTIFIED
+        assert next_candidate.notified_at is not None
+        broadcast.assert_awaited_once()
+        assert broadcast.await_args.args[1]["payload"]["detection_type"] == "WEAPON_DETECTED"
+
+    @pytest.mark.asyncio
+    async def test_rejects_response_from_officer_it_was_not_sent_to(self):
+        officer = SimpleNamespace(id=uuid4())
+        dispatch = make_dispatch_row(DispatchStatus.NOTIFIED, officer_id=uuid4(), rank=1)
+        mock_db = _respond_db(officer=officer, dispatch=dispatch)
+
+        with pytest.raises(HTTPException) as exc_info:
+            await respond_to_dispatch_handler(dispatch.id, "ACCEPT", mock_db, CLAIMS)
+
+        assert exc_info.value.status_code == 403
+        mock_db.commit.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_accept_fails_when_alert_assigned_to_another_officer(self):
+        officer_id = uuid4()
+        officer = SimpleNamespace(id=officer_id)
+        dispatch = make_dispatch_row(
+            DispatchStatus.NOTIFIED,
+            officer_id=officer_id,
+            rank=2,
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=5),
+        )
+        already_accepted = make_dispatch_row(DispatchStatus.ACCEPTED, officer_id=uuid4(), rank=1)
+        mock_db = _respond_db(
+            officer=officer,
+            dispatch=dispatch,
+            extra=[make_scalars_result([already_accepted, dispatch])]
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await respond_to_dispatch_handler(dispatch.id, "ACCEPT", mock_db, CLAIMS)
+
+        assert exc_info.value.status_code == 409
+        assert dispatch.status == DispatchStatus.NOTIFIED
+        mock_db.commit.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_expired_request_cannot_be_accepted(self):
+        officer_id = uuid4()
+        officer = SimpleNamespace(id=officer_id)
+        dispatch = make_dispatch_row(
+            DispatchStatus.NOTIFIED,
+            officer_id=officer_id,
+            rank=1,
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=RESPONSE_TIMEOUT + 30),
+        )
+        mock_db = _respond_db(
+            officer=officer,
+            dispatch=dispatch,
+            extra=[make_scalars_result([dispatch])],
+        )
+
+        with patch("app.services.dispatch_service._escalate_dispatch", new=AsyncMock()) as escalate:
+            with pytest.raises(HTTPException) as exc_info:
+                await respond_to_dispatch_handler(dispatch.id, "ACCEPT", mock_db, CLAIMS)
+
+        assert exc_info.value.status_code == 409
+        assert dispatch.status == DispatchStatus.TIMED_OUT
+        assert mock_db.commit.await_count == 2
+        mock_db.add.assert_called_once()
+        assert mock_db.add.call_args.args[0].status == DispatchStatus.NO_CANDIDATE
+        escalate.assert_awaited_once()
+        assert escalate.await_args.kwargs["reason"] == "no_available_officer"
+
+class TestExpireStaleDispatches:
+    @pytest.mark.asyncio
+    async def test_expires_stale_dispatches(self):
+        stale = make_dispatch_row(
+            DispatchStatus.NOTIFIED,
+            officer_id=uuid4(),
+            rank=1,
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=RESPONSE_TIMEOUT)
+        )
+        mock_db = AsyncMock()
+        mock_db.add = Mock()
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_scalars_result([stale]),
+                make_scalars_result([stale]),
+            ]
+        )
+
+        with patch("app.services.dispatch_service._escalate_dispatch", new=AsyncMock()) as escalate:
+            expired = await expire_stale_dispatchs(mock_db)
+
+        assert expired == 1
+        assert stale.status == DispatchStatus.TIMED_OUT
+        mock_db.add.assert_called_once()
+        escalate.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_rows_locked_and_skips_already_locked(self):
+        mock_db = AsyncMock()
+        mock_db.add = Mock()
+        mock_db.execute = AsyncMock(return_value=make_scalars_result([]))
+
+        await expire_stale_dispatchs(mock_db)
+
+        stmt = mock_db.execute.await_args.args[0]
+        sql = compiled_sql(stmt)
+        assert "FOR UPDATE" in sql.upper()
+        assert "SKIP LOCKED" in sql.upper()
+
+class TestPromoteOfficer:
+    async def promote(self, rows):
+        mock_db, _ = make_mock_db()
+        mock_db.execute = AsyncMock(return_value=make_scalars_result(rows))
+        with (
+            patch("app.services.dispatch_service._notify_officer", new=AsyncMock()) as notify, 
+            patch("app.services.dispatch_service._escalate_dispatch", new=AsyncMock()) as escalate,
+        ):
+            await _promote_officer(mock_db, ALERT_ID)
+        return SimpleNamespace(db=mock_db, notify=notify, escalate=escalate)
+
+    @pytest.mark.asyncio
+    async def test_already_accepted_stops_reassignment(self):
+        accepted = make_dispatch_row(DispatchStatus.ACCEPTED, officer_id=uuid4(), rank=1)
+        pending = make_dispatch_row(DispatchStatus.PENDING, officer_id=uuid4(), rank=2)
+        run = await self.promote([accepted, pending])
+
+        run.notify.assert_not_awaited()
+        run.escalate.assert_not_awaited()
+        run.db.add.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_does_not_double_notify(self):
+        notified = make_dispatch_row(DispatchStatus.NOTIFIED, officer_id=uuid4(), rank=1)
+        pending = make_dispatch_row(DispatchStatus.PENDING, officer_id=uuid4(), rank=2)
+        run = await self.promote([notified, pending])
+
+        run.notify.assert_not_awaited()
+        run.escalate.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_promotes_next_officer_in_line(self):
+        declined = make_dispatch_row(DispatchStatus.DECLINED, officer_id=uuid4(), rank=1)
+        expired = make_dispatch_row(DispatchStatus.TIMED_OUT, officer_id=uuid4(), rank=2)
+        pending = make_dispatch_row(DispatchStatus.PENDING, officer_id=uuid4(), rank=3)
+        queued = make_dispatch_row(DispatchStatus.QUEUED, officer_id=uuid4(), rank=4)
+
+        run = await self.promote([declined, expired, pending, queued])
+        
+        run.notify.assert_awaited_once_with(run.db, pending)
+        run.escalate.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_queued_officer(self):
+        declined = make_dispatch_row(DispatchStatus.DECLINED, officer_id=uuid4(), rank=1)
+        queued = make_dispatch_row(DispatchStatus.QUEUED, officer_id=uuid4(), rank=2)
+        run = await self.promote([declined, queued])
+        run.notify.assert_awaited_once_with(run.db, queued)
+
+    @pytest.mark.asyncio
+    async def test_no_candidates_escalates(self):
+        declined = make_dispatch_row(DispatchStatus.DECLINED, officer_id=uuid4(), rank=1)
+        expired = make_dispatch_row(DispatchStatus.TIMED_OUT, officer_id=uuid4(), rank=2)
+        run = await self.promote([declined, expired])
+
+        run.notify.assert_not_awaited()
+        run.db.add.assert_called_once()
+        no_candidate = run.db.add.call_args.args[0]
+        assert no_candidate.status == DispatchStatus.NO_CANDIDATE
+        assert no_candidate.alert_id == ALERT_ID
+        assert no_candidate.neighbourhood_id == NEIGHBOURHOOD_ID
+        run.escalate.assert_awaited_once_with(run.db, no_candidate, reason="no_available_officer")
+
+    @pytest.mark.asyncio
+    async def test_no_duplicate_candidate_row_when_no_officers(self):
+        declined = make_dispatch_row(DispatchStatus.DECLINED, officer_id=uuid4(), rank=1)
+        no_candidate = make_dispatch_row(DispatchStatus.NO_CANDIDATE, officer_id=uuid4(), rank=None)
+
+        run = await self.promote([declined, no_candidate])
+        run.db.add.assert_not_called()
+        run.escalate.assert_not_awaited()
+
+class TestEscalateDispatch:
+    def make_row(self, **overrides):
+        return make_dispatch_row(DispatchStatus.NO_CANDIDATE, rank=None, **overrides)
+
+    @pytest.mark.asyncio
+    async def test_records_notified_at(self):
+        mock_db, _ = make_mock_db()
+        mock_db.execute = AsyncMock(return_value=make_scalars_result([str(uuid4())]))
+        row = self.make_row()
+        assert row.notified_at is None
+
+        with patch("app.services.dispatch_service.broadcast", new=AsyncMock()):
+            await _escalate_dispatch(mock_db, row, reason="no_available_officer")
+
+        assert row.notified_at is not None
+        mock_db.commit.assert_awaited_once()
+        mock_db.refresh.assert_awaited_once_with(row)
+
+    @pytest.mark.asyncio
+    async def test_broadcasts_to_admins(self):
+        admin_id = str(uuid4())
+        mock_db, _ = make_mock_db()
+        mock_db.execute = AsyncMock(return_value=make_scalars_result([admin_id]))
+        row = self.make_row()
+
+        with patch("app.services.dispatch_service.broadcast", new=AsyncMock()) as broadcast:
+            await _escalate_dispatch(mock_db, row, reason="no_available_officer")
+
+        params = compiled_params(mock_db.execute.await_args.args[0])
+        roles_param = next(v for v in params.values() if isinstance(v, list))
+        assert NeighbourhoodRole.NEIGHBOURHOOD_ADMIN in roles_param
+        assert NeighbourhoodRole.SECURITY_OFFICER not in roles_param
+
+        broadcast.assert_awaited_once()
+        receivers, message = broadcast.await_args.args
+        assert receivers == [admin_id]
+        assert message["event"] == "dispatch.escalated"
+        assert message["payload"]["dispatch_id"] == str(row.id)
+        assert message["payload"]["alert_id"] == str(row.alert_id)
+        assert message["payload"]["reason"] == "no_available_officer"
+
+    @pytest.mark.asyncio
+    async def test_no_admins_no_broadcast(self):
+        mock_db, _ = make_mock_db()
+        mock_db.execute = AsyncMock(return_value=make_scalars_result([]))
+        row = self.make_row()
+
+        with patch("app.services.dispatch_service.broadcast", new=AsyncMock()) as broadcast:
+            await _escalate_dispatch(mock_db, row, reason="no_available_officer")
+
+        broadcast.assert_not_awaited()
+        assert row.notified_at is not None
+
+class TestExpireStaleDispatch:
+    @pytest.mark.asyncio
+    async def test_skips_row_when_no_longer_notified_after_lock(self):
+        stale = make_dispatch_row(
+            DispatchStatus.NOTIFIED,
+            officer_id=uuid4(),
+            rank=1,
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=RESPONSE_TIMEOUT + 30),
+        )
+        accepted = make_dispatch_row(
+            DispatchStatus.ACCEPTED,
+            officer_id=stale.officer_id,
+            rank=1,
+        )
+        accepted.id = stale.id
+
+        mock_db, _ = make_mock_db()
+        mock_db.execute = AsyncMock(return_value=make_scalar_result(accepted))
+
+        with patch("app.services.dispatch_service._promote_officer", new=AsyncMock()) as promote:
+            result = await _expire_stale_dispatch(mock_db, stale)
+
+        assert result is accepted
+        assert result.status == DispatchStatus.ACCEPTED
+        mock_db.commit.assert_not_awaited() 
+        promote.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_expires_when_still_notified_after_lock(self):
+        stale = make_dispatch_row(
+            DispatchStatus.NOTIFIED,
+            officer_id=uuid4(),
+            rank=1,
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=RESPONSE_TIMEOUT + 30)
+        )
+
+        mock_db, _ = make_mock_db()
+        mock_db.execute = AsyncMock(return_value=make_scalar_result(stale))
+
+        with patch("app.services.dispatch_service._promote_officer", new=AsyncMock()) as promote:
+            result = await _expire_stale_dispatch(mock_db, stale)
+
+        assert result.status == DispatchStatus.TIMED_OUT
+        mock_db.commit.assert_awaited_once() 
+        promote.assert_awaited_once_with(mock_db, stale.alert_id)
+
+    @pytest.mark.asyncio
+    async def test_within_window_nothing_happens(self):
+        fresh = make_dispatch_row(
+            DispatchStatus.NOTIFIED,
+            officer_id=uuid4(),
+            rank=1,
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=5)
+        )
+
+        mock_db, _ = make_mock_db()
+        mock_db.execute = AsyncMock(return_value=make_scalar_result(fresh))
+
+        with patch("app.services.dispatch_service._promote_officer", new=AsyncMock()) as promote:
+            result = await _expire_stale_dispatch(mock_db, fresh)
+
+        assert result is fresh
+        assert result.status == DispatchStatus.NOTIFIED
+        mock_db.commit.assert_not_awaited() 
+        promote.assert_not_awaited()

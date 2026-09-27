@@ -6,7 +6,7 @@ from uuid import uuid4
 from app.tasks.push_tasks import send_push_to_users
 
 class FakeAsyncSessionContext:
-    """Stands in for 'async with WorkerSessionLocal() as db:' in tests."""
+    """Stands in for 'async with worker_session() as db:' in tests."""
 
     def __init__(self, mock_db):
         self._mock_db = mock_db
@@ -37,7 +37,7 @@ class TestSendPushToUsers:
 
     def test_returns_early_for_empty_user_ids(self):
         with patch(
-            "app.tasks.push_tasks.WorkerSessionLocal",
+            "app.tasks.push_tasks.worker_session",
             return_value=FakeAsyncSessionContext(self.mock_db),
         ) as worker_session:
             send_push_to_users([], "title", "body", None)
@@ -52,7 +52,7 @@ class TestSendPushToUsers:
 
         with (
             patch(
-                "app.tasks.push_tasks.WorkerSessionLocal",
+                "app.tasks.push_tasks.worker_session",
                 return_value=FakeAsyncSessionContext(self.mock_db),
             ),
             patch ("app.tasks.push_tasks.messaging.send") as mock_send,

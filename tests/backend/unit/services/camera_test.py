@@ -7,6 +7,8 @@ from app.schemas.camera import RegisterCameraReq
 from app.models.camera import CameraVisibilityEnum
 from fastapi import HTTPException
 from datetime import datetime
+from app.models.camera_coverage import CameraCoverage
+from app.schemas.camera_coverage import CameraCoverageInput
 
 
 
@@ -554,3 +556,296 @@ class TestEditCamera:
             ]
         ]
         assert payload.data[0].zone_ids == [zone_id]
+
+
+class TestRegisterCameraCoverage:
+    def make_property(
+        self,
+        *,
+        latitude: float | None = -25.7479,
+        longitude: float | None = 28.2293,
+    ):
+        property_obj = Mock()
+        property_obj.neighbourhood_id = uuid4()
+        property_obj.latitude = latitude
+        property_obj.longitude = longitude
+        return property_obj
+
+    def make_camera(self, property_id):
+        camera = Mock()
+        camera.id = uuid4()
+        camera.name = MOCK_CAMERA_NAME
+        camera.rtsp_url = MOCK_RTSP_URL
+        camera.location = "Front Door"
+        camera.visibility = CameraVisibilityEnum.PRIVATE
+        camera.property_id = property_id
+        camera.enabled = True
+        camera.neighbourhood_id = uuid4()
+        camera.created_at = datetime.now()
+        return camera
+
+    def make_request(
+        self,
+        property_id,
+        *,
+        coverage=None,
+    ):
+        return RegisterCameraReq(
+            name=MOCK_CAMERA_NAME,
+            rtsp_url=(
+                "rtsp://admin:securepassword123@"
+                "192.168.1.100:554/Streaming/channels/101"
+            ),
+            location="Front Door",
+            visibility=CameraVisibilityEnum.PRIVATE,
+            property_id=property_id,
+            coverage=coverage,
+        )
+
+    @pytest.mark.asyncio
+    async def test_registration_without_coverage_omits_coverage_record(self):
+        db, result = make_mock_db()
+
+        property_id = uuid4()
+        property_obj = self.make_property()
+        camera = self.make_camera(property_id)
+
+        result.scalar_one_or_none.return_value = property_obj
+
+        request = self.make_request(property_id)
+
+        with patch(
+            "app.services.camera_service.Camera",
+            return_value=camera,
+        ):
+            response = await register_camera_handler(
+                req=request,
+                db=db,
+                claims={
+                    "id": str(uuid4()),
+                    "sub": "test-user",
+                },
+            )
+
+        assert response.id == camera.id
+        assert db.add.call_count == 1
+        assert db.flush.await_count == 1
+        assert db.commit.await_count == 1
+        assert db.rollback.await_count == 0
+
+        added_camera = db.add.call_args.args[0]
+        assert added_camera is camera
+
+    @pytest.mark.asyncio
+    async def test_registration_with_valid_coverage_creates_camera_and_coverage(
+        self,
+    ):
+        db, result = make_mock_db()
+
+        property_id = uuid4()
+        property_obj = self.make_property()
+        camera = self.make_camera(property_id)
+
+        result.scalar_one_or_none.return_value = property_obj
+
+        coverage = CameraCoverageInput(
+            origin_latitude=-25.7479,
+            origin_longitude=28.2293,
+            coverage_bearing_degrees=90,
+            coverage_angle_degrees=60,
+            coverage_range_metres=100,
+        )
+
+        request = self.make_request(
+            property_id,
+            coverage=coverage,
+        )
+
+        with patch(
+            "app.services.camera_service.Camera",
+            return_value=camera,
+        ):
+            response = await register_camera_handler(
+                req=request,
+                db=db,
+                claims={
+                    "id": str(uuid4()),
+                    "sub": "test-user",
+                },
+            )
+
+        assert response.id == camera.id
+
+        assert db.add.call_count == 2
+        assert db.flush.await_count == 2
+        assert db.commit.await_count == 1
+        assert db.rollback.await_count == 0
+
+        added_camera = db.add.call_args_list[0].args[0]
+        added_coverage = db.add.call_args_list[1].args[0]
+
+        assert added_camera is camera
+        assert isinstance(added_coverage, CameraCoverage)
+        assert added_coverage.camera_id == camera.id
+        assert added_coverage.origin_latitude == coverage.origin_latitude
+        assert added_coverage.origin_longitude == coverage.origin_longitude
+        assert (
+            added_coverage.coverage_bearing_degrees
+            == coverage.coverage_bearing_degrees
+        )
+        assert (
+            added_coverage.coverage_angle_degrees
+            == coverage.coverage_angle_degrees
+        )
+        assert (
+            added_coverage.coverage_range_metres
+            == coverage.coverage_range_metres
+        )
+
+    @pytest.mark.asyncio
+    async def test_registration_rejects_coverage_when_property_has_no_coordinates(
+        self,
+    ):
+        db, result = make_mock_db()
+
+        property_id = uuid4()
+        property_obj = self.make_property(
+            latitude=None,
+            longitude=None,
+        )
+        camera = self.make_camera(property_id)
+
+        result.scalar_one_or_none.return_value = property_obj
+
+        coverage = CameraCoverageInput(
+            origin_latitude=-25.7479,
+            origin_longitude=28.2293,
+            coverage_bearing_degrees=90,
+            coverage_angle_degrees=60,
+            coverage_range_metres=100,
+        )
+
+        request = self.make_request(
+            property_id,
+            coverage=coverage,
+        )
+
+        with patch(
+            "app.services.camera_service.Camera",
+            return_value=camera,
+        ):
+            with pytest.raises(HTTPException) as exc_info:
+                await register_camera_handler(
+                    req=request,
+                    db=db,
+                    claims={
+                        "id": str(uuid4()),
+                        "sub": "test-user",
+                    },
+                )
+
+        assert exc_info.value.status_code == 400
+        assert "valid coordinates" in exc_info.value.detail
+
+        assert db.add.call_count == 1
+        assert db.flush.await_count == 1
+        assert db.commit.await_count == 0
+        assert db.rollback.await_count == 1
+
+    @pytest.mark.asyncio
+    async def test_registration_rejects_origin_more_than_100_metres_from_property(
+        self,
+    ):
+        db, result = make_mock_db()
+
+        property_id = uuid4()
+        property_obj = self.make_property()
+        camera = self.make_camera(property_id)
+
+        result.scalar_one_or_none.return_value = property_obj
+
+        coverage = CameraCoverageInput(
+            origin_latitude=-25.7499,
+            origin_longitude=28.2293,
+            coverage_bearing_degrees=90,
+            coverage_angle_degrees=60,
+            coverage_range_metres=100,
+        )
+
+        request = self.make_request(
+            property_id,
+            coverage=coverage,
+        )
+
+        with patch(
+            "app.services.camera_service.Camera",
+            return_value=camera,
+        ):
+            with pytest.raises(HTTPException) as exc_info:
+                await register_camera_handler(
+                    req=request,
+                    db=db,
+                    claims={
+                        "id": str(uuid4()),
+                        "sub": "test-user",
+                    },
+                )
+
+        assert exc_info.value.status_code == 400
+        assert "within 100 metres" in exc_info.value.detail
+
+        assert db.add.call_count == 1
+        assert db.flush.await_count == 1
+        assert db.commit.await_count == 0
+        assert db.rollback.await_count == 1
+
+    @pytest.mark.asyncio
+    async def test_registration_rolls_back_camera_when_coverage_insert_fails(
+        self,
+    ):
+        db, result = make_mock_db()
+
+        property_id = uuid4()
+        property_obj = self.make_property()
+        camera = self.make_camera(property_id)
+
+        result.scalar_one_or_none.return_value = property_obj
+
+        coverage = CameraCoverageInput(
+            origin_latitude=-25.7479,
+            origin_longitude=28.2293,
+            coverage_bearing_degrees=90,
+            coverage_angle_degrees=60,
+            coverage_range_metres=100,
+        )
+
+        request = self.make_request(
+            property_id,
+            coverage=coverage,
+        )
+
+        db.add.side_effect = [
+            None,
+            RuntimeError("coverage insert failed"),
+        ]
+
+        with patch(
+            "app.services.camera_service.Camera",
+            return_value=camera,
+        ):
+            with pytest.raises(HTTPException) as exc_info:
+                await register_camera_handler(
+                    req=request,
+                    db=db,
+                    claims={
+                        "id": str(uuid4()),
+                        "sub": "test-user",
+                    },
+                )
+
+        assert exc_info.value.status_code == 500
+        assert exc_info.value.detail == "Could not register camera"
+
+        assert db.add.call_count == 2
+        assert db.commit.await_count == 0
+        assert db.rollback.await_count == 1

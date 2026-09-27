@@ -5,9 +5,13 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
-class NotificationChannel(str, Enum):
+class NotificationChannelEnum(str, Enum):
+    """These notification channels should be in alignment with what 
+       is in the notification service"""
     WHATSAPP = "WHATSAPP"
     EMAIL = "EMAIL"
+    PUSH = "PUSH"
+    WEBSOCKET = "WEBSOCKET"
 
 class NotificationStatus(str, Enum):
     SENT = "SENT"
@@ -17,9 +21,9 @@ class Notification(Base):
     __tablename__ = "notification"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    alert_id = Column(UUID(as_uuid=True), ForeignKey("alert.id", ondelete="CASCADE"), nullable=False)
+    alert_id = Column(UUID(as_uuid=True), ForeignKey("alert.id", ondelete="CASCADE"), nullable=True) # Changed nullable to true to accomodate the other types of notifications that can happen after the notification refactoring
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    channel = Column(SAEnum(NotificationChannel, name="notification_channel"), nullable=False)
+    channel = Column(SAEnum(NotificationChannelEnum, name="notification_channel"), nullable=False)
     status = Column(SAEnum(NotificationStatus, name="notification_status"), nullable=False)
     error_message = Column(String, nullable=True)
     sent_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))

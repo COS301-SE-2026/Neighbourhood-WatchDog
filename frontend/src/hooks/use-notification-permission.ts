@@ -12,6 +12,9 @@ export function useNotificationPermission() {
 
 
 	const refresh = useCallback(async () => {
+		if (!Capacitor.isNativePlatform()) {
+			return "unsupported" as NotificationPermissionState;
+		}
 		setLoading(true);
 
 		try {

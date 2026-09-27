@@ -14,7 +14,7 @@ from sqlalchemy import select
 from app.core.database import DbSession
 
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
-from app.models.notification import Notification, NotificationChannel, NotificationStatus
+from app.models.notification import Notification, NotificationChannelEnum, NotificationStatus
 from app.models.property import Property
 from app.models.user import User
 from app.models.camera import Camera
@@ -93,7 +93,7 @@ def _format_match_notification_message(tracking_subject_id: UUID, source_propert
     )
 
 
-def _send_whatsapp(to_phone: str, message: str) -> tuple[bool, str | None]:
+def send_whatsapp(to_phone: str, message: str) -> tuple[bool, str | None]:
     """Send whatsapp message using twilio snadbox. Recipient must be part of sandbox to receive messages"""
     try:
         from twilio.rest import Client
@@ -469,7 +469,7 @@ def _log_notification(
     db: DbSession,
     alert_id: UUID,
     user_id: UUID,
-    channel: NotificationChannel,
+    channel: NotificationChannelEnum,
     success: bool,
     error_message: str | None,
 ) -> None:
@@ -672,8 +672,8 @@ async def _notify_users_by_whatsapp(
 ) -> None:
     for user in users:
         if user.phone_number:
-            success, error = await asyncio.to_thread(_send_whatsapp, user.phone_number, whatsapp_message)
-            _log_notification(db, alert_id, user.id, NotificationChannel.WHATSAPP, success, error)
+            success, error = await asyncio.to_thread(send_whatsapp, user.phone_number, whatsapp_message)
+            _log_notification(db, alert_id, user.id, NotificationChannelEnum.WHATSAPP, success, error)
             if success:
                 logger.info(f"Whatsapp sent successfully to user {user.id}")
             else:
@@ -716,7 +716,7 @@ async def _notify_users_by_bcc_email(
         )
 
         for user in batch_users:
-            _log_notification(db, alert_id, user.id, NotificationChannel.EMAIL, success, error)
+            _log_notification(db, alert_id, user.id, NotificationChannelEnum.EMAIL, success, error)
 
             if success:
                 logger.info("BCC email sent successfully to user %s", user.id)
@@ -735,7 +735,7 @@ async def _notify_users_by_individual_email(
     for user in users:                
         if user.email:
             success, error = await asyncio.to_thread(send_alert_email, user.email, detection_type, camera.name, camera.location, severity)
-            _log_notification(db, alert_id, user.id, NotificationChannel.EMAIL, success, error)
+            _log_notification(db, alert_id, user.id, NotificationChannelEnum.EMAIL, success, error)
             if success:
                 logger.info(f"Email sent successfully to user {user.id}")
             else:
@@ -779,4 +779,70 @@ async def _notify_users(
             severity,
         )
 
-        
+
+
+
+# KEEP THIS AFTER THE REFACTORING:
+def send_email_smtp(
+    recipient_email: str,
+    subject: str,
+    html_body: str,
+    plain_body: str,
+) -> tuple[bool, str | None]:
+    if not SENDER_EMAIL or not SENDER_PASSWORD:
+        return False, SMTP_ERROR
+
+    try: 
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+
+        msg = MIMEMultipart("alternative")
+        msg["From"] = f"Neighbourhood WatchDog <{SENDER_EMAIL}>"
+        msg["To"] = recipient_email
+        msg["Subject"] = subject
+        msg.attach(MIMEText(plain_body, "plain"))
+        msg.attach(MIMEText(html_body, "html"))
+
+
+        server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
+        server.quit()
+        return True, None
+
+    except Exception as e:
+        logger.exception("Error sending email to %s" , recipient_email)
+        return False, str(e)
+
+def send_email_bcc_smtp(
+    recipient_emails: list[str],
+    subject: str,
+    html_body: str,
+    plain_body: str,
+) -> tuple[bool, str | None]:
+    if not recipient_emails:
+        return False, "No email recipients provided"
+    if not SENDER_EMAIL or not SENDER_PASSWORD:
+        return False, SMTP_ERROR
+
+    try: 
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+
+        msg = MIMEMultipart("alternative")
+        msg["From"] = f"Neighbourhood WatchDog <{SENDER_EMAIL}>"
+        msg["To"] = f"WatchDog Alerts <{SENDER_EMAIL}>"
+        msg["Bcc"] = ", ".join(recipient_emails)
+        msg["Subject"] = subject
+        msg.attach(MIMEText(plain_body, "plain"))
+        msg.attach(MIMEText(html_body, "html"))
+
+
+        server.sendmail(SENDER_EMAIL, recipient_emails, msg.as_string())
+        server.quit()
+        return True, None
+
+    except Exception as e:
+        logger.exception("Error sending email to %s" , len(recipient_emails))
+        return False, str(e)
+

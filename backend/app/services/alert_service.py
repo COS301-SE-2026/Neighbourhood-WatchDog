@@ -49,18 +49,16 @@ from app.schemas.alert import (
     UnlocatedCriticalAlertItem
 )
 from app.services.audit_service import create_audit_log_item
-from app.tasks.push_tasks import send_push_to_users
 from app.models.audit_log import AuditAction, TargetEntity
 from app.models.alert import Alert, DetectionType, AlertStatus
 
 from app.models.neighbourhood import Neighbourhood
-from app.services.notification_service import _format_whatsapp_message, _notify_users
-from app.models.user import User
 
 from app.models.tracking import TrackingSighting, TrackingSubject
 from app.services.tracking_service import normalize_appearance_embedding
 from app.services.situational_brief_service import maybe_generate_situational_brief
-
+from app.services.notifications.factory import NotificationPolicyFactory
+from app.schemas.notification import EventType
 logger = logging.getLogger(__name__)
 
 DEFAULT_PAGE_SIZE = 25
@@ -258,31 +256,25 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
         await db.refresh(alert)
 
 
-        from app.api.controllers.alert import broadcast
-
         if data.neighbourhood_id is not None:
-            recipient_ids = await _get_neighbourhood_websocket_recipient_ids(
-                db,
-                data.neighbourhood_id,
+            alert_result = await db.execute(
+                select(Alert)
+                .options(joinedload(Alert.camera).joinedload(Camera.property))
+                .where(Alert.id == alert.id)
             )
+            alert = alert_result.scalar_one_or_none()
 
-            await broadcast(
-                recipient_ids,
-                {
-                    "event": "new_alert",
-                    "alert_id": str(alert.id),
-                    "camera_id": str(data.camera_id),
-                    "detection_type": data.detection_type,
-                    "confidence": data.confidence,
-                },
-            )
-
-            send_push_to_users.delay(
-                [str(uid) for uid in recipient_ids],
-                title="New alert",
-                body=f"{data.detection_type} detected",
-                data={"alert_id": str(alert.id), "event": "new_alert"}
-            )
+            event_context = {
+                "event_type": "GENERAL_DETECTION",
+                "notification_source_id": alert.id,
+                "neighbourhood_id": data.neighbourhood_id,
+                "alert_type": data.detection_type,
+                "websocket_payload": _build_alert_res(alert).model_dump(mode="json"),
+            }
+        
+            await (NotificationPolicyFactory
+                .get(EventType.GENERAL_DETECTION)
+                .notify(db, event_context))
 
         else:
             logger.warning(
@@ -1046,7 +1038,6 @@ async def get_trends_handler(
 async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession, claims: dict):
     """Broadcast an alert and notify eligible residents in its neighbourhood."""
     
-    from app.api.controllers.alert import broadcast
 
     result = await db.execute(
         select(Alert).where(Alert.id == alert_id)
@@ -1095,47 +1086,28 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
         logger.warning("broadcast_neighbourhood_alert_service: could not find neighbourhoodcamera linked to alert with alert_id=%s", alert_id)
         raise HTTPException(status_code=404, detail=NEIGHBOURHOOD_NOT_FOUND)
 
-    detection_type = alert.detection_type.value \
-    if hasattr(alert.detection_type, "value") \
-    else str(alert.detection_type)
+    detection_type = (
+        alert.detection_type.value 
+        if hasattr(alert.detection_type, "value")
+        else str(alert.detection_type)
+    )              
 
-    alert_res = _build_alert_res(alert)
-    recipient_ids = await _get_neighbourhood_websocket_recipient_ids(
-        db,
-        neighbourhood_id,
-    )
+    event_context = {
+        "event_type": "NEIGHBOURHOOD_BROADCAST",
+        "notification_source_id": alert.id,
+        "neighbourhood_id": neighbourhood_id,
+        "alert_type": detection_type,
+        "camera_name": camera.name,
+        "location": camera.location,
+        "risk_level": "CRITICAL",
+        "timestamp": alert.frame_timestamp.strftime("%d %b %Y %H:%M"),
+        "websocket_payload": _build_alert_res(alert).model_dump(mode="json"),
+    }
 
-    await broadcast(
-        recipient_ids,
-        {
-            "event": "alert.broadcast",
-            "payload": alert_res.model_dump(mode="json"),
-        },
-    )
-
-    result = await db.execute(
-        select(User)
-        .join(
-            NeighbourhoodUser,
-            NeighbourhoodUser.user_id == User.id,
-        )
-        .where(
-            NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
-            NeighbourhoodUser.role.in_(
-                [
-                    NeighbourhoodRole.RESIDENT,
-                    NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
-                ]
-            ),
-        )
-    )
-
-    residents = result.scalars().all()
-
-    timestamp_str = alert.frame_timestamp.strftime("%d %b %Y, %H:%M:%S")
-    whatsapp_message = _format_whatsapp_message("CRITICAL", detection_type, camera.name, timestamp_str)
-    await _notify_users(db, alert.id, residents, whatsapp_message, detection_type, camera, "CRITICAL", email_bcc=True) #imma need to store val to know if failed or not
-
+    await (NotificationPolicyFactory
+        .get(EventType.NEIGHBOURHOOD_BROADCAST)
+        .notify(db, event_context))
+    
     admin_user_id = UUID(claims["id"])
     
     await create_audit_log_item(
@@ -1327,28 +1299,22 @@ async def create_alert_for_agent_handler(
         # Sending a push notification in the case of a weapon detection
         if neighbourhood_id is not None:
             if alert.detection_type == DetectionType.WEAPON_DETECTED:
-
-                from app.api.controllers.alert import broadcast
-
-                recipient_ids = await _get_neighbourhood_websocket_recipient_ids(db, neighbourhood_id)
-
-                await broadcast(
-                    recipient_ids,
-                    {
-                        "event": "new_alert",
-                        "alert_id": str(alert.id),
-                        "camera_id": str(alert.camera_id),
-                        "detection_type": alert.detection_type.value if hasattr(alert.detection_type, "value") else str(alert.detection_type),
-                        "confidence": alert.confidence_score,
-                    },
-                )
-
-                send_push_to_users.delay(
-                    [str(uid) for uid in recipient_ids],
-                    title="New alert",
-                    body=f"{det_type.value if hasattr(det_type, 'value') else det_type} detected",
-                    data={"alert_id": str(alert.id), "event": "new_alert"},
-                )
+                event_context = {
+                    "event_type": "WEAPON_DETECTED",
+                    "notification_source_id": alert.id,
+                    "neighbourhood_id": neighbourhood_id,
+                    "property_id": camera.property_id,
+                    "alert_type": alert.detection_type.value if hasattr(alert.detection_type, "value") else str(alert.detection_type),
+                    "camera_name": camera.name,
+                    "location": camera.location,
+                    "risk_level": "CRITICAL",
+                    "timestamp": alert.frame_timestamp.strftime("%d %b %Y %H:%M"),
+                    "websocket_payload": _build_alert_res(alert).model_dump(mode="json"),
+                }
+            
+                await (NotificationPolicyFactory
+                    .get(EventType.WEAPON_DETECTED)
+                    .notify(db, event_context))
             else: # detection is not a weapon
                 logger.warning(
                     "create_alert_for_agent_handler: skipped broadcast/push because detection type was not a weapon; alert_id=%s",

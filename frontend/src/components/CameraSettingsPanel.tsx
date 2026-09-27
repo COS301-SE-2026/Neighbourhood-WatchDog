@@ -1,18 +1,25 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useCameraSettings } from "@/hooks/use-camera-settings";
 import { ZoneEditor } from "./ZoneEditor";
 import { Button } from "./ui/button";
 import { Slider } from "@/components/ui/slider";
 import { LoaderCircle, Trash2, PlusCircle } from "lucide-react";
+import {
+    deleteCameraCoverage,
+    getCameraCoverage,
+    saveCameraCoverage,
+} from "@/lib/api/camera";
+import type { CameraCoverageInput } from "@/lib/validators/camera-coverage";
+import { CameraCoverageEditor } from "./CameraCoverageEditor";
 
 
 interface CameraSettingsPanelProps {
-
     readonly cameraId: string;
     readonly userRole: string;
     readonly videoRef: React.RefObject<HTMLVideoElement | null>;
-
+    readonly propertyLatitude: number | null;
+    readonly propertyLongitude: number | null;
 }
 
 
@@ -22,13 +29,57 @@ const ADMIN_ROLES = new Set(["NEIGHBOURHOOD_ADMIN", "PROPERTY_ADMIN", "SYSTEM_AD
 
 export function CameraSettingsPanel({
     cameraId,
-    userRole, 
-    videoRef
+    userRole,
+    videoRef,
+    propertyLatitude,
+    propertyLongitude,
 }: CameraSettingsPanelProps) {
     const { settings, loading, updateThreshold, createZone, deleteZone, zoneMutation } = useCameraSettings(cameraId);
 
     const [drawingZone, setDrawingZone] = useState(false);
     const [threshold, setThreshold] = useState<number | null>(null);
+    const [coverage, setCoverage] = useState<
+        CameraCoverageInput | undefined
+    >();
+    const [coverageLoadedForCameraId, setCoverageLoadedForCameraId] = useState<string | null>(null);
+
+    const coverageLoading = coverageLoadedForCameraId !== cameraId;
+    const [coverageSaving, setCoverageSaving] = useState(false);
+    const [coverageMessage, setCoverageMessage] = useState<string | null>(null);
+    const [coverageError, setCoverageError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!ADMIN_ROLES.has(userRole)) {
+            return;
+        }
+
+        let cancelled = false;
+
+        void getCameraCoverage(cameraId)
+            .then((savedCoverage) => {
+                if (cancelled) {
+                    return;
+                }
+
+                setCoverage(savedCoverage ?? undefined);
+                setCoverageMessage(null);
+                setCoverageError(null);
+                setCoverageLoadedForCameraId(cameraId);
+            })
+            .catch((error) => {
+                if (cancelled) {
+                    return;
+                }
+
+                console.error("Failed to load camera POV", error);
+                setCoverageError("Failed to load camera POV.");
+                setCoverageLoadedForCameraId(cameraId);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [cameraId, userRole]);
 
     // resident role cannot see the panel
     if (!ADMIN_ROLES.has(userRole)) return null;
@@ -51,6 +102,59 @@ export function CameraSettingsPanel({
     const handleThresholdCommit = async (val: number[]) => {
         await updateThreshold(val[0]);
 
+    };
+
+    const handleCoverageChange = (
+        nextCoverage: CameraCoverageInput | undefined,
+    ) => {
+        setCoverage(nextCoverage);
+        setCoverageMessage(null);
+        setCoverageError(null);
+    };
+
+    const handleCoverageSave = async () => {
+        if (!coverage) {
+            setCoverageError(
+                "Complete the camera POV before saving it.",
+            );
+            return;
+        }
+
+        setCoverageSaving(true);
+        setCoverageMessage(null);
+        setCoverageError(null);
+
+        try {
+            const savedCoverage = await saveCameraCoverage(
+                cameraId,
+                coverage,
+            );
+
+            setCoverage(savedCoverage);
+            setCoverageMessage("Camera POV saved successfully.");
+        } catch (error) {
+            console.error("Failed to save camera POV", error);
+            setCoverageError("Failed to save camera POV.");
+        } finally {
+            setCoverageSaving(false);
+        }
+    };
+
+    const handleCoverageDelete = async () => {
+        setCoverageSaving(true);
+        setCoverageMessage(null);
+        setCoverageError(null);
+
+        try {
+            await deleteCameraCoverage(cameraId);
+            setCoverage(undefined);
+            setCoverageMessage("Camera POV removed.");
+        } catch (error) {
+            console.error("Failed to remove camera POV", error);
+            setCoverageError("Failed to remove camera POV.");
+        } finally {
+            setCoverageSaving(false);
+        }
     };
 
 
@@ -154,6 +258,82 @@ export function CameraSettingsPanel({
                     </div>
                 )}
             </div>
+
+            <div className="space-y-3 border-t border-border pt-4">
+                <div>
+                    <h3 className="text-sm font-semibold text-brand-frost">
+                        Geographic camera POV
+                    </h3>
+
+                    <p className="mt-1 text-xs text-brand-ash">
+                        Choose the camera position within 100 metres of the
+                        property, then select the left and right viewing edges.
+                    </p>
+                </div>
+
+                {coverageLoading && (
+                    <div
+                        role="status"
+                        className="flex items-center gap-2 text-xs text-brand-ash"
+                    >
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                        Loading camera POV…
+                    </div>
+                )}
+
+                {!coverageLoading && (
+                    <>
+                        <CameraCoverageEditor
+                            propertyLatitude={propertyLatitude}
+                            propertyLongitude={propertyLongitude}
+                            value={coverage}
+                            onChange={handleCoverageChange}
+                        />
+
+                        <div className="flex flex-wrap gap-2">
+                            <Button
+                                type="button"
+                                disabled={!coverage || coverageSaving}
+                                onClick={() => void handleCoverageSave()}
+                                className="bg-brand-green text-brand-void"
+                            >
+                                {coverageSaving
+                                    ? "Saving POV…"
+                                    : "Save camera POV"}
+                            </Button>
+
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={!coverage || coverageSaving}
+                                onClick={() => void handleCoverageDelete()}
+                                className="border-border bg-transparent text-brand-frost"
+                            >
+                                Remove saved POV
+                            </Button>
+                        </div>
+                    </>
+                )}
+
+                {coverageMessage && (
+                    <p
+                        role="status"
+                        className="text-xs text-brand-green"
+                    >
+                        {coverageMessage}
+                    </p>
+                )}
+
+                {coverageError && (
+                    <p
+                        role="alert"
+                        className="text-xs text-brand-threat"
+                    >
+                        {coverageError}
+                    </p>
+                )}
+            </div>
+
         </div>
     );
 }

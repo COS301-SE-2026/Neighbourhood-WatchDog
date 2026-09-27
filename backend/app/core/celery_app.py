@@ -17,8 +17,12 @@ celery = Celery(
     __name__,
     include=[
         "app.tasks.risk_score_tasks", 
-        "app.tasks.clip_tasks", "app.tasks.push_tasks",
-        "app.tasks.incident_density_tasks"
+        "app.tasks.clip_tasks", 
+        "app.tasks.push_tasks",
+        "app.tasks.notification_tasks",
+        "app.tasks.incident_density_tasks",
+        "app.tasks.dispatch_tasks",
+        "app.tasks.danger_zone_tasks"
     ]
 )
 
@@ -32,12 +36,23 @@ celery.conf.beat_schedule = {
         "task": "app.tasks.risk_score_tasks.recalculate_all_risk_scores",
         "schedule": timedelta(minutes=5),
     },
+    "expire-stale-dispatches-every-20-seconds": {
+        "task": "app.tasks.dispatch_tasks.expire_stale_dispatch_requests",
+        "schedule": timedelta(seconds=20),
+    },
     "refresh-current-incident-density": {
         "task": (
             "app.tasks.incident_density_tasks."
             "refresh_current_incident_density"
         ),
         "schedule": timedelta(minutes=5),
+    },
+    "recompute-danger-zones-every-10-minutes": {
+        "task": (
+            "app.tasks.danger_zone_tasks."
+            "recompute_all_danger_zones"
+        ),
+        "schedule": timedelta(minutes=10),
     },
     "finalize-yesterday-incident-density": {
         "task": (
