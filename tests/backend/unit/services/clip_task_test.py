@@ -74,6 +74,7 @@ class TestUploadAndLink:
             patch.object(service, "_clip_s3_key", return_value="clips/test.mp4"),
             patch.object(service, "datetime") as datetime_module,
             patch.object(service.asyncio, "to_thread", new=to_thread),
+            patch.object(service, "S3_BUCKET_NAME", "test-bucket")
         ):
             datetime_module.now.return_value = timestamp
             await service._upload_and_link(
@@ -107,6 +108,7 @@ class TestUploadAndLink:
             patch.object(service, "_s3_client", return_value=s3_client),
             patch.object(service, "_clip_s3_key", return_value="clips/test.webm"),
             patch.object(service.asyncio, "to_thread", new=to_thread),
+            patch.object(service, "S3_BUCKET_NAME", "test-bucket")
         ):
             await service._upload_and_link(
                 ALERT_ID,
