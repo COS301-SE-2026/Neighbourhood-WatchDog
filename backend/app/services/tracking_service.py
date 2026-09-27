@@ -600,14 +600,15 @@ async def get_tracking_timeline(*, db: AsyncSession, alert_id: UUID, claims: dic
 
 
     sightings_result = await db.execute(
-        select(TrackingSighting, Camera)
+        select(TrackingSighting, Camera, Property)
         .join(Camera, Camera.id == TrackingSighting.camera_id)
+        .join(Property, Property.id == Camera.property_id)
         .where(TrackingSighting.tracking_subject_id == tracking_subject.id)
         .order_by(
             TrackingSighting.observed_at.asc(),
             TrackingSighting.sequence_no.asc(),
             TrackingSighting.id.asc()
-            
+
         )
     )
 
@@ -623,10 +624,12 @@ async def get_tracking_timeline(*, db: AsyncSession, alert_id: UUID, claims: dic
             sequence_no=sighting.sequence_no,
             match_confidence=sighting.match_confidence,
             clip_s3_key=sighting.clip_s3_key,
-            clip_expires_at=sighting.clip_expires_at
+            clip_expires_at=sighting.clip_expires_at,
+            latitude=sighting_property.latitude,
+            longitude=sighting_property.longitude
             
         )
-        for sighting, sighting_camera in sightings_result.all()
+        for sighting, sighting_camera, sighting_property in sightings_result.all()
 
 
     ]

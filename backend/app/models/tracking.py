@@ -28,7 +28,7 @@ class TrackingSubject(Base):
     brief_data = Column(JSONB, nullable=True)
 
     alert = relationship("Alert", back_populates="tracking_subject")
-    sightings = relationship("TrackingSighting", back_populates="tracking_subject", cascade="all, delete-orphan", order_by="TrackingSighting.sequence_no")
+    sightings = relationship("TrackingSighting", back_populates="tracking_subject", cascade="all, delete-orphan", order_by=lambda: (TrackingSighting.observed_at, TrackingSighting.sequence_no, TrackingSighting.id))
 
 
 

@@ -66,7 +66,9 @@ async def create_alert(
 )
 async def upload_tracking_sighting_clip(sighting_id: str, db: DbSession, credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)], clip: Annotated[UploadFile, File(...)]) -> TrackingSightingClipUploadAcceptedRes:
 
-    if clip.content_type not in {"video/mp4", "application/octet-stream"}:
+    content_type = clip.content_type or "video/mp4"
+
+    if content_type not in {"video/mp4", "application/octet-stream"}:   
         raise HTTPException(
             status_code=400,
             detail="Clip upload must use video/mp4 content type"
@@ -97,7 +99,7 @@ async def upload_tracking_sighting_clip(sighting_id: str, db: DbSession, credent
     upload_tracking_sighting_clip_task.delay(
         str(sighting.id),
         clip_b64,
-        clip.content_type or "video/mp4"
+        content_type
     )
 
     return TrackingSightingClipUploadAcceptedRes(
@@ -148,7 +150,9 @@ async def upload_clip(
     clip: Annotated[UploadFile, File(...)]
 ) -> ClipUploadAcceptedRes:
     """Receive an H.264 MP4 from an authenticated Edge Agent and queue it for upload."""
-    if clip.content_type not in {"video/mp4", "application/octet-stream"}:
+    content_type = clip.content_type or "video/mp4"
+
+    if content_type not in {"video/mp4", "application/octet-stream"}:
         raise HTTPException(status_code=400, detail="Clip upload must use video/mp4 content type")
 
     clip_bytes = await _read_clip_with_limit(clip, MAX_CLIP_SIZE_BYTES)
@@ -161,7 +165,7 @@ async def upload_clip(
         raise HTTPException(status_code=404, detail="Alert not found")
 
     clip_b64 = base64.b64encode(clip_bytes).decode("ascii")
-    upload_alert_clip_task.delay(str(alert.id), clip_b64, clip.content_type or "video/mp4")
+    upload_alert_clip_task.delay(str(alert.id), clip_b64, content_type)
 
     return ClipUploadAcceptedRes(alert_id=alert.id, status="queued")
 
