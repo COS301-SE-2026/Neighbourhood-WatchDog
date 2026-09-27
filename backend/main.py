@@ -16,7 +16,6 @@ from app.api.controllers.clips import router as clips_router
 from app.api.controllers.detection import router as detection_router
 from app.api.controllers.internal import router as internal_router
 from app.api.controllers.internal_cameras import router as internal_cameras_router
-from app.api.controllers.internal_failover import router as internal_failover_router
 from app.api.controllers.neighbourhood import router as neighbourhood_router
 from app.api.controllers.notification import router as notification_router
 from app.api.controllers.pairing_token import router as pairing_token_router
@@ -78,7 +77,6 @@ app.include_router(audit_router)
 app.include_router(camera_settings_router)
 app.include_router(clips_router)
 app.include_router(internal_router)
-app.include_router(internal_failover_router)
 app.include_router(risk_score_history_router)
 app.include_router(pairing_token_router)
 app.include_router(risk_threshold_router)
