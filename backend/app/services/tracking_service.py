@@ -604,9 +604,11 @@ async def get_tracking_timeline(*, db: AsyncSession, alert_id: UUID, claims: dic
         .join(Camera, Camera.id == TrackingSighting.camera_id)
         .where(TrackingSighting.tracking_subject_id == tracking_subject.id)
         .order_by(
-            TrackingSighting.sequence_no.asc(), 
-            TrackingSighting.observed_at.asc()
-            )
+            TrackingSighting.observed_at.asc(),
+            TrackingSighting.sequence_no.asc(),
+            TrackingSighting.id.asc()
+            
+        )
     )
 
 
