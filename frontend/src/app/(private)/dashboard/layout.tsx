@@ -21,7 +21,6 @@ export default async function DashboardV2Layout({
           <div className="px-4">{children}</div>
         </main>
       </SidebarProvider>
-      <OfficerDispatchPopup />
     </>
   );
 }
