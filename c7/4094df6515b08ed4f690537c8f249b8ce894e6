@@ -1,0 +1,16 @@
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/alerts/AlertsPage.tsx
+  h_3555f7510a5ca8 495,505,518-519,563,658
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/map/page.tsx
+  h_3555f7510a5ca8 27,825-836
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c74094df6515b08ed4f690537c8f249b8ce894e6",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
