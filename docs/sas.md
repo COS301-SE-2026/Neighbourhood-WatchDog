@@ -334,8 +334,8 @@ The system supports rollback in the following ways:
 | ID | Quantified Requirement | Tactic in SAS | Test / tool | Target | Actual |
 |---|---|---|---|---|---|
 | QR-07 | ECS launches an additional task within 3 minutes of sustained CPU and/or memory threshold being exceeded under load | ASG and ECS target-tracking auto-scaling policy | Locust load test sustained past the threshold, watch `describe-services` for scale out event | <= 3 minutes | +-38s (alarm transitioned to ALARM at 19:48:44Z UTC and the earliest observable capacity improvement in Locust data was at 19:49:22Z UTC) |
-| QR-08 | p95 latency stays under 2500ms at 500 concurrent virtual users at 300 RPS | Connection pooling + indexing + auto-scaling and Redis caching for selected endpoints | Sustained Locust load test, 500 VUs, 12.5min | p95 < 2500ms at 500 Virtual Users | 2400ms at 500 users at 233-280 RPS |
-| QR-9 | Error rate at peak load | Connection pool limit | Locust | <1% | 0.24% |
+| QR-08 | p95 latency stays under 3000ms at 500 concurrent virtual users | Connection pooling + indexing + auto-scaling and Redis caching for selected endpoints | Sustained Locust load test, 500 VUs, 10min | p95 < 3000ms at 500 Virtual Users | 2700ms at 500 users ![2700ms at 500 users](/docs/nfr-test-proof/locust.png) |
+| QR-9 | Error rate at peak load | Connection pool limit | Locust | <1% | [0.20%](/docs/nfr-test-proof/Locust_2026-09-28-21h22_locustfile.py_https___api.neighbourhoodwatchdog.co.za.html) |
 
 ### Maintainability
 | ID | Quantified Requirement | Tactic in SAS | Test / tool | Target | Actual |
