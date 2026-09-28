@@ -8,7 +8,12 @@ import {
   Polygon,
   TileLayer,
   useMapEvents,
+  Marker,
 } from "react-leaflet";
+
+import {
+  PROPERTY_MAP_ICON,
+} from "@/components/shared/property-map-icon";
 
 import {
   cameraCoverageSchema,
@@ -396,14 +401,9 @@ const [rangeMetres, setRangeMetres] = useState(
               fillOpacity: 0.08,
             }}
           />
-          <CircleMarker
-            center={property}
-            radius={7}
-            pathOptions={{
-              color: "#e2e8f0",
-              fillColor: "#38bdf8",
-              fillOpacity: 0.9,
-            }}
+          <Marker
+            position={property}
+            icon={PROPERTY_MAP_ICON}
           />
           {origin && (
             <CircleMarker
