@@ -127,6 +127,11 @@ export function AlertFootagePlayer({ alertId, timestamp, clipKind = "alert" }: A
                 autoPlay
                 muted
                 playsInline
+
+                onLoadedMetadata={(event) => {
+                    event.currentTarget.playbackRate = 0.5;
+                }}
+
                 className="w-full max-h-56 bg-brand-void"
                 aria-label={`Detection footage at ${formattedTs}`}
             />
