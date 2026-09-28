@@ -1147,15 +1147,34 @@ def _validate_tracking_payload(body: CreateInternalAlertRequest, det_type: Detec
 
             )
 
+
+async def _find_recent_weapon_alert(*, db: AsyncSession, camera_id: UUID, frame_timestamp: datetime) -> Alert | None:
+    incident_window_start = (frame_timestamp - timedelta(seconds=WEAPON_INCIDENT_WINDOW_SECONDS))
+
+    stmt = (
+        select(Alert)
+        .where(
+            Alert.camera_id == camera_id,
+            Alert.detection_type == DetectionType.WEAPON_DETECTED,
+            Alert.status == AlertStatus.OPEN.value,
+            Alert.frame_timestamp >= incident_window_start,
+            Alert.frame_timestamp <= frame_timestamp
+        )
+        .order_by(Alert.frame_timestamp.desc())
+        .limit(1)
+    )
+
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
         
 
 async def create_alert_for_agent_handler(
-    body: CreateInternalAlertRequest, 
-    db:AsyncSession, 
-    credential: EdgeAgentCredential, 
+    body: CreateInternalAlertRequest,
+    db: AsyncSession,
+    credential: EdgeAgentCredential,
     generate_brief: bool = False
 ) -> InternalAlertCreateRes:
-    """Create an alert for a camera owned by the authenticated edge agent's property."""
+    """Create an alert for a camera owned by the authenticated edge agent."""
 
     label_map = {
         "gun": DetectionType.WEAPON_DETECTED,
@@ -1173,52 +1192,60 @@ async def create_alert_for_agent_handler(
         camera_id = UUID(body.camera_id)
     except ValueError:
         logger.warning("internal create_alert: malformed camera_id=%s", body.camera_id)
-        raise HTTPException(status_code=400, detail="camera_id is not a valid UUID")
+        raise HTTPException(
+            status_code=400,
+            detail="camera_id is not a valid UUID"
+
+        )
 
     if body.frame_timestamp:
         try:
             frame_timestamp = datetime.fromisoformat(body.frame_timestamp)
         except ValueError:
             logger.warning("internal create_alert: malformed frame_timestamp=%s", body.frame_timestamp)
-            raise HTTPException(status_code=400, detail="frame_timestamp is not a valid ISO datetime")
+            raise HTTPException(
+                status_code=400,
+                detail="frame_timestamp is not a valid ISO datetime"
+
+            )
     else:
         frame_timestamp = datetime.now(timezone.utc)
 
     try:
-
-        stmt = (select(Camera)
+        camera_stmt = (
+            select(Camera)
             .options(joinedload(Camera.property))
-            .where(Camera.id == body.camera_id)
+            .where(Camera.id == camera_id)
         )
-        result = await db.execute(stmt)
-        camera: Camera | None = result.scalar_one_or_none()
 
-        if not camera:
+        camera_result = await db.execute(camera_stmt)
+        camera: Camera | None = camera_result.scalar_one_or_none()
+
+        if camera is None:
             logger.warning("internal create_alert: no camera found for camera_id=%s", body.camera_id)
-            raise HTTPException(status_code=404,detail=f"Camera {body.camera_id} not found")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Camera {body.camera_id} not found"
 
-        
+            )
+
         _validate_tracking_payload(body, det_type)
 
         existing_row = None
 
+        #for tracked weapon detections, reuse an existing alert when the same local track is already attached to an open alert.
         if (det_type == DetectionType.WEAPON_DETECTED and body.local_track_id is not None):
+           
             existing_stmt = (
                 select(Alert, TrackingSubject, TrackingSighting)
-                .join(
-                    TrackingSubject,
-                    TrackingSubject.alert_id == Alert.id,
-                )
-                .join(
-                    TrackingSighting,
-                    TrackingSighting.tracking_subject_id == TrackingSubject.id,
-                )
+                .join(TrackingSubject, TrackingSubject.alert_id == Alert.id)
+                .join(TrackingSighting, TrackingSighting.tracking_subject_id == TrackingSubject.id)
                 .where(
                     Alert.camera_id == camera_id,
                     Alert.detection_type == DetectionType.WEAPON_DETECTED,
                     Alert.status == AlertStatus.OPEN.value,
                     TrackingSighting.camera_id == camera_id,
-                    TrackingSighting.local_track_id == body.local_track_id,
+                    TrackingSighting.local_track_id == body.local_track_id
                 )
                 .order_by(Alert.frame_timestamp.desc())
                 .limit(1)
@@ -1227,43 +1254,31 @@ async def create_alert_for_agent_handler(
             existing_result = await db.execute(existing_stmt)
             existing_row = existing_result.first()
 
-
         if existing_row is not None:
             existing_alert, _, existing_sighting = existing_row
 
             return InternalAlertCreateRes(
                 alert_id=existing_alert.id,
                 sighting_id=existing_sighting.id,
-                is_new_alert=False
-
+                is_new_alert=False,
             )
 
-
+        ###group weapon detections from the same camera into the same open incident within the configured time window.
         if det_type == DetectionType.WEAPON_DETECTED:
-            incident_window_start = (frame_timestamp - timedelta(seconds=WEAPON_INCIDENT_WINDOW_SECONDS))
+            recent_weapon_alert = await _find_recent_weapon_alert(
+                db=db,
+                camera_id=camera_id,
+                frame_timestamp=frame_timestamp
 
-            recent_weapon_stmt = (
-                select(Alert)
-                .where(
-                    Alert.camera_id == camera_id,
-                    Alert.detection_type == DetectionType.WEAPON_DETECTED,
-                    Alert.status == AlertStatus.OPEN.value,
-                    Alert.frame_timestamp >= incident_window_start,
-                    Alert.frame_timestamp <= frame_timestamp
-                )
-                .order_by(Alert.frame_timestamp.desc())
-                .limit(1)
             )
-
-            recent_weapon_result = await db.execute(recent_weapon_stmt)
-            recent_weapon_alert = recent_weapon_result.scalar_one_or_none()
 
             if recent_weapon_alert is not None:
                 logger.info(
-                    "Reusing recent weapon incident alert_id=%s for camera_id=%s",
+                    "Reusing recent weapon incident alert_id=%s "
+                    "for camera_id=%s",
                     recent_weapon_alert.id,
                     camera_id
-                    
+
                 )
 
                 return InternalAlertCreateRes(
@@ -1273,30 +1288,25 @@ async def create_alert_for_agent_handler(
 
                 )
 
-
-
-        
         alert = Alert(
             camera_id=camera_id,
-            frame_timestamp= frame_timestamp,
+            frame_timestamp=frame_timestamp,
             detection_type=det_type,
             confidence_score=body.confidence_score,
             thumbnail_url=body.thumbnail_url,
             processed=True,
-            status="OPEN"
+            status=AlertStatus.OPEN.value
+
         )
 
         db.add(alert)
         await db.flush()
 
-
-
-        initial_sighting = None
         tracking_subject = None
+        initial_sighting = None
 
-
+        ## track less weapon detections are valid. They create an alert  but deliberately do not create tracking rows.
         if body.local_track_id is not None:
-
             reference_embedding = normalize_appearance_embedding(body.appearance_embedding)
 
             tracking_subject = TrackingSubject(
@@ -1326,9 +1336,12 @@ async def create_alert_for_agent_handler(
 
         alert.tracking_subject = tracking_subject
 
-        neighbourhood_id = camera.property.neighbourhood_id if camera.property else None
+        neighbourhood_id = (
+            camera.property.neighbourhood_id
+            if camera.property is not None
+            else None
+        )
 
-        # Sending a push notification in the case of a weapon detection
         if neighbourhood_id is not None:
             if alert.detection_type == DetectionType.WEAPON_DETECTED:
                 event_context = {
@@ -1336,25 +1349,39 @@ async def create_alert_for_agent_handler(
                     "notification_source_id": alert.id,
                     "neighbourhood_id": neighbourhood_id,
                     "property_id": camera.property_id,
-                    "alert_type": alert.detection_type.value if hasattr(alert.detection_type, "value") else str(alert.detection_type),
+                    "alert_type": (
+                        alert.detection_type.value
+                        if hasattr(alert.detection_type, "value")
+                        else str(alert.detection_type)
+                    ),
                     "camera_name": camera.name,
                     "location": camera.location,
                     "risk_level": "CRITICAL",
-                    "timestamp": alert.frame_timestamp.strftime("%d %b %Y %H:%M"),
-                    "websocket_payload": _build_alert_res(alert).model_dump(mode="json"),
+                    "timestamp": alert.frame_timestamp.strftime(
+                        "%d %b %Y %H:%M"
+                    ),
+                    "websocket_payload": _build_alert_res(
+                        alert
+                    ).model_dump(mode="json"),
                 }
-            
-                await (NotificationPolicyFactory
+
+                await (
+                    NotificationPolicyFactory
                     .get(EventType.WEAPON_DETECTED)
-                    .notify(db, event_context))
-            else: # detection is not a weapon
+                    .notify(db, event_context)
+                )
+            else:
                 logger.warning(
-                    "create_alert_for_agent_handler: skipped broadcast/push because detection type was not a weapon; alert_id=%s",
+                    "create_alert_for_agent_handler: skipped "
+                    "broadcast/push because detection type was not "
+                    "a weapon; alert_id=%s",
                     alert.id,
                 )
-        else: # neighbourhood is None
+        else:
             logger.warning(
-                "create_alert_for_agent_handler: skipped broadcast/push because camera has no neighbourhood; alert_id=%s",
+                "create_alert_for_agent_handler: skipped "
+                "broadcast/push because camera has no neighbourhood; "
+                "alert_id=%s",
                 alert.id,
             )
 
@@ -1362,17 +1389,18 @@ async def create_alert_for_agent_handler(
             try:
                 await maybe_generate_situational_brief(
                     db=db,
-                    tracking_subject_id=tracking_subject.id
+                    tracking_subject_id=tracking_subject.id,
                 )
             except Exception:
                 logger.exception(
-                    "create_alert_for_agent_handler: situational brief generation failed for alert_id=%s",
+                    "create_alert_for_agent_handler: situational "
+                    "brief generation failed for alert_id=%s",
                     alert.id,
                 )
 
-
         logger.info(
-            "Internal alert created: alert_id=%s, camera_id=%s, detection_type=%s",
+            "Internal alert created: alert_id=%s, camera_id=%s, "
+            "detection_type=%s",
             alert.id,
             alert.camera_id,
             alert.detection_type,
@@ -1385,18 +1413,18 @@ async def create_alert_for_agent_handler(
                 if initial_sighting is not None
                 else None
             ),
-            is_new_alert=True
-            
+            is_new_alert=True,
         )
 
-    
     except HTTPException:
         await db.rollback()
         raise
+
     except Exception:
         await db.rollback()
         logger.exception(
-            "Unexpected failure while creating an internal alert for camera_id=%s.",
+            "Unexpected failure while creating an internal alert "
+            "for camera_id=%s.",
             camera_id,
         )
         raise HTTPException(
@@ -1404,7 +1432,7 @@ async def create_alert_for_agent_handler(
             detail="Failed to create alert",
         )
 
-
+    
 async def update_alert_clip_for_agent_handler(alert_id: str, body: UpdateAlertClipRequest, credential: EdgeAgentCredential, db: AsyncSession) -> AlertClipUpdateRes:
     """Update clip metadata for an alert owned by the authenticated edge agent's property."""
 
