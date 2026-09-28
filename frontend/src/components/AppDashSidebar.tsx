@@ -181,7 +181,7 @@ function getSidebarGroups(
 
     if (activeContext.role === "Security Officer" || activeContext.role == "Neighbourhood Admin") {
         neighbourhoodItems.unshift({
-            title: "Alert map",
+            title: "Map",
             url:
             `/dashboard/neighbourhood/` +
             `${activeContext.neighbourhoodId}/map`,
