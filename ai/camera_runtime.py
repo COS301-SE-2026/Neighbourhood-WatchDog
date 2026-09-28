@@ -9,9 +9,11 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable
 from urllib.parse import quote
+from keyring.errors import NoKeyringError
 
 import httpx
 import keyring
+
 
 
 logger = logging.getLogger("watchdog.ai.runtime")
@@ -44,7 +46,7 @@ DetectionTarget = Callable[[CameraSpec, str, threading.Event], None]
 
 class CameraSupervisor:
 
-    def __init__(self, *, backend_url: str, internal_token: str, mediamtx_rtsp_url: str, detection_target: DetectionTarget, reconcile_interval_seconds: float = 5.0) -> None:
+    def __init__(self, *, backend_url: str, internal_token: str | None, mediamtx_rtsp_url: str, detection_target: DetectionTarget, reconcile_interval_seconds: float = 5.0) -> None:
         self.backend_url = backend_url.rstrip("/")
         self.internal_token = internal_token
         self.mediamtx_rtsp_url = mediamtx_rtsp_url.rstrip("/")
@@ -98,10 +100,15 @@ class CameraSupervisor:
     def _fetch_enabled_cameras(self) -> dict[str, CameraSpec]:
         print("Fetching cameras from: ", self.backend_url)
 
-        api_key = keyring.get_password("WatchDog", "api_key")
+        try:
+            api_key = keyring.get_password("WatchDog", "api_key")
+        except NoKeyringError:
+            api_key = None
+
+        api_key = (api_key or self.internal_token or os.getenv("INTERNAL_API_TOKEN"))
 
         if not api_key:
-            raise RuntimeError("No paired API key found in keyring. Run agent pairing before starting the agent.")
+            raise RuntimeError("No paired edge-agent API key is available. Pair the agent or configure INTERNAL_API_TOKEN.")
 
         response = httpx.get(
             f"{self.backend_url}/internal/cameras/enabled",
