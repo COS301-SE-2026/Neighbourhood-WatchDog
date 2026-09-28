@@ -11,7 +11,7 @@ from app.tasks import clip_tasks as service
 
 
 ALERT_ID = str(uuid.uuid4())
-
+TEST_BUCKET = "test-bucket"
 
 def make_session(alert):
     db = MagicMock()
@@ -74,7 +74,7 @@ class TestUploadAndLink:
             patch.object(service, "_clip_s3_key", return_value="clips/test.mp4"),
             patch.object(service, "datetime") as datetime_module,
             patch.object(service.asyncio, "to_thread", new=to_thread),
-            patch.object(service, "S3_BUCKET_NAME", "test-bucket")
+            patch.object(service, "S3_BUCKET_NAME", TEST_BUCKET)
         ):
             datetime_module.now.return_value = timestamp
             await service._upload_and_link(
@@ -86,7 +86,7 @@ class TestUploadAndLink:
         to_thread.assert_awaited_once()
         assert to_thread.await_args.args[0] is s3_client.put_object
         assert to_thread.await_args.kwargs == {
-            "Bucket": "test-bucket",
+            "Bucket": TEST_BUCKET,
             "Key": "clips/test.mp4",
             "Body": b"clip-data",
             "ContentType": "video/mp4",
@@ -108,7 +108,7 @@ class TestUploadAndLink:
             patch.object(service, "_s3_client", return_value=s3_client),
             patch.object(service, "_clip_s3_key", return_value="clips/test.webm"),
             patch.object(service.asyncio, "to_thread", new=to_thread),
-            patch.object(service, "S3_BUCKET_NAME", "test-bucket")
+            patch.object(service, "S3_BUCKET_NAME", TEST_BUCKET)
         ):
             await service._upload_and_link(
                 ALERT_ID,

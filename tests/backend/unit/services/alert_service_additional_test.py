@@ -20,6 +20,8 @@ from app.schemas.alert import (
     UpdateAlertClipRequest,
 )
 from app.services import alert_service as service
+from app.services.alert_service import _validate_tracking_payload
+
 
 
 ALERT_ID = uuid4()
@@ -1674,3 +1676,90 @@ async def test_read_clip_with_limit_rejects_oversized_upload():
     assert exc_info.value.detail == (
         "Clip exceeds 5MB upload limit"
     )
+
+
+def test_weapon_alert_without_local_track_id_is_allowed():
+    body = CreateInternalAlertRequest(
+        camera_id=str(uuid4()),
+        detection_type="WEAPON_DETECTED",
+        confidence_score=0.95,
+        local_track_id=None,
+        frame_timestamp=datetime.now(timezone.utc).isoformat(),
+    )
+
+    _validate_tracking_payload(body, DetectionType.WEAPON_DETECTED)
+
+
+@pytest.mark.asyncio
+async def test_create_trackless_weapon_alert_without_tracking_rows():
+    db = make_db()
+    camera = make_camera()
+
+    db.execute.return_value = make_result(
+        scalar=camera,
+    )
+
+    alert = SimpleNamespace(
+        id=ALERT_ID,
+        camera_id=CAMERA_ID,
+        frame_timestamp=FRAME_TIMESTAMP,
+        detection_type=DetectionType.WEAPON_DETECTED,
+        confidence_score=0.95,
+        thumbnail_url=None,
+        clip_s3_key=None,
+        clip_expires_at=None,
+        processed=True,
+        status="OPEN",
+        resolved_by=None,
+        resolved_at=None,
+        created_at=FRAME_TIMESTAMP,
+        camera=camera,
+    )
+
+    body = make_internal_alert_request(
+        detection_type="WEAPON_DETECTED",
+        local_track_id=None,
+        appearance_embedding=None,
+        embedding_model=None,
+    )
+
+    notification_policy = Mock()
+    notification_policy.notify = AsyncMock()
+
+    with (
+        patch(
+            "app.services.alert_service.Alert",
+            return_value=alert,
+        ),
+        patch(
+            "app.services.alert_service.TrackingSubject",
+        ) as tracking_subject_model,
+        patch(
+            "app.services.alert_service.TrackingSighting",
+        ) as tracking_sighting_model,
+        patch(
+            "app.services.alert_service.NotificationPolicyFactory.get",
+            return_value=notification_policy,
+        ),
+        patch(
+            "app.services.alert_service._build_alert_res",
+            return_value=Mock(
+                model_dump=Mock(return_value={}),
+            ),
+        ),
+    ):
+        response = await service.create_alert_for_agent_handler(
+            body,
+            db,
+            make_edge_credential(),
+        )
+
+    assert response.alert_id == ALERT_ID
+    assert response.sighting_id is None
+    assert response.is_new_alert is True
+
+    db.add.assert_called_once_with(alert)
+    db.commit.assert_awaited_once()
+
+    tracking_subject_model.assert_not_called()
+    tracking_sighting_model.assert_not_called()

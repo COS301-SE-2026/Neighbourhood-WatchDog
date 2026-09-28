@@ -24,6 +24,7 @@ import boto3
 from pathlib import Path
 from runtime.paths import get_resource_dir
 from dataclasses import dataclass
+from keyring.errors import NoKeyringError
 
 
 @dataclass(frozen=True)
@@ -114,7 +115,7 @@ load_dotenv(RESOURCE_DIR / ".env")
 
 
 BACKEND_URL = os.getenv("BACKEND_URL", "https://api.neighbourhoodwatchdog.co.za")
-INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "dev-token")
+INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN")
 MEDIAMTX_RTSP_URL = os.getenv("MEDIAMTX_RTSP_URL", "rtsp://stream.neighbourhoodwatchdog.co.za:8554")
 
 _model_lock = threading.Lock()
@@ -130,6 +131,14 @@ def _s3_client():
     return boto3.client("s3", region_name=AWS_REGION)
 
 
+def _get_internal_api_key() -> str | None:
+    try:
+        stored_key = keyring.get_password("WatchDog", "api_key")
+    except NoKeyringError:
+        stored_key = None
+
+    return stored_key or INTERNAL_API_TOKEN
+
 
 
 #cooldown tracker per weapon class
@@ -139,7 +148,7 @@ _cooldown_lock = threading.Lock()
 
 def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp: str) -> None:
     """POST detection track data to backend so it can broadcast via WebSocket."""
-    api_key = keyring.get_password("WatchDog", "api_key")
+    api_key = _get_internal_api_key()
     if not api_key:
         logger.warning("Cannot push annotations for camera %s: no paired API key found. Run agent pairing first.", camera_id)
         return
@@ -160,7 +169,7 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
 def _post_detection_event(camera: CameraSpec, event: dict) -> None:
     """ send one edge-triggered classified event to the backend."""
 
-    api_key = keyring.get_password("WatchDog", "api_key")
+    api_key = _get_internal_api_key()
     if not api_key:
         logger.warning("Cannot post detection event for camera %s: no paired API key", camera.id)
         return
@@ -420,7 +429,12 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
     If no match is found, create a new alert and tracking subject.
     """
 
-    api_key = keyring.get_password("WatchDog", "api_key") or INTERNAL_API_TOKEN
+    api_key = _get_internal_api_key()
+
+    if not api_key:
+        logger.error("Cannot create weapon alert for camera %s: no internal API key", camera.id)
+        return None
+    
     observed_at = datetime.now(timezone.utc).isoformat()
 
     if (appearance_embedding is not None and local_track_id is not None):
@@ -627,7 +641,12 @@ def _save_weapon_clip(target: IncidentClipTarget, camera: CameraSpec, frame_buff
     No YOLO, DeepSort, or second RTSP capture is used here.
     """
 
-    api_key = keyring.get_password("WatchDog", "api_key") or INTERNAL_API_TOKEN
+    api_key = _get_internal_api_key()
+
+    if not api_key:
+        logger.error("Cannot upload weapon clip for camera %s: no internal API key", camera.id)
+        return
+
     headers = {"X-Internal-Token": api_key}
 
     pre_frames = frame_buffer.snapshot_through(trigger_sequence)
