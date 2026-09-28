@@ -492,7 +492,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
 
   if (userContextLoading) {
     return (
-      <main className="min-h-full bg-brand-void px-6 py-8 text-brand-frost md:px-8">
+      <main className="min-h-full bg-brand-void px-0 py-4 text-brand-frost sm:px-2 sm:py-6 md:px-4 md:py-8">
         <div className="mx-auto flex max-w-6xl items-center justify-center py-20">
           <RefreshCw className="size-5 animate-spin text-brand-green" />
         </div>
@@ -502,7 +502,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
 
   if (!canViewAlerts) {
     return (
-      <main className="min-h-full bg-brand-void px-6 py-8 text-brand-frost md:px-8">
+      <main className="min-h-full bg-brand-void px-0 py-4 text-brand-frost sm:px-2 sm:py-6 md:px-4 md:py-8">
         <div className="mx-auto max-w-6xl">
           <p className="text-sm text-brand-ash">
             You do not have access to these alerts.
@@ -515,8 +515,8 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
 
   return (
     <TooltipProvider>
-      <main className="min-h-full bg-brand-void px-6 py-8 text-brand-frost md:px-8">
-        <div className="w-full max-w-6xl">
+      <main className="min-h-full bg-brand-void px-0 py-4 text-brand-frost sm:px-2 sm:py-6 md:px-4 md:py-8">
+        <div className="mx-auto w-full max-w-6xl">
           <header className="mb-7 border-b border-border pb-6">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight text-brand-frost">{isNeighbourhoodAdmin ? "Live alerts" : "Critical alerts"}</h1>
@@ -560,7 +560,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
           </div>
 
           <Card className="overflow-hidden rounded-lg border border-border bg-brand-depth">
-            <div className="flex items-center justify-between gap-3 rounded-t-xl border-b border-border px-5 py-4">
+            <div className="flex items-center justify-between gap-3 rounded-t-xl border-b border-border px-3 py-3 sm:px-5 sm:py-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -655,7 +655,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
             <section
               aria-label="Alert list"
               aria-live="polite"
-              className="rounded-b-lg p-5 md:p-6"
+              className="rounded-b-lg p-3 sm:p-5 md:p-6"
             >
 
               {loading && alerts.length === 0 ? (
