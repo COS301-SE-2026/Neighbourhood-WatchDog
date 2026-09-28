@@ -20,6 +20,7 @@ class TestCreateAuditLogItem:
         self.mock_db = Mock()
         self.mock_db.add = Mock()
         self.mock_db.commit = AsyncMock()
+        self.mock_db.flush = AsyncMock()
 
         self.mock_log_item = Mock()
         self.mock_log_item.user_id = uuid4()
@@ -58,6 +59,8 @@ class TestCreateAuditLogItem:
 
         assert self.mock_db.add.call_count == 1
         assert self.mock_db.rollback.call_count == 0
+        self.mock_db.flush.assert_awaited_once()
+        self.mock_db.commit.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_same_old_new_values(self):

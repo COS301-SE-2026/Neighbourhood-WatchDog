@@ -60,7 +60,7 @@ async def create_audit_log_item(
     )
 
     db.add(new_audit_log_item)
-    await db.commit()
+    await db.flush()
 
     logger.info(
         "create_audit_log_item: successfully created audit log id=%s",
