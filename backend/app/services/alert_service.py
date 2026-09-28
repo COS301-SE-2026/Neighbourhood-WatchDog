@@ -1321,11 +1321,17 @@ async def create_alert_for_agent_handler(
             )
 
         if generate_brief and tracking_subject is not None:
-            await maybe_generate_situational_brief(
-                db=db, 
-                tracking_subject_id=tracking_subject.id
-            )
-        
+            try:
+                await maybe_generate_situational_brief(
+                    db=db,
+                    tracking_subject_id=tracking_subject.id
+                )
+            except Exception:
+                logger.exception(
+                    "create_alert_for_agent_handler: situational brief generation failed for alert_id=%s",
+                    alert.id,
+                )
+
 
         logger.info(
             "Internal alert created: alert_id=%s, camera_id=%s, detection_type=%s",
