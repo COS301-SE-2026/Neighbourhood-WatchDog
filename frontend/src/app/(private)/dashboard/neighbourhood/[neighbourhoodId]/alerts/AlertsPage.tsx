@@ -294,19 +294,73 @@ function createAlertsWebSocket({url, wsRef, mountedRef, isSecurityOfficer, seenE
 }
 
 
-function groupAlertsByIncident(alerts: Alert[]): Alert[] {
-  const seenSubjects = new Set<string>();
 
-  return alerts.filter((alert) => {
-    if (!alert.tracking_subject_id) {
-      return true; //historical/untracked alerts remain separate
+const WEAPON_INCIDENT_WINDOW_MS = 30000;
+
+function alertTimestamp(alert: Alert): number | null {
+  const value = Date.parse(alert.frame_timestamp ?? alert.created_at);
+
+  return Number.isNaN(value) ? null : value;
+}
+
+
+
+function groupAlertsByIncident(alerts: Alert[]): Alert[] {
+  
+  const sortedAlerts = [...alerts].sort((a, b) => {
+
+    const aTimestamp = alertTimestamp(a) ?? 0;
+    const bTimestamp = alertTimestamp(b) ?? 0;
+
+    return bTimestamp - aTimestamp;
+
+  });
+
+  const seenTrackingSubjects = new Set<string>();
+
+  const weaponIncidents: Array<{cameraId: string; timestamp: number;}> = [];
+
+  return sortedAlerts.filter((alert) => {
+    
+     //tracked alerts are grouped by their tracking subject, this preserves the existing cross-camera tracking behavior.
+    
+    if (alert.tracking_subject_id) {
+      if (seenTrackingSubjects.has(alert.tracking_subject_id)) {
+        return false;
+      }
+
+      seenTrackingSubjects.add(alert.tracking_subject_id);
+      return true;
     }
 
-    if (seenSubjects.has(alert.tracking_subject_id)) {
+    
+     //trackless weapon alerts do not have a tracking_subject_id
+     ///grouping them by camera and the same 30second incident window
+    
+    if (alert.detection_type !== "WEAPON_DETECTED") {
+      return true;
+    }
+
+    const timestamp = alertTimestamp(alert);
+
+    if (timestamp === null) {
+      return true;
+    }
+
+    const belongsToExistingIncident = weaponIncidents.some((incident) =>
+       incident.cameraId === alert.camera_id && Math.abs(incident.timestamp - timestamp) <= WEAPON_INCIDENT_WINDOW_MS
+    );
+
+    if (belongsToExistingIncident) {
       return false;
     }
 
-    seenSubjects.add(alert.tracking_subject_id);
+    weaponIncidents.push({
+      cameraId: alert.camera_id,
+      timestamp
+
+    });
+
     return true;
   });
 }
