@@ -1,0 +1,18 @@
+docs/sas.md
+  h_cf6208e37032c0 323
+  h_cf6208e37032c0 321
+.gitignore
+  h_cf6208e37032c0 60-61
+  h_cf6208e37032c0 59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f52c12c38da41bcc49953826859988931322d9bf",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
