@@ -24,8 +24,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useCriticalAlerts } from "@/hooks/use-critical-alerts";
+import StatusToggle from "@/components/security-components/StatusLocation";
 import { useAlertPropertyRoute } from "@/hooks/use-alert-property-route";
-import { useOfficerMapLocationTracking } from "@/hooks/use-officer-map-location-tracking";
 import { useUserContext } from "@/hooks/use-user-context";
 import { usePropertyResidentContext } from "@/hooks/use-property-resident-context";
 import { useNeighbourhoodMapProperties } from "@/hooks/use-neighbourhood-map-properties";
@@ -330,8 +330,8 @@ function PropertyAlertsSheet({
         }
       }}
     >
-      <SheetContent className="z-[1001] w-full overflow-y-auto border-border bg-brand-depth text-brand-frost sm:max-w-md">
-        <SheetHeader>
+      <SheetContent className="z-[1001] w-full overflow-y-auto border-border bg-brand-depth px-4 pb-6 text-brand-frost sm:max-w-md sm:px-6">
+        <SheetHeader className="pt-4 pr-8 pb-0 pl-0">
           <SheetTitle className="text-brand-frost">
             {property.propertyAddress}
           </SheetTitle>
@@ -678,11 +678,6 @@ function handleToggleLayer(layer: MapLayerKey) {
   }));
 }
 
-  useOfficerMapLocationTracking(
-    neighbourhoodId,
-    isSecurityOfficer && activeMapMode === "security"
-  );
-
 
 
   const {
@@ -827,6 +822,18 @@ function handleToggleLayer(layer: MapLayerKey) {
             onToggle={handleToggleLayer}
           />
         </section>
+        {showSecurityContent && isSecurityOfficer && (
+          <section
+            aria-label="Officer duty and location status"
+            className="mb-5"
+          >
+            <StatusToggle
+              neighbourhoodId={neighbourhoodId}
+            />
+          </section>
+        )}
+
+
         {isStale && (
           <output
             className="mb-5 flex items-start gap-3 rounded-lg border border-brand-caution/30 bg-brand-caution/10 px-4 py-3"
