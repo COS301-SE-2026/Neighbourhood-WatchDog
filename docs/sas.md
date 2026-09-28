@@ -318,9 +318,9 @@ The system supports rollback in the following ways:
 
 | ID | Quantified Requirement | Tactic in SAS | Test / tool | Target | Actual |
 |---|---|---|---|---|---|
-| QR-04 | Zero high/critical dependancy CVEs on `main` | Automated dependancy scanning in CI | `pip audit` + `npm audit` | 0 high or critical | 0 findings |
+| QR-04 | Zero high/critical dependancy CVEs on `main` | Automated dependancy scanning in CI | `pip audit` + `npm audit` | 0 high or critical | 0 findings  |
 | QR-05 | Zero medium+ severity findings on staging | Input validation, security headers, limited exposure | OWASP ZAP baseline scan again staging | 0 medium+ | 0 (There was a false positive critical) |
-| QR-04 | 0 secrets committed to the repository | Making use of GitHub Actions secrets and Secrets Manager | `gitleaks` | 0 findings | 0 findings |
+| QR-04 | 0 secrets committed to the repository | Making use of GitHub Actions secrets and Secrets Manager | `gitleaks` | 0 findings | 0 findings ![0 findings](/docs/nfr-test-proof/QR-04.png) |
 
 ### Recoverability 
 
