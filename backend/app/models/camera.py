@@ -27,7 +27,7 @@ class Camera(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
     
-    alerts = relationship("Alert", back_populates="camera")
+    alerts = relationship("Alert", back_populates="camera", cascade=CASCADE_DELETE_ORPHAN, passive_deletes=True)
     retention_policy = relationship(
         "RetentionPolicy", 
         back_populates="camera", 
