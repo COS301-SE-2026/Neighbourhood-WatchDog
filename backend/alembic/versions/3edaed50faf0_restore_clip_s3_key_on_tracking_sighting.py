@@ -19,7 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def _existing_columns() -> set[str]:
     inspector = sa.inspect(op.get_bind())
-    return {[c["name"] for c in inspector.get_columns("tracking_sighting")]} #noqa
+    return {c["name"] for c in inspector.get_columns("tracking_sighting")} 
 
 def upgrade() -> None:
     """Upgrade schema."""
@@ -30,10 +30,10 @@ def upgrade() -> None:
             sa.Column("clip_s3_key", sa.String(length=512), nullable=True)
         )
     if "clip_expires_at" not in cols:
-            op.add_column(
-                "tracking_sighting",
-                sa.Column("clip_expires_at", sa.DateTime(timezone=True), nullable=True)
-            )
+        op.add_column(
+            "tracking_sighting",
+            sa.Column("clip_expires_at", sa.DateTime(timezone=True), nullable=True)
+        )
 
 
 def downgrade() -> None:
