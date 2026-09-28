@@ -1,4 +1,3 @@
-import os
 from datetime import date, datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
