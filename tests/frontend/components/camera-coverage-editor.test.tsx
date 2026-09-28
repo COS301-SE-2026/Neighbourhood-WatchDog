@@ -154,7 +154,7 @@ test("origin and two viewing edges derive a direction", () => {
 
   fireEvent.click(
     screen.getByRole("button", {
-      name: "Use this POV",
+      name: "Use this field of view",
     }),
   );
 
@@ -186,7 +186,7 @@ test("range above 200 metres is rejected", () => {
 
   fireEvent.click(
     screen.getByRole("button", {
-      name: "Use this POV",
+      name: "Use this field of view",
     }),
   );
 
@@ -205,7 +205,7 @@ test("changing range clears previously accepted POV", () => {
 
   fireEvent.click(
     screen.getByRole("button", {
-      name: "Use this POV",
+      name: "Use this field of view",
     }),
   );
 

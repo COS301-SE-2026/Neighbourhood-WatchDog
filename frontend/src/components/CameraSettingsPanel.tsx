@@ -73,8 +73,8 @@ export function CameraSettingsPanel({
                     return;
                 }
 
-                console.error("Failed to load camera POV", error);
-                setCoverageError("Failed to load camera POV.");
+                console.error("Failed to load camera field of view.", error);
+                setCoverageError("Failed to load camera field of view.");
                 setCoverageLoadedForCameraId(cameraId);
             });
 
@@ -117,7 +117,7 @@ export function CameraSettingsPanel({
     const handleCoverageSave = async () => {
         if (!coverage) {
             setCoverageError(
-                "Complete the camera POV before saving it.",
+                "Complete the camera field of view before saving it.",
             );
             return;
         }
@@ -133,10 +133,10 @@ export function CameraSettingsPanel({
             );
 
             setCoverage(savedCoverage);
-            setCoverageMessage("Camera POV saved successfully.");
+            setCoverageMessage("Camera field of view saved successfully.");
         } catch (error) {
-            console.error("Failed to save camera POV", error);
-            setCoverageError("Failed to save camera POV.");
+            console.error("Failed to save camera field of view.", error);
+            setCoverageError("Failed to save camera field of view.");
         } finally {
             setCoverageSaving(false);
         }
@@ -152,11 +152,11 @@ export function CameraSettingsPanel({
             setCoverage(undefined);
             setCoverageEditorResetKey((currentKey) => currentKey + 1);
             setCoverageMessage(
-                "Camera POV removed. The map points have been cleared.",
+                "Camera field of view removed. The map points have been cleared.",
             );
         } catch (error) {
-            console.error("Failed to remove camera POV", error);
-            setCoverageError("Failed to remove camera POV.");
+            console.error("Failed to remove camera field of view.", error);
+            setCoverageError("Failed to remove camera field of view.");
         } finally {
             setCoverageSaving(false);
         }
@@ -267,7 +267,7 @@ export function CameraSettingsPanel({
             <div className="space-y-3 border-t border-border pt-4">
                 <div>
                     <h3 className="text-sm font-semibold text-brand-frost">
-                        Geographic camera POV
+                        Geographic camera field of view
                     </h3>
 
                     <p className="mt-1 text-xs text-brand-ash">
@@ -282,7 +282,7 @@ export function CameraSettingsPanel({
                         className="flex items-center gap-2 text-xs text-brand-ash"
                     >
                         <LoaderCircle className="h-4 w-4 animate-spin" />
-                        Loading camera POV…
+                        Loading camera field of view…
                     </div>
                 )}
 
@@ -304,8 +304,8 @@ export function CameraSettingsPanel({
                                 className="bg-brand-green text-brand-void"
                             >
                                 {coverageSaving
-                                    ? "Saving POV…"
-                                    : "Save camera POV"}
+                                    ? "Saving field of view…"
+                                    : "Save camera field of view"}
                             </Button>
 
                             <Button
@@ -315,7 +315,7 @@ export function CameraSettingsPanel({
                                 onClick={() => void handleCoverageDelete()}
                                 className="border-border bg-transparent text-brand-frost"
                             >
-                                Remove saved POV
+                                Remove saved field of view
                             </Button>
                         </div>
                     </>

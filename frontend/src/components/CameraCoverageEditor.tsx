@@ -302,7 +302,7 @@ const [rangeMetres, setRangeMetres] = useState(
   if (!property) {
     return (
       <div className="rounded-md border border-brand-caution/40 bg-brand-caution/10 p-3 text-sm text-brand-caution">
-        This property has no saved map coordinates. Add the property coordinates before configuring a camera POV.
+        This property has no saved map coordinates. Add the property coordinates before configuring a camera field of view.
       </div>
     );
   }
@@ -343,13 +343,13 @@ const [rangeMetres, setRangeMetres] = useState(
       ? "Now click the left edge of the camera view."
       : !rightEdge
         ? "Now click the right edge of the camera view."
-        : "POV preview ready. Adjust the range or reset the points.";
+        : "Field-of-view preview ready. Adjust the range or reset the points.";
 
   return (
     <div className="space-y-3 rounded-lg border border-border bg-brand-abyss p-3">
       <div>
         <p className="text-sm font-medium text-brand-frost">
-          Camera POV (optional)
+          Camera field of view (optional)
         </p>
         <p className="mt-1 text-xs text-brand-ash">
           {instruction} The camera origin must remain within {MAX_CAMERA_ORIGIN_DISTANCE_METRES} metres of the property marker.
@@ -491,7 +491,7 @@ const [rangeMetres, setRangeMetres] = useState(
           disabled={!origin || !leftEdge || !rightEdge}
           className="rounded-md bg-brand-green px-3 py-2 text-xs font-medium text-brand-void disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Use this POV
+          Use this field of view
         </button>
         <button
           type="button"

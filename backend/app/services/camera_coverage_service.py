@@ -27,7 +27,10 @@ def _validate_origin_near_property(
     if property_obj.latitude is None or property_obj.longitude is None:
         raise HTTPException(
             status_code=400,
-            detail="The property must have valid coordinates before a camera POV can be configured",
+            detail=(
+                "The property must have valid coordinates before a camera "
+                "field of view can be configured"
+            ),
         )
 
     distance = haversine_distance_metres(
