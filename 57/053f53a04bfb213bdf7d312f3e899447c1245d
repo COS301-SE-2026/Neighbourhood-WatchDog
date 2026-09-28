@@ -1,0 +1,16 @@
+docs/sas.md
+  h_cf6208e37032c0 321-323,329-330,336-338,343,349
+docs/nfr-test-proof/owasp-report.html
+  h_cf6208e37032c0 1-23137
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "57053f53a04bfb213bdf7d312f3e899447c1245d",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
