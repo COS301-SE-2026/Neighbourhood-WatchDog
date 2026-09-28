@@ -1,0 +1,25 @@
+tests/backend/unit/services/camera_test.py
+  h_3555f7510a5ca8 201,234,258,279-283,285-288,291-295
+  h_3555f7510a5ca8 200,202
+backend/app/services/audit_service.py
+  h_3555f7510a5ca8 63
+tests/backend/unit/services/alert_test.py
+  h_3555f7510a5ca8 34,782,992-993
+backend/app/models/camera.py
+  h_3555f7510a5ca8 30
+tests/backend/unit/services/audit_service_test.py
+  h_3555f7510a5ca8 23,62-63
+backend/app/services/camera_service.py
+  h_3555f7510a5ca8 150,179-182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5a69ff16a74a8186a835d57b643277298ce98855",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
