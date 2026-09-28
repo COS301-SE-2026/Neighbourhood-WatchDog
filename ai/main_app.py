@@ -347,52 +347,48 @@ class MainApplicationPage(ttk.Frame):
         )
 
         button_frame.columnconfigure(0, weight=1)
-        button_frame.columnconfigure(1, weight=1)
+        button_frame.columnconfigure(1, weight=0)
 
-        ttk.Button(
-            button_frame,
-            text="Exit",
-            command=self.exit_application,
-            style="Secondary.TButton",
-            width=12,
-        ).grid(
-            row=0,
-            column=0,
-            sticky="e",
-        )
-        self.after(50, self.refresh_cameras)
-
-        self.after(
-            self.CAMERA_REFRESH_INTERVAL,
-            self._camera_poll_tick,
-        )
-
-        ttk.Button(
+        self.disconnect_button = ttk.Button(
             button_frame,
             text="Disconnect Property",
             command=(
                 self.controller.request_disconnect
                 if self.controller is not None
-                else None
+                else lambda: None
             ),
             style="Danger.TButton",
             width=20,
-        ).grid(
+        )
+
+        self.disconnect_button.grid(
             row=0,
             column=0,
             sticky="w",
         )
 
-        ttk.Button(
+        self.exit_button = ttk.Button(
             button_frame,
             text="Exit",
             command=self.exit_application,
             style="Secondary.TButton",
             width=12,
-        ).grid(
+        )
+
+        self.exit_button.grid(
             row=0,
             column=1,
             sticky="e",
+        )
+
+        self.after(
+            50,
+            self.refresh_cameras,
+        )
+
+        self.after(
+            self.CAMERA_REFRESH_INTERVAL,
+            self._camera_poll_tick,
         )
 
     def _render_camera_rows(
