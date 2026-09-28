@@ -1,6 +1,5 @@
 import AppDashSidebar from "@/components/AppDashSidebar";
 import Navbar from "@/components/Navbar";
-import OfficerDispatchPopup from "@/components/OfficerDispatchPopup";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { cookies } from "next/headers";
 
