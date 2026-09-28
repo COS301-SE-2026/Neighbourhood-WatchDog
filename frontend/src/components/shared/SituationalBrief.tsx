@@ -10,6 +10,7 @@ import {
   type SituationalBriefData,
 } from "@/lib/api/alert";
 
+import { SituationalBriefPrintTemplate } from "@/components/shared/SituationalBriefPrintTemplate";
 
 interface SituationalBriefProps {
   readonly alertId: string;
@@ -222,6 +223,11 @@ export function SituationalBrief({alertId, enabled, refreshKey = 0}: Situational
           </div>
         </div>
       )}
+
+      {brief && (
+        <SituationalBriefPrintTemplate brief={brief} />
+      )}
+      
     </section>
   );
 }
