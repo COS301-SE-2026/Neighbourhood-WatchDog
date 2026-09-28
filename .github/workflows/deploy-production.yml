@@ -2,7 +2,7 @@ name: Deploy to Production AWS
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "tests/nfr-tests" ]
 
 concurrency:
   group: production-deploy

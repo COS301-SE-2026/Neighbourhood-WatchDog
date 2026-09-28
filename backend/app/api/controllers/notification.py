@@ -30,16 +30,16 @@ async def list_notifications_for_alert(
     if role not in ("NEIGHBOURHOOD_ADMIN", "SYSTEM_ADMIN", "SECURITY_OFFICER"):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
-    alert = db.execute(select(Alert).where(Alert.id == alert_id)).scalar_one_or_none()
+    alert = (await db.execute(select(Alert).where(Alert.id == alert_id))).scalar_one_or_none()
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
-    
+
     caller_neighbourhood = claims.get("custom:neighbourhood_id")
-    camera = db.execute(select(Camera).where(Camera.id == alert.camera_id)).scalar_one_or_none()
+    camera = (await db.execute(select(Camera).where(Camera.id == alert.camera_id))).scalar_one_or_none()
     if not camera or str(camera.neighbourhood_id) != str(caller_neighbourhood):
         raise HTTPException(status_code=403, detail="Not authorised for this alert")
-    
-    notifications = db.execute(select(Notification).where(Notification.alert_id == alert_id)).scalars().all()
+
+    notifications = (await db.execute(select(Notification).where(Notification.alert_id == alert_id))).scalars().all()
 
     return ListNotificationRes(
         status=200,

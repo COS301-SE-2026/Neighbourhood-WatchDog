@@ -34,7 +34,7 @@ class Alert(Base):
 
     clip_s3_key = Column(String, nullable=True)
     clip_expires_at = Column(DateTime(timezone=True), nullable=True)
-    status = Column(String, nullable=False, server_default="OPEN")
+    status = Column(String, nullable=False, server_default="OPEN", index=True)
     acknowledged_by = Column(UUID(as_uuid=True), ForeignKey(USER_ID_FOREIGN_KEY), nullable=True)
     acknowledged_at = Column(TIMESTAMP(timezone=True), nullable=True)
     confirmed_by = Column(UUID(as_uuid=True), ForeignKey(USER_ID_FOREIGN_KEY), nullable=True)
