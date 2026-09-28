@@ -1,0 +1,23 @@
+backend/app/websocket/manager.py
+  h_cf6208e37032c0 2,31-32,34-36,39-42
+  h_cf6208e37032c0 37-38
+.github/workflows/deploy-production.yml
+  h_cf6208e37032c0 5
+backend/alembic/versions/05696974518c_add_index_on_alert_status.py
+  h_cf6208e37032c0 1-31
+backend/app/api/controllers/notification.py
+  h_cf6208e37032c0 33,36,38,41-42
+backend/app/models/alert.py
+  h_cf6208e37032c0 37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "70a3baaa999f6c4cd1983a9157af0989cc6fb315",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
