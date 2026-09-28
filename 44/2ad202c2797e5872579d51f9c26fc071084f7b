@@ -1,0 +1,16 @@
+backend/app/services/detection_service.py
+  h_cf6208e37032c0 92-95
+backend/app/services/alert_service.py
+  h_cf6208e37032c0 1291-1292
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "442ad202c2797e5872579d51f9c26fc071084f7b",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
