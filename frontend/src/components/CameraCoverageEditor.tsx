@@ -16,6 +16,10 @@ import {
 } from "@/components/shared/property-map-icon";
 
 import {
+  CAMERA_MAP_ICON,
+} from "@/components/shared/camera-map-icon";
+
+import {
   cameraCoverageSchema,
   MAX_CAMERA_COVERAGE_RANGE_METRES,
   MAX_CAMERA_ORIGIN_DISTANCE_METRES,
@@ -406,14 +410,9 @@ const [rangeMetres, setRangeMetres] = useState(
             icon={PROPERTY_MAP_ICON}
           />
           {origin && (
-            <CircleMarker
-              center={origin}
-              radius={7}
-              pathOptions={{
-                color: "#e2e8f0",
-                fillColor: "#22c55e",
-                fillOpacity: 0.95,
-              }}
+            <Marker
+              position={origin}
+              icon={CAMERA_MAP_ICON}
             />
           )}
           {leftEdge && (

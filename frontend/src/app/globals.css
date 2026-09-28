@@ -301,6 +301,27 @@
     transform: translateY(-2px) scale(1.08);
     filter: drop-shadow(0 3px 5px rgb(0 0 0 / 70%));
   }
+
+  .watchdog-camera-icon {
+    width: 22px !important;
+    height: 26px !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .watchdog-camera-icon__svg {
+    display: block;
+    overflow: visible;
+    filter: drop-shadow(0 2px 3px rgb(0 0 0 / 60%));
+    transition:
+      transform var(--motion-fast),
+      filter var(--motion-fast);
+  }
+
+  .watchdog-camera-icon:hover .watchdog-camera-icon__svg {
+    transform: translateY(-2px) scale(1.08);
+    filter: drop-shadow(0 3px 5px rgb(0 0 0 / 75%));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
