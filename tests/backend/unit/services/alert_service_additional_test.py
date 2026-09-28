@@ -952,11 +952,13 @@ async def test_create_alert_for_agent_maps_known_detection_label():
     existing_result = make_result()
     existing_result.first.return_value = None
 
+    recent_weapon_result = make_result(scalar=None)
+
     db.execute.side_effect = [
         camera_result,
         existing_result,
+        recent_weapon_result,
     ]
-
     assigned_ids = iter([ALERT_ID, uuid4(), uuid4()])
 
     def assign_ids_on_add(entity):
@@ -1012,9 +1014,12 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
     existing_result = make_result()
     existing_result.first.return_value = None
 
+    recent_weapon_result = make_result(scalar=None)
+
     db.execute.side_effect = [
         camera_result,
         existing_result,
+        recent_weapon_result,
     ]
 
     assigned_ids = iter([ALERT_ID, uuid4(), uuid4()])
@@ -1746,6 +1751,10 @@ async def test_create_trackless_weapon_alert_without_tracking_rows():
             return_value=Mock(
                 model_dump=Mock(return_value={}),
             ),
+        ),
+        patch(
+            "app.services.alert_service._find_recent_weapon_alert",
+            new=AsyncMock(return_value=None),
         ),
     ):
         response = await service.create_alert_for_agent_handler(
