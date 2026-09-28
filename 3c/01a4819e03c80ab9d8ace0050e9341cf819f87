@@ -1,0 +1,14 @@
+frontend/src/components/shared/AlertCard.tsx
+  h_3555f7510a5ca8 479,494,520
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3c01a4819e03c80ab9d8ace0050e9341cf819f87",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
