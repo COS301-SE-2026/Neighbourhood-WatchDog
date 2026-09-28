@@ -430,6 +430,12 @@ class TestListAlerts:
         alert.created_at = datetime.now(timezone.utc)
         return alert
 
+    class _FakeRow(tuple):
+        def __new__(cls, item, total_count):
+            row = super().__new__(cls, (item,))
+            row.total_count = total_count
+            return row
+
     def _mock_query_results(self, alerts, total=None):
         membership = Mock()
         membership.user_id = self.user_id
@@ -438,19 +444,25 @@ class TestListAlerts:
         membership_result = Mock()
         membership_result.scalar_one_or_none.return_value = membership
 
-        count_result = Mock()
-        count_result.scalar_one.return_value = (
-            total if total is not None else len(alerts)
-        )
+        total_value = total if total is not None else len(alerts)
+        rows = [self._FakeRow(a, total_value) for a in alerts]
 
-        alerts_result = Mock()
-        alerts_result.scalars.return_value.all.return_value = alerts
+        combined_result = Mock()
+        combined_result.all.return_value = rows
 
-        self.mock_db.execute.side_effect = [
-            membership_result,
-            count_result,
-            alerts_result,
-        ]
+        if rows:
+            self.mock_db.execute.side_effect = [
+                membership_result,
+                combined_result,
+            ]
+        else:
+            count_result = Mock()
+            count_result.scalar_one.return_value = total_value
+            self.mock_db.execute.side_effect = [
+                membership_result,
+                combined_result,
+                count_result,
+            ]
 
     @pytest.mark.asyncio
     async def test_missing_neighbourhood_id_raises_400(self):
@@ -501,7 +513,7 @@ class TestListAlerts:
 
         assert len(results) == 2
         assert total == 2
-        assert self.mock_db.execute.await_count == 3
+        assert self.mock_db.execute.await_count == 2
 
     @pytest.mark.asyncio
     async def test_filters_by_camera_id(self):
