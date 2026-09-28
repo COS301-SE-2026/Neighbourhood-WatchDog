@@ -57,3 +57,5 @@ ai/data/curated/
 ai/.smoke-venv
 
 docker-compose.override.yml
+
+.gitleaksignore

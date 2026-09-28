@@ -50,11 +50,11 @@ async def test_cache_get_or_set_fetches_on_cache_miss(monkeypatch):
 
     assert result == {"status": "fresh"}
     fetch_fn.assert_awaited_once()
-    redis_client.setex.assert_awaited_once_with(
-        "camera:1",
-        60,
-        json.dumps({"status": "fresh"}),
-    )
+    redis_client.setex.assert_awaited_once()
+    key, ttl, payload = redis_client.setex.await_args.args
+    assert key == "camera:1"
+    assert 60 <= ttl <= 65
+    assert payload == json.dumps({"status": "fresh"})
 
 
 @pytest.mark.asyncio

@@ -610,20 +610,23 @@ async def list_property_alerts_handler(
         if end_date:
             base_stmt = base_stmt.where(Alert.frame_timestamp <= end_date)
 
-        count_result = await db.execute(
-            select(func.count()).select_from(base_stmt.subquery())
-        )
-        total = count_result.scalar_one()
-
         stmt = (
             base_stmt
+            .add_columns(func.count().over().label("total_count"))
             .order_by(Alert.frame_timestamp.desc())
             .limit(limit)
             .offset(offset)
         )
 
         result = await db.execute(stmt)
-        alerts = result.scalars().all()
+        rows = result.all()
+        alerts = [row[0] for row in rows]
+        
+        if rows:    
+            total = rows[0].total_count 
+        else:
+            count_result = await db.execute(select(func.count()).select_from(base_stmt.subquery()))
+            total = count_result.scalar_one()
 
         return [
             _build_alert_res(alert)
@@ -710,17 +713,23 @@ async def list_alerts_handler(
         if end_date:
             base_stmt = base_stmt.where(Alert.frame_timestamp <= end_date)
 
-        count_result = await db.execute(
-            select(func.count()).select_from(base_stmt.subquery())
+        stmt = (
+            base_stmt
+            .add_columns(func.count().over().label("total_count"))
+            .order_by(Alert.frame_timestamp.desc())
+            .limit(limit)
+            .offset(offset)
         )
-        total = count_result.scalar_one()
-
-        stmt = (base_stmt.order_by(Alert.frame_timestamp.desc())
-                .limit(limit)
-                .offset(offset))
 
         result = await db.execute(stmt)
-        alerts = result.scalars().all()
+        rows = result.all()
+        alerts = [row[0] for row in rows]
+
+        if rows:
+            total = rows[0].total_count
+        else:
+            count_result = await db.execute(select(func.count()).select_from(base_stmt.subquery()))
+            total = count_result.scalar_one()
 
         return [_build_alert_res(a) for a in alerts], total
     except HTTPException as he:

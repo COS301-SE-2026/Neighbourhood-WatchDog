@@ -47,7 +47,6 @@ def recompute_all_danger_zones(
         )
     )
 
-
 @celery.task
 def recompute_neighbourhood_danger_zone(
     neighbourhood_id: str,
