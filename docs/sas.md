@@ -340,10 +340,10 @@ The system supports rollback in the following ways:
 ### Maintainability
 | ID | Quantified Requirement | Tactic in SAS | Test / tool | Target | Actual |
 |---|---|---|---|---|---|
-| QR-10 | SonarQube Maintainability rating of A on code in main branch | Code quality requirements | SonarQube | A rating | A rating |
+| QR-10 | SonarQube Maintainability rating of A on code in main branch | Code quality requirements | SonarQube | A rating | A rating ![alt text](/docs/images/maintainability.png)  |
 
 ### Accessibility
 
 | ID | Quantified Requirement | Tactic in SAS | Test / tool | Target | Actual |
 |---|---|---|---|---|---|
-| QR-10 | Google Lighthouse accessibility score above 95 on production frontend | Code quality requirements | Google Lighthouse | 95 accessibility rating | 95 accessibility rating |
+| QR-10 | Google Lighthouse accessibility score above 95 on production frontend | Code quality requirements | Google Lighthouse | 95 accessibility rating | 96 accessibility rating ![96 accessibility rating](/docs/images/accessibility.png) |
