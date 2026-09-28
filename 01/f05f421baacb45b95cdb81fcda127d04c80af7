@@ -1,0 +1,15 @@
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/map/CriticalAlertsMap.tsx
+  h_3555f7510a5ca8 7,11,68,195-329,555,558,562,564,594-598,600-601,620-647
+  h_3555f7510a5ca8 554,557,559-561,563,565
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "01f05f421baacb45b95cdb81fcda127d04c80af7",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
