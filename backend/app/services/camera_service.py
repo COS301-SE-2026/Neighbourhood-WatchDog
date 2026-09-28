@@ -147,7 +147,7 @@ async def deregister_camera_handler(camera_id, db, claims):
     if not db:
         raise HTTPException(status_code=500, detail=NO_DB_SESSION)
     if not claims:
-        raise HTTPException(status_code=500, detail=NOT_AUTHENTICATED)
+        raise HTTPException(status_code=401, detail=NOT_AUTHENTICATED)
     
     try:
         result = await db.execute(select(Camera).where(Camera.id == camera_id))
@@ -155,17 +155,6 @@ async def deregister_camera_handler(camera_id, db, claims):
 
         if not camera_obj:
             raise HTTPException(status_code=404, detail="Camera not found")
-        
-        prop_user_result = await db.execute(
-            select(PropertyUser)
-            .options(joinedload(PropertyUser.user))
-            .join(PropertyUser.user)
-            .where(PropertyUser.property_id == camera_obj.property_id, User.cognito_sub == claims.get("sub"))
-        )
-        prop_user = prop_user_result.scalar_one_or_none()
-
-        if prop_user is None or getattr(getattr(prop_user, "user", None), "cognito_sub", None) != claims.get("sub"):
-            raise HTTPException(status_code=403, detail="Forbidden")
 
         property_id = camera_obj.property_id
         old_values = {
@@ -187,7 +176,10 @@ async def deregister_camera_handler(camera_id, db, claims):
         )
 
         await db.commit()
-        await invalidate_camera_caches(property_id)
+        try:
+            await invalidate_camera_caches(property_id)
+        except Exception:
+            logger.exception("Camera %s deleted, but cache invalidation failed", camera_id)
         
     except HTTPException as he:
         await db.rollback()

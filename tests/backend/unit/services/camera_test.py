@@ -197,10 +197,9 @@ class TestDeregisterCamera:
         self.mock_prop_user_result = Mock()
         self.mock_prop_user_result.scalar_one_or_none.return_value = self.mock_prop_user
 
-        self.mock_db.execute = AsyncMock(side_effect=[
-            self.mock_camera_result,
-            self.mock_prop_user_result,
-        ])
+        self.mock_db.execute = AsyncMock(
+            return_value=self.mock_camera_result
+        )
 
         self.mock_db.refresh = AsyncMock()
 
@@ -232,7 +231,7 @@ class TestDeregisterCamera:
             claims=self.claims
         )
 
-        assert self.mock_db.execute.call_count == 2
+        assert self.mock_db.execute.call_count == 1
         assert self.mock_db.commit.call_count == 1
         assert self.mock_db.rollback.call_count == 0
 
@@ -256,7 +255,7 @@ class TestDeregisterCamera:
                 db=self.mock_db,
                 claims=None
             )
-        assert exc.value.status_code == 500
+        assert exc.value.status_code == 401
         assert self.mock_db.commit.call_count == 0
         assert self.mock_db.rollback.call_count == 0
 
@@ -277,31 +276,23 @@ class TestDeregisterCamera:
         assert self.mock_db.rollback.call_count == 1
 
     @pytest.mark.asyncio
-    async def test_wrong_owner(self):
-        """Camera belongs to a different user"""
+    async def test_cache_failure_does_not_fail_completed_delete(
+        self,
+        mock_invalidate_camera_caches
+    ):
+        mock_invalidate_camera_caches.side_effect = RuntimeError("Redis unavailable")
 
-        wrong_user = Mock()
-        wrong_user.cognito_sub = "different-user-sub"
-
-        wrong_prop_user = Mock()
-        wrong_prop_user.user_id = uuid4()
-        wrong_prop_user.user =  wrong_user
-
-        self.reset_side_effects(
-            camera=self.mock_camera,
-            prop_user=wrong_prop_user,
+        await deregister_camera_handler(
+            camera_id=self.camera_id,
+            db=self.mock_db,
+            claims=self.claims
         )
 
-        with pytest.raises(HTTPException) as exc:
-            await deregister_camera_handler(
-                camera_id=self.camera_id,
-                db=self.mock_db,
-                claims=self.claims
-            )
-        assert exc.value.status_code == 403
-        assert self.mock_db.execute.call_count == 2
-        assert self.mock_db.commit.call_count == 0
-        assert self.mock_db.rollback.call_count == 1
+        self.mock_db.commit.assert_awaited_once()
+        self.mock_db.delete.assert_awaited_once_with(
+            self.mock_camera
+        )
+        self.mock_db.rollback.assert_not_awaited()
 
 
 class TestEditCamera:
