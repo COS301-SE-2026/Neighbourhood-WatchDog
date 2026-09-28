@@ -1288,6 +1288,8 @@ async def create_alert_for_agent_handler(
         await db.commit()
         await db.refresh(alert)
 
+        alert.tracking_subject = tracking_subject
+
         neighbourhood_id = camera.property.neighbourhood_id if camera.property else None
 
         # Sending a push notification in the case of a weapon detection
