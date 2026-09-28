@@ -72,6 +72,7 @@ ALERT_NOT_FOUND = "Alert not found"
 CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "")
 AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
+WEAPON_INCIDENT_WINDOW_SECONDS = int(os.getenv("WEAPON_INCIDENT_WINDOW_SECONDS", "30"))
 CHUNK_SIZE = 256 * 1024
 
 CRITICAL_DETECTION_TYPES = {
@@ -1236,6 +1237,41 @@ async def create_alert_for_agent_handler(
                 is_new_alert=False
 
             )
+
+
+        if det_type == DetectionType.WEAPON_DETECTED:
+            incident_window_start = (frame_timestamp - timedelta(seconds=WEAPON_INCIDENT_WINDOW_SECONDS))
+
+            recent_weapon_stmt = (
+                select(Alert)
+                .where(
+                    Alert.camera_id == camera_id,
+                    Alert.detection_type == DetectionType.WEAPON_DETECTED,
+                    Alert.status == AlertStatus.OPEN.value,
+                    Alert.frame_timestamp >= incident_window_start,
+                    Alert.frame_timestamp <= frame_timestamp
+                )
+                .order_by(Alert.frame_timestamp.desc())
+                .limit(1)
+            )
+
+            recent_weapon_result = await db.execute(recent_weapon_stmt)
+            recent_weapon_alert = recent_weapon_result.scalar_one_or_none()
+
+            if recent_weapon_alert is not None:
+                logger.info(
+                    "Reusing recent weapon incident alert_id=%s for camera_id=%s",
+                    recent_weapon_alert.id,
+                    camera_id
+                    
+                )
+
+                return InternalAlertCreateRes(
+                    alert_id=recent_weapon_alert.id,
+                    sighting_id=None,
+                    is_new_alert=False
+
+                )
 
 
 
