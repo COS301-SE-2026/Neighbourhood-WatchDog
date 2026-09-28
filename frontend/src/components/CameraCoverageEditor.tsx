@@ -351,12 +351,17 @@ const [rangeMetres, setRangeMetres] = useState(
         <MapContainer
           center={property}
           zoom={17}
+          maxZoom={19}
           scrollWheelZoom
           className="h-72 w-full"
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; CARTO'
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            maxZoom={19}
+            attribution={
+              '&copy; <a href="https://www.openstreetmap.org/copyright">' +
+              "OpenStreetMap contributors"
+            }
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <MapClickHandler
             property={property}
