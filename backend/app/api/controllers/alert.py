@@ -45,7 +45,7 @@ from app.schemas.danger_zone import (
     DangerZoneResponse,
 )
 from app.services import alert_service
-from app.services.alert_cache import alerts_neighbourhood_cache_key, incident_density_cache_key
+from app.services.alert_cache import incident_density_cache_key
 from app.services.alert_service import (
     DEFAULT_PAGE_SIZE,
     MAX_PAGE_SIZE,
