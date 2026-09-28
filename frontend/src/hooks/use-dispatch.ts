@@ -1,9 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { WS_BASE, fetchCurrentUser, getAuthToken } from "@/lib/api/alert";
+import { WS_BASE } from "@/lib/api/alert";
+import { getAccessToken, refreshSession } from "@/lib/auth/cognito";
 import { respondToDispatch, type DispatchAction } from "@/lib/api/dispatch";
+
 const OUTCOME_DISPLAY_MS = 3000;
+const RECONNECT_BASE_MS = 1000;
+const RECONNECT_MAX_MS = 15000;
 
 export interface DispatchNotification {
   dispatchId: string;
@@ -30,7 +34,7 @@ interface DispatchSocketEvent {
   };
 }
 
-export function useDispatchNotification() {
+export function useDispatchNotification(neighbourhoodId: string | null) {
   const [notification, setNotification] = useState<DispatchNotification | null>(
     null,
   );
@@ -66,69 +70,110 @@ export function useDispatchNotification() {
   );
 
   useEffect(() => {
+    if (!neighbourhoodId) {
+      return;
+    }
+
     let socket: WebSocket | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let attempt = 0;
     let cancelled = false;
 
-    (async () => {
-      const { neighbourhood_id } = await fetchCurrentUser();
-      const token = getAuthToken();
+    const handleMessage = ({ data }: MessageEvent) => {
+      let message: DispatchSocketEvent;
 
-      if (cancelled || !neighbourhood_id || !token) {
+      try {
+        message = JSON.parse(data);
+      } catch {
         return;
       }
 
-      socket = new WebSocket(
-        `${WS_BASE}/alerts/${neighbourhood_id}/ws?token=${encodeURIComponent(token)}`,
+      if (
+        message.event !== "dispatch.notified" ||
+        !message.payload?.dispatch_id
+      ) {
+        return;
+      }
+
+      const {
+        dispatch_id,
+        alert_id,
+        detection_type,
+        distance,
+        eta,
+        notified_at,
+        expires_at,
+      } = message.payload;
+
+      clearExpiryTimer();
+      setOutcome(null);
+
+      setNotification({
+        dispatchId: dispatch_id,
+        alertId: alert_id ?? "",
+        detectionType: detection_type ?? null,
+        distance: distance ?? null,
+        eta: eta ?? null,
+        notifiedAt: notified_at ?? new Date().toISOString(),
+        expiresAt: expires_at ?? null,
+      });
+    };
+
+    const scheduleReconnect = () => {
+      if (cancelled) return;
+
+      const delay = Math.min(
+        RECONNECT_BASE_MS * 2 ** attempt,
+        RECONNECT_MAX_MS,
       );
+      attempt += 1;
+      reconnectTimer = setTimeout(connect, delay);
+    };
 
-      socket.onmessage = ({ data }) => {
-        let message: DispatchSocketEvent;
+    const connect = async () => {
+      if (cancelled) return;
 
-        try {
-          message = JSON.parse(data);
-        } catch {
-          return;
-        }
+      let token: string | null = null;
 
-        if (message.event === "ping") {
-          return;
-        }
+      try {
+        // Access token lives in memory and expires; refresh if it's gone.
+        token = getAccessToken() ?? (await refreshSession());
+      } catch {
+        token = null;
+      }
 
-        if (
-          message.event !== "dispatch.notified" ||
-          !message.payload?.dispatch_id
-        ) {
-          return;
-        }
+      if (cancelled) return;
 
-        const {
-          dispatch_id,
-          alert_id,
-          detection_type,
-          distance,
-          eta,
-          notified_at,
-          expires_at,
-        } = message.payload;
+      if (!token) {
+        scheduleReconnect();
+        return;
+      }
 
-        clearExpiryTimer();
-        setOutcome(null);
+      const ws = new WebSocket(
+        `${WS_BASE}/alerts/${neighbourhoodId}/ws?token=${encodeURIComponent(token)}`,
+      );
+      socket = ws;
 
-        setNotification({
-          dispatchId: dispatch_id,
-          alertId: alert_id ?? "",
-          detectionType: detection_type ?? null,
-          distance: distance ?? null,
-          eta: eta ?? null,
-          notifiedAt: notified_at ?? new Date().toISOString(),
-          expiresAt: expires_at ?? null,
-        });
+      ws.onopen = () => {
+        attempt = 0;
       };
-    })();
+      ws.onmessage = handleMessage;
+      ws.onclose = () => {
+        if (socket === ws) socket = null;
+        scheduleReconnect();
+      };
+    };
+
+    void connect();
 
     return () => {
       cancelled = true;
-      socket?.close();
+
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+
+      const ws = socket;
+      socket = null;
+      ws?.close();
 
       clearExpiryTimer();
 
@@ -136,7 +181,7 @@ export function useDispatchNotification() {
         clearTimeout(outcomeTimer.current);
       }
     };
-  }, [clearExpiryTimer]);
+  }, [neighbourhoodId, clearExpiryTimer]);
 
   useEffect(() => {
     clearExpiryTimer();
