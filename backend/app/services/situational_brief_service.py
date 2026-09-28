@@ -84,6 +84,7 @@ async def _load_context(db: AsyncSession, tracking_subject_id: UUID,) -> tuple[T
     # load all sightings
     sightings_result = await db.execute(
         select(TrackingSighting, Camera, Property)
+        .select_from(TrackingSighting)
         .join(Camera, Camera.id == TrackingSighting.camera_id)
         .join(Property, Property.id == Camera.property_id)
         .where(TrackingSighting.tracking_subject_id == tracking_subject_id)
