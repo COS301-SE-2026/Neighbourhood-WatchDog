@@ -8,9 +8,14 @@ export default function OfficerDispatchPopup() {
 
   if (isLoading) return null;
 
-  const isSecurityOfficer = contexts.some(
-    (context) => context.role === "Security Officer",
+  const officerContext = contexts.find(
+    (context) =>
+      context.role === "Security Officer" && context.neighbourhoodId !== null,
   );
 
-  return isSecurityOfficer ? <DispatchRequestPopup /> : null;
+  if (!officerContext) return null;
+
+  return (
+    <DispatchRequestPopup neighbourhoodId={officerContext.neighbourhoodId} />
+  );
 }
