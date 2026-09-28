@@ -280,6 +280,27 @@
     cursor: not-allowed;
     opacity: 0.6;
   }
+
+  .watchdog-property-icon {
+    width: 32px !important;
+    height: 36px !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .watchdog-property-icon__svg {
+    display: block;
+    overflow: visible;
+    filter: drop-shadow(0 2px 3px rgb(0 0 0 / 55%));
+    transition:
+      transform var(--motion-fast),
+      filter var(--motion-fast);
+  }
+
+  .watchdog-property-icon:hover .watchdog-property-icon__svg {
+    transform: translateY(-2px) scale(1.08);
+    filter: drop-shadow(0 3px 5px rgb(0 0 0 / 70%));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
