@@ -89,6 +89,10 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
 
         if alert:
             await db.refresh(alert)
+            # freshly-created alert cannot yet have an associated tracking subject
+            # set in-memory to avoid lazy-load of Alert.tracking_subkect in _build_alert_res,
+            # which fails outside an async safe context
+            alert.tracking_subject = None
             camera_result = await db.execute(
                 select(Camera)
                 .options(joinedload(Camera.property))

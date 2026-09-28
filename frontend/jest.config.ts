@@ -25,6 +25,7 @@ const config: Config = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
 
   moduleNameMapper: {
+    '\\.svg$': '<rootDir>/__mocks__/svgMock.ts',
     '^@/(.*)$': '<rootDir>/src/$1',
   },
 

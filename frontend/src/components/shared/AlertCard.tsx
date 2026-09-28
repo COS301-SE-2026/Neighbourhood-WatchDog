@@ -243,7 +243,7 @@ export function AlertDetailSheet({
       <SheetContent
         side="right"
         overlayClassName="z-[1100]"
-        className="z-[1101] w-full max-w-lg border-l border-border bg-brand-void text-brand-frost"
+        className="z-[1101] w-full sm:max-w-[min(90vw,36rem)] border-l border-border bg-brand-void text-brand-frost"
       >
         {onBack && (
           <Button
@@ -271,7 +271,7 @@ export function AlertDetailSheet({
         </SheetHeader>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-6 sm:px-6">
-          {alert.thumbnail_url ? (
+          {alert.thumbnail_url && (
             <div className="relative rounded-lg overflow-hidden border border-border">
               <Image
                 src={alert.thumbnail_url}
@@ -281,11 +281,6 @@ export function AlertDetailSheet({
                 sizes="(max-width: 768px) 100vw, 400px"
                 className="h-auto w-full object-cover"
               />
-            </div>
-          ) : (
-            <div className="rounded-lg border border-border bg-brand-slate h-40 flex items-center justify-center gap-2">
-              <Camera className="h-8 w-8 text-brand-green opacity-50" />
-              <span className="text-sm text-brand-ash/60">No thumbnail</span>
             </div>
           )}
 

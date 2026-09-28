@@ -31,6 +31,7 @@ class TestAcknowledgeAlert:
         self.mock_db = Mock()
         self.mock_db.execute = AsyncMock()
         self.mock_db.commit = AsyncMock()
+        self.mock_db.flush = AsyncMock()
         self.mock_db.refresh = AsyncMock()
         self.mock_db.rollback = AsyncMock()
 
@@ -778,6 +779,7 @@ class TestBroadcastNeighbourhoodAlert:
         self.mock_db = Mock()
         self.mock_db.execute = AsyncMock()
         self.mock_db.commit = AsyncMock()
+        self.mock_db.flush = AsyncMock()
         self.mock_db.add = Mock()
 
         self.user_id = uuid.uuid4()
@@ -987,8 +989,8 @@ class TestBroadcastNeighbourhoodAlert:
 
         mock_get.assert_called_once_with(EventType.NEIGHBOURHOOD_BROADCAST)
         mock_get.return_value.notify.assert_awaited_once()
-        # create_audit_log_item commits, then the broadcast service commits.
-        assert self.mock_db.commit.await_count == 2
+        # The service owns the transaction commit.
+        assert self.mock_db.commit.await_count == 1
 
 class TestGetAlertForAgent:
     def setup_method(self):
