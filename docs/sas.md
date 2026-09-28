@@ -318,32 +318,32 @@ The system supports rollback in the following ways:
 
 | ID | Quantified Requirement | Tactic in SAS | Test / tool | Target | Actual |
 |---|---|---|---|---|---|
-| QR-04 | Zero high/critical dependancy CVEs on `main` | Automated dependancy scanning in CI | `pip audit` + `npm audit` | 0 high or critical | 0 findings  |
-| QR-05 | Zero medium+ severity findings on staging | Input validation, security headers, limited exposure | OWASP ZAP baseline scan again staging | 0 medium+ | 0 (There was a false positive critical) |
-| QR-04 | 0 secrets committed to the repository | Making use of GitHub Actions secrets and Secrets Manager | `gitleaks` | 0 findings | 0 findings ![0 findings](/docs/nfr-test-proof/QR-04.png) |
+| QR-04 | Zero high/critical dependancy CVEs on `main` | Automated dependancy scanning in CI | `pip audit` + `pnpm audit` | 0 high or critical | 0 known vulnerabilities found ![0 findings](/docs/nfr-test-proof/QR-04.png) |
+| QR-05 | Zero medium+ severity findings on staging | Input validation, security headers, limited exposure | OWASP ZAP baseline scan again staging | 0 medium+ | [0](/docs/nfr-test-proof/owasp-report.html) (There was a false positive critical) |
+| QR-06 | 0 secrets committed to the repository | Making use of GitHub Actions secrets and Secrets Manager | `gitleaks` | 0 findings | 0 findings ![0 findings](/docs/nfr-test-proof/QR-06.png) |
 
 ### Recoverability 
 
 | ID | Quantified Requirement | Tactic in SAS | Test / tool | Target | Actual |
 |---|---|---|---|---|---|
-| QR-05 | A failed production deployment can be rolled back to the previous health task definition within 5 minutes | ECS task definition rollback and the deployment circuit breaker | Force a bad deploy and run the documented rollback command and test time until health | <= 5 mins | service never left healthy state because the circuit breaker prevented the bad revision from ever reaching majority healthy status. The broken task auto stopped within seconds. 2 out of 3 good tasks kept serving throughout. |
-| QR-06 | Edge agent continues operating in last-known camera config for at least indefinitely if the backend is not reachable | Local caching of the last successful request for the list of enabled cameras | Turn the backend off and on and observe whether the stream continues to be pushed on the list of existing cameras | runs indefinitely | runs indefinitely thanks to caching of camera configurations. And when it does send out requests, it sends them out with exponential backoff so it will not further break the backend if there are issues with it. |
+| QR-07 | A failed production deployment can be rolled back to the previous health task definition within 5 minutes | ECS task definition rollback and the deployment circuit breaker | Force a bad deploy and run the documented rollback command and test time until health | <= 5 mins | service never left healthy state because the circuit breaker prevented the bad revision from ever reaching majority healthy status. The broken task auto stopped within seconds. 2 out of 3 good tasks kept serving throughout. |
+| QR-08 | Edge agent continues operating in last-known camera config for at least indefinitely if the backend is not reachable | Local caching of the last successful request for the list of enabled cameras | Turn the backend off and on and observe whether the stream continues to be pushed on the list of existing cameras | runs indefinitely | runs indefinitely thanks to caching of camera configurations. And when it does send out requests, it sends them out with exponential backoff so it will not further break the backend if there are issues with it. |
 
 ### Scalability
 
 | ID | Quantified Requirement | Tactic in SAS | Test / tool | Target | Actual |
 |---|---|---|---|---|---|
-| QR-07 | ECS launches an additional task within 3 minutes of sustained CPU and/or memory threshold being exceeded under load | ASG and ECS target-tracking auto-scaling policy | Locust load test sustained past the threshold, watch `describe-services` for scale out event | <= 3 minutes | +-38s (alarm transitioned to ALARM at 19:48:44Z UTC and the earliest observable capacity improvement in Locust data was at 19:49:22Z UTC) |
-| QR-08 | p95 latency stays under 3000ms at 500 concurrent virtual users | Connection pooling + indexing + auto-scaling and Redis caching for selected endpoints | Sustained Locust load test, 500 VUs, 10min | p95 < 3000ms at 500 Virtual Users | 2700ms at 500 users ![2700ms at 500 users](/docs/nfr-test-proof/locust.png) |
-| QR-9 | Error rate at peak load | Connection pool limit | Locust | <1% | [0.20%](/docs/nfr-test-proof/Locust_2026-09-28-21h22_locustfile.py_https___api.neighbourhoodwatchdog.co.za.html) |
+| QR-09 | ECS launches an additional task within 3 minutes of sustained CPU and/or memory threshold being exceeded under load | ASG and ECS target-tracking auto-scaling policy | Locust load test sustained past the threshold, watch `describe-services` for scale out event | <= 3 minutes | +-38s (alarm transitioned to ALARM at 19:48:44Z UTC and the earliest observable capacity improvement in Locust data was at 19:49:22Z UTC) |
+| QR-10 | p95 latency stays under 3000ms at 500 concurrent virtual users | Connection pooling + indexing + auto-scaling and Redis caching for selected endpoints | Sustained Locust load test, 500 VUs, 10min | p95 < 3000ms at 500 Virtual Users | 2700ms at 500 users ![2700ms at 500 users](/docs/nfr-test-proof/locust.png) |
+| QR-11 | Error rate at peak load | Connection pool limit | Locust | <1% | [0.20%](/docs/nfr-test-proof/Locust_2026-09-28-21h22_locustfile.py_https___api.neighbourhoodwatchdog.co.za.html) |
 
 ### Maintainability
 | ID | Quantified Requirement | Tactic in SAS | Test / tool | Target | Actual |
 |---|---|---|---|---|---|
-| QR-10 | SonarQube Maintainability rating of A on code in main branch | Code quality requirements | SonarQube | A rating | A rating ![alt text](/docs/images/maintainability.png)  |
+| QR-12 | SonarQube Maintainability rating of A on code in main branch | Code quality requirements | SonarQube | A rating | A rating ![alt text](/docs/images/maintainability.png)  |
 
 ### Accessibility
 
 | ID | Quantified Requirement | Tactic in SAS | Test / tool | Target | Actual |
 |---|---|---|---|---|---|
-| QR-10 | Google Lighthouse accessibility score above 95 on production frontend | Code quality requirements | Google Lighthouse | 95 accessibility rating | 96 accessibility rating ![96 accessibility rating](/docs/images/accessibility.png) |
+| QR-13 | Google Lighthouse accessibility score above 95 on production frontend | Code quality requirements | Google Lighthouse | 95 accessibility rating | 96 accessibility rating ![96 accessibility rating](/docs/images/accessibility.png) |
