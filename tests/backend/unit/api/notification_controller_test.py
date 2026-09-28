@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
 
 import pytest
@@ -54,6 +54,7 @@ def make_notification(
 @pytest.mark.asyncio
 async def test_list_notifications_rejects_unauthorized_role():
     db = Mock()
+    db.execute = AsyncMock()
     claims = {
         "custom:role": "RESIDENT",
         "custom:neighbourhood_id": str(NEIGHBOURHOOD_ID),
@@ -74,6 +75,7 @@ async def test_list_notifications_rejects_unauthorized_role():
 @pytest.mark.asyncio
 async def test_list_notifications_rejects_missing_role():
     db = Mock()
+    db.execute = AsyncMock()
     claims = {
         "custom:neighbourhood_id": str(NEIGHBOURHOOD_ID),
     }
@@ -108,6 +110,7 @@ async def test_list_notifications_allows_authorized_roles(role):
     ]
 
     db = Mock()
+    db.execute = AsyncMock()
     db.execute.side_effect = [
         make_result(scalar=alert),
         make_result(scalar=camera),
@@ -144,6 +147,7 @@ async def test_list_notifications_allows_authorized_roles(role):
 @pytest.mark.asyncio
 async def test_list_notifications_returns_empty_data_when_no_notifications_exist():
     db = Mock()
+    db.execute = AsyncMock()
     db.execute.side_effect = [
         make_result(scalar=make_alert()),
         make_result(scalar=make_camera()),
@@ -169,6 +173,7 @@ async def test_list_notifications_returns_empty_data_when_no_notifications_exist
 @pytest.mark.asyncio
 async def test_list_notifications_returns_404_when_alert_does_not_exist():
     db = Mock()
+    db.execute = AsyncMock()
     db.execute.return_value = make_result(scalar=None)
 
     claims = {
@@ -191,6 +196,7 @@ async def test_list_notifications_returns_404_when_alert_does_not_exist():
 @pytest.mark.asyncio
 async def test_list_notifications_returns_403_when_camera_does_not_exist():
     db = Mock()
+    db.execute = AsyncMock()
     db.execute.side_effect = [
         make_result(scalar=make_alert()),
         make_result(scalar=None),
@@ -219,6 +225,7 @@ async def test_list_notifications_returns_403_when_camera_is_in_another_neighbou
     camera = make_camera(neighbourhood_id=uuid4())
 
     db = Mock()
+    db.execute = AsyncMock()
     db.execute.side_effect = [
         make_result(scalar=alert),
         make_result(scalar=camera),
@@ -247,6 +254,7 @@ async def test_list_notifications_compares_neighbourhood_ids_as_strings():
     camera = make_camera(neighbourhood_id=NEIGHBOURHOOD_ID)
 
     db = Mock()
+    db.execute = AsyncMock()
     db.execute.side_effect = [
         make_result(scalar=alert),
         make_result(scalar=camera),
