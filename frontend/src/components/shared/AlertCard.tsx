@@ -243,7 +243,7 @@ export function AlertDetailSheet({
       <SheetContent
         side="right"
         overlayClassName="z-[1100]"
-        className="z-[1101] w-full max-w-lg border-l border-border bg-brand-void text-brand-frost"
+        className="z-[1101] w-full sm:max-w-[min(90vw,36rem)] border-l border-border bg-brand-void text-brand-frost"
       >
         {onBack && (
           <Button
