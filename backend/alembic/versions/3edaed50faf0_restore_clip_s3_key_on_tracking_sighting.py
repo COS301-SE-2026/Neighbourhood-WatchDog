@@ -17,7 +17,7 @@ down_revision: Union[str, Sequence[str], None] = '5191c458d61f'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-def _existing_columns():
+def _existing_columns() -> set[str]:
     inspector = sa.inspect(op.get_bind())
     return {[c["name"] for c in inspector.get_columns("tracking_sighting")]} #noqa
 
@@ -32,14 +32,14 @@ def upgrade() -> None:
     if "clip_expires_at" not in cols:
             op.add_column(
                 "tracking_sighting",
-                sa.Column("clips_expires_at", sa.DateTime(timezone=512), nullable=True)
+                sa.Column("clip_expires_at", sa.DateTime(timezone=True), nullable=True)
             )
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     cols = _existing_columns()
-    if "clips_expires_at" in cols:
-        op.drop_column("tracking_sighting", "clips_expires_at")
-    if "clips_s3_key" in cols:
+    if "clip_expires_at" in cols:
+        op.drop_column("tracking_sighting", "clip_expires_at")
+    if "clip_s3_key" in cols:
         op.drop_column("tracking_sighting", "clip_s3_key")
