@@ -886,4 +886,3 @@ The system is developed by a team of five third-year Computer Science students. 
 ![Mockup 1](images/Mockups%201.png)
 ![Mockup 2](images/Mockups%202.png)
 ![Mockup 3](images/Mockups%203.png)
-35
