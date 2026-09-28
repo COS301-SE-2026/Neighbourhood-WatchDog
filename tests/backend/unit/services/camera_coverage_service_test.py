@@ -351,8 +351,8 @@ async def test_upsert_camera_coverage_rejects_property_without_coordinates():
     assert exc_info.value.status_code == 400
     assert (
         exc_info.value.detail
-        == "The property must have valid coordinates before a camera POV "
-        "can be configured"
+        == "The property must have valid coordinates before a camera "
+        "field of view can be configured"
     )
     db.scalar.assert_not_awaited()
     db.add.assert_not_called()

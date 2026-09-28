@@ -16,18 +16,18 @@ jest.mock("react-leaflet", () => {
   const React = require("react") as typeof import("react");
 
   return {
-    CircleMarker: ({
+    Marker: ({
       children,
-      center,
+      position,
     }: {
       children: ReactNode;
-      center: [number, number];
+      position: [number, number];
     }) =>
       React.createElement(
         "div",
         {
-          "data-testid": "circle-marker",
-          "data-center": center.join(","),
+          "data-testid": "property-marker",
+          "data-center": position.join(","),
         },
         children,
       ),
@@ -87,11 +87,11 @@ describe("PropertyLayer", () => {
     );
 
     expect(
-      screen.getAllByTestId("circle-marker"),
+      screen.getAllByTestId("property-marker"),
     ).toHaveLength(1);
 
     expect(
-      screen.getByTestId("circle-marker"),
+      screen.getByTestId("property-marker"),
     ).toHaveAttribute(
       "data-center",
       "-25.7479,28.2293",

@@ -150,7 +150,7 @@ export function NewCameraCard({
               }}
               className="size-4 accent-brand-green"
             />
-            Configure camera POV now (optional)
+            Configure camera field of view now (optional)
           </label>
 
           {configureCoverage && (

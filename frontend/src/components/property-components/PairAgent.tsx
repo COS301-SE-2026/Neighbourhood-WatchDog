@@ -60,21 +60,21 @@ export default function PairAgent({ propertyId, propertyAddress}: Readonly<PairA
 
   return (
       <div className="w-full">
-        <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
-          <KeyRound className="h-5 w-5 text-primary" />
+        <div className="mb-1.5 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+          <KeyRound className="h-4.5 w-4.5 text-primary" />
         </div>
-        <h2 className="text-card-foreground mt-4">Pair security agent</h2>
+        <h2 className="mt-2 text-card-foreground">Pair security agent</h2>
 
-        <p className="mt-4">
+        <p className="mt-3 text-sm">
           Property:
           <span className="mt-1 block font-medium text-foreground">{propertyAddress}</span>
         </p>
 
-        <p className="leading-relaxed text-muted-foreground mt-4">
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
           Generate a one-time token to securely connect a WatchDog edge agent to the selected property.
         </p>
 
-      <div className="space-y-4">
+      <div className="mt-6 space-y-5">
         {error && (
           <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-brand-threat">
             {error}
@@ -96,7 +96,7 @@ export default function PairAgent({ propertyId, propertyAddress}: Readonly<PairA
               type="button"
               variant="outline"
               onClick={copyToken}
-              className="mt-4 w-full border-border bg-background text-foreground hover:bg-accent"
+              className="mt-5 min-h-11 w-full border-border bg-background text-sm font-medium text-foreground hover:bg-accent"
             >
               {copied ? (
                 <>
@@ -114,12 +114,12 @@ export default function PairAgent({ propertyId, propertyAddress}: Readonly<PairA
         )}
       </div>
 
-      <div>
+      <div className="mt-6">
         <Button
           type="button"
           onClick={getToken}
           disabled={loading}
-          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+          className="min-h-12 w-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           {loading ? (
             <>

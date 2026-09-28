@@ -8,7 +8,16 @@ import {
   Polygon,
   TileLayer,
   useMapEvents,
+  Marker,
 } from "react-leaflet";
+
+import {
+  PROPERTY_MAP_ICON,
+} from "@/components/shared/property-map-icon";
+
+import {
+  CAMERA_MAP_ICON,
+} from "@/components/shared/camera-map-icon";
 
 import {
   cameraCoverageSchema,
@@ -293,7 +302,7 @@ const [rangeMetres, setRangeMetres] = useState(
   if (!property) {
     return (
       <div className="rounded-md border border-brand-caution/40 bg-brand-caution/10 p-3 text-sm text-brand-caution">
-        This property has no saved map coordinates. Add the property coordinates before configuring a camera POV.
+        This property has no saved map coordinates. Add the property coordinates before configuring a camera field of view.
       </div>
     );
   }
@@ -334,13 +343,13 @@ const [rangeMetres, setRangeMetres] = useState(
       ? "Now click the left edge of the camera view."
       : !rightEdge
         ? "Now click the right edge of the camera view."
-        : "POV preview ready. Adjust the range or reset the points.";
+        : "Field-of-view preview ready. Adjust the range or reset the points.";
 
   return (
     <div className="space-y-3 rounded-lg border border-border bg-brand-abyss p-3">
       <div>
         <p className="text-sm font-medium text-brand-frost">
-          Camera POV (optional)
+          Camera field of view (optional)
         </p>
         <p className="mt-1 text-xs text-brand-ash">
           {instruction} The camera origin must remain within {MAX_CAMERA_ORIGIN_DISTANCE_METRES} metres of the property marker.
@@ -351,12 +360,17 @@ const [rangeMetres, setRangeMetres] = useState(
         <MapContainer
           center={property}
           zoom={17}
+          maxZoom={19}
           scrollWheelZoom
           className="h-72 w-full"
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; CARTO'
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            maxZoom={19}
+            attribution={
+              '&copy; <a href="https://www.openstreetmap.org/copyright">' +
+              "OpenStreetMap contributors"
+            }
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <MapClickHandler
             property={property}
@@ -391,24 +405,14 @@ const [rangeMetres, setRangeMetres] = useState(
               fillOpacity: 0.08,
             }}
           />
-          <CircleMarker
-            center={property}
-            radius={7}
-            pathOptions={{
-              color: "#e2e8f0",
-              fillColor: "#38bdf8",
-              fillOpacity: 0.9,
-            }}
+          <Marker
+            position={property}
+            icon={PROPERTY_MAP_ICON}
           />
           {origin && (
-            <CircleMarker
-              center={origin}
-              radius={7}
-              pathOptions={{
-                color: "#e2e8f0",
-                fillColor: "#22c55e",
-                fillOpacity: 0.95,
-              }}
+            <Marker
+              position={origin}
+              icon={CAMERA_MAP_ICON}
             />
           )}
           {leftEdge && (
@@ -487,7 +491,7 @@ const [rangeMetres, setRangeMetres] = useState(
           disabled={!origin || !leftEdge || !rightEdge}
           className="rounded-md bg-brand-green px-3 py-2 text-xs font-medium text-brand-void disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Use this POV
+          Use this field of view
         </button>
         <button
           type="button"
