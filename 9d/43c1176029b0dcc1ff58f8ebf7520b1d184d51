@@ -1,0 +1,17 @@
+backend/app/services/alert_service.py
+  h_cf6208e37032c0 1324,1327-1332,1334
+  h_cf6208e37032c0 1325-1326,1333
+backend/app/services/situational_brief_service.py
+  h_cf6208e37032c0 87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9d43c1176029b0dcc1ff58f8ebf7520b1d184d51",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
