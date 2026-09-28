@@ -45,6 +45,8 @@ export function CameraSettingsPanel({
 
     const coverageLoading = coverageLoadedForCameraId !== cameraId;
     const [coverageSaving, setCoverageSaving] = useState(false);
+    const [coverageEditorResetKey, setCoverageEditorResetKey] =
+        useState(0);
     const [coverageMessage, setCoverageMessage] = useState<string | null>(null);
     const [coverageError, setCoverageError] = useState<string | null>(null);
 
@@ -148,7 +150,10 @@ export function CameraSettingsPanel({
         try {
             await deleteCameraCoverage(cameraId);
             setCoverage(undefined);
-            setCoverageMessage("Camera POV removed.");
+            setCoverageEditorResetKey((currentKey) => currentKey + 1);
+            setCoverageMessage(
+                "Camera POV removed. The map points have been cleared.",
+            );
         } catch (error) {
             console.error("Failed to remove camera POV", error);
             setCoverageError("Failed to remove camera POV.");
@@ -284,6 +289,7 @@ export function CameraSettingsPanel({
                 {!coverageLoading && (
                     <>
                         <CameraCoverageEditor
+                            key={coverageEditorResetKey}
                             propertyLatitude={propertyLatitude}
                             propertyLongitude={propertyLongitude}
                             value={coverage}
