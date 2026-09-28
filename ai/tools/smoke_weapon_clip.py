@@ -8,6 +8,7 @@ import httpx
 import keyring
 import numpy as np
 from dotenv import load_dotenv
+from keyring.errors import NoKeyringError
 
 
 AI_DIR = Path(__file__).resolve().parents[1]
@@ -23,6 +24,15 @@ AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
 CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
 
 CAMERA_ID = os.getenv("TEST_CAMERA_ID", "")
+
+
+def get_api_key() -> str | None:
+    try:
+        stored_key = keyring.get_password("WatchDog", "api_key")
+    except NoKeyringError:
+        stored_key = None
+
+    return stored_key or os.getenv("INTERNAL_API_TOKEN")
 
 
 def fail(message: str) -> None:
@@ -124,7 +134,7 @@ def main() -> None:
     if not CAMERA_ID:
         fail("TEST_CAMERA_ID is required.")
 
-    api_key = (keyring.get_password("WatchDog", "api_key") or os.getenv("INTERNAL_API_TOKEN"))
+    api_key = get_api_key()
 
     if not api_key:
         fail("No paired edge-agent key was found. Run the test from the native Windows environment after pairing.")
@@ -181,12 +191,18 @@ def main() -> None:
             )
 
     print("Backend clip-upload response:", upload_response.status_code, upload_response.text)
+
     upload_response.raise_for_status()
-    clip_metadata = upload_response.json()
+
+    accepted = upload_response.json()
+
+    if accepted.get("status") != "queued":
+        fail(f"Backend did not queue the clip upload: {accepted}")
 
     print("\nSUCCESS")
     print("Alert ID:", alert_id)
-    print("S3 key:", clip_metadata["clip_s3_key"])
+    print("Clip status: queued")
+    print("The Celery worker must now upload the clip to S3. Check the worker log for the final S3 key.")
 
     print("Open the alert page as an authorised user and review this test clip.")
 

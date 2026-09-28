@@ -1129,13 +1129,7 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
 
 def _validate_tracking_payload(body: CreateInternalAlertRequest, det_type: DetectionType) -> None:
 
-    if det_type == DetectionType.WEAPON_DETECTED:
-        if body.local_track_id is None:
-            raise HTTPException(
-                status_code=422,
-                detail="local_track_id is required for weapon alerts"
 
-            )
 
     if body.appearance_embedding is not None:
         if body.local_track_id is None:
