@@ -330,8 +330,8 @@ function PropertyAlertsSheet({
         }
       }}
     >
-      <SheetContent className="z-[1001] w-full overflow-y-auto border-border bg-brand-depth text-brand-frost sm:max-w-md">
-        <SheetHeader>
+      <SheetContent className="z-[1001] w-full overflow-y-auto border-border bg-brand-depth px-4 pb-6 text-brand-frost sm:max-w-md sm:px-6">
+        <SheetHeader className="pt-4 pr-8 pb-0 pl-0">
           <SheetTitle className="text-brand-frost">
             {property.propertyAddress}
           </SheetTitle>
