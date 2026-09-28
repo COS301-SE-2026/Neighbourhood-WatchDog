@@ -1,6 +1,7 @@
 import json
 import os
 from typing import Any, Callable, Awaitable
+import random
 
 import redis.asyncio as redis
 
@@ -21,6 +22,8 @@ async def cache_get_or_set(
     cached = await r.get(key)
     if cached is not None:
         return json.loads(cached)
+
+    ttl_seconds = ttl_seconds + random.randint(0, 5) #noqa it is safe here
 
     result = await fetch_fn()
     await r.setex(key, ttl_seconds, json.dumps(result))

@@ -31,6 +31,7 @@ class TestAcknowledgeAlert:
         self.mock_db = Mock()
         self.mock_db.execute = AsyncMock()
         self.mock_db.commit = AsyncMock()
+        self.mock_db.flush = AsyncMock()
         self.mock_db.refresh = AsyncMock()
         self.mock_db.rollback = AsyncMock()
 
@@ -429,6 +430,12 @@ class TestListAlerts:
         alert.created_at = datetime.now(timezone.utc)
         return alert
 
+    class _FakeRow(tuple):
+        def __new__(cls, item, total_count):
+            row = super().__new__(cls, (item,))
+            row.total_count = total_count
+            return row
+
     def _mock_query_results(self, alerts, total=None):
         membership = Mock()
         membership.user_id = self.user_id
@@ -437,19 +444,25 @@ class TestListAlerts:
         membership_result = Mock()
         membership_result.scalar_one_or_none.return_value = membership
 
-        count_result = Mock()
-        count_result.scalar_one.return_value = (
-            total if total is not None else len(alerts)
-        )
+        total_value = total if total is not None else len(alerts)
+        rows = [self._FakeRow(a, total_value) for a in alerts]
 
-        alerts_result = Mock()
-        alerts_result.scalars.return_value.all.return_value = alerts
+        combined_result = Mock()
+        combined_result.all.return_value = rows
 
-        self.mock_db.execute.side_effect = [
-            membership_result,
-            count_result,
-            alerts_result,
-        ]
+        if rows:
+            self.mock_db.execute.side_effect = [
+                membership_result,
+                combined_result,
+            ]
+        else:
+            count_result = Mock()
+            count_result.scalar_one.return_value = total_value
+            self.mock_db.execute.side_effect = [
+                membership_result,
+                combined_result,
+                count_result,
+            ]
 
     @pytest.mark.asyncio
     async def test_missing_neighbourhood_id_raises_400(self):
@@ -500,7 +513,7 @@ class TestListAlerts:
 
         assert len(results) == 2
         assert total == 2
-        assert self.mock_db.execute.await_count == 3
+        assert self.mock_db.execute.await_count == 2
 
     @pytest.mark.asyncio
     async def test_filters_by_camera_id(self):
@@ -778,6 +791,7 @@ class TestBroadcastNeighbourhoodAlert:
         self.mock_db = Mock()
         self.mock_db.execute = AsyncMock()
         self.mock_db.commit = AsyncMock()
+        self.mock_db.flush = AsyncMock()
         self.mock_db.add = Mock()
 
         self.user_id = uuid.uuid4()
@@ -987,8 +1001,8 @@ class TestBroadcastNeighbourhoodAlert:
 
         mock_get.assert_called_once_with(EventType.NEIGHBOURHOOD_BROADCAST)
         mock_get.return_value.notify.assert_awaited_once()
-        # create_audit_log_item commits, then the broadcast service commits.
-        assert self.mock_db.commit.await_count == 2
+        # The service owns the transaction commit.
+        assert self.mock_db.commit.await_count == 1
 
 class TestGetAlertForAgent:
     def setup_method(self):

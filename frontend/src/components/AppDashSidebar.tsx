@@ -42,7 +42,6 @@ import {
     User,
     UserPlus,
     Users,
-    Shield,
     type LucideIcon,
 } from "lucide-react";
 
@@ -181,7 +180,7 @@ function getSidebarGroups(
 
     if (activeContext.role === "Security Officer" || activeContext.role == "Neighbourhood Admin") {
         neighbourhoodItems.unshift({
-            title: "Alert map",
+            title: "Map",
             url:
             `/dashboard/neighbourhood/` +
             `${activeContext.neighbourhoodId}/map`,
@@ -194,21 +193,7 @@ function getSidebarGroups(
         items: neighbourhoodItems
     });
 
-    const securityItems: SidebarItemData[] = [];
 
-    if (activeContext.role === "Security Officer") {
-        securityItems.unshift({
-            title: "Officer Status",
-            url: `/dashboard/security/${activeContext.id}/`,
-            icon: Shield,
-            // badge: , TODO: make this badge glow green when the officer's location is being broadcast
-        });
-    }
-
-    groups.push({
-        label: "SECURITY",
-        items: securityItems
-    })
 
     if (activeContext.role === "Neighbourhood Admin") {
         groups.push({

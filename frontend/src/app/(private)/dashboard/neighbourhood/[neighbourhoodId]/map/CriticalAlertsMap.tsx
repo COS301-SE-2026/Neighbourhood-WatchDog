@@ -4,10 +4,11 @@ import {
   useEffect,
   useMemo,
 } from "react";
-import { latLngBounds } from "leaflet";
+import { divIcon, latLngBounds } from "leaflet";
 import {
   CircleMarker,
   MapContainer,
+  Marker,
   Polyline,
   TileLayer,
   Tooltip,
@@ -64,7 +65,7 @@ const TYPE_COLOURS: Record<
   CriticalAlertMapItem["detection_type"],
   string
 > = {
-  WEAPON_DETECTED: "#ef4444",
+  WEAPON_DETECTED: "#facc15",
   FALL_DETECTED: "#f59e0b",
 };
 
@@ -189,6 +190,141 @@ function propertyStatus(
 
 function markerRadius(alertCount: number): number {
   return Math.min(10 + alertCount, 18);
+}
+
+function weaponWarningIcon(
+  status: CriticalAlertStatus,
+  selected: boolean,
+) {
+  const statusStyle = STATUS_STYLES[status];
+  const outlineColour = selected
+    ? "#ffffff"
+    : statusStyle.colour;
+
+  return divIcon({
+    className: "",
+    iconSize: [40, 36],
+    iconAnchor: [20, 33],
+    tooltipAnchor: [0, -30],
+    html: `
+      <svg
+        width="40"
+        height="36"
+        viewBox="0 0 40 36"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <path
+          d="M20 2 L38 34 H2 Z"
+          fill="#facc15"
+          stroke="${outlineColour}"
+          stroke-width="${selected ? 5 : 3}"
+          stroke-linejoin="round"
+          stroke-dasharray="${
+            statusStyle.dashArray ?? "none"
+          }"
+        />
+        <path
+          d="M20 11 V23"
+          stroke="#111827"
+          stroke-width="3.5"
+          stroke-linecap="round"
+        />
+        <circle
+          cx="20"
+          cy="28"
+          r="2"
+          fill="#111827"
+        />
+      </svg>
+    `,
+  });
+}
+
+
+function AlertPropertyMarker({
+  property,
+  selected,
+  onSelect,
+}: {
+  readonly property: PropertyAlertGroup;
+  readonly selected: boolean;
+  readonly onSelect: (
+    property: PropertyAlertGroup,
+  ) => void;
+}) {
+  const detectionType = propertyDetectionType(
+    property.alerts,
+  );
+
+  const status = propertyStatus(property.alerts);
+  const statusStyle = STATUS_STYLES[status];
+
+  const tooltip = (
+    <Tooltip
+      direction="top"
+      offset={[0, -8]}
+    >
+      <div>
+        <strong>
+          {property.propertyAddress}
+        </strong>
+
+        <br />
+
+        {property.alerts.length} critical{" "}
+        {property.alerts.length === 1
+          ? "alert"
+          : "alerts"}
+      </div>
+    </Tooltip>
+  );
+
+  if (detectionType === "WEAPON_DETECTED") {
+    return (
+      <Marker
+        position={[
+          property.latitude,
+          property.longitude,
+        ]}
+        icon={weaponWarningIcon(
+          status,
+          selected,
+        )}
+        eventHandlers={{
+          click: () => onSelect(property),
+        }}
+      >
+        {tooltip}
+      </Marker>
+    );
+  }
+
+  return (
+    <CircleMarker
+      center={[
+        property.latitude,
+        property.longitude,
+      ]}
+      radius={markerRadius(
+        property.alerts.length,
+      )}
+      pathOptions={{
+        color: selected
+          ? "#ffffff"
+          : statusStyle.colour,
+        fillColor: TYPE_COLOURS.FALL_DETECTED,
+        fillOpacity: 0.85,
+        weight: selected ? 6 : 4,
+        dashArray: statusStyle.dashArray,
+      }}
+      eventHandlers={{
+        click: () => onSelect(property),
+      }}
+    >
+      {tooltip}
+    </CircleMarker>
+  );
 }
 
 function FitPropertyBounds({
@@ -415,72 +551,18 @@ export function CriticalAlertsMap({
         
 
 
-        {alertProperties.map((property) => {
-          const detectionType =
-            propertyDetectionType(
-              property.alerts,
-            );
-
-          const status = propertyStatus(
-            property.alerts,
-          );
-
-          const fillColour =
-            TYPE_COLOURS[detectionType];
-
-          const statusStyle =
-            STATUS_STYLES[status];
-
-          return (
-            <CircleMarker
+        {alertProperties.map((property) => (
+          <AlertPropertyMarker
             key={property.propertyId}
-            center={[
-                property.latitude,
-                property.longitude,
-            ]}
-            radius={markerRadius(
-                property.alerts.length,
-            )}
-            pathOptions={{
-                color:
-                selectedPropertyId ===
-                property.propertyId
-                    ? "#ffffff"
-                    : statusStyle.colour,
-                fillColor: fillColour,
-                fillOpacity: 0.85,
-                weight:
-                selectedPropertyId ===
-                property.propertyId
-                    ? 6
-                    : 4,
-                dashArray: statusStyle.dashArray,
-            }}
-            eventHandlers={{
-                click: () =>
-                onSelectProperty(property),
-            }}
-            >
-            <Tooltip
-                direction="top"
-                offset={[0, -8]}
-            >
-                <div>
-                <strong>
-                    {property.propertyAddress}
-                </strong>
+            property={property}
+            selected={
+              selectedPropertyId ===
+              property.propertyId
+            }
+            onSelect={onSelectProperty}
+          />
+        ))}
 
-                <br />
-
-                {property.alerts.length} critical{" "}
-                {property.alerts.length === 1
-                    ? "alert"
-                    : "alerts"}
-                </div>
-            </Tooltip>
-            </CircleMarker>
-          );
-        })}
 
         {route && (
           <>
@@ -509,11 +591,14 @@ export function CriticalAlertsMap({
               ]}
               radius={12}
               pathOptions={{
-                color: "#ffffff",
-                fillColor: "#ef4444",
-                fillOpacity: 0.9,
-                weight: 4,
+                color: "#10b981",
+                fillColor: "#10b981",
+                fillOpacity: 0,
+                weight: 3,
+                dashArray: "5 4",
               }}
+
+
             >
               <Tooltip direction="top">
                 Alert property
@@ -532,10 +617,34 @@ function MapLegend() {
       aria-label="Map marker legend"
       className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-brand-ash"
     >
-      <LegendItem
-        colour="#ef4444"
-        label="Weapon"
-      />
+      <span className="inline-flex items-center gap-1.5">
+        <svg
+          aria-hidden="true"
+          width="14"
+          height="13"
+          viewBox="0 0 40 36"
+        >
+          <path
+            d="M20 2 L38 34 H2 Z"
+            fill="#facc15"
+          />
+          <path
+            d="M20 11 V23"
+            stroke="#111827"
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
+          <circle
+            cx="20"
+            cy="28"
+            r="2"
+            fill="#111827"
+          />
+        </svg>
+
+        Weapon
+      </span>
+
 
       <LegendItem
         colour="#f59e0b"

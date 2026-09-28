@@ -1,9 +1,13 @@
 "use client";
 
 import {
-  CircleMarker,
+  Marker,
   Tooltip,
 } from "react-leaflet";
+
+import {
+  PROPERTY_MAP_ICON,
+} from "@/components/shared/property-map-icon";
 
 import type {
   NeighbourhoodMapProperty,
@@ -33,21 +37,15 @@ export function PropertyLayer({
         }
 
         return (
-          <CircleMarker
+          <Marker
             key={property.id}
-            center={[
+            position={[
               property.latitude,
               property.longitude,
             ]}
-            radius={6}
-            pathOptions={{
-              color: "#e2e8f0",
-              fillColor: "#38bdf8",
-              fillOpacity: 0.85,
-              weight: 2,
-            }}
+            icon={PROPERTY_MAP_ICON}
           >
-            <Tooltip direction="top" offset={[0, -6]}>
+            <Tooltip direction="top" offset={[0, -36]}>
               <div>
                 <strong>
                   {property.address}
@@ -60,7 +58,7 @@ export function PropertyLayer({
                 </span>
               </div>
             </Tooltip>
-          </CircleMarker>
+          </Marker>
         );
       })}
     </>

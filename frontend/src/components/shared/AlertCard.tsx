@@ -243,7 +243,7 @@ export function AlertDetailSheet({
       <SheetContent
         side="right"
         overlayClassName="z-[1100]"
-        className="z-[1101] w-full max-w-lg border-l border-border bg-brand-void text-brand-frost"
+        className="z-[1101] w-full sm:max-w-[min(90vw,36rem)] border-l border-border bg-brand-void text-brand-frost"
       >
         {onBack && (
           <Button
@@ -271,7 +271,7 @@ export function AlertDetailSheet({
         </SheetHeader>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-6 sm:px-6">
-          {alert.thumbnail_url ? (
+          {alert.thumbnail_url && (
             <div className="relative rounded-lg overflow-hidden border border-border">
               <Image
                 src={alert.thumbnail_url}
@@ -281,11 +281,6 @@ export function AlertDetailSheet({
                 sizes="(max-width: 768px) 100vw, 400px"
                 className="h-auto w-full object-cover"
               />
-            </div>
-          ) : (
-            <div className="rounded-lg border border-border bg-brand-slate h-40 flex items-center justify-center gap-2">
-              <Camera className="h-8 w-8 text-brand-green opacity-50" />
-              <span className="text-sm text-brand-ash/60">No thumbnail</span>
             </div>
           )}
 
@@ -481,7 +476,7 @@ export function AlertCard({alert, onAcknowledge, onBroadcast, broadcasting, canV
     <>
       <Card
         className={[
-          "relative flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-xl border transition-all duration-200",
+          "relative flex flex-col gap-3 rounded-xl border p-3 transition-all duration-200 sm:flex-row sm:items-center sm:gap-4 sm:p-4",
           "bg-brand-depth border-border",
           isNew
             ? "hover:border-brand-green/50 hover:shadow-md"
@@ -496,7 +491,7 @@ export function AlertCard({alert, onAcknowledge, onBroadcast, broadcasting, canV
         aria-label={`Alert: ${detectionLabel(alert.detection_type)}`}
       >
         {/* Content */}
-        <div className="flex-1 pl-3 min-w-0">
+        <div className="min-w-0 flex-1 pl-0 sm:pl-3">
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <SeverityBadge severity={severity} />
             <StatusBadge status={alert.status} />
@@ -522,7 +517,7 @@ export function AlertCard({alert, onAcknowledge, onBroadcast, broadcasting, canV
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap sm:shrink-0">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

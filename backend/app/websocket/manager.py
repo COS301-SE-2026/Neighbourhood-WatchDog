@@ -1,4 +1,5 @@
 import json
+import asyncio
 from fastapi import WebSocket
 
 class ConnectionManager:
@@ -26,14 +27,19 @@ class ConnectionManager:
         payload = json.dumps(message)
         for key in keys:
             connections = self._connections.get(key, set())
-            dead: set[WebSocket] = set()
             
-            for ws in connections:
-                try:
-                    await ws.send_text(payload)
-                except Exception:
-                    dead.add(ws)
+            if not connections:
+                continue
 
+            results = await asyncio.gather(
+                *(ws.send_text(payload) for ws in connections),
+                return_exceptions=True,
+            )
+
+            dead = {
+                ws for ws, result in zip(connections, results)
+                if isinstance(result, Exception)
+            }
             for ws in dead:
                 connections.discard(ws)
 

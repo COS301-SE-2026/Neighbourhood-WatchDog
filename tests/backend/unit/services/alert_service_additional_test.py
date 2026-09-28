@@ -49,6 +49,19 @@ def make_result(
     return result
 
 
+class _FakeRow(tuple):
+    def __new__(cls, item, total_count):
+        row = super().__new__(cls, (item,))
+        row.total_count = total_count
+        return row
+
+
+def make_paginated_result(items, total=None):
+    total_count = total if total is not None else len(items)
+    result = Mock()
+    result.all.return_value = [_FakeRow(item, total_count) for item in items]
+    return result
+
 def make_property(
     *,
     neighbourhood_id=NEIGHBOURHOOD_ID,
@@ -643,14 +656,11 @@ async def test_list_property_alerts_returns_paginated_alerts():
     )
     alert = make_alert()
 
-    count_result = make_result(scalar_one=1)
-
     db = make_db()
     db.execute.side_effect = [
         make_result(scalar=property_obj),
         make_result(scalar=membership),
-        count_result,
-        make_result(rows=[alert]),
+        make_paginated_result([alert], total=1),
     ]
 
     alerts, total = await service.list_property_alerts_handler(
@@ -670,7 +680,7 @@ async def test_list_property_alerts_returns_paginated_alerts():
     assert len(alerts) == 1
     assert alerts[0].id == ALERT_ID
     assert alerts[0].camera_id == CAMERA_ID
-    assert db.execute.await_count == 4
+    assert db.execute.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -952,11 +962,13 @@ async def test_create_alert_for_agent_maps_known_detection_label():
     existing_result = make_result()
     existing_result.first.return_value = None
 
+    recent_weapon_result = make_result(scalar=None)
+
     db.execute.side_effect = [
         camera_result,
         existing_result,
+        recent_weapon_result,
     ]
-
     assigned_ids = iter([ALERT_ID, uuid4(), uuid4()])
 
     def assign_ids_on_add(entity):
@@ -1012,9 +1024,12 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
     existing_result = make_result()
     existing_result.first.return_value = None
 
+    recent_weapon_result = make_result(scalar=None)
+
     db.execute.side_effect = [
         camera_result,
         existing_result,
+        recent_weapon_result,
     ]
 
     assigned_ids = iter([ALERT_ID, uuid4(), uuid4()])
@@ -1746,6 +1761,10 @@ async def test_create_trackless_weapon_alert_without_tracking_rows():
             return_value=Mock(
                 model_dump=Mock(return_value={}),
             ),
+        ),
+        patch(
+            "app.services.alert_service._find_recent_weapon_alert",
+            new=AsyncMock(return_value=None),
         ),
     ):
         response = await service.create_alert_for_agent_handler(

@@ -98,7 +98,7 @@ test("POV option is disabled by default", () => {
   renderCard();
 
   const checkbox = screen.getByLabelText(
-    "Configure camera POV now (optional)",
+    "Configure camera field of view now (optional)",
   );
 
   expect(checkbox).not.toBeChecked();
@@ -132,7 +132,7 @@ test("enabling POV displays the editor", () => {
 
   fireEvent.click(
     screen.getByLabelText(
-      "Configure camera POV now (optional)",
+      "Configure camera field of view now (optional)",
     ),
   );
 
@@ -156,7 +156,7 @@ test("missing property coordinates show a warning", () => {
 
   fireEvent.click(
     screen.getByLabelText(
-      "Configure camera POV now (optional)",
+      "Configure camera field of view now (optional)",
     ),
   );
 
@@ -175,7 +175,7 @@ test("incomplete POV prevents camera submission", () => {
 
   fireEvent.click(
     screen.getByLabelText(
-      "Configure camera POV now (optional)",
+      "Configure camera field of view now (optional)",
     ),
   );
 
@@ -196,7 +196,7 @@ test("complete POV is included in the registration data", () => {
 
   fireEvent.click(
     screen.getByLabelText(
-      "Configure camera POV now (optional)",
+      "Configure camera field of view now (optional)",
     ),
   );
 
@@ -227,7 +227,7 @@ test("disabling POV removes the optional coverage payload", () => {
   fillRequiredFields();
 
   const checkbox = screen.getByLabelText(
-    "Configure camera POV now (optional)",
+    "Configure camera field of view now (optional)",
   );
 
   fireEvent.click(checkbox);

@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
 from app.auth.jwt import verify_jwt
+from app.core.cache import cache_get_or_set
 from app.models.neighbourhood_user import (
     NeighbourhoodRole,
     NeighbourhoodUser
@@ -44,6 +45,7 @@ from app.schemas.danger_zone import (
     DangerZoneResponse,
 )
 from app.services import alert_service
+from app.services.alert_cache import alerts_neighbourhood_cache_key, incident_density_cache_key
 from app.services.alert_service import (
     DEFAULT_PAGE_SIZE,
     MAX_PAGE_SIZE,
@@ -81,7 +83,8 @@ def remove_connection(user_id: str, websocket: WebSocket) -> None:
 async def broadcast(user_ids: list[str], message: dict) -> None:
     await alert_connection_manager.broadcast(user_ids, message)
 
-
+ALERTS_BY_NEIGHBOURHOOD_TTL = 15 # 15 second ttl for alerts/{neighbourhood_id}
+INCIDENT_DENSITY_TTL = 30  # 30 second ttl for get incident density
 
 @router.get("/metrics", response_model=AlertMetricsRes)
 async def get_alert_metrics(
@@ -529,19 +532,34 @@ async def get_incident_density(
     db: DbSession,
     claims: NeighbourhoodMemberClaims,
 ) -> IncidentDensityRes:
-    data = await get_incident_density_handler(
-        neighbourhood_id=neighbourhood_id,
-        filters=filters,
-        db=db,
-        claims=claims,
-    )
+    async def fetch():
+        data = await get_incident_density_handler(
+            neighbourhood_id=neighbourhood_id,
+            filters=filters,
+            db=db,
+            claims=claims,
+        )
 
-    return IncidentDensityRes(
-        status=200,
-        message=(
-            "Incident density retrieved successfully"
+        return IncidentDensityRes(
+            status=200,
+            message=(
+                "Incident density retrieved successfully"
+            ),
+            data=data,
+        ).model_dump(mode="json")
+
+    return await cache_get_or_set(
+        incident_density_cache_key(
+            neighbourhood_id,
+            filters.start_date,
+            filters.end_date,
+            filters.west,
+            filters.south,
+            filters.east,
+            filters.north,
         ),
-        data=data,
+        INCIDENT_DENSITY_TTL,
+        fetch,
     )
 
 @router.get(

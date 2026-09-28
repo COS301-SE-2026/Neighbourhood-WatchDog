@@ -26,7 +26,7 @@ jest.mock("@/components/CameraCoverageEditor", () => ({
             type="button"
             onClick={() => onChange(undefined)}
         >
-            Mock camera POV editor
+            Mock camera field-of-view editor
         </button>
     ),
 }));
@@ -88,7 +88,7 @@ function settingsState(zoneMutation: "adding" | "removing" | null) {
 async function waitForCoverageToLoad() {
     await waitFor(() => {
         expect(
-            screen.queryByText("Loading camera POV…"),
+            screen.queryByText("Loading camera field of view…"),
         ).not.toBeInTheDocument();
     });
 }

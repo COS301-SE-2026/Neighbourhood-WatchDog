@@ -2,11 +2,15 @@
 
 import { useEffect } from "react";
 import {
-    CircleMarker,
     MapContainer,
+    Marker,
     TileLayer,
     useMap,
 } from "react-leaflet";
+
+import {
+    PROPERTY_MAP_ICON,
+} from "@/components/shared/property-map-icon";
 
 interface AddressMapProps {
     latitude: number;
@@ -53,14 +57,9 @@ export function AddressMap({
 
 
 
-                <CircleMarker
-                    center={position}
-                    radius={8}
-                    pathOptions={{
-                        color: "var(--color-green)",
-                        fillColor: "var(--color-green)",
-                        fillOpacity: 0.8,
-                    }}
+                <Marker
+                    position={position}
+                    icon={PROPERTY_MAP_ICON}
                 />
             </MapContainer>
         </div>

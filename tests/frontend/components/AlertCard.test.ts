@@ -211,7 +211,7 @@ describe("AlertCard rendered states", () => {
     fireEvent.click(screen.getByRole("button", { name: "View alert details" }));
 
     expect(screen.getByText("Full alert details")).toBeInTheDocument();
-    expect(screen.getByText("No thumbnail")).toBeInTheDocument();
+    expect(screen.queryByText("No thumbnail")).not.toBeInTheDocument();
     expect(screen.getByText("Property address is unavailable.")).toBeInTheDocument();
     expect(screen.getByText(/Map unavailable because this property has no saved coordinates/)).toBeInTheDocument();
   });
