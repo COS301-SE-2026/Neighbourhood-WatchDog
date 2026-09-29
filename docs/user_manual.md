@@ -315,6 +315,10 @@ Detection settings are available only to authorised administrators.
 4. Move the slider to the required percentage.
 5. Release the slider to save the setting.
 
+![Camera Threshold mockup](images/ConfidenceThresholdMarkup.png)
+
+*Figure 10. Illustrative camera image.*
+
 The helper text explains that detections below this confidence do not trigger alerts. A higher threshold can reduce false alerts but may also miss less-clear detections. Use the value agreed by the security team; do not change it casually during an incident.
 
 ### Add a detection zone
@@ -333,7 +337,7 @@ A camera with no configured zones treats all detections as eligible for alerting
 
 ![Detection zone screenshot placeholder](images/zone_config.png)
 
-*Figure 11. Capture the Camera Detection Settings panel with the confidence slider and a visible polygon.*
+*Figure 12. Capture the Camera Detection Settings panel with the confidence slider and a visible polygon.*
 
 ---
 
@@ -380,7 +384,7 @@ Select **Details** to open the detail panel. Depending on the alert, it may cont
 
 ![Alerts mockup](images/alert.png)
 
-*Figure 12. Existing mockups show an Alerts list and an alert pop-up.*
+*Figure 13. Existing mockups show an Alerts list and an alert pop-up.*
 
 ### Broadcast an alert
 
@@ -478,7 +482,7 @@ If there are no matching records, WatchDog displays **No alerts**. This can mean
 
 ![Alert history screenshot placeholder](images/alert_filter.png)
 
-*Figure 13. Capture Current, History, and the Filter menu.*
+*Figure 14. Capture Current, History, and the Filter menu.*
 
 ---
 
@@ -525,7 +529,7 @@ Analytics should be interpreted as decision support. Confirm important incidents
 
 ![Analytics screenshot placeholder](images/analytics.png)
 
-*Figure 14. The Analytics page.*
+*Figure 15. The Analytics page.*
 
 ---
 
@@ -584,7 +588,7 @@ The page also displays the neighbourhood join code to authorised administrators.
 
 ![Join requests screenshot placeholder](images/join_request.png)
 
-*Figure 15. Pending filter and request actions.*
+*Figure 16. Pending filter and request actions.*
 
 ### Set risk thresholds
 
@@ -602,7 +606,7 @@ These thresholds apply to the cameras and residents in the selected neighbourhoo
 
 ![Risk thresholds screenshot placeholder](images/risk_threshold.png)
 
-*Figure 16. Capture the current configuration and update form.*
+*Figure 17. Capture the current configuration and update form.*
 
 ---
 
@@ -622,7 +626,7 @@ The availability of WhatsApp and email notifications depends on the deployment c
 
 ![Settings screenshot placeholder](images/settings.png)
 
-*Figure 17. Capture the Settings page.*
+*Figure 18. Capture the Settings page.*
 
 ---
 
