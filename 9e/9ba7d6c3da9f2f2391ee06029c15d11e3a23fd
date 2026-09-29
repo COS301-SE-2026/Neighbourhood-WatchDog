@@ -1,0 +1,14 @@
+README.md
+  h_cf6208e37032c0 246,249-250,252,264
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9e9ba7d6c3da9f2f2391ee06029c15d11e3a23fd",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
