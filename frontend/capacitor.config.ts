@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'WatchDog',
   webDir: 'out',
   server: {
-    url: 'https://neighbourhood-watch-dog.vercel.app',
+    url: 'https://neighbourhood-watch-dog.vercel.app/auth/login',
     cleartext: false
   }
 };
