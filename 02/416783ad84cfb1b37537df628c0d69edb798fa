@@ -1,0 +1,15 @@
+backend/app/services/alert_service.py
+  h_3555f7510a5ca8 540,542-721
+  h_3555f7510a5ca8 536-539,541
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "02416783ad84cfb1b37537df628c0d69edb798fa",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
