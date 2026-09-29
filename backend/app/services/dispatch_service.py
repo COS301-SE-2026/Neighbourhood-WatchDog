@@ -299,6 +299,21 @@ async def _fetch_dispatch_rows(db: DbSession, alert_id: UUID) -> list[Dispatch]:
     )
     return list((await db.execute(stmt)).scalars().all())
 
+async def _fetch_dispatch_rows_for_round(
+        db: DbSession, 
+        alert_id: UUID,
+        triggering_sighting_id: UUID,
+    ) -> list[Dispatch]:
+    stmt = (
+        select(Dispatch)
+        .where(
+            Dispatch.alert_id == alert_id,
+            Dispatch.triggering_sighting_id == triggering_sighting_id,
+        )
+        .order_by(Dispatch.rank.asc().nulls_last(), Dispatch.created_at.asc())
+    )
+    return list((await db.execute(stmt)).scalars().all())
+
 async def _get_officer_user_id(db: DbSession, officer_id: UUID) -> str | None:
     result = await db.execute(
         select(NeighbourhoodUser.user_id)
