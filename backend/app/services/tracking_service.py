@@ -130,20 +130,30 @@ async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUI
 
 
         duplicate_sighting_stmt = (
-            select(TrackingSighting.id)
+            select(TrackingSighting)
             .where(
                 TrackingSighting.tracking_subject_id == tracking_subject_id,
-                TrackingSighting.camera_id == camera_id 
+                TrackingSighting.camera_id == camera_id,
             )
             .limit(1)
         )
 
         duplicate_sighting_result = await db.execute(duplicate_sighting_stmt)
 
-        if duplicate_sighting_result.scalar_one_or_none() is not None:
+        existing_sighting = (
+            duplicate_sighting_result.scalar_one_or_none()
+        )
+
+        if existing_sighting is not None:
+            if existing_sighting.local_track_id == local_track_id:
+                return existing_sighting
+
             raise HTTPException(
                 status_code=409,
-                detail="Tracking subject already has a sighting on this camera" 
+                detail=(
+                    "Tracking subject already has a different sighting on this camera"
+                
+                )
 
             )
 
@@ -435,6 +445,43 @@ async def match_tracking_embedding(*, db: AsyncSession, body: MatchTrackingEmbed
             detail="Candidate camera is not associated with a neighbourhood"
 
         )
+
+    if body.local_track_id is not None:
+        existing_sighting_stmt = (
+            select(TrackingSubject, TrackingSighting)
+            .join(TrackingSighting, TrackingSighting.tracking_subject_id == TrackingSubject.id)
+            .join(Alert, Alert.id == TrackingSubject.alert_id)
+            .where(
+                TrackingSighting.camera_id == body.camera_id,
+                TrackingSighting.local_track_id == body.local_track_id,
+                Alert.status == "OPEN",
+                Alert.camera_id != body.camera_id
+            )
+            .limit(1)
+        )
+
+        existing_sighting_result = await db.execute(
+            existing_sighting_stmt
+        )
+
+        existing_row = existing_sighting_result.one_or_none()
+
+        if existing_row is not None:
+            existing_subject, existing_sighting = existing_row
+
+            return TrackingMatchResponse(
+                status=200,
+                message="Existing tracking sighting matched",
+                data=TrackingMatchData(
+                    matched=True,
+                    tracking_subject_id=existing_subject.id,
+                    similarity=(
+                        existing_sighting.match_confidence
+                        or TRACKING_MATCH_MIN_SIMILARITY
+                    ),
+                    threshold=TRACKING_MATCH_MIN_SIMILARITY,
+                ),
+            )
 
 
     #distance close to 0 = very similar

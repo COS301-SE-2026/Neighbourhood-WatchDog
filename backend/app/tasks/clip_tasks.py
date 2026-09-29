@@ -35,12 +35,12 @@ def upload_alert_clip_task(self, alert_id: str, clip_b64: str, content_type: str
 async def _upload_and_link(alert_id: str, clip_b64: str, content_type: str) -> None:
     clip_bytes = base64.b64decode(clip_b64)
 
-    if not clip_bytes:
-        logger.error(
-            "Clip for alert %s exceeds %s bytes (%s bytes). Skipping upload.",
-            alert_id, MAX_CLIP_SIZE_BYTES, len(clip_bytes),
+    if (not clip_bytes or len(clip_bytes) > MAX_CLIP_SIZE_BYTES):
+        raise ValueError(
+            f"Invalid clip size for alert {alert_id}: "
+            f"{len(clip_bytes)} bytes; maximum is "
+            f"{MAX_CLIP_SIZE_BYTES} bytes"
         )
-        return
 
     async with worker_session() as db:
         alert_uuid = UUID(alert_id)
