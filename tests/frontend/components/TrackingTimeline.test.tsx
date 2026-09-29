@@ -30,7 +30,6 @@ jest.mock("react-leaflet", () => {
 });
 
 import { render, screen, waitFor } from "@testing-library/react";
-import { render, screen, waitFor } from "@testing-library/react";
 import { ApiError, fetchTrackingTimeline } from "../../../frontend/src/lib/api/alert";
 import {
   TrackingTimeline,
@@ -95,7 +94,7 @@ describe("TrackingTimeline", () => {
     });
 
     expect(screen.getByText("subject-1")).toBeInTheDocument();
-    expect(screen.getByText("Active")).toBeInTheDocument();
+    expect(screen.getByText("Active across cameras")).toBeInTheDocument();
     expect(screen.getByText("Sequence 2")).toBeInTheDocument();
     expect(screen.getByText("North entrance")).toBeInTheDocument();
     expect(screen.getByText("Local track: 17")).toBeInTheDocument();
@@ -126,7 +125,7 @@ describe("TrackingTimeline", () => {
       ).toBeInTheDocument();
     });
 
-    expect(screen.getByText("Terminated after acknowledgement")).toBeInTheDocument();
+    expect(screen.getByText("Active across cameras")).toBeInTheDocument();
   });
 
   test("renders a not-found error", async () => {

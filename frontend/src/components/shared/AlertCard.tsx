@@ -298,6 +298,7 @@ export function AlertDetailSheet({
               <>
                 <TrackingTimeline
                   alertId={alert.id}
+                  alertTimestamp={alert.created_at}
                   alertStatus={alert.status}
                   enabled={open}
                   refreshKey={trackingRefreshKey}

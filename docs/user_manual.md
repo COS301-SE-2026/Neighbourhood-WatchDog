@@ -17,12 +17,13 @@
 11. [Configure detection settings](#11-configure-detection-settings)
 12. [Review and respond to alerts](#12-review-and-respond-to-alerts)
 13. [Use alert history and filters](#13-use-alert-history-and-filters)
-14. [Analytics](#14-analytics)
-15. [Neighbourhood administration](#15-neighbourhood-administration)
-16. [Account settings and notifications](#16-account-settings-and-notifications)
-17. [Troubleshooting](#17-troubleshooting)
-18. [Safety, privacy, and responsible use](#18-safety-privacy-and-responsible-use)
-19. [Demo 3 verification checklist](#19-demo-3-verification-checklist)
+14. [Analytics and neighbourhood intelligence](#14-analytics-and-neighbourhood-intelligence)
+15. [Security officer availability and dispatch](#15-security-officer-availability-and-dispatch)
+16. [Neighbourhood administration](#16-neighbourhood-administration)
+17. [Account settings and notifications](#17-account-settings-and-notifications)
+18. [Troubleshooting](#18-troubleshooting)
+19. [Safety, privacy, and responsible use](#19-safety-privacy-and-responsible-use)
+20. [WOW-factor demonstration checklist](#20-wow-factor-demonstration-checklist)
 
 ---
 
@@ -38,12 +39,25 @@ Neighbourhood WatchDog connects approved security cameras to a shared monitoring
 - notify the neighbourhood about an active alert when that action is appropriate.
 
 
+### What makes WatchDog different
+
+WatchDog is more than a camera dashboard. Its standout capabilities help security teams move from simply viewing alerts to understanding, prioritising, and responding to incidents:
+
+- **Autonomous patrol assistance:** follow a detected individual across authorised cameras, review the movement path, and read a plain-English situational brief.
+- **Smart alert navigation:** view critical alerts on a map, see routes, distance, and estimated arrival time, and open the route in Google Maps.
+- **Neighbourhood risk intelligence:** overlay historical incidents, camera coverage gaps, danger zones, and live alerts on the neighbourhood map.
+- **Intelligent officer dispatch:** officers can share their availability and location so the system can select an eligible nearby responder.
+- **Cross-property identity correlation:** when a confident match is detected across authorised properties, related alerts can be connected and authorised responders can be notified.
+
+These capabilities are decision-support tools. They do not replace human judgement, emergency services, or the neighbourhood’s response procedures.
+
+
 
 ### The normal user journey
 
 **Create account → confirm email → create property → create or join a neighbourhood → add cameras → connect the Agent → enable monitoring → review alerts.**
 
-![WatchDog logo](images/NWD.jpeg)
+![WatchDog logo](../frontend/src/assets/images/logo-mark-only.svg)
 
 *Figure 1. Neighbourhood WatchDog identity mark.*
 
@@ -90,9 +104,10 @@ For the demonstration pairing workflow, use native Windows Python 3.12.
 5. Select the submit button.
 6. Watch for a confirmation message and check your email.
 
-![Authentication mockup](images/verify-email.png)
+![Sign up Mockup](images/CreateAccountMockup.png)
 
 *Figure 2. Existing authentication.*
+
 
 ### Confirm the account
 
@@ -100,6 +115,9 @@ For the demonstration pairing workflow, use native Windows Python 3.12.
 2. Enter the code sent to your email address.
 3. Submit the code.
 4. Return to the login screen and sign in.
+![Authentication mockup](images/verify-email.png)
+
+*Figure 3. Existing authentication.*
 
 If the code expires or is incorrect, use the application’s resend or confirmation option if available. Do not repeatedly guess codes.
 
@@ -128,7 +146,7 @@ A property is the place where one or more cameras are registered. A property is 
 ![Property and neighbourhood mockup](images/create_property.png)
 ![Property and neighbourhood mockup](images/view_properties.png)
 
-*Figure 3. Existing property and neighbourhood mockups. Replace with the live Create Property dialog in the final manual.*
+*Figure 4. Existing property and neighbourhood mockups. Replace with the live Create Property dialog in the final manual.*
 
 ### If the property is not shown
 
@@ -155,20 +173,26 @@ Use this option when you are responsible for starting a new community group.
 
 ![Create neighbourhood mockup](images/create_neighbourhood.png)
 
-*Figure 4. The existing mockup shows the Create Neighbourhood form.*
+*Figure 5. The existing mockup shows the Create Neighbourhood form.*
 
 ### Join an existing neighbourhood
 
 1. Select the property you want to associate with the neighbourhood.
 2. Open **Join a neighbourhood**.
-3. Enter the join code supplied by the neighbourhood administrator.
+3. Enter the join code supplied by the neighbourhood administrator.(From the "Join requests" page)
 4. Submit the request.
 5. Wait for the administrator to approve or deny the request.
 
 Your request remains pending until the administrator resolves it. If the request is denied or the code is invalid, contact the administrator rather than creating multiple duplicate requests.
 
+![Request Code Mockup](images/JoinRequestCode.png)
+
+*Figure 6. Neighbourhood admin's join request code that needs to be shared*
+
 ![Join neighbourhood mockup](images/join_neighbourhood.png)
-*Figure 5. The existing mockup shows the Join Neighbourhood form.*
+
+*Figure 7. The existing mockup shows the Join Neighbourhood form.*
+
 ---
 
 ## 7. Navigate the dashboard
@@ -180,11 +204,13 @@ The left sidebar is the main way to move through WatchDog. The active property a
 - **My cameras:** View cameras registered for the selected property.
 - **Connect agent:** Generate a one-time token for the local WatchDog Agent.
 - **Live alerts:** View recent alerts for the selected neighbourhood.
-- **Analytics:** View alert activity, risk-score history, and response metrics when data is available.
+- **Analytics:** View alert activity, risk-score history, response metrics, and neighbourhood intelligence when data is available.
 - **Join requests:** Administrator-only view for approving or denying membership requests.
 - **Risk thresholds:** Administrator-only view for setting low and medium risk boundaries.
 - **Settings:** Update profile and notification contact details.
 - **Audit log:** System-administrator view of recorded system actions.
+- **Map:** View neighbourhood properties, incident heatmaps, danger zones, contours, live critical alerts, and security routes when permitted.
+- **Security:** Security-officer workspace for setting duty status and sharing location while on duty.
 
 The property selector may display the address together with either **Standalone property** or the user’s neighbourhood role. Check this context before changing cameras or reviewing alerts.
 
@@ -208,7 +234,7 @@ The current camera form requires a location and connection URL. Newly added came
 ![Dashboard and alert mockup](images/add_camera.png)
 ![Dashboard and alert mockup](images/view_camera_dashboard.png)
 
-*Figure 6. Existing dashboard mockups illustrate the camera and alert areas.*
+*Figure 8. Existing dashboard mockups illustrate the camera and alert areas.*
 
 ### Understand the camera list
 
@@ -231,6 +257,9 @@ A camera card can display these states:
 ### Edit or remove a camera
 
 Use the camera’s action menu when available. Read the confirmation message carefully before removing a camera. Removing a camera can affect monitoring and future alerts for that camera.
+![Camera Actions Mockup](images/CameraActionsMockup.png)
+
+*Figure 9. Menu to be used in order to edit or delete cameras.*
 
 ---
 
@@ -250,7 +279,7 @@ The Agent is the trusted local service that can reach the registered camera sour
 
 ![Agent pairing screenshot placeholder](images/pairing.png)
 
-*Figure 7. Connect Agent page.*
+*Figure 10. Connect Agent page.*
 
 A token is sensitive even if it is temporary. Treat it like a password: share it only with the person performing the pairing, then remove it from chat messages, notes, screenshots, and screen recordings.
 
@@ -278,7 +307,7 @@ If the camera is unavailable, WatchDog should show an **Unavailable** state rath
 
 ![Camera detection illustration](images/camera_detection.png)
 
-*Figure 8. Illustrative camera image.*
+*Figure 11. Illustrative camera image.*
 ---
 
 ## 11. Configure detection settings
@@ -292,6 +321,10 @@ Detection settings are available only to authorised administrators.
 3. Find **Confidence threshold**.
 4. Move the slider to the required percentage.
 5. Release the slider to save the setting.
+
+![Camera Threshold mockup](images/ConfidenceThresholdMarkup.png)
+
+*Figure 12. Illustrative camera image.*
 
 The helper text explains that detections below this confidence do not trigger alerts. A higher threshold can reduce false alerts but may also miss less-clear detections. Use the value agreed by the security team; do not change it casually during an incident.
 
@@ -311,7 +344,7 @@ A camera with no configured zones treats all detections as eligible for alerting
 
 ![Detection zone screenshot placeholder](images/zone_config.png)
 
-*Figure 9. Capture the Camera Detection Settings panel with the confidence slider and a visible polygon.*
+*Figure 13. Capture the Camera Detection Settings panel with the confidence slider and a visible polygon.*
 
 ---
 
@@ -358,7 +391,7 @@ Select **Details** to open the detail panel. Depending on the alert, it may cont
 
 ![Alerts mockup](images/alert.png)
 
-*Figure 10. Existing mockups show an Alerts list and an alert pop-up.*
+*Figure 14. Existing mockups show an Alerts list and an alert pop-up.*
 
 ### Broadcast an alert
 
@@ -371,6 +404,69 @@ The **Broadcast** action notifies the neighbourhood about an active alert. Use i
 5. Continue following the response procedure.
 
 Avoid broadcasting unverified or sensitive information. A broadcast is an external communication and should be treated as a deliberate safety action.
+
+### Understand incident grouping
+
+WatchDog groups related active detections into an incident so that repeated detections do not unnecessarily create a separate card for every observation.
+
+On the Current alerts view:
+
+- one card represents the incident;
+- the representative alert provides the main image and alert actions;
+- repeated detections update the existing incident;
+- the incident count and latest-seen information reflect additional detections; and
+- live updates refresh the incident instead of blindly adding duplicate cards.
+
+Historical records may still contain separate older alerts because historical incidents are not automatically regrouped.
+
+### Track an individual across cameras
+
+Tracking features are available only to authorised security officers and neighbourhood administrators.
+
+1. Open a weapon-related alert.
+2. Select **Details**.
+3. Review the **Tracking timeline**.
+4. Inspect the **Movement path** map.
+5. Review the cameras visited, sequence numbers, timestamps, local track identifiers, match confidence, and available footage.
+6. Use the timeline to understand how the subject moved through the monitored area.
+
+A tracking match is an investigative aid, not proof of identity. Treat uncertain matches cautiously and follow the approved response procedure.
+
+### Review a cross-property match
+
+When the system detects a confident appearance match across authorised properties, the Alerts page can display a **Cross-property match detected** notification.
+
+1. Open the notification or refresh the alert list.
+2. Open the related weapon alert.
+3. Review the tracking timeline and associated sightings.
+4. Compare the cameras, locations, timestamps, and confidence information.
+5. Escalate according to the security team’s procedure.
+
+Low-confidence comparisons are treated as a new identity rather than being presented as a confirmed match.
+
+### Read a situational brief
+
+A situational brief summarises the tracked subject for authorised responders.
+
+The brief can include:
+
+- a plain-English summary;
+- tracking ID;
+- generation time;
+- the trigger event;
+- last known camera and location;
+- cameras visited;
+- associated alerts;
+- sightings and sequence numbers; and
+- confidence information.
+
+To use it:
+
+1. Open the relevant weapon alert.
+2. Select **Details**.
+3. Scroll to **Situational brief**.
+4. Review the summary before acting.
+5. Select **Save as PDF** when a printable briefing is required.
 
 ---
 
@@ -393,11 +489,38 @@ If there are no matching records, WatchDog displays **No alerts**. This can mean
 
 ![Alert history screenshot placeholder](images/alert_filter.png)
 
-*Figure 11. Capture Current, History, and the Filter menu.*
+*Figure 15. Capture Current, History, and the Filter menu.*
 
 ---
 
-## 14. Analytics
+## 14. Analytics and neighbourhood intelligence
+
+### Use the neighbourhood intelligence map
+
+Open **Map** to view security information geographically.
+
+Depending on your role, the map can provide:
+
+- **Properties:** geocoded properties in the selected neighbourhood;
+- **Incident heatmap:** aggregated confirmed and resolved incidents;
+- **Danger zones:** areas combining incident history with camera sparsity;
+- **Contours:** visual contours over the incident surface;
+- **Live alerts:** individual active critical-alert markers; and
+- **Routes:** the selected officer route when route information is available.
+
+To use the map:
+
+1. Open **Map** from the neighbourhood dashboard.
+2. Choose **Neighbourhood** for the general neighbourhood view.
+3. Choose **Security** when you need officer-facing alert and route information.
+4. Open **Map layers**.
+5. Enable or disable the layers relevant to the task.
+6. Use **Incident date range** to select the historical period used for incident contours.
+7. Select an alert or property marker to inspect its details.
+8. For an eligible officer route, review the distance and ETA.
+9. Select **Open in Google Maps** when external navigation is required.
+
+The incident date range changes the historical contour range. It does not change live alerts or danger-zone scores. A heatmap and danger zone are decision-support overlays; always confirm important events using the alert details and available camera evidence.
 
 Select **Analytics** to review neighbourhood-level information when the account has access and data has been calculated.
 
@@ -413,11 +536,49 @@ Analytics should be interpreted as decision support. Confirm important incidents
 
 ![Analytics screenshot placeholder](images/analytics.png)
 
-*Figure 12. The Analytics page.*
+*Figure 16. The Analytics page.*
 
 ---
 
-## 15. Neighbourhood administration
+## 15. Security officer availability and dispatch
+
+The dispatch workflow helps the system identify an eligible nearby officer when a critical alert requires a response. It uses officer availability, location freshness, distance, estimated travel time, and alert context.[^5](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/issues/628)
+
+### Set your duty status
+
+Security officers can set their status from the **Security** workspace.
+
+1. Open **Security** for the selected neighbourhood.
+2. Open the **Status** selector.
+3. Choose **On Duty** or **Off Duty**.
+4. When choosing **On Duty**, allow location access when prompted.
+5. Confirm that the location indicator shows a recent update.
+
+When you are **On Duty**, WatchDog can use your location for eligible dispatch decisions. If location permission is denied, the system will not allow the officer to go on duty. If the location becomes stale, update permission or reconnect the officer device before relying on location-based dispatch.
+
+Use **Off Duty** when you are not available to respond.
+
+### Respond to a dispatch request
+
+When a dispatch request is assigned to you, WatchDog displays a **Dispatch request** popup. It can show:
+
+- the alert type, such as Weapon detected or Fall detected;
+- distance from you to the property;
+- estimated travel time; and
+- a response countdown.
+
+You normally have two minutes to respond.
+
+1. Review the alert type, distance, ETA, and remaining time.
+2. Select **Accept** if you can respond.
+3. Select **Decline** if you cannot respond.
+4. Follow the neighbourhood response procedure after accepting.
+
+The system displays **Dispatch accepted**, **Dispatch declined**, or **Request expired** after the response.
+
+If a request is declined or expires, the system may attempt reassignment or escalation according to the deployment’s dispatch policy. Do not assume that accepting a request means the incident is resolved; accepted incidents remain active until the response workflow is completed.
+
+## 16. Neighbourhood administration
 
 ### Review join requests
 
@@ -434,7 +595,7 @@ The page also displays the neighbourhood join code to authorised administrators.
 
 ![Join requests screenshot placeholder](images/join_request.png)
 
-*Figure 13. Pending filter and request actions.*
+*Figure 17. Pending filter and request actions.*
 
 ### Set risk thresholds
 
@@ -452,11 +613,11 @@ These thresholds apply to the cameras and residents in the selected neighbourhoo
 
 ![Risk thresholds screenshot placeholder](images/risk_threshold.png)
 
-*Figure 14. Capture the current configuration and update form.*
+*Figure 18. Capture the current configuration and update form.*
 
 ---
 
-## 16. Account settings and notifications
+## 17. Account settings and notifications
 
 1. Open **Settings**.
 2. Under **Profile**, update your first and last name if needed.
@@ -472,11 +633,11 @@ The availability of WhatsApp and email notifications depends on the deployment c
 
 ![Settings screenshot placeholder](images/settings.png)
 
-*Figure 15. Capture the Settings page.*
+*Figure 19. Capture the Settings page.*
 
 ---
 
-## 17. Troubleshooting
+## 18. Troubleshooting
 
 | Problem | Likely cause | First action |
 |---|---|---|
@@ -496,7 +657,7 @@ When reporting a problem, include the screen name, the visible error message, ap
 
 ---
 
-## 18. Safety, privacy, and responsible use
+## 19. Safety, privacy, and responsible use
 
 - Treat alerts as indicators that require human review, not automatic proof of wrongdoing.
 - Follow the neighbourhood’s emergency and escalation procedures.
