@@ -149,7 +149,11 @@ def rank_candidates(
         for rank, (e, eta, score, _) in enumerate(scored, start=1)
     ]
 
-def _build_dispatch_rows(context: AlertContext, ranked: list[RankedCandidate]) -> list[Dispatch]:
+def _build_dispatch_rows(
+        context: AlertContext, 
+        ranked: list[RankedCandidate],
+        triggering_sighting_id: UUID | None = None,
+    ) -> list[Dispatch]:
     """Helper to build dispatch table rows"""
     rows: list[Dispatch] = []
     has_selected = False
@@ -166,6 +170,7 @@ def _build_dispatch_rows(context: AlertContext, ranked: list[RankedCandidate]) -
             Dispatch(
                 alert_id=context.alert_id,
                 neighbourhood_id=context.neighbourhood_id,
+                triggering_sighting_id=triggering_sighting_id,
                 officer_id=c.officer_id,
                 rank=r.rank,
                 score=r.score,
@@ -183,6 +188,7 @@ def _build_dispatch_rows(context: AlertContext, ranked: list[RankedCandidate]) -
             Dispatch(
                 alert_id=context.alert_id,
                 neighbourhood_id=context.neighbourhood_id,
+                triggering_sighting_id=triggering_sighting_id,
                 status=DispatchStatus.NO_CANDIDATE,
             )
         )
