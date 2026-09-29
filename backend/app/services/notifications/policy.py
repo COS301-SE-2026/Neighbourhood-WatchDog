@@ -36,6 +36,8 @@ class NotificationPolicy:
                     event_context,
                 )
             except Exception:
+                await db.rollback()
+                
                 logger.exception("NotificationPolicy.notify failed to send.")
 
     

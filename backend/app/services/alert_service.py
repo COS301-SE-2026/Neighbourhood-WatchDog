@@ -1638,6 +1638,25 @@ async def create_alert_for_agent_handler(
                 alert.id,
             )
 
+        if alert.detection_type in CRITICAL_DETECTION_TYPES:
+            try:
+                from app.services.dispatch_service import (
+                    dispatch_alert,
+                )
+
+                await dispatch_alert(
+                    db,
+                    alert.id,
+                )
+            except Exception:
+                logger.exception(
+                    (
+                        "Dispatch failed for critical "
+                        "alert %s"
+                    ),
+                    alert.id,
+                )
+
         if generate_brief and tracking_subject is not None:
             try:
                 await maybe_generate_situational_brief(

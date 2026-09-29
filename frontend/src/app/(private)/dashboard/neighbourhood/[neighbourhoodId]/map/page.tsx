@@ -38,7 +38,6 @@ import type {
 } from "@/lib/validators/alert";
 import { useState } from "react";
 import {AlertDetailSheet, type Alert} from "@/components/shared/AlertCard";
-import { acknowledgeAlert } from "@/lib/api/alert";
 import {
   MapModeTabs,
   type MapMode,
@@ -58,7 +57,7 @@ function statusLabel(
     case "OPEN":
       return "Open";
     case "ACKNOWLEDGED":
-      return "Acknowledged";
+      return "Responding";
     case "CONFIRMED":
       return "Confirmed";
     case "DISMISSED":
@@ -558,26 +557,11 @@ export default function NeighbourhoodAlertMapPage() {
     setSelectedProperty(property);
   }
 
-  async function handleAcknowledgeSelectedAlert(alertId: string) {
-    setAcknowledgingAlert(true);
-
-    try {
-      await acknowledgeAlert(alertId);
-      setSelectedAlert(null);
-      await refetch();
-    } catch (error) {
-      console.error("Failed to acknowledge critical alert:", error);
-    } finally {
-      setAcknowledgingAlert(false);
-    }
-  }
   const [
     selectedAlert,
     setSelectedAlert,
   ] = useState<CriticalAlertMapItem | null>(null);
 
-  const [acknowledgingAlert, setAcknowledgingAlert] =
-    useState(false);
   const [routePropertyId, setRoutePropertyId] = useState<string | null>(null);
 
   const [densityEndDate, setDensityEndDate] =
@@ -1072,8 +1056,6 @@ function handleToggleLayer(layer: MapLayerKey) {
             open
             onBack={() => setSelectedAlert(null)}
             onClose={() => setSelectedAlert(null)}
-            onAcknowledge={handleAcknowledgeSelectedAlert}
-            acknowledging={acknowledgingAlert}
             canViewTracking={isSecurityOfficer}
           />
         )}

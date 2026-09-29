@@ -260,7 +260,15 @@ async def _fetch_workloads(
         .where(Dispatch.officer_id.in_(officer_ids))
         .where(Dispatch.status.in_(ACTIVE_DISPATCH_STATUS))
         .where(Dispatch.alert_id != exclude_alert_id)
-        .where(Alert.status != AlertStatus.RESOLVED.value)
+        .where(
+            Alert.status.in_(
+                (
+                    AlertStatus.OPEN.value,
+                    AlertStatus.ACKNOWLEDGED.value,
+                    AlertStatus.CONFIRMED.value
+                )
+            )
+        )
         .group_by(Dispatch.officer_id)
     )
     result = await db.execute(stmt)
