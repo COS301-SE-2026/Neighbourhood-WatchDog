@@ -1,7 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useParams } from "next/navigation";
+import {
+  useParams,
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 import {
   AlertTriangle,
   Clock,
@@ -36,9 +41,8 @@ import type {
   CriticalAlertStatus,
   UnlocatedCriticalAlertItem,
 } from "@/lib/validators/alert";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {AlertDetailSheet, type Alert} from "@/components/shared/AlertCard";
-import { acknowledgeAlert } from "@/lib/api/alert";
 import {
   MapModeTabs,
   type MapMode,
@@ -58,7 +62,7 @@ function statusLabel(
     case "OPEN":
       return "Open";
     case "ACKNOWLEDGED":
-      return "Acknowledged";
+      return "Responding";
     case "CONFIRMED":
       return "Confirmed";
     case "DISMISSED":
@@ -558,26 +562,11 @@ export default function NeighbourhoodAlertMapPage() {
     setSelectedProperty(property);
   }
 
-  async function handleAcknowledgeSelectedAlert(alertId: string) {
-    setAcknowledgingAlert(true);
-
-    try {
-      await acknowledgeAlert(alertId);
-      setSelectedAlert(null);
-      await refetch();
-    } catch (error) {
-      console.error("Failed to acknowledge critical alert:", error);
-    } finally {
-      setAcknowledgingAlert(false);
-    }
-  }
   const [
     selectedAlert,
     setSelectedAlert,
   ] = useState<CriticalAlertMapItem | null>(null);
 
-  const [acknowledgingAlert, setAcknowledgingAlert] =
-    useState(false);
   const [routePropertyId, setRoutePropertyId] = useState<string | null>(null);
 
   const [densityEndDate, setDensityEndDate] =
@@ -605,6 +594,13 @@ export default function NeighbourhoodAlertMapPage() {
   const { neighbourhoodId } = useParams<{
     neighbourhoodId: string;
   }>();
+
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const requestedRouteAlertId = searchParams.get("routeAlertId");
+  const requestedRoutePropertyId = searchParams.get("routePropertyId");
 
   const {
     data: userContext,
@@ -670,6 +666,9 @@ function handleToggleLayer(layer: MapLayerKey) {
     layerState.routes
   ) {
     setRoutePropertyId(null);
+    if (requestedRouteAlertId || requestedRoutePropertyId) {
+      router.replace(pathname, { scroll: false});
+    }
   }
 
   setLayerState((current) => ({
@@ -694,6 +693,56 @@ function handleToggleLayer(layer: MapLayerKey) {
   } = useCriticalAlerts(
     showSecurityContent ? neighbourhoodId : "",
   );
+
+  useEffect(() => {
+    if (
+      (!requestedRoutePropertyId && !requestedRouteAlertId) ||
+      !isSecurityOfficer
+    ) {
+      return;
+    }
+
+    // Preserve older links that contain an alert ID.
+    const acceptedAlert = requestedRoutePropertyId
+      ? null
+      : mappedAlerts.find(
+          (alert) => alert.id === requestedRouteAlertId,
+        );
+
+    const destinationPropertyId =
+      requestedRoutePropertyId ?? acceptedAlert?.property_id;
+
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (cancelled) return;
+
+      setMapMode("security");
+      setLayerState((current) => ({
+        ...current,
+        liveAlerts: true,
+        routes: true,
+      }));
+
+      if (!destinationPropertyId) return;
+
+      setSelectedAlert(null);
+      setSelectedProperty(null);
+      setRoutePropertyId(destinationPropertyId);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    requestedRoutePropertyId,
+    requestedRouteAlertId,
+    isSecurityOfficer,
+    mappedAlerts,
+  ]);
+
+
+
 
   const currentSelectedProperty =
   selectedProperty
@@ -721,6 +770,25 @@ function handleToggleLayer(layer: MapLayerKey) {
     routePropertyId,
     isSecurityOfficer
   );
+
+  const isRouting =
+    showSecurityContent &&
+    layerState.routes &&
+    routePropertyId !== null;
+
+  const visibleMapProperties = isRouting
+    ? mapProperties.filter(
+        (property) => property.id === routePropertyId,
+      )
+    : mapProperties;
+
+  const visibleMappedAlerts = isRouting
+    ? mappedAlerts.filter(
+        (alert) => alert.property_id === routePropertyId,
+      )
+    : mappedAlerts;
+
+
 
 
 
@@ -963,9 +1031,17 @@ function handleToggleLayer(layer: MapLayerKey) {
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={() =>
-                  setRoutePropertyId(null)
-                }
+                onClick={() => {
+                  setRoutePropertyId(null);
+                  setLayerState((current) => ({
+                    ...current,
+                    routes: false,
+                  }));
+                  if (requestedRouteAlertId || requestedRoutePropertyId) {
+                    router.replace(pathname, { scroll: false });
+                  }
+                }}
+
               >
                 Close route
               </Button>
@@ -1004,10 +1080,10 @@ function handleToggleLayer(layer: MapLayerKey) {
             alerts={
               showSecurityContent &&
               layerState.liveAlerts
-                ? mappedAlerts
+                ? visibleMappedAlerts
                 : []
             }
-            mapProperties={mapProperties}
+            mapProperties={visibleMapProperties}
             showProperties={
               layerState.properties
             }
@@ -1072,8 +1148,6 @@ function handleToggleLayer(layer: MapLayerKey) {
             open
             onBack={() => setSelectedAlert(null)}
             onClose={() => setSelectedAlert(null)}
-            onAcknowledge={handleAcknowledgeSelectedAlert}
-            acknowledging={acknowledgingAlert}
             canViewTracking={isSecurityOfficer}
           />
         )}

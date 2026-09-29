@@ -21,14 +21,16 @@ import { SlidersHorizontal, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { useUserContext } from "@/hooks/use-user-context";
 import {
   fetchIncidents,
-  acknowledgeAlert,
   normaliseAlert,
   getAuthToken,
   WS_BASE,
-  type AlertFilters,
   broadcastAlert,
+  updateAlertStatus,
+  type AlertFilters,
+  type AlertClosingStatus,
   type IncidentSummary,
 } from "@/lib/api/alert";
+
 import { toast } from "sonner";
 import { claimTrackingEvent } from "@/lib/tracking-events";
 import {
@@ -53,7 +55,7 @@ const SEVERITY_LABELS: Record<AlertSeverity, string> = {
 
 const STATUS_LABELS: Record<AlertStatus, string> = {
   NEW: "New",
-  ACKNOWLEDGED: "Acknowledged",
+  ACKNOWLEDGED: "Responding",
   CONFIRMED: "Confirmed",
   RESOLVED: "Resolved",
   DISMISSED: "Dismissed"
@@ -236,7 +238,7 @@ function handleAlertSocketMessage(
     return;
   }
 
-  if (message.event === "alert.acknowledged") {
+  if (message.event === "alert.acknowledged" || message.event === "alert.resolved" || message.event === "alert.dismissed") {
     onIncidentRefresh();
   }
 }
@@ -466,49 +468,33 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
     });
   }, [neighbourhoodId, activeTab, userContextLoading, canViewAlerts, isSecurityOfficer]);
 
-  async function handleAcknowledge(id: string) {
+  async function handleCloseAlert(
+    id: string,
+    status: AlertClosingStatus,
+  ): Promise<void> {
     const incident = incidents.find(
       (item) => item.representative_alert.id === id,
     );
 
-    const alert = incident?.representative_alert;
-
-    if (!incident || !alert || alert.status !== "NEW") {
-      return;
-    }
+    if (!incident) return;
 
     setActionError(null);
 
-    dispatch({
-      type: "UPDATE_INCIDENT",
-      payload: {
-        ...incident,
-        representative_alert: {
-          ...alert,
-          status: "ACKNOWLEDGED",
-        },
-      },
-    });
-
     try {
-      await acknowledgeAlert(id);
-    } catch (err) {
-      if (mountedRef.current) {
-        dispatch({
-          type: "UPDATE_INCIDENT",
-          payload: incident,
-        });
+      await updateAlertStatus(id, status);
+      if (mountedRef.current) triggerRefresh();
+    } catch (error) {
+      if (!mountedRef.current) return;
 
-        setActionError(
-          err instanceof Error
-            ? err.message
-            : "Failed to acknowledge alert.",
-        );
-      }
-
-      console.error("Acknowledge failed:", err);
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "Failed to update alert",
+      );
+      console.error("Failed to close alert:", error);
     }
   }
+
 
   async function handleBroadcast(id: string) {
     const incident = incidents.find(
@@ -753,12 +739,31 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
                   {filteredIncidents.map((incident) => {
                     const representativeAlert =
                       incident.representative_alert;
+                    const isInProgress =
+                      representativeAlert.status === "ACKNOWLEDGED" ||
+                      representativeAlert.status === "CONFIRMED";
+
+                    const canResolve =
+                      isNeighbourhoodAdmin ||
+                      (isSecurityOfficer && isInProgress);
+                    const canDismiss =
+                      isNeighbourhoodAdmin ||
+                      (isSecurityOfficer && isInProgress);
 
                     return (
                       <AlertCard
                         key={incident.id}
                         alert={representativeAlert}
-                        onAcknowledge={handleAcknowledge}
+                        onResolve={
+                          canResolve
+                            ? (id) => handleCloseAlert(id, "RESOLVED")
+                            : undefined
+                        }
+                        onDismissAlert={
+                          canDismiss
+                            ? (id) => handleCloseAlert(id, "DISMISSED")
+                            : undefined
+                        }
                         onBroadcast={
                           isNeighbourhoodAdmin
                             ? handleBroadcast
@@ -772,6 +777,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
                       />
                     );
                   })}
+
                 </div>
               )}
             </section>

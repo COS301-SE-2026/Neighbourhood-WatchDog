@@ -15,7 +15,7 @@ from app.models.neighbourhood_user import (
 from app.models.user import User
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.authorization import Claims, NeighbourhoodMemberClaims, CriticalAlertMapClaims
+from app.auth.authorization import AlertClosureClaims, Claims, NeighbourhoodMemberClaims, CriticalAlertMapClaims
 from app.auth.dependencies import get_authenticated_edge_agent
 from app.core.database import DbSession, get_db
 from app.models.edge_agent_credentials import EdgeAgentCredential
@@ -37,7 +37,8 @@ from app.schemas.alert import (
     TimePeriod,
     TrendGroupBy,
     TrendResponse,
-    UnlocatedCriticalAlertsRes,
+    UpdateAlertStatusReq,
+    UnlocatedCriticalAlertsRes
 )
 
 from app.schemas.danger_zone import (
@@ -58,6 +59,7 @@ from app.services.alert_service import (
     get_unlocated_critical_alerts_handler,
     list_alerts_handler,
     list_property_alerts_handler,
+    update_alert_status_handler,
 )
 from app.services.alert_route_service import calculate_property_distance_handler, get_property_route_handler
 
@@ -604,4 +606,28 @@ async def get_danger_zones(
             "Danger zones retrieved successfully"
         ),
         data=data,
+    )
+
+
+@router.patch(
+    "/{alert_id}/status",
+    response_model=AcknowledgeAlertRes,
+    summary="Resolve or dismiss an alert"
+)
+async def update_alert_status(
+    alert_id: UUID,
+    body: UpdateAlertStatusReq,
+    db: DbSession,
+    claims: AlertClosureClaims
+):
+    alert = await update_alert_status_handler(
+        alert_id=alert_id,
+        target_status=body.status,
+        db=db,
+        claims=claims,
+    )
+
+    return AcknowledgeAlertRes(
+        status=200,
+        data=alert,
     )

@@ -20,6 +20,16 @@ export { getAuthToken } from "@/lib/api/auth";
 const API_BASE = getApiBaseUrl();
 export const WS_BASE = API_BASE.replace(/^http/, "ws");
 
+export type AlertClosingStatus =
+  | "RESOLVED"
+  | "DISMISSED";
+
+interface AlertMutationResponse {
+  status: number;
+  message: string | null;
+  data: Record<string, unknown> | null;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -462,4 +472,29 @@ export async function fetchSituationalBrief(alertId: string, signal?: AbortSigna
   }
 
   return response.data;
+}
+
+export async function updateAlertStatus(
+  alertId: string,
+  status: AlertClosingStatus,
+): Promise<Alert> {
+  const response =
+    await apiFetch<AlertMutationResponse>(
+      `/alerts/${alertId}/status`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      },
+    );
+
+  if (!response.data) {
+    throw new Error(
+      "The server returned no alert",
+    );
+  }
+
+  return normaliseAlert(response.data);
 }

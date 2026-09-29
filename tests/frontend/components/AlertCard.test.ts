@@ -172,7 +172,7 @@ describe("AlertCard rendered states", () => {
     );
 
     expect(screen.getByLabelText("Severity: Critical")).toBeInTheDocument();
-    expect(screen.getByLabelText("Status: Acknowledged")).toBeInTheDocument();
+    expect(screen.getByLabelText("Status: Responding")).toBeInTheDocument();
   });
 
   test("renders new-alert actions and invokes their callbacks", async () => {
@@ -275,7 +275,7 @@ describe("AlertCard rendered states", () => {
       }),
     );
 
-    expect(screen.getByLabelText("Status: Acknowledged")).toBeInTheDocument();
+    expect(screen.getByLabelText("Status: Responding")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Broadcast alert to the neighbourhood" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Acknowledge alert" })).not.toBeInTheDocument();
   });

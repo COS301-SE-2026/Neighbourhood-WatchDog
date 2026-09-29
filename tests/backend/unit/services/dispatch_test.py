@@ -25,6 +25,7 @@ from app.services.dispatch_service import (
     RankingWeights,
     _build_alert_dispatch_res,
     _build_dispatch_rows,
+    _dispatch_destination_property_id,
     _fetch_neighbourhood_officers,
     _fetch_workloads,
     _load_alert_context,
@@ -671,7 +672,7 @@ class TestFetchWorkloads:
         params = list(compiled_params(mock_db.execute.await_args.args[0]).values())
  
         assert ALERT_ID in params  
-        assert "RESOLVED" in params
+        assert ["OPEN", "ACKNOWLEDGED", "CONFIRMED"] in params
         assert list(ACTIVE_DISPATCH_STATUS) in params
 
 class TestDispatchAlert:
@@ -906,33 +907,66 @@ def _respond_db(*, officer, dispatch, extra=()):
     return mock_db
 class TestRespondToDispatchHandler:
     @pytest.mark.asyncio
-    async def test_accept_marks_dispatch_as_accepted(self): 
+    async def test_accept_marks_dispatch_as_accepted(self):
         officer_id = uuid4()
         officer = SimpleNamespace(id=officer_id)
         dispatch = make_dispatch_row(
             DispatchStatus.NOTIFIED,
             officer_id=officer_id,
             rank=1,
-            notified_at=datetime.now(timezone.utc) - timedelta(seconds=5)
-        )     
+            notified_at=datetime.now(timezone.utc) - timedelta(seconds=5),
+        )
+
+        alert = MagicMock()
+        alert.id = ALERT_ID
+        alert.status = "OPEN"
+
+        alert_result = MagicMock()
+        alert_result.unique.return_value.scalar_one_or_none.return_value = alert
+
         mock_db = _respond_db(
             officer=officer,
             dispatch=dispatch,
             extra=[
                 make_scalars_result([dispatch]),
-                make_scalars_result([str(uuid4())]),
+                alert_result,
+                make_scalars_result([uuid4()]),
             ],
-        )  
+        )
 
-        with patch("app.api.controllers.alert.broadcast", new=AsyncMock()) as broadcast:
-            res = await respond_to_dispatch_handler(dispatch.id, "ACCEPT", mock_db, CLAIMS)
+        with (
+            patch(
+                "app.api.controllers.alert.broadcast",
+                new_callable=AsyncMock,
+            ) as broadcast,
+            patch(
+                "app.services.dispatch_service.create_audit_log_item",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.services.dispatch_service._build_alert_res",
+            ) as build_alert_res,
+        ):
+            build_alert_res.return_value.model_dump.return_value = {
+                "id": str(ALERT_ID),
+            }
+
+            res = await respond_to_dispatch_handler(
+                dispatch.id,
+                "ACCEPT",
+                mock_db,
+                CLAIMS,
+            )
 
         assert dispatch.status == DispatchStatus.ACCEPTED
+        assert alert.status == "ACKNOWLEDGED"
         assert res.status == 200
-        assert res.data.status == DispatchStatus.ACCEPTED
         mock_db.commit.assert_awaited_once()
-        broadcast.assert_awaited_once()
-
+        assert [
+            item.args[1]["event"]
+            for item in broadcast.await_args_list
+        ] == ["dispatch.accepted", "alert.acknowledged"]
+    
     @pytest.mark.asyncio
     async def test_decline_promotes_next(self):
         officer_id, next_officer_id = uuid4(), uuid4()
@@ -951,6 +985,7 @@ class TestRespondToDispatchHandler:
                 make_scalars_result([dispatch, next_candidate]),
                 make_scalar_result(str(uuid4())),
                 make_scalar_result("WEAPON_DETECTED"),
+                make_scalar_result(uuid4())
             ],
         )
 
@@ -1341,3 +1376,35 @@ class TestDispatchAlertForSighting:
         notify.assert_awaited_once()
         assert notify.await_args.args[1].officer_id == fresh.officer_id
         escalate.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("sighting_id", [None, SIGHTING_ID])
+    async def test_dispatch_destination_property_uses_the_correct_round(
+        self,
+        sighting_id
+    ):
+        property_id = uuid4()
+        dispatch = make_dispatch_row(
+            DispatchStatus.NOTIFIED,
+            officer_id=uuid4(),
+            triggering_sighting_id=sighting_id,
+        )
+        db = AsyncMock()
+        db.execute = AsyncMock(
+            return_value=make_scalar_result(property_id),
+        )
+
+        result = await _dispatch_destination_property_id(db, dispatch)
+
+        assert result == property_id
+
+        query = db.execute.await_args.args[0]
+        sql = compiled_sql(query).lower()
+        params = list(compiled_params(query).values())
+
+        if sighting_id is None:
+            assert "tracking_sighting" not in sql
+            assert dispatch.alert_id in params
+        else:
+            assert "tracking_sighting" in sql
+            assert sighting_id in params

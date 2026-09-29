@@ -6,11 +6,13 @@ from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy import select, func, cast
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 from geoalchemy2 import Geography
 
 from app.auth.authorization import Claims
 from app.core.database import DbSession
 from app.models.alert import Alert, AlertStatus
+from app.models.audit_log import AuditAction, TargetEntity
 from app.models.camera import Camera
 from app.models.user import User
 from app.models.property import Property
@@ -19,6 +21,8 @@ from app.models.security_officer import SecurityOfficer, AvailabilityStatus
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from app.models.tracking import TrackingSighting, TrackingSubject
 from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, RespondDispatchRes
+from app.services.alert_service import _build_alert_res
+from app.services.audit_service import create_audit_log_item
 from app.services.neighbourhood_service import STALE_LOCATION_THRESHOLD_SECONDS, is_location_stale
 
 logger = logging.getLogger(__name__)
@@ -284,7 +288,15 @@ async def _fetch_workloads(
         .where(Dispatch.officer_id.in_(officer_ids))
         .where(Dispatch.status.in_(ACTIVE_DISPATCH_STATUS))
         .where(Dispatch.alert_id != exclude_alert_id)
-        .where(Alert.status != AlertStatus.RESOLVED.value)
+        .where(
+            Alert.status.in_(
+                (
+                    AlertStatus.OPEN.value,
+                    AlertStatus.ACKNOWLEDGED.value,
+                    AlertStatus.CONFIRMED.value
+                )
+            )
+        )
         .group_by(Dispatch.officer_id)
     )
     result = await db.execute(stmt)
@@ -382,6 +394,8 @@ async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
             await db.execute(select(Alert.detection_type).where(Alert.id == dispatch.alert_id))
         ).scalar_one_or_none()
 
+        property_id = await _dispatch_destination_property_id(db, dispatch)
+
         await broadcast(
             [user_id],
             {
@@ -389,6 +403,16 @@ async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
                 "payload": {
                     "dispatch_id": str(dispatch.id),
                     "alert_id": str(dispatch.alert_id),
+                    "property_id": (
+                        str(property_id)
+                        if property_id is not None
+                        else None
+                    ),
+                    "neighbourhood_id": (
+                        str(dispatch.neighbourhood_id)
+                        if dispatch.neighbourhood_id is not None
+                        else None
+                    ),
                     "detection_type": detection_type,
                     "distance": dispatch.distance,
                     "eta": dispatch.eta,
@@ -402,6 +426,30 @@ async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
             "dispatch: failed to notify officer %s for dispatch %s",
             dispatch.officer_id, dispatch.id,
         )
+
+
+async def _dispatch_destination_property_id(
+    db: DbSession,
+    dispatch: Dispatch,
+) -> UUID | None:
+    if dispatch.triggering_sighting_id is not None:
+        query = (
+            select(Camera.property_id)
+            .select_from(TrackingSighting)
+            .join(Camera, Camera.id == TrackingSighting.camera_id)
+            .where(TrackingSighting.id == dispatch.triggering_sighting_id)
+        )
+    else:
+        query = (
+            select(Camera.property_id)
+            .select_from(Alert)
+            .join(Camera, Camera.id == Alert.camera_id)
+            .where(Alert.id == dispatch.alert_id)
+        )
+
+    result = await db.execute(query)
+    return result.scalar_one_or_none()
+
 
 async def _promote_officer(db: DbSession, alert_id: UUID, triggering_sighting_id: UUID | None) -> None:
     """
@@ -856,32 +904,119 @@ async def respond_to_dispatch_handler(
         return RespondDispatchRes(status=200, message="Declined", data=_build_candidate_res(dispatch))
 
     if action == "ACCEPT":
+        # Only one officer may accept this dispatch round.
+        # A later sighting of the same alert has its own round.
         lock_result = await db.execute(
             select(Dispatch)
             .where(
                 Dispatch.alert_id == dispatch.alert_id,
-                Dispatch.triggering_sighting_id == dispatch.triggering_sighting_id,
+                Dispatch.triggering_sighting_id
+                == dispatch.triggering_sighting_id,
             )
             .with_for_update()
         )
         round_rows = lock_result.scalars().all()
 
-        if any(r.status == DispatchStatus.ACCEPTED and r.id != dispatch.id for r in round_rows):
-            raise HTTPException(409, "This alert has already been assigned to another officer")
+        if any(
+            row.status == DispatchStatus.ACCEPTED
+            and row.id != dispatch.id
+            for row in round_rows
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "This alert has already been assigned "
+                    "to another officer in this dispatch round"
+                ),
+            )
+
+        alert_result = await db.execute(
+            select(Alert)
+            .options(
+                joinedload(Alert.camera)
+                .joinedload(Camera.property),
+                joinedload(Alert.tracking_subject),
+            )
+            .where(Alert.id == dispatch.alert_id)
+            .with_for_update(of=Alert)
+        )
+        alert = alert_result.unique().scalar_one_or_none()
+
+        if alert is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Alert not found",
+            )
+
+        if alert.status in {
+            AlertStatus.RESOLVED.value,
+            AlertStatus.DISMISSED.value,
+        }:
+            raise HTTPException(
+                status_code=409,
+                detail="This alert is already closed",
+            )
+
+        try:
+            user_id = UUID(claims["id"])
+        except (KeyError, TypeError, ValueError):
+            raise HTTPException(
+                status_code=401,
+                detail="Authenticated user identity is missing",
+            )
 
         dispatch.status = DispatchStatus.ACCEPTED
         dispatch.responded_at = now
 
+        # The first acceptance acknowledges the alert. A later
+        # sighting may dispatch another officer, but must not erase
+        # who originally acknowledged the alert.
+        newly_acknowledged = (
+            alert.status == AlertStatus.OPEN.value
+        )
+
+        if newly_acknowledged:
+            previous_status = alert.status
+            alert.status = AlertStatus.ACKNOWLEDGED.value
+            alert.acknowledged_by = user_id
+            alert.acknowledged_at = now
+
+            await create_audit_log_item(
+                db=db,
+                user_id=user_id,
+                action=AuditAction.UPDATE,
+                target_entity_type=TargetEntity.ALERT,
+                target_entity_id=alert.id,
+                old_values={
+                    "status": previous_status,
+                },
+                new_values={
+                    "status": alert.status,
+                    "acknowledged_by": str(user_id),
+                    "acknowledged_at": now.isoformat(),
+                },
+            )
+
         try:
             await db.commit()
-        except IntegrityError:
+        except IntegrityError as error:
             await db.rollback()
-            raise HTTPException(409, "This alert has already been assigned to another officer")
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "This dispatch round has already been "
+                    "assigned to another officer"
+                ),
+            ) from error
 
         await db.refresh(dispatch)
 
         try:
-            user_ids = await get_dispatch_viewer_ids(db, dispatch.neighbourhood_id)
+            user_ids = await get_dispatch_viewer_ids(
+                db,
+                dispatch.neighbourhood_id,
+            )
+
             if user_ids:
                 await broadcast(
                     user_ids,
@@ -893,12 +1028,27 @@ async def respond_to_dispatch_handler(
                         },
                     },
                 )
+
+                if newly_acknowledged:
+                    await broadcast(
+                        user_ids,
+                        {
+                            "event": "alert.acknowledged",
+                            "payload": _build_alert_res(
+                                alert,
+                            ).model_dump(mode="json"),
+                        },
+                    )
         except Exception:
             logger.exception(
-                "respond_to_dispatch: failed to broadcast acceptance for dispatch %s",
+                "Failed to broadcast acceptance for dispatch %s",
                 dispatch.id,
             )
 
-        return RespondDispatchRes(status=200, message="Accepted", data=_build_candidate_res(dispatch))
+        return RespondDispatchRes(
+            status=200,
+            message="Accepted",
+            data=_build_candidate_res(dispatch),
+        )
 
     raise HTTPException(400, "Unsupported action")

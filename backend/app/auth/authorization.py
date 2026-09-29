@@ -11,13 +11,16 @@ from app.auth.dependencies import (
     require_role,
 )
 from app.core.database import DbSession
+from app.models.alert import Alert
 from app.models.camera import Camera
+from app.models.dispatch import Dispatch, DispatchStatus
 from app.models.neighbourhood_user import (
     NeighbourhoodRole,
     NeighbourhoodUser,
 )
 from app.models.property import Property
 from app.models.property_user import PropertyUser
+from app.models.security_officer import SecurityOfficer
 from app.models.user import User
 
 AdminPermission = Literal[
@@ -583,6 +586,92 @@ def require_property_resident_context():
     return checker
 
 
+def require_alert_closure_access():
+    async def checker(
+        alert_id: UUID,
+        db: DbSession,
+        claims: Annotated[dict, Depends(get_current_user)]
+    ) -> dict:
+        if (claims.get(CUSTOM_ROLE_CLAIM) == "SYSTEM_ADMIN"):
+            return claims
+
+        context_result = await db.execute(
+            select(Property.neighbourhood_id)
+            .join(
+                Camera,
+                Camera.property_id == Property.id
+            )
+            .join(
+                Alert,
+                Alert.camera_id == Camera.id
+            )
+            .where(Alert.id == alert_id)
+        )
+
+        neighbourhood_id = context_result.scalar_one_or_none()
+        
+
+        if neighbourhood_id is None:
+            raise HTTPException(status_code=404, detail="Alert not found")
+
+        membership_result = await db.execute(
+            select(NeighbourhoodUser)
+            .join(
+                User,
+                User.id == NeighbourhoodUser.user_id
+            )
+            .where(
+                NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+                User.cognito_sub == claims.get("sub"),
+            )
+        )
+
+        membership = membership_result.scalar_one_or_none()
+
+        if (
+            membership is not None
+            and membership.role == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN
+        ):
+            return claims
+
+        assigned_dispatch_result = await db.execute(
+            select(Dispatch.id)
+            .join(
+                SecurityOfficer,
+                SecurityOfficer.id == Dispatch.officer_id
+            )
+            .join(
+                NeighbourhoodUser,
+                NeighbourhoodUser.id == SecurityOfficer.neighbourhood_user_id
+            )
+            .join(
+                User,
+                User.id == NeighbourhoodUser.user_id
+            )
+            .where(
+                Dispatch.alert_id == alert_id,
+                Dispatch.status == DispatchStatus.ACCEPTED,
+                NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
+                NeighbourhoodUser.role == NeighbourhoodRole.SECURITY_OFFICER,
+                User.cognito_sub == claims.get("sub")
+            )
+        )
+
+        if (assigned_dispatch_result.scalar_one_or_none() is None):
+            raise HTTPException(
+                status_code=403,
+                detail=(
+                    "Only the assigned officer or a "
+                    "neighbourhood administrator can "
+                    "close this alert"
+                ),
+            )
+
+        return claims
+
+    return checker
+
+
 #These Aliases will make it easier to read the code in the controllers
 Claims = Annotated[dict, Depends(get_current_user)]#Use this role if you need an endpoint to be accessible by any authenticated user, regardless of their role.
 PropertyAdminClaims = Annotated[dict, Depends(require_property_authorization("PROPERTY_ADMIN", "SYSTEM_ADMIN"))]
@@ -597,3 +686,4 @@ CriticalAlertMapClaims = Annotated[dict, Depends(require_critical_alert_map_acce
 PropertyResidentContextClaims = Annotated[dict, Depends(require_property_resident_context())]
 # EdgeAgentClaims = Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)]
 CameraCoverageAdminClaims = Annotated[ dict, Depends( require_camera_authorization( "PROPERTY_ADMIN", "SYSTEM_ADMIN"))]
+AlertClosureClaims = Annotated[dict, Depends(require_alert_closure_access())]
