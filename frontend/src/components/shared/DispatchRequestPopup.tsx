@@ -227,10 +227,11 @@ export function DispatchRequestPopup({
     const accepted = await accept();
     if (!accepted) return;
 
-    const destination =
-      `/dashboard/neighbourhood/` +
-      `${encodeURIComponent(dispatchNeighbourhoodId)}/map?` +
-      `routePropertyId=${encodeURIComponent(propertyId)}`;
+    const destination = dispatchRouteUrl(
+      dispatchNeighbourhoodId,
+      propertyId,
+    );
+
 
     window.location.assign(destination);
   };
@@ -254,5 +255,16 @@ export function DispatchRequestPopup({
         <OutcomeToast outcome={outcome} />
       ) : null}
     </div>
+  );
+}
+
+export function dispatchRouteUrl(
+  neighbourhoodId: string,
+  propertyId: string,
+): string {
+  return (
+    `/dashboard/neighbourhood/` +
+    `${encodeURIComponent(neighbourhoodId)}/map?` +
+    `routePropertyId=${encodeURIComponent(propertyId)}`
   );
 }
