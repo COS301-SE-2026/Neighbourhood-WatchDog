@@ -243,11 +243,13 @@ docker compose up --build
 ```
 Neighbourhood-WatchDog/
 │
-├── frontend/          # Next.js dashboard (React, TailwindCSS, HLS.js)
+├── frontend/          # Next.js dashboard (React, TailwindCSS, WebRTC)
 ├── backend/           # FastAPI backend (REST API, WebSocket, Celery)
 ├── ai/                # AI pipeline (YOLOv8, DeepSORT, OpenCV)
-├── infra/             # Docker, docker-compose, AWS configuration
+├── mediamtx/          # Video relay (MediaMTX)
+├── watchdog-infra/    # Docker, docker-compose, AWS configuration
 ├── docs/              # Project documentation
+├── tests/             # Testing files (Pytest, Jest, Playwright)
 └── assets/            # Logos, images, README assets
 ```
 
@@ -259,7 +261,7 @@ Neighbourhood-WatchDog/
 
 [![SRS](https://img.shields.io/badge/Software_Requirements_Spec-View-10B981?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/srs.md)
 <br>
-[![SRS](https://img.shields.io/badge/Deployment_Document-View-10B981?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/deployment_doc.md)
+[![SRS](https://img.shields.io/badge/Deployment_Document-View-10B981?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](/docs/deployment_doc.md)
 
 [![SRS](https://img.shields.io/badge/Software_Architecture_Spec-View-10B981?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/sas.md)
 
