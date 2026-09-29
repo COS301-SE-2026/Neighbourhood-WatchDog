@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ShieldAlert,
   MapPin,
@@ -14,6 +15,7 @@ import {
   useDispatchNotification,
   type DispatchNotification,
 } from "@/hooks/use-dispatch";
+
 
 const RESPONSE_WINDOW = 120;
 
@@ -206,8 +208,31 @@ export function DispatchRequestPopup({
 }: {
   neighbourhoodId: string | null;
 }) {
+  const router = useRouter();
   const { notification, responding, outcome, accept, decline } =
     useDispatchNotification(neighbourhoodId);
+
+  const handleAccept = async () => {
+    const alertId = notification?.alertId;
+
+    if (!alertId || !neighbourhoodId) {
+      return;
+    }
+
+    const accepted = await accept();
+
+    if (!accepted) {
+      return;
+    }
+
+    const destination = 
+      `/dashboard/neighbourhood/` +
+      `${neighbourhoodId}/map?` +
+      `routeAlertId=${encodeURIComponent(alertId)}`;
+    
+    window.location.assign(destination)
+  };
+
 
   if (!notification && !outcome) {
     return null;
@@ -219,7 +244,7 @@ export function DispatchRequestPopup({
         <RequestCard
           notification={notification}
           responding={responding}
-          onAccept={accept}
+          onAccept={handleAccept}
           onDecline={decline}
         />
       ) : outcome ? (

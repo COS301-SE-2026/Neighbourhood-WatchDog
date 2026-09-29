@@ -209,24 +209,40 @@ export function useDispatchNotification(neighbourhoodId: string | null) {
   ]);
 
   const respond = useCallback(
-    async (action: DispatchAction) => {
+    async (
+      action: DispatchAction,
+    ): Promise<boolean> => {
       if (!notification || responding) {
-        return;
+        return false;
       }
 
       setResponding(true);
 
       try {
-        await respondToDispatch(notification.dispatchId, action);
+        await respondToDispatch(
+          notification.dispatchId,
+          action,
+        );
 
-        showOutcome(action === "ACCEPT" ? "ACCEPTED" : "DECLINED");
+        showOutcome(
+          action === "ACCEPT"
+            ? "ACCEPTED"
+            : "DECLINED",
+        );
+
+        return true;
       } catch {
         showOutcome("EXPIRED");
+        return false;
       } finally {
         setResponding(false);
       }
     },
-    [notification, responding, showOutcome],
+    [
+      notification,
+      responding,
+      showOutcome,
+    ],
   );
 
   return {

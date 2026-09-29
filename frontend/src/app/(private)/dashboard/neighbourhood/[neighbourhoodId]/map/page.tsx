@@ -1,7 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useParams } from "next/navigation";
+import {
+  useParams,
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 import {
   AlertTriangle,
   Clock,
@@ -36,7 +41,7 @@ import type {
   CriticalAlertStatus,
   UnlocatedCriticalAlertItem,
 } from "@/lib/validators/alert";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {AlertDetailSheet, type Alert} from "@/components/shared/AlertCard";
 import {
   MapModeTabs,
@@ -590,6 +595,12 @@ export default function NeighbourhoodAlertMapPage() {
     neighbourhoodId: string;
   }>();
 
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const requestedRouteAlertId = searchParams.get("routeAlertId");
+
   const {
     data: userContext,
     isLoading: userContextLoading,
@@ -654,6 +665,9 @@ function handleToggleLayer(layer: MapLayerKey) {
     layerState.routes
   ) {
     setRoutePropertyId(null);
+    if (requestedRouteAlertId) {
+      router.replace(pathname, { scroll: false});
+    }
   }
 
   setLayerState((current) => ({
@@ -678,6 +692,63 @@ function handleToggleLayer(layer: MapLayerKey) {
   } = useCriticalAlerts(
     showSecurityContent ? neighbourhoodId : "",
   );
+
+  useEffect(() => {
+    if (
+      !requestedRouteAlertId ||
+      !isSecurityOfficer
+    ) {
+      return;
+    }
+
+    const acceptedAlert = mappedAlerts.find(
+      (alert) =>
+        alert.id === requestedRouteAlertId,
+    );
+
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (cancelled) {
+        return;
+      }
+
+      // Activating Security mode causes the
+      // critical-alert hook to load its data.
+      setMapMode("security");
+
+      setLayerState((current) => ({
+        ...current,
+        liveAlerts: true,
+        routes: true,
+      }));
+
+      // On the first render, alerts may still
+      // be loading. The effect runs again when
+      // mappedAlerts updates.
+      if (!acceptedAlert) {
+        return;
+      }
+
+      setSelectedAlert(null);
+      setSelectedProperty(null);
+      setRoutePropertyId(
+        acceptedAlert.property_id,
+      );
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    requestedRouteAlertId,
+    isSecurityOfficer,
+    mappedAlerts,
+    pathname,
+    router,
+  ]);
+
+
 
   const currentSelectedProperty =
   selectedProperty
@@ -947,9 +1018,17 @@ function handleToggleLayer(layer: MapLayerKey) {
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={() =>
-                  setRoutePropertyId(null)
-                }
+                onClick={() => {
+                  setRoutePropertyId(null);
+                  setLayerState((current) => ({
+                    ...current,
+                    routes: false,
+                  }));
+                  if (requestedRouteAlertId) {
+                    router.replace(pathname, { scroll: false });
+                  }
+                }}
+
               >
                 Close route
               </Button>
