@@ -7,6 +7,7 @@ import Features from "@/sections/Features";
 import Integrations from "@/sections/Integrations";
 import Faqs from "@/sections/Faqs";
 import Footer from "@/sections/Footer";
+import Downloads from "@/sections/Downloads";
 
 export default function Home() {
     return (
@@ -16,6 +17,7 @@ export default function Home() {
             <Introduction/>
             <Features/>
             <Integrations/>
+            <Downloads/>
             <Faqs/>
             <Footer/>
         </>

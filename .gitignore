@@ -58,4 +58,6 @@ ai/.smoke-venv
 
 docker-compose.override.yml
 
-.gitleaksignore
+.gitleaksignore/ai/build/
+/ai/dist/
+/ai/installer-output/
