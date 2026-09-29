@@ -52,3 +52,35 @@ export async function respondToDispatch(
 
   return response.data;
 }
+
+export interface DispatchRecord {
+  id: string;
+  alert_id: string;
+  triggering_sighting_id: string | null;
+  officer_id: string | null;
+  rank: number | null;
+  score: number | null;
+  distance: number | null;
+  eta: number | null;
+  workload: number | null;
+  status: DispatchStatus;
+  officer_availability: string | null;
+  is_location_stale: boolean;
+  created_at: string;
+  notified_at: string | null;
+  responded_at: string | null;
+}
+
+interface DispatchListResponse {
+  data: DispatchRecord[];
+}
+
+export async function listNeighbourhoodDispatches(
+  neighbourhoodId: string,
+): Promise<DispatchRecord[]> {
+  const res = await apiFetch<DispatchListResponse>(
+    `/dispatch/neighbourhood/${neighbourhoodId}`,
+  );
+
+  return res.data;
+}
