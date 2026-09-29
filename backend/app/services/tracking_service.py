@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy import exists, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.alert import Alert
+from app.models.alert import Alert, AlertStatus
 from app.models.tracking import TrackingSighting, TrackingSubject, APPEARANCE_EMBEDDING_DIMENSION, APPEARANCE_EMBEDDING_MODEL
 from app.models.camera import Camera
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
@@ -30,6 +30,12 @@ from app.services.dispatch_service import dispatch_alert_for_sighting
 from app.schemas.notification import EventType
 
 logger = logging.getLogger(__name__)
+
+TRACKING_ACTIVE_ALERT_STATUSES = (
+    AlertStatus.OPEN.value,
+    AlertStatus.ACKNOWLEDGED.value,
+    AlertStatus.CONFIRMED.value,
+)
 
 TRACKING_MATCH_MIN_SIMILARITY = float(os.getenv("TRACKING_MATCH_MIN_SIMILARITY", "0.75"))
 
@@ -81,9 +87,11 @@ def normalize_appearance_embedding(values: list[float] | None) -> list[float] | 
 
 
 async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUID, camera_id: UUID, local_track_id: int, observed_at: datetime, match_confidence: float | None = None) -> TrackingSighting:
-    """records a camera sighting for one tracking subject
-    this subject is locked, while the alert status and next seq number are checked.
-    acknowledged alerts can't get new sightings
+    """Record a camera sighting for one tracking subject.
+
+    The subject is locked while the alert status and next sequence number are
+    checked. Tracking remains active until the parent alert is resolved or
+    dismissed.
     """
 
     if match_confidence is not None and not 0 <= match_confidence <= 1:
@@ -122,10 +130,10 @@ async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUI
 
         tracking_subject, parent_alert = row
 
-        if parent_alert.status != "OPEN": # only an OPEN alert can recieve new sightings
+        if parent_alert.status not in TRACKING_ACTIVE_ALERT_STATUSES:
             raise HTTPException(
-                status_code=409, 
-                detail="Tracking sequence has already terminated"
+                status_code=409,
+                detail="Tracking sequence has already terminated",
             )
 
 
@@ -454,7 +462,7 @@ async def match_tracking_embedding(*, db: AsyncSession, body: MatchTrackingEmbed
             .where(
                 TrackingSighting.camera_id == body.camera_id,
                 TrackingSighting.local_track_id == body.local_track_id,
-                Alert.status == "OPEN",
+                Alert.status.in_(TRACKING_ACTIVE_ALERT_STATUSES),
                 Alert.camera_id != body.camera_id
             )
             .limit(1)
@@ -509,7 +517,7 @@ async def match_tracking_embedding(*, db: AsyncSession, body: MatchTrackingEmbed
         .join(Camera, Camera.id == Alert.camera_id)
         .join(Property, Property.id == Camera.property_id)
         .where(
-            Alert.status == "OPEN",
+            Alert.status.in_(TRACKING_ACTIVE_ALERT_STATUSES),
             TrackingSubject.reference_embedding.is_not(None),
             TrackingSubject.embedding_model == body.embedding_model,
             Property.neighbourhood_id == candidate_property.neighbourhood_id,

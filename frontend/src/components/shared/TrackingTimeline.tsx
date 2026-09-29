@@ -9,10 +9,12 @@ import {
   type TrackingTimelineData,
 } from "@/lib/api/alert";
 import { AlertFootagePlayer } from "@/components/shared/AlertFootagePlayer";
+import { SequencedFootagePlayer } from "@/components/shared/SequencedFootagePlayer";
 import { TrackingMovementMap } from "@/components/shared/TrackingMovementMap";
 
 interface TrackingTimelineProps {
   readonly alertId: string;
+  readonly alertTimestamp?: string;
   readonly alertStatus: string;
   readonly enabled: boolean;
   readonly refreshKey?: number;
@@ -31,6 +33,7 @@ function formatDateTime(value: string): string {
 
 export function TrackingTimeline({
   alertId,
+  alertTimestamp,
   alertStatus,
   enabled,
   refreshKey = 0,
@@ -144,9 +147,9 @@ export function TrackingTimeline({
             <div>
               <span className="text-brand-ash">Sequence status</span>
               <p className="mt-1 text-brand-frost">
-                {alertStatus === "NEW"
-                  ? "Active"
-                  : "Terminated after acknowledgement"}
+                {alertStatus === "RESOLVED" || alertStatus === "DISMISSED"
+                  ? "Terminated"
+                  : "Active across cameras"}
               </p>
             </div>
           </div>
@@ -164,6 +167,22 @@ export function TrackingTimeline({
 
                 <TrackingMovementMap sightings={orderedSightings} />
               </div>
+
+              {timeline.sightings.some((sighting) => sighting.clip_s3_key) && (
+                <div className="mb-4">
+                  <h4 className="mb-2 text-sm font-semibold text-brand-frost">
+                    Continuous footage
+                  </h4>
+                  <SequencedFootagePlayer
+                    alertId={alertId}
+                    alertTimestamp={alertTimestamp ?? ""}
+                    enabled={enabled}
+                    sightings={timeline.sightings}
+                    refreshKey={refreshKey}
+                  />
+                </div>
+              )}
+
               {orderedSightings.map((sighting) => (
                 <li
                   key={sighting.id}
