@@ -253,6 +253,9 @@ A camera card can display these states:
 ### Edit or remove a camera
 
 Use the camera’s action menu when available. Read the confirmation message carefully before removing a camera. Removing a camera can affect monitoring and future alerts for that camera.
+![Camera Actions Mockup](images/CameraActionsMockup.png)
+
+*Figure 9. Menu to be used in order to edit or delete cameras.*
 
 ---
 
