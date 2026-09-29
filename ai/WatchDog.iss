@@ -36,10 +36,4 @@ Name: "{autodesktop}\WatchDog"; Filename: "{app}\WatchDog.exe"
 Name: "startup"; Description: "Start WatchDog when Windows starts"; GroupDescription: "Startup options:"
 
 [Registry]
-Root: HKCU
-Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"
-ValueType: string
-ValueName: "WatchDog"
-ValueData: """{app}\WatchDog.exe"""
-Flags: uninsdeletevalue
-Tasks: startup
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "WatchDog"; ValueData: """{app}\WatchDog.exe"""; Flags: uninsdeletevalue; Tasks: startup
