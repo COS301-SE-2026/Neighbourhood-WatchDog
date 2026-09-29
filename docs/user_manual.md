@@ -104,9 +104,7 @@ For the demonstration pairing workflow, use native Windows Python 3.12.
 5. Select the submit button.
 6. Watch for a confirmation message and check your email.
 
-![Authentication mockup](images/verify-email.png)
 
-*Figure 2. Existing authentication.*
 
 ### Confirm the account
 
@@ -114,6 +112,9 @@ For the demonstration pairing workflow, use native Windows Python 3.12.
 2. Enter the code sent to your email address.
 3. Submit the code.
 4. Return to the login screen and sign in.
+![Authentication mockup](images/verify-email.png)
+
+*Figure 2. Existing authentication.*
 
 If the code expires or is incorrect, use the application’s resend or confirmation option if available. Do not repeatedly guess codes.
 
