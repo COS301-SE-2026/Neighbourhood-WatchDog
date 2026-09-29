@@ -1,0 +1,16 @@
+docs/sas.md
+  h_cf6208e37032c0 314
+docs/nfr-test-proof/qr-03-mediamtx-restart-2.log
+  h_cf6208e37032c0 1-142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2730ef7e86f06db176d95cf9c12181d36b729b14",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
