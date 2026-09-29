@@ -1,0 +1,21 @@
+backend/app/services/notifications/policy.py
+  h_3555f7510a5ca8 39-40
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/map/page.tsx
+  h_3555f7510a5ca8 60
+backend/app/services/dispatch_service.py
+  h_3555f7510a5ca8 264-270
+  h_3555f7510a5ca8 263,271
+backend/app/services/alert_service.py
+  h_3555f7510a5ca8 1641-1659
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "44d3c5ffa07dbaa9846ef518a0a2f50e071f0039",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
