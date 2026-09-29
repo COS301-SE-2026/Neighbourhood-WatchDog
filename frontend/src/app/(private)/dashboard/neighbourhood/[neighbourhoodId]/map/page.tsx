@@ -777,6 +777,25 @@ function handleToggleLayer(layer: MapLayerKey) {
     isSecurityOfficer
   );
 
+  const isRouting =
+    showSecurityContent &&
+    layerState.routes &&
+    routePropertyId !== null;
+
+  const visibleMapProperties = isRouting
+    ? mapProperties.filter(
+        (property) => property.id === routePropertyId,
+      )
+    : mapProperties;
+
+  const visibleMappedAlerts = isRouting
+    ? mappedAlerts.filter(
+        (alert) => alert.property_id === routePropertyId,
+      )
+    : mappedAlerts;
+
+
+
 
 
   if (userContextLoading) {
@@ -1067,10 +1086,10 @@ function handleToggleLayer(layer: MapLayerKey) {
             alerts={
               showSecurityContent &&
               layerState.liveAlerts
-                ? mappedAlerts
+                ? visibleMappedAlerts
                 : []
             }
-            mapProperties={mapProperties}
+            mapProperties={visibleMapProperties}
             showProperties={
               layerState.properties
             }
