@@ -104,6 +104,9 @@ For the demonstration pairing workflow, use native Windows Python 3.12.
 5. Select the submit button.
 6. Watch for a confirmation message and check your email.
 
+![Sign up Mockup](images/CreateAccountMockup.png)
+
+*Figure 2. Existing authentication.*
 
 
 ### Confirm the account
@@ -114,7 +117,7 @@ For the demonstration pairing workflow, use native Windows Python 3.12.
 4. Return to the login screen and sign in.
 ![Authentication mockup](images/verify-email.png)
 
-*Figure 2. Existing authentication.*
+*Figure 3. Existing authentication.*
 
 If the code expires or is incorrect, use the application’s resend or confirmation option if available. Do not repeatedly guess codes.
 
@@ -143,7 +146,7 @@ A property is the place where one or more cameras are registered. A property is 
 ![Property and neighbourhood mockup](images/create_property.png)
 ![Property and neighbourhood mockup](images/view_properties.png)
 
-*Figure 3. Existing property and neighbourhood mockups. Replace with the live Create Property dialog in the final manual.*
+*Figure 4. Existing property and neighbourhood mockups. Replace with the live Create Property dialog in the final manual.*
 
 ### If the property is not shown
 
@@ -170,7 +173,7 @@ Use this option when you are responsible for starting a new community group.
 
 ![Create neighbourhood mockup](images/create_neighbourhood.png)
 
-*Figure 4. The existing mockup shows the Create Neighbourhood form.*
+*Figure 5. The existing mockup shows the Create Neighbourhood form.*
 
 ### Join an existing neighbourhood
 
@@ -183,9 +186,9 @@ Use this option when you are responsible for starting a new community group.
 Your request remains pending until the administrator resolves it. If the request is denied or the code is invalid, contact the administrator rather than creating multiple duplicate requests.
 
 ![Request Code Mockup](images/JoinRequestCode.png)
-*Figure 5. Neighbourhood admin's join request code that needs to be shared*
+*Figure 6. Neighbourhood admin's join request code that needs to be shared*
 ![Join neighbourhood mockup](images/join_neighbourhood.png)
-*Figure 6. The existing mockup shows the Join Neighbourhood form.*
+*Figure 7. The existing mockup shows the Join Neighbourhood form.*
 ---
 
 ## 7. Navigate the dashboard
@@ -227,7 +230,7 @@ The current camera form requires a location and connection URL. Newly added came
 ![Dashboard and alert mockup](images/add_camera.png)
 ![Dashboard and alert mockup](images/view_camera_dashboard.png)
 
-*Figure 6. Existing dashboard mockups illustrate the camera and alert areas.*
+*Figure 8. Existing dashboard mockups illustrate the camera and alert areas.*
 
 ### Understand the camera list
 
@@ -269,7 +272,7 @@ The Agent is the trusted local service that can reach the registered camera sour
 
 ![Agent pairing screenshot placeholder](images/pairing.png)
 
-*Figure 7. Connect Agent page.*
+*Figure 9. Connect Agent page.*
 
 A token is sensitive even if it is temporary. Treat it like a password: share it only with the person performing the pairing, then remove it from chat messages, notes, screenshots, and screen recordings.
 
@@ -297,7 +300,7 @@ If the camera is unavailable, WatchDog should show an **Unavailable** state rath
 
 ![Camera detection illustration](images/camera_detection.png)
 
-*Figure 8. Illustrative camera image.*
+*Figure 10. Illustrative camera image.*
 ---
 
 ## 11. Configure detection settings
@@ -330,7 +333,7 @@ A camera with no configured zones treats all detections as eligible for alerting
 
 ![Detection zone screenshot placeholder](images/zone_config.png)
 
-*Figure 9. Capture the Camera Detection Settings panel with the confidence slider and a visible polygon.*
+*Figure 11. Capture the Camera Detection Settings panel with the confidence slider and a visible polygon.*
 
 ---
 
@@ -377,7 +380,7 @@ Select **Details** to open the detail panel. Depending on the alert, it may cont
 
 ![Alerts mockup](images/alert.png)
 
-*Figure 10. Existing mockups show an Alerts list and an alert pop-up.*
+*Figure 12. Existing mockups show an Alerts list and an alert pop-up.*
 
 ### Broadcast an alert
 
@@ -475,7 +478,7 @@ If there are no matching records, WatchDog displays **No alerts**. This can mean
 
 ![Alert history screenshot placeholder](images/alert_filter.png)
 
-*Figure 11. Capture Current, History, and the Filter menu.*
+*Figure 13. Capture Current, History, and the Filter menu.*
 
 ---
 
@@ -522,7 +525,7 @@ Analytics should be interpreted as decision support. Confirm important incidents
 
 ![Analytics screenshot placeholder](images/analytics.png)
 
-*Figure 12. The Analytics page.*
+*Figure 14. The Analytics page.*
 
 ---
 
@@ -581,7 +584,7 @@ The page also displays the neighbourhood join code to authorised administrators.
 
 ![Join requests screenshot placeholder](images/join_request.png)
 
-*Figure 13. Pending filter and request actions.*
+*Figure 15. Pending filter and request actions.*
 
 ### Set risk thresholds
 
@@ -599,7 +602,7 @@ These thresholds apply to the cameras and residents in the selected neighbourhoo
 
 ![Risk thresholds screenshot placeholder](images/risk_threshold.png)
 
-*Figure 14. Capture the current configuration and update form.*
+*Figure 16. Capture the current configuration and update form.*
 
 ---
 
@@ -619,7 +622,7 @@ The availability of WhatsApp and email notifications depends on the deployment c
 
 ![Settings screenshot placeholder](images/settings.png)
 
-*Figure 15. Capture the Settings page.*
+*Figure 17. Capture the Settings page.*
 
 ---
 
