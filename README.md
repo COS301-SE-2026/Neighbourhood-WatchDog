@@ -334,7 +334,7 @@ Neighbourhood-WatchDog/
       <br/><br/>
       <b>Joshua Mahabeer</b><br/>
       <sub><code>u24597092</code></sub><br/><br/>
-      <img src="https://img.shields.io/badge--AI%2FML%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
+      <img src="https://img.shields.io/badge/AI%2FML%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <br/><br/>
       <sub>Python · OpenCV · YOLOv8 · React · Docker · C++</sub><br/><br/>
       <a href="https://github.com/"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
@@ -347,7 +347,7 @@ Neighbourhood-WatchDog/
       <br/><br/>
       <b>Obed Edom Mbaya</b><br/>
       <sub><code>u24595889</code></sub><br/><br/>
-      <img src="https://img.shields.io/badge--AI%2FML%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
+      <img src="https://img.shields.io/badge/AI%2FML%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <br/><br/>
       <sub>Python · FastAPI · LangGraph · Next.js · PostgreSQL · Docker</sub><br/><br/>
       <a href="https://github.com/"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
@@ -360,7 +360,7 @@ Neighbourhood-WatchDog/
       <br/><br/>
       <b>Zaman Bassa</b><br/>
       <sub><code>u24744931</code></sub><br/><br/>
-      <img src="https://img.shields.io/badge--DevOps%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
+      <img src="https://img.shields.io/badge/DevOps%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <br/><br/>
       <sub>TypeScript · Python · Docker · PostgreSQL · GitHub Actions</sub><br/><br/>
       <a href="https://github.com/"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
