@@ -12,6 +12,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from threading import Lock
 from typing import Any, Sequence
+from pipeline.utils.zone_config import bbox_in_zone
 
 import time
 import math
@@ -228,6 +229,20 @@ class CascadedPipeline:
 
         )
 
+    def _filter_by_zones(self, detections: list[dict[str, Any]], frame: Any) -> list[dict[str, Any]]:
+        if not self.zones:
+            return detections
+
+        frame_h, frame_w = frame.shape[:2]
+
+        return [
+            detection for detection in detections
+            if any(
+                bbox_in_zone(detection["bbox"], polygon, frame_w, frame_h)
+                for polygon in self.zones
+            )
+        ]
+
     def _detect_persons(self, frame: Any) -> list[dict[str, Any]]:
 
         with self._inference_guard():
@@ -267,7 +282,7 @@ class CascadedPipeline:
                 }
             )
 
-        return persons
+        return self._filter_by_zones(persons, frame)
 
 
     def _detect_weapons(self, frame: Any) -> list[dict[str, Any]]:
@@ -309,7 +324,7 @@ class CascadedPipeline:
                 }
             )
 
-        return detections
+        return self._filter_by_zones(detections, frame)
 
     def _enrich_with_weapons(self, persons: list[dict[str, Any]], weapon_detections: list[dict[str, Any]]) -> list[dict[str, Any]]:
         
