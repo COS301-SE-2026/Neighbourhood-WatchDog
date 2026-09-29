@@ -1,0 +1,58 @@
+.github/workflows/deploy-production.yml
+  h_3555f7510a5ca8 59,93,126,161,170-171
+README.md
+  h_3555f7510a5ca8 24,246,249-250,252,264
+backend/.env.example
+  h_3555f7510a5ca8 47-48
+backend/alembic/versions/add_incident_grouping.py
+  h_3555f7510a5ca8 1-191
+backend/alembic/versions/merge_pre_incident_heads.py
+  h_3555f7510a5ca8 1-24
+backend/app/api/controllers/incidents.py
+  h_3555f7510a5ca8 1-79
+backend/app/models/__init__.py
+  h_3555f7510a5ca8 4
+backend/app/models/alert.py
+  h_3555f7510a5ca8 29-31,50
+backend/app/models/incident.py
+  h_3555f7510a5ca8 1-34
+backend/app/schemas/alert.py
+  h_3555f7510a5ca8 29,320-356
+backend/app/services/alert_service.py
+  h_3555f7510a5ca8 62-67,81-92,264-282,384,1396,1513-1524,1547,1553-1557
+backend/app/services/incident_service.py
+  h_3555f7510a5ca8 1-294
+backend/main.py
+  h_3555f7510a5ca8 32,69
+backend/recreate_db.py
+  h_3555f7510a5ca8 23,28-34
+backend/seed.py
+  h_3555f7510a5ca8 9,11,56-112,170-177,179-184,186-203,205,208-209,211-212,214-215,217,219-221,223,225,227-232,234-239,241-243,245,247-253,255-256,260-261,263,265,267-268,275,279-301,303-304,307-332,334-341,343-565,567,581
+docker-compose.prod.yml
+  h_3555f7510a5ca8 45
+docker-compose.yml
+  h_3555f7510a5ca8 73,148
+docs/nfr-test-proof/qr-03-mediamtx-restart-2.log
+  h_3555f7510a5ca8 1-142
+docs/sas.md
+  h_3555f7510a5ca8 4,314
+frontend/capacitor.config.ts
+  h_3555f7510a5ca8 8
+frontend/src/hooks/use-notification-permission.ts
+  h_3555f7510a5ca8 66-68
+tests/backend/unit/services/alert_service_additional_test.py
+  h_3555f7510a5ca8 1,11-12,25,463-471,982-987,1027-1035,1058-1063,1098-1106,1232-1233,1247,1249-1250,1819-1821,1825-2021
+tests/backend/unit/services/incident_service.py
+  h_3555f7510a5ca8 1-123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1922a8f8f00252043db2f64fbec8bdff178e1da9",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
