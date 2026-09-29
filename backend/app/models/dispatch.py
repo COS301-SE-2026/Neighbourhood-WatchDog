@@ -17,14 +17,16 @@ class DispatchStatus(str, Enum):
     TIMED_OUT = "TIMED_OUT" #officer did not respond on time
     NO_CANDIDATE = "NO_CANDIDATE" #no eligible officer exists for dispatch request
 
+SET_NULL = "SET NULL"
+
 class Dispatch(Base):
     __tablename__ = "dispatch"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     alert_id = Column(UUID(as_uuid=True), ForeignKey("alert.id", ondelete="CASCADE"), nullable=False)
-    neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id", ondelete="SET NULL"), nullable=True)
-    officer_id = Column(UUID(as_uuid=True), ForeignKey("security_officer.id", ondelete="SET NULL"), nullable=True)
-    triggering_sighting_id = Column(UUID(as_uuid=True), ForeignKey("tracking_sighting.id", ondelete="SET NULL"), nullable=True)
+    neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id", ondelete=SET_NULL), nullable=True)
+    officer_id = Column(UUID(as_uuid=True), ForeignKey("security_officer.id", ondelete=SET_NULL), nullable=True)
+    triggering_sighting_id = Column(UUID(as_uuid=True), ForeignKey("tracking_sighting.id", ondelete=SET_NULL), nullable=True)
     rank = Column(Integer, nullable=True) 
     score = Column(Float, nullable=True) #lower score is better
     distance = Column(Float, nullable=True) #distance from alert in metres
