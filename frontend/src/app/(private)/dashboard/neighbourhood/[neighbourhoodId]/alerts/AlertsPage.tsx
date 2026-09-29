@@ -2,7 +2,6 @@
 
 import {
   AlertCard,
-  type Alert,
   type AlertSeverity,
   type AlertStatus,
   getSeverity,
@@ -21,13 +20,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SlidersHorizontal, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { useUserContext } from "@/hooks/use-user-context";
 import {
-  fetchAlerts,
+  fetchIncidents,
   acknowledgeAlert,
   normaliseAlert,
   getAuthToken,
   WS_BASE,
-  AlertFilters,
-  broadcastAlert
+  type AlertFilters,
+  broadcastAlert,
+  type IncidentSummary,
 } from "@/lib/api/alert";
 import { toast } from "sonner";
 import { claimTrackingEvent } from "@/lib/tracking-events";
@@ -41,7 +41,7 @@ import {
 } from "react";
 
 const ALL_SEVERITIES: AlertSeverity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
-const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "CONFIRMED", "RESOLVED", "RESOLVED"];
+const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "CONFIRMED", "RESOLVED", "DISMISSED"];
 const CURRENT_CUTOFF = 24 * 60 * 60 * 1000; // 24h
 
 const SEVERITY_LABELS: Record<AlertSeverity, string> = {
@@ -88,38 +88,64 @@ function ActionErrorBanner({ message, onDismiss }: { message: string; onDismiss:
   );
 }
 
-type FetchState = { alerts: Alert[]; loading: boolean; error: string | null };
+type FetchState = {
+  incidents: IncidentSummary[];
+  loading: boolean;
+  error: string | null;
+};
 
 type FetchAction =
   | { type: "FETCH_START" }
-  | { type: "FETCH_SUCCESS"; payload: Alert[] }
+  | { type: "FETCH_SUCCESS"; payload: IncidentSummary[] }
   | { type: "FETCH_ERROR"; payload: string }
-  | { type: "UPDATE_ALERT"; payload: Alert }
-  | { type: "PREPEND_ALERT"; payload: Alert };
+  | { type: "UPDATE_INCIDENT"; payload: IncidentSummary };
 
-const initialFetchState: FetchState = { alerts: [], loading: true, error: null };
+const initialFetchState: FetchState = {
+  incidents: [],
+  loading: true,
+  error: null,
+};
 
-function fetchReducer(state: FetchState, action: FetchAction): FetchState {
+function fetchReducer(
+  state: FetchState,
+  action: FetchAction,
+): FetchState {
   switch (action.type) {
     case "FETCH_START":
-      return { ...state, loading: true, error: null };
-    case "FETCH_SUCCESS":
-      return { alerts: action.payload, loading: false, error: null };
-    case "FETCH_ERROR":
-      return { ...state, loading: false, error: action.payload };
-    case "PREPEND_ALERT":
-      if (state.alerts.some((alert) => alert.id === action.payload.id)) return state;
-      return { ...state, alerts: [action.payload, ...state.alerts] };
-    case "UPDATE_ALERT":
       return {
         ...state,
-        alerts: state.alerts.map((alert) => (alert.id === action.payload.id ? action.payload : alert)),
+        loading: true,
+        error: null,
       };
+
+    case "FETCH_SUCCESS":
+      return {
+        incidents: action.payload,
+        loading: false,
+        error: null,
+      };
+
+    case "FETCH_ERROR":
+      return {
+        ...state,
+        loading: false,
+        error: action.payload,
+      };
+
+    case "UPDATE_INCIDENT":
+      return {
+        ...state,
+        incidents: state.incidents.map((incident) =>
+          incident.id === action.payload.id
+            ? action.payload
+            : incident,
+        ),
+      };
+
     default:
       return state;
   }
 }
-
 interface Props {
   neighbourhoodId: string;
 }
@@ -162,7 +188,13 @@ function handleTrackingSightingMessage(
   onRefresh();
 }
 
-function handleAlertSocketMessage(message: AlertSocketMessage, isSecurityOfficer: boolean, seenEventIds: Set<string>, dispatch: (action: FetchAction) => void, onTrackingRefresh: () => void): void {
+function handleAlertSocketMessage(
+  message: AlertSocketMessage,
+  isSecurityOfficer: boolean,
+  seenEventIds: Set<string>,
+  onIncidentRefresh: () => void,
+  onTrackingRefresh: () => void,
+): void {
   if (message.event === "ping") {
     return;
   }
@@ -176,6 +208,12 @@ function handleAlertSocketMessage(message: AlertSocketMessage, isSecurityOfficer
       );
     }
 
+    return;
+  }
+
+
+  if (message.event === "incident.updated") {
+    onIncidentRefresh();
     return;
   }
 
@@ -193,19 +231,13 @@ function handleAlertSocketMessage(message: AlertSocketMessage, isSecurityOfficer
       return;
     }
 
-    dispatch({
-      type: "PREPEND_ALERT",
-      payload: incomingAlert,
-    });
+    onIncidentRefresh();
 
     return;
   }
 
   if (message.event === "alert.acknowledged") {
-    dispatch({
-      type: "UPDATE_ALERT",
-      payload: incomingAlert,
-    });
+    onIncidentRefresh();
   }
 }
 
@@ -216,12 +248,21 @@ type AlertsWebSocketOptions = {
   mountedRef: MutableRefObject<boolean>;
   isSecurityOfficer: boolean;
   seenEventIds: Set<string>;
-  dispatch: (action: FetchAction) => void;
+  onIncidentRefresh: () => void;
   onTrackingRefresh: () => void;
   onConnectionChange: (connected: boolean) => void;
 };
 
-function createAlertsWebSocket({url, wsRef, mountedRef, isSecurityOfficer, seenEventIds, dispatch, onTrackingRefresh, onConnectionChange}: AlertsWebSocketOptions): () => void {
+function createAlertsWebSocket({
+  url,
+  wsRef,
+  mountedRef,
+  isSecurityOfficer,
+  seenEventIds,
+  onIncidentRefresh,
+  onTrackingRefresh,
+  onConnectionChange,
+}: AlertsWebSocketOptions): () => void {
   let unmounted = false;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -265,9 +306,8 @@ function createAlertsWebSocket({url, wsRef, mountedRef, isSecurityOfficer, seenE
           message,
           isSecurityOfficer,
           seenEventIds,
-          dispatch,
-          onTrackingRefresh
-
+          onIncidentRefresh,
+          onTrackingRefresh,
         );
       } catch {
         // Ignore malformed WebSocket payloads.
@@ -295,75 +335,6 @@ function createAlertsWebSocket({url, wsRef, mountedRef, isSecurityOfficer, seenE
 
 
 
-const WEAPON_INCIDENT_WINDOW_MS = 30000;
-
-function alertTimestamp(alert: Alert): number | null {
-  const value = Date.parse(alert.frame_timestamp ?? alert.created_at);
-
-  return Number.isNaN(value) ? null : value;
-}
-
-
-
-function groupAlertsByIncident(alerts: Alert[]): Alert[] {
-  
-  const sortedAlerts = [...alerts].sort((a, b) => {
-
-    const aTimestamp = alertTimestamp(a) ?? 0;
-    const bTimestamp = alertTimestamp(b) ?? 0;
-
-    return bTimestamp - aTimestamp;
-
-  });
-
-  const seenTrackingSubjects = new Set<string>();
-
-  const weaponIncidents: Array<{cameraId: string; timestamp: number;}> = [];
-
-  return sortedAlerts.filter((alert) => {
-    
-     //tracked alerts are grouped by their tracking subject, this preserves the existing cross-camera tracking behavior.
-    
-    if (alert.tracking_subject_id) {
-      if (seenTrackingSubjects.has(alert.tracking_subject_id)) {
-        return false;
-      }
-
-      seenTrackingSubjects.add(alert.tracking_subject_id);
-      return true;
-    }
-
-    
-     //trackless weapon alerts do not have a tracking_subject_id
-     ///grouping them by camera and the same 30second incident window
-    
-    if (alert.detection_type !== "WEAPON_DETECTED") {
-      return true;
-    }
-
-    const timestamp = alertTimestamp(alert);
-
-    if (timestamp === null) {
-      return true;
-    }
-
-    const belongsToExistingIncident = weaponIncidents.some((incident) =>
-       incident.cameraId === alert.camera_id && Math.abs(incident.timestamp - timestamp) <= WEAPON_INCIDENT_WINDOW_MS
-    );
-
-    if (belongsToExistingIncident) {
-      return false;
-    }
-
-    weaponIncidents.push({
-      cameraId: alert.camera_id,
-      timestamp
-
-    });
-
-    return true;
-  });
-}
 
 
 export default function AlertsPage({ neighbourhoodId }: Props) {
@@ -397,7 +368,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
   const canViewTracking =
     isSystemAdmin || isNeighbourhoodAdmin || isSecurityOfficer;
 
-  const [{ alerts, loading, error }, dispatch] = useReducer(fetchReducer, initialFetchState);
+  const [{ incidents, loading, error }, dispatch] = useReducer(fetchReducer, initialFetchState);
 
   const [actionError, setActionError] = useState<string | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
@@ -419,7 +390,11 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
     if (selectedStatus) base.status = selectedStatus;
     if (activeTab === "history") {
       if (historyStartDate) base.startDate = new Date(historyStartDate);
-      if (historyEndDate) base.endDate = new Date(historyEndDate);
+      if (historyEndDate) {
+        base.endDate = new Date(
+          `${historyEndDate}T23:59:59.999`,
+        );
+      }
     }
     return base;
   }, [activeTab, selectedStatus, historyStartDate, historyEndDate]);
@@ -448,10 +423,14 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
         ? { ...alertFilters, startDate: new Date(Date.now() - CURRENT_CUTOFF) }
         : alertFilters;
 
-    fetchAlerts(neighbourhoodId, filters, controller.signal)
-      .then(({ alerts: fetched }) => {
+    fetchIncidents(neighbourhoodId, filters, controller.signal)
+      .then(({ incidents: fetched }) => {
         if (!mountedRef.current) return;
-        dispatch({ type: "FETCH_SUCCESS", payload: fetched });
+
+        dispatch({
+          type: "FETCH_SUCCESS",
+          payload: fetched,
+        });
       })
       .catch((err: unknown) => {
         if (!mountedRef.current) return;
@@ -476,7 +455,10 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
       mountedRef,
       isSecurityOfficer,
       seenEventIds: seenTrackingEventIdsRef.current,
-      dispatch,
+      onIncidentRefresh: () => {
+        dispatch({ type: "FETCH_START" });
+        setFetchTick((tick) => tick + 1);
+      },
       onTrackingRefresh: () => {
         setTrackingRefreshKey((current) => current + 1);
       },
@@ -485,26 +467,59 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
   }, [neighbourhoodId, activeTab, userContextLoading, canViewAlerts, isSecurityOfficer]);
 
   async function handleAcknowledge(id: string) {
-    const original = alerts.find((alert) => alert.id === id);
-    if (!original || original.status !== "NEW") return;
+    const incident = incidents.find(
+      (item) => item.representative_alert.id === id,
+    );
+
+    const alert = incident?.representative_alert;
+
+    if (!incident || !alert || alert.status !== "NEW") {
+      return;
+    }
 
     setActionError(null);
-    dispatch({ type: "UPDATE_ALERT", payload: { ...original, status: "ACKNOWLEDGED" } });
+
+    dispatch({
+      type: "UPDATE_INCIDENT",
+      payload: {
+        ...incident,
+        representative_alert: {
+          ...alert,
+          status: "ACKNOWLEDGED",
+        },
+      },
+    });
 
     try {
       await acknowledgeAlert(id);
     } catch (err) {
       if (mountedRef.current) {
-        dispatch({ type: "UPDATE_ALERT", payload: original });
-        setActionError(err instanceof Error ? err.message : "Failed to acknowledge alert.");
+        dispatch({
+          type: "UPDATE_INCIDENT",
+          payload: incident,
+        });
+
+        setActionError(
+          err instanceof Error
+            ? err.message
+            : "Failed to acknowledge alert.",
+        );
       }
+
       console.error("Acknowledge failed:", err);
     }
   }
 
   async function handleBroadcast(id: string) {
-    const alert = alerts.find((item) => item.id === id);
-    if (!alert || alert.status === "RESOLVED") return;
+    const incident = incidents.find(
+      (item) => item.representative_alert.id === id,
+    );
+
+    const alert = incident?.representative_alert;
+
+    if (!alert || alert.status === "RESOLVED") {
+      return;
+    }
 
     setActionError(null);
     setBroadcastingAlertId(id);
@@ -512,36 +527,49 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
     try {
       await broadcastAlert(id);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Failed to broadcast the alert.");
+      setActionError(
+        err instanceof Error
+          ? err.message
+          : "Failed to broadcast the alert.",
+      );
+
       console.error("Broadcast alert failed:", err);
     } finally {
-      if (mountedRef.current) setBroadcastingAlertId(null);
+      if (mountedRef.current) {
+        setBroadcastingAlertId(null);
+      }
     }
   }
 
-  const filtered = useMemo(
-    () => alerts.filter((alert) => selectedSeverities.has(getSeverity(alert.detection_type))),
-    [alerts, selectedSeverities],
-  );
-
-  const groupedAlerts = useMemo(
-    () => groupAlertsByIncident(filtered),
-    [filtered],
+  const filteredIncidents = useMemo(
+    () =>
+      incidents.filter((incident) =>
+        selectedSeverities.has(
+          getSeverity(
+            incident.representative_alert.detection_type,
+          ),
+        ),
+      ),
+    [incidents, selectedSeverities],
   );
 
   const hasActiveFilters =
     selectedSeverities.size < ALL_SEVERITIES.length ||
     selectedStatus !== null ||
-    (activeTab === "history" && (historyStartDate !== "" || historyEndDate !== ""));
+    (activeTab === "history" &&
+      (historyStartDate !== "" || historyEndDate !== ""));
 
-  const newCount = groupedAlerts.filter(
-    (alert) => alert.status === "NEW",
+  const newCount = filteredIncidents.filter(
+    (incident) =>
+      incident.representative_alert.status === "NEW",
   ).length;
 
-  const criticalCount = groupedAlerts.filter(
-    (alert) =>
-      getSeverity(alert.detection_type) === "CRITICAL" &&
-      alert.status === "NEW",
+  const criticalCount = filteredIncidents.filter(
+    (incident) =>
+      getSeverity(
+        incident.representative_alert.detection_type,
+      ) === "CRITICAL" &&
+      incident.representative_alert.status === "NEW",
   ).length;
 
   if (userContextLoading) {
@@ -712,29 +740,38 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
               className="rounded-b-lg p-3 sm:p-5 md:p-6"
             >
 
-              {loading && alerts.length === 0 ? (
+              {loading && incidents.length === 0 ? (
                 <div className="flex items-center justify-center py-20">
                   <RefreshCw className="h-5 w-5 animate-spin text-brand-green" />
                 </div>
               ) : error ? (
                 <ErrorState message={error} onRetry={() => setFetchTick((tick) => tick + 1)} />
-              ) : groupedAlerts.length === 0 ? (
+              ) : filteredIncidents.length === 0 ? (
                 <EmptyState />
               ) : (
                 <div className="space-y-3">
-                  {groupedAlerts.map((alert) => (
-                    <AlertCard
-                      key={alert.id}
-                      alert={alert}
-                      onAcknowledge={handleAcknowledge}
-                      onBroadcast={
-                        isNeighbourhoodAdmin ? handleBroadcast : undefined
-                      }
-                      broadcasting={broadcastingAlertId === alert.id}
-                      canViewTracking={canViewTracking}
-                      trackingRefreshKey={trackingRefreshKey}
-                    />
-                  ))}
+                  {filteredIncidents.map((incident) => {
+                    const representativeAlert =
+                      incident.representative_alert;
+
+                    return (
+                      <AlertCard
+                        key={incident.id}
+                        alert={representativeAlert}
+                        onAcknowledge={handleAcknowledge}
+                        onBroadcast={
+                          isNeighbourhoodAdmin
+                            ? handleBroadcast
+                            : undefined
+                        }
+                        broadcasting={
+                          broadcastingAlertId === representativeAlert.id
+                        }
+                        canViewTracking={canViewTracking}
+                        trackingRefreshKey={trackingRefreshKey}
+                      />
+                    );
+                  })}
                 </div>
               )}
             </section>

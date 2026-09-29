@@ -83,12 +83,14 @@ class TestAcknowledgeAlert:
         alert = Mock()
         alert.id = uuid.uuid4()
         alert.camera_id = uuid.uuid4()
+        alert.incident_id = None
         alert.frame_timestamp = datetime.now(timezone.utc)
         alert.detection_type = "HUMAN_PRESENCE"
         alert.confidence_score = 0.8
         alert.thumbnail_url = None
         alert.clip_s3_key = None
         alert.clip_expires_at = None
+        alert.tracking_subject = None
         alert.processed = True
         alert.status = status
         alert.resolved_by = None
@@ -417,12 +419,14 @@ class TestListAlerts:
         alert = Mock()
         alert.id = uuid.uuid4()
         alert.camera_id = uuid.uuid4()
+        alert.incident_id = None
         alert.frame_timestamp = datetime.now(timezone.utc)
         alert.detection_type = "HUMAN_PRESENCE"
         alert.confidence_score = 0.8
         alert.thumbnail_url = None
         alert.clip_s3_key = None
         alert.clip_expires_at = None
+        alert.tracking_subject = None
         alert.processed = True
         alert.status = status
         alert.resolved_by = None
@@ -813,16 +817,18 @@ class TestBroadcastNeighbourhoodAlert:
         self.alert_patcher.stop()
         self.camera_patcher.stop()
  
-    def _make_alert(self, status: str = "OPEN"):
+    def _make_alert(self, status="OPEN"):
         alert = Mock()
         alert.id = uuid.uuid4()
         alert.camera_id = uuid.uuid4()
+        alert.incident_id = None
         alert.frame_timestamp = datetime.now(timezone.utc)
         alert.detection_type = "HUMAN_PRESENCE"
         alert.confidence_score = 0.8
         alert.thumbnail_url = None
         alert.clip_s3_key = None
         alert.clip_expires_at = None
+        alert.tracking_subject = None
         alert.processed = True
         alert.status = status
         alert.resolved_by = None
