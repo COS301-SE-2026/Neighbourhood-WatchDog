@@ -1,0 +1,20 @@
+frontend/src/lib/api/dispatch.ts
+  h_cf6208e37032c0 1,42
+  h_cf6208e37032c0 46
+frontend/src/lib/api/client.ts
+  h_cf6208e37032c0 1,71
+frontend/src/hooks/use-dispatch.ts
+  h_cf6208e37032c0 4,7,243-244,246-250
+  h_cf6208e37032c0 245
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9f77a7ff52aba3bf660a541d9300b8b60ee97aaa",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
