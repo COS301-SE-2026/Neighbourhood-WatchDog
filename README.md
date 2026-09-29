@@ -21,7 +21,7 @@
 <br/><br/>
 
 [![CI Pipeline](https://img.shields.io/github/actions/workflow/status/COS301-SE-2026/Neighbourhood-WatchDog/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI&labelColor=0D1B2A&color=10B981)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions/workflows/ci.yml)
-[![CD Pipeline](https://img.shields.io/github/actions/workflow/status/COS301-SE-2026/Neighbourhood-WatchDog/cd.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CD&labelColor=0D1B2A&color=10B981)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions/workflows/cd.yml)
+[![CD Pipeline](https://img.shields.io/github/actions/workflow/status/COS301-SE-2026/Neighbourhood-WatchDog/cd.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CD&labelColor=0D1B2A&color=10B981)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions/workflows/deploy-production.yml)
 [![Quality Gate](https://img.shields.io/sonar/quality_gate/COS301-SE-2026_Neighbourhood-WatchDog?server=https%3A%2F%2Fsonarcloud.io&style=for-the-badge&logo=sonarcloud&logoColor=white&label=Quality+Gate&labelColor=0D1B2A&color=10B981)](https://sonarcloud.io/summary/new_code?id=COS301-SE-2026_Neighbourhood-WatchDog)
 [![Coverage](https://img.shields.io/codecov/c/github/COS301-SE-2026/Neighbourhood-WatchDog?style=for-the-badge&logo=codecov&logoColor=white&label=Coverage&labelColor=0D1B2A&color=10B981&token=28L6HTN8XV)](https://codecov.io/github/COS301-SE-2026/Neighbourhood-WatchDog)
 [![Commit Activity](https://img.shields.io/github/commit-activity/m/COS301-SE-2026/Neighbourhood-WatchDog/dev?style=for-the-badge&logo=git&logoColor=white&label=Commits&labelColor=0D1B2A&color=10B981)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/commits/dev)
@@ -243,11 +243,13 @@ docker compose up --build
 ```
 Neighbourhood-WatchDog/
 │
-├── frontend/          # Next.js dashboard (React, TailwindCSS, HLS.js)
+├── frontend/          # Next.js dashboard (React, TailwindCSS, WebRTC)
 ├── backend/           # FastAPI backend (REST API, WebSocket, Celery)
 ├── ai/                # AI pipeline (YOLOv8, DeepSORT, OpenCV)
-├── infra/             # Docker, docker-compose, AWS configuration
+├── mediamtx/          # Video relay (MediaMTX)
+├── watchdog-infra/    # Docker, docker-compose, AWS configuration
 ├── docs/              # Project documentation
+├── tests/             # Testing files (Pytest, Jest, Playwright)
 └── assets/            # Logos, images, README assets
 ```
 
@@ -259,7 +261,7 @@ Neighbourhood-WatchDog/
 
 [![SRS](https://img.shields.io/badge/Software_Requirements_Spec-View-10B981?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/srs.md)
 <br>
-[![SRS](https://img.shields.io/badge/Deployment_Document-View-10B981?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/deployment_doc.md)
+[![SRS](https://img.shields.io/badge/Deployment_Document-View-10B981?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](/docs/deployment_doc.md)
 
 [![SRS](https://img.shields.io/badge/Software_Architecture_Spec-View-10B981?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0D1B2A)](docs/sas.md)
 

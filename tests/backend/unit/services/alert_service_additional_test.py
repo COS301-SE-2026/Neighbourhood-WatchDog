@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 from uuid import uuid4
@@ -8,7 +8,8 @@ from botocore.exceptions import BotoCoreError
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
-from app.models.alert import DetectionType
+from app.models.alert import Alert, DetectionType
+from app.models.incident import Incident
 from app.models.neighbourhood_user import NeighbourhoodRole
 from app.schemas.alert import (
     AlertCreate,
@@ -21,6 +22,7 @@ from app.schemas.alert import (
 )
 from app.services import alert_service as service
 from app.services.alert_service import _validate_tracking_payload
+from app.models.incident import Incident
 
 
 
@@ -458,7 +460,15 @@ async def test_create_alert_persists_and_broadcasts_to_neighbourhood():
     assert response.status == "OPEN"
     assert response.created_at == FRAME_TIMESTAMP
 
-    db.add.assert_called_once()
+    assert db.add.call_count == 2
+
+    added_entities = [
+        call.args[0]
+        for call in db.add.call_args_list
+    ]
+
+    assert isinstance(added_entities[0], Incident)
+    assert isinstance(added_entities[1], Alert)
     db.commit.assert_awaited_once()
 
 
@@ -969,7 +979,12 @@ async def test_create_alert_for_agent_maps_known_detection_label():
         existing_result,
         recent_weapon_result,
     ]
-    assigned_ids = iter([ALERT_ID, uuid4(), uuid4()])
+    assigned_ids = iter([
+        ALERT_ID,  # Alert
+        uuid4(),   # Incident
+        uuid4(),   # TrackingSubject
+        uuid4(),   # TrackingSighting
+    ])
 
     def assign_ids_on_add(entity):
         entity.id = next(assigned_ids)
@@ -1009,7 +1024,15 @@ async def test_create_alert_for_agent_maps_known_detection_label():
     assert created_alert.processed is True
     assert created_alert.status == "OPEN"
 
-    assert db.add.call_count == 3
+    assert db.add.call_count == 4
+
+    added_entities = [
+        call.args[0]
+        for call in db.add.call_args_list
+    ]
+
+    assert isinstance(added_entities[0], Alert)
+    assert isinstance(added_entities[1], Incident)
     db.commit.assert_awaited_once()
     db.refresh.assert_awaited_once_with(created_alert)
 
@@ -1032,7 +1055,12 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
         recent_weapon_result,
     ]
 
-    assigned_ids = iter([ALERT_ID, uuid4(), uuid4()])
+    assigned_ids = iter([
+        ALERT_ID,  # Alert
+        uuid4(),   # Incident
+        uuid4(),   # TrackingSubject
+        uuid4(),   # TrackingSighting
+    ])
 
     def assign_ids_on_add(entity):
         entity.id = next(assigned_ids)
@@ -1067,7 +1095,15 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
     assert created_alert.detection_type == DetectionType.WEAPON_DETECTED
     assert response.is_new_alert is True
     assert response.sighting_id is not None
-    assert db.add.call_count == 3
+    assert db.add.call_count == 4
+
+    added_entities = [
+        call.args[0]
+        for call in db.add.call_args_list
+    ]
+
+    assert isinstance(added_entities[0], Alert)
+    assert isinstance(added_entities[1], Incident)
 
 
 @pytest.mark.asyncio
@@ -1193,8 +1229,8 @@ async def test_create_alert_for_agent_persists_initial_tracking_sighting():
         sequence_no=1,
         match_confidence=None,
     )
-    assert db.add.call_count == 3
-    assert db.flush.await_count == 2
+    assert db.add.call_count == 4
+    assert db.flush.await_count == 3
 
 
 
@@ -1208,7 +1244,10 @@ async def test_create_alert_for_agent_uses_current_time_without_timestamp():
     alert = SimpleNamespace(
         id=ALERT_ID,
         camera_id=CAMERA_ID,
+        frame_timestamp=FRAME_TIMESTAMP,
         detection_type=DetectionType.HUMAN_PRESENCE,
+        incident_id=None,
+        created_at=FRAME_TIMESTAMP,
     )
 
     body = make_internal_alert_request(
@@ -1777,8 +1816,206 @@ async def test_create_trackless_weapon_alert_without_tracking_rows():
     assert response.sighting_id is None
     assert response.is_new_alert is True
 
-    db.add.assert_called_once_with(alert)
+    assert db.add.call_args_list[0].args[0] is alert
+    assert db.add.call_args_list[1].args[0].__class__ is Incident
+    assert db.add.call_count == 2
     db.commit.assert_awaited_once()
 
     tracking_subject_model.assert_not_called()
     tracking_sighting_model.assert_not_called()
+
+
+
+@pytest.mark.asyncio
+async def test_grouped_weapon_detection_reuses_same_alert_and_incident():
+    existing_alert = SimpleNamespace(
+        id=uuid4(),
+        incident_id=uuid4(),
+        frame_timestamp=datetime.now(timezone.utc),
+    )
+
+    db = make_db()
+
+    db.execute.return_value = make_result(
+        scalar=make_camera(),
+    )
+
+    with patch(
+        "app.services.alert_service._find_recent_weapon_alert",
+        new=AsyncMock(return_value=existing_alert),
+    ), patch(
+        "app.services.alert_service.ensure_incident_for_alert",
+        new=AsyncMock(
+            return_value=SimpleNamespace(
+                id=existing_alert.incident_id,
+                last_seen_at=existing_alert.frame_timestamp,
+            )
+        ),
+    ) as ensure_incident:
+        response = await service.create_alert_for_agent_handler(
+            body=make_internal_alert_request(
+                detection_type="WEAPON_DETECTED",
+                local_track_id=None,
+            ),
+            db=db,
+            credential=make_edge_credential(),
+        )
+
+    assert response.alert_id == existing_alert.id
+    assert response.is_new_alert is False
+    ensure_incident.assert_awaited_once()
+
+    db.commit.assert_awaited_once()
+
+
+def test_weapon_grouping_status_policy():
+    assert service.WEAPON_ACTIVE_STATUSES == (
+        "OPEN",
+        "ACKNOWLEDGED",
+    )
+
+    assert service.WEAPON_CLOSED_STATUSES == (
+        "RESOLVED",
+        "DISMISSED",
+    )
+
+    assert "RESOLVED" not in service.WEAPON_ACTIVE_STATUSES
+    assert "DISMISSED" not in service.WEAPON_ACTIVE_STATUSES
+
+
+@pytest.mark.asyncio
+async def test_find_recent_weapon_alert_accepts_acknowledged_alert():
+    frame_timestamp = datetime(
+        2026,
+        1,
+        1,
+        12,
+        16,
+        0,
+        tzinfo=timezone.utc,
+    )
+
+    acknowledged_alert = make_alert(
+        status="ACKNOWLEDGED",
+        detection_type=DetectionType.WEAPON_DETECTED,
+    )
+
+    db = make_db()
+    db.execute.return_value = make_result(
+        scalar=acknowledged_alert,
+    )
+
+    with patch.object(
+        service,
+        "WEAPON_INCIDENT_WINDOW_SECONDS",
+        1800,
+    ):
+        result = await service._find_recent_weapon_alert(
+            db=db,
+            camera_id=CAMERA_ID,
+            frame_timestamp=frame_timestamp,
+        )
+
+    assert result is acknowledged_alert
+    db.execute.assert_awaited_once()
+
+    statement = db.execute.await_args.args[0]
+    compiled = statement.compile()
+
+    # The query must filter using the active statuses.
+    assert "alert.status IN" in str(compiled)
+
+    # The query must use the configured 30-minute window.
+    expected_window_start = frame_timestamp - timedelta(minutes=30)
+    assert expected_window_start in compiled.params.values()
+
+    # The status bind parameter must contain OPEN and ACKNOWLEDGED.
+    status_parameters = [
+        value
+        for value in compiled.params.values()
+        if isinstance(value, (tuple, list))
+    ]
+
+    assert any(
+        set(value) == {"OPEN", "ACKNOWLEDGED"}
+        for value in status_parameters
+    )
+
+
+@pytest.mark.asyncio
+async def test_find_recent_weapon_alert_does_not_include_resolved_or_dismissed():
+    frame_timestamp = datetime(
+        2026,
+        1,
+        1,
+        12,
+        16,
+        0,
+        tzinfo=timezone.utc,
+    )
+
+    db = make_db()
+    db.execute.return_value = make_result(
+        scalar=None,
+    )
+
+    await service._find_recent_weapon_alert(
+        db=db,
+        camera_id=CAMERA_ID,
+        frame_timestamp=frame_timestamp,
+    )
+
+    statement = db.execute.await_args.args[0]
+    compiled = statement.compile()
+
+    status_parameters = [
+        value
+        for value in compiled.params.values()
+        if isinstance(value, (tuple, list))
+    ]
+
+    assert any(
+        set(value) == {"OPEN", "ACKNOWLEDGED"}
+        for value in status_parameters
+    )
+
+    assert all(
+        "RESOLVED" not in value and "DISMISSED" not in value
+        for value in status_parameters
+    )
+
+
+@pytest.mark.asyncio
+async def test_find_recent_weapon_alert_uses_configured_window_boundary():
+    frame_timestamp = datetime(
+        2026,
+        1,
+        1,
+        12,
+        30,
+        0,
+        tzinfo=timezone.utc,
+    )
+
+    db = make_db()
+    db.execute.return_value = make_result(
+        scalar=None,
+    )
+
+    with patch.object(
+        service,
+        "WEAPON_INCIDENT_WINDOW_SECONDS",
+        1800,
+    ):
+        await service._find_recent_weapon_alert(
+            db=db,
+            camera_id=CAMERA_ID,
+            frame_timestamp=frame_timestamp,
+        )
+
+    statement = db.execute.await_args.args[0]
+    compiled = statement.compile()
+
+    expected_window_start = frame_timestamp - timedelta(seconds=1800)
+
+    assert expected_window_start in compiled.params.values()

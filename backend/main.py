@@ -29,6 +29,7 @@ from app.auth.rate_limiter import limiter
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from app.api.controllers.incidents import router as incidents_router
 
 configure_logging(config.debug and "DEBUG" or "INFO")
 
@@ -65,6 +66,7 @@ app.add_middleware( #CORS (allow requests from frontend)
 app.include_router(auth_router)
 app.include_router(neighbourhood_join_router)
 app.include_router(alert_router)
+app.include_router(incidents_router)
 app.include_router(detection_router)
 app.include_router(internal_cameras_router)
 app.include_router(property_router)

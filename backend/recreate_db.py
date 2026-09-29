@@ -20,10 +20,17 @@ async def recreate_database():
 
     print("Re-enabling PostGIS extension")
     async with engine.begin() as connection:
-        
+
         await connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
 
     print("PostGIS enabled")
+
+    print("Re-enabling pgvector extension")
+    async with engine.begin() as connection:
+
+        await connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+
+    print("pgvector enabled")
 
     print("Creating all tables from models...")
     async with engine.begin() as connection:

@@ -26,6 +26,7 @@ class AlertResponse(BaseModel):
 class AlertRes(BaseModel):
     id: UUID
     camera_id: UUID
+    incident_id: UUID | None = None
     frame_timestamp: datetime
     detection_type: str
     confidence_score: float
@@ -316,3 +317,40 @@ class IncidentDensityRes(BaseModel):
     status: int
     message: str | None = None
     data: IncidentDensityData
+
+
+
+class IncidentSummaryRes(BaseModel):
+    id: UUID
+    detection_type: str
+    started_at: datetime
+    last_seen_at: datetime
+    alert_count: int
+    representative_alert_id: UUID
+    representative_alert: AlertRes
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class IncidentDetailRes(BaseModel):
+    id: UUID
+    detection_type: str
+    started_at: datetime
+    last_seen_at: datetime
+    alert_count: int
+    alerts: list[AlertRes]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ListIncidentsRes(BaseModel):
+    status: int
+    message: str | None = None
+    data: list[IncidentSummaryRes] | None = None
+    pagination: Pagination | None = None
+
+
+class IncidentDetailResponse(BaseModel):
+    status: int
+    message: str | None = None
+    data: IncidentDetailRes | None = None
