@@ -1,9 +1,10 @@
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Query
 
-from app.auth.authorization import NeighbourhoodMemberClaims
+from app.auth.authorization import Claims, NeighbourhoodMemberClaims
 from app.core.database import DbSession
 from app.schemas.alert import (
     IncidentDetailResponse,
@@ -32,6 +33,8 @@ async def list_incidents(
     status_filter: Annotated[str | None, Query(alias="status")] = None,
     camera_id: Annotated[UUID | None, Query()] = None,
     detection_type: Annotated[str | None, Query()] = None,
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 25,
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
@@ -42,6 +45,8 @@ async def list_incidents(
         status_filter=status_filter,
         camera_id=camera_id,
         detection_type=detection_type,
+        start_date=start_date,
+        end_date=end_date,
         limit=limit,
         offset=offset,
     )
@@ -65,7 +70,7 @@ async def list_incidents(
 async def get_incident(
     incident_id: UUID,
     db: DbSession,
-    claims: NeighbourhoodMemberClaims,
+    claims: Claims,
 ):
     result = await get_incident_handler(
         incident_id=incident_id,

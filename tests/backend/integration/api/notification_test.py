@@ -1,6 +1,7 @@
 import uuid
+import uuid
 from datetime import datetime, timezone
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 import main as m
@@ -46,7 +47,10 @@ def _make_mock_db(alert=None, camera=None, notifications=None):
         result.scalars.return_value.all.return_value = notifications or []
         return result
  
-    mock_db.execute.side_effect = _execute
+    mock_db.execute = AsyncMock(side_effect=_execute)
+    mock_db.commit = AsyncMock()
+    mock_db.close = AsyncMock()
+    mock_db.rollback = AsyncMock()
     return mock_db
  
 def _headers_for_neighbourhood(headers: dict, neighbourhood_id=NEIGHBOURHOOD_ID) -> dict:

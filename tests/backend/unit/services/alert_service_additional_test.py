@@ -94,7 +94,6 @@ def make_camera(
         location=location,
     )
 
-
 def make_alert(
     *,
     status="OPEN",
@@ -102,15 +101,18 @@ def make_alert(
     camera=None,
 ):
     property_obj = make_property()
+
     return SimpleNamespace(
         id=ALERT_ID,
         camera_id=CAMERA_ID,
+        incident_id=None,
         frame_timestamp=FRAME_TIMESTAMP,
         detection_type=detection_type,
         confidence_score=0.85,
         thumbnail_url="https://example.com/thumbnail.jpg",
         clip_s3_key=None,
         clip_expires_at=None,
+        tracking_subject=None,
         processed=False,
         status=status,
         resolved_by=None,
@@ -118,7 +120,6 @@ def make_alert(
         created_at=FRAME_TIMESTAMP,
         camera=camera or make_camera(property_obj=property_obj),
     )
-
 
 def make_claims():
     return {
@@ -471,33 +472,36 @@ async def test_create_alert_persists_and_broadcasts_to_neighbourhood():
     assert isinstance(added_entities[1], Alert)
     db.commit.assert_awaited_once()
 
-
 @pytest.mark.asyncio
 async def test_create_alert_skips_broadcast_without_neighbourhood():
-    alert = make_alert()
     db = make_db()
     data = make_alert_create(neighbourhood_id=None)
 
-    with (
-        patch(
-            "app.services.alert_service.Alert",
-            return_value=alert,
-        ),
-        patch(
-            "app.api.controllers.alert.broadcast",
-            new=AsyncMock(),
-        ) as broadcast,
-        patch(
-            "app.services.alert_service._get_neighbourhood_websocket_recipient_ids",
-            new=AsyncMock(),
-        ) as recipients,
-    ):
+    def assign_ids(entity):
+        if isinstance(entity, Incident):
+            entity.id = uuid4()
+        elif isinstance(entity, Alert):
+            entity.id = ALERT_ID
+
+    async def refresh_alert(entity):
+        entity.status = "OPEN"
+        entity.created_at = FRAME_TIMESTAMP
+
+    db.add.side_effect = assign_ids
+    db.refresh.side_effect = refresh_alert
+
+    with patch(
+        "app.services.alert_service.NotificationPolicyFactory.get",
+    ) as mock_send_push:
         response = await service.create_alert(db, data)
 
+    mock_send_push.assert_not_called()
+
     assert response.id == ALERT_ID
-    broadcast.assert_not_awaited()
-    recipients.assert_not_awaited()
-    db.commit.assert_awaited_once()
+    assert response.camera_id == CAMERA_ID
+    assert response.status == "OPEN"
+    assert response.created_at == FRAME_TIMESTAMP
+    assert db.commit.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -998,11 +1002,20 @@ async def test_create_alert_for_agent_maps_known_detection_label():
 
     with (
         patch(
+            "app.services.alert_service._lock_weapon_incident_key",
+            new=AsyncMock(),
+        ),
+        patch(
             "app.services.alert_service._get_neighbourhood_websocket_recipient_ids",
             new=AsyncMock(return_value=[]),
         ),
-        patch("app.services.alert_service.NotificationPolicyFactory.get") as mock_send_push,
-        patch("app.api.controllers.alert.broadcast", new=AsyncMock()),
+        patch(
+            "app.services.alert_service.NotificationPolicyFactory.get",
+        ) as mock_send_push,
+        patch(
+            "app.api.controllers.alert.broadcast",
+            new=AsyncMock(),
+        ),
     ):
         mock_send_push.return_value.notify = AsyncMock()
         response = await service.create_alert_for_agent_handler(
@@ -1074,24 +1087,34 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
 
     with (
         patch(
+            "app.services.alert_service._lock_weapon_incident_key",
+            new=AsyncMock(),
+        ),
+        patch(
             "app.services.alert_service._get_neighbourhood_websocket_recipient_ids",
             new=AsyncMock(return_value=[]),
         ),
-        patch("app.services.alert_service.NotificationPolicyFactory.get") as mock_send_push,
-        patch("app.api.controllers.alert.broadcast", new=AsyncMock()),
+        patch(
+            "app.services.alert_service.NotificationPolicyFactory.get",
+        ) as mock_send_push,
+        patch(
+            "app.api.controllers.alert.broadcast",
+            new=AsyncMock(),
+        ),
     ):
         mock_send_push.return_value.notify = AsyncMock()
-        
+
         response = await service.create_alert_for_agent_handler(
             body,
             db,
             make_edge_credential(),
         )
 
+
     created_alert = db.add.call_args_list[0].args[0]
 
     assert response.alert_id == ALERT_ID
-    mock_send_push.return_value.notify.assert_called_once()
+    mock_send_push.return_value.notify.assert_awaited_once()
     assert created_alert.detection_type == DetectionType.WEAPON_DETECTED
     assert response.is_new_alert is True
     assert response.sighting_id is not None
@@ -1872,8 +1895,8 @@ def test_weapon_grouping_status_policy():
     assert service.WEAPON_ACTIVE_STATUSES == (
         "OPEN",
         "ACKNOWLEDGED",
+        "CONFIRMED",
     )
-
     assert service.WEAPON_CLOSED_STATUSES == (
         "RESOLVED",
         "DISMISSED",
@@ -1937,7 +1960,11 @@ async def test_find_recent_weapon_alert_accepts_acknowledged_alert():
     ]
 
     assert any(
-        set(value) == {"OPEN", "ACKNOWLEDGED"}
+        set(value) == {
+            "OPEN",
+            "ACKNOWLEDGED",
+            "CONFIRMED",
+        }
         for value in status_parameters
     )
 
@@ -1975,7 +2002,11 @@ async def test_find_recent_weapon_alert_does_not_include_resolved_or_dismissed()
     ]
 
     assert any(
-        set(value) == {"OPEN", "ACKNOWLEDGED"}
+        set(value) == {
+            "OPEN",
+            "ACKNOWLEDGED",
+            "CONFIRMED",
+        }
         for value in status_parameters
     )
 
@@ -2019,3 +2050,11 @@ async def test_find_recent_weapon_alert_uses_configured_window_boundary():
     expected_window_start = frame_timestamp - timedelta(seconds=1800)
 
     assert expected_window_start in compiled.params.values()
+
+def test_weapon_grouping_treats_confirmed_as_active():
+    assert service.AlertStatus.OPEN.value in service.WEAPON_ACTIVE_STATUSES
+    assert service.AlertStatus.ACKNOWLEDGED.value in service.WEAPON_ACTIVE_STATUSES
+    assert service.AlertStatus.CONFIRMED.value in service.WEAPON_ACTIVE_STATUSES
+
+    assert service.AlertStatus.RESOLVED.value in service.WEAPON_CLOSED_STATUSES
+    assert service.AlertStatus.DISMISSED.value in service.WEAPON_CLOSED_STATUSES

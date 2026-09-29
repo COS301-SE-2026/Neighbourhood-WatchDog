@@ -67,6 +67,7 @@ export type AlertStatus = "NEW" | "ACKNOWLEDGED" | "RESOLVED" | "CONFIRMED" | "D
 export interface Alert {
   id: string;
   camera_id: string;
+  incident_id?: string | null;
   frame_timestamp?: string;
   detection_type: string;
   confidence_score?: number | null;

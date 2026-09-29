@@ -12,7 +12,7 @@ from fastapi import HTTPException, UploadFile
 from uuid import UUID
 from app.core.database import DbSession
 
-from sqlalchemy import or_, select, func
+from sqlalchemy import or_, select, func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -83,6 +83,7 @@ WEAPON_INCIDENT_WINDOW_SECONDS = int(os.getenv("WEAPON_INCIDENT_WINDOW_SECONDS")
 WEAPON_ACTIVE_STATUSES = (
     AlertStatus.OPEN.value,
     AlertStatus.ACKNOWLEDGED.value,
+    AlertStatus.CONFIRMED.value,
 )
 
 WEAPON_CLOSED_STATUSES = (
@@ -1194,6 +1195,34 @@ def _validate_tracking_payload(body: CreateInternalAlertRequest, det_type: Detec
             )
 
 
+async def _lock_weapon_incident_key(
+    *,
+    db: AsyncSession,
+    camera_id: UUID,
+) -> None:
+    """
+    Serialize weapon grouping for one camera and detection type.
+
+    This is a PostgreSQL transaction-level advisory lock.
+    It also protects the empty-result case where SELECT ... FOR UPDATE
+    would lock no rows.
+    """
+    await db.execute(
+        text(
+            """
+            SELECT pg_advisory_xact_lock(
+                hashtextextended(:lock_key, 0)
+            )
+            """
+        ),
+        {
+            "lock_key": f"{camera_id}:WEAPON_DETECTED",
+        },
+    )
+
+
+
+
 async def _find_recent_weapon_alert(*, db: AsyncSession, camera_id: UUID, frame_timestamp: datetime) -> Alert | None:
     incident_window_start = (frame_timestamp - timedelta(seconds=WEAPON_INCIDENT_WINDOW_SECONDS))
 
@@ -1311,6 +1340,11 @@ async def create_alert_for_agent_handler(
 
         ###group weapon detections from the same camera into the same open incident within the configured time window.
         if det_type == DetectionType.WEAPON_DETECTED:
+            await _lock_weapon_incident_key(
+                db=db,
+                camera_id=camera_id,
+            )
+
             recent_weapon_alert = await _find_recent_weapon_alert(
                 db=db,
                 camera_id=camera_id,
