@@ -1,6 +1,5 @@
 import queue
 import logging
-import queue
 import subprocess
 import sys
 import threading
