@@ -356,17 +356,15 @@ class WatchDogDesktopApp:
             if getattr(sys, "frozen", False):
                 command = [
                     sys.executable,
-                    *sys.argv[1:],
                 ]
                 working_directory = (
                     Path(sys.executable).resolve().parent
                 )
             else:
-                script_path = Path(sys.argv[0]).resolve()
+                script_path = Path(__file__).resolve()
                 command = [
                     sys.executable,
                     str(script_path),
-                    *sys.argv[1:],
                 ]
                 working_directory = script_path.parent
 
