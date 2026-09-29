@@ -33,16 +33,15 @@ export function SequencedFootagePlayer({
 }: SequencedFootagePlayerProps) {
   const [sightings, setSightings] = useState<TrackingSighting[]>([]);
   const [index, setIndex] = useState(0);
+  const suppliedSightings = useMemo(
+    () => providedSightings?.filter((sighting) => sighting.clip_s3_key) ?? null,
+    [providedSightings],
+  );
 
   useEffect(() => {
     if (!enabled) return;
 
-    if (providedSightings) {
-      setSightings(
-        providedSightings.filter((sighting) => sighting.clip_s3_key),
-      );
-      return;
-    }
+    if (providedSightings) return;
 
     const controller = new AbortController();
 
@@ -71,10 +70,6 @@ export function SequencedFootagePlayer({
     return () => controller.abort();
   }, [alertId, enabled, providedSightings, refreshKey]);
 
-  useEffect(() => {
-    setIndex(0);
-  }, [alertId, refreshKey]);
-
   const playlist = useMemo<PlaylistItem[]>(() => {
     const items: PlaylistItem[] = [
       {
@@ -85,7 +80,7 @@ export function SequencedFootagePlayer({
       },
     ];
 
-    const ordered = [...sightings].sort((left, right) => {
+    const ordered = [...(suppliedSightings ?? sightings)].sort((left, right) => {
       const timeDifference =
         new Date(left.observed_at).getTime() -
         new Date(right.observed_at).getTime();
@@ -108,7 +103,7 @@ export function SequencedFootagePlayer({
     }
 
     return items;
-  }, [alertId, alertTimestamp, sightings]);
+  }, [alertId, alertTimestamp, sightings, suppliedSightings]);
 
   const current = playlist[Math.min(index, playlist.length - 1)];
   const { url, status, errorMessage } = useClip(current.id, current.kind);

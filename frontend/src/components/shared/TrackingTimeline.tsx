@@ -174,6 +174,7 @@ export function TrackingTimeline({
                     Continuous footage
                   </h4>
                   <SequencedFootagePlayer
+                    key={`${alertId}:${refreshKey}`}
                     alertId={alertId}
                     alertTimestamp={alertTimestamp ?? ""}
                     enabled={enabled}
