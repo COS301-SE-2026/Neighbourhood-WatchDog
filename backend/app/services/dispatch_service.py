@@ -742,7 +742,7 @@ async def respond_to_dispatch_handler(
         dispatch.responded_at = now
         await db.commit()
         try:
-            await _promote_officer(db, dispatch.alert_id)
+            await _promote_officer(db, dispatch.alert_id, dispatch.triggering_sighting_id)
         except Exception:
             logger.exception(
                 "respond_to_dispatch: failed to promote next officer after expiry for alert %s", 
@@ -757,7 +757,7 @@ async def respond_to_dispatch_handler(
         await db.refresh(dispatch)
 
         try:
-            await _promote_officer(db, dispatch.alert_id)
+            await _promote_officer(db, dispatch.alert_id, dispatch.triggering_sighting_id)
         except Exception:
             logger.exception(
                 "respond_to_dispatch: failed to promote next officer after declining alert %s",
@@ -769,12 +769,15 @@ async def respond_to_dispatch_handler(
     if action == "ACCEPT":
         lock_result = await db.execute(
             select(Dispatch)
-            .where(Dispatch.alert_id == dispatch.alert_id)
+            .where(
+                Dispatch.alert_id == dispatch.alert_id,
+                Dispatch.triggering_sighting_id == dispatch.triggering_sighting_id,
+            )
             .with_for_update()
         )
-        alert_rows = lock_result.scalars().all()
+        round_rows = lock_result.scalars().all()
 
-        if any(r.status == DispatchStatus.ACCEPTED and r.id != dispatch.id for r in alert_rows):
+        if any(r.status == DispatchStatus.ACCEPTED and r.id != dispatch.id for r in round_rows):
             raise HTTPException(409, "This alert has already been assigned to another officer")
 
         dispatch.status = DispatchStatus.ACCEPTED
