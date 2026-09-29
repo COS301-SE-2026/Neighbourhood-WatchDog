@@ -1,0 +1,23 @@
+frontend/src/hooks/use-critical-alerts.ts
+  h_3555f7510a5ca8 26-31,128,134,179,185
+frontend/src/lib/api/alert.ts
+  h_3555f7510a5ca8 23-32,419-443
+  h_3555f7510a5ca8 418
+frontend/src/components/shared/AlertCard.tsx
+  h_3555f7510a5ca8 135,440-441,448,451,457-458,473-501,627-670
+  h_3555f7510a5ca8 452
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/alerts/AlertsPage.tsx
+  h_3555f7510a5ca8 30-32,46,58,206,489-492,494,496-497,499,503-510,513-520,522-543,545-546,551,772-785,788-796,798-805,820-822
+  h_3555f7510a5ca8 493,495,498,502,544,547,786-787,797,806-819
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c335222c3dda22aa04dd98db32c75e0d888919db",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
