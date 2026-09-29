@@ -1,0 +1,100 @@
+backend/app/services/dispatch_service.py
+  h_3555f7510a5ca8 22,158-159,177,195,220-241,313-323,327-336,377,423,432-433,456,462,464-465,467,498,520,524,527,529,532-533,540,580,695-730,732-777,820,851,866,876-877,881-883,887,892,897-898,909,912,940-944,947-953,964-967,976,995-996,1001,1006-1008,1013
+  h_3555f7510a5ca8 156-157,160,324-326,337,431,434,531,534,731,954-963,968,1002-1005,1009-1010,1023
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/alerts/AlertsPage.tsx
+  h_3555f7510a5ca8 23,29-31,33,94,96,101,103,106,108,113,120,122,125,127,129,133-134,136-144,146,197-198,217-218,236,241-242,253,264,266,311-312,373,395,397,399,428-429,431,434,460-463,475-476,479,484-485,487,494,500-506,508,519,521,524,526,530,532,535-537,539,548-550,553-554,556,558,729,735,739-741,743-744,755-756,759,764,773,776
+  h_3555f7510a5ca8 93,95,97,105,107,109,111-112,114,117-119,121,124,126,128,135,193-196,199,216,219-221,258-263,265,267,396,398,432-433,435,507,516-518,520,525,531,533-534,538,545-546,555,557
+.github/workflows/deploy-production.yml
+  h_3555f7510a5ca8 125,204,215
+.gitignore
+  h_3555f7510a5ca8 61-64
+README.md
+  h_3555f7510a5ca8 24,337,350,363
+ai/.gitignore
+  h_3555f7510a5ca8 15-16
+ai/WatchDog.iss
+  h_3555f7510a5ca8 2,39
+ai/WatchDogService.spec
+  h_3555f7510a5ca8 6
+ai/build_windows.ps1
+  h_3555f7510a5ca8 40
+ai/main.py
+  h_3555f7510a5ca8 3-8,24-25,47-50,218-395
+ai/main_app.py
+  h_3555f7510a5ca8 350,352-370,376-378,380,383-387
+ai/requirements.txt
+  h_3555f7510a5ca8 40
+ai/runtime/agent_runtime.py
+  h_3555f7510a5ca8 424,428-454,456,458-475,478,484-485,489-492,494-501,503-545,550,553-556
+backend/alembic/versions/2cae7582d70f_merge_heads.py
+  h_3555f7510a5ca8 1-26
+backend/alembic/versions/3f0d5fabf71e_added_fk_and_updated_indexes.py
+  h_3555f7510a5ca8 1-40
+backend/app/api/controllers/incidents.py
+  h_3555f7510a5ca8 1,7,36-37,48-49,73,84
+backend/app/core/database.py
+  h_3555f7510a5ca8 3,19-33,77
+backend/app/models/dispatch.py
+  h_3555f7510a5ca8 20-21,27-30,46,54-55,57-72
+backend/app/schemas/dispatch.py
+  h_3555f7510a5ca8 13
+backend/app/services/alert_service.py
+  h_3555f7510a5ca8 15,86,1389-1416,1534-1538
+backend/app/services/incident_service.py
+  h_3555f7510a5ca8 1,9,12,163-164,214-223
+backend/app/services/tracking_service.py
+  h_3555f7510a5ca8 29,363-367
+backend/seed.py
+  h_3555f7510a5ca8 31-32
+docs/sas.md
+  h_3555f7510a5ca8 292
+frontend/src/app/(public)/home/page.tsx
+  h_3555f7510a5ca8 10,20
+frontend/src/components/shared/AlertCard.tsx
+  h_3555f7510a5ca8 70
+frontend/src/components/shared/AlertLocationMap.tsx
+  h_3555f7510a5ca8 4-10,13-14,17-21,23-25,27-28,30-64,66-73,75-94,96-100,102-110
+frontend/src/lib/api/alert.ts
+  h_3555f7510a5ca8 128-152,218-249
+frontend/src/sections/Downloads.tsx
+  h_3555f7510a5ca8 1-85
+tests/backend/conftest.py
+  h_3555f7510a5ca8 1,4,49
+tests/backend/integration/api/alert_test.py
+  h_3555f7510a5ca8 8,27,34,36,42,65,69,75,96,108,136,157,160,165,168,173,195
+tests/backend/integration/api/auth_test.py
+  h_3555f7510a5ca8 2,24,70-71,87,91,185
+tests/backend/integration/api/camera_settings_test.py
+  h_3555f7510a5ca8 2,29,49,62,87,103,166,182,204,210
+tests/backend/integration/api/incident_grouping_test.py
+  h_3555f7510a5ca8 1-359
+tests/backend/integration/api/neighbourhood_join_test.py
+  h_3555f7510a5ca8 9,20-24,36,59-63
+tests/backend/integration/api/notification_test.py
+  h_3555f7510a5ca8 3,49-52,139
+tests/backend/integration/conftest.py
+  h_3555f7510a5ca8 2,68-76,91
+tests/backend/integration/incident_test.py
+  h_3555f7510a5ca8 1-644
+tests/backend/pytest.ini
+  h_3555f7510a5ca8 9-10
+tests/backend/unit/api/incidents_controller_test.py
+  h_3555f7510a5ca8 1-177
+tests/backend/unit/services/alert_service_additional_test.py
+  h_3555f7510a5ca8 103,107,114,479-494,497-498,500-503,1003-1006,1011-1017,1088-1091,1096-1102,1105,1112,1116,1897,1962-1966,2004-2008,2051-2059
+tests/backend/unit/services/alert_test.py
+  h_3555f7510a5ca8 86,93,422,429,820,824,831
+tests/backend/unit/services/dispatch_test.py
+  h_3555f7510a5ca8 41-43,46,927,957,1071,1078,1153,1167,1189,1239,1259-1343
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "36cca6f1345f9dee3ebe211ac5df878fb334d1c7",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
