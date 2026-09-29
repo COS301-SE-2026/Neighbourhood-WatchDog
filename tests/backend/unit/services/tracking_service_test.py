@@ -228,14 +228,17 @@ async def test_record_tracking_sighting_rejects_terminated_alert():
 
 
 @pytest.mark.asyncio
-async def test_record_tracking_sighting_rejects_duplicate_camera():
+async def test_record_tracking_sighting_rejects_different_track_on_same_camera():
     subject_result = MagicMock()
     subject_result.one_or_none.return_value = (
         SimpleNamespace(id=uuid4()),
         SimpleNamespace(status="OPEN"),
     )
     duplicate_result = MagicMock()
-    duplicate_result.scalar_one_or_none.return_value = uuid4()
+    duplicate_result.scalar_one_or_none.return_value = SimpleNamespace(
+        id=uuid4(),
+        local_track_id=2,
+    )
     db = MagicMock()
     db.execute = AsyncMock(side_effect=[subject_result, duplicate_result])
 
@@ -249,7 +252,41 @@ async def test_record_tracking_sighting_rejects_duplicate_camera():
         )
 
     assert exc.value.status_code == 409
-    assert exc.value.detail == "Tracking subject already has a sighting on this camera"
+    assert (
+        exc.value.detail
+        == "Tracking subject already has a different "
+           "sighting on this camera"
+    )
+
+
+@pytest.mark.asyncio
+async def test_record_tracking_sighting_returns_existing_same_track():
+    existing_sighting = SimpleNamespace(
+        id=uuid4(),
+        local_track_id=1,
+    )
+
+    subject_result = MagicMock()
+    subject_result.one_or_none.return_value = (
+        SimpleNamespace(id=uuid4()),
+        SimpleNamespace(status="OPEN"),
+    )
+    duplicate_result = MagicMock()
+    duplicate_result.scalar_one_or_none.return_value = (
+        existing_sighting
+    )
+    db = MagicMock()
+    db.execute = AsyncMock(side_effect=[subject_result, duplicate_result])
+
+    result = await record_tracking_sighting(
+        db=db,
+        tracking_subject_id=uuid4(),
+        camera_id=uuid4(),
+        local_track_id=1,
+        observed_at=datetime.now(timezone.utc),
+    )
+
+    assert result is existing_sighting
 
 
 @pytest.mark.asyncio
