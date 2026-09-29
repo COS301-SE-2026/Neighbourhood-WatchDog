@@ -23,12 +23,13 @@ The purpose of this document is to communicate the architectural structure of th
 ### 2.2 Design Patterns
 | Design Pattern | Implementation |
 |---|---|
-| Strategy | The AI detection worker can delegate frame analysis to a selected detection strategy. The current implementation uses YOLO-based person and weapon detection with DeepSORT tracking. Future strategies can support vehicle, fall, loitering, or perimeter-intrusion detection without changing the camera runtime’s overall workflow. |
+| Strategy | The notification service uses a strategy to send notifications out through different channels (Email, Push notifications or Whatsapp) and allows one to add channels easily. |
 | Observer | When an AI worker posts a detection or annotation to the FastAPI backend, the backend broadcasts alert and annotation updates through WebSockets. Dashboard clients subscribed through WebSocket connections receive updates immediately and refresh alerts or bounding-box overlays without polling. |
 | State | The camera playback UI moves between distinct states: `connecting`, `live`, and `unavailable/offline`. When a user selects a camera, the frontend initiates WHEP/WebRTC playback and displays the appropriate state based on connection success, stream availability, or failure. Closing the camera view ends the playback session and returns the component to its initial state. Moreover, the Edge Agent also moves between distinct states: `setup`, `running` and `off`.|
-| Factory | A factory can centralise creation of camera-specific runtime components. Given a camera configuration, it would construct the corresponding FFmpeg publisher, AI detection worker, credentials, stream path, and process configuration. |
+| Factory | A factory is used when a user wants to retrieve a policy for a particular type of notification. The user passes the event type into the factory and is given the correct notification policy object and it can be used to send the notification to the user through the appropriate channels for that policy |
 | Chain of Responsibility | Requests pass through sequential validation and authorisation stages: authentication, role/property access checks, request validation, internal-agent token validation, and finally route/service execution. FastAPI middleware and dependency functions naturally support this pattern. |
 | Command | Camera actions such as enable, disable, start publisher, stop publisher, start detection, and stop detection, can be represented as commands. This would make operations easier to queue, retry, log, audit, and potentially execute remotely through the WatchDog Agent. |
+| Builder | The builder design pattern is used to create the different policies for notifications. For example, there is a policy for joining a neighbourhood and a user can select which channels should be used to send the notification through (Email, Push notifications or Whatsapp). This allows for flexible adding or removing channels from a policy without have to rewrite large sections of code. |
 
 ### 2.3 Architectural Constraints
 - Existing CCTV and IP cameras must provide RTSP streams.
