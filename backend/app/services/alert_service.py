@@ -533,8 +533,192 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
         raise HTTPException(500, "Failed to acknowledge alert")
 
 
-async def update_alert_status_handler(alert_id: UUID, target_status: str, db: AsyncSession, claims: dict) -> AlertRes:
-    pass
+async def update_alert_status_handler(
+    alert_id: UUID,
+    target_status: str,
+    db: AsyncSession,
+    claims: dict
+) -> AlertRes:
+    _validate_db_and_claims(db, claims)
+
+    allowed_statuses = {
+        AlertStatus.RESOLVED.value,
+        AlertStatus.DISMISSED.value
+    }
+
+    if target_status not in allowed_statuses:
+        raise HTTPException(
+            status_code=422,
+            detail="Unsupported alert status"
+        )
+
+    try:
+        user_id = UUID(claims["id"])
+    except (KeyError, TypeError, ValueError):
+        raise HTTPException(
+            status_code=401,
+            detail=NOT_AUTHENTICATED
+        )
+
+    try:
+        result = await db.execute(
+            select(Alert)
+            .options(
+                joinedload(Alert.camera)
+                .joinedload(Camera.property),
+                joinedload(Alert.tracking_subject)
+            )
+            .where(Alert.id == alert_id)
+            .with_for_update(of=Alert)
+        )
+
+        alert = result.unique().scalar_one_or_none()
+
+        if (
+            alert is None
+            or alert.camera is None
+            or alert.camera.property is None
+        ):
+            raise HTTPException(
+                status_code=404,
+                detail=ALERT_NOT_FOUND,
+            )
+
+        neighbourhood_id = alert.camera.property.neighbourhood_id
+
+        if alert.status in {
+            AlertStatus.RESOLVED.value,
+            AlertStatus.DISMISSED.value,
+        }:
+            raise HTTPException(
+                status_code=409,
+                detail="Alert is already closed",
+            )
+
+        resolvable_statuses = {
+            AlertStatus.ACKNOWLEDGED.value,
+            AlertStatus.CONFIRMED.value
+        }
+
+        if (
+            target_status
+            == AlertStatus.RESOLVED.value
+            and alert.status
+            not in resolvable_statuses
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "An alert must be acknowledged "
+                    "before it can be resolved"
+                ),
+            )
+
+        previous_status = alert.status
+        now = datetime.now(timezone.utc)
+
+        alert.status = target_status
+
+        if (
+            target_status
+            == AlertStatus.RESOLVED.value
+        ):
+            alert.resolved_by = user_id
+            alert.resolved_at = now
+        else:
+            # A dismissed alert was not resolved.
+            alert.resolved_by = None
+            alert.resolved_at = None
+
+        await create_audit_log_item(
+            db=db,
+            user_id=user_id,
+            action=AuditAction.UPDATE,
+            target_entity_type=TargetEntity.ALERT,
+            target_entity_id=alert.id,
+            old_values={
+                "status": previous_status,
+            },
+            new_values={
+                "status": alert.status,
+                "resolved_by": (
+                    str(alert.resolved_by)
+                    if alert.resolved_by
+                    else None
+                ),
+                "resolved_at": (
+                    alert.resolved_at.isoformat()
+                    if alert.resolved_at
+                    else None
+                ),
+            },
+        )
+
+        await db.commit()
+
+        alert_response = _build_alert_res(
+            alert,
+        )
+
+        try:
+            from app.api.controllers.alert import (
+                broadcast,
+            )
+
+            if neighbourhood_id is not None:
+                recipients = (
+                    await _get_neighbourhood_websocket_recipient_ids(
+                        db,
+                        neighbourhood_id,
+                    )
+                )
+
+                await broadcast(
+                    recipients,
+                    {
+                        "event": (
+                            "alert."
+                            f"{target_status.lower()}"
+                        ),
+                        "payload": (
+                            alert_response.model_dump(
+                                mode="json",
+                            )
+                        ),
+                    },
+                )
+        except Exception:
+            # The status was already committed.
+            # A WebSocket failure must not undo it.
+            logger.exception(
+                (
+                    "Failed to broadcast status "
+                    "update for alert %s"
+                ),
+                alert_id,
+            )
+
+        return alert_response
+
+    except HTTPException:
+        # Release the transaction and row lock even
+        # for expected lifecycle errors.
+        await db.rollback()
+        raise
+
+    except Exception as error:
+        await db.rollback()
+
+        logger.exception(
+            "Failed to update alert %s to %s",
+            alert_id,
+            target_status,
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update alert status",
+        ) from error
 
 def _validate_db_and_claims(db: AsyncSession, claims: dict):
     if not db:
