@@ -52,3 +52,6 @@ class DispatchNotificationRes(BaseModel):
     frame_timestamp: datetime
     notified_at: datetime
     expires_at: datetime | None = None #response deadline
+
+class DispatchListRes(BaseModel):
+    data: list[DispatchCandidateRes]
