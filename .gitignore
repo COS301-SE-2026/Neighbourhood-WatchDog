@@ -61,3 +61,5 @@ docker-compose.override.yml
 .gitleaksignore/ai/build/
 /ai/dist/
 /ai/installer-output/
+
+.gitleaksignore
