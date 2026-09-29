@@ -20,7 +20,7 @@ from app.models.dispatch import Dispatch, DispatchStatus
 from app.models.security_officer import SecurityOfficer, AvailabilityStatus
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from app.models.tracking import TrackingSighting, TrackingSubject
-from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, RespondDispatchRes
+from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, RespondDispatchRes, DispatchListRes
 from app.services.alert_service import _build_alert_res
 from app.services.audit_service import create_audit_log_item
 from app.services.neighbourhood_service import STALE_LOCATION_THRESHOLD_SECONDS, is_location_stale
@@ -1052,3 +1052,18 @@ async def respond_to_dispatch_handler(
         )
 
     raise HTTPException(400, "Unsupported action")
+
+async def list_neighbourhood_dispatches_handler(
+    neighbourhood_id: UUID,
+    db: DbSession,
+) -> DispatchListRes:
+    result = await db.execute(
+        select(Dispatch)
+        .where(Dispatch.neighbourhood_id == neighbourhood_id)
+        .order_by(Dispatch.created_at.desc())
+    )
+    rows = result.scalars().all()
+
+    return DispatchListRes(
+        data=[_build_candidate_res(row) for row in rows],
+    )
