@@ -15,7 +15,7 @@ from app.models.neighbourhood_user import (
 from app.models.user import User
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.authorization import Claims, NeighbourhoodMemberClaims, CriticalAlertMapClaims
+from app.auth.authorization import AlertClosureClaims, Claims, NeighbourhoodMemberClaims, CriticalAlertMapClaims
 from app.auth.dependencies import get_authenticated_edge_agent
 from app.core.database import DbSession, get_db
 from app.models.edge_agent_credentials import EdgeAgentCredential
@@ -37,7 +37,8 @@ from app.schemas.alert import (
     TimePeriod,
     TrendGroupBy,
     TrendResponse,
-    UnlocatedCriticalAlertsRes,
+    UpdateAlertStatusReq,
+    UnlocatedCriticalAlertsRes
 )
 
 from app.schemas.danger_zone import (
