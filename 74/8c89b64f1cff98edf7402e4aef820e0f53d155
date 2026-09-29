@@ -1,0 +1,19 @@
+backend/app/schemas/alert.py
+  h_3555f7510a5ca8 52-54
+backend/app/auth/authorization.py
+  h_3555f7510a5ca8 14,16,23,589-674,689
+  h_3555f7510a5ca8 688
+backend/app/api/controllers/alert.py
+  h_3555f7510a5ca8 18,40-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "748c89b64f1cff98edf7402e4aef820e0f53d155",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
