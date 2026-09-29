@@ -314,6 +314,16 @@ async def _fetch_dispatch_rows_for_round(
     )
     return list((await db.execute(stmt)).scalars().all())
 
+async def _fetch_engaged_officer_ids(db: DbSession, alert_id: UUID) -> set[UUID]:
+    """Fetches officers already offered an alert in any round"""
+    result = await db.execute(
+        select(Dispatch.officer_id).where(
+            Dispatch.alert_id == alert_id,
+            Dispatch.officer_id.is_not(None),
+        )
+    )
+    return set(result.scalars().all())
+
 async def _get_officer_user_id(db: DbSession, officer_id: UUID) -> str | None:
     result = await db.execute(
         select(NeighbourhoodUser.user_id)
