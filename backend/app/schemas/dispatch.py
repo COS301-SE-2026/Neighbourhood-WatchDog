@@ -10,6 +10,7 @@ class DispatchCandidateRes(BaseModel):
     """One ranked candidate row for a given alert"""
     id: UUID
     alert_id: UUID
+    triggering_sighting_id: UUID | None = None
     officer_id: UUID | None
     rank: int | None
     score: float | None
