@@ -173,9 +173,10 @@ def test_normalise_appearance_embedding_accepts_none():
 
 
 @pytest.mark.asyncio
-async def test_record_tracking_sighting_creates_next_sequence():
+@pytest.mark.parametrize("alert_status", ["OPEN", "ACKNOWLEDGED", "CONFIRMED"])
+async def test_record_tracking_sighting_creates_next_sequence(alert_status):
     subject = SimpleNamespace(id=uuid4())
-    alert = SimpleNamespace(status="OPEN")
+    alert = SimpleNamespace(status=alert_status)
     subject_result = MagicMock()
     subject_result.one_or_none.return_value = (subject, alert)
     duplicate_result = MagicMock()
@@ -209,7 +210,7 @@ async def test_record_tracking_sighting_rejects_terminated_alert():
     subject_result = MagicMock()
     subject_result.one_or_none.return_value = (
         SimpleNamespace(id=uuid4()),
-        SimpleNamespace(status="ACKNOWLEDGED"),
+        SimpleNamespace(status="RESOLVED"),
     )
     db = MagicMock()
     db.execute = AsyncMock(return_value=subject_result)
