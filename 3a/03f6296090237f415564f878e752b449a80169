@@ -1,0 +1,25 @@
+backend/app/services/dispatch_service.py
+  h_3555f7510a5ca8 397-398,406-410,430-447,449-452
+  h_3555f7510a5ca8 448,453
+backend/app/services/tracking_service.py
+  h_3555f7510a5ca8 363
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/map/page.tsx
+  h_3555f7510a5ca8 603,669,699,705-708,712-713,718,727,731,738,1040
+  h_3555f7510a5ca8 709-711,746
+frontend/src/hooks/use-dispatch.ts
+  h_3555f7510a5ca8 15,31,105,120
+frontend/src/components/shared/DispatchRequestPopup.tsx
+  h_3555f7510a5ca8 216,220,222,228,233
+  h_3555f7510a5ca8 214,239
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3a03f6296090237f415564f878e752b449a80169",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
