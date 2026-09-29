@@ -275,7 +275,7 @@ The Agent is the trusted local service that can reach the registered camera sour
 
 ![Agent pairing screenshot placeholder](images/pairing.png)
 
-*Figure 9. Connect Agent page.*
+*Figure 10. Connect Agent page.*
 
 A token is sensitive even if it is temporary. Treat it like a password: share it only with the person performing the pairing, then remove it from chat messages, notes, screenshots, and screen recordings.
 
@@ -303,7 +303,7 @@ If the camera is unavailable, WatchDog should show an **Unavailable** state rath
 
 ![Camera detection illustration](images/camera_detection.png)
 
-*Figure 10. Illustrative camera image.*
+*Figure 11. Illustrative camera image.*
 ---
 
 ## 11. Configure detection settings
@@ -320,7 +320,7 @@ Detection settings are available only to authorised administrators.
 
 ![Camera Threshold mockup](images/ConfidenceThresholdMarkup.png)
 
-*Figure 10. Illustrative camera image.*
+*Figure 12. Illustrative camera image.*
 
 The helper text explains that detections below this confidence do not trigger alerts. A higher threshold can reduce false alerts but may also miss less-clear detections. Use the value agreed by the security team; do not change it casually during an incident.
 
@@ -340,7 +340,7 @@ A camera with no configured zones treats all detections as eligible for alerting
 
 ![Detection zone screenshot placeholder](images/zone_config.png)
 
-*Figure 12. Capture the Camera Detection Settings panel with the confidence slider and a visible polygon.*
+*Figure 13. Capture the Camera Detection Settings panel with the confidence slider and a visible polygon.*
 
 ---
 
@@ -387,7 +387,7 @@ Select **Details** to open the detail panel. Depending on the alert, it may cont
 
 ![Alerts mockup](images/alert.png)
 
-*Figure 13. Existing mockups show an Alerts list and an alert pop-up.*
+*Figure 14. Existing mockups show an Alerts list and an alert pop-up.*
 
 ### Broadcast an alert
 
@@ -485,7 +485,7 @@ If there are no matching records, WatchDog displays **No alerts**. This can mean
 
 ![Alert history screenshot placeholder](images/alert_filter.png)
 
-*Figure 14. Capture Current, History, and the Filter menu.*
+*Figure 15. Capture Current, History, and the Filter menu.*
 
 ---
 
@@ -532,7 +532,7 @@ Analytics should be interpreted as decision support. Confirm important incidents
 
 ![Analytics screenshot placeholder](images/analytics.png)
 
-*Figure 15. The Analytics page.*
+*Figure 16. The Analytics page.*
 
 ---
 
@@ -591,7 +591,7 @@ The page also displays the neighbourhood join code to authorised administrators.
 
 ![Join requests screenshot placeholder](images/join_request.png)
 
-*Figure 16. Pending filter and request actions.*
+*Figure 17. Pending filter and request actions.*
 
 ### Set risk thresholds
 
@@ -609,7 +609,7 @@ These thresholds apply to the cameras and residents in the selected neighbourhoo
 
 ![Risk thresholds screenshot placeholder](images/risk_threshold.png)
 
-*Figure 17. Capture the current configuration and update form.*
+*Figure 18. Capture the current configuration and update form.*
 
 ---
 
@@ -629,7 +629,7 @@ The availability of WhatsApp and email notifications depends on the deployment c
 
 ![Settings screenshot placeholder](images/settings.png)
 
-*Figure 18. Capture the Settings page.*
+*Figure 19. Capture the Settings page.*
 
 ---
 
