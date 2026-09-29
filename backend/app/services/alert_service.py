@@ -1233,13 +1233,11 @@ async def _find_recent_weapon_alert(
     """Find the active weapon incident for this camera and local track.
 
     A time-only match can incorrectly group a different person into an
-    existing incident and then suppress that person's clip. Therefore an
-    untracked weapon event is never grouped here; the AI cooldown remains the
-    only short-lived duplicate guard for that case.
+    existing incident and then suppress that person's clip. Tracked events
+    therefore require the same local sighting. Untagged events use the short
+    configured window as their fallback because there is no identity value to
+    compare.
     """
-    if local_track_id is None:
-        return None
-
     incident_window_start = (
         frame_timestamp - timedelta(seconds=WEAPON_INCIDENT_WINDOW_SECONDS)
     )
@@ -1368,7 +1366,9 @@ async def create_alert_for_agent_handler(
                 alert_id=existing_alert.id,
                 sighting_id=existing_sighting.id,
                 is_new_alert=False,
-                clip_required=not bool(existing_alert.clip_s3_key),
+                clip_required=not bool(
+                    getattr(existing_alert, "clip_s3_key", None)
+                ),
             )
 
         ###group weapon detections from the same camera into the same open incident within the configured time window.
@@ -1410,7 +1410,9 @@ async def create_alert_for_agent_handler(
                     alert_id=recent_weapon_alert.id,
                     sighting_id=None,
                     is_new_alert=False,
-                    clip_required=not bool(recent_weapon_alert.clip_s3_key),
+                    clip_required=not bool(
+                        getattr(recent_weapon_alert, "clip_s3_key", None)
+                    ),
                 )
 
         alert = Alert(
