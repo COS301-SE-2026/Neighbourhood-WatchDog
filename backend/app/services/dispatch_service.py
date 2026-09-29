@@ -1056,7 +1056,11 @@ async def respond_to_dispatch_handler(
 async def list_neighbourhood_dispatches_handler(
     neighbourhood_id: UUID,
     db: DbSession,
+    claims: Claims,
 ) -> DispatchListRes:
+    if not claims:
+        raise HTTPException(401, "Not authenticated")
+    
     result = await db.execute(
         select(Dispatch)
         .where(Dispatch.neighbourhood_id == neighbourhood_id)

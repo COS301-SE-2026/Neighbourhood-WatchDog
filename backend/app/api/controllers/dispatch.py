@@ -4,8 +4,8 @@ from fastapi import APIRouter
 
 from app.auth.authorization import Claims
 from app.core.database import DbSession
-from app.schemas.dispatch import AlertDispatchRes, RespondDispatchRes, RespondDispatchReq
-from app.services.dispatch_service import get_alert_dispatch_handler, respond_to_dispatch_handler
+from app.schemas.dispatch import AlertDispatchRes, RespondDispatchRes, RespondDispatchReq, DispatchListRes
+from app.services.dispatch_service import get_alert_dispatch_handler, respond_to_dispatch_handler, list_neighbourhood_dispatches_handler
 
 router = APIRouter(prefix="/dispatch", tags=["dispatch"])
 
@@ -26,6 +26,26 @@ async def get_alert_dispatch(
 ):
     return await get_alert_dispatch_handler(
         alert_id=alert_id,
+        db=db,
+        claims=claims,
+    )
+
+@router.get(
+    "/neighbourhood/{neighbourhood_id}",
+    response_model=DispatchListRes,
+    status_code=200,
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Only neighbourhood admins can list dispatches"},
+    },
+)
+async def list_neighbourhood_dispatches(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: Claims
+):
+    return await list_neighbourhood_dispatches_handler(
+        neighbourhood_id=neighbourhood_id,
         db=db,
         claims=claims,
     )
