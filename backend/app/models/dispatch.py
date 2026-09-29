@@ -24,6 +24,7 @@ class Dispatch(Base):
     alert_id = Column(UUID(as_uuid=True), ForeignKey("alert.id", ondelete="CASCADE"), nullable=False)
     neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id", ondelete="SET NULL"), nullable=True)
     officer_id = Column(UUID(as_uuid=True), ForeignKey("security_officer.id", ondelete="SET NULL"), nullable=True)
+    triggering_sighting_id = Column(UUID(as_uuid=True), ForeignKey("tracking_sighting.id", ondelete="SET NULL"), nullable=True)
     rank = Column(Integer, nullable=True) 
     score = Column(Float, nullable=True) #lower score is better
     distance = Column(Float, nullable=True) #distance from alert in metres
@@ -40,6 +41,7 @@ class Dispatch(Base):
     alert = relationship("Alert", back_populates="dispatch")
     neighbourhood = relationship("Neighbourhood", back_populates="dispatches")
     officer = relationship("SecurityOfficer", back_populates="dispatch", foreign_keys=[officer_id])
+    triggering_sighting = relationship("TrackingSighting", foreign_keys=[triggering_sighting_id])
 
     #indexes
     __table_args__ = (
@@ -47,9 +49,25 @@ class Dispatch(Base):
         Index("ix_dispatch_officer", "officer_id"),
         Index("ix_dispatch_neighbourhood", "neighbourhood_id"),
         Index("ix_dispatch_neighbourhood_status", "neighbourhood_id", "status"),
+        Index("ix_dispatch_alert_round", "alert_id", "triggering_sighting_id"),
+        
         Index("uq_dispatch_alert_officer", "alert_id", "officer_id", unique=True, postgresql_where=text("officer_id IS NOT NULL")),
-        Index("uq_dispatch_one_selected_per_alert", "alert_id", unique=True, postgresql_where=text("status = 'SELECTED'")),
-        Index("uq_dispatch_one_accepted_per_alert", "alert_id", unique=True, postgresql_where=text("status = 'ACCEPTED'")),
+        
+        Index(
+            "uq_dispatch_one_selected_per_round", 
+            "alert_id", 
+            text("COALESCE(triggering_sighting_id, '00000000-0000-0000-0000-000000000000'::uuid)"), 
+            unique=True, 
+            postgresql_where=text("status = 'SELECTED'"),
+        ),
+        
+        Index(
+            "uq_dispatch_one_accepted_per_round", 
+            "alert_id", 
+            text("COALESCE(triggering_sighting_id, '00000000-0000-0000-0000-000000000000'::uuid)"),
+            unique=True, 
+            postgresql_where=text("status = 'ACCEPTED'"),
+        ),
         
         CheckConstraint(
             "(status = 'NO_CANDIDATE' AND officer_id IS NULL) "
