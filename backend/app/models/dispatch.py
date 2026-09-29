@@ -27,7 +27,7 @@ class Dispatch(Base):
     neighbourhood_id = Column(UUID(as_uuid=True), ForeignKey("neighbourhood.id", ondelete=SET_NULL), nullable=True)
     officer_id = Column(UUID(as_uuid=True), ForeignKey("security_officer.id", ondelete=SET_NULL), nullable=True)
     triggering_sighting_id = Column(UUID(as_uuid=True), ForeignKey("tracking_sighting.id", ondelete=SET_NULL), nullable=True)
-    rank = Column(Integer, nullable=True) 
+    rank = Column(Integer, nullable=True)
     score = Column(Float, nullable=True) #lower score is better
     distance = Column(Float, nullable=True) #distance from alert in metres
     eta = Column(Float, nullable=True) #eta to alert in seconds
