@@ -145,6 +145,24 @@ def _get_internal_api_key() -> str | None:
 _clips_cooldowns: dict[tuple[str, int | None, str], float] = {}
 _cooldown_lock = threading.Lock()
 
+_tracking_targets: dict[
+    tuple[str, int],
+    IncidentClipTarget,
+] = {}
+
+_tracking_retry_at: dict[
+    tuple[str, int],
+    float,
+] = {}
+
+_tracking_state_lock = threading.Lock()
+
+TRACKING_MATCH_RETRY_SECS = float(
+    os.getenv("TRACKING_MATCH_RETRY_SECS", "2")
+)
+
+TRACKING_MATCH_RETRY_SECS = float(os.getenv("TRACKING_MATCH_RETRY_SECS", "2"))
+
 
 def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp: str) -> None:
     """POST detection track data to backend so it can broadcast via WebSocket."""
@@ -276,7 +294,7 @@ class LatestFrameReader:
                 cap.release()
 
 
-def _match_tracking_subject(camera: CameraSpec, appearance_embedding: list[float], api_key: str) -> tuple[bool, str | None, float | None]:
+def _match_tracking_subject(camera: CameraSpec, appearance_embedding: list[float], api_key: str, local_track_id: int | None = None):
     """
     Attempt to match an appearance embedding against an active tracking subject (does this person look like an existing tracking subject)
 
@@ -292,9 +310,9 @@ def _match_tracking_subject(camera: CameraSpec, appearance_embedding: list[float
     
             json={
                 "camera_id": camera.id,
+                "local_track_id": local_track_id,
                 "appearance_embedding": appearance_embedding,
-                "embedding_model": APPEARANCE_EMBEDDING_MODEL
-    
+                "embedding_model": APPEARANCE_EMBEDDING_MODEL,
             },
             timeout=10.0
     
@@ -568,45 +586,83 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
         return None
     
 
-def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, weapon_label: str, 
-                          confidence: float, local_track_id: int | None, stop_event: threading.Event, appearance_embedding: list[float] | None = None) -> None:
-    
+def _schedule_weapon_clip(
+    camera: CameraSpec,
+    frame_buffer: AnnotatedFrameBuffer,
+    trigger_sequence: int,
+    weapon_label: str,
+    confidence: float,
+    local_track_id: int | None,
+    stop_event: threading.Event,
+    appearance_embedding: list[float] | None = None,
+    target: IncidentClipTarget | None = None,
+) -> None:
+    """
+    Schedule either:
+    - a new source-camera alert clip, or
+    - a matched cross-camera tracking-sighting clip.
+    """
+
     label = weapon_label.lower()
-    cooldown_key = (camera.id, local_track_id, label)
     now = time.monotonic()
+    cooldown_key: tuple[str, int | None, str] | None = None
 
-    with _cooldown_lock:
-        previous = _clips_cooldowns.get(cooldown_key)
+    if target is None:
+        cooldown_key = (
+            str(camera.id),
+            local_track_id,
+            label,
+        )
 
-        if previous is not None and now - previous < CLIP_COOLDOWN_SECS:
-            logger.info(
-                "Weapon alert cooldown active for camera %s / %s",
-                camera.id,
-                label
-            )
+        with _cooldown_lock:
+            previous = _clips_cooldowns.get(cooldown_key)
+
+            if (
+                previous is not None
+                and now - previous < CLIP_COOLDOWN_SECS
+            ):
+                logger.info(
+                    "Weapon alert cooldown active for camera %s / %s",
+                    camera.id,
+                    label,
+                )
+                return
+
+            _clips_cooldowns[cooldown_key] = now
+
+        target = _create_weapon_alert(
+            camera=camera,
+            weapon_label=label,
+            confidence=confidence,
+            local_track_id=local_track_id,
+            appearance_embedding=appearance_embedding,
+        )
+
+        if target is None:
+            with _cooldown_lock:
+                if (
+                    cooldown_key is not None
+                    and _clips_cooldowns.get(cooldown_key) == now
+                ):
+                    _clips_cooldowns.pop(cooldown_key, None)
 
             return
 
-        _clips_cooldowns[cooldown_key] = now
-
-    target = _create_weapon_alert(
-        camera=camera,
-        weapon_label=label,
-        confidence=confidence,
-        local_track_id=local_track_id,
-        appearance_embedding=appearance_embedding
-
-    )
-
-    if target is None:
-        with _cooldown_lock:
-            if _clips_cooldowns.get(cooldown_key) == now:
-                _clips_cooldowns.pop(cooldown_key, None)
-
-        return
+    else:
+        logger.info(
+            "Scheduling tracking-sighting clip: "
+            "alert=%s sighting=%s camera=%s",
+            target.alert_id,
+            target.sighting_id,
+            camera.id,
+        )
 
     if target.clip_owner == "none":
-        logger.info("Existing incident reused; no additional clip uploaded: alert=%s", target.alert_id)
+        logger.info(
+            "Existing incident reused; no additional clip uploaded: "
+            "alert=%s",
+            target.alert_id,
+        )
         return
 
     threading.Thread(
@@ -616,22 +672,20 @@ def _schedule_weapon_clip(camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer
             camera,
             frame_buffer,
             trigger_sequence,
-            stop_event
+            stop_event,
         ),
         name=f"watchdog-clip-{camera.id}-{label}",
-        daemon=True
+        daemon=True,
     ).start()
 
-
-
     logger.info(
-        "Scheduled annotated footage capture for weapon alert %s on camera %s: "
-        "label=%s, confidence=%.2f, trigger_sequence=%s",
+        "Scheduled annotated footage capture: "
+        "alert=%s sighting=%s camera=%s label=%s confidence=%.2f",
+        target.alert_id,
+        target.sighting_id,
         camera.id,
         label,
         confidence,
-        trigger_sequence
-        
     )
 
 def _save_weapon_clip(target: IncidentClipTarget, camera: CameraSpec, frame_buffer: AnnotatedFrameBuffer, trigger_sequence: int, stop_event: threading.Event) -> None:    
@@ -793,6 +847,17 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
 
     logger.info("Detection loop starting for camera %s", camera.id)
 
+    camera_key = str(camera.id)
+
+    with _tracking_state_lock:
+        for key in list(_tracking_targets):
+            if key[0] == camera_key:
+                _tracking_targets.pop(key, None)
+
+        for key in list(_tracking_retry_at):
+            if key[0] == camera_key:
+                _tracking_retry_at.pop(key, None)
+
     pipeline = CascadedPipeline(
         person_model=person_model,
         weapon_model=threat_model,
@@ -831,7 +896,11 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
 
     try:
         while not stop_event.is_set():
-            frame, last_processed_sequence = latest_frame_reader.get_latest_after(last_processed_sequence)
+            frame, last_processed_sequence = (
+                latest_frame_reader.get_latest_after(
+                    last_processed_sequence
+                )
+            )
 
             if frame is None:
                 stop_event.wait(0.01)
@@ -840,49 +909,208 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
             result = pipeline.process_frame(frame)
             tracks_payload = result.tracks
 
-            trigger_sequence = annotated_frames.append(annotate_frame(frame, tracks_payload))
-
-            _push_annotations(
-                BACKEND_URL,
-                camera.id,
-                tracks_payload,
-                datetime.now(timezone.utc).isoformat()
-
-
+            trigger_sequence = annotated_frames.append(
+                annotate_frame(frame, tracks_payload)
             )
 
-            for event in result.events:
-                _post_detection_event(camera, event)
+            api_key = _get_internal_api_key()
 
+            if api_key:
+                observed_at = datetime.now(timezone.utc).isoformat()
 
-                if event["detection_type"] == "WEAPON_DETECTED":
+                for track in tracks_payload:
+                    local_track_id = track.get("track_id")
 
-                    local_track_id = event.get("track_id")
+                    if local_track_id is None:
+                        continue
+
+                    if not track.get("is_confirmed", True):
+                        continue
 
                     appearance_embedding = (
-                        result.appearance_embeddings.get(local_track_id)
-                        if local_track_id is not None
-                        else None
+                        result.appearance_embeddings.get(
+                            local_track_id
+                        )
                     )
+
+                    if appearance_embedding is None:
+                        continue
+
+                    tracking_key = (
+                        str(camera.id),
+                        int(local_track_id),
+                    )
+
+                    with _tracking_state_lock:
+                        existing_target = _tracking_targets.get(
+                            tracking_key
+                        )
+
+                    if existing_target is not None:
+                        continue
+
+                 
+                    now = time.monotonic()
+
+                    with _tracking_state_lock:
+                        retry_at = _tracking_retry_at.get(
+                            tracking_key,
+                            0.0,
+                        )
+
+                        if now < retry_at:
+                            continue
+
+                        _tracking_retry_at[tracking_key] = (now + TRACKING_MATCH_RETRY_SECS)
+
+                    (
+                        matcher_succeeded,
+                        tracking_subject_id,
+                        similarity,
+                    ) = _match_tracking_subject(
+                        camera=camera,
+                        appearance_embedding=appearance_embedding,
+                        api_key=api_key,
+                        local_track_id=local_track_id,
+                    )
+
+                    if not matcher_succeeded:
+                        logger.warning(
+                            "Tracking matcher unavailable: "
+                            "camera=%s track=%s",
+                            camera.id,
+                            local_track_id,
+                        )
+                        continue
+
+                    if (
+                        tracking_subject_id is None
+                        or similarity is None
+                    ):
+                        continue
+
+                    target = _record_tracking_sighting(
+                        camera=camera,
+                        local_track_id=local_track_id,
+                        observed_at=observed_at,
+                        tracking_subject_id=tracking_subject_id,
+                        match_confidence=similarity,
+                        api_key=api_key,
+                    )
+
+                    if target is None:
+                        continue
+
+                    with _tracking_state_lock:
+                        _tracking_targets[tracking_key] = target
+
 
                     _schedule_weapon_clip(
                         camera=camera,
                         frame_buffer=annotated_frames,
                         trigger_sequence=trigger_sequence,
-                        weapon_label=event.get("weapon_type") or "weapon",
-                        confidence=float(event["weapon_confidence"] or event["confidence"]),
-                        local_track_id=local_track_id, 
+                        weapon_label="tracked-subject",
+                        confidence=float(
+                            track.get("confidence", 0.0)
+                        ),
+                        local_track_id=local_track_id,
                         stop_event=stop_event,
-                        appearance_embedding=appearance_embedding
-                        
+                        appearance_embedding=appearance_embedding,
+                        target=target,
                     )
 
-    except Exception:
-        logger.exception("Detection worker crashed for camera %s", camera.id)
-    finally:
-        latest_frame_reader.close()
-        logger.info("Detection worker stopped for camera %s", camera.id)
+            _push_annotations(
+                BACKEND_URL,
+                camera.id,
+                tracks_payload,
+                datetime.now(timezone.utc).isoformat(),
+            )
 
+            for event in result.events:
+                _post_detection_event(camera, event)
+
+                if event["detection_type"] != "WEAPON_DETECTED":
+                    continue
+
+                local_track_id = event.get("track_id")
+
+                appearance_embedding = (
+                    result.appearance_embeddings.get(
+                        local_track_id
+                    )
+                    if local_track_id is not None
+                    else None
+                )
+
+                tracking_key = (
+                    (
+                        str(camera.id),
+                        int(local_track_id),
+                    )
+                    if local_track_id is not None
+                    else None
+                )
+
+                if tracking_key is not None:
+                    with _tracking_state_lock:
+                        existing_target = _tracking_targets.get(
+                            tracking_key
+                        )
+                else:
+                    existing_target = None
+
+
+                if existing_target is not None:
+                    logger.info(
+                        "Weapon event already belongs to a matched "
+                        "tracking subject; skipping duplicate alert: "
+                        "camera=%s track=%s alert=%s",
+                        camera.id,
+                        local_track_id,
+                        existing_target.alert_id,
+                    )
+                    continue
+
+                _schedule_weapon_clip(
+                    camera=camera,
+                    frame_buffer=annotated_frames,
+                    trigger_sequence=trigger_sequence,
+                    weapon_label=(
+                        event.get("weapon_type")
+                        or "weapon"
+                    ),
+                    confidence=float(
+                        event["weapon_confidence"]
+                        or event["confidence"]
+                    ),
+                    local_track_id=local_track_id,
+                    stop_event=stop_event,
+                    appearance_embedding=appearance_embedding,
+                )
+
+    except Exception:
+        logger.exception(
+            "Detection worker crashed for camera %s",
+            camera.id,
+        )
+    finally:
+        camera_key = str(camera.id)
+
+        with _tracking_state_lock:
+            for key in list(_tracking_targets):
+                if key[0] == camera_key:
+                    _tracking_targets.pop(key, None)
+
+            for key in list(_tracking_retry_at):
+                if key[0] == camera_key:
+                    _tracking_retry_at.pop(key, None)
+
+        latest_frame_reader.close()
+
+        logger.info(
+            "Detection worker stopped for camera %s",
+            camera.id,
+        )
         
 def _reconnect_if_needed(cap, rtsp_url: str, stop_event: threading.Event):
     """Return an open capture, reconnecting if necessary."""

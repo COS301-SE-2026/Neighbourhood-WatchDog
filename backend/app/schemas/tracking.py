@@ -38,23 +38,6 @@ class TrackingTimelineResponse(BaseModel):
     data: TrackingTimelineData | None = None
 
 
-#compare payload against existing subjects
-class MatchTrackingEmbeddingRequest(BaseModel):
-    camera_id: UUID
-
-    appearance_embedding: list[float] = Field(
-        min_length=1280,
-        max_length=1280 
-
-    )
-
-    embedding_model: str = Field(
-        min_length=1,
-        max_length=128 
-
-    )
-
-
 class TrackingMatchData(BaseModel):
     matched: bool
     tracking_subject_id: UUID | None = None
@@ -152,3 +135,21 @@ class SituationalBriefResponse(BaseModel):
     status: int
     message: str | None = None
     data: SituationalBriefData | None = None
+
+
+#compare payload against existing subjects
+class MatchTrackingEmbeddingRequest(BaseModel):
+    camera_id: UUID
+    local_track_id: int | None = Field(default=None, ge=0)
+
+    appearance_embedding: list[float] = Field(
+        min_length=1280,
+        max_length=1280,
+
+    )
+
+    embedding_model: str = Field(
+        min_length=1,
+        max_length=128
+
+    )
