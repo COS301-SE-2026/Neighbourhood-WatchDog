@@ -531,6 +531,10 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
         alert_id = response_data.get("alert_id")
         sighting_id = response_data.get("sighting_id")
         is_new_alert = response_data.get("is_new_alert", True)
+        clip_required = response_data.get(
+            "clip_required",
+            is_new_alert,
+        )
 
         if not alert_id:
             raise RuntimeError(
@@ -538,25 +542,13 @@ def _create_weapon_alert(camera: CameraSpec, weapon_label: str, confidence: floa
                 f"{response.text}"
             )
 
-        if is_new_alert:
-            return IncidentClipTarget(
-                alert_id=str(alert_id),
-                sighting_id=str(sighting_id)
-                if sighting_id
-                else None,
-                clip_owner="alert"
-
-            )
-
-        #backend reused an existing same-camera incident
-        #  don't upload another clip to the existing sighting
+        
         return IncidentClipTarget(
             alert_id=str(alert_id),
             sighting_id=str(sighting_id)
             if sighting_id
             else None,
-            clip_owner="none"
-
+            clip_owner="alert" if clip_required else "none",
         )
 
     except httpx.HTTPStatusError as error:
