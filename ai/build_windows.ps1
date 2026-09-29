@@ -37,6 +37,7 @@ Write-Host "Building WatchDogService.exe..."
     --distpath $distRoot `
     --workpath (Join-Path $buildRoot "WatchDogService") `
     --hidden-import services.benchmark_runner `
+    --hidden-import pkg_resources `
     --collect-all ultralytics `
     --collect-all torch `
     --collect-all torchvision `
