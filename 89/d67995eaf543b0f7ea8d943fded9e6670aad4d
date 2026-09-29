@@ -1,0 +1,15 @@
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/map/page.tsx
+  h_3555f7510a5ca8 780-797,1089,1092
+  h_3555f7510a5ca8 798
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "89d67995eaf543b0f7ea8d943fded9e6670aad4d",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
