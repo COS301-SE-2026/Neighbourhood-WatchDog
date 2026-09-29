@@ -12,6 +12,8 @@ const RECONNECT_MAX_MS = 15000;
 export interface DispatchNotification {
   dispatchId: string;
   alertId: string;
+  propertyId: string | null;
+  neighbourhoodId: string | null;
   detectionType: string | null;
   distance: number | null;
   eta: number | null;
@@ -26,6 +28,8 @@ interface DispatchSocketEvent {
   payload?: {
     dispatch_id?: string;
     alert_id?: string;
+    property_id?: string | null;
+    neighbourhood_id?: string | null;
     detection_type?: string;
     distance?: number;
     eta?: number;
@@ -98,6 +102,8 @@ export function useDispatchNotification(neighbourhoodId: string | null) {
       const {
         dispatch_id,
         alert_id,
+        property_id,
+        neighbourhood_id,
         detection_type,
         distance,
         eta,
@@ -111,6 +117,8 @@ export function useDispatchNotification(neighbourhoodId: string | null) {
       setNotification({
         dispatchId: dispatch_id,
         alertId: alert_id ?? "",
+        propertyId: property_id ?? null,
+        neighbourhoodId: neighbourhood_id ?? null,
         detectionType: detection_type ?? null,
         distance: distance ?? null,
         eta: eta ?? null,
@@ -209,24 +217,40 @@ export function useDispatchNotification(neighbourhoodId: string | null) {
   ]);
 
   const respond = useCallback(
-    async (action: DispatchAction) => {
+    async (
+      action: DispatchAction,
+    ): Promise<boolean> => {
       if (!notification || responding) {
-        return;
+        return false;
       }
 
       setResponding(true);
 
       try {
-        await respondToDispatch(notification.dispatchId, action);
+        await respondToDispatch(
+          notification.dispatchId,
+          action,
+        );
 
-        showOutcome(action === "ACCEPT" ? "ACCEPTED" : "DECLINED");
+        showOutcome(
+          action === "ACCEPT"
+            ? "ACCEPTED"
+            : "DECLINED",
+        );
+
+        return true;
       } catch {
         showOutcome("EXPIRED");
+        return false;
       } finally {
         setResponding(false);
       }
     },
-    [notification, responding, showOutcome],
+    [
+      notification,
+      responding,
+      showOutcome,
+    ],
   );
 
   return {

@@ -50,6 +50,9 @@ class AcknowledgeAlertRes(BaseModel):
 	message: str | None = None
 	data: AlertRes | None = None
 
+class UpdateAlertStatusReq(BaseModel):
+    status: Literal["RESOLVED", "DISMISSED"]
+
 class Pagination(BaseModel):
 	total: int
 	limit: int

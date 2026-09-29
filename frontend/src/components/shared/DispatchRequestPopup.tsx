@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import {
   ShieldAlert,
   MapPin,
@@ -14,6 +15,7 @@ import {
   useDispatchNotification,
   type DispatchNotification,
 } from "@/hooks/use-dispatch";
+
 
 const RESPONSE_WINDOW = 120;
 
@@ -209,6 +211,33 @@ export function DispatchRequestPopup({
   const { notification, responding, outcome, accept, decline } =
     useDispatchNotification(neighbourhoodId);
 
+    const handleAccept = async () => {
+    // Capture these before accept() clears the notification.
+    const propertyId = notification?.propertyId;
+    const dispatchNeighbourhoodId =
+      notification?.neighbourhoodId;
+
+    if (!propertyId || !dispatchNeighbourhoodId) {
+      console.error(
+        "Dispatch notification is missing its destination property or neighbourhood ID",
+      );
+      return;
+    }
+
+    const accepted = await accept();
+    if (!accepted) return;
+
+    const destination = dispatchRouteUrl(
+      dispatchNeighbourhoodId,
+      propertyId,
+    );
+
+
+    window.location.assign(destination);
+  };
+
+
+
   if (!notification && !outcome) {
     return null;
   }
@@ -219,12 +248,23 @@ export function DispatchRequestPopup({
         <RequestCard
           notification={notification}
           responding={responding}
-          onAccept={accept}
+          onAccept={handleAccept}
           onDecline={decline}
         />
       ) : outcome ? (
         <OutcomeToast outcome={outcome} />
       ) : null}
     </div>
+  );
+}
+
+export function dispatchRouteUrl(
+  neighbourhoodId: string,
+  propertyId: string,
+): string {
+  return (
+    `/dashboard/neighbourhood/` +
+    `${encodeURIComponent(neighbourhoodId)}/map?` +
+    `routePropertyId=${encodeURIComponent(propertyId)}`
   );
 }
