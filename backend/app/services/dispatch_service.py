@@ -20,7 +20,6 @@ from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from app.models.tracking import TrackingSighting, TrackingSubject
 from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, RespondDispatchRes
 from app.services.neighbourhood_service import STALE_LOCATION_THRESHOLD_SECONDS, is_location_stale
-from app.api.controllers.alert import broadcast
 
 logger = logging.getLogger(__name__)
 
@@ -363,6 +362,7 @@ async def resolve_officer(db: DbSession, claims: Claims) -> SecurityOfficer:
 
 async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
     """Notifies selected officer of dispatch request over websocket"""
+    from app.api.controllers.alert import broadcast #noqa: PLC0415
     now = datetime.now(timezone.utc)
     dispatch.status = DispatchStatus.NOTIFIED
     dispatch.notified_at = now
@@ -478,7 +478,7 @@ async def _expire_stale_dispatch(db: DbSession, dispatch: Dispatch) -> Dispatch:
     await db.refresh(dispatch)
 
     try:
-        await _promote_officer(db, dispatch.alert_id)
+        await _promote_officer(db, dispatch.alert_id, dispatch.triggering_sighting_id)
     except Exception:
         logger.exception("dispatch: failed to promote next officer after time out for alert %s", dispatch.alert_id)
 
@@ -500,23 +500,27 @@ async def expire_stale_dispatchs(db: DbSession) -> int:
     if not expired:
         return 0
 
-    alert_ids: set[UUID] = set()
+    rounds: set[tuple[UUID, UUID | None]] = set()
     for e in expired:
         e.status = DispatchStatus.TIMED_OUT
         e.responded_at = now
-        alert_ids.add(e.alert_id)
+        rounds.add((e.alert_id, e.triggering_sighting_id))
     await db.commit()
 
-    for alert_id in alert_ids:
+    for alert_id, triggering_sighting_id in rounds:
         try:
-            await _promote_officer(db, alert_id)
+            await _promote_officer(db, alert_id, triggering_sighting_id)
         except Exception:
-            logger.exception("expire_stale_dispatches: failed to promote next officer for alert %s", alert_id)
+            logger.exception(
+                "expire_stale_dispatches: failed to promote next officer for alert %s (round %s)", 
+                alert_id, triggering_sighting_id,
+            )
 
     return len(expired)
 
 async def _escalate_dispatch(db: DbSession, dispatch: Dispatch, reason: str) -> None:
     """Informs admin of critical alert no officer was able to attend to"""
+    from app.api.controllers.alert import broadcast #noqa: PLC0415
     now = datetime.now(timezone.utc)
     dispatch.notified_at = now
     await db.commit()
@@ -556,6 +560,7 @@ def _build_candidate_res(d: Dispatch) -> DispatchCandidateRes:
     return DispatchCandidateRes(
         id=d.id,
         alert_id=d.alert_id,
+        triggering_sighting_id=d.triggering_sighting_id,
         officer_id=d.officer_id,
         rank=d.rank,
         score=d.score,
@@ -795,6 +800,7 @@ async def respond_to_dispatch_handler(
         claims: Claims,
 ) -> RespondDispatchRes:
     """Handles officer response to dispatch requests"""
+    from app.api.controllers.alert import broadcast #noqa: PLC0415
     if not claims:
         raise HTTPException(401, "Not authenticated")
 
