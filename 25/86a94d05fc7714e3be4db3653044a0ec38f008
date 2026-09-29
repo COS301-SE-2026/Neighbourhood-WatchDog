@@ -1,0 +1,21 @@
+frontend/src/hooks/use-dispatch.ts
+  h_3555f7510a5ca8 213-214,216,224,230-233,236,244
+  h_3555f7510a5ca8 212,222-223,225-229,241-243,245
+frontend/src/components/shared/DispatchRequestPopup.tsx
+  h_3555f7510a5ca8 4,19,211,215-235,247
+  h_3555f7510a5ca8 236
+frontend/src/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/map/page.tsx
+  h_3555f7510a5ca8 5-8,44,598-603,668-670,696-723,725-735,737-751,1021-1031
+  h_3555f7510a5ca8 4,9,724,736,752
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2586a94d05fc7714e3be4db3653044a0ec38f008",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
