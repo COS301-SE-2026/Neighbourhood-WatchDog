@@ -12,3 +12,5 @@ data/external/
 data/curated/
 
 ./watchdog-agent/connection-settings.json
+
+installer-output/
