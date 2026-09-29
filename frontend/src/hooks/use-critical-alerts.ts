@@ -23,6 +23,12 @@ import type {
 const CACHE_VERSION = 1 as const;
 const RECONNECT_DELAY_MS = 3_000;
 
+const LIVE_ALERT_STATUSES = new Set([
+  "OPEN",
+  "ACKNOWLEDGED",
+  "CONFIRMED"
+]);
+
 function getCacheKey(
   neighbourhoodId: string
 ) : string {
@@ -119,13 +125,13 @@ export function useCriticalAlerts(
       const mapped =
         parsed.data.mapped_alerts.filter(
           (alert) =>
-            alert.status === "OPEN",
+            LIVE_ALERT_STATUSES.has(alert.status),
         );
 
       const unlocated =
         parsed.data.unlocated_alerts.filter(
           (alert) =>
-            alert.status === "OPEN",
+            LIVE_ALERT_STATUSES.has(alert.status),
         );
 
       setMappedAlerts(mapped);
@@ -170,13 +176,13 @@ export function useCriticalAlerts(
         const mapped =
           mapResponse.data.alerts.filter(
             (alert) =>
-              alert.status === "OPEN",
+              LIVE_ALERT_STATUSES.has(alert.status),
           );
 
         const unlocated =
           unlocatedResponse.data.alerts.filter(
             (alert) =>
-              alert.status === "OPEN",
+              LIVE_ALERT_STATUSES.has(alert.status),
           );
 
         const updatedAt = mapResponse.data.last_updated;

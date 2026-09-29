@@ -132,7 +132,7 @@ const STATUS_CONFIG: Record<AlertStatus, { bg: string; textColor: string; label:
   ACKNOWLEDGED: {
     bg: "bg-brand-slate border border-brand-gunmetal/20",
     textColor: "text-brand-ash",
-    label: "Acknowledged",
+    label: "Responding",
     icon: <CheckCheck className="h-3 w-3" />,
   },
   CONFIRMED: {
@@ -437,19 +437,25 @@ function MetaRow({
 export interface AlertCardProps {
   readonly alert: Alert;
   readonly onAcknowledge?: (id: string) => Promise<void>;
+  readonly onResolve?: (id: string) => Promise<void>;
+  readonly onDismissAlert?: (id: string) => Promise<void>;
   readonly onBroadcast?: (id: string) => Promise<void>;
   readonly broadcasting: boolean;
   readonly trackingRefreshKey?: number;
   readonly canViewTracking: boolean;
 }
 
-export function AlertCard({alert, onAcknowledge, onBroadcast, broadcasting, canViewTracking, trackingRefreshKey = 0}: AlertCardProps) {
+export function AlertCard({alert, onAcknowledge, onResolve, onDismissAlert, onBroadcast, broadcasting, canViewTracking, trackingRefreshKey = 0}: AlertCardProps) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
+  const [closingStatus, setClosingStatus] = useState<"RESOLVED" | "DISMISSED" | null>(null);
+
 
   const severity = getSeverity(alert.detection_type);
   const isNew = alert.status === "NEW";
   const isCritical = severity === "CRITICAL";
+  const canResolve = alert.status === "ACKNOWLEDGED" || alert.status === "CONFIRMED";
+  const canDismiss = alert.status === "NEW" || alert.status === "ACKNOWLEDGED" || alert.status === "CONFIRMED"
 
   async function handleAcknowledge(id: string) {
     if (!onAcknowledge) {
@@ -463,6 +469,35 @@ export function AlertCard({alert, onAcknowledge, onBroadcast, broadcasting, canV
       setDetailOpen(false);
     }
   }
+
+  async function handleResolve() {
+    if (!onResolve || !canResolve) {
+      return;
+    }
+
+    setClosingStatus("RESOLVED");
+
+    try {
+      await onResolve(alert.id);
+    } finally {
+      setClosingStatus(null);
+    }
+  }
+
+  async function handleDismiss() {
+    if (!onDismissAlert || !canDismiss) {
+      return;
+    }
+
+    setClosingStatus("DISMISSED");
+
+    try {
+      await onDismissAlert(alert.id);
+    } finally {
+      setClosingStatus(null);
+    }
+  }
+
 
   async function handleBroadcast() {
     if (!onBroadcast) {
@@ -589,6 +624,50 @@ export function AlertCard({alert, onAcknowledge, onBroadcast, broadcasting, canV
               </TooltipContent>
             </Tooltip>
           )}
+
+          {onResolve && canResolve && (
+            <Button
+              size="sm"
+              className={
+                "bg-brand-green text-brand-void " +
+                "hover:bg-brand-green"
+              }
+              onClick={() => void handleResolve()}
+              disabled={closingStatus !== null}
+              aria-label="Resolve alert"
+            >
+              {closingStatus === "RESOLVED" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <>
+                  <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                  Resolve
+                </>
+              )}
+            </Button>
+          )}
+
+          {onDismissAlert && canDismiss && (
+            <Button
+              size="sm"
+              variant="outline"
+              className={
+                "border-brand-caution " +
+                "text-brand-caution"
+              }
+              onClick={() => void handleDismiss()}
+              disabled={closingStatus !== null}
+              aria-label="Dismiss alert"
+            >
+              {closingStatus === "DISMISSED" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                "Dismiss"
+              )}
+            </Button>
+          )}
+
+
         </div>
       </Card>
 

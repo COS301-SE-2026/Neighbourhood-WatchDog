@@ -27,7 +27,9 @@ import {
   getAuthToken,
   WS_BASE,
   AlertFilters,
-  broadcastAlert
+  broadcastAlert,
+  updateAlertStatus,
+  type AlertClosingStatus
 } from "@/lib/api/alert";
 import { toast } from "sonner";
 import { claimTrackingEvent } from "@/lib/tracking-events";
@@ -41,7 +43,7 @@ import {
 } from "react";
 
 const ALL_SEVERITIES: AlertSeverity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
-const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "CONFIRMED", "RESOLVED", "RESOLVED"];
+const ALL_STATUSES: AlertStatus[] = ["NEW", "ACKNOWLEDGED", "CONFIRMED", "RESOLVED", "DISMISSED"];
 const CURRENT_CUTOFF = 24 * 60 * 60 * 1000; // 24h
 
 const SEVERITY_LABELS: Record<AlertSeverity, string> = {
@@ -53,7 +55,7 @@ const SEVERITY_LABELS: Record<AlertSeverity, string> = {
 
 const STATUS_LABELS: Record<AlertStatus, string> = {
   NEW: "New",
-  ACKNOWLEDGED: "Acknowledged",
+  ACKNOWLEDGED: "Responding",
   CONFIRMED: "Confirmed",
   RESOLVED: "Resolved",
   DISMISSED: "Dismissed"
@@ -201,7 +203,7 @@ function handleAlertSocketMessage(message: AlertSocketMessage, isSecurityOfficer
     return;
   }
 
-  if (message.event === "alert.acknowledged") {
+  if (message.event === "alert.acknowledged" || message.event === "alert.resolved" ||  message.event === "alert.dismissed") {
     dispatch({
       type: "UPDATE_ALERT",
       payload: incomingAlert,
@@ -484,23 +486,68 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
     });
   }, [neighbourhoodId, activeTab, userContextLoading, canViewAlerts, isSecurityOfficer]);
 
-  async function handleAcknowledge(id: string) {
-    const original = alerts.find((alert) => alert.id === id);
-    if (!original || original.status !== "NEW") return;
+  async function handleCloseAlert(
+    id: string,
+    status: AlertClosingStatus,
+  ): Promise<void> {
+    const original = alerts.find(
+      (alert) => alert.id === id,
+    );
+
+    if (!original) {
+      return;
+    }
 
     setActionError(null);
-    dispatch({ type: "UPDATE_ALERT", payload: { ...original, status: "ACKNOWLEDGED" } });
+
+    // Optimistic update.
+    dispatch({
+      type: "UPDATE_ALERT",
+      payload: {
+        ...original,
+        status,
+      },
+    });
 
     try {
-      await acknowledgeAlert(id);
-    } catch (err) {
-      if (mountedRef.current) {
-        dispatch({ type: "UPDATE_ALERT", payload: original });
-        setActionError(err instanceof Error ? err.message : "Failed to acknowledge alert.");
+      const updatedAlert =
+        await updateAlertStatus(
+          id,
+          status,
+        );
+
+      if (!mountedRef.current) {
+        return;
       }
-      console.error("Acknowledge failed:", err);
+
+      dispatch({
+        type: "UPDATE_ALERT",
+        payload: updatedAlert,
+      });
+    } catch (error) {
+      if (!mountedRef.current) {
+        return;
+      }
+
+      // Restore the previous state.
+      dispatch({
+        type: "UPDATE_ALERT",
+        payload: original,
+      });
+
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "Failed to update alert",
+      );
+
+      console.error(
+        "Failed to close alert:",
+        error,
+      );
     }
   }
+
 
   async function handleBroadcast(id: string) {
     const alert = alerts.find((item) => item.id === id);
@@ -722,19 +769,57 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
                 <EmptyState />
               ) : (
                 <div className="space-y-3">
-                  {groupedAlerts.map((alert) => (
-                    <AlertCard
-                      key={alert.id}
-                      alert={alert}
-                      onAcknowledge={handleAcknowledge}
-                      onBroadcast={
-                        isNeighbourhoodAdmin ? handleBroadcast : undefined
-                      }
-                      broadcasting={broadcastingAlertId === alert.id}
-                      canViewTracking={canViewTracking}
-                      trackingRefreshKey={trackingRefreshKey}
-                    />
-                  ))}
+                  {groupedAlerts.map((alert) => {
+                    const isInProgress =
+                      alert.status === "ACKNOWLEDGED" ||
+                      alert.status === "CONFIRMED";
+
+                    const canResolve =
+                      isNeighbourhoodAdmin ||
+                      (isSecurityOfficer && isInProgress);
+
+                    const canDismiss =
+                      isNeighbourhoodAdmin ||
+                      (isSecurityOfficer && isInProgress);
+
+                    return (
+                      <AlertCard
+                        key={alert.id}
+                        alert={alert}
+                        onResolve={
+                          canResolve
+                            ? (id) =>
+                                handleCloseAlert(
+                                  id,
+                                  "RESOLVED",
+                                )
+                            : undefined
+                        }
+                        onDismissAlert={
+                          canDismiss
+                            ? (id) =>
+                                handleCloseAlert(
+                                  id,
+                                  "DISMISSED",
+                                )
+                            : undefined
+                        }
+                        onBroadcast={
+                          isNeighbourhoodAdmin
+                            ? handleBroadcast
+                            : undefined
+                        }
+                        broadcasting={
+                          broadcastingAlertId === alert.id
+                        }
+                        canViewTracking={canViewTracking}
+                        trackingRefreshKey={
+                          trackingRefreshKey
+                        }
+                      />
+                    );
+                  })}
+
                 </div>
               )}
             </section>
