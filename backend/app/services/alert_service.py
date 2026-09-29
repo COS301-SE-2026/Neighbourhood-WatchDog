@@ -423,6 +423,9 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
         alert = row
         property_obj = alert.camera.property if alert.camera else None
 
+        if _is_critical_alert(alert):
+            raise HTTPException(status_code=409, detail=("Critical alerts are acknowledged by accepting their dispatch"))
+
         if property_obj is None:
             raise HTTPException(404, ALERT_NOT_FOUND)
 
