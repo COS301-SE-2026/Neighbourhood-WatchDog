@@ -670,6 +670,89 @@ async def dispatch_alert(db: DbSession, alert_id: UUID) -> AlertDispatchRes:
     rows = await _fetch_dispatch_rows(db, alert_id)
     return _build_alert_dispatch_res(alert_id, rows)
 
+async def dispatch_alert_for_sighting(db: DbSession, sighting_id: UUID) -> AlertDispatchRes:
+    """
+    Starts a supplementary dispatch round for an alert when a subject is identified on another camera.
+    Happens independent of inital dispatch round and other rounds.
+    Does not cancel or reassign an accepted dispatch and does not re-offer to officer involved in previous rounds
+    """
+    context = await _load_sighting_context(db, sighting_id)
+    if context is None:
+        raise HTTPException(404, "Tracking sighting or its alert not found")
+
+    if context.detection_type not in CRITICAL_DETECTION_TYPES:
+        logger.info("dispatch_alert_for_sighting skipped: alert %s (%s) is not critical", context.alert_id, context.detection_type)
+        return AlertDispatchRes(alert_id=context.alert_id)
+
+    existing = await _fetch_dispatch_rows_for_round(db, context.alert_id, sighting_id)
+    if existing:
+        return _build_alert_dispatch_res(context.alert_id, existing)
+
+    try:
+        ranked: list[RankedCandidate] = []
+
+        if context.neighbourhood_id is None:
+            logger.warning("dispatch_alert_for_sighting: sighting %s's alert %s belongs to a property with no neighbourhood", sighting_id, context.alert_id)
+        elif context.latitude is None or context.longitude is None:
+            logger.warning("dispatch_alert_for_sighting: sighting %s's property has no coordinates", sighting_id)
+        else:
+            officers = await _fetch_neighbourhood_officers(
+                db, context.neighbourhood_id, context.latitude, context.longitude
+            )
+            engaged = await _fetch_engaged_officer_ids(db, context.alert_id)
+            officers = [o for o in officers if o.officer_id not in engaged]
+            eligible = filter_eligible(officers)
+            logger.info(
+                "dispatch_alert_for_sighting: alert %s sighting %s - %d officers in neighbourhood, %d eligible. %d excluded as already engaged",
+                context.alert_id, sighting_id, len(officers), len(eligible), len(engaged),
+            )
+
+            workloads = await _fetch_workloads(db, [e.officer_id for e in eligible], context.alert_id)
+            eligible = [replace(e, workload=workloads.get(e.officer_id, 0)) for e in eligible]
+            ranked = rank_candidates(eligible, context.detection_type)
+
+            db.add_all(_build_dispatch_rows(context, ranked, triggering_sighting_id=sighting_id))
+            await db.commit()
+
+            selected_result = await db.execute(
+                select(Dispatch).where(
+                    Dispatch.alert_id == context.alert_id,
+                    Dispatch.triggering_sighting_id == sighting_id,
+                    Dispatch.status == DispatchStatus.SELECTED,
+                )
+            )
+            selected = selected_result.scalar_one_or_none()
+
+            if selected is not None:
+                await _notify_officer(db, selected)
+            else:
+                no_candidate_result = await db.execute(
+                    select(Dispatch).where(
+                        Dispatch.alert_id == context.alert_id,
+                        Dispatch.triggering_sighting_id == sighting_id,
+                        Dispatch.status == DispatchStatus.NO_CANDIDATE,
+                    )
+                )
+                no_candidate = no_candidate_result.scalar_one_or_none()
+                if no_candidate is not None:
+                    await _escalate_dispatch(db, no_candidate, reason="no_available_officer_for_new_sighting")
+    except IntegrityError:
+        await db.rollback()
+        existing = await _fetch_dispatch_rows_for_round(db, context.alert_id, sighting_id)
+        if existing:
+            return _build_alert_dispatch_res(context.alert_id, existing)
+        logger.exception("dispatch_alert_for_sighting failed for sighting %s", sighting_id)
+        raise HTTPException(500, "Failed to start supplementary dispatch")
+    except HTTPException:
+        raise
+    except Exception:
+        await db.rollback()
+        logger.exception("dispatch_alert_for_sighting failed for sighting %s", sighting_id)
+        raise HTTPException(500, "Failed to start supplementary dispatch")
+
+    rows = await _fetch_dispatch_rows_for_round(db, context.alert_id, sighting_id)
+    return _build_alert_dispatch_res(context.alert_id, rows)
+
 async def get_alert_dispatch_handler(
         alert_id: UUID,
         db: DbSession,
