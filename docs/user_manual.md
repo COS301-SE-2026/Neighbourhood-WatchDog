@@ -175,14 +175,16 @@ Use this option when you are responsible for starting a new community group.
 
 1. Select the property you want to associate with the neighbourhood.
 2. Open **Join a neighbourhood**.
-3. Enter the join code supplied by the neighbourhood administrator.
+3. Enter the join code supplied by the neighbourhood administrator.(From the "Join requests" page)
 4. Submit the request.
 5. Wait for the administrator to approve or deny the request.
 
 Your request remains pending until the administrator resolves it. If the request is denied or the code is invalid, contact the administrator rather than creating multiple duplicate requests.
 
+![Request Code Mockup](images/JoinRequestCode.png)
+*Figure 5. Neighbourhood admin's join request code that needs to be shared*
 ![Join neighbourhood mockup](images/join_neighbourhood.png)
-*Figure 5. The existing mockup shows the Join Neighbourhood form.*
+*Figure 6. The existing mockup shows the Join Neighbourhood form.*
 ---
 
 ## 7. Navigate the dashboard
