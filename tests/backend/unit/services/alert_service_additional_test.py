@@ -22,7 +22,6 @@ from app.schemas.alert import (
 )
 from app.services import alert_service as service
 from app.services.alert_service import _validate_tracking_payload
-from app.models.incident import Incident
 
 
 

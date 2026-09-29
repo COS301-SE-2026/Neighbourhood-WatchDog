@@ -6,14 +6,10 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from app.auth.authorization import NeighbourhoodMemberClaims
-from app.models.alert import Alert, AlertStatus, DetectionType
+from app.models.alert import Alert, DetectionType
 from app.models.camera import Camera
 from app.models.incident import Incident
-from app.models.neighbourhood_user import (
-    NeighbourhoodRole,
-    NeighbourhoodUser,
-)
+from app.models.neighbourhood_user import NeighbourhoodRole
 from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.schemas.alert import (

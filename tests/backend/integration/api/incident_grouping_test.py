@@ -7,12 +7,10 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 import pytest_asyncio
 from sqlalchemy import delete, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import SessionLocal
 from app.models.alert import Alert
 from app.models.camera import Camera, CameraVisibilityEnum
-from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.models.incident import Incident
 from app.models.neighbourhood import Neighbourhood
 from app.models.neighbourhood_user import (
