@@ -532,6 +532,7 @@ High-Level:
 TUCBW: A camera stream, video publisher, or detection process fails while other cameras are being monitored by the WatchDog Agent.
 TUCEW: The affected camera is marked as unavailable or offline, while the WatchDog Agent continues monitoring all other operational cameras without interruption.
 
+![Use Case P4 - UCD9](images/Use%20Case%20P4%20-%20UCD9.png)
 
 R9: Secure On-Demand Camera Playback
 
@@ -550,8 +551,10 @@ High-Level:
 TUCBW: A user attempts to request playback for a camera stream that they are not permitted to view.
 TUCEW: The platform denies access to the camera stream and does not establish a live playback connection.
 
+![Use Case P4 - UCD10](images/Use%20Case%20P4%20-%20UCD10.png)
+
 R10: Smart Alert Navigation and Neighbourhood Risk Intelligence
-<!-- TODO: Add Use case diagram -->
+
 UC10.1 - View Critical Alerts on Map (Abstract)
 High-Level:
 TUCBW: A Security Officer opens the alert map for their neighbourhood.
@@ -563,6 +566,7 @@ TUCBW: A Security Officer selects a critical alert associated with a property.
 TUCEW: The Security Officer sees the authorised resident and property information associated with that alert.
 
 UC10.3 - Navigate to Critical Alert (Abstract)
+
 High-Level:
 TUCBW: A Security Officer selects a critical alert and requests navigation.
 TUCEW: The Security Officer sees their distance, route, and estimated arrival time to the alert.
@@ -577,8 +581,10 @@ High-Level:
 TUCBW: A Security Officer enables the danger-zone overlay.
 TUCEW: The Security Officer sees areas identified using incident density and camera coverage.
 
+![Use Case P4 - UCD11](images/Use%20Case%20P4%20-%20UCD11.png)
+
 R11: Intelligent Security Officer Dispatch and Availability
-<!-- TODO: Add Use case diagram -->
+
 UC11.1 - Manage Officer Availability (Abstract)
 High-Level:
 TUCBW: A Security Officer opens their availability settings.
@@ -604,8 +610,10 @@ High-Level:
 TUCBW: A dispatch request is declined, expires, or has no eligible responding officer.
 TUCEW: The system reassigns the request or escalates it to the appropriate administrator.
 
+![Use Case P4 - UCD12](images/Use%20Case%20P4%20-%20UCD12.png)
+
 R12: Autonomous Patrol Assistance
-<!-- TODO: Add Use case diagram -->
+
 UC12.1 - Correlate Individual Across Properties (Abstract)
 High-Level:
 TUCBW: A critical alert is generated for a detected individual.
