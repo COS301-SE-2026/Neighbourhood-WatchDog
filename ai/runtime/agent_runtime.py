@@ -421,53 +421,139 @@ class AgentRuntime:
         return True
 
 
+    def _force_stop_windows_process(
+        self,
+        process: subprocess.Popen,
+    ) -> None:
+        self._emit(
+            event_type="log",
+            message=(
+                "Graceful stop was unavailable. "
+                "Force-stopping the WatchDog service process tree."
+            ),
+        )
+
+        subprocess.run(
+            [
+                "taskkill",
+                "/PID",
+                str(process.pid),
+                "/T",
+                "/F",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    def _stop_windows_process(
+        self,
+        process: subprocess.Popen,
+    ) -> None:
+        graceful_signal_failed = False
+
+        try:
+            process.send_signal(signal.CTRL_BREAK_EVENT)
+
+        except OSError as error:
+            # Packaged/windowed processes may not have a valid
+            # console control handle. WinError 6 is expected in
+            # that situation, so fall back to taskkill.
+            if getattr(error, "winerror", None) != 6:
+                raise
+
+            graceful_signal_failed = True
+
+            self._emit(
+                event_type="log",
+                message=(
+                    "Windows graceful stop was unavailable; "
+                    "using process-tree shutdown."
+                ),
+            )
+
+        if not graceful_signal_failed:
+            try:
+                process.wait(timeout=10)
+                return
+
+            except subprocess.TimeoutExpired:
+                self._emit(
+                    event_type="log",
+                    message=(
+                        "Graceful stop timed out. "
+                        "Force-stopping the service process tree."
+                    ),
+                )
+
+        self._force_stop_windows_process(process)
+
+        try:
+            process.wait(timeout=5)
+
+        except subprocess.TimeoutExpired:
+            self._emit(
+                event_type="log",
+                message=(
+                    "The WatchDog service did not exit after "
+                    "process-tree shutdown."
+                ),
+            )
+
+    def _stop_unix_process(
+        self,
+        process: subprocess.Popen,
+    ) -> None:
+        os.killpg(
+            process.pid,
+            signal.SIGTERM,
+        )
+
+        try:
+            process.wait(timeout=10)
+
+        except subprocess.TimeoutExpired:
+            self._emit(
+                event_type="log",
+                message=(
+                    "Stop timed out. "
+                    "Force-stopping remaining processes."
+                ),
+            )
+
+            os.killpg(
+                process.pid,
+                signal.SIGKILL,
+            )
+
+            process.wait(timeout=5)
+
     def _terminate_process_tree(
         self,
         process: subprocess.Popen,
     ) -> None:
         try:
             if sys.platform == "win32":
-                process.send_signal(signal.CTRL_BREAK_EVENT)
-            else:
-                os.killpg(process.pid, signal.SIGTERM)
+                self._stop_windows_process(process)
+                return
 
-            try:
-                process.wait(timeout=10)
+            self._stop_unix_process(process)
 
-            except subprocess.TimeoutExpired:
-                self._emit(
-                    event_type="log",
-                    message=(
-                        "Stop timed out. Force-stopping remaining processes."
-                    ),
-                )
-
-                if sys.platform == "win32":
-                    subprocess.run(
-                        [
-                            "taskkill",
-                            "/PID",
-                            str(process.pid),
-                            "/T",
-                            "/F",
-                        ],
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                    )
-                else:
-                    os.killpg(process.pid, signal.SIGKILL)
-
-                process.wait(timeout=5)
-
-        except (OSError, subprocess.SubprocessError) as error:
+        except (
+            OSError,
+            subprocess.SubprocessError,
+        ) as error:
             self._set_status(
                 "error",
                 "Could not stop local AI service.",
             )
+
             self._emit(
                 event_type="error",
-                message=str(error),
+                message=(
+                    "Could not stop the local AI service cleanly: "
+                    f"{error}"
+                ),
             )
 
     def shutdown(self) -> None:

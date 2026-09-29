@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from typing import Annotated, AsyncGenerator
+
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import declarative_base
@@ -15,12 +16,21 @@ if not DATABASE_URL:
     raise ValueError("DATABASE_URL not set in .env")
 
 # API engine
-engine = create_async_engine(
-    DATABASE_URL,
-    pool_size=15,
-    max_overflow=10,
-    pool_timeout=10,
-)
+# Pytest creates separate event loops for integration tests. Reusing pooled
+# asyncpg connections across those loops can produce InterfaceError failures,
+# so tests use one fresh connection per session while production keeps pooling.
+if os.getenv("TESTING", "").lower() == "true":
+    engine = create_async_engine(
+        DATABASE_URL,
+        poolclass=NullPool,
+    )
+else:
+    engine = create_async_engine(
+        DATABASE_URL,
+        pool_size=15,
+        max_overflow=10,
+        pool_timeout=10,
+    )
 
 #  Worker engine
 worker_engine = create_async_engine(DATABASE_URL, poolclass=NullPool)

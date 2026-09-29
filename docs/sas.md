@@ -1,7 +1,7 @@
 # Software Architecture Specification (SAS)
 # Neighbourhood WatchDog
 
-version 3.1 Updated 3 September 2026 
+version 4.1 Updated 29 September 2026
 
 # 1. Introduction
 
@@ -289,7 +289,7 @@ The system supports rollback in the following ways:
 
 ### Deployment Diagram
 
-![Prod Deployment Diagram](/docs/images/Production%20Deployment%20Diagramv2.svg)
+![Prod Deployment Diagram](/docs/images/Prod%20Deployment%20Diagram%20v3.png)
 
 ![Staging Deployment Diagram](/docs/images/Staging%20Deployment%20Diagramv3.drawio.svg)
 
@@ -311,7 +311,7 @@ The system supports rollback in the following ways:
 | ID | Quantified Requirement | Tactic in SAS | Test / tool | Target | Actual |
 |---|---|---|---|---|---|
 | QR-02 | ECS recovers killed task to health within 360s | ECS circuit breaker + ASG. Health check threshold is set at 5 x 30s to avoid premature failover on transient blips | Manually run `aws ecs stop-task`, time until ALB target group reports healthy again | <= health-check grace period (360s once reverted from the temporary 10s) | 341s ![Log of number of services running](/docs/nfr-test-proof/QR-02.png) |
-| QR-03 |  mediamtx stream resumes within 60s of a mediamtx restart | Edge agent RTSP reconnect/retry with backoff | Restart mediamtx container, time until WebRTC stream is viewable again | < 60s | 5.5s (T0 20:58:51Z, readyTime 20:58:56.8Z) |
+| QR-03 |  mediamtx stream resumes within 60s of a mediamtx restart | Edge agent RTSP reconnect/retry with backoff | Restart mediamtx container, time until WebRTC stream is viewable again | < 60s | 5.5s (T0 12:02:01.3Z, publising stream at 12:02:09.19Z) ![Log of docker restart](/docs/nfr-test-proof/qr-03-mediamtx-restart-2.log) |
 
 
 ### Security

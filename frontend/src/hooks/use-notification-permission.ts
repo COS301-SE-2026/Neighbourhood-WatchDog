@@ -63,6 +63,9 @@ export function useNotificationPermission() {
 	}, []);
 
 	useEffect(() => {
+		if (!Capacitor.isNativePlatform()) {
+			return;
+		}
 		const registrationListener = PushNotifications.addListener("registration", (result) => {
 			setToken(result.value);
 		});
