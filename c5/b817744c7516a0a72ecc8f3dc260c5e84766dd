@@ -1,0 +1,14 @@
+backend/alembic/versions/2cae7582d70f_merge_heads.py
+  h_cf6208e37032c0 1-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c5b817744c7516a0a72ecc8f3dc260c5e84766dd",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
