@@ -1,0 +1,20 @@
+frontend/src/components/shared/DispatchRequestPopup.tsx
+  h_3555f7510a5ca8 230-233,260-268
+  h_3555f7510a5ca8 234,269-270
+tests/frontend/unit/components/dispatch-request-popup.test.ts
+  h_3555f7510a5ca8 1-12
+tests/backend/unit/services/dispatch_test.py
+  h_3555f7510a5ca8 1383-1384
+  h_3555f7510a5ca8 28,675,910,917-926,932-933,935,937-959,962,965-969,988,1378-1382,1385-1410
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4e3b50073715497a50274b3582103d27ca6e11e2",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
