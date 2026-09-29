@@ -262,6 +262,8 @@ class InternalAlertCreateRes(BaseModel):
     alert_id: UUID
     sighting_id: UUID | None = None
     is_new_alert: bool = True
+    #true when AI must still upload the source-camera clip for this alert
+    clip_required: bool = True
 class IncidentDensityQuery(BaseModel):
     start_date: date
     end_date: date

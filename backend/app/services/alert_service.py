@@ -78,7 +78,7 @@ ALERT_NOT_FOUND = "Alert not found"
 CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "")
 AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
-WEAPON_INCIDENT_WINDOW_SECONDS = int(os.getenv("WEAPON_INCIDENT_WINDOW_SECONDS") or "1800")
+WEAPON_INCIDENT_WINDOW_SECONDS = int(os.getenv("WEAPON_INCIDENT_WINDOW_SECONDS") or "30")
 
 WEAPON_ACTIVE_STATUSES = (
     AlertStatus.OPEN.value,
@@ -1223,8 +1223,24 @@ async def _lock_weapon_incident_key(
 
 
 
-async def _find_recent_weapon_alert(*, db: AsyncSession, camera_id: UUID, frame_timestamp: datetime) -> Alert | None:
-    incident_window_start = (frame_timestamp - timedelta(seconds=WEAPON_INCIDENT_WINDOW_SECONDS))
+async def _find_recent_weapon_alert(
+    *,
+    db: AsyncSession,
+    camera_id: UUID,
+    frame_timestamp: datetime,
+    local_track_id: int | None = None,
+) -> Alert | None:
+    """Find the active weapon incident for this camera and local track.
+
+    A time-only match can incorrectly group a different person into an
+    existing incident and then suppress that person's clip. Tracked events
+    therefore require the same local sighting. Untagged events use the short
+    configured window as their fallback because there is no identity value to
+    compare.
+    """
+    incident_window_start = (
+        frame_timestamp - timedelta(seconds=WEAPON_INCIDENT_WINDOW_SECONDS)
+    )
 
     stmt = (
         select(Alert)
@@ -1233,11 +1249,25 @@ async def _find_recent_weapon_alert(*, db: AsyncSession, camera_id: UUID, frame_
             Alert.detection_type == DetectionType.WEAPON_DETECTED,
             Alert.status.in_(WEAPON_ACTIVE_STATUSES),
             Alert.frame_timestamp >= incident_window_start,
-            Alert.frame_timestamp <= frame_timestamp
+            Alert.frame_timestamp <= frame_timestamp,
         )
-        .order_by(Alert.frame_timestamp.desc())
-        .limit(1)
     )
+
+    if local_track_id is not None:
+        stmt = (
+            stmt
+            .join(TrackingSubject, TrackingSubject.alert_id == Alert.id)
+            .join(
+                TrackingSighting,
+                TrackingSighting.tracking_subject_id == TrackingSubject.id,
+            )
+            .where(
+                TrackingSighting.camera_id == camera_id,
+                TrackingSighting.local_track_id == local_track_id,
+            )
+        )
+
+    stmt = stmt.order_by(Alert.frame_timestamp.desc()).limit(1)
 
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
@@ -1336,6 +1366,9 @@ async def create_alert_for_agent_handler(
                 alert_id=existing_alert.id,
                 sighting_id=existing_sighting.id,
                 is_new_alert=False,
+                clip_required=not bool(
+                    getattr(existing_alert, "clip_s3_key", None)
+                ),
             )
 
         ###group weapon detections from the same camera into the same open incident within the configured time window.
@@ -1348,8 +1381,8 @@ async def create_alert_for_agent_handler(
             recent_weapon_alert = await _find_recent_weapon_alert(
                 db=db,
                 camera_id=camera_id,
-                frame_timestamp=frame_timestamp
-
+                frame_timestamp=frame_timestamp,
+                local_track_id=body.local_track_id,
             )
 
             if recent_weapon_alert is not None:
@@ -1376,8 +1409,10 @@ async def create_alert_for_agent_handler(
                 return InternalAlertCreateRes(
                     alert_id=recent_weapon_alert.id,
                     sighting_id=None,
-                    is_new_alert=False
-
+                    is_new_alert=False,
+                    clip_required=not bool(
+                        getattr(recent_weapon_alert, "clip_s3_key", None)
+                    ),
                 )
 
         alert = Alert(
@@ -1510,6 +1545,7 @@ async def create_alert_for_agent_handler(
                 else None
             ),
             is_new_alert=True,
+            clip_required=True,
         )
 
     except HTTPException:
