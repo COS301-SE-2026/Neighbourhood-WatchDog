@@ -38,8 +38,12 @@ from app.services.dispatch_service import (
     _promote_officer,
     _escalate_dispatch,
     _expire_stale_dispatch,
+    _fetch_engaged_officer_ids,
+    _load_sighting_context,
+    dispatch_alert_for_sighting,
 )
 
+SIGHTING_ID = uuid4()
 ALERT_ID = uuid4()
 NEIGHBOURHOOD_ID = uuid4()
 OTHER_NEIGHBOURHOOD_ID = uuid4()
@@ -920,7 +924,7 @@ class TestRespondToDispatchHandler:
             ],
         )  
 
-        with patch("app.services.dispatch_service.broadcast", new=AsyncMock()) as broadcast:
+        with patch("app.api.controllers.alert.broadcast", new=AsyncMock()) as broadcast:
             res = await respond_to_dispatch_handler(dispatch.id, "ACCEPT", mock_db, CLAIMS)
 
         assert dispatch.status == DispatchStatus.ACCEPTED
@@ -950,7 +954,7 @@ class TestRespondToDispatchHandler:
             ],
         )
 
-        with patch("app.services.dispatch_service.broadcast", new=AsyncMock()) as broadcast:
+        with patch("app.api.controllers.alert.broadcast", new=AsyncMock()) as broadcast:
             res = await respond_to_dispatch_handler(dispatch.id, "DECLINE", mock_db, CLAIMS)
 
         assert dispatch.status == DispatchStatus.DECLINED
@@ -1064,14 +1068,14 @@ class TestExpireStaleDispatches:
         assert "SKIP LOCKED" in sql.upper()
 
 class TestPromoteOfficer:
-    async def promote(self, rows):
+    async def promote(self, rows, triggering_sighting_id=None):
         mock_db, _ = make_mock_db()
         mock_db.execute = AsyncMock(return_value=make_scalars_result(rows))
         with (
             patch("app.services.dispatch_service._notify_officer", new=AsyncMock()) as notify, 
             patch("app.services.dispatch_service._escalate_dispatch", new=AsyncMock()) as escalate,
         ):
-            await _promote_officer(mock_db, ALERT_ID)
+            await _promote_officer(mock_db, ALERT_ID, triggering_sighting_id)
         return SimpleNamespace(db=mock_db, notify=notify, escalate=escalate)
 
     @pytest.mark.asyncio
@@ -1146,7 +1150,7 @@ class TestEscalateDispatch:
         row = self.make_row()
         assert row.notified_at is None
 
-        with patch("app.services.dispatch_service.broadcast", new=AsyncMock()):
+        with patch("app.api.controllers.alert.broadcast", new=AsyncMock()):
             await _escalate_dispatch(mock_db, row, reason="no_available_officer")
 
         assert row.notified_at is not None
@@ -1160,7 +1164,7 @@ class TestEscalateDispatch:
         mock_db.execute = AsyncMock(return_value=make_scalars_result([admin_id]))
         row = self.make_row()
 
-        with patch("app.services.dispatch_service.broadcast", new=AsyncMock()) as broadcast:
+        with patch("app.api.controllers.alert.broadcast", new=AsyncMock()) as broadcast:
             await _escalate_dispatch(mock_db, row, reason="no_available_officer")
 
         params = compiled_params(mock_db.execute.await_args.args[0])
@@ -1182,7 +1186,7 @@ class TestEscalateDispatch:
         mock_db.execute = AsyncMock(return_value=make_scalars_result([]))
         row = self.make_row()
 
-        with patch("app.services.dispatch_service.broadcast", new=AsyncMock()) as broadcast:
+        with patch("app.api.controllers.alert.broadcast", new=AsyncMock()) as broadcast:
             await _escalate_dispatch(mock_db, row, reason="no_available_officer")
 
         broadcast.assert_not_awaited()
@@ -1232,7 +1236,7 @@ class TestExpireStaleDispatch:
 
         assert result.status == DispatchStatus.TIMED_OUT
         mock_db.commit.assert_awaited_once() 
-        promote.assert_awaited_once_with(mock_db, stale.alert_id)
+        promote.assert_awaited_once_with(mock_db, stale.alert_id, stale.triggering_sighting_id)
 
     @pytest.mark.asyncio
     async def test_within_window_nothing_happens(self):
@@ -1253,3 +1257,87 @@ class TestExpireStaleDispatch:
         assert result.status == DispatchStatus.NOTIFIED
         mock_db.commit.assert_not_awaited() 
         promote.assert_not_awaited()
+
+class TestLoadSightingContext:
+    @pytest.mark.asyncio
+    async def test_maps_row_and_scopes_query_to_sighting(self):
+        mock_db = AsyncMock()
+        mock_db.execute = AsyncMock(return_value=make_first_result(make_alert_row(make_context())))
+
+        context = await _load_sighting_context(mock_db, SIGHTING_ID)
+
+        assert context == make_context()
+        stmt = mock_db.execute.await_args.args[0]
+        assert SIGHTING_ID in compiled_params(stmt).values()
+        assert "tracking_sighting" in compiled_sql(stmt)
+
+        mock_db.execute = AsyncMock(return_value=make_first_result(None))
+        assert await _load_sighting_context(mock_db, SIGHTING_ID) is None
+
+class TestFetchEngagedOfficerIds:
+    @pytest.mark.asyncio
+    async def test_returns_officers_from_any_round_and_status(self):
+        a, b = uuid4(), uuid4()
+        mock_db = AsyncMock()
+        mock_db.execute = AsyncMock(return_value=make_scalars_result([a, b, a]))
+
+        engaged = await _fetch_engaged_officer_ids(mock_db, ALERT_ID)
+
+        assert engaged == {a, b}
+        stmt = mock_db.execute.await_args.args[0]
+        sql = compiled_sql(stmt)
+        assert ALERT_ID in compiled_params(stmt).values()
+        assert "IS NOT NULL" in sql.upper()
+        assert "triggering_sighting_id" not in sql
+        assert "status" not in sql
+
+class TestDispatchAlertForSighting:
+    @pytest.mark.asyncio
+    async def test_skips_engaged_officers_and_stamps_round(self):
+        engaged = make_candidate(distance=100.0)
+        fresh = make_candidate(distance=900.0)
+        context = make_context()
+
+        mock_db, _ = make_mock_db()
+        added: list[Dispatch] = []
+
+        def add_all(rows):
+            for row in rows:
+                row.id = uuid4()
+                row.created_at = CREATED_AT
+            added.extend(rows)
+
+        mock_db.add_all = Mock(side_effect=add_all)
+
+        pending = [
+            make_first_result(make_alert_row(context)),
+            make_scalars_result([]),
+            make_rows_result([make_officer_row(engaged), make_officer_row(fresh)]),
+            make_scalars_result([engaged.officer_id]),
+            make_rows_result([]),
+        ]
+
+        async def fake_execute(_stmt):
+            if pending:
+                return pending.pop(0)
+            result = make_scalars_result(added)
+            result.scalar_one_or_none.return_value = next(
+                (r for r in added if r.status == DispatchStatus.SELECTED), None
+            )
+            return result
+
+        mock_db.execute = AsyncMock(side_effect=fake_execute)
+
+        with (
+            patch("app.services.dispatch_service._notify_officer", new=AsyncMock()) as notify,
+            patch("app.services.dispatch_service._escalate_dispatch", new=AsyncMock()) as escalate,
+        ):
+            res = await dispatch_alert_for_sighting(mock_db, SIGHTING_ID)
+
+        assert not pending
+        assert {r.officer_id for r in added if r.officer_id} == {fresh.officer_id}
+        assert all(r.triggering_sighting_id == SIGHTING_ID for r in added)
+        assert res.selected.officer_id == fresh.officer_id
+        notify.assert_awaited_once()
+        assert notify.await_args.args[1].officer_id == fresh.officer_id
+        escalate.assert_not_awaited()
