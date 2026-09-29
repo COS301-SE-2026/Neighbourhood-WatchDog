@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { WS_BASE } from "@/lib/api/alert";
+import { WS_BASE, ApiError } from "@/lib/api/alert";
 import { getAccessToken, refreshSession } from "@/lib/auth/cognito";
 import { respondToDispatch, type DispatchAction } from "@/lib/api/dispatch";
+import { toast } from "sonner";
 
 const OUTCOME_DISPLAY_MS = 3000;
 const RECONNECT_BASE_MS = 1000;
@@ -239,8 +240,14 @@ export function useDispatchNotification(neighbourhoodId: string | null) {
         );
 
         return true;
-      } catch {
-        showOutcome("EXPIRED");
+      } catch (error) {
+        if (error instanceof ApiError && error.statusCode === 409){
+          showOutcome("EXPIRED");
+        } else {
+          const message = error instanceof Error ? error.message : "Unknown error";
+          toast.error("Failed to respond to dispatch", { description: message });
+          showOutcome("EXPIRED");
+        }
         return false;
       } finally {
         setResponding(false);

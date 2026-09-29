@@ -1,3 +1,4 @@
+import { ApiError } from "./alert"
 import { getAccessToken, refreshSession, clearSession } from "@/lib/auth/cognito"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -67,7 +68,7 @@ export async function apiCall<T>(
 		
 		}
 
-		throw new Error(errorMessage);
+		throw new ApiError(errorMessage, response.status);
 	}
 	
 
