@@ -1,0 +1,18 @@
+tests/backend/unit/tasks/incident_density_tasks_test.py
+  h_3555f7510a5ca8 95,105
+tests/backend/unit/tasks/danger_zone_tasks_test.py
+  h_3555f7510a5ca8 123,129
+backend/app/core/celery_app.py
+  h_3555f7510a5ca8 35,37,43,48,50,55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "58f845dfa59643258c368323bc368866b0458bc8",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
