@@ -12,6 +12,7 @@ const RECONNECT_MAX_MS = 15000;
 export interface DispatchNotification {
   dispatchId: string;
   alertId: string;
+  neighbourhoodId: string | null;
   detectionType: string | null;
   distance: number | null;
   eta: number | null;
@@ -26,6 +27,7 @@ interface DispatchSocketEvent {
   payload?: {
     dispatch_id?: string;
     alert_id?: string;
+    neighbourhood_id?: string | null;
     detection_type?: string;
     distance?: number;
     eta?: number;
@@ -98,6 +100,7 @@ export function useDispatchNotification(neighbourhoodId: string | null) {
       const {
         dispatch_id,
         alert_id,
+        neighbourhood_id,
         detection_type,
         distance,
         eta,
@@ -111,6 +114,7 @@ export function useDispatchNotification(neighbourhoodId: string | null) {
       setNotification({
         dispatchId: dispatch_id,
         alertId: alert_id ?? "",
+        neighbourhoodId: neighbourhood_id ?? null,
         detectionType: detection_type ?? null,
         distance: distance ?? null,
         eta: eta ?? null,

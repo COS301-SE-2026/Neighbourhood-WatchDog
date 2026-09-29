@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+
 import {
   ShieldAlert,
   MapPin,
@@ -208,14 +208,19 @@ export function DispatchRequestPopup({
 }: {
   neighbourhoodId: string | null;
 }) {
-  const router = useRouter();
   const { notification, responding, outcome, accept, decline } =
     useDispatchNotification(neighbourhoodId);
 
   const handleAccept = async () => {
+    // Capture these before accept() clears the notification.
     const alertId = notification?.alertId;
+    const dispatchNeighbourhoodId =
+      notification?.neighbourhoodId;
 
-    if (!alertId || !neighbourhoodId) {
+    if (!alertId || !dispatchNeighbourhoodId) {
+      console.error(
+        "Dispatch notification is missing its alert or neighbourhood ID",
+      );
       return;
     }
 
@@ -225,12 +230,12 @@ export function DispatchRequestPopup({
       return;
     }
 
-    const destination = 
+    const destination =
       `/dashboard/neighbourhood/` +
-      `${neighbourhoodId}/map?` +
+      `${encodeURIComponent(dispatchNeighbourhoodId)}/map?` +
       `routeAlertId=${encodeURIComponent(alertId)}`;
-    
-    window.location.assign(destination)
+
+    window.location.assign(destination);
   };
 
 

@@ -347,6 +347,11 @@ async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
                 "payload": {
                     "dispatch_id": str(dispatch.id),
                     "alert_id": str(dispatch.alert_id),
+                    "neighbourhood_id": (
+                        str(dispatch.neighbourhood_id)
+                        if dispatch.neighbourhood_id is not None
+                        else None
+                    ),
                     "detection_type": detection_type,
                     "distance": dispatch.distance,
                     "eta": dispatch.eta,
