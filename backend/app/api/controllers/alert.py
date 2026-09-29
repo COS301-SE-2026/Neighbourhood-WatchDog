@@ -59,6 +59,7 @@ from app.services.alert_service import (
     get_unlocated_critical_alerts_handler,
     list_alerts_handler,
     list_property_alerts_handler,
+    update_alert_status_handler,
 )
 from app.services.alert_route_service import calculate_property_distance_handler, get_property_route_handler
 
@@ -605,4 +606,28 @@ async def get_danger_zones(
             "Danger zones retrieved successfully"
         ),
         data=data,
+    )
+
+
+@router.patch(
+    "/{alert_id}/status",
+    response_model=AcknowledgeAlertRes,
+    summary="Resolve or dismiss an alert"
+)
+async def update_alert_status(
+    alert_id: UUID,
+    body: UpdateAlertStatusReq,
+    db: DbSession,
+    claims: AlertClosureClaims
+):
+    alert = await update_alert_status_handler(
+        alert_id=alert_id,
+        target_status=body.status,
+        db=db,
+        claims=claims,
+    )
+
+    return AcknowledgeAlertRes(
+        status=200,
+        data=alert,
     )

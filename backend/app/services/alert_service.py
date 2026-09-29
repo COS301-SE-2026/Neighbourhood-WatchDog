@@ -532,6 +532,10 @@ async def acknowledge_alert_handler(alert_id, db: AsyncSession, claims: dict) ->
         await db.rollback()
         raise HTTPException(500, "Failed to acknowledge alert")
 
+
+async def update_alert_status_handler(alert_id: UUID, target_status: str, db: AsyncSession, claims: dict) -> AlertRes:
+    pass
+
 def _validate_db_and_claims(db: AsyncSession, claims: dict):
     if not db:
         logger.warning("acknowledge_alert_handler: no db entered")
