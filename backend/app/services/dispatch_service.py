@@ -403,7 +403,7 @@ async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
             dispatch.officer_id, dispatch.id,
         )
 
-async def _promote_officer(db: DbSession, alert_id: UUID) -> None:
+async def _promote_officer(db: DbSession, alert_id: UUID, triggering_sighting_id: UUID | None) -> None:
     """
     Notifies next ranked officer if the selected officer declines, is unreachable, 
     or the request times out before a response is received. Picks officers from pending before
@@ -411,7 +411,10 @@ async def _promote_officer(db: DbSession, alert_id: UUID) -> None:
     """
     result = await db.execute(
         select(Dispatch)
-        .where(Dispatch.alert_id == alert_id)
+        .where(
+            Dispatch.alert_id == alert_id,
+            Dispatch.triggering_sighting_id == triggering_sighting_id,
+        )
         .order_by(Dispatch.rank.asc().nulls_last())
         .with_for_update()
     )
@@ -433,16 +436,18 @@ async def _promote_officer(db: DbSession, alert_id: UUID) -> None:
             no_candidate = Dispatch(
                 alert_id=alert_id,
                 neighbourhood_id=rows[0].neighbourhood_id,
+                triggering_sighting_id=triggering_sighting_id,
                 status=DispatchStatus.NO_CANDIDATE,
             )
             db.add(no_candidate)
             await db.commit()
             await db.refresh(no_candidate)
+            reason = "no_available_officer" if triggering_sighting_id is None else "no_available_officer_for_new_sighting"
             logger.info(
-                "dispatch: no remaining candidates to notify for alert %s, escalating to neighbourhood_admin", 
-                alert_id,
+                "dispatch: no remaining candidates to notify for alert %s (round %s), escalating to neighbourhood_admin", 
+                alert_id, triggering_sighting_id,
             )
-            await _escalate_dispatch(db, no_candidate, reason="no_available_officer")
+            await _escalate_dispatch(db, no_candidate, reason=reason)
         return
 
     await _notify_officer(db, officer)
