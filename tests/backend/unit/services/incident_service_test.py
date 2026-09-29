@@ -6,7 +6,6 @@ import pytest
 
 from app.services import incident_service
 
-
 def make_alert(timestamp):
     return SimpleNamespace(
         id=uuid4(),

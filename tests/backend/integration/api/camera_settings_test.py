@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, patch
 from fastapi import HTTPException
 
 CAMERA_ID = "40000000-0000-0000-0000-000000000001"
@@ -26,7 +26,7 @@ MOCK_ZONE = {
 async def test_get_camera_settings_ok(async_client, admin_headers):
     with patch(
         "app.api.controllers.camera_settings.get_camera_settings_handler",
-        new=MagicMock(return_value=MOCK_SETTINGS),
+        new=AsyncMock(return_value=MOCK_SETTINGS),
     ):
         r = await async_client.get(f"/cameras/{CAMERA_ID}/settings", headers=admin_headers)
     assert r.status_code == 200
@@ -46,7 +46,7 @@ async def test_get_camera_settings_resident_forbidden(async_client, auth_headers
 async def test_get_camera_settings_not_found(async_client, admin_headers):
     with patch(
         "app.api.controllers.camera_settings.get_camera_settings_handler",
-        new=MagicMock(side_effect=HTTPException(status_code=404, detail="Camera not found")),
+        new=AsyncMock(side_effect=HTTPException(status_code=404, detail="Camera not found")),
     ):
         r = await async_client.get(f"/cameras/{CAMERA_ID}/settings", headers=admin_headers)
     assert r.status_code == 404
@@ -59,7 +59,7 @@ async def test_update_camera_threshold_ok(async_client, admin_headers):
     updated = {"camera_id": CAMERA_ID, "confidence_threshold": 0.7}
     with patch(
         "app.api.controllers.camera_settings.update_camera_settings_handler",
-        new=MagicMock(return_value=updated),
+        new=AsyncMock(return_value=updated),
     ):
         r = await async_client.patch(
             f"/cameras/{CAMERA_ID}/settings",
@@ -84,7 +84,7 @@ async def test_update_camera_threshold_resident_forbidden(async_client, auth_hea
 async def test_update_camera_threshold_missing_field(async_client, admin_headers):
     with patch(
         "app.api.controllers.camera_settings.update_camera_settings_handler",
-        new=MagicMock(return_value={}),
+        new=AsyncMock(return_value={}),
     ):
         r = await async_client.patch(
             f"/cameras/{CAMERA_ID}/settings",
@@ -100,7 +100,7 @@ async def test_update_camera_threshold_missing_field(async_client, admin_headers
 async def test_create_zone_ok(async_client, admin_headers):
     with patch(
         "app.api.controllers.camera_settings.create_zone_handler",
-        new=MagicMock(return_value=MOCK_ZONE),
+        new=AsyncMock(return_value=MOCK_ZONE),
     ):
         r = await async_client.post(
             f"/cameras/{CAMERA_ID}/zones",
@@ -163,7 +163,7 @@ async def test_create_zone_resident_forbidden(async_client, auth_headers):
 async def test_create_zone_camera_not_found(async_client, admin_headers):
     with patch(
         "app.api.controllers.camera_settings.create_zone_handler",
-        new=MagicMock(side_effect=HTTPException(status_code=404, detail="Camera not found")),
+        new=AsyncMock(side_effect=HTTPException(status_code=404, detail="Camera not found")),
     ):
         r = await async_client.post(
             f"/cameras/{CAMERA_ID}/zones",
@@ -179,7 +179,7 @@ async def test_create_zone_camera_not_found(async_client, admin_headers):
 async def test_delete_zone_ok(async_client, admin_headers):
     with patch(
         "app.api.controllers.camera_settings.delete_zone_handler",
-        new=MagicMock(return_value=None),
+        new=AsyncMock(return_value=None),
     ):
         r = await async_client.delete(
             f"/cameras/{CAMERA_ID}/zones/{ZONE_ID}",
@@ -201,7 +201,7 @@ async def test_delete_zone_resident_forbidden(async_client, auth_headers):
 async def test_delete_zone_not_found(async_client, admin_headers):
     with patch(
         "app.api.controllers.camera_settings.delete_zone_handler",
-        new=MagicMock(side_effect=HTTPException(status_code=404, detail="Zone not found")),
+        new=AsyncMock(side_effect=HTTPException(status_code=404, detail="Zone not found")),
     ):
         r = await async_client.delete(
             f"/cameras/{CAMERA_ID}/zones/{ZONE_ID}",

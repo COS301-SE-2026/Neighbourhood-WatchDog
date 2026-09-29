@@ -21,7 +21,7 @@
 <br/><br/>
 
 [![CI Pipeline](https://img.shields.io/github/actions/workflow/status/COS301-SE-2026/Neighbourhood-WatchDog/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI&labelColor=0D1B2A&color=10B981)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions/workflows/ci.yml)
-[![CD Pipeline](https://img.shields.io/github/actions/workflow/status/COS301-SE-2026/Neighbourhood-WatchDog/cd.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CD&labelColor=0D1B2A&color=10B981)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions/workflows/deploy-production.yml)
+[![CD Pipeline](https://img.shields.io/github/actions/workflow/status/COS301-SE-2026/Neighbourhood-WatchDog/deploy-production.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CD&labelColor=0D1B2A&color=10B981)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions/workflows/deploy-production.yml)
 [![Quality Gate](https://img.shields.io/sonar/quality_gate/COS301-SE-2026_Neighbourhood-WatchDog?server=https%3A%2F%2Fsonarcloud.io&style=for-the-badge&logo=sonarcloud&logoColor=white&label=Quality+Gate&labelColor=0D1B2A&color=10B981)](https://sonarcloud.io/summary/new_code?id=COS301-SE-2026_Neighbourhood-WatchDog)
 [![Coverage](https://img.shields.io/codecov/c/github/COS301-SE-2026/Neighbourhood-WatchDog?style=for-the-badge&logo=codecov&logoColor=white&label=Coverage&labelColor=0D1B2A&color=10B981&token=28L6HTN8XV)](https://codecov.io/github/COS301-SE-2026/Neighbourhood-WatchDog)
 [![Commit Activity](https://img.shields.io/github/commit-activity/m/COS301-SE-2026/Neighbourhood-WatchDog/dev?style=for-the-badge&logo=git&logoColor=white&label=Commits&labelColor=0D1B2A&color=10B981)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/commits/dev)
@@ -334,7 +334,7 @@ Neighbourhood-WatchDog/
       <br/><br/>
       <b>Joshua Mahabeer</b><br/>
       <sub><code>u24597092</code></sub><br/><br/>
-      <img src="https://img.shields.io/badge--AI%2FML%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
+      <img src="https://img.shields.io/badge/AI%2FML%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <br/><br/>
       <sub>Python · OpenCV · YOLOv8 · React · Docker · C++</sub><br/><br/>
       <a href="https://github.com/"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
@@ -347,7 +347,7 @@ Neighbourhood-WatchDog/
       <br/><br/>
       <b>Obed Edom Mbaya</b><br/>
       <sub><code>u24595889</code></sub><br/><br/>
-      <img src="https://img.shields.io/badge--AI%2FML%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
+      <img src="https://img.shields.io/badge/AI%2FML%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <br/><br/>
       <sub>Python · FastAPI · LangGraph · Next.js · PostgreSQL · Docker</sub><br/><br/>
       <a href="https://github.com/"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
@@ -360,7 +360,7 @@ Neighbourhood-WatchDog/
       <br/><br/>
       <b>Zaman Bassa</b><br/>
       <sub><code>u24744931</code></sub><br/><br/>
-      <img src="https://img.shields.io/badge--DevOps%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
+      <img src="https://img.shields.io/badge/DevOps%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <br/><br/>
       <sub>TypeScript · Python · Docker · PostgreSQL · GitHub Actions</sub><br/><br/>
       <a href="https://github.com/"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>

@@ -125,6 +125,31 @@ export interface PaginatedAlerts {
   pagination: Pagination;
 }
 
+
+export interface IncidentSummary {
+  id: string;
+  detection_type: string;
+  started_at: string;
+  last_seen_at: string;
+  alert_count: number;
+  representative_alert_id: string;
+  representative_alert: Alert;
+}
+
+export interface PaginatedIncidents {
+  incidents: IncidentSummary[];
+  pagination: Pagination;
+}
+
+interface ListIncidentsRes {
+  status: number;
+  message: string | null;
+  data: IncidentSummary[] | null;
+  pagination: Pagination | null;
+}
+
+
+
 interface ListAlertsRes {
   status: number;
   message: string | null;
@@ -180,6 +205,38 @@ export async function fetchAlerts(
 
   return {
     alerts: (res.data ?? []).map(normaliseAlert),
+    pagination: {
+      total: res.pagination?.total ?? 0,
+      limit: res.pagination?.limit ?? 25,
+      offset: res.pagination?.offset ?? 0,
+      has_more: res.pagination?.has_more ?? false,
+    },
+  };
+}
+
+
+export async function fetchIncidents(
+  neighbourhoodId: string,
+  filters?: AlertFilters,
+  signal?: AbortSignal,
+): Promise<PaginatedIncidents> {
+  const query = buildAlerts(filters);
+
+  const res = await apiFetch<ListIncidentsRes>(
+    `/incidents/neighbourhoods/${encodeURIComponent(neighbourhoodId)}${query}`,
+    { signal },
+  );
+
+  return {
+    incidents: (res.data ?? []).map((incident) => ({
+      ...incident,
+      representative_alert: normaliseAlert(
+        incident.representative_alert as unknown as Record<
+          string,
+          unknown
+        >,
+      ),
+    })),
     pagination: {
       total: res.pagination?.total ?? 0,
       limit: res.pagination?.limit ?? 25,

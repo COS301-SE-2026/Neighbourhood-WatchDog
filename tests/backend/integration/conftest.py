@@ -1,4 +1,5 @@
 import os
+
 import pytest
 from httpx import AsyncClient
 
@@ -60,6 +61,15 @@ def admin_headers():
     return {
         "Authorization": TEST_BEARER,
         "X-Mock-Role": "NEIGHBOURHOOD_ADMIN",
+        "X-Mock-Sub": "a16cd2b8-c0c1-70f7-1fb6-17b5cea57bcf",
+    }
+
+
+@pytest.fixture
+def system_admin_headers():
+    return {
+        "Authorization": TEST_BEARER,
+        "X-Mock-Role": "SYSTEM_ADMIN",
         "X-Mock-Sub": "a16cd2b8-c0c1-70f7-1fb6-17b5cea57bcf",
     }
 

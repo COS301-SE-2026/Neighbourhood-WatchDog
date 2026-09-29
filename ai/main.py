@@ -1,6 +1,11 @@
 import queue
-import tkinter as tk
 import logging
+import subprocess
+import sys
+import threading
+from pathlib import Path
+import tkinter as tk
+from tkinter import messagebox
 
 from services.logging_service import configure_application_logging
 from services.onboarding_service import OnboardingService
@@ -16,6 +21,8 @@ from benchmark import BenchmarkPage
 from ui.theme import configure_theme
 from services.benchmark_service import BenchmarkResult
 from services.benchmark_state_service import BenchmarkStateService
+from services.config_service import ConfigService
+from services.keyring_service import KeyringService
 
 logger = logging.getLogger("watchdog.desktop.main")
 
@@ -36,6 +43,10 @@ class WatchDogDesktopApp:
         self.startup_resolver = StartupResolver()
         self.onboarding_service = OnboardingService()
         self.benchmark_state_service = BenchmarkStateService()
+
+        self.config_service = ConfigService()
+        self.keyring_service = KeyringService()
+        self.disconnect_in_progress = False
 
         self.agent_events: queue.Queue[AgentEvent] = queue.Queue()
         self.exit_requested = False
@@ -203,6 +214,184 @@ class WatchDogDesktopApp:
         This method is called by BenchmarkPage.
         """
         self.benchmark_state_service.save(result)
+
+    def request_disconnect(self) -> None:
+        """
+        Disconnect this desktop application from the current property.
+
+        This is intentionally a local-only reset. It does not contact the
+        backend or revoke the old backend credential.
+        """
+
+        if self.disconnect_in_progress:
+            return
+
+        confirmed = messagebox.askyesno(
+            "Disconnect property",
+            (
+                "This will stop the local AI agent, remove the saved "
+                "property connection from this computer, and require a "
+                "new pairing token.\n\n"
+                "The old backend credential will not be changed.\n\n"
+                "Continue?"
+            ),
+        )
+
+        if not confirmed:
+            return
+
+        self.disconnect_in_progress = True
+
+        if self.agent_service.status in {
+            "starting",
+            "running",
+            "running_with_warnings",
+            "stopping",
+        } or self.agent_service.is_running():
+            self.agent_service.stop()
+
+            self.root.after(
+                100,
+                self._wait_for_agent_stop_before_disconnect,
+            )
+            return
+
+        self._begin_disconnect_worker()
+
+    def _wait_for_agent_stop_before_disconnect(self) -> None:
+        """
+        Wait until the AI subprocess has stopped before clearing credentials.
+        """
+
+        if self.agent_service.is_running():
+            self.root.after(
+                100,
+                self._wait_for_agent_stop_before_disconnect,
+            )
+            return
+
+        if self.agent_service.status in {
+            "starting",
+            "stopping",
+        }:
+            self.root.after(
+                100,
+                self._wait_for_agent_stop_before_disconnect,
+            )
+            return
+
+        self._begin_disconnect_worker()
+
+    def _begin_disconnect_worker(self) -> None:
+        """
+        Clear local credentials away from the Tkinter UI thread.
+        """
+
+        threading.Thread(
+            target=self._disconnect_worker,
+            name="watchdog-local-disconnect",
+            daemon=True,
+        ).start()
+
+    def _disconnect_worker(self) -> None:
+        """
+        Delete the local API key and persisted property configuration.
+
+        No backend endpoint is called.
+        """
+
+        errors: list[str] = []
+
+        try:
+            self.keyring_service.clear_api_key()
+        except Exception as error:
+            logger.exception(
+                "Could not clear the saved WatchDog API key."
+            )
+            errors.append(
+                f"Could not clear the saved API key: {error}"
+            )
+
+        try:
+            self.config_service.clear()
+        except Exception as error:
+            logger.exception(
+                "Could not clear the saved WatchDog configuration."
+            )
+            errors.append(
+                f"Could not clear the saved property configuration: {error}"
+            )
+
+        if errors:
+            self.root.after(
+                0,
+                lambda: self._disconnect_failed(errors),
+            )
+            return
+
+        self.root.after(
+            0,
+            self._restart_after_disconnect,
+        )
+
+    def _disconnect_failed(self, errors: list[str]) -> None:
+        self.disconnect_in_progress = False
+
+        messagebox.showerror(
+            "Disconnect failed",
+            (
+                "WatchDog could not remove all local connection data.\n\n"
+                + "\n".join(errors)
+                + "\n\n"
+                "The application will remain open so you can try again."
+            ),
+        )
+
+    def _restart_after_disconnect(self) -> None:
+        """
+        Start a fresh WatchDog process, then close this process.
+        """
+
+        try:
+            if getattr(sys, "frozen", False):
+                command = [
+                    sys.executable,
+                ]
+                working_directory = (
+                    Path(sys.executable).resolve().parent
+                )
+            else:
+                script_path = Path(__file__).resolve()
+                command = [
+                    sys.executable,
+                    str(script_path),
+                ]
+                working_directory = script_path.parent
+
+            subprocess.Popen(
+                command,
+                cwd=str(working_directory),
+                close_fds=True,
+            )
+
+        except OSError as error:
+            logger.exception(
+                "Could not restart WatchDog after disconnect."
+            )
+
+            messagebox.showerror(
+                "Restart failed",
+                (
+                    "The local property connection was removed, but "
+                    "WatchDog could not restart automatically.\n\n"
+                    f"{error}"
+                ),
+            )
+
+            self.root.destroy()
+            return
+
+        self.root.destroy()
 
     def quit_application(self) -> None:
         """

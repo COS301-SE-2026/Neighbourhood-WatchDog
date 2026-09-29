@@ -6,6 +6,7 @@ async def test_join_neighbourhood(async_client, auth_headers):
     result = {
         "id": "66666666-6666-6666-6666-666666666666",
         "neighbourhood_id": "55555555-5555-5555-5555-555555555555",
+        "property_id": "22222222-2222-2222-2222-222222222222",
         "user_id": "00000000-0000-0000-0000-000000000001",
         "status": "PENDING",
         "created_at": "2023-01-01T00:00:00Z",
@@ -16,7 +17,11 @@ async def test_join_neighbourhood(async_client, auth_headers):
         new=AsyncMock(return_value=result),
     ):
         payload = {"join_code": "ABC123"}
-        r = await async_client.post("/neighbourhood/join", json=payload, headers=auth_headers)
+        r = await async_client.post(
+            "/neighbourhood/join/22222222-2222-2222-2222-222222222222",
+            json=payload,
+            headers=auth_headers,
+        )
         assert r.status_code == 201
         body = r.json()
         assert body["status"] == 201
@@ -28,6 +33,7 @@ async def test_resolve_join_request(async_client, admin_headers):
     result = {
         "id": "66666666-6666-6666-6666-666666666666",
         "neighbourhood_id": "55555555-5555-5555-5555-555555555555",
+        "property_id": "22222222-2222-2222-2222-222222222222",
         "user_id": "00000000-0000-0000-0000-000000000001",
         "status": "APPROVE",
         "created_at": "2023-01-01T00:00:00Z",
@@ -50,5 +56,8 @@ async def test_resolve_join_request(async_client, admin_headers):
 
 @pytest.mark.asyncio
 async def test_pending_user_cannot_access_camera_feed(async_client, pending_user_headers):
-    r = await async_client.get("/neighbourhood/join-requests", headers=pending_user_headers)
+    r = await async_client.get(
+        "/neighbourhood/join-requests/55555555-5555-5555-5555-555555555555",
+        headers=pending_user_headers,
+    )
     assert r.status_code == 403

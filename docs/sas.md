@@ -289,7 +289,7 @@ The system supports rollback in the following ways:
 
 ### Deployment Diagram
 
-![Prod Deployment Diagram](/docs/images/Production%20Deployment%20Diagramv2.svg)
+![Prod Deployment Diagram](/docs/images/Prod%20Deployment%20Diagram%20v3.png)
 
 ![Staging Deployment Diagram](/docs/images/Staging%20Deployment%20Diagramv3.drawio.svg)
 

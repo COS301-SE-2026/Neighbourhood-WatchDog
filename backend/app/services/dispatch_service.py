@@ -19,11 +19,11 @@ from app.models.property import Property
 from app.models.dispatch import Dispatch, DispatchStatus
 from app.models.security_officer import SecurityOfficer, AvailabilityStatus
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
+from app.models.tracking import TrackingSighting, TrackingSubject
 from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, RespondDispatchRes
 from app.services.alert_service import _build_alert_res
 from app.services.audit_service import create_audit_log_item
 from app.services.neighbourhood_service import STALE_LOCATION_THRESHOLD_SECONDS, is_location_stale
-from app.api.controllers.alert import broadcast
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +153,11 @@ def rank_candidates(
         for rank, (e, eta, score, _) in enumerate(scored, start=1)
     ]
 
-def _build_dispatch_rows(context: AlertContext, ranked: list[RankedCandidate]) -> list[Dispatch]:
+def _build_dispatch_rows(
+        context: AlertContext, 
+        ranked: list[RankedCandidate],
+        triggering_sighting_id: UUID | None = None,
+    ) -> list[Dispatch]:
     """Helper to build dispatch table rows"""
     rows: list[Dispatch] = []
     has_selected = False
@@ -170,6 +174,7 @@ def _build_dispatch_rows(context: AlertContext, ranked: list[RankedCandidate]) -
             Dispatch(
                 alert_id=context.alert_id,
                 neighbourhood_id=context.neighbourhood_id,
+                triggering_sighting_id=triggering_sighting_id,
                 officer_id=c.officer_id,
                 rank=r.rank,
                 score=r.score,
@@ -187,6 +192,7 @@ def _build_dispatch_rows(context: AlertContext, ranked: list[RankedCandidate]) -
             Dispatch(
                 alert_id=context.alert_id,
                 neighbourhood_id=context.neighbourhood_id,
+                triggering_sighting_id=triggering_sighting_id,
                 status=DispatchStatus.NO_CANDIDATE,
             )
         )
@@ -198,6 +204,28 @@ async def _load_alert_context(db: DbSession, alert_id: UUID) -> AlertContext | N
         .join(Camera, Camera.id == Alert.camera_id)
         .join(Property, Property.id == Camera.property_id)
         .where(Alert.id == alert_id)
+    )
+    row = (await db.execute(stmt)).first()
+    if row is None:
+        return None
+    
+    return AlertContext(
+        alert_id=row[0],
+        detection_type=_enum_value(row[1]),
+        neighbourhood_id=row[2],
+        latitude=row[3],
+        longitude=row[4],
+    )
+
+async def _load_sighting_context(db: DbSession, sighting_id: UUID) -> AlertContext | None:
+    stmt = (
+        select(Alert.id, Alert.detection_type, Property.neighbourhood_id, Property.latitude, Property.longitude)
+        .select_from(TrackingSighting)
+        .join(TrackingSubject, TrackingSubject.id == TrackingSighting.tracking_subject_id)
+        .join(Alert, Alert.id == TrackingSubject.alert_id)
+        .join(Camera, Camera.id == TrackingSighting.camera_id)
+        .join(Property, Property.id == Camera.property_id)
+        .where(TrackingSighting.id == sighting_id)
     )
     row = (await db.execute(stmt)).first()
     if row is None:
@@ -282,6 +310,31 @@ async def _fetch_dispatch_rows(db: DbSession, alert_id: UUID) -> list[Dispatch]:
     )
     return list((await db.execute(stmt)).scalars().all())
 
+async def _fetch_dispatch_rows_for_round(
+        db: DbSession, 
+        alert_id: UUID,
+        triggering_sighting_id: UUID,
+    ) -> list[Dispatch]:
+    stmt = (
+        select(Dispatch)
+        .where(
+            Dispatch.alert_id == alert_id,
+            Dispatch.triggering_sighting_id == triggering_sighting_id,
+        )
+        .order_by(Dispatch.rank.asc().nulls_last(), Dispatch.created_at.asc())
+    )
+    return list((await db.execute(stmt)).scalars().all())
+
+async def _fetch_engaged_officer_ids(db: DbSession, alert_id: UUID) -> set[UUID]:
+    """Fetches officers already offered an alert in any round"""
+    result = await db.execute(
+        select(Dispatch.officer_id).where(
+            Dispatch.alert_id == alert_id,
+            Dispatch.officer_id.is_not(None),
+        )
+    )
+    return set(result.scalars().all())
+
 async def _get_officer_user_id(db: DbSession, officer_id: UUID) -> str | None:
     result = await db.execute(
         select(NeighbourhoodUser.user_id)
@@ -321,6 +374,7 @@ async def resolve_officer(db: DbSession, claims: Claims) -> SecurityOfficer:
 
 async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
     """Notifies selected officer of dispatch request over websocket"""
+    from app.api.controllers.alert import broadcast #noqa: PLC0415
     now = datetime.now(timezone.utc)
     dispatch.status = DispatchStatus.NOTIFIED
     dispatch.notified_at = now
@@ -366,7 +420,7 @@ async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
             dispatch.officer_id, dispatch.id,
         )
 
-async def _promote_officer(db: DbSession, alert_id: UUID) -> None:
+async def _promote_officer(db: DbSession, alert_id: UUID, triggering_sighting_id: UUID | None) -> None:
     """
     Notifies next ranked officer if the selected officer declines, is unreachable, 
     or the request times out before a response is received. Picks officers from pending before
@@ -374,7 +428,10 @@ async def _promote_officer(db: DbSession, alert_id: UUID) -> None:
     """
     result = await db.execute(
         select(Dispatch)
-        .where(Dispatch.alert_id == alert_id)
+        .where(
+            Dispatch.alert_id == alert_id,
+            Dispatch.triggering_sighting_id == triggering_sighting_id,
+        )
         .order_by(Dispatch.rank.asc().nulls_last())
         .with_for_update()
     )
@@ -396,16 +453,18 @@ async def _promote_officer(db: DbSession, alert_id: UUID) -> None:
             no_candidate = Dispatch(
                 alert_id=alert_id,
                 neighbourhood_id=rows[0].neighbourhood_id,
+                triggering_sighting_id=triggering_sighting_id,
                 status=DispatchStatus.NO_CANDIDATE,
             )
             db.add(no_candidate)
             await db.commit()
             await db.refresh(no_candidate)
+            reason = "no_available_officer" if triggering_sighting_id is None else "no_available_officer_for_new_sighting"
             logger.info(
-                "dispatch: no remaining candidates to notify for alert %s, escalating to neighbourhood_admin", 
-                alert_id,
+                "dispatch: no remaining candidates to notify for alert %s (round %s), escalating to neighbourhood_admin", 
+                alert_id, triggering_sighting_id,
             )
-            await _escalate_dispatch(db, no_candidate, reason="no_available_officer")
+            await _escalate_dispatch(db, no_candidate, reason=reason)
         return
 
     await _notify_officer(db, officer)
@@ -436,7 +495,7 @@ async def _expire_stale_dispatch(db: DbSession, dispatch: Dispatch) -> Dispatch:
     await db.refresh(dispatch)
 
     try:
-        await _promote_officer(db, dispatch.alert_id)
+        await _promote_officer(db, dispatch.alert_id, dispatch.triggering_sighting_id)
     except Exception:
         logger.exception("dispatch: failed to promote next officer after time out for alert %s", dispatch.alert_id)
 
@@ -458,23 +517,27 @@ async def expire_stale_dispatchs(db: DbSession) -> int:
     if not expired:
         return 0
 
-    alert_ids: set[UUID] = set()
+    rounds: set[tuple[UUID, UUID | None]] = set()
     for e in expired:
         e.status = DispatchStatus.TIMED_OUT
         e.responded_at = now
-        alert_ids.add(e.alert_id)
+        rounds.add((e.alert_id, e.triggering_sighting_id))
     await db.commit()
 
-    for alert_id in alert_ids:
+    for alert_id, triggering_sighting_id in rounds:
         try:
-            await _promote_officer(db, alert_id)
+            await _promote_officer(db, alert_id, triggering_sighting_id)
         except Exception:
-            logger.exception("expire_stale_dispatches: failed to promote next officer for alert %s", alert_id)
+            logger.exception(
+                "expire_stale_dispatches: failed to promote next officer for alert %s (round %s)", 
+                alert_id, triggering_sighting_id,
+            )
 
     return len(expired)
 
 async def _escalate_dispatch(db: DbSession, dispatch: Dispatch, reason: str) -> None:
     """Informs admin of critical alert no officer was able to attend to"""
+    from app.api.controllers.alert import broadcast #noqa: PLC0415
     now = datetime.now(timezone.utc)
     dispatch.notified_at = now
     await db.commit()
@@ -514,6 +577,7 @@ def _build_candidate_res(d: Dispatch) -> DispatchCandidateRes:
     return DispatchCandidateRes(
         id=d.id,
         alert_id=d.alert_id,
+        triggering_sighting_id=d.triggering_sighting_id,
         officer_id=d.officer_id,
         rank=d.rank,
         score=d.score,
@@ -628,6 +692,89 @@ async def dispatch_alert(db: DbSession, alert_id: UUID) -> AlertDispatchRes:
     rows = await _fetch_dispatch_rows(db, alert_id)
     return _build_alert_dispatch_res(alert_id, rows)
 
+async def dispatch_alert_for_sighting(db: DbSession, sighting_id: UUID) -> AlertDispatchRes:
+    """
+    Starts a supplementary dispatch round for an alert when a subject is identified on another camera.
+    Happens independent of inital dispatch round and other rounds.
+    Does not cancel or reassign an accepted dispatch and does not re-offer to officer involved in previous rounds
+    """
+    context = await _load_sighting_context(db, sighting_id)
+    if context is None:
+        raise HTTPException(404, "Tracking sighting or its alert not found")
+
+    if context.detection_type not in CRITICAL_DETECTION_TYPES:
+        logger.info("dispatch_alert_for_sighting skipped: alert %s (%s) is not critical", context.alert_id, context.detection_type)
+        return AlertDispatchRes(alert_id=context.alert_id)
+
+    existing = await _fetch_dispatch_rows_for_round(db, context.alert_id, sighting_id)
+    if existing:
+        return _build_alert_dispatch_res(context.alert_id, existing)
+
+    try:
+        ranked: list[RankedCandidate] = []
+
+        if context.neighbourhood_id is None:
+            logger.warning("dispatch_alert_for_sighting: sighting %s's alert %s belongs to a property with no neighbourhood", sighting_id, context.alert_id)
+        elif context.latitude is None or context.longitude is None:
+            logger.warning("dispatch_alert_for_sighting: sighting %s's property has no coordinates", sighting_id)
+        else:
+            officers = await _fetch_neighbourhood_officers(
+                db, context.neighbourhood_id, context.latitude, context.longitude
+            )
+            engaged = await _fetch_engaged_officer_ids(db, context.alert_id)
+            officers = [o for o in officers if o.officer_id not in engaged]
+            eligible = filter_eligible(officers)
+            logger.info(
+                "dispatch_alert_for_sighting: alert %s sighting %s - %d officers in neighbourhood, %d eligible. %d excluded as already engaged",
+                context.alert_id, sighting_id, len(officers), len(eligible), len(engaged),
+            )
+
+            workloads = await _fetch_workloads(db, [e.officer_id for e in eligible], context.alert_id)
+            eligible = [replace(e, workload=workloads.get(e.officer_id, 0)) for e in eligible]
+            ranked = rank_candidates(eligible, context.detection_type)
+
+            db.add_all(_build_dispatch_rows(context, ranked, triggering_sighting_id=sighting_id))
+            await db.commit()
+
+            selected_result = await db.execute(
+                select(Dispatch).where(
+                    Dispatch.alert_id == context.alert_id,
+                    Dispatch.triggering_sighting_id == sighting_id,
+                    Dispatch.status == DispatchStatus.SELECTED,
+                )
+            )
+            selected = selected_result.scalar_one_or_none()
+
+            if selected is not None:
+                await _notify_officer(db, selected)
+            else:
+                no_candidate_result = await db.execute(
+                    select(Dispatch).where(
+                        Dispatch.alert_id == context.alert_id,
+                        Dispatch.triggering_sighting_id == sighting_id,
+                        Dispatch.status == DispatchStatus.NO_CANDIDATE,
+                    )
+                )
+                no_candidate = no_candidate_result.scalar_one_or_none()
+                if no_candidate is not None:
+                    await _escalate_dispatch(db, no_candidate, reason="no_available_officer_for_new_sighting")
+    except IntegrityError:
+        await db.rollback()
+        existing = await _fetch_dispatch_rows_for_round(db, context.alert_id, sighting_id)
+        if existing:
+            return _build_alert_dispatch_res(context.alert_id, existing)
+        logger.exception("dispatch_alert_for_sighting failed for sighting %s", sighting_id)
+        raise HTTPException(500, "Failed to start supplementary dispatch")
+    except HTTPException:
+        raise
+    except Exception:
+        await db.rollback()
+        logger.exception("dispatch_alert_for_sighting failed for sighting %s", sighting_id)
+        raise HTTPException(500, "Failed to start supplementary dispatch")
+
+    rows = await _fetch_dispatch_rows_for_round(db, context.alert_id, sighting_id)
+    return _build_alert_dispatch_res(context.alert_id, rows)
+
 async def get_alert_dispatch_handler(
         alert_id: UUID,
         db: DbSession,
@@ -670,6 +817,7 @@ async def respond_to_dispatch_handler(
         claims: Claims,
 ) -> RespondDispatchRes:
     """Handles officer response to dispatch requests"""
+    from app.api.controllers.alert import broadcast #noqa: PLC0415
     if not claims:
         raise HTTPException(401, "Not authenticated")
 
@@ -700,7 +848,7 @@ async def respond_to_dispatch_handler(
         dispatch.responded_at = now
         await db.commit()
         try:
-            await _promote_officer(db, dispatch.alert_id)
+            await _promote_officer(db, dispatch.alert_id, dispatch.triggering_sighting_id)
         except Exception:
             logger.exception(
                 "respond_to_dispatch: failed to promote next officer after expiry for alert %s", 
@@ -715,7 +863,7 @@ async def respond_to_dispatch_handler(
         await db.refresh(dispatch)
 
         try:
-            await _promote_officer(db, dispatch.alert_id)
+            await _promote_officer(db, dispatch.alert_id, dispatch.triggering_sighting_id)
         except Exception:
             logger.exception(
                 "respond_to_dispatch: failed to promote next officer after declining alert %s",
@@ -725,29 +873,29 @@ async def respond_to_dispatch_handler(
         return RespondDispatchRes(status=200, message="Declined", data=_build_candidate_res(dispatch))
 
     if action == "ACCEPT":
+        # Only one officer may accept this dispatch round.
+        # A later sighting of the same alert has its own round.
         lock_result = await db.execute(
             select(Dispatch)
             .where(
-                Dispatch.alert_id
-                == dispatch.alert_id
+                Dispatch.alert_id == dispatch.alert_id,
+                Dispatch.triggering_sighting_id
+                == dispatch.triggering_sighting_id,
             )
             .with_for_update()
         )
-
-        dispatch_rows = (
-            lock_result.scalars().all()
-        )
+        round_rows = lock_result.scalars().all()
 
         if any(
             row.status == DispatchStatus.ACCEPTED
             and row.id != dispatch.id
-            for row in dispatch_rows
+            for row in round_rows
         ):
             raise HTTPException(
                 status_code=409,
                 detail=(
-                    "This alert has already been "
-                    "assigned to another officer"
+                    "This alert has already been assigned "
+                    "to another officer in this dispatch round"
                 ),
             )
 
@@ -758,16 +906,10 @@ async def respond_to_dispatch_handler(
                 .joinedload(Camera.property),
                 joinedload(Alert.tracking_subject),
             )
-            .where(
-                Alert.id == dispatch.alert_id,
-            )
+            .where(Alert.id == dispatch.alert_id)
             .with_for_update(of=Alert)
         )
-
-        alert = (
-            alert_result.unique()
-            .scalar_one_or_none()
-        )
+        alert = alert_result.unique().scalar_one_or_none()
 
         if alert is None:
             raise HTTPException(
@@ -792,49 +934,51 @@ async def respond_to_dispatch_handler(
                 detail="Authenticated user identity is missing",
             )
 
-        previous_status = alert.status
-
         dispatch.status = DispatchStatus.ACCEPTED
         dispatch.responded_at = now
 
-        alert.status = AlertStatus.ACKNOWLEDGED.value
-        alert.acknowledged_by = user_id
-        alert.acknowledged_at = now
-
-        await create_audit_log_item(
-            db=db,
-            user_id=user_id,
-            action=AuditAction.UPDATE,
-            target_entity_type=TargetEntity.ALERT,
-            target_entity_id=alert.id,
-            old_values={
-                "status": previous_status,
-            },
-            new_values={
-                "status": alert.status,
-                "acknowledged_by": str(user_id),
-                "acknowledged_at": now.isoformat(),
-            },
+        # The first acceptance acknowledges the alert. A later
+        # sighting may dispatch another officer, but must not erase
+        # who originally acknowledged the alert.
+        newly_acknowledged = (
+            alert.status == AlertStatus.OPEN.value
         )
+
+        if newly_acknowledged:
+            previous_status = alert.status
+            alert.status = AlertStatus.ACKNOWLEDGED.value
+            alert.acknowledged_by = user_id
+            alert.acknowledged_at = now
+
+            await create_audit_log_item(
+                db=db,
+                user_id=user_id,
+                action=AuditAction.UPDATE,
+                target_entity_type=TargetEntity.ALERT,
+                target_entity_id=alert.id,
+                old_values={
+                    "status": previous_status,
+                },
+                new_values={
+                    "status": alert.status,
+                    "acknowledged_by": str(user_id),
+                    "acknowledged_at": now.isoformat(),
+                },
+            )
 
         try:
             await db.commit()
         except IntegrityError as error:
             await db.rollback()
-
             raise HTTPException(
                 status_code=409,
                 detail=(
-                    "This alert has already been "
+                    "This dispatch round has already been "
                     "assigned to another officer"
                 ),
             ) from error
 
         await db.refresh(dispatch)
-
-        alert_payload = _build_alert_res(
-            alert,
-        ).model_dump(mode="json")
 
         try:
             user_ids = await get_dispatch_viewer_ids(
@@ -848,29 +992,25 @@ async def respond_to_dispatch_handler(
                     {
                         "event": "dispatch.accepted",
                         "payload": {
-                            "dispatch_id": str(
-                                dispatch.id,
-                            ),
-                            "alert_id": str(
-                                dispatch.alert_id,
-                            ),
+                            "dispatch_id": str(dispatch.id),
+                            "alert_id": str(dispatch.alert_id),
                         },
                     },
                 )
 
-                await broadcast(
-                    user_ids,
-                    {
-                        "event": "alert.acknowledged",
-                        "payload": alert_payload,
-                    },
-                )
+                if newly_acknowledged:
+                    await broadcast(
+                        user_ids,
+                        {
+                            "event": "alert.acknowledged",
+                            "payload": _build_alert_res(
+                                alert,
+                            ).model_dump(mode="json"),
+                        },
+                    )
         except Exception:
             logger.exception(
-                (
-                    "Failed to broadcast acceptance "
-                    "for dispatch %s"
-                ),
+                "Failed to broadcast acceptance for dispatch %s",
                 dispatch.id,
             )
 
