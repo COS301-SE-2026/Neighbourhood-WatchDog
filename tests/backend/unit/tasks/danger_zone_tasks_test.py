@@ -120,13 +120,13 @@ def test_danger_zone_task_is_scheduled():
     schedule = celery.conf.beat_schedule
 
     assert (
-        "recompute-danger-zones-every-10-minutes"
+        "recompute-danger-zones-hourly"
         in schedule
     )
 
     assert (
         schedule[
-            "recompute-danger-zones-every-10-minutes"
+            "recompute-danger-zones-hourly"
         ]["task"]
         == (
             "app.tasks.danger_zone_tasks."

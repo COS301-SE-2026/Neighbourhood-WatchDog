@@ -32,27 +32,27 @@ celery.conf.enable_utc = True
 celery.conf.timezone = "Africa/Johannesburg"
 
 celery.conf.beat_schedule = {
-    "recalculate-risk-scores-every-5-minutes": {
+    "recalculate-risk-scores-daily": {
         "task": "app.tasks.risk_score_tasks.recalculate_all_risk_scores",
-        "schedule": timedelta(minutes=5),
+        "schedule": crontab(hour=1, minute=0)
     },
     "expire-stale-dispatches-every-20-seconds": {
         "task": "app.tasks.dispatch_tasks.expire_stale_dispatch_requests",
         "schedule": timedelta(seconds=20),
     },
-    "refresh-current-incident-density": {
+    "refresh-current-incident-density-every-15-minutes": {
         "task": (
             "app.tasks.incident_density_tasks."
             "refresh_current_incident_density"
         ),
-        "schedule": timedelta(minutes=5),
+        "schedule": timedelta(minutes=15),
     },
-    "recompute-danger-zones-every-10-minutes": {
+    "recompute-danger-zones-hourly": {
         "task": (
             "app.tasks.danger_zone_tasks."
             "recompute_all_danger_zones"
         ),
-        "schedule": timedelta(minutes=10),
+        "schedule": crontab(minute=20),
     },
     "finalize-yesterday-incident-density": {
         "task": (
