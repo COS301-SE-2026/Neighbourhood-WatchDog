@@ -92,7 +92,7 @@ def test_density_tasks_are_registered_in_beat_schedule():
     schedule = celery.conf.beat_schedule
 
     assert (
-        "refresh-current-incident-density"
+        "refresh-current-incident-density-every-15-minutes"
         in schedule
     )
 
@@ -102,7 +102,7 @@ def test_density_tasks_are_registered_in_beat_schedule():
     )
 
     assert (
-        schedule["refresh-current-incident-density"]["task"]
+        schedule["refresh-current-incident-density-every-15-minutes"]["task"]
         == (
             "app.tasks.incident_density_tasks."
             "refresh_current_incident_density"

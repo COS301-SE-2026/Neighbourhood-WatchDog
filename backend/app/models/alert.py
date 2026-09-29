@@ -26,6 +26,9 @@ class Alert(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     camera_id = Column(UUID(as_uuid=True), ForeignKey("camera.id", ondelete="CASCADE"), nullable=False)
+
+    incident_id = Column(UUID(as_uuid=True), ForeignKey("incident.id", ondelete="SET NULL"), nullable=True, index=True)
+
     frame_timestamp = Column(TIMESTAMP(timezone=True), nullable=False)
     detection_type = Column(SAEnum(DetectionType, name="detection_type"), nullable=False)
     confidence_score = Column(Float, nullable=False)
@@ -44,6 +47,7 @@ class Alert(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
     camera = relationship("Camera", back_populates="alerts")
+    incident = relationship("Incident", back_populates="alerts")
     dispatch = relationship("Dispatch", back_populates="alert", cascade="all, delete-orphan", order_by="Dispatch.created_at.desc()")
 
     tracking_subject = relationship("TrackingSubject", back_populates="alert", uselist=False, cascade="all, delete-orphan")

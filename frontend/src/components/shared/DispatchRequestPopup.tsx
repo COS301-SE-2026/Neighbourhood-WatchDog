@@ -201,9 +201,13 @@ function OutcomeToast({
   }
 }
 
-export function DispatchRequestPopup() {
+export function DispatchRequestPopup({
+  neighbourhoodId,
+}: {
+  neighbourhoodId: string | null;
+}) {
   const { notification, responding, outcome, accept, decline } =
-    useDispatchNotification();
+    useDispatchNotification(neighbourhoodId);
 
   if (!notification && !outcome) {
     return null;

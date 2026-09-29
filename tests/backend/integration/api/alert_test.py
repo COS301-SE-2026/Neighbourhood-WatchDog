@@ -5,7 +5,7 @@ ALERT_TIMESTAMP = "2023-01-01T00:00:00Z"
 
 @pytest.mark.skip(reason="TESTING=true bypasses auth, so this cannot be tested")
 @pytest.mark.asyncio
-async def test_create_alert(async_client, auth_headers):
+async def test_create_alert(async_client, system_admin_headers):
     alert_res = {
         "id": "77777777-7777-7777-7777-777777777777",
         "camera_id": "22222222-2222-2222-2222-222222222222",
@@ -24,22 +24,22 @@ async def test_create_alert(async_client, auth_headers):
             "confidence": 0.9,
             "timestamp": ALERT_TIMESTAMP,
         }
-        r = await async_client.post("/alerts/", json=payload, headers=auth_headers)
+        r = await async_client.post("/alerts/", json=payload, headers=system_admin_headers)
         assert r.status_code == 200
         body = r.json()
         assert body["id"] == alert_res["id"]
 
 
 @pytest.mark.asyncio
-async def test_dev_broadcast(async_client, auth_headers):
+async def test_dev_broadcast(async_client, system_admin_headers):
     payload = {"neighbourhood_id": "5555", "camera_id": "2222", "detection_type": "HUMAN_PRESENCE", "confidence": 0.5}
-    r = await async_client.post("/alerts/dev/broadcast", json=payload, headers=auth_headers)
+    r = await async_client.post("/alerts/dev/broadcast", json=payload, headers=system_admin_headers)
     assert r.status_code == 200
     assert r.json() == {"status": "broadcasted"}
 
 
 @pytest.mark.asyncio
-async def test_list_and_acknowledge(async_client, auth_headers):
+async def test_list_and_acknowledge(async_client, system_admin_headers):
     alert_item = {
         "id": "77777777-7777-7777-7777-777777777777",
         "camera_id": "22222222-2222-2222-2222-222222222222",
@@ -62,17 +62,17 @@ async def test_list_and_acknowledge(async_client, auth_headers):
         "app.api.controllers.alert.acknowledge_alert_handler",
         new=AsyncMock(return_value=alert_item),
     ):
-        r = await async_client.get("/alerts/55555555-5555-5555-5555-555555555555", headers=auth_headers)
+        r = await async_client.get("/alerts/55555555-5555-5555-5555-555555555555", headers=system_admin_headers)
         assert r.status_code == 200
 
         r2 = await async_client.patch(
-            "/alerts/77777777-7777-7777-7777-777777777777/acknowledge", headers=auth_headers
+            "/alerts/77777777-7777-7777-7777-777777777777/acknowledge", headers=system_admin_headers
         )
         assert r2.status_code == 200
         assert r2.json()["data"]["id"] == alert_item["id"]
 
 @pytest.mark.asyncio
-async def test_list_alerts_default_pagination_params(async_client, auth_headers):
+async def test_list_alerts_default_pagination_params(async_client, system_admin_headers):
     alert_item = {
         "id": "77777777-7777-7777-7777-777777777777",
         "camera_id": "22222222-2222-2222-2222-222222222222",
@@ -93,7 +93,7 @@ async def test_list_alerts_default_pagination_params(async_client, auth_headers)
         new=AsyncMock(return_value=([alert_item], 1)),
     ) as mock_handler:
         r = await async_client.get(
-            "/alerts/55555555-5555-5555-5555-555555555555", headers=auth_headers
+            "/alerts/55555555-5555-5555-5555-555555555555", headers=system_admin_headers
         )
     
     assert r.status_code == 200
@@ -105,7 +105,7 @@ async def test_list_alerts_default_pagination_params(async_client, auth_headers)
     assert kwargs["detection_type"] is None
 
 @pytest.mark.asyncio
-async def test_list_alerts_forwards_filters(async_client, auth_headers):
+async def test_list_alerts_forwards_filters(async_client, system_admin_headers):
     alert_item = {
         "id": "77777777-7777-7777-7777-777777777777",
         "camera_id": "22222222-2222-2222-2222-222222222222",
@@ -133,7 +133,7 @@ async def test_list_alerts_forwards_filters(async_client, auth_headers):
             "&start_date=2026-01-01T00:00:00Z"
             "&end_date=2026-12-31T23:59:59Z"
             "&limit=10&offset=20", 
-            headers=auth_headers,
+            headers=system_admin_headers,
         )
     
     assert r.status_code == 200
@@ -154,23 +154,23 @@ async def test_list_alerts_forwards_filters(async_client, auth_headers):
     assert kwargs["offset"] == 20
 
 @pytest.mark.asyncio
-async def test_list_alerts_rejects_limits_over_max(async_client, auth_headers):
+async def test_list_alerts_rejects_limits_over_max(async_client, system_admin_headers):
     r = await async_client.get(
          "/alerts/55555555-5555-5555-5555-555555555555?limit=500",
-        headers=auth_headers,
+        headers=system_admin_headers,
     )
     assert r.status_code == 422
 
 @pytest.mark.asyncio
-async def test_list_alerts_rejects_negative_offset(async_client, auth_headers):
+async def test_list_alerts_rejects_negative_offset(async_client, system_admin_headers):
     r = await async_client.get(
          "/alerts/55555555-5555-5555-5555-555555555555?offset=-1",
-        headers=auth_headers,
+        headers=system_admin_headers,
     )
     assert r.status_code == 422
 
 @pytest.mark.asyncio
-async def test_list_alerts_has_more_true_when_pages_remain(async_client, auth_headers):
+async def test_list_alerts_has_more_true_when_pages_remain(async_client, system_admin_headers):
     alert_item = {
         "id": "77777777-7777-7777-7777-777777777777",
         "camera_id": "22222222-2222-2222-2222-222222222222",
@@ -192,7 +192,7 @@ async def test_list_alerts_has_more_true_when_pages_remain(async_client, auth_he
     ): 
          r = await async_client.get(
          "/alerts/55555555-5555-5555-5555-555555555555?offset=0",
-        headers=auth_headers,
+        headers=system_admin_headers,
     )
     assert r.status_code == 200
     assert r.json()["pagination"]["has_more"] is True

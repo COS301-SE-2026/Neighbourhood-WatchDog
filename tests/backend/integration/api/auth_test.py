@@ -1,4 +1,5 @@
 import pytest
+import uuid
 from unittest.mock import AsyncMock, patch, MagicMock
 from app.auth import cognito
 
@@ -20,7 +21,7 @@ def mock_cognito_client(monkeypatch):
 
     # SIGNUP
     mock_client.sign_up.return_value = {
-        "UserSub": "abc-123",
+        "UserSub": TEST_USER_SUB,
         "UserConfirmed": False
     }
 
@@ -66,7 +67,8 @@ def mock_cognito_client(monkeypatch):
 
 
 #DATA
-TEST_EMAIL = "test@example.com"
+TEST_EMAIL = f"test-{uuid.uuid4()}@example.com"
+TEST_USER_SUB = f"abc-{uuid.uuid4()}"
 TEST_PASSWORD = "Password123!"
 
 
@@ -82,11 +84,11 @@ async def test_register_user_integration(async_client):
         "address": "JHB"
     })
 
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     data = response.json()["data"]
 
-    assert data["user_sub"] == "abc-123"
+    assert data["user_sub"] == TEST_USER_SUB
     assert data["user_confirmed"] is False
 
 

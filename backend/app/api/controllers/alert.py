@@ -45,7 +45,7 @@ from app.schemas.danger_zone import (
     DangerZoneResponse,
 )
 from app.services import alert_service
-from app.services.alert_cache import alerts_neighbourhood_cache_key, incident_density_cache_key
+from app.services.alert_cache import incident_density_cache_key
 from app.services.alert_service import (
     DEFAULT_PAGE_SIZE,
     MAX_PAGE_SIZE,
@@ -239,71 +239,6 @@ async def get_alert_situational_brief(alert_id: UUID, db: DbSession, claims: Cla
 
     )
 
-
-@router.get(
-    "/{neighbourhood_id}",
-    response_model=ListAlertsRes,
-    summary="List alerts for a neighbourhood",
-)
-async def list_alerts(
-    neighbourhood_id: UUID,
-    db: DbSession,
-    claims: NeighbourhoodMemberClaims,
-    status_filter: Annotated[str | None, Query(alias="status")] = None,
-    camera_id: Annotated[UUID | None, Query()] = None,
-    detection_type: Annotated[str | None, Query()] = None,
-    start_date: Annotated[datetime | None, Query()] = None,
-    end_date: Annotated[datetime | None,  Query()] = None,
-    limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
-    offset: Annotated[int, Query(ge=0)] = 0,
-):
-    async def fetch():
-        results, total = await list_alerts_handler(
-            str(neighbourhood_id), 
-            db, 
-            claims, 
-            status_filter=status_filter, 
-            camera_id=camera_id, 
-            detection_type=detection_type,
-            start_date=start_date,
-            end_date=end_date,
-            limit=limit,
-            offset=offset,)
-        return ListAlertsRes(
-            status=200,
-            data=results,
-            pagination=Pagination(
-                total=total,
-                limit=limit,
-                offset=offset,
-                has_more=(offset + limit) < total,
-            )).model_dump(mode="json")
-
-    return await cache_get_or_set(
-        alerts_neighbourhood_cache_key(
-            neighbourhood_id,
-            status_filter=status_filter, 
-            camera_id=camera_id, 
-            detection_type=detection_type,
-            start_date=start_date,
-            end_date=end_date,
-            limit=limit,
-            offset=offset,
-        ), 
-        ALERTS_BY_NEIGHBOURHOOD_TTL, 
-        fetch
-    )
-
-@router.patch("/{alert_id}/acknowledge", response_model=AcknowledgeAlertRes, summary="Acknowledge an alert")
-async def acknowledge_alert(
-    alert_id: UUID,
-    db: DbSession,
-    claims: Claims,
-):
-    result = await acknowledge_alert_handler(alert_id, db, claims)
-    return AcknowledgeAlertRes(status=200, data=result)
-
-
 @router.websocket("/{neighbourhood_id}/ws")
 async def alert_websocket(
     websocket: WebSocket,
@@ -379,6 +314,53 @@ async def alert_websocket(
 
     finally:
         remove_connection(user_id, websocket)
+
+@router.get(
+    "/{neighbourhood_id}",
+    response_model=ListAlertsRes,
+    summary="List alerts for a neighbourhood",
+)
+async def list_alerts(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: NeighbourhoodMemberClaims,
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
+    camera_id: Annotated[UUID | None, Query()] = None,
+    detection_type: Annotated[str | None, Query()] = None,
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None,  Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
+    offset: Annotated[int, Query(ge=0)] = 0,
+):
+    results, total = await list_alerts_handler(
+        str(neighbourhood_id), 
+        db, 
+        claims, 
+        status_filter=status_filter, 
+        camera_id=camera_id, 
+        detection_type=detection_type,
+        start_date=start_date,
+        end_date=end_date,
+        limit=limit,
+        offset=offset,)
+    return ListAlertsRes(
+        status=200, 
+        data=results,
+        pagination=Pagination(
+            total=total,
+            limit=limit,
+            offset=offset,
+            has_more=(offset + limit) < total,
+        ))
+
+@router.patch("/{alert_id}/acknowledge", response_model=AcknowledgeAlertRes, summary="Acknowledge an alert")
+async def acknowledge_alert(
+    alert_id: UUID,
+    db: DbSession,
+    claims: Claims,
+):
+    result = await acknowledge_alert_handler(alert_id, db, claims)
+    return AcknowledgeAlertRes(status=200, data=result)
 
 @router.post("/broadcast")
 async def broadcast_neighbourhood_alert(

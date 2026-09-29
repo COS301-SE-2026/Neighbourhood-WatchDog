@@ -1,6 +1,7 @@
 from app.models.user import *  # noqa: F403
 from app.models.camera import *  # noqa: F403
 from app.models.alert import *  # noqa: F403
+from app.models.incident import *  # noqa: F403
 from app.models.audit_log import *  # noqa: F403
 from app.models.neighbourhood import *  # noqa: F403
 from app.models.neighbourhood_join_request import *  # noqa: F403
