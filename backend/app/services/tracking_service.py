@@ -26,7 +26,6 @@ from app.schemas.tracking import (
 )
 from app.services.situational_brief_service import maybe_generate_situational_brief
 from app.services.notifications.factory import NotificationPolicyFactory
-from app.services.dispatch_service import dispatch_alert_for_sighting
 from app.schemas.notification import EventType
 
 logger = logging.getLogger(__name__)
@@ -361,6 +360,7 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
         )
 
     try:
+        from app.services.dispatch_service import dispatch_alert_for_sighting
         await dispatch_alert_for_sighting(db, sighting.id)
     except Exception:
         logger.exception("Dispatch failed for sighting %s", sighting.id)

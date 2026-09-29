@@ -211,32 +211,30 @@ export function DispatchRequestPopup({
   const { notification, responding, outcome, accept, decline } =
     useDispatchNotification(neighbourhoodId);
 
-  const handleAccept = async () => {
+    const handleAccept = async () => {
     // Capture these before accept() clears the notification.
-    const alertId = notification?.alertId;
+    const propertyId = notification?.propertyId;
     const dispatchNeighbourhoodId =
       notification?.neighbourhoodId;
 
-    if (!alertId || !dispatchNeighbourhoodId) {
+    if (!propertyId || !dispatchNeighbourhoodId) {
       console.error(
-        "Dispatch notification is missing its alert or neighbourhood ID",
+        "Dispatch notification is missing its destination property or neighbourhood ID",
       );
       return;
     }
 
     const accepted = await accept();
-
-    if (!accepted) {
-      return;
-    }
+    if (!accepted) return;
 
     const destination =
       `/dashboard/neighbourhood/` +
       `${encodeURIComponent(dispatchNeighbourhoodId)}/map?` +
-      `routeAlertId=${encodeURIComponent(alertId)}`;
+      `routePropertyId=${encodeURIComponent(propertyId)}`;
 
     window.location.assign(destination);
   };
+
 
 
   if (!notification && !outcome) {

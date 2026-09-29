@@ -394,6 +394,8 @@ async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
             await db.execute(select(Alert.detection_type).where(Alert.id == dispatch.alert_id))
         ).scalar_one_or_none()
 
+        property_id = await _dispatch_destination_property_id(db, dispatch)
+
         await broadcast(
             [user_id],
             {
@@ -401,6 +403,11 @@ async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
                 "payload": {
                     "dispatch_id": str(dispatch.id),
                     "alert_id": str(dispatch.alert_id),
+                    "property_id": (
+                        str(property_id)
+                        if property_id is not None
+                        else None
+                    ),
                     "neighbourhood_id": (
                         str(dispatch.neighbourhood_id)
                         if dispatch.neighbourhood_id is not None
@@ -419,6 +426,30 @@ async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
             "dispatch: failed to notify officer %s for dispatch %s",
             dispatch.officer_id, dispatch.id,
         )
+
+
+async def _dispatch_destination_property_id(
+    db: DbSession,
+    dispatch: Dispatch,
+) -> UUID | None:
+    if dispatch.triggering_sighting_id is not None:
+        query = (
+            select(Camera.property_id)
+            .select_from(TrackingSighting)
+            .join(Camera, Camera.id == TrackingSighting.camera_id)
+            .where(TrackingSighting.id == dispatch.triggering_sighting_id)
+        )
+    else:
+        query = (
+            select(Camera.property_id)
+            .select_from(Alert)
+            .join(Camera, Camera.id == Alert.camera_id)
+            .where(Alert.id == dispatch.alert_id)
+        )
+
+    result = await db.execute(query)
+    return result.scalar_one_or_none()
+
 
 async def _promote_officer(db: DbSession, alert_id: UUID, triggering_sighting_id: UUID | None) -> None:
     """

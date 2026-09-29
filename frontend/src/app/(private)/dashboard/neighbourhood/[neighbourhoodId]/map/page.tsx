@@ -600,6 +600,7 @@ export default function NeighbourhoodAlertMapPage() {
   const searchParams = useSearchParams();
 
   const requestedRouteAlertId = searchParams.get("routeAlertId");
+  const requestedRoutePropertyId = searchParams.get("routePropertyId");
 
   const {
     data: userContext,
@@ -665,7 +666,7 @@ function handleToggleLayer(layer: MapLayerKey) {
     layerState.routes
   ) {
     setRoutePropertyId(null);
-    if (requestedRouteAlertId) {
+    if (requestedRouteAlertId || requestedRoutePropertyId) {
       router.replace(pathname, { scroll: false});
     }
   }
@@ -695,58 +696,51 @@ function handleToggleLayer(layer: MapLayerKey) {
 
   useEffect(() => {
     if (
-      !requestedRouteAlertId ||
+      (!requestedRoutePropertyId && !requestedRouteAlertId) ||
       !isSecurityOfficer
     ) {
       return;
     }
 
-    const acceptedAlert = mappedAlerts.find(
-      (alert) =>
-        alert.id === requestedRouteAlertId,
-    );
+    // Preserve older links that contain an alert ID.
+    const acceptedAlert = requestedRoutePropertyId
+      ? null
+      : mappedAlerts.find(
+          (alert) => alert.id === requestedRouteAlertId,
+        );
+
+    const destinationPropertyId =
+      requestedRoutePropertyId ?? acceptedAlert?.property_id;
 
     let cancelled = false;
 
     queueMicrotask(() => {
-      if (cancelled) {
-        return;
-      }
+      if (cancelled) return;
 
-      // Activating Security mode causes the
-      // critical-alert hook to load its data.
       setMapMode("security");
-
       setLayerState((current) => ({
         ...current,
         liveAlerts: true,
         routes: true,
       }));
 
-      // On the first render, alerts may still
-      // be loading. The effect runs again when
-      // mappedAlerts updates.
-      if (!acceptedAlert) {
-        return;
-      }
+      if (!destinationPropertyId) return;
 
       setSelectedAlert(null);
       setSelectedProperty(null);
-      setRoutePropertyId(
-        acceptedAlert.property_id,
-      );
+      setRoutePropertyId(destinationPropertyId);
     });
 
     return () => {
       cancelled = true;
     };
   }, [
+    requestedRoutePropertyId,
     requestedRouteAlertId,
     isSecurityOfficer,
     mappedAlerts,
-    pathname,
-    router,
   ]);
+
 
 
 
@@ -1043,7 +1037,7 @@ function handleToggleLayer(layer: MapLayerKey) {
                     ...current,
                     routes: false,
                   }));
-                  if (requestedRouteAlertId) {
+                  if (requestedRouteAlertId || requestedRoutePropertyId) {
                     router.replace(pathname, { scroll: false });
                   }
                 }}
