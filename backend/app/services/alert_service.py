@@ -59,6 +59,12 @@ from app.services.tracking_service import normalize_appearance_embedding
 from app.services.situational_brief_service import maybe_generate_situational_brief
 from app.services.notifications.factory import NotificationPolicyFactory
 from app.schemas.notification import EventType
+from app.models.incident import Incident
+from app.services.incident_service import (
+    create_incident_for_alert,
+    ensure_incident_for_alert,
+)
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_PAGE_SIZE = 25
@@ -72,7 +78,18 @@ ALERT_NOT_FOUND = "Alert not found"
 CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "")
 AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
-WEAPON_INCIDENT_WINDOW_SECONDS = int(os.getenv("WEAPON_INCIDENT_WINDOW_SECONDS", "30"))
+WEAPON_INCIDENT_WINDOW_SECONDS = int(os.getenv("WEAPON_INCIDENT_WINDOW_SECONDS") or "1800")
+
+WEAPON_ACTIVE_STATUSES = (
+    AlertStatus.OPEN.value,
+    AlertStatus.ACKNOWLEDGED.value,
+)
+
+WEAPON_CLOSED_STATUSES = (
+    AlertStatus.RESOLVED.value, 
+    AlertStatus.DISMISSED.value
+)
+
 CHUNK_SIZE = 256 * 1024
 
 CRITICAL_DETECTION_TYPES = {
@@ -244,6 +261,25 @@ async def create_alert(db: AsyncSession, data: AlertCreate):
             thumbnail_url=data.thumbnail_url,
             processed=False,
         )
+
+
+        incident = Incident(
+            detection_type=(
+                data.detection_type.value
+                if hasattr(data.detection_type, "value")
+                else str(data.detection_type)
+            ),
+            started_at=data.timestamp,
+            last_seen_at=data.timestamp
+        )
+
+        db.add(incident)
+        await db.flush()
+
+        alert.incident_id = incident.id
+
+
+
         db.add(alert)
 
         logger.info(
@@ -345,6 +381,7 @@ def _build_alert_res(alert: Alert) -> AlertRes:
     return AlertRes(
         id=alert.id,
         camera_id=alert.camera_id,
+        incident_id=getattr(alert, "incident_id", None),
         frame_timestamp=alert.frame_timestamp,
         detection_type=(
             alert.detection_type.value
@@ -1165,7 +1202,7 @@ async def _find_recent_weapon_alert(*, db: AsyncSession, camera_id: UUID, frame_
         .where(
             Alert.camera_id == camera_id,
             Alert.detection_type == DetectionType.WEAPON_DETECTED,
-            Alert.status == AlertStatus.OPEN.value,
+            Alert.status.in_(WEAPON_ACTIVE_STATUSES),
             Alert.frame_timestamp >= incident_window_start,
             Alert.frame_timestamp <= frame_timestamp
         )
@@ -1282,6 +1319,18 @@ async def create_alert_for_agent_handler(
             )
 
             if recent_weapon_alert is not None:
+
+                incident = await ensure_incident_for_alert(
+                    db=db,
+                    alert=recent_weapon_alert
+
+                )
+
+                if frame_timestamp > incident.last_seen_at:
+                    incident.last_seen_at = frame_timestamp
+
+                await db.commit()
+
                 logger.info(
                     "Reusing recent weapon incident alert_id=%s "
                     "for camera_id=%s",
@@ -1304,12 +1353,16 @@ async def create_alert_for_agent_handler(
             confidence_score=body.confidence_score,
             thumbnail_url=body.thumbnail_url,
             processed=True,
-            status=AlertStatus.OPEN.value
-
+            status=AlertStatus.OPEN.value,
         )
 
         db.add(alert)
         await db.flush()
+
+        incident = await create_incident_for_alert(
+            db=db,
+            alert=alert,
+        )
 
         tracking_subject = None
         initial_sighting = None
