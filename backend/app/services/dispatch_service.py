@@ -17,6 +17,7 @@ from app.models.property import Property
 from app.models.dispatch import Dispatch, DispatchStatus
 from app.models.security_officer import SecurityOfficer, AvailabilityStatus
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
+from app.models.tracking import TrackingSighting, TrackingSubject
 from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, RespondDispatchRes
 from app.services.neighbourhood_service import STALE_LOCATION_THRESHOLD_SECONDS, is_location_stale
 from app.api.controllers.alert import broadcast
@@ -200,6 +201,28 @@ async def _load_alert_context(db: DbSession, alert_id: UUID) -> AlertContext | N
         .join(Camera, Camera.id == Alert.camera_id)
         .join(Property, Property.id == Camera.property_id)
         .where(Alert.id == alert_id)
+    )
+    row = (await db.execute(stmt)).first()
+    if row is None:
+        return None
+    
+    return AlertContext(
+        alert_id=row[0],
+        detection_type=_enum_value(row[1]),
+        neighbourhood_id=row[2],
+        latitude=row[3],
+        longitude=row[4],
+    )
+
+async def _load_sighting_context(db: DbSession, sighting_id: UUID) -> AlertContext | None:
+    stmt = (
+        select(Alert.id, Alert.detection_type, Property.neighbourhood_id, Property.latitude, Property.longitude)
+        .select_from(TrackingSighting)
+        .join(TrackingSubject, TrackingSubject.id == TrackingSighting.tracking_subject_id)
+        .join(Alert, Alert.id == TrackingSubject.alert_id)
+        .join(Camera, Camera.id == TrackingSighting.camera_id)
+        .join(Property, Property.id == Camera.property_id)
+        .where(TrackingSighting.id == sighting_id)
     )
     row = (await db.execute(stmt)).first()
     if row is None:
