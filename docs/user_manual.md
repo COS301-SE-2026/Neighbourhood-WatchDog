@@ -57,7 +57,7 @@ These capabilities are decision-support tools. They do not replace human judgeme
 
 **Create account → confirm email → create property → create or join a neighbourhood → add cameras → connect the Agent → enable monitoring → review alerts.**
 
-![WatchDog logo](images/NWD.jpeg)
+![WatchDog logo](../frontend/src/assets/images/logo-mark-only.svg)
 
 *Figure 1. Neighbourhood WatchDog identity mark.*
 
@@ -186,9 +186,13 @@ Use this option when you are responsible for starting a new community group.
 Your request remains pending until the administrator resolves it. If the request is denied or the code is invalid, contact the administrator rather than creating multiple duplicate requests.
 
 ![Request Code Mockup](images/JoinRequestCode.png)
+
 *Figure 6. Neighbourhood admin's join request code that needs to be shared*
+
 ![Join neighbourhood mockup](images/join_neighbourhood.png)
+
 *Figure 7. The existing mockup shows the Join Neighbourhood form.*
+
 ---
 
 ## 7. Navigate the dashboard
