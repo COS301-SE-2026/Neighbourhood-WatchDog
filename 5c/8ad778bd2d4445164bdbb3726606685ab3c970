@@ -1,0 +1,35 @@
+ai/main.py
+  s_fcd3b7a532f5b5::t_d71d727e8c2e01 10
+  h_cf6208e37032c0 9,11-12
+backend/app/services/detection_service.py
+  h_cf6208e37032c0 204-211
+backend/app/services/tracking_service.py
+  h_cf6208e37032c0 322-360,430
+ai/app.py
+  h_cf6208e37032c0 422
+tests/backend/unit/services/tracking_service_test.py
+  h_cf6208e37032c0 482,568
+ai/authenticator.py
+  h_cf6208e37032c0 2,8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5c8ad778bd2d4445164bdbb3726606685ab3c970",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_fcd3b7a532f5b5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f8e2bcee-ea7a-4cca-aae1-e5e1c6fbecbe",
+        "model": "unknown"
+      },
+      "human_author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
