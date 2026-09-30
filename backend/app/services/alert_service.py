@@ -1551,9 +1551,11 @@ async def create_alert_for_agent_handler(
             det_type == DetectionType.WEAPON_DETECTED
             and body.local_track_id is not None
             and body.appearance_embedding is not None
+            and body.embedding_model is not None
             and neighbourhood_id is not None
         ):
             candidate_embedding = normalize_appearance_embedding(body.appearance_embedding)
+            assert candidate_embedding is not None
 
             matched_incident = await find_active_incident_for_embedding(
                 db=db,

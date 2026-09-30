@@ -7,10 +7,6 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import messagebox
 from dotenv import load_dotenv
-
-from runtime.paths import get_resource_dir
-load_dotenv(get_resource_dir() / ".env")
-
 from services.logging_service import configure_application_logging
 from services.onboarding_service import OnboardingService
 from app_state import AppState
@@ -27,6 +23,9 @@ from services.benchmark_service import BenchmarkResult
 from services.benchmark_state_service import BenchmarkStateService
 from services.config_service import ConfigService
 from services.keyring_service import KeyringService
+
+from runtime.paths import get_resource_dir
+load_dotenv(get_resource_dir() / ".env")
 
 logger = logging.getLogger("watchdog.desktop.main")
 
