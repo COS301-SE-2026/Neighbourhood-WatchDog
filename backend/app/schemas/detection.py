@@ -43,3 +43,4 @@ class DetectionIngestRes(BaseModel):
     message: str | None = None
     alert_created: bool
     alert_id: UUID | None = None
+    clip_required: bool = False

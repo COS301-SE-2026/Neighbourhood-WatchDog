@@ -14,7 +14,7 @@ from app.services.dispatch_service import dispatch_alert
 from app.services.notifications.factory import NotificationPolicyFactory
 from app.models.tracking import TrackingSubject, TrackingSighting
 from app.services.tracking_service import normalize_appearance_embedding
-from app.services.incident_service import create_incident_for_alert
+from app.services.incident_service import create_incident_for_alert, find_active_incident_for_embedding
 from app.schemas.notification import EventType
 
 
@@ -69,13 +69,103 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
 
         threshold = _get_threshold(zone)
 
-
         alert_created = False
         alert_id = None
         alert = None
         tracking_subject = None
+        clip_required = False
+        matched_incident = None
+        neighbourhood_id = None
+        if data.local_track_id is not None and data.appearance_embedding is not None:
+            camera_for_match_result = await db.execute(
+                select(Camera)
+                .options(joinedload(Camera.property))
+                .where(Camera.id == data.camera_id)
+            )
+            camera_for_match = camera_for_match_result.scalar_one_or_none()
 
-        if data.confidence_score >= threshold:
+            neighbourhood_id = (
+                camera_for_match.property.neighbourhood_id
+                if camera_for_match is not None and camera_for_match.property is not None
+                else None
+            )
+
+        if (
+            data.local_track_id is not None
+            and data.appearance_embedding is not None
+            and neighbourhood_id is not None
+        ):
+            candidate_embedding = normalize_appearance_embedding(data.appearance_embedding)
+
+            matched_incident = await find_active_incident_for_embedding(
+                db=db,
+                neighbourhood_id=neighbourhood_id,
+                embedding=candidate_embedding,
+                embedding_model=data.embedding_model,
+            )
+
+        if matched_incident is not None:
+            # A person already tracked by an active incident was seen
+            # again - bypasses the normal confidence threshold, since we
+            # already know who they are from a strong embedding match.
+            existing_stmt = (
+                select(Alert)
+                .where(
+                    Alert.incident_id == matched_incident.id,
+                    Alert.camera_id == data.camera_id,
+                )
+                .order_by(Alert.frame_timestamp.desc())
+                .limit(1)
+            )
+            existing_result = await db.execute(existing_stmt)
+            existing_alert = existing_result.scalar_one_or_none()
+
+            if existing_alert is not None:
+                matched_incident.last_seen_at = data.frame_timestamp
+                await db.commit()
+
+                return DetectionIngestRes(
+                    status=201,
+                    message="Detection matched an existing tracked incident",
+                    alert_created=False,
+                    alert_id=existing_alert.id,
+                    clip_required=not bool(
+                        getattr(existing_alert, "clip_s3_key", None)
+                    ),
+                )
+
+            alert = Alert(
+                camera_id=data.camera_id,
+                frame_timestamp=data.frame_timestamp,
+                detection_type=data.detection_type,
+                confidence_score=data.confidence_score,
+                thumbnail_url=data.thumbnail_url,
+                processed=True,
+                status="OPEN",
+            )
+            db.add(alert)
+            await db.flush()
+            alert_created = True
+            alert_id = alert.id
+            clip_required = True
+
+            alert.incident_id = matched_incident.id
+            alert.incident = matched_incident
+            matched_incident.last_seen_at = data.frame_timestamp
+
+            tracking_subject = matched_incident.tracking_subject
+
+            if tracking_subject is not None:
+                db.add(TrackingSighting(
+                    tracking_subject_id=tracking_subject.id,
+                    camera_id=alert.camera_id,
+                    local_track_id=data.local_track_id,
+                    observed_at=alert.frame_timestamp,
+                    sequence_no=1,
+                    match_confidence=None,
+                ))
+
+        elif data.confidence_score >= threshold:
             alert = Alert(
                 camera_id=data.camera_id,
                 frame_timestamp=data.frame_timestamp,
@@ -89,6 +179,7 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
             await db.flush()
             alert_created = True
             alert_id = alert.id
+            clip_required = True
 
             await create_incident_for_alert(db=db, alert=alert)
 
@@ -116,9 +207,6 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
 
         if alert:
             await db.refresh(alert)
-            # freshly-created alert cannot yet have an associated tracking subject
-            # set in-memory to avoid lazy-load of Alert.tracking_subkect in _build_alert_res,
-            # which fails outside an async safe context
             alert.tracking_subject = tracking_subject
             camera_result = await db.execute(
                 select(Camera)
@@ -127,7 +215,6 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
             )
             camera = camera_result.scalar_one_or_none()
             if camera:
-
                 event_type = "WEAPON_DETECTED" if data.detection_type == "WEAPON_DETECTED" else "GENERAL_DETECTION"
                 event_context = {
                     "event_type": event_type,
@@ -156,6 +243,7 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
             message=("Alert created" if alert_created else "Detection did not meet the configured confidence threshold"),
             alert_created=alert_created,
             alert_id=alert_id,
+            clip_required=clip_required,
         )
     except HTTPException as he:
         raise he
