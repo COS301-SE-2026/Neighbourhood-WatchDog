@@ -117,5 +117,49 @@ describe("useDispatchNotification", () => {
     jest.useRealTimers();
   });
 
+  test("does not connect without a neighbourhood", () => {
+    const { result } = renderHook(() =>
+      useDispatchNotification(null),
+    );
+
+    expect(MockWebSocket.instances).toHaveLength(0);
+    expect(result.current.notification).toBeNull();
+  });
+
+  test("shows a dispatch notification and ignores unrelated messages", () => {
+    const { result } = renderHook(() =>
+      useDispatchNotification(NEIGHBOURHOOD_ID),
+    );
+
+    const socket = MockWebSocket.instances[0];
+
+    expect(socket.url).toContain(
+      `/alerts/${NEIGHBOURHOOD_ID}/ws?token=test-token`,
+    );
+
+    act(() => {
+      socket.receiveRaw("invalid JSON");
+      socket.receive({ event: "alert.created" });
+      socket.receive({ event: "dispatch.notified" });
+    });
+
+    expect(result.current.notification).toBeNull();
+
+    act(() => {
+      notify(socket);
+    });
+
+    expect(result.current.notification).toMatchObject({
+      dispatchId: "dispatch-1",
+      alertId: "alert-1",
+      propertyId: "property-1",
+      neighbourhoodId: NEIGHBOURHOOD_ID,
+      detectionType: "WEAPON_DETECTED",
+      distance: 500,
+      eta: 90,
+    });
+  });
+
+
 
 });
