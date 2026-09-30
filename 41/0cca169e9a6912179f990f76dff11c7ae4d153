@@ -1,0 +1,17 @@
+tests/frontend/unit/components/shared-footage-and-dispatch.test.tsx
+  h_3555f7510a5ca8 1,129-131,195-196,198,226-227
+  h_3555f7510a5ca8 193-194,197,224-225,228
+tests/frontend/unit/components/situational-brief.test.tsx
+  h_3555f7510a5ca8 89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "410cca169e9a6912179f990f76dff11c7ae4d153",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
