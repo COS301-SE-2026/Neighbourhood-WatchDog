@@ -1644,8 +1644,6 @@ async def create_alert_for_agent_handler(
                 clip_required=True,
             )
 
-        existing_row = None
-
         # Untracked weapon detections (no local_track_id) have no identity
         # to match against, so they keep the old time-proximity grouping.
         if det_type == DetectionType.WEAPON_DETECTED and body.local_track_id is None:
