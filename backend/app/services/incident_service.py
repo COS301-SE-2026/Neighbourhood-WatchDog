@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from uuid import UUID
 
@@ -18,6 +19,8 @@ from app.schemas.alert import (
     IncidentDetailRes,
     IncidentSummaryRes,
 )
+
+logger = logging.getLogger(__name__)
 
 def _build_incident_alert_response(alert: Alert) -> AlertRes:
     from app.services.alert_service import _build_alert_res
@@ -89,10 +92,25 @@ async def find_active_incident_for_embedding(
     row = result.first()
 
     if row is None:
+        logger.info(
+            "find_active_incident_for_embedding: no active-incident candidate "
+            "in neighbourhood=%s embedding_model=%s",
+            neighbourhood_id,
+            embedding_model,
+        )
         return None
 
     incident, distance = row
     similarity = max(0.0, min(1.0, 1.0 - float(distance)))
+
+    logger.info(
+        "find_active_incident_for_embedding: best candidate incident=%s "
+        "similarity=%.4f threshold=%.4f neighbourhood=%s",
+        incident.id,
+        similarity,
+        TRACKING_MATCH_MIN_SIMILARITY,
+        neighbourhood_id,
+    )
 
     if similarity < TRACKING_MATCH_MIN_SIMILARITY:
         return None

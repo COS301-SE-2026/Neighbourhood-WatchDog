@@ -179,7 +179,7 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
             await db.flush()
             alert_created = True
             alert_id = alert.id
-            clip_required = True
+            clip_required = data.detection_type == "WEAPON_DETECTED"
 
             await create_incident_for_alert(db=db, alert=alert)
 
