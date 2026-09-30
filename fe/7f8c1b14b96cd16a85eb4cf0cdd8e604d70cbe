@@ -1,0 +1,24 @@
+backend/alembic/versions/f976555ab841_add_ended_at_and_tracking_subject_id_to_.py
+  s_fcd3b7a532f5b5::t_fc4542a4c89441 1-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "fe7f8c1b14b96cd16a85eb4cf0cdd8e604d70cbe",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_fcd3b7a532f5b5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f8e2bcee-ea7a-4cca-aae1-e5e1c6fbecbe",
+        "model": "unknown"
+      },
+      "human_author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
