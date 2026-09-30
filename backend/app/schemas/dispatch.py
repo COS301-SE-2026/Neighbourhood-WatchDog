@@ -53,5 +53,11 @@ class DispatchNotificationRes(BaseModel):
     notified_at: datetime
     expires_at: datetime | None = None #response deadline
 
+class DispatchPageRes(BaseModel):
+    total: int
+    page: int
+    size: int
+    results: list[DispatchCandidateRes]
+
 class DispatchListRes(BaseModel):
-    data: list[DispatchCandidateRes]
+    data: DispatchPageRes
