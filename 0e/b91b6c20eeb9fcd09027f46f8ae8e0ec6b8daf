@@ -1,0 +1,25 @@
+backend/app/services/dispatch_service.py
+  h_3555f7510a5ca8 614-668,670-671,677-679,1181,1187
+  h_3555f7510a5ca8 669
+frontend/src/lib/api/dispatch.ts
+  h_3555f7510a5ca8 19-21,61-63
+frontend/src/components/dispatch-components/dispatch-table.tsx
+  h_3555f7510a5ca8 45-46,48-61,65,68-69,71-72,76,103-104,106,109-110,114-115
+  h_3555f7510a5ca8 70,108
+tests/backend/unit/services/dispatch_test.py
+  h_3555f7510a5ca8 1433-1448,1450,1474-1478
+  h_3555f7510a5ca8 1449,1451-1452
+backend/app/schemas/dispatch.py
+  h_3555f7510a5ca8 15-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0eb91b6c20eeb9fcd09027f46f8ae8e0ec6b8daf",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
