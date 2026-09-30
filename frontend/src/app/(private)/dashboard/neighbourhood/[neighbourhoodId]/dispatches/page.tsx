@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   listNeighbourhoodDispatches,
-  type DispatchRecord,
+  type DispatchListFilters,
+  type DispatchPage,
 } from "@/lib/api/dispatch";
-import {
-  DispatchFilters,
-  type DispatchFiltersValue,
-} from "@/components/dispatch-components/dispatch-filters";
+import { DispatchFilters } from "@/components/dispatch-components/dispatch-filters";
 import { DispatchTable } from "@/components/dispatch-components/dispatch-table";
 
-const DEFAULT_FILTERS: DispatchFiltersValue = {
+const PAGE_SIZE = 20;
+
+const DEFAULT_FILTERS: DispatchListFilters = {
   search: "",
   status: "ALL",
   from: "",
@@ -24,85 +24,57 @@ export default function DispatchesPage() {
   const params = useParams<{ neighbourhoodId: string }>();
   const neighbourhoodId = params.neighbourhoodId;
 
-  const [dispatches, setDispatches] = useState<DispatchRecord[]>([]);
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<DispatchListFilters>(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
-  const [loadedNeighbourhoodId, setLoadedNeighbourhoodId] = useState<
-    string | null
-  >(null);
-  const loading = loadedNeighbourhoodId !== neighbourhoodId;
-  const [error, setError] = useState<string | null>(null);
-  const visibleError = loadedNeighbourhoodId === neighbourhoodId ? error : null;
+  const [pageData, setPageData] = useState<DispatchPage | null>(null);
+  const [loadedRequestKey, setLoadedRequestKey] = useState<string | null>(null);
+  const [errorState, setErrorState] = useState<{
+    key: string;
+    message: string;
+  } | null>(null);
+
+  const requestKey = JSON.stringify([
+    neighbourhoodId,
+    page,
+    PAGE_SIZE,
+    filters.status,
+    filters.search,
+    filters.from,
+    filters.to,
+    filters.sort,
+  ]);
+
+  const loading = loadedRequestKey !== requestKey;
+  const visibleError =
+    errorState?.key === requestKey ? errorState.message : null;
 
   useEffect(() => {
     let cancelled = false;
 
-    listNeighbourhoodDispatches(neighbourhoodId)
-      .then((items) => {
+    listNeighbourhoodDispatches(neighbourhoodId, page, PAGE_SIZE, filters)
+      .then((result) => {
         if (cancelled) return;
 
-        setDispatches(items);
-        setError(null);
+        setPageData(result);
+        setErrorState(null);
+        setLoadedRequestKey(requestKey);
       })
       .catch(() => {
         if (cancelled) return;
 
-        setError("Could not load dispatches.");
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoadedNeighbourhoodId(neighbourhoodId);
-        }
+        setErrorState({
+          key: requestKey,
+          message: "Could not load dispatches.",
+        });
+        setLoadedRequestKey(requestKey);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [neighbourhoodId]);
+  }, [neighbourhoodId, page, filters, requestKey]);
 
-  const filteredDispatches = useMemo(() => {
-    const search = filters.search.trim().toLowerCase();
-    const fromTime = filters.from
-      ? new Date(`${filters.from}T00:00:00`).getTime()
-      : null;
-    const toTime = filters.to
-      ? new Date(`${filters.to}T23:59:59.999`).getTime()
-      : null;
-
-    return dispatches
-      .filter((dispatch) => {
-        if (filters.status !== "ALL" && dispatch.status !== filters.status) {
-          return false;
-        }
-
-        if (search) {
-          const searchable = [
-            dispatch.alert_id,
-            dispatch.officer_id ?? "",
-            dispatch.triggering_sighting_id ?? "",
-          ]
-            .join(" ")
-            .toLowerCase();
-
-          if (!searchable.includes(search)) return false;
-        }
-
-        const createdAt = new Date(dispatch.created_at).getTime();
-
-        if (fromTime !== null && createdAt < fromTime) return false;
-        if (toTime !== null && createdAt > toTime) return false;
-
-        return true;
-      })
-      .sort((a, b) => {
-        const difference =
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-
-        return filters.sort === "NEWEST" ? -difference : difference;
-      });
-  }, [dispatches, filters]);
-
-  function handleFiltersChange(nextFilters: DispatchFiltersValue) {
+  function handleFiltersChange(nextFilters: DispatchListFilters) {
     setFilters(nextFilters);
     setPage(1);
   }
@@ -133,10 +105,12 @@ export default function DispatchesPage() {
         </p>
       )}
 
-      {!loading && !error && (
+      {!loading && !visibleError && (
         <DispatchTable
-          dispatches={filteredDispatches}
+          dispatches={pageData?.results ?? []}
+          total={pageData?.total ?? 0}
           page={page}
+          size={PAGE_SIZE}
           loading={loading}
           onPageChange={setPage}
         />
