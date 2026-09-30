@@ -1,0 +1,29 @@
+tests/frontend/components/AlertCard.test.ts
+  h_cf6208e37032c0 224
+ai/main.py
+  h_cf6208e37032c0 27-28
+  s_fcd3b7a532f5b5::t_0fe697e36fe40a 29
+backend/app/services/alert_service.py
+  h_cf6208e37032c0 1554,1558
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "af18f5e9ec0e6548a17305f733c6569cf27b7366",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_fcd3b7a532f5b5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f8e2bcee-ea7a-4cca-aae1-e5e1c6fbecbe",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
