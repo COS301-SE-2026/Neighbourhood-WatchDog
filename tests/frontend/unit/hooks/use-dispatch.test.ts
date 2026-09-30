@@ -211,4 +211,68 @@ describe("useDispatchNotification", () => {
     expect(result.current.notification).toBeNull();
     expect(toast.error).not.toHaveBeenCalled();
   });
+
+  test("shows a toast when responding fails", async () => {
+    mockRespond.mockRejectedValue(new Error("Network failed"));
+
+    const { result } = renderHook(() =>
+      useDispatchNotification(NEIGHBOURHOOD_ID),
+    );
+
+    act(() => {
+      notify(MockWebSocket.instances[0]);
+    });
+
+    await act(async () => {
+      expect(await result.current.decline()).toBe(false);
+    });
+
+    expect(toast.error).toHaveBeenCalledWith(
+      "Failed to respond to dispatch",
+      { description: "Network failed" },
+    );
+    expect(result.current.outcome).toBe("EXPIRED");
+  });
+
+  test("expires a notification when its deadline passes", () => {
+    jest.useFakeTimers();
+
+    const { result } = renderHook(() =>
+      useDispatchNotification(NEIGHBOURHOOD_ID),
+    );
+
+    act(() => {
+      notify(MockWebSocket.instances[0], {
+        expires_at: new Date(Date.now() + 5_000).toISOString(),
+      });
+    });
+
+    expect(result.current.notification).not.toBeNull();
+
+    act(() => {
+      jest.advanceTimersByTime(5_000);
+    });
+
+    expect(result.current.notification).toBeNull();
+    expect(result.current.outcome).toBe("EXPIRED");
+  });
+
+  test("reconnects after the socket closes", () => {
+    jest.useFakeTimers();
+
+    const { unmount } = renderHook(() =>
+      useDispatchNotification(NEIGHBOURHOOD_ID),
+    );
+
+    act(() => {
+      MockWebSocket.instances[0].disconnect();
+      jest.advanceTimersByTime(1_000);
+    });
+
+    expect(MockWebSocket.instances).toHaveLength(2);
+
+    unmount();
+    expect(MockWebSocket.instances[1].close).toHaveBeenCalled();
+  });
+
 });
