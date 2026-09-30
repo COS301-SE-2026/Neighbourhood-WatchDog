@@ -1,0 +1,16 @@
+backend/app/services/detection_service.py
+  h_cf6208e37032c0 96,100
+frontend/src/components/shared/AlertCard.tsx
+  h_cf6208e37032c0 715
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7b8c7d3173097de1915d7d67f2e7361cd45d2eb0",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
