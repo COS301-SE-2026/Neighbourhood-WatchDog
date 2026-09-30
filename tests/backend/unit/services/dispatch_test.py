@@ -42,6 +42,7 @@ from app.services.dispatch_service import (
     _fetch_engaged_officer_ids,
     _load_sighting_context,
     dispatch_alert_for_sighting,
+    list_neighbourhood_dispatches_handler,
 )
 
 SIGHTING_ID = uuid4()
@@ -1408,3 +1409,143 @@ class TestDispatchAlertForSighting:
         else:
             assert "tracking_sighting" in sql
             assert sighting_id in params
+
+class TestListNeighbourhoodDispatchesHandler:
+    @pytest.mark.asyncio
+    async def test_returns_requested_page_and_total(self):
+        first_row = make_dispatch_row(
+            DispatchStatus.ACCEPTED,
+            officer_id=uuid4(),
+            rank=1,
+        )
+        second_row = make_dispatch_row(
+            DispatchStatus.DECLINED,
+            officer_id=uuid4(),
+            rank=2,
+        )
+
+        count_result = MagicMock()
+        count_result.scalar_one.return_value = 21
+
+        rows_result = make_scalars_result([first_row, second_row])
+
+        db = AsyncMock()
+        db.execute = AsyncMock(side_effect=[count_result, rows_result])
+
+        res = await list_neighbourhood_dispatches_handler(
+            neighbourhood_id=NEIGHBOURHOOD_ID,
+            db=db,
+            claims=CLAIMS,
+            page=3,
+            size=10,
+            status=None,
+            search_term=None,
+            start_date=None,
+            end_date=None,
+            sort_order="DESC",
+        )
+
+        assert res.data.total == 21
+        assert res.data.page == 3
+        assert res.data.size == 10
+        assert [item.id for item in res.data.results] == [
+            first_row.id,
+            second_row.id,
+        ]
+        assert db.execute.await_count == 2
+
+        page_query = db.execute.await_args_list[1].args[0]
+        sql = compiled_sql(page_query).upper()
+        params = compiled_params(page_query)
+
+        assert "LIMIT" in sql
+        assert "OFFSET" in sql
+        assert "DESC" in sql
+        assert 10 in params.values()
+        assert 20 in params.values()
+
+    @pytest.mark.asyncio
+    async def test_applies_neighbourhood_status_and_date_filters(self):
+        start_date = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        end_date = datetime(2026, 1, 31, 23, 59, tzinfo=timezone.utc)
+
+        count_result = MagicMock()
+        count_result.scalar_one.return_value = 0
+        rows_result = make_scalars_result([])
+
+        db = AsyncMock()
+        db.execute = AsyncMock(side_effect=[count_result, rows_result])
+        res = await list_neighbourhood_dispatches_handler(
+            neighbourhood_id=NEIGHBOURHOOD_ID,
+            db=db,
+            claims=CLAIMS,
+            page=1,
+            size=20,
+            status=DispatchStatus.ACCEPTED,
+            search_term=None,
+            start_date=start_date,
+            end_date=end_date,
+            sort_order="DESC",
+        )
+
+        assert res.data.total == 0
+        assert res.data.results == []
+
+        page_query = db.execute.await_args_list[1].args[0]
+        params = compiled_params(page_query)
+
+        assert NEIGHBOURHOOD_ID in params.values()
+        assert DispatchStatus.ACCEPTED in params.values()
+        assert start_date in params.values()
+        assert end_date in params.values()
+
+    @pytest.mark.asyncio
+    async def test_applies_search_to_alert_officer_and_sighting_ids(self):
+        count_result = MagicMock()
+        count_result.scalar_one.return_value = 0
+        rows_result = make_scalars_result([])
+
+        db = AsyncMock()
+        db.execute = AsyncMock(side_effect=[count_result, rows_result])
+        await list_neighbourhood_dispatches_handler(
+            neighbourhood_id=NEIGHBOURHOOD_ID,
+            db=db,
+            claims=CLAIMS,
+            page=1,
+            size=20,
+            status=None,
+            search_term="abc123",
+            start_date=None,
+            end_date=None,
+            sort_order="DESC",
+        )
+
+        page_query = db.execute.await_args_list[1].args[0]
+        sql = compiled_sql(page_query).upper()
+        params = compiled_params(page_query)
+
+        assert "ILIKE" in sql
+        assert "%abc123%" in params.values()
+        assert "TRIGGERING_SIGHTING_ID" in sql
+        assert "OFFICER_ID" in sql
+        assert "ALERT_ID" in sql
+
+    @pytest.mark.asyncio
+    async def test_rejects_missing_claims(self):
+        db = AsyncMock()
+        with pytest.raises(HTTPException) as exc_info:
+            await list_neighbourhood_dispatches_handler(
+                neighbourhood_id=NEIGHBOURHOOD_ID,
+                db=db,
+                claims={},
+                page=1,
+                size=20,
+                status=None,
+                search_term=None,
+                start_date=None,
+                end_date=None,
+                sort_order="DESC",
+            )
+
+        assert exc_info.value.status_code == 401
+        db.execute.assert_not_awaited()
