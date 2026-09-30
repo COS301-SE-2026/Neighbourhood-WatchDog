@@ -93,4 +93,83 @@ describe("useClip", () => {
     expect(mockApiFetch).toHaveBeenCalledTimes(1);
   });
 
+  test("shows a generic error for a network failure", async () => {
+    mockApiFetch.mockRejectedValue(new Error("Network failed"));
+    const { result } = renderHook(() => useClip("alert-1"));
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("error");
+    });
+
+    expect(result.current.errorMessage).toBe("Failed to load footage");
+  });
+
+  test("retries a processing clip and then displays it", async () => {
+    jest.useFakeTimers();
+    mockApiFetch
+      .mockRejectedValueOnce(new ApiError("Processing", 404))
+      .mockResolvedValueOnce(readyClip);
+
+    const { result } = renderHook(() => useClip("alert-1"));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.status).toBe("processing");
+
+    await act(async () => {
+      jest.advanceTimersByTime(5_000);
+      await Promise.resolve();
+    });
+
+    expect(mockApiFetch).toHaveBeenCalledTimes(2);
+    expect(result.current.status).toBe("ready");
+    expect(result.current.url).toBe(readyClip.url);
+  });
+
+  test("stops after ten processing responses", async () => {
+    jest.useFakeTimers();
+    mockApiFetch.mockRejectedValue(new ApiError("Processing", 404));
+
+    const { result } = renderHook(() => useClip("alert-1"));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    for (let attempt = 1; attempt < 10; attempt += 1) {
+      await act(async () => {
+        jest.advanceTimersByTime(5_000);
+        await Promise.resolve();
+      });
+    }
+
+    expect(mockApiFetch).toHaveBeenCalledTimes(10);
+    expect(result.current.status).toBe("unavailable");
+    expect(result.current.errorMessage).toBe(
+      "Footage was not available after processing.",
+    );
+  });
+
+  test("cancels a scheduled retry on unmount", async () => {
+    jest.useFakeTimers();
+    mockApiFetch.mockRejectedValue(new ApiError("Processing", 404));
+
+    const { unmount } = renderHook(() => useClip("alert-1"));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    unmount();
+
+    await act(async () => {
+      jest.advanceTimersByTime(5_000);
+    });
+
+    expect(mockApiFetch).toHaveBeenCalledTimes(1);
+  });
+
+
 });
