@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from app.models.dispatch import DispatchStatus
 from app.models.security_officer import AvailabilityStatus
-from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, DispatchNotificationRes, RespondDispatchReq, RespondDispatchRes
+from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, DispatchNotificationRes, RespondDispatchReq, RespondDispatchRes, DispatchListRes, DispatchPageRes
 
 NOW = datetime(2026, 1, 1, tzinfo=timezone.utc)
 
@@ -208,3 +208,43 @@ class TestDispatchNotificationRes:
         notif = self.make_notifcation(dispatch_id="not-a-uuid")
         with pytest.raises(ValidationError):
             DispatchNotificationRes(**notif)
+
+class TestDispatchPagination:
+    def test_dispatch_page_response(self):
+        candidate = DispatchCandidateRes(**make_candidate())
+        page = DispatchPageRes(
+            total=41,
+            page=2,
+            size=20,
+            results=[candidate],
+        )
+
+        assert page.total == 41
+        assert page.page == 2
+        assert page.size == 20
+        assert page.results == [candidate]
+
+    def test_dispatch_list_response_wraps_page(self):
+        candidate = DispatchCandidateRes(**make_candidate())
+        page = DispatchPageRes(
+            total=1,
+            page=1,
+            size=20,
+            results=[candidate],
+        )
+        res = DispatchListRes(data=page)
+
+        assert res.data == page
+        assert res.data.results == [candidate]
+
+    def test_dispatch_page_requires_pagination_fields(self):
+        with pytest.raises(ValidationError):
+            DispatchPageRes(
+                page=1,
+                size=20,
+                results=[],
+            )
+
+    def test_dispatch_list_response_rejects_unpaginated_data(self):
+        with pytest.raises(ValidationError):
+            DispatchListRes(data=[])
