@@ -12,6 +12,8 @@ from app.schemas.detection import DetectionIngestReq, DetectionIngestRes
 from app.services.alert_service import _build_alert_res
 from app.services.dispatch_service import dispatch_alert
 from app.services.notifications.factory import NotificationPolicyFactory
+from app.models.tracking import TrackingSubject, TrackingSighting
+from app.services.tracking_service import normalize_appearance_embedding
 from app.schemas.notification import EventType
 
 
@@ -24,7 +26,8 @@ SENSITIVITY_THRESHOLDS: dict[str, float] = {
     "CRITICAL": 0.35,
 }
 
-DEFAULT_THRESHOLD = 0.65
+DEFAULT_THRESHOLD = 0.30
+
 VALID_DETECTIONS = {
     "HUMAN_PRESENCE",
     "LOITERING",
@@ -69,6 +72,7 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
         alert_created = False
         alert_id = None
         alert = None
+        tracking_subject = None
 
         if data.confidence_score >= threshold:
             alert = Alert(
@@ -85,6 +89,26 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
             alert_created = True
             alert_id = alert.id
 
+            if data.local_track_id is not None:
+                reference_embedding = normalize_appearance_embedding(data.appearance_embedding)
+
+                tracking_subject = TrackingSubject(
+                    alert_id=alert.id,
+                    reference_embedding=reference_embedding,
+                    embedding_model=data.embedding_model,
+                )
+                db.add(tracking_subject)
+                await db.flush()
+
+                db.add(TrackingSighting(
+                    tracking_subject_id=tracking_subject.id,
+                    camera_id=alert.camera_id,
+                    local_track_id=data.local_track_id,
+                    observed_at=alert.frame_timestamp,
+                    sequence_no=1,
+                    match_confidence=None,
+                ))
+
         await db.commit()
 
         if alert:
@@ -92,7 +116,7 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
             # freshly-created alert cannot yet have an associated tracking subject
             # set in-memory to avoid lazy-load of Alert.tracking_subkect in _build_alert_res,
             # which fails outside an async safe context
-            alert.tracking_subject = None
+            alert.tracking_subject = tracking_subject
             camera_result = await db.execute(
                 select(Camera)
                 .options(joinedload(Camera.property))

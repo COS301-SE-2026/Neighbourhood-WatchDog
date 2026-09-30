@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, Field
 
 class DetectionIngestReq(BaseModel):
     camera_id: UUID
@@ -10,6 +10,11 @@ class DetectionIngestReq(BaseModel):
     confidence_score: float
     thumbnail_url: str | None = None
     zone_id: UUID | None = None
+    local_track_id: int | None = None
+    appearance_embedding: list[float] | None = Field(
+        default=None, min_length=1280, max_length=1280
+    )
+    embedding_model: str | None = Field(default=None, min_length=1, max_length=128)
 
     @field_validator("confidence_score")
     @classmethod

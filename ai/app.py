@@ -184,7 +184,7 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
         logger.warning("Could not push annotations for camera %s: %s", camera_id, error)
 
 
-def _post_detection_event(camera: CameraSpec, event: dict) -> None:
+def _post_detection_event(camera: CameraSpec, event: dict, appearance_embedding: list[float] | None = None) -> None:
     """ send one edge-triggered classified event to the backend."""
 
     api_key = _get_internal_api_key()
@@ -197,7 +197,10 @@ def _post_detection_event(camera: CameraSpec, event: dict) -> None:
         "frame_timestamp": datetime.now(timezone.utc).isoformat(),
         "detection_type": event["detection_type"],
         "confidence_score": float(event["confidence"]),
-        "zone_id": event.get("zone_id")
+        "zone_id": event.get("zone_id"),
+        "local_track_id": event.get("track_id"),
+        "appearance_embedding": appearance_embedding,
+        "embedding_model": APPEARANCE_EMBEDDING_MODEL if appearance_embedding is not None else None
     }
 
     try:
@@ -1019,7 +1022,13 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
             )
 
             for event in result.events:
-                _post_detection_event(camera, event)
+                local_track_id = event.get("track_id")
+                appearance_embedding = (
+                    result.appearance_embeddings.get(local_track_id)
+                    if local_track_id is not None
+                    else None
+                )
+                _post_detection_event(camera, event, appearance_embedding)
 
                 if event["detection_type"] != "WEAPON_DETECTED":
                     continue

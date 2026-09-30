@@ -2,7 +2,7 @@ name: Deploy to Production AWS
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "fix/cross-cam" ]
 
 concurrency:
   group: production-deploy
