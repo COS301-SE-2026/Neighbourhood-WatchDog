@@ -4,7 +4,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Query
 
-from app.auth.authorization import Claims
+from app.auth.authorization import Claims, NeighbourhoodAdminClaims
 from app.core.database import DbSession
 from app.schemas.dispatch import AlertDispatchRes, RespondDispatchRes, RespondDispatchReq, DispatchListRes
 from app.services.dispatch_service import get_alert_dispatch_handler, respond_to_dispatch_handler, list_neighbourhood_dispatches_handler
@@ -45,7 +45,7 @@ async def get_alert_dispatch(
 async def list_neighbourhood_dispatches(
     neighbourhood_id: UUID,
     db: DbSession,
-    claims: Claims,
+    claims: NeighbourhoodAdminClaims,
     page: Annotated[int, Query(ge=1)] = 1,
     size: Annotated[int, Query(ge=1, le=100)] = 20,
     status: DispatchStatus | None = None,
