@@ -900,8 +900,8 @@ def _respond_db(*, officer, dispatch, extra=()):
     mock_db.add = Mock()
     mock_db.execute = AsyncMock(
         side_effect=[
-            make_scalar_result(officer),
             make_scalar_result(dispatch),
+            make_scalar_result(officer),
             *extra,
         ]
     )

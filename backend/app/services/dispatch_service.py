@@ -359,14 +359,20 @@ async def get_dispatch_viewer_ids(
     )
     return [str(user_id) for user_id in result.scalars().all()]
 
-async def resolve_officer(db: DbSession, claims: Claims) -> SecurityOfficer:
-    result = await db.execute(
+async def resolve_officer(
+    db: DbSession, claims: Claims, officer_id: UUID | None = None
+) -> SecurityOfficer:
+    query = (
         select(SecurityOfficer)
         .join(NeighbourhoodUser, NeighbourhoodUser.id == SecurityOfficer.neighbourhood_user_id)
         .join(User, User.id == NeighbourhoodUser.user_id)
         .where(User.cognito_sub == claims["sub"])
     )
-    officer = result.scalar_one_or_none()
+
+    if officer_id is not None:
+        query = query.where(SecurityOfficer.id == officer_id)
+
+    officer = (await db.execute(query)).scalar_one_or_none()
 
     if officer is None:
         raise HTTPException(403, "Not authorised: no security officer profile for this account")
@@ -853,14 +859,17 @@ async def respond_to_dispatch_handler(
     if not claims:
         raise HTTPException(401, "Not authenticated")
 
-    officer = await resolve_officer(db, claims)
-
     result = await db.execute(
         select(Dispatch).where(Dispatch.id == dispatch_id).with_for_update()
     )
     dispatch = result.scalar_one_or_none()
     if dispatch is None:
         raise HTTPException(404, "Dispatch request not found")
+
+    if dispatch.officer_id is None:
+        raise HTTPException(404, "Dispatch request not found")
+
+    officer = await resolve_officer(db, claims, officer_id=dispatch.officer_id)
 
     if dispatch.officer_id != officer.id:
         raise HTTPException(403, "This dispatch request was not sent to you")
