@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from uuid import UUID
 
@@ -12,11 +13,14 @@ from app.models.incident import Incident
 from app.models.neighbourhood_user import NeighbourhoodRole
 from app.models.property import Property
 from app.models.property_user import PropertyUser
+from app.models.tracking import TrackingSubject
 from app.schemas.alert import (
     AlertRes,
     IncidentDetailRes,
     IncidentSummaryRes,
 )
+
+logger = logging.getLogger(__name__)
 
 def _build_incident_alert_response(alert: Alert) -> AlertRes:
     from app.services.alert_service import _build_alert_res
@@ -27,6 +31,7 @@ async def create_incident_for_alert(
     *,
     db: AsyncSession,
     alert: Alert,
+    tracking_subject_id: UUID | None = None,
 ) -> Incident:
     """Create a new Incident and attach the supplied Alert to it."""
 
@@ -38,6 +43,7 @@ async def create_incident_for_alert(
         ),
         started_at=alert.frame_timestamp,
         last_seen_at=alert.frame_timestamp,
+        tracking_subject_id=tracking_subject_id,
     )
 
     db.add(incident)
@@ -48,7 +54,101 @@ async def create_incident_for_alert(
 
     return incident
 
+async def find_active_incident_for_embedding(
+    *,
+    db: AsyncSession,
+    neighbourhood_id: UUID,
+    embedding: list[float],
+    embedding_model: str,
+) -> Incident | None:
+    """
+    Find the active (not yet ended) incident whose tracked person best matches
+    the given appearance embedding."""
+    from app.services.tracking_service import TRACKING_MATCH_MIN_SIMILARITY
 
+    cosine_distance = (
+        TrackingSubject.reference_embedding.cosine_distance(embedding)
+        .label("cosine_distance")
+    )
+
+    stmt = (
+        select(Incident, cosine_distance)
+        .join(TrackingSubject, TrackingSubject.id == Incident.tracking_subject_id)
+        .join(Alert, Alert.id == TrackingSubject.alert_id)
+        .join(Camera, Camera.id == Alert.camera_id)
+        .join(Property, Property.id == Camera.property_id)
+        .options(joinedload(Incident.tracking_subject))
+        .where(
+            Incident.ended_at.is_(None),
+            TrackingSubject.reference_embedding.is_not(None),
+            TrackingSubject.embedding_model == embedding_model,
+            Property.neighbourhood_id == neighbourhood_id,
+        )
+        .order_by(cosine_distance.asc())
+        .limit(1)
+    )
+
+    result = await db.execute(stmt)
+    row = result.first()
+
+    if row is None:
+        logger.info(
+            "find_active_incident_for_embedding: no active-incident candidate "
+            "in neighbourhood=%s embedding_model=%s",
+            neighbourhood_id,
+            embedding_model,
+        )
+        return None
+
+    incident, distance = row
+    similarity = max(0.0, min(1.0, 1.0 - float(distance)))
+
+    logger.info(
+        "find_active_incident_for_embedding: best candidate incident=%s "
+        "similarity=%.4f threshold=%.4f neighbourhood=%s",
+        incident.id,
+        similarity,
+        TRACKING_MATCH_MIN_SIMILARITY,
+        neighbourhood_id,
+    )
+
+    if similarity < TRACKING_MATCH_MIN_SIMILARITY:
+        return None
+
+    return incident
+
+async def end_incident_if_representative(
+    *,
+    db: AsyncSession,
+    alert: Alert,
+    ended_at: datetime,
+) -> None:
+    """
+    Mark an incident as ended once its representative (most recently seen) alert is resolved
+    or dismissed. If a newer alert on the same incident is still open it stays active."""
+    if alert.incident_id is None:
+        return
+
+    incident = await db.get(Incident, alert.incident_id)
+
+    if incident is None or incident.ended_at is not None:
+        return
+
+    latest_result = await db.execute(
+        select(func.max(Alert.frame_timestamp))
+        .where(Alert.incident_id == incident.id)
+    )
+    latest_frame_timestamp = latest_result.scalar_one_or_none()
+
+    if (
+        latest_frame_timestamp is not None
+        and alert.frame_timestamp < latest_frame_timestamp
+    ):
+        return
+
+    incident.ended_at = ended_at
+
+    
 async def ensure_incident_for_alert(
     *,
     db: AsyncSession,
@@ -110,7 +210,8 @@ def _summary_for_incident(incident: Incident) -> IncidentSummaryRes:
         last_seen_at=incident.last_seen_at,
         alert_count=len(alerts),
         representative_alert_id=representative.id,
-        representative_alert=_build_incident_alert_response(representative)
+        representative_alert=_build_incident_alert_response(representative),
+        tracking_subject_id=incident.tracking_subject_id,
     )
 
 
@@ -127,6 +228,7 @@ def _detail_for_incident(incident: Incident) -> IncidentDetailRes:
             _build_incident_alert_response(alert)
             for alert in alerts
         ],
+        tracking_subject_id=incident.tracking_subject_id,
     )
 
 

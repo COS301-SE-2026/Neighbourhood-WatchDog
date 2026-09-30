@@ -63,6 +63,8 @@ from app.models.incident import Incident
 from app.services.incident_service import (
     create_incident_for_alert,
     ensure_incident_for_alert,
+    end_incident_if_representative,
+    find_active_incident_for_embedding
 )
 
 logger = logging.getLogger(__name__)
@@ -670,6 +672,12 @@ async def update_alert_status_handler(
             # A dismissed alert was not resolved.
             alert.resolved_by = None
             alert.resolved_at = None
+
+        await end_incident_if_representative(
+            db=db,
+            alert=alert,
+            ended_at=now,
+        )
 
         await create_audit_log_item(
             db=db,
@@ -1527,43 +1535,120 @@ async def create_alert_for_agent_handler(
 
         _validate_tracking_payload(body, det_type)
 
-        existing_row = None
+        neighbourhood_id = (
+            camera.property.neighbourhood_id
+            if camera.property is not None
+            else None
+        )
 
-        #for tracked weapon detections, reuse an existing alert when the same local track is already attached to an open alert.
-        if (det_type == DetectionType.WEAPON_DETECTED and body.local_track_id is not None):
-           
+        matched_incident = None
+
+        # For tracked weapon detections, try to match against a person
+        # already being tracked by an active incident before falling back
+        # to the old time-window grouping (which only applies to
+        # untracked detections, where there's no identity to compare).
+        if (
+            det_type == DetectionType.WEAPON_DETECTED
+            and body.local_track_id is not None
+            and body.appearance_embedding is not None
+            and body.embedding_model is not None
+            and neighbourhood_id is not None
+        ):
+            candidate_embedding = normalize_appearance_embedding(body.appearance_embedding)
+            assert candidate_embedding is not None
+
+            matched_incident = await find_active_incident_for_embedding(
+                db=db,
+                neighbourhood_id=neighbourhood_id,
+                embedding=candidate_embedding,
+                embedding_model=body.embedding_model,
+            )
+
+        if matched_incident is not None:
+            # Same tracked person, same camera, still within this incident:
+            # reuse the alert already recorded for this camera instead of
+            # spamming a new one every frame.
             existing_stmt = (
-                select(Alert, TrackingSubject, TrackingSighting)
-                .join(TrackingSubject, TrackingSubject.alert_id == Alert.id)
-                .join(TrackingSighting, TrackingSighting.tracking_subject_id == TrackingSubject.id)
+                select(Alert)
                 .where(
+                    Alert.incident_id == matched_incident.id,
                     Alert.camera_id == camera_id,
-                    Alert.detection_type == DetectionType.WEAPON_DETECTED,
-                    Alert.status == AlertStatus.OPEN.value,
-                    TrackingSighting.camera_id == camera_id,
-                    TrackingSighting.local_track_id == body.local_track_id
                 )
                 .order_by(Alert.frame_timestamp.desc())
                 .limit(1)
             )
-
             existing_result = await db.execute(existing_stmt)
-            existing_row = existing_result.first()
+            existing_alert = existing_result.scalar_one_or_none()
 
-        if existing_row is not None:
-            existing_alert, _, existing_sighting = existing_row
+            if existing_alert is not None:
+                matched_incident.last_seen_at = frame_timestamp
+                await db.commit()
 
-            return InternalAlertCreateRes(
-                alert_id=existing_alert.id,
-                sighting_id=existing_sighting.id,
-                is_new_alert=False,
-                clip_required=not bool(
-                    getattr(existing_alert, "clip_s3_key", None)
-                ),
+                return InternalAlertCreateRes(
+                    alert_id=existing_alert.id,
+                    sighting_id=None,
+                    is_new_alert=False,
+                    clip_required=not bool(
+                        getattr(existing_alert, "clip_s3_key", None)
+                    ),
+                )
+
+            # New camera for this incident's tracked person: create a new
+            # alert, attached to the existing incident and tracking subject.
+            alert = Alert(
+                camera_id=camera_id,
+                frame_timestamp=frame_timestamp,
+                detection_type=det_type,
+                confidence_score=body.confidence_score,
+                thumbnail_url=body.thumbnail_url,
+                processed=True,
+                status=AlertStatus.OPEN.value,
+            )
+            db.add(alert)
+            await db.flush()
+
+            alert.incident_id = matched_incident.id
+            alert.incident = matched_incident
+            matched_incident.last_seen_at = frame_timestamp
+
+            tracking_subject = matched_incident.tracking_subject
+            initial_sighting = None
+
+            if tracking_subject is not None:
+                initial_sighting = TrackingSighting(
+                    tracking_subject_id=tracking_subject.id,
+                    camera_id=alert.camera_id,
+                    local_track_id=body.local_track_id,
+                    observed_at=alert.frame_timestamp,
+                    sequence_no=1,
+                    match_confidence=None,
+                )
+                db.add(initial_sighting)
+
+            await db.commit()
+            await db.refresh(alert)
+            alert.tracking_subject = tracking_subject
+
+            logger.info(
+                "Attached new weapon alert alert_id=%s to existing "
+                "tracked incident_id=%s for camera_id=%s",
+                alert.id,
+                matched_incident.id,
+                camera_id,
             )
 
-        ###group weapon detections from the same camera into the same open incident within the configured time window.
-        if det_type == DetectionType.WEAPON_DETECTED:
+            return InternalAlertCreateRes(
+                alert_id=alert.id,
+                sighting_id=(
+                    initial_sighting.id if initial_sighting is not None else None
+                ),
+                is_new_alert=True,
+                clip_required=True,
+            )
+
+        # Untracked weapon detections (no local_track_id) have no identity
+        # to match against, so they keep the old time-proximity grouping.
+        if det_type == DetectionType.WEAPON_DETECTED and body.local_track_id is None:
             await _lock_weapon_incident_key(
                 db=db,
                 camera_id=camera_id,
@@ -1573,15 +1658,13 @@ async def create_alert_for_agent_handler(
                 db=db,
                 camera_id=camera_id,
                 frame_timestamp=frame_timestamp,
-                local_track_id=body.local_track_id,
+                local_track_id=None,
             )
 
             if recent_weapon_alert is not None:
-
                 incident = await ensure_incident_for_alert(
                     db=db,
-                    alert=recent_weapon_alert
-
+                    alert=recent_weapon_alert,
                 )
 
                 if frame_timestamp > incident.last_seen_at:
@@ -1590,11 +1673,10 @@ async def create_alert_for_agent_handler(
                 await db.commit()
 
                 logger.info(
-                    "Reusing recent weapon incident alert_id=%s "
+                    "Reusing recent untracked weapon incident alert_id=%s "
                     "for camera_id=%s",
                     recent_weapon_alert.id,
-                    camera_id
-
+                    camera_id,
                 )
 
                 return InternalAlertCreateRes(
@@ -1619,23 +1701,18 @@ async def create_alert_for_agent_handler(
         db.add(alert)
         await db.flush()
 
-        incident = await create_incident_for_alert(
-            db=db,
-            alert=alert,
-        )
-
         tracking_subject = None
         initial_sighting = None
 
-        ## track less weapon detections are valid. They create an alert  but deliberately do not create tracking rows.
+        # Trackless weapon detections are valid. They create an alert but
+        # deliberately do not create tracking rows.
         if body.local_track_id is not None:
             reference_embedding = normalize_appearance_embedding(body.appearance_embedding)
 
             tracking_subject = TrackingSubject(
                 alert_id=alert.id,
                 reference_embedding=reference_embedding,
-                embedding_model=body.embedding_model
-
+                embedding_model=body.embedding_model,
             )
 
             db.add(tracking_subject)
@@ -1647,22 +1724,23 @@ async def create_alert_for_agent_handler(
                 local_track_id=body.local_track_id,
                 observed_at=alert.frame_timestamp,
                 sequence_no=1,
-                match_confidence=None
-                
+                match_confidence=None,
             )
 
             db.add(initial_sighting)
+
+        incident = await create_incident_for_alert(
+            db=db,
+            alert=alert,
+            tracking_subject_id=(
+                tracking_subject.id if tracking_subject is not None else None
+            ),
+        )
 
         await db.commit()
         await db.refresh(alert)
 
         alert.tracking_subject = tracking_subject
-
-        neighbourhood_id = (
-            camera.property.neighbourhood_id
-            if camera.property is not None
-            else None
-        )
 
         if neighbourhood_id is not None:
             if alert.detection_type == DetectionType.WEAPON_DETECTED:

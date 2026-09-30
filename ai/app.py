@@ -33,6 +33,11 @@ class IncidentClipTarget:
     sighting_id: str | None
     clip_owner: str #clip owner will be alert/sighting/none
 
+@dataclass(frozen=True)
+class DetectionPostResult:
+    alert_id: str | None
+    clip_required: bool
+
 RESOURCE_DIR = get_resource_dir()
 
 load_dotenv(RESOURCE_DIR / ".env")
@@ -184,20 +189,23 @@ def _push_annotations(backend_url: str, camera_id: str, tracks: list, timestamp:
         logger.warning("Could not push annotations for camera %s: %s", camera_id, error)
 
 
-def _post_detection_event(camera: CameraSpec, event: dict) -> None:
+def _post_detection_event(camera: CameraSpec, event: dict, appearance_embedding: list[float] | None = None) -> DetectionPostResult | None:
     """ send one edge-triggered classified event to the backend."""
 
     api_key = _get_internal_api_key()
     if not api_key:
         logger.warning("Cannot post detection event for camera %s: no paired API key", camera.id)
-        return
+        return None
 
     payload = {
         "camera_id": camera.id,
         "frame_timestamp": datetime.now(timezone.utc).isoformat(),
         "detection_type": event["detection_type"],
         "confidence_score": float(event["confidence"]),
-        "zone_id": event.get("zone_id")
+        "zone_id": event.get("zone_id"),
+        "local_track_id": event.get("track_id"),
+        "appearance_embedding": appearance_embedding,
+        "embedding_model": APPEARANCE_EMBEDDING_MODEL if appearance_embedding is not None else None
     }
 
     try:
@@ -210,11 +218,19 @@ def _post_detection_event(camera: CameraSpec, event: dict) -> None:
 
         response.raise_for_status()
 
+        body = response.json()
+        return DetectionPostResult(
+            alert_id=body.get("alert_id"),
+            clip_required=bool(body.get("clip_required")),
+        )
+
     except httpx.RequestError as error:
         logger.warning(
             "Could not post detection event for camera %s: %s", camera.id, error)
     except httpx.HTTPStatusError as error:
         logger.warning("Backend rejected detection event for camera %s: %s", camera.id, error.response.status_code)
+
+    return None
 
 
 
@@ -403,7 +419,7 @@ def _record_tracking_sighting(camera: CameraSpec, local_track_id: int | None, ob
         return IncidentClipTarget(
             alert_id=str(alert_id),
             sighting_id=str(sighting_id),
-            clip_owner="sighting"
+            clip_owner="alert"
 
         )
 
@@ -1019,10 +1035,35 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
             )
 
             for event in result.events:
-                _post_detection_event(camera, event)
+                local_track_id = event.get("track_id")
+                appearance_embedding = (
+                    result.appearance_embeddings.get(local_track_id)
+                    if local_track_id is not None
+                    else None
+                )
 
                 if event["detection_type"] != "WEAPON_DETECTED":
+                    post_result = _post_detection_event(camera, event, appearance_embedding)
+
+                    if post_result is not None and post_result.clip_required and post_result.alert_id:
+                        _schedule_weapon_clip(
+                            camera=camera,
+                            frame_buffer=annotated_frames,
+                            trigger_sequence=trigger_sequence,
+                            weapon_label=event["detection_type"],
+                            confidence=float(event["confidence"]),
+                            local_track_id=local_track_id,
+                            stop_event=stop_event,
+                            appearance_embedding=appearance_embedding,
+                            target=IncidentClipTarget(
+                                alert_id=post_result.alert_id,
+                                sighting_id=None,
+                                clip_owner="alert",
+                            ),
+                        )
+
                     continue
+
 
                 local_track_id = event.get("track_id")
 

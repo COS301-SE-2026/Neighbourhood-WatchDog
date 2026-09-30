@@ -330,6 +330,7 @@ class IncidentSummaryRes(BaseModel):
     alert_count: int
     representative_alert_id: UUID
     representative_alert: AlertRes
+    tracking_subject_id: UUID | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -341,6 +342,7 @@ class IncidentDetailRes(BaseModel):
     last_seen_at: datetime
     alert_count: int
     alerts: list[AlertRes]
+    tracking_subject_id: UUID | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

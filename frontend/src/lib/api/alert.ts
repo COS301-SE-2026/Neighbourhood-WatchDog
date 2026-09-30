@@ -148,6 +148,15 @@ interface ListIncidentsRes {
   pagination: Pagination | null;
 }
 
+export interface IncidentDetail {
+  id: string;
+  detection_type: string;
+  started_at: string;
+  last_seen_at: string;
+  alert_count: number;
+  alerts: Alert[];
+  tracking_subject_id: string | null;
+}
 
 
 interface ListAlertsRes {
@@ -243,6 +252,25 @@ export async function fetchIncidents(
       offset: res.pagination?.offset ?? 0,
       has_more: res.pagination?.has_more ?? false,
     },
+  };
+}
+
+interface IncidentDetailResponse {
+  status: number;
+  message?: string | null;
+  data?: IncidentDetail | null;
+}
+
+export async function fetchIncidentDetail(incidentId: string, signal?: AbortSignal): Promise<IncidentDetail> {
+  const response = await apiFetch<IncidentDetailResponse>(`/incidents/${incidentId}`, { signal });
+
+  if (!response.data) {
+    throw new ApiError(response.message ?? "Incident is unavailable", response.status);
+  }
+
+  return {
+    ...response.data,
+    alerts: response.data.alerts.map((a) => normaliseAlert(a as unknown as Record<string, unknown>)),
   };
 }
 

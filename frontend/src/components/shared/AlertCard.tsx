@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { Card } from "@/components/ui/card";
@@ -36,7 +36,7 @@ import {
 import { AlertFootagePlayer } from "@/components/shared/AlertFootagePlayer";
 import { TrackingTimeline } from "@/components/shared/TrackingTimeline";
 import { SituationalBrief } from "@/components/shared/SituationalBrief";
-
+import { fetchIncidentDetail } from "@/lib/api/alert";
 
 type AlertLocationMapProps = {
   readonly latitude: number;
@@ -271,6 +271,16 @@ export function AlertDetailSheet({
           </SheetDescription>
         </SheetHeader>
 
+        {alert.incident_id && (
+          <div className="px-4 sm:px-6">
+            <IncidentMembersList
+              incidentId={alert.incident_id}
+              currentAlertId={alert.id}
+              enabled={open}
+            />
+          </div>
+        )}
+
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-6 sm:px-6">
           {alert.thumbnail_url && (
             <div className="relative rounded-lg overflow-hidden border border-border">
@@ -285,7 +295,7 @@ export function AlertDetailSheet({
             </div>
           )}
 
-          {alert.detection_type === "WEAPON_DETECTED" && (
+          {alert.incident_id != null && (
             <AlertFootagePlayer
               alertId={alert.id}
               timestamp={alert.created_at}
@@ -293,7 +303,7 @@ export function AlertDetailSheet({
 
           )}
 
-          {alert.detection_type === "WEAPON_DETECTED" &&
+          {alert.incident_id != null &&
             canViewTracking && (
               <>
                 <TrackingTimeline
@@ -445,9 +455,10 @@ export interface AlertCardProps {
   readonly broadcasting: boolean;
   readonly trackingRefreshKey?: number;
   readonly canViewTracking: boolean;
+  readonly alertCount?: number;
 }
 
-export function AlertCard({alert, onAcknowledge, onResolve, onDismissAlert, onBroadcast, broadcasting, canViewTracking, trackingRefreshKey = 0}: AlertCardProps) {
+export function AlertCard({alert, onAcknowledge, onResolve, onDismissAlert, onBroadcast, broadcasting, canViewTracking, trackingRefreshKey = 0, alertCount}: AlertCardProps) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
   const [closingStatus, setClosingStatus] = useState<"RESOLVED" | "DISMISSED" | null>(null);
@@ -532,6 +543,14 @@ export function AlertCard({alert, onAcknowledge, onResolve, onDismissAlert, onBr
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <SeverityBadge severity={severity} />
             <StatusBadge status={alert.status} />
+            {alertCount != null && alertCount > 1 && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-brand-slate text-brand-ash"
+                aria-label={`${alertCount} alerts in this incident`}
+              >
+                {alertCount} alerts
+              </span>
+            )}
           </div>
           <p className="text-base font-semibold text-brand-frost leading-snug truncate">
             {detectionLabel(alert.detection_type)}
@@ -683,5 +702,55 @@ export function AlertCard({alert, onAcknowledge, onResolve, onDismissAlert, onBr
         trackingRefreshKey={trackingRefreshKey}
       />
     </>
+  );
+}
+
+function IncidentMembersList({ incidentId, currentAlertId, enabled }: { incidentId: string; currentAlertId: string; enabled: boolean }) {
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+
+  useEffect(() => {
+    if (!enabled) return;
+    const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setStatus("loading");
+
+    fetchIncidentDetail(incidentId, controller.signal)
+      .then((detail) => {
+        if (controller.signal.aborted) return;
+        setAlerts(detail.alerts);
+        setStatus("ready");
+      })
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        if (!controller.signal.aborted) setStatus("error");
+      });
+
+    return () => controller.abort();
+  }, [incidentId, enabled]);
+
+  if (status !== "ready" || alerts.length <= 1) return null;
+
+  return (
+    <section aria-labelledby="incident-members-heading" className="space-y-2">
+      <h3 id="incident-members-heading" className="text-sm font-semibold text-brand-frost">
+        Alerts in this incident ({alerts.length})
+      </h3>
+      <ul className="space-y-1.5">
+        {alerts.map((member) => (
+          <li
+            key={member.id}
+            className={`flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-xs ${
+              member.id === currentAlertId
+                ? "border-brand-pulse/40 bg-brand-pulse/10 text-brand-frost"
+                : "border-border bg-brand-slate text-brand-ash"
+            }`}
+          >
+            <span className="truncate">{detectionLabel(member.detection_type)} · {member.camera_id.slice(0, 8)}…</span>
+            <span className="shrink-0 font-mono">{timeAgo(member.created_at)}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
