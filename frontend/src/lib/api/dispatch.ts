@@ -1,3 +1,4 @@
+import { URLSearchParams } from "next/dist/compiled/@edge-runtime/primitives/url";
 import { apiFetch } from "./alert";
 
 export type DispatchStatus =
@@ -71,15 +72,61 @@ export interface DispatchRecord {
   responded_at: string | null;
 }
 
+export interface DispatchPage {
+  total: number;
+  page: number;
+  size: number;
+  results: DispatchRecord[];
+}
+
+export interface DispatchListFilters {
+  status: DispatchStatus | "ALL";
+  search: string;
+  from: string;
+  to: string;
+  sort: "NEWEST" | "OLDEST";
+}
+
 interface DispatchListResponse {
-  data: DispatchRecord[];
+  data: DispatchPage;
 }
 
 export async function listNeighbourhoodDispatches(
   neighbourhoodId: string,
-): Promise<DispatchRecord[]> {
+  page: number,
+  size: number,
+  filters: DispatchListFilters,
+): Promise<DispatchPage> {
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+    sort_order: filters.sort === "NEWEST" ? "DESC" : "ASC",
+  });
+
+  if (filters.status !== "ALL") {
+    params.set("status", filters.status);
+  }
+
+  if (filters.search.trim()) {
+    params.set("search_term", filters.search.trim());
+  }
+
+  if (filters.from) {
+    params.set(
+      "start_date",
+      new Date(`${filters.from}T00:00:00`).toISOString(),
+    );
+  }
+
+  if (filters.to) {
+    params.set(
+      "end_date",
+      new Date(`${filters.to}T23:59:59.999`).toISOString(),
+    );
+  }
+
   const res = await apiFetch<DispatchListResponse>(
-    `/dispatch/neighbourhood/${neighbourhoodId}`,
+    `/dispatch/neighbourhood/${neighbourhoodId}?${params.toString()}`,
   );
 
   return res.data;
