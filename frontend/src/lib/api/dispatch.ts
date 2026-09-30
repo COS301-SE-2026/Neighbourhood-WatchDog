@@ -1,4 +1,4 @@
-import { apiFetch } from "./alert";
+import { apiCall } from "./client";
 
 export type DispatchStatus =
   | "SELECTED"
@@ -39,14 +39,11 @@ export async function respondToDispatch(
   dispatchId: string,
   action: DispatchAction,
 ): Promise<DispatchCandidate | null> {
-  const response = await apiFetch<RespondDispatchResponse>(
+  const response = await apiCall<RespondDispatchResponse>(
     `/dispatch/${dispatchId}/respond`,
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ action }),
+      body: { action },
     },
   );
 
@@ -124,7 +121,7 @@ export async function listNeighbourhoodDispatches(
     );
   }
 
-  const res = await apiFetch<DispatchListResponse>(
+  const res = await apiCall<DispatchListResponse>(
     `/dispatch/neighbourhood/${neighbourhoodId}?${params.toString()}`,
   );
 
