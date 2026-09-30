@@ -1,4 +1,3 @@
-import { URLSearchParams } from "next/dist/compiled/@edge-runtime/primitives/url";
 import { apiFetch } from "./alert";
 
 export type DispatchStatus =
