@@ -86,7 +86,7 @@ describe("SituationalBrief", () => {
     await waitFor(() => expect(screen.getByText(brief.summary)).toBeInTheDocument());
     expect(screen.getByText("subject-1")).toBeInTheDocument();
     expect(screen.getByText("WEAPON DETECTED")).toBeInTheDocument();
-    expect(screen.getByText("Front camera - Front gate")).toBeInTheDocument();
+    expect(screen.getAllByText("Front camera - Front gate")).toHaveLength(2);
     expect(screen.getByText("Cameras visited")).toBeInTheDocument();
     expect(screen.getByText("Associated alerts")).toBeInTheDocument();
     expect(screen.getByText("Sightings")).toBeInTheDocument();

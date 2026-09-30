@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { AlertFootagePlayer } from "@/components/shared/AlertFootagePlayer";
 import { DispatchRequestPopup, dispatchRouteUrl } from "@/components/shared/DispatchRequestPopup";
 import { SequencedFootagePlayer } from "@/components/shared/SequencedFootagePlayer";
@@ -126,7 +126,9 @@ describe("DispatchRequestPopup", () => {
     });
     render(<DispatchRequestPopup neighbourhoodId="n1" />);
     expect(screen.getByText(/1:00|0:59/)).toBeInTheDocument();
-    jest.advanceTimersByTime(1000);
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
     jest.useRealTimers();
   });
 
@@ -188,7 +190,12 @@ describe("AlertFootagePlayer", () => {
     ["unavailable", "Clip storage is unavailable."],
     ["error", "Failed to load footage"]
   ] as const)("renders the %s state", (status, text) => {
-    mockUseClip.mockReturnValue({ ...baseClip, status });
+    mockUseClip.mockReturnValue({
+      ...baseClip,
+      status,
+      errorMessage: text,
+    });
+
     render(<AlertFootagePlayer alertId="a1" timestamp="2026-09-30T08:00:00.000Z" />);
     expect(screen.getByText(text)).toBeInTheDocument();
   });
@@ -214,7 +221,11 @@ describe("SequencedFootagePlayer", () => {
     ["unavailable", "Footage unavailable"],
     ["error", "Footage unavailable"]
   ] as const)("renders the %s state", (status, text) => {
-    mockUseClip.mockReturnValue({ ...baseClip, status });
+        mockUseClip.mockReturnValue({
+      ...baseClip,
+      status,
+      errorMessage: text,
+    });
     render(<SequencedFootagePlayer alertId="a1" alertTimestamp="2026-09-30T08:00:00.000Z" enabled={false} />);
     expect(screen.getByText(text)).toBeInTheDocument();
   });
