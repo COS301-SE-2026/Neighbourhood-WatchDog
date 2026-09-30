@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.alert import Alert, AlertStatus
 from app.models.tracking import TrackingSighting, TrackingSubject, APPEARANCE_EMBEDDING_DIMENSION, APPEARANCE_EMBEDDING_MODEL
 from app.models.camera import Camera
+from app.models.incident import Incident
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
 from app.models.property import Property
 from app.schemas.tracking import (
@@ -646,17 +647,27 @@ async def get_tracking_timeline(*, db: AsyncSession, alert_id: UUID, claims: dic
     
     await _require_tracking_timeline_access(db=db, claims=claims, neighbourhood_id=property_obj.neighbourhood_id)
 
-    subject_result = await db.execute(
-        select(TrackingSubject)
-        .where(TrackingSubject.alert_id == alert_id)
-    )
+    tracking_subject_id = None
 
-    tracking_subject = subject_result.scalar_one_or_none()
+    if alert.incident_id is not None:
+        incident = await db.get(Incident, alert.incident_id)
+        tracking_subject_id = incident.tracking_subject_id if incident is not None else None
+
+    if tracking_subject_id is not None:
+        tracking_subject = await db.get(TrackingSubject, tracking_subject_id)
+    else:
+        # Fall back to the direct alert->subject link, for alerts that
+        # predate the incident model or were never grouped into one.
+        subject_result = await db.execute(
+            select(TrackingSubject)
+            .where(TrackingSubject.alert_id == alert_id)
+        )
+        tracking_subject = subject_result.scalar_one_or_none()
+
     if tracking_subject is None:
         raise HTTPException(
-            status_code=404, 
+            status_code=404,
             detail="Tracking timeline not found"
-
         )
 
 

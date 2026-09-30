@@ -754,6 +754,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
                       <AlertCard
                         key={incident.id}
                         alert={representativeAlert}
+                        alertCount={incident.alert_count}
                         onResolve={
                           canResolve
                             ? (id) => handleCloseAlert(id, "RESOLVED")

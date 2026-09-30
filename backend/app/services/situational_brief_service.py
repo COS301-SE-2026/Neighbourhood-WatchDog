@@ -10,6 +10,7 @@ from app.models.alert import Alert
 from app.models.camera import Camera
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
 from app.models.property import Property
+from app.models.incident import Incident
 from app.models.tracking import TrackingSighting, TrackingSubject
 from app.schemas.tracking import (
     SituationalBriefAlert,
@@ -286,25 +287,45 @@ async def _require_brief_access(*, db: AsyncSession, claims: dict, neighbourhood
 async def get_situational_brief(*, db: AsyncSession, alert_id: UUID, claims: dict) -> SituationalBriefResponse:
     """find tracking subject associated with alert"""
 
-    result = await db.execute(
-        select(TrackingSubject, Alert, Camera, Property)
-        .join(Alert, Alert.id == TrackingSubject.alert_id)
+    alert_result = await db.execute(
+        select(Alert, Camera, Property)
         .join(Camera, Camera.id == Alert.camera_id)
         .join(Property, Property.id == Camera.property_id)
         .where(Alert.id == alert_id)
     )
 
-    row = result.one_or_none()
+    alert_row = alert_result.one_or_none()
 
-    if row is None:
+    if alert_row is None:
         raise HTTPException(
             status_code=404,
             detail="Situational brief not found"
-
         )
 
+    alert, _, property_obj = alert_row
 
-    tracking_subject, _, _, property_obj = row
+    tracking_subject_id = None
+
+    if alert.incident_id is not None:
+        incident = await db.get(Incident, alert.incident_id)
+        tracking_subject_id = incident.tracking_subject_id if incident is not None else None
+
+    if tracking_subject_id is not None:
+        tracking_subject = await db.get(TrackingSubject, tracking_subject_id)
+    else:
+        # Fall back to the direct alert->subject link, for alerts that
+        # predate the incident model or were never grouped into one.
+        subject_result = await db.execute(
+            select(TrackingSubject).where(TrackingSubject.alert_id == alert_id)
+        )
+        tracking_subject = subject_result.scalar_one_or_none()
+
+    if tracking_subject is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Situational brief not found"
+        )
+
 
     if property_obj.neighbourhood_id is None:
         raise HTTPException(

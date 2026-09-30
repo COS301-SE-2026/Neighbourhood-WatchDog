@@ -192,7 +192,8 @@ def _summary_for_incident(incident: Incident) -> IncidentSummaryRes:
         last_seen_at=incident.last_seen_at,
         alert_count=len(alerts),
         representative_alert_id=representative.id,
-        representative_alert=_build_incident_alert_response(representative)
+        representative_alert=_build_incident_alert_response(representative),
+        tracking_subject_id=incident.tracking_subject_id,
     )
 
 
@@ -209,6 +210,7 @@ def _detail_for_incident(incident: Incident) -> IncidentDetailRes:
             _build_incident_alert_response(alert)
             for alert in alerts
         ],
+        tracking_subject_id=incident.tracking_subject_id,
     )
 
 

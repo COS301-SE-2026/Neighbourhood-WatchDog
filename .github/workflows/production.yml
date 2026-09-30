@@ -7,7 +7,7 @@ env:
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "fix/cross-cam" ]
 
 jobs:
   Deploy-Production:
