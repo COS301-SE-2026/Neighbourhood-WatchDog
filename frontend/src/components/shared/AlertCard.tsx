@@ -712,6 +712,7 @@ function IncidentMembersList({ incidentId, currentAlertId, enabled }: { incident
   useEffect(() => {
     if (!enabled) return;
     const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatus("loading");
 
     fetchIncidentDetail(incidentId, controller.signal)

@@ -93,9 +93,11 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
         if (
             data.local_track_id is not None
             and data.appearance_embedding is not None
+            and data.embedding_model is not None
             and neighbourhood_id is not None
         ):
             candidate_embedding = normalize_appearance_embedding(data.appearance_embedding)
+            assert candidate_embedding is not None
 
             matched_incident = await find_active_incident_for_embedding(
                 db=db,
