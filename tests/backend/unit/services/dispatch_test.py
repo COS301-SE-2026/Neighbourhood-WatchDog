@@ -1430,7 +1430,26 @@ class TestListNeighbourhoodDispatchesHandler:
         rows_result = make_scalars_result([first_row, second_row])
 
         db = AsyncMock()
-        db.execute = AsyncMock(side_effect=[count_result, rows_result])
+        labels_result = make_rows_result([
+            (
+                first_row.id,
+                "Test",
+                "User",
+                DetectionType.WEAPON_DETECTED,
+                "123 Test Street",
+            ),
+            (
+                second_row.id,
+                "Other",
+                "Officer",
+                DetectionType.FALL_DETECTED,
+                "45 Main Street",
+            ),
+        ])
+        db.execute = AsyncMock(
+            side_effect=[count_result, rows_result, labels_result]
+        )
+
 
         res = await list_neighbourhood_dispatches_handler(
             neighbourhood_id=NEIGHBOURHOOD_ID,
@@ -1452,7 +1471,11 @@ class TestListNeighbourhoodDispatchesHandler:
             first_row.id,
             second_row.id,
         ]
-        assert db.execute.await_count == 2
+        assert db.execute.await_count == 3
+        assert res.data.results[0].officer_name == "Test User"
+        assert res.data.results[0].detection_type == "WEAPON_DETECTED"
+        assert res.data.results[0].property_address == "123 Test Street"
+
 
         page_query = db.execute.await_args_list[1].args[0]
         sql = compiled_sql(page_query).upper()

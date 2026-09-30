@@ -16,6 +16,9 @@ export interface DispatchCandidate {
   id: string;
   alert_id: string;
   officer_id: string | null;
+  officer_name: string | null;
+  detection_type: string | null;
+  property_address: string | null;
   rank: number | null;
   score: number | null;
   distance: number | null;
@@ -55,6 +58,9 @@ export interface DispatchRecord {
   alert_id: string;
   triggering_sighting_id: string | null;
   officer_id: string | null;
+  officer_name: string | null;
+  detection_type: string | null;
+  property_address: string | null;
   rank: number | null;
   score: number | null;
   distance: number | null;

@@ -12,6 +12,9 @@ class DispatchCandidateRes(BaseModel):
     alert_id: UUID
     triggering_sighting_id: UUID | None = None
     officer_id: UUID | None
+    officer_name: str | None = None
+    detection_type: str | None = None
+    property_address: str | None = None
     rank: int | None
     score: float | None
     distance: float | None

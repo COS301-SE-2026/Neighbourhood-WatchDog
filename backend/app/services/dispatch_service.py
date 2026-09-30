@@ -611,12 +611,72 @@ async def _escalate_dispatch(db: DbSession, dispatch: Dispatch, reason: str) -> 
             dispatch.alert_id,
         )
 
-def _build_candidate_res(d: Dispatch) -> DispatchCandidateRes:
+async def _fetch_dispatch_labels(
+    db: DbSession,
+    rows: list[Dispatch],
+) -> dict[UUID, dict[str, str | None]]:
+    if not rows:
+        return {}
+
+    result = await db.execute(
+        select(
+            Dispatch.id,
+            User.first_name,
+            User.last_name,
+            Alert.detection_type,
+            Property.address,
+        )
+        .select_from(Dispatch)
+        .outerjoin(
+            SecurityOfficer,
+            SecurityOfficer.id == Dispatch.officer_id,
+        )
+        .outerjoin(
+            NeighbourhoodUser,
+            NeighbourhoodUser.id == SecurityOfficer.neighbourhood_user_id,
+        )
+        .outerjoin(
+            User,
+            User.id == NeighbourhoodUser.user_id,
+        )
+        .outerjoin(Alert, Alert.id == Dispatch.alert_id)
+        .outerjoin(Camera, Camera.id == Alert.camera_id)
+        .outerjoin(Property, Property.id == Camera.property_id)
+        .where(Dispatch.id.in_([row.id for row in rows]))
+    )
+
+    labels = {}
+    for dispatch_id, first_name, last_name, detection_type, address in result.all():
+        labels[dispatch_id] = {
+            "officer_name": (
+                " ".join(part for part in (first_name, last_name) if part)
+                or None
+            ),
+            "detection_type": (
+                getattr(detection_type, "value", detection_type)
+                if detection_type is not None
+                else None
+            ),
+            "property_address": address,
+        }
+
+    return labels
+
+
+def _build_candidate_res(
+    d: Dispatch,
+    labels: dict[str, str | None] | None = None,
+) -> DispatchCandidateRes:
+    labels = labels or {}
+
     return DispatchCandidateRes(
         id=d.id,
         alert_id=d.alert_id,
         triggering_sighting_id=d.triggering_sighting_id,
         officer_id=d.officer_id,
+        officer_name=labels.get("officer_name"),
+        detection_type=labels.get("detection_type"),
+        property_address=labels.get("property_address"),
         rank=d.rank,
         score=d.score,
         distance=d.distance,
@@ -1118,12 +1178,12 @@ async def list_neighbourhood_dispatches_handler(
         .limit(size)
     )
     rows = result.scalars().all()
-
+    labels = await _fetch_dispatch_labels(db, rows)
     return DispatchListRes(
         data=DispatchPageRes(
             total=total,
             page=page,
             size=size,
-            results=[_build_candidate_res(row) for row in rows],
+            results=[_build_candidate_res(row, labels.get(row.id)) for row in rows],
         )
     )

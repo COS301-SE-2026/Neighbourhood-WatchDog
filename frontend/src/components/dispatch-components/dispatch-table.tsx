@@ -19,10 +19,6 @@ function formatTimestamp(value: string | null) {
   return new Date(value).toLocaleString();
 }
 
-function shortId(value: string | null, length = 8) {
-  return value ? `${value.slice(0, length)}…` : "None";
-}
-
 export function DispatchTable({
   dispatches,
   total,
@@ -46,44 +42,38 @@ export function DispatchTable({
       ),
     },
     {
-      accessorKey: "alert_id",
-      header: "Alert",
+      id: "incident",
+      header: "Incident",
       cell: ({ row }) => (
-        <span
-          className="font-mono text-xs text-brand-ash"
-          title={row.original.alert_id}
-        >
-          {shortId(row.original.alert_id)}
-        </span>
+        <div>
+          <p className="font-medium text-brand-frost">
+            {row.original.detection_type
+              ? row.original.detection_type.replaceAll("_", " ").toLowerCase()
+              : "Alert"}
+          </p>
+          <p className="text-xs text-brand-ash">
+            {row.original.property_address ?? "Property unavailable"}
+            {" · "}
+            {row.original.triggering_sighting_id
+              ? "Follow-up sighting"
+              : "Initial dispatch"}
+          </p>
+        </div>
       ),
     },
     {
-      accessorKey: "triggering_sighting_id",
-      header: "Sighting",
-      cell: ({ row }) => {
-        const sightingId = row.original.triggering_sighting_id;
-
-        return sightingId ? (
-          <span className="font-mono text-xs text-brand-ash" title={sightingId}>
-            {shortId(sightingId)}
-          </span>
-        ) : (
-          <span className="text-brand-ash">Initial dispatch</span>
-        );
-      },
-    },
-    {
-      accessorKey: "officer_id",
+      accessorKey: "officer_name",
       header: "Officer",
       cell: ({ row }) => (
-        <span
-          className="font-mono text-xs text-brand-ash"
-          title={row.original.officer_id ?? "No officer assigned"}
-        >
-          {shortId(row.original.officer_id)}
+        <span className="text-brand-frost">
+          {row.original.officer_name ??
+            (row.original.officer_id
+              ? "Name unavailable"
+              : "No officer assigned")}
         </span>
       ),
     },
+
     {
       accessorKey: "rank",
       header: "Rank",
@@ -110,26 +100,19 @@ export function DispatchTable({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-brand-ash">
-          <p>
-            Alert:{" "}
-            <span className="font-mono">{shortId(dispatch.alert_id)}</span>
+          <p className="font-medium text-brand-frost">
+            {dispatch.detection_type?.replaceAll("_", " ").toLowerCase() ?? "Alert"}
           </p>
+          <p>{dispatch.property_address ?? "Property unavailable"}</p>
           <p>
-            Sighting:{" "}
-            {dispatch.triggering_sighting_id ? (
-              <span
-                className="font-mono"
-                title={dispatch.triggering_sighting_id}
-              >
-                {shortId(dispatch.triggering_sighting_id)}
-              </span>
-            ) : (
-              "Initial dispatch"
-            )}
+            {dispatch.triggering_sighting_id
+              ? "Follow-up sighting"
+              : "Initial dispatch"}
           </p>
           <p>
             Officer:{" "}
-            <span className="font-mono">{shortId(dispatch.officer_id)}</span>
+            {dispatch.officer_name ??
+              (dispatch.officer_id ? "Name unavailable" : "No officer assigned")}
           </p>
           <p>Rank: {dispatch.rank ?? "—"}</p>
           <p>Created: {formatTimestamp(dispatch.created_at)}</p>
