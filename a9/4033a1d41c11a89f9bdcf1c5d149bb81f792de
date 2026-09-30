@@ -1,0 +1,32 @@
+tests/backend/unit/services/alert_service_additional_test.py
+  h_cf6208e37032c0 14,1047-1049,1130-1132
+backend/app/services/detection_service.py
+  h_cf6208e37032c0 17,76-135,137-166,168,182,246
+  h_cf6208e37032c0 167
+ai/app.py
+  h_cf6208e37032c0 36-40,192,198,221-225,233,1046-1062,1064
+  h_cf6208e37032c0 226,234,1063,1067
+backend/app/models/incident.py
+  h_cf6208e37032c0 3,20-27,36-37,44-50
+  h_cf6208e37032c0 51
+backend/app/services/alert_service.py
+  h_cf6208e37032c0 66-67,676-681,1538-1563,1565-1568,1570,1572,1579-1592,1594-1606,1608-1636,1639-1641,1643-1644,1647-1651,1661,1667,1676,1679,1707-1708,1715,1727,1732-1737
+  h_cf6208e37032c0 1607,1738-1739
+backend/app/services/incident_service.py
+  h_cf6208e37032c0 15,31,43,54-131,133
+backend/app/schemas/detection.py
+  h_cf6208e37032c0 46
+tests/backend/unit/services/detection_test.py
+  h_cf6208e37032c0 104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a94033a1d41c11a89f9bdcf1c5d149bb81f792de",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
