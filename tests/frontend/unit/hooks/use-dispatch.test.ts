@@ -190,4 +190,25 @@ describe("useDispatchNotification", () => {
     },
   );
 
+  test("treats an expired dispatch response as expired", async () => {
+    mockRespond.mockRejectedValue(
+      new ApiError("Already assigned", 409),
+    );
+
+    const { result } = renderHook(() =>
+      useDispatchNotification(NEIGHBOURHOOD_ID),
+    );
+
+    act(() => {
+      notify(MockWebSocket.instances[0]);
+    });
+
+    await act(async () => {
+      expect(await result.current.accept()).toBe(false);
+    });
+
+    expect(result.current.outcome).toBe("EXPIRED");
+    expect(result.current.notification).toBeNull();
+    expect(toast.error).not.toHaveBeenCalled();
+  });
 });
