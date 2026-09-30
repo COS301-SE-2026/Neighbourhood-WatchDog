@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useNotificationPermission } from "@/hooks/use-notification-permission";
 import OfficerDispatchPopup from "@/components/OfficerDispatchPopup";
+import AdminDispatchPopup from "@/components/AdminDispatchPopup";
 import { registerPushDevice } from "@/lib/api/user";
 import { toast } from "sonner";
 
@@ -35,6 +36,7 @@ export default function ProtectedLayout({
     <>
       {children}
       <OfficerDispatchPopup />
+      <AdminDispatchPopup />
     </>
   );
 }
