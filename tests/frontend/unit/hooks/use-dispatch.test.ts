@@ -160,6 +160,34 @@ describe("useDispatchNotification", () => {
     });
   });
 
+  test.each([
+    ["accept", "ACCEPT", "ACCEPTED"],
+    ["decline", "DECLINE", "DECLINED"],
+  ] as const)(
+    "%s calls the API and shows %s outcome",
+    async (method, action, expectedOutcome) => {
+      const { result } = renderHook(() =>
+        useDispatchNotification(NEIGHBOURHOOD_ID),
+      );
 
+      act(() => {
+        notify(MockWebSocket.instances[0]);
+      });
+
+      let succeeded = false;
+      await act(async () => {
+        succeeded = await result.current[method]();
+      });
+
+      expect(succeeded).toBe(true);
+      expect(mockRespond).toHaveBeenCalledWith(
+        "dispatch-1",
+        action,
+      );
+      expect(result.current.notification).toBeNull();
+      expect(result.current.outcome).toBe(expectedOutcome);
+      expect(result.current.responding).toBe(false);
+    },
+  );
 
 });
