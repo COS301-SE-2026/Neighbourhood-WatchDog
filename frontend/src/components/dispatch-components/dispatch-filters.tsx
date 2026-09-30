@@ -1,18 +1,10 @@
 "use client";
 
-import type { DispatchStatus } from "@/lib/api/dispatch";
-
-export type DispatchFiltersValue = {
-  search: string;
-  status: DispatchStatus | "ALL";
-  from: string;
-  to: string;
-  sort: "NEWEST" | "OLDEST";
-};
+import type { DispatchListFilters, DispatchStatus } from "@/lib/api/dispatch";
 
 type DispatchFiltersProps = {
-  filters: DispatchFiltersValue;
-  onChange: (filters: DispatchFiltersValue) => void;
+  filters: DispatchListFilters;
+  onChange: (filters: DispatchListFilters) => void;
 };
 
 const STATUSES: DispatchStatus[] = [
@@ -27,9 +19,9 @@ const STATUSES: DispatchStatus[] = [
 ];
 
 export function DispatchFilters({ filters, onChange }: DispatchFiltersProps) {
-  const update = (change: Partial<DispatchFiltersValue>) => {
+  function update(change: Partial<DispatchListFilters>) {
     onChange({ ...filters, ...change });
-  };
+  }
 
   return (
     <section
@@ -54,7 +46,7 @@ export function DispatchFilters({ filters, onChange }: DispatchFiltersProps) {
             value={filters.status}
             onChange={(event) =>
               update({
-                status: event.target.value as DispatchFiltersValue["status"],
+                status: event.target.value as DispatchListFilters["status"],
               })
             }
             className="h-10 rounded-md border border-border bg-brand-abyss px-3 text-sm text-brand-frost outline-none [color-scheme:dark] focus:border-brand-green/60"
@@ -94,7 +86,7 @@ export function DispatchFilters({ filters, onChange }: DispatchFiltersProps) {
             value={filters.sort}
             onChange={(event) =>
               update({
-                sort: event.target.value as DispatchFiltersValue["sort"],
+                sort: event.target.value as DispatchListFilters["sort"],
               })
             }
             className="h-10 rounded-md border border-border bg-brand-abyss px-3 text-sm text-brand-frost outline-none [color-scheme:dark] focus:border-brand-green/60"
