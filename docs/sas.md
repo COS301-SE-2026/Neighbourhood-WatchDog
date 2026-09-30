@@ -43,7 +43,7 @@ The purpose of this document is to communicate the architectural structure of th
 - Services must support horizontal scalability where appropriate.
 
 ### 2.4 Architectural Diagram
-![Architecture Diagramv2](/docs/images/Architecture%20Diagramv3.svg)
+![Architecture Diagramv2](images/Architecture%20Diagramv3.svg)
 
 ### 2.5 Mapping Quality Requirements to Architectural Decisions
 |Quality Requirement|Architectural Decision|
@@ -290,13 +290,13 @@ The system supports rollback in the following ways:
 
 ### Deployment Diagram
 
-![Prod Deployment Diagram](/docs/images/Prod%20Deployment%20Diagram%20v3.png)
+![Prod Deployment Diagram](images/Prod%20Deployment%20Diagram%20v3.png)
 
-![Staging Deployment Diagram](/docs/images/Staging%20Deployment%20Diagramv3.drawio.svg)
+![Staging Deployment Diagram](images/Staging%20Deployment%20Diagramv3.drawio.svg)
 
 ### CI/CD Pipeline Diagram
 
-![CI/CD Pipeline Diagram](/docs/images/CI_CD%20Pipeline%20Diagramv1.drawio.svg)
+![CI/CD Pipeline Diagram](images/CI_CD%20Pipeline%20Diagramv1.drawio.svg)
 
 
 # 8. NFR Testing
@@ -311,17 +311,17 @@ The system supports rollback in the following ways:
 
 | ID | Quantified Requirement | Tactic in SAS | Test / tool | Target | Actual |
 |---|---|---|---|---|---|
-| QR-02 | ECS recovers killed task to health within 360s | ECS circuit breaker + ASG. Health check threshold is set at 5 x 30s to avoid premature failover on transient blips | Manually run `aws ecs stop-task`, time until ALB target group reports healthy again | <= health-check grace period (360s once reverted from the temporary 10s) | 341s ![Log of number of services running](/docs/nfr-test-proof/QR-02.png) |
-| QR-03 |  mediamtx stream resumes within 60s of a mediamtx restart | Edge agent RTSP reconnect/retry with backoff | Restart mediamtx container, time until WebRTC stream is viewable again | < 60s | 5.5s (T0 12:02:01.3Z, publising stream at 12:02:09.19Z) ![Log of docker restart](/docs/nfr-test-proof/qr-03-mediamtx-restart-2.log) |
+| QR-02 | ECS recovers killed task to health within 360s | ECS circuit breaker + ASG. Health check threshold is set at 5 x 30s to avoid premature failover on transient blips | Manually run `aws ecs stop-task`, time until ALB target group reports healthy again | <= health-check grace period (360s once reverted from the temporary 10s) | 341s ![Log of number of services running](nfr-test-proof/QR-02.png) |
+| QR-03 |  mediamtx stream resumes within 60s of a mediamtx restart | Edge agent RTSP reconnect/retry with backoff | Restart mediamtx container, time until WebRTC stream is viewable again | < 60s | 5.5s (T0 12:02:01.3Z, publising stream at 12:02:09.19Z) ![Log of docker restart](nfr-test-proof/qr-03-mediamtx-restart-2.log) |
 
 
 ### Security
 
 | ID | Quantified Requirement | Tactic in SAS | Test / tool | Target | Actual |
 |---|---|---|---|---|---|
-| QR-04 | Zero high/critical dependancy CVEs on `main` | Automated dependancy scanning in CI | `pip audit` + `pnpm audit` | 0 high or critical | 0 known vulnerabilities found ![0 findings](/docs/nfr-test-proof/QR-04.png) |
-| QR-05 | Zero medium+ severity findings on staging | Input validation, security headers, limited exposure | OWASP ZAP baseline scan again staging | 0 medium+ | [0](/docs/nfr-test-proof/owasp-report.html) (There was a false positive critical) |
-| QR-06 | 0 secrets committed to the repository | Making use of GitHub Actions secrets and Secrets Manager | `gitleaks` | 0 findings | 0 findings ![0 findings](/docs/nfr-test-proof/QR-06.png) |
+| QR-04 | Zero high/critical dependancy CVEs on `main` | Automated dependancy scanning in CI | `pip audit` + `pnpm audit` | 0 high or critical | 0 known vulnerabilities found ![0 findings](nfr-test-proof/QR-04.png) |
+| QR-05 | Zero medium+ severity findings on staging | Input validation, security headers, limited exposure | OWASP ZAP baseline scan again staging | 0 medium+ | [0](nfr-test-proof/owasp-report.html) (There was a false positive critical) |
+| QR-06 | 0 secrets committed to the repository | Making use of GitHub Actions secrets and Secrets Manager | `gitleaks` | 0 findings | 0 findings ![0 findings](nfr-test-proof/QR-06.png) |
 
 ### Recoverability 
 
@@ -335,16 +335,16 @@ The system supports rollback in the following ways:
 | ID | Quantified Requirement | Tactic in SAS | Test / tool | Target | Actual |
 |---|---|---|---|---|---|
 | QR-09 | ECS launches an additional task within 3 minutes of sustained CPU and/or memory threshold being exceeded under load | ASG and ECS target-tracking auto-scaling policy | Locust load test sustained past the threshold, watch `describe-services` for scale out event | <= 3 minutes | +-38s (alarm transitioned to ALARM at 19:48:44Z UTC and the earliest observable capacity improvement in Locust data was at 19:49:22Z UTC) |
-| QR-10 | p95 latency stays under 3000ms at 500 concurrent virtual users | Connection pooling + indexing + auto-scaling and Redis caching for selected endpoints | Sustained Locust load test, 500 VUs, 10min | p95 < 3000ms at 500 Virtual Users | 2700ms at 500 users ![2700ms at 500 users](/docs/nfr-test-proof/locust.png) |
-| QR-11 | Error rate at peak load | Connection pool limit | Locust | <1% | [0.20%](/docs/nfr-test-proof/Locust_2026-09-28-21h22_locustfile.py_https___api.neighbourhoodwatchdog.co.za.html) |
+| QR-10 | p95 latency stays under 3000ms at 500 concurrent virtual users | Connection pooling + indexing + auto-scaling and Redis caching for selected endpoints | Sustained Locust load test, 500 VUs, 10min | p95 < 3000ms at 500 Virtual Users | 2700ms at 500 users ![2700ms at 500 users](nfr-test-proof/locust.png) |
+| QR-11 | Error rate at peak load | Connection pool limit | Locust | <1% | [0.20%](nfr-test-proof/Locust_2026-09-28-21h22_locustfile.py_https___api.neighbourhoodwatchdog.co.za.html) |
 
 ### Maintainability
 | ID | Quantified Requirement | Tactic in SAS | Test / tool | Target | Actual |
 |---|---|---|---|---|---|
-| QR-12 | SonarQube Maintainability rating of A on code in main branch | Code quality requirements | SonarQube | A rating | A rating ![alt text](/docs/images/maintainability.png)  |
+| QR-12 | SonarQube Maintainability rating of A on code in main branch | Code quality requirements | SonarQube | A rating | A rating ![alt text](images/maintainability.png)  |
 
 ### Accessibility
 
 | ID | Quantified Requirement | Tactic in SAS | Test / tool | Target | Actual |
 |---|---|---|---|---|---|
-| QR-13 | Google Lighthouse accessibility score above 95 on production frontend | Code quality requirements | Google Lighthouse | 95 accessibility rating | 96 accessibility rating ![96 accessibility rating](/docs/images/accessibility.png) |
+| QR-13 | Google Lighthouse accessibility score above 95 on production frontend | Code quality requirements | Google Lighthouse | 95 accessibility rating | 96 accessibility rating ![96 accessibility rating](images/accessibility.png) |
