@@ -1,0 +1,14 @@
+tests/frontend/unit/hooks/use-clip.test.ts
+  h_3555f7510a5ca8 96-174
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "772e620a7a31996d5cfcef3728a476cbb7bc98b1",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
