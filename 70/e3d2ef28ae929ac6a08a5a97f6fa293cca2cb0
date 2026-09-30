@@ -1,0 +1,20 @@
+tests/backend/unit/services/tracking_service_test.py
+  h_cf6208e37032c0 974
+  h_cf6208e37032c0 1031
+backend/app/services/incident_service.py
+  h_cf6208e37032c0 1,23-24,95-100,106-113
+  h_cf6208e37032c0 114
+backend/app/services/detection_service.py
+  h_cf6208e37032c0 182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "70e3d2ef28ae929ac6a08a5a97f6fa293cca2cb0",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
