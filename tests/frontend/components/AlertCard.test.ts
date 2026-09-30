@@ -221,6 +221,7 @@ describe("AlertCard rendered states", () => {
       createElement(AlertCard, {
         alert: makeAlert({
           detection_type: "WEAPON_DETECTED",
+          incident_id: "incident-1",
           thumbnail_url: "https://example.com/thumb.jpg",
           property_address: "12 Main Street",
           property_latitude: -25.7479,

@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from app.models.alert import Alert, DetectionType
 from app.models.incident import Incident
 from app.models.neighbourhood_user import NeighbourhoodRole
+from app.models.tracking import TrackingSubject, TrackingSighting
 from app.schemas.alert import (
     AlertCreate,
     CreateInternalAlertRequest,
@@ -22,7 +23,6 @@ from app.schemas.alert import (
 )
 from app.services import alert_service as service
 from app.services.alert_service import _validate_tracking_payload
-
 
 
 ALERT_ID = uuid4()
@@ -1044,7 +1044,9 @@ async def test_create_alert_for_agent_maps_known_detection_label():
     ]
 
     assert isinstance(added_entities[0], Alert)
-    assert isinstance(added_entities[1], Incident)
+    assert isinstance(added_entities[1], TrackingSubject)
+    assert isinstance(added_entities[2], TrackingSighting)
+    assert isinstance(added_entities[3], Incident)
     db.commit.assert_awaited_once()
     db.refresh.assert_awaited_once_with(created_alert)
 
@@ -1125,7 +1127,9 @@ async def test_create_alert_for_agent_uses_default_detection_for_unknown_label()
     ]
 
     assert isinstance(added_entities[0], Alert)
-    assert isinstance(added_entities[1], Incident)
+    assert isinstance(added_entities[1], TrackingSubject)
+    assert isinstance(added_entities[2], TrackingSighting)
+    assert isinstance(added_entities[3], Incident)
 
 
 @pytest.mark.asyncio

@@ -479,6 +479,7 @@ async def test_agent_sighting_records_and_broadcasts_event():
         SimpleNamespace(id=subject_id),
         SimpleNamespace(
             id=alert_id,
+            incident_id=None,
             frame_timestamp=datetime(
                 2026,
                 9,
@@ -564,6 +565,7 @@ async def test_agent_sighting_survives_broadcast_failure():
         SimpleNamespace(id=body.tracking_subject_id),
         SimpleNamespace(
             id=uuid4(),
+            incident_id=None,
             frame_timestamp=datetime(
                 2026,
                 9,
@@ -971,7 +973,7 @@ async def test_get_tracking_timeline_rejects_alert_without_neighbourhood():
 async def test_get_tracking_timeline_rejects_missing_tracking_subject():
     alert_result = MagicMock()
     alert_result.one_or_none.return_value = (
-        SimpleNamespace(status="OPEN"),
+        SimpleNamespace(status="OPEN", incident_id=None),
         SimpleNamespace(id=uuid4()),
         SimpleNamespace(neighbourhood_id=uuid4()),
     )
@@ -1028,7 +1030,7 @@ async def test_tracking_timeline_access_rejects_unauthorized_user():
 async def test_get_tracking_timeline_returns_ordered_data():
     alert_id = uuid4()
     subject_id = uuid4()
-    alert = SimpleNamespace(status="OPEN")
+    alert = SimpleNamespace(status="OPEN", incident_id=None)
     property_obj = SimpleNamespace(neighbourhood_id=uuid4())
     camera = SimpleNamespace(id=uuid4())
     subject = SimpleNamespace(id=subject_id)

@@ -101,7 +101,7 @@ class TestIngestDetection:
         assert result.alert_id is not None
 
         # Only the merged Alert is persisted.
-        assert self.mock_db.add.call_count == 1
+        assert self.mock_db.add.call_count == 2
         assert self.mock_db.commit.call_count == 1
 
         mock_dispatch.return_value.notify.assert_awaited_once()

@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import select, func, cast
+from sqlalchemy import select, func, cast, or_, String
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 from geoalchemy2 import Geography
@@ -20,7 +20,7 @@ from app.models.dispatch import Dispatch, DispatchStatus
 from app.models.security_officer import SecurityOfficer, AvailabilityStatus
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from app.models.tracking import TrackingSighting, TrackingSubject
-from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, RespondDispatchRes
+from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, RespondDispatchRes, DispatchListRes, DispatchPageRes
 from app.services.alert_service import _build_alert_res
 from app.services.audit_service import create_audit_log_item
 from app.services.neighbourhood_service import STALE_LOCATION_THRESHOLD_SECONDS, is_location_stale
@@ -601,6 +601,7 @@ async def _escalate_dispatch(db: DbSession, dispatch: Dispatch, reason: str) -> 
                     "neighbourhood_id": str(dispatch.neighbourhood_id) if dispatch.neighbourhood_id else None,
                     "reason": reason,
                     "notified_at": now.isoformat(),
+                    "triggering_sighting_id": str(dispatch.triggering_sighting_id) if dispatch.triggering_sighting_id else None
                 },
             },
         )
@@ -610,12 +611,72 @@ async def _escalate_dispatch(db: DbSession, dispatch: Dispatch, reason: str) -> 
             dispatch.alert_id,
         )
 
-def _build_candidate_res(d: Dispatch) -> DispatchCandidateRes:
+async def _fetch_dispatch_labels(
+    db: DbSession,
+    rows: list[Dispatch],
+) -> dict[UUID, dict[str, str | None]]:
+    if not rows:
+        return {}
+
+    result = await db.execute(
+        select(
+            Dispatch.id,
+            User.first_name,
+            User.last_name,
+            Alert.detection_type,
+            Property.address,
+        )
+        .select_from(Dispatch)
+        .outerjoin(
+            SecurityOfficer,
+            SecurityOfficer.id == Dispatch.officer_id,
+        )
+        .outerjoin(
+            NeighbourhoodUser,
+            NeighbourhoodUser.id == SecurityOfficer.neighbourhood_user_id,
+        )
+        .outerjoin(
+            User,
+            User.id == NeighbourhoodUser.user_id,
+        )
+        .outerjoin(Alert, Alert.id == Dispatch.alert_id)
+        .outerjoin(Camera, Camera.id == Alert.camera_id)
+        .outerjoin(Property, Property.id == Camera.property_id)
+        .where(Dispatch.id.in_([row.id for row in rows]))
+    )
+
+    labels = {}
+    for dispatch_id, first_name, last_name, detection_type, address in result.all():
+        labels[dispatch_id] = {
+            "officer_name": (
+                " ".join(part for part in (first_name, last_name) if part)
+                or None
+            ),
+            "detection_type": (
+                getattr(detection_type, "value", detection_type)
+                if detection_type is not None
+                else None
+            ),
+            "property_address": address,
+        }
+
+    return labels
+
+
+def _build_candidate_res(
+    d: Dispatch,
+    labels: dict[str, str | None] | None = None,
+) -> DispatchCandidateRes:
+    labels = labels or {}
+
     return DispatchCandidateRes(
         id=d.id,
         alert_id=d.alert_id,
         triggering_sighting_id=d.triggering_sighting_id,
         officer_id=d.officer_id,
+        officer_name=labels.get("officer_name"),
+        detection_type=labels.get("detection_type"),
+        property_address=labels.get("property_address"),
         rank=d.rank,
         score=d.score,
         distance=d.distance,
@@ -1061,3 +1122,68 @@ async def respond_to_dispatch_handler(
         )
 
     raise HTTPException(400, "Unsupported action")
+
+async def list_neighbourhood_dispatches_handler(
+    neighbourhood_id: UUID,
+    db: DbSession,
+    claims: Claims,
+    page: int,
+    size: int,
+    status: DispatchStatus | None,
+    search_term: str | None,
+    start_date: datetime | None,
+    end_date: datetime | None,
+    sort_order: str,
+) -> DispatchListRes:
+    if not claims:
+        raise HTTPException(401, "Not authenticated")
+
+    filters = [Dispatch.neighbourhood_id == neighbourhood_id]
+
+    if status is not None:
+        filters.append(Dispatch.status == status)
+
+    if start_date is not None:
+        filters.append(Dispatch.created_at >= start_date)
+
+    if end_date is not None:
+        filters.append(Dispatch.created_at <= end_date)
+
+    if search_term and search_term.strip():
+        pattern = f"%{search_term.strip()}%"
+        filters.append(
+            or_(
+                cast(Dispatch.alert_id, String).ilike(pattern),
+                cast(Dispatch.officer_id, String).ilike(pattern),
+                cast(Dispatch.triggering_sighting_id, String).ilike(pattern),
+            )
+        )
+
+    count = await db.execute(
+        select(func.count(Dispatch.id)).where(*filters)
+    )
+    total = count.scalar_one()
+
+    order_by = (
+        Dispatch.created_at.asc()
+        if sort_order == "ASC"
+        else Dispatch.created_at.desc()
+    )
+    
+    result = await db.execute(
+        select(Dispatch)
+        .where(*filters)
+        .order_by(order_by, Dispatch.id.asc())
+        .offset((page - 1) * size)
+        .limit(size)
+    )
+    rows = result.scalars().all()
+    labels = await _fetch_dispatch_labels(db, rows)
+    return DispatchListRes(
+        data=DispatchPageRes(
+            total=total,
+            page=page,
+            size=size,
+            results=[_build_candidate_res(row, labels.get(row.id)) for row in rows],
+        )
+    )

@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.alert import Alert, AlertStatus
 from app.models.tracking import TrackingSighting, TrackingSubject, APPEARANCE_EMBEDDING_DIMENSION, APPEARANCE_EMBEDDING_MODEL
 from app.models.camera import Camera
+from app.models.incident import Incident
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
 from app.models.property import Property
 from app.schemas.tracking import (
@@ -318,6 +319,45 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
 
     )
 
+    reported_alert = parent_alert
+    incident = None
+
+    if parent_alert.incident_id is not None:
+        incident = await db.get(Incident, parent_alert.incident_id)
+
+    if incident is not None:
+        existing_alert_result = await db.execute(
+            select(Alert)
+            .where(
+                Alert.incident_id == incident.id,
+                Alert.camera_id == body.camera_id,
+            )
+            .order_by(Alert.frame_timestamp.desc())
+            .limit(1)
+        )
+        existing_alert = existing_alert_result.scalar_one_or_none()
+
+        if existing_alert is not None:
+            reported_alert = existing_alert
+        else:
+            reported_alert = Alert(
+                camera_id=body.camera_id,
+                frame_timestamp=body.observed_at,
+                detection_type=parent_alert.detection_type,
+                confidence_score=body.match_confidence,
+                processed=True,
+                status=AlertStatus.OPEN.value,
+                incident_id=incident.id,
+            )
+            db.add(reported_alert)
+            await db.flush()
+
+        if body.observed_at > incident.last_seen_at:
+            incident.last_seen_at = body.observed_at
+
+        await db.commit()
+        await db.refresh(reported_alert)
+
     if generate_brief:
         await maybe_generate_situational_brief(
             db=db,
@@ -387,7 +427,7 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
         status=201,
         message="Tracking sighting recorded and broadcast",
         data=TrackingSightingCreateData(
-            alert_id=parent_alert.id,
+            alert_id=reported_alert.id,
             tracking_subject_id=tracking_subject.id,
             sighting_id=sighting.id,
             camera_id=body.camera_id,
@@ -646,17 +686,27 @@ async def get_tracking_timeline(*, db: AsyncSession, alert_id: UUID, claims: dic
     
     await _require_tracking_timeline_access(db=db, claims=claims, neighbourhood_id=property_obj.neighbourhood_id)
 
-    subject_result = await db.execute(
-        select(TrackingSubject)
-        .where(TrackingSubject.alert_id == alert_id)
-    )
+    tracking_subject_id = None
 
-    tracking_subject = subject_result.scalar_one_or_none()
+    if alert.incident_id is not None:
+        incident = await db.get(Incident, alert.incident_id)
+        tracking_subject_id = incident.tracking_subject_id if incident is not None else None
+
+    if tracking_subject_id is not None:
+        tracking_subject = await db.get(TrackingSubject, tracking_subject_id)
+    else:
+        # Fall back to the direct alert->subject link, for alerts that
+        # predate the incident model or were never grouped into one.
+        subject_result = await db.execute(
+            select(TrackingSubject)
+            .where(TrackingSubject.alert_id == alert_id)
+        )
+        tracking_subject = subject_result.scalar_one_or_none()
+
     if tracking_subject is None:
         raise HTTPException(
-            status_code=404, 
+            status_code=404,
             detail="Tracking timeline not found"
-
         )
 
 

@@ -1,11 +1,11 @@
 from app_config import save_config
-
+import os
 import tkinter as tk
 from tkinter import ttk
 import requests
 import keyring
 
-API_BASE_URL = "https://api.neighbourhoodwatchdog.co.za"
+API_BASE_URL = os.getenv("BACKEND_URL", "https://api.neighbourhoodwatchdog.co.za")
 SEGOE_FONT = "Segoe UI"
 KEY_RELEASE = "<KeyRelease>"
 
