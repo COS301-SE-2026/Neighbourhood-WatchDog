@@ -595,6 +595,7 @@ async def _escalate_dispatch(db: DbSession, dispatch: Dispatch, reason: str) -> 
                     "neighbourhood_id": str(dispatch.neighbourhood_id) if dispatch.neighbourhood_id else None,
                     "reason": reason,
                     "notified_at": now.isoformat(),
+                    "triggering_sighting_id": str(dispatch.triggering_sighting_id) if dispatch.triggering_sighting_id else None
                 },
             },
         )
