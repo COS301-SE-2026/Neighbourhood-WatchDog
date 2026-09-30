@@ -5,11 +5,12 @@ from uuid import uuid4
 import pytest
 from fastapi import HTTPException
 
-from app.api.controllers.dispatch import get_alert_dispatch, router, respond_to_dispatch
+from app.api.controllers.dispatch import get_alert_dispatch, router, respond_to_dispatch, list_neighbourhood_dispatches
 from app.models.dispatch import DispatchStatus
 from app.models.security_officer import AvailabilityStatus
-from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, RespondDispatchReq, RespondDispatchRes
+from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, RespondDispatchReq, RespondDispatchRes, DispatchPageRes, DispatchListRes
 
+NEIGHBOURHOOD_ID = uuid4()
 ALERT_ID = uuid4()
 OFFICER_ID = uuid4()
 CLAIMS = {
@@ -180,3 +181,86 @@ async def test_respond_to_dispatch_propagates_conflict_error():
             await respond_to_dispatch(dispatch_id, body, DB, CLAIMS)
 
     assert exc_info.value is error
+
+def test_router_exposes_list_neighbourhood_dispatches_route():
+    routes = {(route.path, tuple(sorted(route.methods))) for route in router.routes}
+    assert ("/dispatch/neighbourhood/{neighbourhood_id}",("GET",),) in routes
+
+@pytest.mark.asyncio
+async def test_list_neighbourhood_dispatches_delegates_pagination_and_filters():
+    start_date = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    end_date = datetime(2026, 1, 31, 23, 59, tzinfo=timezone.utc)
+    expected = DispatchListRes(
+        data=DispatchPageRes(
+            total=37,
+            page=2,
+            size=15,
+            results=[],
+        )
+    )
+
+    with patch(
+        "app.api.controllers.dispatch.list_neighbourhood_dispatches_handler",
+        new=AsyncMock(return_value=expected),
+    ) as handler:
+        res = await list_neighbourhood_dispatches(
+            neighbourhood_id=NEIGHBOURHOOD_ID,
+            db=DB,
+            claims=CLAIMS,
+            page=2,
+            size=15,
+            status=DispatchStatus.ACCEPTED,
+            search_term="abc123",
+            start_date=start_date,
+            end_date=end_date,
+            sort_order="ASC",
+        )
+
+    assert res is expected
+    handler.assert_awaited_once_with(
+        neighbourhood_id=NEIGHBOURHOOD_ID,
+        db=DB,
+        claims=CLAIMS,
+        page=2,
+        size=15,
+        status=DispatchStatus.ACCEPTED,
+        search_term="abc123",
+        start_date=start_date,
+        end_date=end_date,
+        sort_order="ASC",
+    )
+
+@pytest.mark.asyncio
+async def test_list_neighbourhood_dispatches_uses_default_pagination():
+    expected = DispatchListRes(
+        data=DispatchPageRes(
+            total=0,
+            page=1,
+            size=20,
+            results=[],
+        )
+    )
+
+    with patch(
+        "app.api.controllers.dispatch.list_neighbourhood_dispatches_handler",
+        new=AsyncMock(return_value=expected),
+    ) as handler:
+        res = await list_neighbourhood_dispatches(
+            neighbourhood_id=NEIGHBOURHOOD_ID,
+            db=DB,
+            claims=CLAIMS,
+        )
+
+    assert res is expected
+    handler.assert_awaited_once_with(
+        neighbourhood_id=NEIGHBOURHOOD_ID,
+        db=DB,
+        claims=CLAIMS,
+        page=1,
+        size=20,
+        status=None,
+        search_term=None,
+        start_date=None,
+        end_date=None,
+        sort_order="DESC",
+    )
