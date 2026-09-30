@@ -1,0 +1,14 @@
+tests/frontend/unit/hooks/use-dispatch.test.ts
+  h_3555f7510a5ca8 120-163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "01d0135f33dacad61a4eaa88884b75ef67de1fa5",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
