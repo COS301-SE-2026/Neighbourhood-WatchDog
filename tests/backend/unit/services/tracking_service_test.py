@@ -479,6 +479,7 @@ async def test_agent_sighting_records_and_broadcasts_event():
         SimpleNamespace(id=subject_id),
         SimpleNamespace(
             id=alert_id,
+            incident_id=None,
             frame_timestamp=datetime(
                 2026,
                 9,
@@ -564,6 +565,7 @@ async def test_agent_sighting_survives_broadcast_failure():
         SimpleNamespace(id=body.tracking_subject_id),
         SimpleNamespace(
             id=uuid4(),
+            incident_id=None,
             frame_timestamp=datetime(
                 2026,
                 9,

@@ -319,6 +319,45 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
 
     )
 
+    reported_alert = parent_alert
+    incident = None
+
+    if parent_alert.incident_id is not None:
+        incident = await db.get(Incident, parent_alert.incident_id)
+
+    if incident is not None:
+        existing_alert_result = await db.execute(
+            select(Alert)
+            .where(
+                Alert.incident_id == incident.id,
+                Alert.camera_id == body.camera_id,
+            )
+            .order_by(Alert.frame_timestamp.desc())
+            .limit(1)
+        )
+        existing_alert = existing_alert_result.scalar_one_or_none()
+
+        if existing_alert is not None:
+            reported_alert = existing_alert
+        else:
+            reported_alert = Alert(
+                camera_id=body.camera_id,
+                frame_timestamp=body.observed_at,
+                detection_type=parent_alert.detection_type,
+                confidence_score=body.match_confidence,
+                processed=True,
+                status=AlertStatus.OPEN.value,
+                incident_id=incident.id,
+            )
+            db.add(reported_alert)
+            await db.flush()
+
+        if body.observed_at > incident.last_seen_at:
+            incident.last_seen_at = body.observed_at
+
+        await db.commit()
+        await db.refresh(reported_alert)
+
     if generate_brief:
         await maybe_generate_situational_brief(
             db=db,
@@ -388,7 +427,7 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
         status=201,
         message="Tracking sighting recorded and broadcast",
         data=TrackingSightingCreateData(
-            alert_id=parent_alert.id,
+            alert_id=reported_alert.id,
             tracking_subject_id=tracking_subject.id,
             sighting_id=sighting.id,
             camera_id=body.camera_id,

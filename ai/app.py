@@ -419,7 +419,7 @@ def _record_tracking_sighting(camera: CameraSpec, local_track_id: int | None, ob
         return IncidentClipTarget(
             alert_id=str(alert_id),
             sighting_id=str(sighting_id),
-            clip_owner="sighting"
+            clip_owner="alert"
 
         )
 

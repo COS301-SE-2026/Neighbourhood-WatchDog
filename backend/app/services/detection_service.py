@@ -181,8 +181,6 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
             alert_id = alert.id
             clip_required = data.detection_type == "WEAPON_DETECTED"
 
-            await create_incident_for_alert(db=db, alert=alert)
-
             if data.local_track_id is not None:
                 reference_embedding = normalize_appearance_embedding(data.appearance_embedding)
 
@@ -202,6 +200,14 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
                     sequence_no=1,
                     match_confidence=None,
                 ))
+
+            await create_incident_for_alert(
+                db=db,
+                alert=alert,
+                tracking_subject_id=(
+                    tracking_subject.id if tracking_subject is not None else None
+                ),
+            )
 
         await db.commit()
 
