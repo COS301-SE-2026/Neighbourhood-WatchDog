@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import select, func, cast
+from sqlalchemy import select, func, cast, or_, String
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 from geoalchemy2 import Geography
@@ -20,7 +20,7 @@ from app.models.dispatch import Dispatch, DispatchStatus
 from app.models.security_officer import SecurityOfficer, AvailabilityStatus
 from app.models.neighbourhood_user import NeighbourhoodUser, NeighbourhoodRole
 from app.models.tracking import TrackingSighting, TrackingSubject
-from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, RespondDispatchRes, DispatchListRes
+from app.schemas.dispatch import AlertDispatchRes, DispatchCandidateRes, RespondDispatchRes, DispatchListRes, DispatchPageRes
 from app.services.alert_service import _build_alert_res
 from app.services.audit_service import create_audit_log_item
 from app.services.neighbourhood_service import STALE_LOCATION_THRESHOLD_SECONDS, is_location_stale
@@ -1058,17 +1058,63 @@ async def list_neighbourhood_dispatches_handler(
     neighbourhood_id: UUID,
     db: DbSession,
     claims: Claims,
+    page: int,
+    size: int,
+    status: DispatchStatus | None,
+    search_term: str | None,
+    start_date: datetime | None,
+    end_date: datetime | None,
+    sort_order: str,
 ) -> DispatchListRes:
     if not claims:
         raise HTTPException(401, "Not authenticated")
+
+    filters = [Dispatch.neighbourhood_id == neighbourhood_id]
+
+    if status is not None:
+        filters.append(Dispatch.status == status)
+
+    if start_date is not None:
+        filters.append(Dispatch.created_at >= start_date)
+
+    if end_date is not None:
+        filters.append(Dispatch.created_at <= end_date)
+
+    if search_term and search_term.strip():
+        pattern = f"%{search_term.strip()}%"
+        filters.append(
+            or_(
+                cast(Dispatch.alert_id, String).ilike(pattern),
+                cast(Dispatch.officer_id, String).ilike(pattern),
+                cast(Dispatch.triggering_sighting_id, String).ilike(pattern),
+            )
+        )
+
+    count = await db.execute(
+        select(func.count(Dispatch.id)).where(*filters)
+    )
+    total = count.scalar_one()
+
+    order_by = (
+        Dispatch.created_at.asc()
+        if sort_order == "ASC"
+        else Dispatch.created_at.desc()
+    )
     
     result = await db.execute(
         select(Dispatch)
-        .where(Dispatch.neighbourhood_id == neighbourhood_id)
-        .order_by(Dispatch.created_at.desc())
+        .where(*filters)
+        .order_by(order_by, Dispatch.id.asc())
+        .offset((page - 1) * size)
+        .limit(size)
     )
     rows = result.scalars().all()
 
     return DispatchListRes(
-        data=[_build_candidate_res(row) for row in rows],
+        data=DispatchPageRes(
+            total=total,
+            page=page,
+            size=size,
+            results=[_build_candidate_res(row) for row in rows],
+        )
     )
