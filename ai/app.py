@@ -1028,9 +1028,9 @@ def _detection_loop(camera: CameraSpec, rtsp_url: str, stop_event: threading.Eve
                     if local_track_id is not None
                     else None
                 )
-                _post_detection_event(camera, event, appearance_embedding)
 
                 if event["detection_type"] != "WEAPON_DETECTED":
+                    _post_detection_event(camera, event, appearance_embedding)
                     continue
 
                 local_track_id = event.get("track_id")

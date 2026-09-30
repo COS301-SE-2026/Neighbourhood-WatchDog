@@ -14,6 +14,7 @@ from app.services.dispatch_service import dispatch_alert
 from app.services.notifications.factory import NotificationPolicyFactory
 from app.models.tracking import TrackingSubject, TrackingSighting
 from app.services.tracking_service import normalize_appearance_embedding
+from app.services.incident_service import create_incident_for_alert
 from app.schemas.notification import EventType
 
 
@@ -88,6 +89,8 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
             await db.flush()
             alert_created = True
             alert_id = alert.id
+
+            await create_incident_for_alert(db=db, alert=alert)
 
             if data.local_track_id is not None:
                 reference_embedding = normalize_appearance_embedding(data.appearance_embedding)
