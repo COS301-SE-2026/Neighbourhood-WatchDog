@@ -1,5 +1,5 @@
 from uuid import UUID
-from sqlalchemy import select
+from sqlalchemy import select, or_
 
 from app.core.database import DbSession
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
@@ -70,8 +70,7 @@ async def resolve_neighbourhood_admins_and_officers(db: DbSession, event_context
         .join(NeighbourhoodUser, NeighbourhoodUser.user_id == User.id)
         .where(
             NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
-            NeighbourhoodUser.role == NeighbourhoodRole.SECURITY_OFFICER 
-                or NeighbourhoodUser.role == NeighbourhoodRole.NEIGHBOURHOOD_ADMIN,
+            or_(NeighbourhoodUser.role.in_(NeighbourhoodRole.SECURITY_OFFICER, NeighbourhoodRole.NEIGHBOURHOOD_ADMIN))
         )
     )
     return list(result.scalars().all())
