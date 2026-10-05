@@ -358,12 +358,15 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
         await db.commit()
         await db.refresh(reported_alert)
 
+    situational_summary = None
     if generate_brief:
-        await maybe_generate_situational_brief(
+        brief = await maybe_generate_situational_brief(
             db=db,
             tracking_subject_id=tracking_subject.id
-            
+
         )
+        if brief is not None:
+            situational_summary = brief.summary
 
     tracking_event_payload = {
         #the sighting ID is the idempotency key for this event.
@@ -404,6 +407,7 @@ async def record_tracking_sighting_for_agent(*, db: AsyncSession, body: RecordTr
         "source_property": source_property.address,
         "destination_property": candidate_property.address,
         "websocket_payload": tracking_event_payload,
+        "situational_summary": situational_summary,
     }
 
     try:

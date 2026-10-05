@@ -22,7 +22,7 @@ from app.services.alert_service import (
     _read_clip_with_limit,
 )
 from app.tasks.clip_tasks import MAX_CLIP_SIZE_BYTES, upload_alert_clip_task, upload_tracking_sighting_clip_task
-from app.schemas.tracking import MatchTrackingEmbeddingRequest, RecordTrackingSightingRequest, TrackingMatchResponse, TrackingSightingCreateResponse, TrackingSightingClipUploadAcceptedRes
+from app.schemas.tracking import MatchTrackingEmbeddingRequest, RecordTrackingSightingRequest, TrackingMatchResponse, TrackingSightingClipUploadAcceptedRes
 from app.services.tracking_service import match_tracking_embedding, record_tracking_sighting_for_agent, get_tracking_sighting_for_agent
 
 
