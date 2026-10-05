@@ -29,7 +29,7 @@ from app.services.tracking_service import match_tracking_embedding, record_track
 
 router = APIRouter(prefix="/internal", tags=["internal"])
 
-
+VIDEO_MP4 = "video/mp4"
 
 @router.post("/alerts",
     status_code=201,
@@ -74,9 +74,9 @@ async def upload_tracking_sighting_clip(
     clip: Annotated[UploadFile, File(...)]
 ):
 
-    content_type = clip.content_type or "video/mp4"
+    content_type = clip.content_type or VIDEO_MP4
 
-    if content_type not in {"video/mp4", "application/octet-stream"}:   
+    if content_type not in {VIDEO_MP4, "application/octet-stream"}:   
         raise HTTPException(
             status_code=400,
             detail="Clip upload must use video/mp4 content type"
@@ -158,9 +158,9 @@ async def upload_clip(
     clip: Annotated[UploadFile, File(...)]
 ):
     """Receive an H.264 MP4 from an authenticated Edge Agent and queue it for upload."""
-    content_type = clip.content_type or "video/mp4"
+    content_type = clip.content_type or VIDEO_MP4
 
-    if content_type not in {"video/mp4", "application/octet-stream"}:
+    if content_type not in {VIDEO_MP4, "application/octet-stream"}:
         raise HTTPException(status_code=400, detail="Clip upload must use video/mp4 content type")
 
     clip_bytes = await _read_clip_with_limit(clip, MAX_CLIP_SIZE_BYTES)
