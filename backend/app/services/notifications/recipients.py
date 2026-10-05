@@ -1,5 +1,5 @@
 from uuid import UUID
-from sqlalchemy import select, or_
+from sqlalchemy import select
 
 from app.core.database import DbSession
 from app.models.neighbourhood_user import NeighbourhoodRole, NeighbourhoodUser
