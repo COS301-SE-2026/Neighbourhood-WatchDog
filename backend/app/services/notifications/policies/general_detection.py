@@ -8,7 +8,6 @@ def build_neighbourhood_general_detection_policy() -> NotificationPolicy:
     return (
         NotificationPolicyBuilder()
         .with_channel(WebSocketChannel())
-        .with_channel(PushChannel())
         .with_recipient_resolver(resolve_neighbourhood_members)
         .build()
     )
