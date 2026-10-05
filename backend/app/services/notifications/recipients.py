@@ -70,7 +70,7 @@ async def resolve_neighbourhood_admins_and_officers(db: DbSession, event_context
         .join(NeighbourhoodUser, NeighbourhoodUser.user_id == User.id)
         .where(
             NeighbourhoodUser.neighbourhood_id == neighbourhood_id,
-            or_(NeighbourhoodUser.role.in_(NeighbourhoodRole.SECURITY_OFFICER, NeighbourhoodRole.NEIGHBOURHOOD_ADMIN))
+            (NeighbourhoodUser.role.in_(NeighbourhoodRole.SECURITY_OFFICER, NeighbourhoodRole.NEIGHBOURHOOD_ADMIN))
         )
     )
     return list(result.scalars().all())
