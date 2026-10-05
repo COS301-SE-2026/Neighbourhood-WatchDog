@@ -61,8 +61,11 @@ async def create_alert(
 @router.post(
     "/tracking/sightings/{sighting_id}/clip",
     status_code=202,
-    response_model=TrackingSightingClipUploadAcceptedRes
-
+    response_model=TrackingSightingClipUploadAcceptedRes,
+    responses={
+        400: {"description": "camera_id is not a valid UUID, or frame_timestamp is not a valid IOS datetime"},
+        404: {"description": "Camera not found"}, 
+    },
 )
 async def upload_tracking_sighting_clip(
     sighting_id: str, 
