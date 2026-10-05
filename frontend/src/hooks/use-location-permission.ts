@@ -50,7 +50,7 @@ export function useLocationPermission() {
 	}, []);
 
 	const requestBackground = useCallback(async () => {
-		if (!Capacitor.isNativePlatform() && status !== "granted"){
+		if (!Capacitor.isNativePlatform() || status !== "granted"){
 			return "unsupported" as BackgroundPermissionState;
 		}
 
@@ -84,11 +84,6 @@ export function useLocationPermission() {
 	}, [status, backgroundStatus]);
 
 	useEffect(() => {
-		// eslint-disable-next-line react-hooks/set-state-in-effect
-		refresh();
-	}, [refresh]);
-
-	useEffect(() => {
 		const onVisible = () => {
 			if (document.visibilityState === "visible"){
 				BackgroundGeolocation.checkPermissions().then((result) => {
@@ -101,6 +96,19 @@ export function useLocationPermission() {
 
 		return() => document.removeEventListener("visibilitychange", onVisible);
 	}, []);
+
+	const refreshBackground = useCallback(async () => {
+		const result = await BackgroundGeolocation.checkPermissions();
+		if (result.location) setStatus(result.location);
+		setBackgroundStatus(result.backgroundLocation ?? "unsupported");
+	}, []);
+
+	useEffect(() => {
+		// eslint-disable-next-line react-hooks/set-state-in-effect
+		refresh();
+		// eslint-disable-next-line react-hooks/set-state-in-effect
+		refreshBackground();
+	}, [refresh, refreshBackground]);
 
 	return { status, backgroundStatus, fullyGranted, loading, backgroundError, refresh, request, requestBackground }
 
