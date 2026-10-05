@@ -1,0 +1,15 @@
+frontend/src/hooks/use-location-permission.ts
+  h_cf6208e37032c0 53,100-103,105-111
+  h_cf6208e37032c0 104,112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c22ea3004e2468cc0ec918861373cf1e86a8c507",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
