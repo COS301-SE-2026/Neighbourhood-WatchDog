@@ -1742,6 +1742,22 @@ async def create_alert_for_agent_handler(
 
         alert.tracking_subject = tracking_subject
 
+        situational_summary = None
+        if generate_brief and tracking_subject is not None:
+            try:
+                brief = await maybe_generate_situational_brief(
+                    db=db,
+                    tracking_subject_id=tracking_subject.id,
+                )
+                if brief is not None:
+                    situational_summary = brief.summary
+            except Exception:
+                logger.exception(
+                    "create_alert_for_agent_handler: situational "
+                    "brief generation failed for alert_id=%s",
+                    alert.id,
+                )
+
         if neighbourhood_id is not None:
             if alert.detection_type == DetectionType.WEAPON_DETECTED:
                 event_context = {
@@ -1763,6 +1779,7 @@ async def create_alert_for_agent_handler(
                     "websocket_payload": _build_alert_res(
                         alert
                     ).model_dump(mode="json"),
+                    "situational_summary": situational_summary,
                 }
 
                 await (
@@ -1801,19 +1818,6 @@ async def create_alert_for_agent_handler(
                         "Dispatch failed for critical "
                         "alert %s"
                     ),
-                    alert.id,
-                )
-
-        if generate_brief and tracking_subject is not None:
-            try:
-                await maybe_generate_situational_brief(
-                    db=db,
-                    tracking_subject_id=tracking_subject.id,
-                )
-            except Exception:
-                logger.exception(
-                    "create_alert_for_agent_handler: situational "
-                    "brief generation failed for alert_id=%s",
                     alert.id,
                 )
 
