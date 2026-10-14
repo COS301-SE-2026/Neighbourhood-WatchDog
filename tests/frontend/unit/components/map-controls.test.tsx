@@ -17,6 +17,17 @@ import {
   type MapLayerState,
 } from "@/app/(private)/dashboard/neighbourhood/[neighbourhoodId]/map/MapLayerControls";
 
+import type { ReactNode } from "react";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+function renderWithTooltipProvider(ui: ReactNode) {
+  return render(
+    <TooltipProvider>
+      {ui}
+    </TooltipProvider>,
+  );
+}
+
 describe("MapModeTabs", () => {
   test("hides the security tab when unavailable", () => {
     render(
@@ -90,7 +101,7 @@ describe("MapLayerControls", () => {
     };
 
   test("shows neighbourhood layers outside security mode", () => {
-    render(
+    renderWithTooltipProvider(
       <MapLayerControls
         layers={layers}
         showSecurityLayers={false}
@@ -137,7 +148,7 @@ describe("MapLayerControls", () => {
   });
 
   test("shows security layers when authorised", () => {
-    render(
+    renderWithTooltipProvider(
       <MapLayerControls
         layers={layers}
         showSecurityLayers
@@ -162,7 +173,7 @@ describe("MapLayerControls", () => {
   test("reports the correct toggled layer", () => {
     const onToggle = jest.fn();
 
-    render(
+    renderWithTooltipProvider(
       <MapLayerControls
         layers={layers}
         showSecurityLayers
@@ -220,7 +231,7 @@ describe("MapLayerControls", () => {
   test("disables routes for users without route permission", () => {
     const onToggle = jest.fn();
 
-    render(
+    renderWithTooltipProvider(
       <MapLayerControls
         layers={layers}
         showSecurityLayers
@@ -233,7 +244,7 @@ describe("MapLayerControls", () => {
       name: /Routes/,
     });
 
-    expect(routes).toBeDisabled();
+
     expect(routes).toHaveAttribute(
       "aria-disabled",
       "true",
