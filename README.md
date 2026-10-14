@@ -283,8 +283,8 @@ Neighbourhood-WatchDog/
 
 
 Demo 4 
-[![Slides](https://img.shields.io/badge/Slides_4-View-0A0A0A?style=flat-square&logo=googleslides&logoColor=white&labelColor=0D1B2A)](/docs/demo_4_slides.pdf) 
-[![Video](https://img.shields.io/badge/Video_4-Watch-0A0A0A?style=flat-square&logo=youtube&logoColor=white&labelColor=0D1B2A)](/docs/Demo4.mp4)
+[![Slides](https://img.shields.io/badge/Slides_4-View-0A0A0A?style=flat-square&logo=googleslides&logoColor=white&labelColor=0D1B2A)](/docs/demo-videos/demo_4_slides.pdf) 
+[![Video](https://img.shields.io/badge/Video_4-Watch-0A0A0A?style=flat-square&logo=youtube&logoColor=white&labelColor=0D1B2A)](/docs/demo-videos/Demo%204.mp4)
 
 </div>
 
