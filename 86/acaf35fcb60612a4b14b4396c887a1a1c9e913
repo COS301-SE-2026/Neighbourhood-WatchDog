@@ -1,0 +1,16 @@
+postgres/Dockerfile
+  h_cf6208e37032c0 1-19
+.gitignore
+  h_cf6208e37032c0 65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "86acaf35fcb60612a4b14b4396c887a1a1c9e913",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
