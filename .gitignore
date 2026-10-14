@@ -63,5 +63,3 @@ docker-compose.override.yml
 /ai/installer-output/
 
 .gitleaksignore
-
-/postgres
