@@ -1,6 +1,6 @@
 import logging
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import IntegrityError
 
@@ -118,6 +118,7 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
                 .where(
                     Alert.incident_id == matched_incident.id,
                     Alert.camera_id == data.camera_id,
+                    Alert.detection_type == data.detection_type,
                 )
                 .order_by(Alert.frame_timestamp.desc())
                 .limit(1)
@@ -126,7 +127,10 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
             existing_alert = existing_result.scalar_one_or_none()
 
             if existing_alert is not None:
-                matched_incident.last_seen_at = data.frame_timestamp
+                matched_incident.last_seen_at = max(
+                    matched_incident.last_seen_at,
+                    data.frame_timestamp,
+                )
                 await db.commit()
 
                 return DetectionIngestRes(
@@ -156,17 +160,33 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
 
             alert.incident_id = matched_incident.id
             alert.incident = matched_incident
-            matched_incident.last_seen_at = data.frame_timestamp
+            matched_incident.last_seen_at = max(
+                matched_incident.last_seen_at,
+                data.frame_timestamp,
+            )
 
             tracking_subject = matched_incident.tracking_subject
 
             if tracking_subject is not None:
+                sequence_result = await db.execute(
+                    select(
+                        func.coalesce(
+                            func.max(TrackingSighting.sequence_no),
+                            0,
+                        ) + 1
+                    ).where(
+                        TrackingSighting.tracking_subject_id
+                        == tracking_subject.id
+                    )
+                )
+                next_sequence = int(sequence_result.scalar_one())
+
                 db.add(TrackingSighting(
                     tracking_subject_id=tracking_subject.id,
                     camera_id=alert.camera_id,
                     local_track_id=data.local_track_id,
                     observed_at=alert.frame_timestamp,
-                    sequence_no=1,
+                    sequence_no=next_sequence,
                     match_confidence=None,
                 ))
 
