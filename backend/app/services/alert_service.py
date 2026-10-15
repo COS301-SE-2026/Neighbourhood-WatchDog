@@ -1377,6 +1377,9 @@ async def broadcast_neighbourhood_alert_service(alert_id: UUID, db: AsyncSession
     await db.commit()
 
 def _validate_tracking_payload(body: CreateInternalAlertRequest, det_type: DetectionType) -> None:
+
+
+
     if body.appearance_embedding is not None:
         if body.local_track_id is None:
             raise HTTPException(
@@ -1534,12 +1537,6 @@ async def create_alert_for_agent_handler(
 
         _validate_tracking_payload(body, det_type)
 
-        candidate_embedding = None
-        if body.local_track_id is not None and body.appearance_embedding is not None:
-            candidate_embedding = normalize_appearance_embedding(
-                body.appearance_embedding
-            )
-
         neighbourhood_id = (
             camera.property.neighbourhood_id
             if camera.property is not None
@@ -1550,10 +1547,15 @@ async def create_alert_for_agent_handler(
 
         if (
             body.local_track_id is not None
-            and candidate_embedding is not None
+            and body.appearance_embedding is not None
             and body.embedding_model is not None
             and neighbourhood_id is not None
         ):
+            candidate_embedding = normalize_appearance_embedding(
+                body.appearance_embedding
+            )
+            assert candidate_embedding is not None
+
             matched_incident = await find_active_incident_for_embedding(
                 db=db,
                 neighbourhood_id=neighbourhood_id,
@@ -1718,7 +1720,7 @@ async def create_alert_for_agent_handler(
         # Trackless weapon detections are valid. They create an alert but
         # deliberately do not create tracking rows.
         if body.local_track_id is not None:
-            reference_embedding = candidate_embedding
+            reference_embedding = normalize_appearance_embedding(body.appearance_embedding)
 
             tracking_subject = TrackingSubject(
                 alert_id=alert.id,
