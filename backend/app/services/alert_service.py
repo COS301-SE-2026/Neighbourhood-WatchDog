@@ -179,7 +179,7 @@ def _clip_s3_key(alert: Alert, timestamp: datetime) -> str:
 
 
 def _neighbourhood_alert_stmt(neighbourhood_id: UUID):
-    """Build the base alert query scoped through Camera → Property."""
+    """Build the base alert query scoped through Camera â†’ Property."""
     return (
         select(Alert)
         .options(
@@ -1537,6 +1537,12 @@ async def create_alert_for_agent_handler(
 
         _validate_tracking_payload(body, det_type)
 
+        candidate_embedding = None
+        if body.local_track_id is not None and body.appearance_embedding is not None:
+            candidate_embedding = normalize_appearance_embedding(
+                body.appearance_embedding
+            )
+
         neighbourhood_id = (
             camera.property.neighbourhood_id
             if camera.property is not None
@@ -1547,15 +1553,10 @@ async def create_alert_for_agent_handler(
 
         if (
             body.local_track_id is not None
-            and body.appearance_embedding is not None
+            and candidate_embedding is not None
             and body.embedding_model is not None
             and neighbourhood_id is not None
         ):
-            candidate_embedding = normalize_appearance_embedding(
-                body.appearance_embedding
-            )
-            assert candidate_embedding is not None
-
             matched_incident = await find_active_incident_for_embedding(
                 db=db,
                 neighbourhood_id=neighbourhood_id,
@@ -1720,7 +1721,7 @@ async def create_alert_for_agent_handler(
         # Trackless weapon detections are valid. They create an alert but
         # deliberately do not create tracking rows.
         if body.local_track_id is not None:
-            reference_embedding = normalize_appearance_embedding(body.appearance_embedding)
+            reference_embedding = candidate_embedding
 
             tracking_subject = TrackingSubject(
                 alert_id=alert.id,
