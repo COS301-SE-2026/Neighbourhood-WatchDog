@@ -104,6 +104,9 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
                 neighbourhood_id=neighbourhood_id,
                 embedding=candidate_embedding,
                 embedding_model=data.embedding_model,
+                observed_at=data.frame_timestamp,
+                window_seconds=300
+                
             )
 
         if matched_incident is not None:
