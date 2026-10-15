@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from app.models.alert import Alert, DetectionType
+from app.models.alert import Alert, DetectionType, AlertStatus
 from app.models.camera import Camera
 from app.models.incident import Incident
 from app.models.neighbourhood_user import NeighbourhoodRole
@@ -26,6 +26,22 @@ def _build_incident_alert_response(alert: Alert) -> AlertRes:
     from app.services.alert_service import _build_alert_res
 
     return _build_alert_res(alert)
+
+
+def _incident_detection_types(incident: Incident) -> list[str]:
+    return sorted(
+        {
+            (
+                alert.detection_type.value
+                if hasattr(alert.detection_type, "value")
+                else str(alert.detection_type)
+            )
+            for alert in (incident.alerts or [])
+        }
+    )
+
+
+
 
 async def create_incident_for_alert(
     *,
@@ -60,29 +76,50 @@ async def find_active_incident_for_embedding(
     neighbourhood_id: UUID,
     embedding: list[float],
     embedding_model: str,
+    observed_at: datetime,
+    window_seconds: int = 300
 ) -> Incident | None:
-    """
-    Find the active (not yet ended) incident whose tracked person best matches
-    the given appearance embedding."""
+    """find the most similar recent active incident in this neighbourhood."""
     from app.services.tracking_service import TRACKING_MATCH_MIN_SIMILARITY
 
-    cosine_distance = (
-        TrackingSubject.reference_embedding.cosine_distance(embedding)
-        .label("cosine_distance")
+    cosine_distance = (TrackingSubject.reference_embedding.cosine_distance(embedding).label("cosine_distance"))
+
+    active_alert_exists = (
+        select(Alert.id)
+        .where(
+            Alert.incident_id == Incident.id,
+            Alert.status.in_(
+                (
+                    AlertStatus.OPEN.value,
+                    AlertStatus.ACKNOWLEDGED.value,
+                    AlertStatus.CONFIRMED.value
+                )
+            )
+        )
+        .exists()
     )
 
     stmt = (
         select(Incident, cosine_distance)
-        .join(TrackingSubject, TrackingSubject.id == Incident.tracking_subject_id)
+        .join(
+            TrackingSubject,
+            TrackingSubject.id == Incident.tracking_subject_id,
+        )
         .join(Alert, Alert.id == TrackingSubject.alert_id)
         .join(Camera, Camera.id == Alert.camera_id)
         .join(Property, Property.id == Camera.property_id)
         .options(joinedload(Incident.tracking_subject))
         .where(
             Incident.ended_at.is_(None),
+            Incident.last_seen_at >= observed_at - timedelta(
+                seconds=window_seconds
+            ),
+            Incident.last_seen_at <= observed_at + timedelta(seconds=5),
+            active_alert_exists,
             TrackingSubject.reference_embedding.is_not(None),
             TrackingSubject.embedding_model == embedding_model,
-            Property.neighbourhood_id == neighbourhood_id,
+            Property.neighbourhood_id == neighbourhood_id
+
         )
         .order_by(cosine_distance.asc())
         .limit(1)
@@ -92,24 +129,16 @@ async def find_active_incident_for_embedding(
     row = result.first()
 
     if row is None:
-        logger.info(
-            "find_active_incident_for_embedding: no active-incident candidate "
-            "in neighbourhood=%s embedding_model=%s",
-            neighbourhood_id,
-            embedding_model,
-        )
         return None
 
     incident, distance = row
     similarity = max(0.0, min(1.0, 1.0 - float(distance)))
 
     logger.info(
-        "find_active_incident_for_embedding: best candidate incident=%s "
-        "similarity=%.4f threshold=%.4f neighbourhood=%s",
+        "Embedding incident candidate=%s similarity=%.4f threshold=%.4f",
         incident.id,
         similarity,
-        TRACKING_MATCH_MIN_SIMILARITY,
-        neighbourhood_id,
+        TRACKING_MATCH_MIN_SIMILARITY
     )
 
     if similarity < TRACKING_MATCH_MIN_SIMILARITY:
@@ -134,16 +163,23 @@ async def end_incident_if_representative(
     if incident is None or incident.ended_at is not None:
         return
 
-    latest_result = await db.execute(
-        select(func.max(Alert.frame_timestamp))
-        .where(Alert.incident_id == incident.id)
-    )
-    latest_frame_timestamp = latest_result.scalar_one_or_none()
 
-    if (
-        latest_frame_timestamp is not None
-        and alert.frame_timestamp < latest_frame_timestamp
-    ):
+    active_alert_result = await db.execute(
+        select(func.count())
+        .select_from(Alert)
+        .where(
+            Alert.incident_id == incident.id,
+            Alert.status.in_(
+                (
+                    AlertStatus.OPEN.value,
+                    AlertStatus.ACKNOWLEDGED.value,
+                    AlertStatus.CONFIRMED.value,
+                )
+            ),
+        )
+    )
+
+    if active_alert_result.scalar_one() > 0:
         return
 
     incident.ended_at = ended_at
@@ -206,12 +242,14 @@ def _summary_for_incident(incident: Incident) -> IncidentSummaryRes:
     return IncidentSummaryRes(
         id=incident.id,
         detection_type=incident.detection_type,
+        detection_types=_incident_detection_types(incident),
         started_at=incident.started_at,
         last_seen_at=incident.last_seen_at,
         alert_count=len(alerts),
         representative_alert_id=representative.id,
         representative_alert=_build_incident_alert_response(representative),
-        tracking_subject_id=incident.tracking_subject_id,
+        tracking_subject_id=incident.tracking_subject_id
+
     )
 
 
@@ -221,6 +259,7 @@ def _detail_for_incident(incident: Incident) -> IncidentDetailRes:
     return IncidentDetailRes(
         id=incident.id,
         detection_type=incident.detection_type,
+        detection_types=_incident_detection_types(incident),
         started_at=incident.started_at,
         last_seen_at=incident.last_seen_at,
         alert_count=len(alerts),
@@ -282,10 +321,11 @@ async def list_incidents_handler(
 
     if membership.role == NeighbourhoodRole.SECURITY_OFFICER:
         stmt = stmt.where(
-            Incident.detection_type.in_(
+            Alert.detection_type.in_(
                 {
-                    DetectionType.WEAPON_DETECTED.value,
-                    DetectionType.FALL_DETECTED.value,
+                    DetectionType.WEAPON_DETECTED,
+                    DetectionType.FALL_DETECTED
+
                 }
             )
         )
@@ -309,9 +349,7 @@ async def list_incidents_handler(
         )
 
     if detection_type:
-        stmt = stmt.where(
-            Incident.detection_type == detection_type,
-        )
+        stmt = stmt.where(Alert.detection_type == detection_type)
 
     if start_date:
         stmt = stmt.where(
