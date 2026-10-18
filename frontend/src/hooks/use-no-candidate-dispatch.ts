@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { WS_BASE } from "@/lib/api/alert";
 import { getAccessToken, refreshSession } from "@/lib/auth/cognito";
 
@@ -22,6 +22,8 @@ interface SocketMessage {
 export function useNoCandidateDispatch(neighbourhoodId: string | null) {
   const [notification, setNotification] =
     useState<NoCandidateNotification | null>(null);
+
+  const dismissedDispatchIds = useRef(new Set<string>());
 
   useEffect(() => {
     if (!neighbourhoodId) return;
@@ -74,6 +76,10 @@ export function useNoCandidateDispatch(neighbourhoodId: string | null) {
           return;
         }
 
+        if (dismissedDispatchIds.current.has(payload.dispatch_id)) {
+          return;
+        }
+
         setNotification({
           dispatchId: payload.dispatch_id,
           alertId: payload.alert_id,
@@ -100,8 +106,15 @@ export function useNoCandidateDispatch(neighbourhoodId: string | null) {
     };
   }, [neighbourhoodId]);
 
+  const dismiss = useCallback(() => {
+    if (!notification) return;
+
+    dismissedDispatchIds.current.add(notification.dispatchId);
+    setNotification(null);
+  }, [notification]);
+
   return {
     notification,
-    dismiss: () => setNotification(null),
+    dismiss,
   };
 }
