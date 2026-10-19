@@ -554,7 +554,7 @@ export function AlertCard({alert, onAcknowledge, onResolve, onDismissAlert, onBr
             )}
           </div>
             <p className="text-base font-semibold text-brand-frost leading-snug truncate">
-              Incident
+              {detectionTypes?.length ? "Incident" : detectionLabel(alert.detection_type)}
             </p>
 
             {detectionTypes && detectionTypes.length > 0 && (
