@@ -1,0 +1,24 @@
+frontend/package.json
+  h_cf6208e37032c0 68-69
+package.json
+  h_cf6208e37032c0 20-21
+.github/workflows/preview.yml
+  h_cf6208e37032c0 26
+.github/workflows/production.yml
+  h_cf6208e37032c0 24
+backend/requirements.txt
+  h_cf6208e37032c0 51
+.github/workflows/ci.yml
+  h_cf6208e37032c0 16,36,39,100,114,152,179,182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "aa9fd28e4b24cf1556560683eeebea97cdf6ac10",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
