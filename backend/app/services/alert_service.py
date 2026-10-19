@@ -62,7 +62,6 @@ from app.services.tracking_service import (
 from app.services.situational_brief_service import maybe_generate_situational_brief
 from app.services.incident_policy import (
     ACTIVE_ALERT_STATUSES,
-    TRACKED_ALERT_DUPLICATE_WINDOW_SECONDS,
     tracked_alert_duplicate_stmt,
 )
 from app.services.notifications.factory import NotificationPolicyFactory
