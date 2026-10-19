@@ -1,0 +1,18 @@
+package.json
+  h_cf6208e37032c0 4
+  h_cf6208e37032c0 21
+frontend/package.json
+  h_cf6208e37032c0 4
+  h_cf6208e37032c0 69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9a31540838e1e3e699ccb1934e6fd237ff5f3f62",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
