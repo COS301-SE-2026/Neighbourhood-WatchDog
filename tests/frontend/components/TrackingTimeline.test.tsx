@@ -103,6 +103,9 @@ describe("TrackingTimeline", () => {
       "alert-1",
       expect.any(AbortSignal),
     );
+    expect(
+      screen.queryByText("Cross-camera tracking is not available for this alert."),
+    ).not.toBeInTheDocument();
   });
 
   test("renders the empty-sightings state after acknowledgement", async () => {
@@ -128,7 +131,7 @@ describe("TrackingTimeline", () => {
     expect(screen.getByText("Active across cameras")).toBeInTheDocument();
   });
 
-  test("renders a not-found error", async () => {
+  test("renders a neutral status when tracking is unavailable", async () => {
     fetchTrackingTimelineMock.mockRejectedValue(
       new ApiError("not found", 404),
     );
@@ -139,14 +142,11 @@ describe("TrackingTimeline", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("No tracking timeline is available for this alert."),
+        screen.getByText("Cross-camera tracking is not available for this alert."),
       ).toBeInTheDocument();
     });
 
-    expect(screen.getByText("No tracking timeline is available for this alert.")).toHaveAttribute(
-      "class",
-      expect.stringContaining("border-brand-caution"),
-    );
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   test("allows the timeline to be refreshed", async () => {
