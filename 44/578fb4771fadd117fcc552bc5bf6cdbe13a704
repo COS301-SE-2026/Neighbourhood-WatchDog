@@ -1,0 +1,23 @@
+.github/workflows/zap-baseline.yml
+  h_cf6208e37032c0 58
+.github/workflows/deploy-staging.yml
+  h_cf6208e37032c0 91
+.github/workflows/ci.yml
+  h_cf6208e37032c0 31,95,103,174,195,213
+  h_cf6208e37032c0 17,161
+tests/e2e/.github/workflows/playwright.yml
+  h_cf6208e37032c0 13,22
+.github/workflows/deploy-mediamtx-prod.yml
+  h_cf6208e37032c0 34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "44578fb4771fadd117fcc552bc5bf6cdbe13a704",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
