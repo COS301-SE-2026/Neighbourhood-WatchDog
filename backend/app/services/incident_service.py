@@ -5,8 +5,7 @@ from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
-
+from sqlalchemy.orm import aliased, joinedload
 from app.models.alert import Alert, DetectionType, AlertStatus
 from app.models.camera import Camera
 from app.models.incident import Incident
@@ -84,18 +83,23 @@ async def find_active_incident_for_embedding(
 
     cosine_distance = (TrackingSubject.reference_embedding.cosine_distance(embedding).label("cosine_distance"))
 
+    ActiveAlert = aliased(Alert)
+
     active_alert_exists = (
-        select(Alert.id)
+        select(ActiveAlert.id)
+        .select_from(ActiveAlert)
         .where(
-            Alert.incident_id == Incident.id,
-            Alert.status.in_(
+            ActiveAlert.incident_id == Incident.id,
+            ActiveAlert.status.in_(
                 (
                     AlertStatus.OPEN.value,
                     AlertStatus.ACKNOWLEDGED.value,
                     AlertStatus.CONFIRMED.value
                 )
             )
+
         )
+        .correlate(Incident)
         .exists()
     )
 
