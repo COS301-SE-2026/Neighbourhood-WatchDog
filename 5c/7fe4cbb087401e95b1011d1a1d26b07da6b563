@@ -1,0 +1,25 @@
+frontend/Dockerfile
+  h_cf6208e37032c0 2-3,15-16,25-26
+mediamtx/Dockerfile
+  h_cf6208e37032c0 1-2
+backend/Dockerfile
+  h_cf6208e37032c0 2-3,25-26,48-49
+  h_cf6208e37032c0 1,24,47
+ai/Dockerfile
+  h_cf6208e37032c0 2-3,19-20
+docker-compose.yml
+  h_cf6208e37032c0 23-24,37-38
+docs/code_quality.md
+  h_cf6208e37032c0 446
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5c7fe4cbb087401e95b1011d1a1d26b07da6b563",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
