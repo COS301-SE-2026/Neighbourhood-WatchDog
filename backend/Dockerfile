@@ -1,5 +1,6 @@
-#Build and test stage
-FROM python:3.11-slim AS builder
+# Build and test stage
+# python:3.11-slim
+FROM python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce AS builder
 
 WORKDIR /app
 
@@ -20,8 +21,9 @@ RUN pip install -r requirements-dev.txt
 COPY . .
 # RUN pytest
 
-#Development stage
-FROM python:3.11-slim AS development
+# Development stage
+# python:3.11-slim
+FROM python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce AS development
 
 WORKDIR /app
 
@@ -42,8 +44,9 @@ RUN pip install -r requirements-dev.txt
 EXPOSE 8000
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
-#Runtime stage (this is prod basically)
-FROM python:3.11-slim AS production
+# Runtime stage (this is prod basically)
+# python:3.11-slim
+FROM python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce AS production
 
 WORKDIR /app
 

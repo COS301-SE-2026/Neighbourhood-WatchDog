@@ -19,7 +19,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
 
       - name: Copy mediamtx files to instance
         uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345 #v1.0.0
@@ -31,7 +31,7 @@ jobs:
           target: "/home/ubuntu/app"
 
       - name: Redeploy mediamtx
-        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 #1.0.3
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 #v1.0.3
         with:
           host: ${{ secrets.MEDIAMTX_HOST }}
           username: ${{ secrets.MEDIAMTX_USER }}
