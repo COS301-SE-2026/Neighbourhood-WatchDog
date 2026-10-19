@@ -5,11 +5,9 @@ on:
     branches: [ "main" ]
     paths:
       - 'mediamtx/**'
-      - 'go2rtc/**'
       - 'failover-controller/**'
       - 'docker-compose.yml'
       - 'docker-compose.prod.yml'
-      - 'docker-compose.failover.yml'
 
 jobs:
   deploy:
