@@ -65,7 +65,8 @@
     "tailwindcss-animate": "^1.0.7",
     "ts-jest": "^29",
     "ts-node": "^10",
-    "typescript": "^5"
+    "typescript": "^5",
+    "packageManager": "pnpm@10.30.3"
   },
   "pnpm": {
     "overrides": {
