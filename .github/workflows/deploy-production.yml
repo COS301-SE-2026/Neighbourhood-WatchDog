@@ -12,7 +12,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: Production
-
+    needs: ci
+    
     steps:
       - uses: actions/checkout@v4
 

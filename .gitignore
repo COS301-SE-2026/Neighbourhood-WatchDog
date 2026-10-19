@@ -63,3 +63,5 @@ docker-compose.override.yml
 /ai/installer-output/
 
 .gitleaksignore
+
+.DS_Store

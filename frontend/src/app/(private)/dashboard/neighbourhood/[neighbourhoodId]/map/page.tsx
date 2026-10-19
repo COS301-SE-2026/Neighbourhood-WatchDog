@@ -882,13 +882,6 @@ function handleToggleLayer(layer: MapLayerKey) {
               </p>
             )}
           </div>
-
-          <MapLayerControls
-            layers={layerState}
-            showSecurityLayers={showSecurityContent}
-            canViewRoutes={isSecurityOfficer}
-            onToggle={handleToggleLayer}
-          />
         </section>
         {showSecurityContent && isSecurityOfficer && (
           <section
@@ -1055,14 +1048,28 @@ function handleToggleLayer(layer: MapLayerKey) {
           </section>
         )}
 
-        <section className="mb-4">
-          <DateRangePicker
-            startDate={densityStartDate}
-            endDate={densityEndDate}
-            onStartDateChange={setDensityStartDate}
-            onEndDateChange={setDensityEndDate}
+        <section className="mb-3">
+          <MapLayerControls
+            layers={layerState}
+            showSecurityLayers={showSecurityContent}
+            canViewRoutes={isSecurityOfficer}
+            onToggle={handleToggleLayer}
           />
         </section>
+
+        {(layerState.heatmap || layerState.contours) && (
+          <section
+            aria-label="Historical incident filters"
+            className="mb-3"
+          >
+            <DateRangePicker
+              startDate={densityStartDate}
+              endDate={densityEndDate}
+              onStartDateChange={setDensityStartDate}
+              onEndDateChange={setDensityEndDate}
+            />
+          </section>
+        )}
 
 
         {(

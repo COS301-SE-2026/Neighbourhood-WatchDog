@@ -22,7 +22,6 @@
 
 [![CI Pipeline](https://img.shields.io/github/actions/workflow/status/COS301-SE-2026/Neighbourhood-WatchDog/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI&labelColor=0D1B2A&color=10B981)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions/workflows/ci.yml)
 [![CD Pipeline](https://img.shields.io/github/actions/workflow/status/COS301-SE-2026/Neighbourhood-WatchDog/deploy-production.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CD&labelColor=0D1B2A&color=10B981)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions/workflows/deploy-production.yml)
-[![Quality Gate](https://img.shields.io/sonar/quality_gate/COS301-SE-2026_Neighbourhood-WatchDog?server=https%3A%2F%2Fsonarcloud.io&style=for-the-badge&logo=sonarcloud&logoColor=white&label=Quality+Gate&labelColor=0D1B2A&color=10B981)](https://sonarcloud.io/summary/new_code?id=COS301-SE-2026_Neighbourhood-WatchDog)
 [![Coverage](https://img.shields.io/codecov/c/github/COS301-SE-2026/Neighbourhood-WatchDog?style=for-the-badge&logo=codecov&logoColor=white&label=Coverage&labelColor=0D1B2A&color=10B981&token=28L6HTN8XV)](https://codecov.io/github/COS301-SE-2026/Neighbourhood-WatchDog)
 [![Commit Activity](https://img.shields.io/github/commit-activity/m/COS301-SE-2026/Neighbourhood-WatchDog/dev?style=for-the-badge&logo=git&logoColor=white&label=Commits&labelColor=0D1B2A&color=10B981)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/commits/dev)
 [![Open Issues](https://img.shields.io/github/issues-raw/COS301-SE-2026/Neighbourhood-WatchDog?style=for-the-badge&logo=github&logoColor=white&label=Issues&labelColor=0D1B2A&color=10B981)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/issues)
@@ -283,8 +282,8 @@ Neighbourhood-WatchDog/
 
 
 Demo 4 
-[![Slides](https://img.shields.io/badge/Slides_4-View-0A0A0A?style=flat-square&logo=googleslides&logoColor=white&labelColor=0D1B2A)](/docs/demo_4_slides.pdf) 
-[![Video](https://img.shields.io/badge/Video_4-Watch-0A0A0A?style=flat-square&logo=youtube&logoColor=white&labelColor=0D1B2A)](/docs/Demo4.mp4)
+[![Slides](https://img.shields.io/badge/Slides_4-View-0A0A0A?style=flat-square&logo=googleslides&logoColor=white&labelColor=0D1B2A)](/docs/demo-videos/demo_4_slides.pdf) 
+[![Video](https://img.shields.io/badge/Video_4-Watch-0A0A0A?style=flat-square&logo=youtube&logoColor=white&labelColor=0D1B2A)](/docs/demo-videos/Demo%204.mp4)
 
 </div>
 

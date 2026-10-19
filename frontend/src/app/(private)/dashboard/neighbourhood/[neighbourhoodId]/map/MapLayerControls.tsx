@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 export type MapLayerKey =
   | "properties"
   | "heatmap"
@@ -33,44 +39,44 @@ function LayerToggle({
   disabled = false,
 }: LayerToggleProps) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-disabled={disabled}
-      disabled={disabled}
-      onClick={onChange}
-      className={`flex w-full items-center justify-between gap-4 rounded-md border px-3 py-2.5 text-left transition-colors ${
-        disabled
-          ? "cursor-not-allowed border-border/50 opacity-50"
-          : checked
-            ? "border-brand-green/40 bg-brand-green/10"
-            : "border-border bg-brand-abyss hover:bg-brand-slate"
-      }`}
-    >
-      <span className="min-w-0">
-        <span className="block text-sm font-medium text-brand-frost">
-          {label}
-        </span>
-
-        <span className="mt-0.5 block text-xs text-brand-ash">
-          {description}
-        </span>
-      </span>
-
-      <span
-        aria-hidden="true"
-        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
-          checked ? "bg-brand-green" : "bg-brand-slate"
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 size-4 rounded-full bg-white transition-transform ${
-            checked ? "translate-x-4" : "translate-x-0.5"
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          role="switch"
+          aria-label={label}
+          aria-checked={checked}
+          aria-disabled={disabled}
+          onClick={disabled ? undefined : onChange}
+          className={`inline-flex min-h-9 items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs font-medium text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-green/50 ${
+            disabled
+              ? "cursor-not-allowed border-border/50 opacity-50"
+              : checked
+                ? "border-brand-green/40 bg-brand-green/10 text-brand-frost"
+                : "border-border bg-brand-abyss text-brand-ash hover:bg-brand-slate hover:text-brand-frost"
           }`}
-        />
-      </span>
-    </button>
+        >
+          <span>{label}</span>
+
+          <span
+            aria-hidden="true"
+            className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${
+              checked ? "bg-brand-green" : "bg-brand-slate"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 size-3 rounded-full bg-white transition-transform ${
+                checked ? "translate-x-3.5" : "translate-x-0.5"
+              }`}
+            />
+          </span>
+        </button>
+      </TooltipTrigger>
+
+      <TooltipContent side="top" sideOffset={6}>
+        {description}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -83,19 +89,13 @@ export function MapLayerControls({
   return (
     <section
       aria-label="Map layer controls"
-      className="rounded-lg border border-border bg-brand-depth p-4"
+      className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-brand-depth p-2"
     >
-      <div className="mb-3">
-        <h2 className="text-sm font-semibold text-brand-frost">
-          Map layers
-        </h2>
+      <h2 className="px-1 text-xs font-semibold text-brand-ash">
+        Map layers
+      </h2>
 
-        <p className="mt-1 text-xs text-brand-ash">
-          Choose which information is visible on the map.
-        </p>
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="flex flex-wrap items-center gap-1.5">
         <LayerToggle
           label="Properties"
           description="Show all geocoded neighbourhood properties."
@@ -105,21 +105,21 @@ export function MapLayerControls({
 
         <LayerToggle
           label="Incident heatmap"
-          description="Show aggregated confirmed and resolved incidents."
+          description="Show aggregated confirmed and resolved incidents for the selected date range."
           checked={layers.heatmap}
           onChange={() => onToggle("heatmap")}
         />
 
         <LayerToggle
-            label="Danger zones"
-            description={"Show areas combining incident history and camera sparsity."}
-            checked={layers.dangerZones}
-            onChange={() => onToggle("dangerZones")}
+          label="Danger zones"
+          description="Show areas combining incident history and camera sparsity."
+          checked={layers.dangerZones}
+          onChange={() => onToggle("dangerZones")}
         />
 
         <LayerToggle
           label="Contours"
-          description="Show contour lines over the incident surface."
+          description="Show contour lines over the historical incident surface for the selected date range."
           checked={layers.contours}
           onChange={() => onToggle("contours")}
         />
@@ -135,7 +135,11 @@ export function MapLayerControls({
 
             <LayerToggle
               label="Routes"
-              description="Show the selected officer route."
+              description={
+                canViewRoutes
+                  ? "Show the selected officer route."
+                  : "Officer routes are only available to users with route access."
+              }
               checked={layers.routes}
               disabled={!canViewRoutes}
               onChange={() => onToggle("routes")}
