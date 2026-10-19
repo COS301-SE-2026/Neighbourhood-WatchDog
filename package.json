@@ -1,6 +1,7 @@
 {
   "name": "neighbourhood-watchdog",
   "version": "1.0.0",
+  "packageManager": "pnpm@10.30.3",
   "scripts": {
     "setup": "pnpm setup:python && pnpm install && pnpm setup:backend",
     "setup:dev": "pnpm setup:python && pnpm install && pnpm setup:backend:dev",
@@ -17,7 +18,6 @@
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "jest": "^30.4.2",
-    "ts-jest": "^29.4.11",
-    "packageManager": "pnpm@10.30.3"
+    "ts-jest": "^29.4.11"
   }
 }

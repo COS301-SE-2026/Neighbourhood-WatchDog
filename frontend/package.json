@@ -1,6 +1,7 @@
 {
   "name": "frontend",
   "version": "0.1.0",
+  "packageManager": "pnpm@10.30.3",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -65,8 +66,7 @@
     "tailwindcss-animate": "^1.0.7",
     "ts-jest": "^29",
     "ts-node": "^10",
-    "typescript": "^5",
-    "packageManager": "pnpm@10.30.3"
+    "typescript": "^5"
   },
   "pnpm": {
     "overrides": {
