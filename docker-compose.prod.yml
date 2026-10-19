@@ -1,18 +1,4 @@
 services:
-  # redis:
-  #   image: redis:7-alpine
-  #   container_name: redis_cache
-  #   restart: always
-  #   ports:
-  #     - "6379:6379"
-  #   volumes:
-  #     - redis_data:/data
-  #   healthcheck:
-  #     test: ["CMD", "redis-cli", "ping"]
-  #     interval: 1m30s
-  #     timeout: 30s
-  #     retries: 5
-  #     start_period: 30s
 
   backend:
     build:
@@ -23,7 +9,6 @@ services:
       DEBUG: "false"
       TESTING: "false"
       DATABASE_URL: ${DATABASE_URL}
-      # REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME}
       AWS_REGION: ${AWS_REGION}
@@ -44,27 +29,9 @@ services:
       INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
       WEAPON_INCIDENT_WINDOW_SECONDS: ${WEAPON_INCIDENT_WINDOW_SECONDS:-30}
     restart: always
-    # volumes:
-    #   - ./backend:/app
     depends_on:
       postgres:
         condition: service_healthy
-      # redis:
-      #   condition: service_healthy
-
-  # ai:
-  #   build:
-  #     context: ./ai
-  #     target: development
-  #   platform: linux/amd64
-  #   ports:
-  #     - "8001:8001"
-  #   environment:
-  #     OPENCV_FFMPEG_CAPTURE_OPTIONS: "rtsp_transport;tcp"
-  #     BACKEND_URL: http://backend:8000
-  #   volumes:
-  #     - ./ai:/app
-  #   command: uvicorn app:app --host 0.0.0.0 --port 8001 --reload
 
   mediamtx:
     environment:
