@@ -54,6 +54,8 @@ async def incident_scenario():
     alert_weapon_one_id = uuid.uuid4()
     alert_weapon_two_id = uuid.uuid4()
     alert_human_id = uuid.uuid4()
+    alert_human_mixed_id = uuid.uuid4()
+    alert_loitering_other_property_id = uuid.uuid4()
     alert_fall_id = uuid.uuid4()
     alert_other_property_id = uuid.uuid4()
 
@@ -153,7 +155,7 @@ async def incident_scenario():
         id=incident_weapon_id,
         detection_type=DetectionType.WEAPON_DETECTED.value,
         started_at=base_time - timedelta(minutes=5),
-        last_seen_at=base_time - timedelta(minutes=4),
+        last_seen_at=base_time - timedelta(minutes=3),
     )
 
     incident_human = Incident(
@@ -197,6 +199,26 @@ async def incident_scenario():
             confidence_score=0.97,
             processed=True,
             status=AlertStatus.ACKNOWLEDGED.value,
+        ),
+        Alert(
+            id=alert_human_mixed_id,
+            camera_id=camera_one_id,
+            incident_id=incident_weapon_id,
+            frame_timestamp=base_time - timedelta(minutes=3),
+            detection_type=DetectionType.HUMAN_PRESENCE,
+            confidence_score=0.90,
+            processed=True,
+            status=AlertStatus.OPEN.value,
+        ),
+        Alert(
+            id=alert_loitering_other_property_id,
+            camera_id=camera_two_id,
+            incident_id=incident_weapon_id,
+            frame_timestamp=base_time - timedelta(minutes=3),
+            detection_type=DetectionType.LOITERING,
+            confidence_score=0.86,
+            processed=True,
+            status=AlertStatus.OPEN.value,
         ),
         Alert(
             id=alert_human_id,
@@ -264,6 +286,8 @@ async def incident_scenario():
         "officer": officer,
         "outsider": outsider,
         "incident_weapon_id": incident_weapon_id,
+        "alert_human_mixed_id": alert_human_mixed_id,
+        "alert_loitering_other_property_id": alert_loitering_other_property_id,
         "incident_human_id": incident_human_id,
         "incident_fall_id": incident_fall_id,
         "incident_other_property_id": incident_other_property_id,
@@ -417,6 +441,66 @@ async def test_get_incident_returns_detail_with_all_alerts(
     assert body["data"]["detection_type"] == "WEAPON_DETECTED"
     assert body["data"]["alert_count"] == 2
     assert len(body["data"]["alerts"]) == 2
+    assert body["data"]["detection_types"] == ["WEAPON_DETECTED"]
+    assert {item["detection_type"] for item in body["data"]["alerts"]} == {"WEAPON_DETECTED"}
+    assert scenario["alert_human_mixed_id"] not in {
+        item["id"] for item in body["data"]["alerts"]
+    }
+    assert scenario["alert_loitering_other_property_id"] not in {
+        item["id"] for item in body["data"]["alerts"]
+    }
+
+
+@pytest.mark.asyncio
+async def test_resident_list_shows_only_incident_alerts_from_their_property(
+    async_client: AsyncClient,
+    incident_scenario,
+):
+    scenario = incident_scenario
+    response = await async_client.get(
+        f"/incidents/neighbourhoods/{scenario['neighbourhood_id']}",
+        headers=make_headers(scenario["viewer"], NeighbourhoodRole.RESIDENT),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    summary = next(
+        item for item in body["data"]
+        if item["id"] == str(scenario["incident_weapon_id"])
+    )
+    assert summary["alert_count"] == 3
+    assert set(summary["detection_types"]) == {
+        "WEAPON_DETECTED",
+        "HUMAN_PRESENCE",
+    }
+    assert summary["representative_alert"]["detection_type"] == "HUMAN_PRESENCE"
+
+
+@pytest.mark.asyncio
+async def test_resident_incident_detail_excludes_other_properties_alerts(
+    async_client: AsyncClient,
+    incident_scenario,
+):
+    scenario = incident_scenario
+    response = await async_client.get(
+        f"/incidents/{scenario['incident_weapon_id']}",
+        headers=make_headers(scenario["viewer"], NeighbourhoodRole.RESIDENT),
+    )
+
+    assert response.status_code == 200
+    detail = response.json()["data"]
+    assert detail["alert_count"] == 3
+    assert set(detail["detection_types"]) == {
+        "WEAPON_DETECTED",
+        "HUMAN_PRESENCE",
+    }
+    assert all(
+        alert["camera_id"] == str(scenario["camera_one_id"])
+        for alert in detail["alerts"]
+    )
+    assert scenario["alert_loitering_other_property_id"] not in {
+        alert["id"] for alert in detail["alerts"]
+    }
 
 
 @pytest.mark.asyncio
@@ -505,6 +589,14 @@ async def test_security_officer_sees_only_weapon_and_fall_incidents(
     assert str(scenario["incident_fall_id"]) in incident_ids
     assert str(scenario["incident_other_property_id"]) in incident_ids
     assert str(scenario["incident_human_id"]) not in incident_ids
+
+    weapon_summary = next(
+        item for item in body["data"]
+        if item["id"] == str(scenario["incident_weapon_id"])
+    )
+    assert weapon_summary["detection_types"] == ["WEAPON_DETECTED"]
+    assert weapon_summary["alert_count"] == 2
+    assert weapon_summary["representative_alert"]["detection_type"] == "WEAPON_DETECTED"
 
 
 @pytest.mark.asyncio

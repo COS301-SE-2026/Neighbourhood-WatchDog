@@ -1,6 +1,6 @@
 import logging
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import IntegrityError
 
@@ -13,7 +13,11 @@ from app.services.alert_service import _build_alert_res
 from app.services.dispatch_service import dispatch_alert
 from app.services.notifications.factory import NotificationPolicyFactory
 from app.models.tracking import TrackingSubject, TrackingSighting
-from app.services.tracking_service import normalize_appearance_embedding
+from app.services.tracking_service import (
+    next_tracking_sighting_sequence,
+    normalize_appearance_embedding,
+)
+from app.services.incident_policy import tracked_alert_duplicate_stmt
 from app.services.incident_service import create_incident_for_alert, find_active_incident_for_embedding
 from app.schemas.notification import EventType
 
@@ -105,23 +109,23 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
                 embedding=candidate_embedding,
                 embedding_model=data.embedding_model,
                 observed_at=data.frame_timestamp,
-                window_seconds=300
-                
             )
 
         if matched_incident is not None:
+            logger.info(
+                "Detection matched active incident=%s camera=%s type=%s",
+                matched_incident.id,
+                data.camera_id,
+                data.detection_type,
+            )
             # A person already tracked by an active incident was seen
             # again - bypasses the normal confidence threshold, since we
             # already know who they are from a strong embedding match.
-            existing_stmt = (
-                select(Alert)
-                .where(
-                    Alert.incident_id == matched_incident.id,
-                    Alert.camera_id == data.camera_id,
-                    Alert.detection_type == data.detection_type,
-                )
-                .order_by(Alert.frame_timestamp.desc())
-                .limit(1)
+            existing_stmt = tracked_alert_duplicate_stmt(
+                incident_id=matched_incident.id,
+                camera_id=data.camera_id,
+                detection_type=data.detection_type,
+                observed_at=data.frame_timestamp,
             )
             existing_result = await db.execute(existing_stmt)
             existing_alert = existing_result.scalar_one_or_none()
@@ -168,18 +172,10 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
             tracking_subject = matched_incident.tracking_subject
 
             if tracking_subject is not None:
-                sequence_result = await db.execute(
-                    select(
-                        func.coalesce(
-                            func.max(TrackingSighting.sequence_no),
-                            0,
-                        ) + 1
-                    ).where(
-                        TrackingSighting.tracking_subject_id
-                        == tracking_subject.id
-                    )
+                next_sequence = await next_tracking_sighting_sequence(
+                    db,
+                    tracking_subject.id,
                 )
-                next_sequence = int(sequence_result.scalar_one())
 
                 db.add(TrackingSighting(
                     tracking_subject_id=tracking_subject.id,
@@ -190,7 +186,15 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
                     match_confidence=None,
                 ))
 
-        elif data.confidence_score >= threshold:
+        else:
+            logger.debug(
+                "No active incident matched detection camera=%s neighbourhood=%s type=%s",
+                data.camera_id,
+                neighbourhood_id,
+                data.detection_type,
+            )
+
+        if matched_incident is None and data.confidence_score >= threshold:
             alert = Alert(
                 camera_id=data.camera_id,
                 frame_timestamp=data.frame_timestamp,

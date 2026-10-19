@@ -6,13 +6,17 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, joinedload
-from app.models.alert import Alert, DetectionType, AlertStatus
+from app.models.alert import Alert, DetectionType
 from app.models.camera import Camera
 from app.models.incident import Incident
 from app.models.neighbourhood_user import NeighbourhoodRole
 from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.tracking import TrackingSubject
+from app.services.incident_policy import (
+    ACTIVE_ALERT_STATUSES,
+    INCIDENT_MATCH_WINDOW_SECONDS,
+)
 from app.schemas.alert import (
     AlertRes,
     IncidentDetailRes,
@@ -107,7 +111,7 @@ async def find_active_incident_for_embedding(
     embedding: list[float],
     embedding_model: str,
     observed_at: datetime,
-    window_seconds: int = 300
+    window_seconds: int = INCIDENT_MATCH_WINDOW_SECONDS,
 ) -> Incident | None:
     """find the most similar recent active incident in this neighbourhood."""
     from app.services.tracking_service import TRACKING_MATCH_MIN_SIMILARITY
@@ -121,14 +125,7 @@ async def find_active_incident_for_embedding(
         .select_from(ActiveAlert)
         .where(
             ActiveAlert.incident_id == Incident.id,
-            ActiveAlert.status.in_(
-                (
-                    AlertStatus.OPEN.value,
-                    AlertStatus.ACKNOWLEDGED.value,
-                    AlertStatus.CONFIRMED.value
-                )
-            )
-
+            ActiveAlert.status.in_(ACTIVE_ALERT_STATUSES),
         )
         .correlate(Incident)
         .exists()
@@ -149,7 +146,9 @@ async def find_active_incident_for_embedding(
             Incident.last_seen_at >= observed_at - timedelta(
                 seconds=window_seconds
             ),
-            Incident.last_seen_at <= observed_at + timedelta(seconds=5),
+            Incident.last_seen_at <= observed_at + timedelta(
+                seconds=window_seconds
+            ),
             active_alert_exists,
             TrackingSubject.reference_embedding.is_not(None),
             TrackingSubject.embedding_model == embedding_model,
@@ -181,15 +180,13 @@ async def find_active_incident_for_embedding(
 
     return incident
 
-async def end_incident_if_representative(
+async def end_incident_if_no_active_alerts(
     *,
     db: AsyncSession,
     alert: Alert,
     ended_at: datetime,
 ) -> None:
-    """
-    Mark an incident as ended once its representative (most recently seen) alert is resolved
-    or dismissed. If a newer alert on the same incident is still open it stays active."""
+    """End the incident when none of its alerts remain active."""
     if alert.incident_id is None:
         return
 
@@ -204,13 +201,7 @@ async def end_incident_if_representative(
         .select_from(Alert)
         .where(
             Alert.incident_id == incident.id,
-            Alert.status.in_(
-                (
-                    AlertStatus.OPEN.value,
-                    AlertStatus.ACKNOWLEDGED.value,
-                    AlertStatus.CONFIRMED.value,
-                )
-            ),
+            Alert.status.in_(ACTIVE_ALERT_STATUSES),
         )
     )
 
@@ -379,9 +370,8 @@ async def list_incidents_handler(
         stmt = stmt.where(
             Alert.detection_type.in_(
                 {
-                    DetectionType.WEAPON_DETECTED,
-                    DetectionType.FALL_DETECTED
-
+                    DetectionType.WEAPON_DETECTED.value,
+                    DetectionType.FALL_DETECTED.value,
                 }
             )
         )

@@ -531,7 +531,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
     () =>
       incidents.filter((incident) => {
         const categories =
-          incident.detection_types?.length
+          incident.detection_types.length
             ? incident.detection_types
             : [incident.representative_alert.detection_type];
 

@@ -152,6 +152,7 @@ interface ListIncidentsRes {
 export interface IncidentDetail {
   id: string;
   detection_type: string;
+  detection_types: string[];
   started_at: string;
   last_seen_at: string;
   alert_count: number;

@@ -1,6 +1,6 @@
 import asyncio
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -34,6 +34,7 @@ async def grouping_camera():
     neighbourhood_id = uuid.uuid4()
     property_id = uuid.uuid4()
     camera_id = uuid.uuid4()
+    second_camera_id = uuid.uuid4()
     user_id = uuid.uuid4()
 
     neighbourhood = Neighbourhood(
@@ -58,6 +59,16 @@ async def grouping_camera():
         name="Grouping Test Camera",
         location="Grouping Test Location",
         rtsp_url="rtsp://grouping-test-camera",
+        visibility=CameraVisibilityEnum.PRIVATE,
+        enabled=True,
+    )
+
+    second_camera = Camera(
+        id=second_camera_id,
+        property_id=property_id,
+        name="Grouping Test Camera Two",
+        location="Grouping Test Location Two",
+        rtsp_url="rtsp://grouping-test-camera-two",
         visibility=CameraVisibilityEnum.PRIVATE,
         enabled=True,
     )
@@ -89,6 +100,7 @@ async def grouping_camera():
                 neighbourhood,
                 property_obj,
                 camera,
+                second_camera,
                 user,
                 membership,
                 property_membership,
@@ -100,6 +112,7 @@ async def grouping_camera():
         "neighbourhood_id": neighbourhood_id,
         "property_id": property_id,
         "camera_id": camera_id,
+        "second_camera_id": second_camera_id,
         "user_id": user_id,
         "camera": camera,
     }
@@ -110,7 +123,7 @@ async def grouping_camera():
         async with SessionLocal() as db:
             incident_result = await db.execute(
                 select(Alert.incident_id).where(
-                    Alert.camera_id == camera_id
+                    Alert.camera_id.in_([camera_id, second_camera_id])
                 )
             )
 
@@ -121,7 +134,9 @@ async def grouping_camera():
             }
 
             await db.execute(
-                delete(Alert).where(Alert.camera_id == camera_id)
+                delete(Alert).where(
+                    Alert.camera_id.in_([camera_id, second_camera_id])
+                )
             )
 
             if incident_ids:
@@ -147,7 +162,9 @@ async def grouping_camera():
             )
 
             await db.execute(
-                delete(Camera).where(Camera.id == camera_id)
+                delete(Camera).where(
+                    Camera.id.in_([camera_id, second_camera_id])
+                )
             )
 
             await db.execute(
@@ -179,6 +196,32 @@ def make_weapon_request(
         thumbnail_url=None,
         local_track_id=None,
     )
+
+
+
+
+def make_tracked_request(
+    camera_id: uuid.UUID,
+    timestamp: datetime,
+    detection_type: str,
+    local_track_id: int,
+    embedding: list[float],
+) -> CreateInternalAlertRequest:
+    return CreateInternalAlertRequest(
+        camera_id=str(camera_id),
+        detection_type=detection_type,
+        confidence_score=0.95,
+        frame_timestamp=timestamp.isoformat(),
+        thumbnail_url=None,
+        local_track_id=local_track_id,
+        appearance_embedding=embedding,
+        embedding_model="grouping-test-model",
+    )
+
+
+async def create_alert_with_session(**kwargs):
+    async with SessionLocal() as db:
+        return await create_alert_for_agent_handler(db=db, **kwargs)
 
 
 def make_notification_policy():
@@ -357,3 +400,80 @@ async def test_confirmed_alert_remains_groupable(
     assert first_result.is_new_alert is True
     assert second_result.is_new_alert is False
     assert first_result.alert_id == second_result.alert_id
+
+
+@pytest.mark.asyncio
+async def test_cross_camera_grouping_accuracy_meets_75_percent(
+    grouping_camera,
+):
+    """Evaluate four labelled same-person/impostor cross-camera sightings."""
+    first_camera = grouping_camera["camera_id"]
+    second_camera = grouping_camera["second_camera_id"]
+    timestamp = datetime.now(timezone.utc).replace(microsecond=0)
+    credential = SimpleNamespace(property_id=grouping_camera["property_id"])
+    notification_policy = make_notification_policy()
+
+    def vector(index: int, sign: float = 1.0) -> list[float]:
+        values = [0.0] * 1280
+        values[index] = sign
+        return values
+
+    seed_embeddings = [vector(0), vector(1)]
+    seed_incidents = []
+    with patch(
+        "app.services.alert_service.NotificationPolicyFactory.get",
+        new=Mock(return_value=notification_policy),
+    ):
+        for index, embedding in enumerate(seed_embeddings):
+            result = await create_alert_with_session(
+                body=make_tracked_request(
+                    first_camera,
+                    timestamp,
+                    "WEAPON_DETECTED",
+                    100 + index,
+                    embedding,
+                ),
+                credential=credential,
+                generate_brief=False,
+            )
+            async with SessionLocal() as verify_db:
+                alert = await verify_db.get(Alert, result.alert_id)
+                assert alert is not None and alert.incident_id is not None
+                seed_incidents.append(alert.incident_id)
+
+        known_incidents = set(seed_incidents)
+        labelled_queries = [
+            # Positive: same person, different camera and detection category.
+            (vector(0), "HUMAN_PRESENCE", seed_incidents[0]),
+            (vector(1), "LOITERING", seed_incidents[1]),
+            # Negative: orthogonal or opposite identity must start a new group.
+            (vector(2), "HUMAN_PRESENCE", None),
+            (vector(0, -1.0), "PERIMETER_SCAN", None),
+        ]
+
+        correct = 0
+        for index, (embedding, detection_type, expected_incident_id) in enumerate(
+            labelled_queries
+        ):
+            result = await create_alert_with_session(
+                body=make_tracked_request(
+                    second_camera,
+                    timestamp + timedelta(seconds=index + 1),
+                    detection_type,
+                    200 + index,
+                    embedding,
+                ),
+                credential=credential,
+                generate_brief=False,
+            )
+            async with SessionLocal() as verify_db:
+                alert = await verify_db.get(Alert, result.alert_id)
+                assert alert is not None and alert.incident_id is not None
+                if expected_incident_id is None:
+                    correct += alert.incident_id not in known_incidents
+                else:
+                    correct += alert.incident_id == expected_incident_id
+                known_incidents.add(alert.incident_id)
+
+    accuracy = correct / len(labelled_queries)
+    assert accuracy >= 0.75, f"cross-camera grouping accuracy was {accuracy:.0%}"
