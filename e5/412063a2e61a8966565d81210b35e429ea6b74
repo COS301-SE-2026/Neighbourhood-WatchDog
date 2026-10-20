@@ -1,0 +1,29 @@
+.github/workflows/ci.yml
+  h_cf6208e37032c0 4,205,221
+  h_cf6208e37032c0 242
+.github/workflows/preview.yml
+  h_cf6208e37032c0 9-12,17,23-24
+  h_cf6208e37032c0 13
+ai/requirements.txt
+  h_cf6208e37032c0 4-5
+.github/workflows/deploy-staging.yml
+  h_cf6208e37032c0 4-7,11,17-18
+.github/workflows/deploy-production.yml
+  h_cf6208e37032c0 4-7,15,21-22
+.github/workflows/production.yml
+  h_cf6208e37032c0 9-12,16,22-23
+  h_cf6208e37032c0 17
+.github/workflows/deploy-mediamtx-prod.yml
+  h_cf6208e37032c0 4-7,11,18-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e5412063a2e61a8966565d81210b35e429ea6b74",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
