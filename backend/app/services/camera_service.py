@@ -1,3 +1,6 @@
+from app.core.database import DbSession
+from app.auth.jwt import verify_jwt
+from app.auth.authorization import user_can_view_camera
 from app.schemas.camera import CameraRes, CameraListItemRes, CamerasRes, CameraEditReq
 from app.models.camera import Camera
 from app.models.property import Property
@@ -380,46 +383,64 @@ async def list_enabled_cameras_for_agent_handler(property_id: UUID, db:AsyncSess
     return ListEnabledCameras(data=data)
 
 
-async def authorize_mediamtx_for_agent_handler(request: MediaMtxAuthRequest, db:AsyncSession) -> Response:
-    """Authorise a MediaMTX playback or camera publishing action."""
+async def authorize_mediamtx_for_agent_handler(request: MediaMtxAuthRequest, db: AsyncSession) -> Response:
+    """Authorise a MediaMTX read (viewer) or publish (edge agent) action."""
 
-    if request.action in {"read", "playback"}:
+    if request.action == "read":
+        camera = await _enabled_camera_from_path(request.path, db)
+
+        if request.user != "jwt" or not request.password:
+            # RTSP clients send empty credentials first and need a 401 before sending real ones.
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Viewer token required.")
+
+        try:
+            claims = verify_jwt(request.password)
+        except Exception as error:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid viewer token.") from error
+
+        if not await user_can_view_camera(db, claims, camera.id):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not allowed to view this camera.")
+
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    if request.action != "publish":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This MediaMTX action is not allowed.")
+    if request.action == "publish":
+        camera = await _enabled_camera_from_path(request.path, db)
+
+        expected_username, expected_password = _camera_publish_credentials(str(camera.id))
+
+        credentials_are_valid = (
+            hmac.compare_digest(request.user, expected_username)
+            and hmac.compare_digest(request.password, expected_password)
+        )
+
+        if not credentials_are_valid:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid publish credential for the requested camera path.")
+
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    # playback, api and anything unexpected are rejected
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This MediaMTX action is not allowed.")
 
 
-    match = _CAMERA_PATH_PATTERN.fullmatch(request.path)
+async def _enabled_camera_from_path(path: str, db: AsyncSession) -> Camera:
+    """Return the enabled camera for a cameras/<camera-uuid> path, or raise 401."""
+    match = _CAMERA_PATH_PATTERN.fullmatch(path)
 
     if match is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Publish path mist be cameras/<camera-uuid>.")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Path must be cameras/<camera-uuid>.")
 
     try:
         camera_id = UUID(match.group(1))
     except ValueError as error:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Publish path contains an invalid camera ID.") from error
-
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Path contains an invalid camera ID.") from error
 
     result = await db.execute(
-        select(Camera).where(
-            Camera.id == camera_id, Camera.enabled.is_(True)
-        )
+        select(Camera).where(Camera.id == camera_id, Camera.enabled.is_(True))
     )
-
     camera = result.scalar_one_or_none()
-
 
     if camera is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Camera does not exist or is disabled.")
 
-    expected_username, expected_password = (_camera_publish_credentials(str(camera_id)))
+    return camera
 
-
-    credentials_are_valid = (hmac.compare_digest(request.user, expected_username) and hmac.compare_digest(request.password, expected_password))
-
-    if not credentials_are_valid:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid publish credential for the requested camera path.")
-
-
-    return Response(status_code=status.HTTP_204_NO_CONTENT)

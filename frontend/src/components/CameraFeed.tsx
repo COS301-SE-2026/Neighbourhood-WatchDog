@@ -2,6 +2,7 @@
 
 import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { useCameraAnnotations } from "@/hooks/use-camera-annotations";
+import { getAccessToken, refreshSession } from "@/lib/auth/cognito";
 
 export type CameraStreamState = "idle" | "connecting" | "live" | "unavailable";
 
@@ -159,6 +160,17 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
       connecting = true;
       reportState("connecting");
 
+      const token = getAccessToken() ?? (await refreshSession());
+
+      if (disposed) {
+        connecting = false;
+        return;
+      }
+
+      if (!token){
+        throw new Error("No access token for camera stream")
+      }
+
       closeCurrentConnection();
 
       const currentPeerConnection = new RTCPeerConnection({
@@ -221,7 +233,8 @@ const AnnotatedCameraFeed = forwardRef<HTMLVideoElement, AnnotatedCameraFeedProp
       const response = await fetch(whepUrl, {
         method: "POST",
         headers: {
-          "Content-Type": "application/sdp"
+          "Content-Type": "application/sdp",
+          Authorization: `Basic ${btoa("jwt:" + token)}`
         },
         body: currentPeerConnection.localDescription?.sdp,
         signal: controller.signal

@@ -1,3 +1,4 @@
+import re
 from fastapi import HTTPException
 
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -5,6 +6,22 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.auth.jwt import get_authenticated_claims
+
+PUBLIC_EXACT = frozenset({
+    "/health", "/docs", "/openapi.json", "/redoc", "/favicon.ico",
+    "/auth/login", "/auth/signup", "/auth/confirm", "/auth/resend-code", 
+    "/auth/verify-mfa", "/auth/refresh", "/auth/logout",
+    "/internal/*", "/internal/mediamtx/auth", "/auth/ping"
+})
+
+PUBLIC_PATTERNS = [
+    re.compile(r"/pairing-token/token/[^/]+"),
+    # Edge-agent routes. Ech one authenticates itself with X-internal-token
+    re.compile(r"/internal/.+"),
+]
+
+def is_public_path(path: str) -> bool:
+    return path in PUBLIC_EXACT or any(p.fullmatch(path) for p in PUBLIC_PATTERNS)
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -14,16 +31,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if request.headers.get("upgrade", "").lower() == "websocket":
             return await call_next(request)
 
-        PUBLIC_EXACT = {"/health", "/docs", "/openapi.json", "/redoc", "/favicon.ico"}
-        PUBLIC_PREFIXES = ["/stream", "/alerts", "/api/stream", "/auth", "/internal", "/pairing-token/token"]
-
-
-        is_public = (
-            request.url.path in PUBLIC_EXACT or
-            any(request.url.path.startswith(p) for p in PUBLIC_PREFIXES)
-        )
-
-        if is_public:
+        if is_public_path(request.url.path):
             return await call_next(request)
 
         try:
@@ -35,3 +43,5 @@ class AuthMiddleware(BaseHTTPMiddleware):
             )
 
         return await call_next(request)
+
+    

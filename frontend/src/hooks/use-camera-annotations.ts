@@ -1,5 +1,6 @@
 "use client"
 
+import { getAccessToken, refreshSession } from "@/lib/auth/cognito";
 import { useEffect, useState, useRef } from "react";
 
 export interface Track {
@@ -49,71 +50,92 @@ export function useCameraAnnotations(cameraId: string) {
     const wsRef = useRef<WebSocket | null>(null);
 
     useEffect(() => {
-        const baseUrl = getAnnotationWebSocketBaseUrl();
-
-        const ws = new WebSocket(
-            `${baseUrl}/api/stream/cameras/${cameraId}/annotations/ws`,
-        );
-
+        let cancelled = false;
+        let ws: WebSocket | null = null;
         let clearTimer: ReturnType<typeof setTimeout> | undefined;
 
-        ws.onopen = () => {
-            setConnection({
-                cameraId,
-                connected: true,
-            });
-        };
+        const connect = async () => {
+            let token: string | null = null;
 
-        ws.onclose = () => {
-            setConnection((previous) =>
-                previous.cameraId === cameraId
-                    ? {
-                          cameraId,
-                          connected: false,
-                      }
-                    : previous,
-            );
-        };
-
-        ws.onerror = () => {
-            setConnection((previous) =>
-                previous.cameraId === cameraId
-                    ? {
-                          cameraId,
-                          connected: false,
-                      }
-                    : previous,
-            );
-        };
-
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data) as AnnotationData;
-
-            if (data.event === "ping") {
-                return;
+            try {
+                // Access token lives in memory and expires; refresh if it's gone.
+                token = getAccessToken() ?? (await refreshSession());
+            } catch {
+                token = null;
             }
 
-            setAnnotations(data);
+            // The component may have unmounted (or cameraId changed) while we awaited.
+            if (cancelled || !token) return;
 
-            if (clearTimer) {
-                clearTimeout(clearTimer);
-            }
+            const baseUrl = getAnnotationWebSocketBaseUrl();
+            const socket = new WebSocket(
+                `${baseUrl}/api/stream/cameras/${cameraId}/annotations/ws?token=${encodeURIComponent(token)}`,
+            );
+            ws = socket;
+            wsRef.current = socket;
 
-            clearTimer = setTimeout(() => {
-                setAnnotations(null);
-            }, 2000);
+            socket.onopen = () => {
+                setConnection({
+                    cameraId,
+                    connected: true,
+                });
+            };
+
+            socket.onclose = () => {
+                setConnection((previous) =>
+                    previous.cameraId === cameraId
+                        ? {
+                              cameraId,
+                              connected: false,
+                          }
+                        : previous,
+                );
+            };
+
+            socket.onerror = () => {
+                setConnection((previous) =>
+                    previous.cameraId === cameraId
+                        ? {
+                              cameraId,
+                              connected: false,
+                          }
+                        : previous,
+                );
+            };
+
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data) as AnnotationData;
+
+                if (data.event === "ping") {
+                    return;
+                }
+
+                setAnnotations(data);
+
+                if (clearTimer) {
+                    clearTimeout(clearTimer);
+                }
+
+                clearTimer = setTimeout(() => {
+                    setAnnotations(null);
+                }, 2000);
+            };
         };
 
-        wsRef.current = ws;
+        void connect();
 
         return () => {
+            cancelled = true;
+
             if (clearTimer) {
                 clearTimeout(clearTimer);
             }
 
-            ws.close();
+            ws?.close();
         };
     }, [cameraId]);
+
+
 
     const currentAnnotations =
         annotations?.camera_id === cameraId ? annotations : null;
