@@ -139,7 +139,7 @@ function connectionStatusLabel(
 
 function MapLoadingState() {
   return (
-    <div className="flex h-[34rem] items-center justify-center rounded-lg border border-border bg-brand-depth">
+    <div className="flex min-h-[24rem] flex-1 items-center justify-center rounded-lg border border-border bg-brand-depth">
       <RefreshCw className="size-5 animate-spin text-brand-green" />
     </div>
   );
@@ -794,7 +794,7 @@ function handleToggleLayer(layer: MapLayerKey) {
 
   if (userContextLoading) {
     return (
-      <main className="min-h-full bg-brand-void px-6 py-8">
+      <main className="flex min-w-0 flex-1 flex-col bg-brand-void px-2 py-4 sm:px-4 sm:py-6 lg:px-6">
         <MapLoadingState />
       </main>
     );
