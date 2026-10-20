@@ -819,8 +819,8 @@ function handleToggleLayer(layer: MapLayerKey) {
   }
 
   return (
-    <main className="min-h-full bg-brand-void px-6 py-8 text-brand-frost md:px-8">
-      <div className="w-full max-w-6xl">
+    <main className="flex min-w-0 flex-1 flex-col bg-brand-void px-2 py-4 text-brand-frost sm:px-4 sm:py-6 lg:px-6">
+      <div className="flex w-full min-w-0 flex-1 flex-col">
         <header className="mb-6 flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
