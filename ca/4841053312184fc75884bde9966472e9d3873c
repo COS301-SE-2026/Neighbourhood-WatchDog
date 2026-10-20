@@ -1,0 +1,15 @@
+frontend/src/lib/auth/cognito.ts
+  h_cf6208e37032c0 150-152,155-163
+  h_cf6208e37032c0 140-143,145,147-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ca4841053312184fc75884bde9966472e9d3873c",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
