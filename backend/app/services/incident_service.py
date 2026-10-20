@@ -1,12 +1,11 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
-
+from sqlalchemy.orm import aliased, joinedload
 from app.models.alert import Alert, DetectionType
 from app.models.camera import Camera
 from app.models.incident import Incident
@@ -14,6 +13,10 @@ from app.models.neighbourhood_user import NeighbourhoodRole
 from app.models.property import Property
 from app.models.property_user import PropertyUser
 from app.models.tracking import TrackingSubject
+from app.services.incident_policy import (
+    ACTIVE_ALERT_STATUSES,
+    INCIDENT_MATCH_WINDOW_SECONDS,
+)
 from app.schemas.alert import (
     AlertRes,
     IncidentDetailRes,
@@ -22,10 +25,58 @@ from app.schemas.alert import (
 
 logger = logging.getLogger(__name__)
 
+SECURITY_OFFICER_DETECTION_TYPES = {
+    DetectionType.WEAPON_DETECTED,
+    DetectionType.FALL_DETECTED,
+}
+
+INCIDENT_NOT_FOUND = "Incident not found"
+
+def _visible_incident_alerts(
+    incident: Incident,
+    *,
+    role: NeighbourhoodRole,
+    property_ids: set[UUID] | None = None,
+) -> list[Alert]:
+    alerts = _incident_alerts(incident)
+
+    if role == NeighbourhoodRole.SECURITY_OFFICER:
+        return [
+            alert
+            for alert in alerts
+            if alert.detection_type in SECURITY_OFFICER_DETECTION_TYPES
+        ]
+
+    if role == NeighbourhoodRole.RESIDENT:
+        property_ids = property_ids or set()
+        return [
+            alert
+            for alert in alerts
+            if alert.camera is not None
+            and alert.camera.property_id in property_ids
+        ]
+
+    return alerts
+
 def _build_incident_alert_response(alert: Alert) -> AlertRes:
     from app.services.alert_service import _build_alert_res
 
     return _build_alert_res(alert)
+
+
+def _incident_detection_types(alerts: list[Alert]) -> list[str]:
+    return sorted(
+        {
+            (
+                alert.detection_type.value
+                if hasattr(alert.detection_type, "value")
+                else str(alert.detection_type)
+            )
+            for alert in alerts
+        }
+    )
+
+
 
 async def create_incident_for_alert(
     *,
@@ -60,29 +111,50 @@ async def find_active_incident_for_embedding(
     neighbourhood_id: UUID,
     embedding: list[float],
     embedding_model: str,
+    observed_at: datetime,
+    window_seconds: int = INCIDENT_MATCH_WINDOW_SECONDS,
 ) -> Incident | None:
-    """
-    Find the active (not yet ended) incident whose tracked person best matches
-    the given appearance embedding."""
+    """find the most similar recent active incident in this neighbourhood."""
     from app.services.tracking_service import TRACKING_MATCH_MIN_SIMILARITY
 
-    cosine_distance = (
-        TrackingSubject.reference_embedding.cosine_distance(embedding)
-        .label("cosine_distance")
+    cosine_distance = (TrackingSubject.reference_embedding.cosine_distance(embedding).label("cosine_distance"))
+
+    active_alert = aliased(Alert)
+
+    active_alert_exists = (
+        select(active_alert.id)
+        .select_from(active_alert)
+        .where(
+            active_alert.incident_id == Incident.id,
+            active_alert.status.in_(ACTIVE_ALERT_STATUSES),
+        )
+        .correlate(Incident)
+        .exists()
     )
 
     stmt = (
         select(Incident, cosine_distance)
-        .join(TrackingSubject, TrackingSubject.id == Incident.tracking_subject_id)
+        .join(
+            TrackingSubject,
+            TrackingSubject.id == Incident.tracking_subject_id,
+        )
         .join(Alert, Alert.id == TrackingSubject.alert_id)
         .join(Camera, Camera.id == Alert.camera_id)
         .join(Property, Property.id == Camera.property_id)
         .options(joinedload(Incident.tracking_subject))
         .where(
             Incident.ended_at.is_(None),
+            Incident.last_seen_at >= observed_at - timedelta(
+                seconds=window_seconds
+            ),
+            Incident.last_seen_at <= observed_at + timedelta(
+                seconds=window_seconds
+            ),
+            active_alert_exists,
             TrackingSubject.reference_embedding.is_not(None),
             TrackingSubject.embedding_model == embedding_model,
-            Property.neighbourhood_id == neighbourhood_id,
+            Property.neighbourhood_id == neighbourhood_id
+
         )
         .order_by(cosine_distance.asc())
         .limit(1)
@@ -92,24 +164,16 @@ async def find_active_incident_for_embedding(
     row = result.first()
 
     if row is None:
-        logger.info(
-            "find_active_incident_for_embedding: no active-incident candidate "
-            "in neighbourhood=%s embedding_model=%s",
-            neighbourhood_id,
-            embedding_model,
-        )
         return None
 
     incident, distance = row
     similarity = max(0.0, min(1.0, 1.0 - float(distance)))
 
     logger.info(
-        "find_active_incident_for_embedding: best candidate incident=%s "
-        "similarity=%.4f threshold=%.4f neighbourhood=%s",
+        "Embedding incident candidate=%s similarity=%.4f threshold=%.4f",
         incident.id,
         similarity,
-        TRACKING_MATCH_MIN_SIMILARITY,
-        neighbourhood_id,
+        TRACKING_MATCH_MIN_SIMILARITY
     )
 
     if similarity < TRACKING_MATCH_MIN_SIMILARITY:
@@ -117,15 +181,13 @@ async def find_active_incident_for_embedding(
 
     return incident
 
-async def end_incident_if_representative(
+async def end_incident_if_no_active_alerts(
     *,
     db: AsyncSession,
     alert: Alert,
     ended_at: datetime,
 ) -> None:
-    """
-    Mark an incident as ended once its representative (most recently seen) alert is resolved
-    or dismissed. If a newer alert on the same incident is still open it stays active."""
+    """End the incident when none of its alerts remain active."""
     if alert.incident_id is None:
         return
 
@@ -134,16 +196,17 @@ async def end_incident_if_representative(
     if incident is None or incident.ended_at is not None:
         return
 
-    latest_result = await db.execute(
-        select(func.max(Alert.frame_timestamp))
-        .where(Alert.incident_id == incident.id)
-    )
-    latest_frame_timestamp = latest_result.scalar_one_or_none()
 
-    if (
-        latest_frame_timestamp is not None
-        and alert.frame_timestamp < latest_frame_timestamp
-    ):
+    active_alert_result = await db.execute(
+        select(func.count())
+        .select_from(Alert)
+        .where(
+            Alert.incident_id == incident.id,
+            Alert.status.in_(ACTIVE_ALERT_STATUSES),
+        )
+    )
+
+    if active_alert_result.scalar_one() > 0:
         return
 
     incident.ended_at = ended_at
@@ -192,44 +255,59 @@ def _incident_alerts(incident: Incident) -> list[Alert]:
     )
 
 
-def _summary_for_incident(incident: Incident) -> IncidentSummaryRes:
-    alerts = _incident_alerts(incident)
-
+def _summary_for_incident(
+    incident: Incident,
+    alerts: list[Alert] | None = None,
+) -> IncidentSummaryRes:
+    alerts = _incident_alerts(incident) if alerts is None else alerts
     if not alerts:
-        raise HTTPException(
-            status_code=500,
-            detail="Incident has no alerts",
-        )
+        raise HTTPException(status_code=404, detail=INCIDENT_NOT_FOUND)
 
     representative = alerts[-1]
+    representative_type = (
+        representative.detection_type.value
+        if hasattr(representative.detection_type, "value")
+        else str(representative.detection_type)
+    )
 
     return IncidentSummaryRes(
         id=incident.id,
-        detection_type=incident.detection_type,
+        detection_type=representative_type,
+        detection_types=_incident_detection_types(alerts),
         started_at=incident.started_at,
         last_seen_at=incident.last_seen_at,
         alert_count=len(alerts),
         representative_alert_id=representative.id,
         representative_alert=_build_incident_alert_response(representative),
-        tracking_subject_id=incident.tracking_subject_id,
+        tracking_subject_id=incident.tracking_subject_id
     )
 
 
-def _detail_for_incident(incident: Incident) -> IncidentDetailRes:
-    alerts = _incident_alerts(incident)
+def _detail_for_incident(
+    incident: Incident,
+    alerts: list[Alert] | None = None
+) -> IncidentDetailRes:
+    alerts = _incident_alerts(incident) if alerts is None else alerts
+    if not alerts:
+        raise HTTPException(status_code=404, detail=INCIDENT_NOT_FOUND)
+
+    representative_type = (
+        alerts[-1].detection_type.value
+        if hasattr(alerts[-1].detection_type, "value")
+        else str(alerts[-1].detection_type)
+    )
 
     return IncidentDetailRes(
         id=incident.id,
-        detection_type=incident.detection_type,
+        detection_type=representative_type,
+        detection_types=_incident_detection_types(alerts),
         started_at=incident.started_at,
         last_seen_at=incident.last_seen_at,
         alert_count=len(alerts),
-        alerts=[
-            _build_incident_alert_response(alert)
-            for alert in alerts
-        ],
-        tracking_subject_id=incident.tracking_subject_id,
+        alerts=[_build_incident_alert_response(alert) for alert in alerts],
+        tracking_subject_id=incident.tracking_subject_id
     )
+
 
 
 def _incident_query(
@@ -278,11 +356,20 @@ async def list_incidents_handler(
 
     current_user_id = UUID(str(claims["id"]))
 
+    property_ids: set[UUID] | None = None
+    if membership.role == NeighbourhoodRole.RESIDENT:
+        property_result = await db.execute(
+            select(PropertyUser.property_id).where(
+                PropertyUser.user_id == current_user_id
+            )
+        )
+        property_ids = set(property_result.scalars().all())
+
     stmt = _incident_query(neighbourhood_id)
 
     if membership.role == NeighbourhoodRole.SECURITY_OFFICER:
         stmt = stmt.where(
-            Incident.detection_type.in_(
+            Alert.detection_type.in_(
                 {
                     DetectionType.WEAPON_DETECTED.value,
                     DetectionType.FALL_DETECTED.value,
@@ -309,9 +396,7 @@ async def list_incidents_handler(
         )
 
     if detection_type:
-        stmt = stmt.where(
-            Incident.detection_type == detection_type,
-        )
+        stmt = stmt.where(Alert.detection_type == detection_type)
 
     if start_date:
         stmt = stmt.where(
@@ -345,10 +430,17 @@ async def list_incidents_handler(
 
     incidents = result.unique().scalars().all()
 
-    return [
-        _summary_for_incident(incident)
-        for incident in incidents
-    ], total
+    summaries = []
+    for incident in incidents:
+        visible_alerts = _visible_incident_alerts(
+            incident,
+            role=membership.role,
+            property_ids=property_ids,
+        )
+        if visible_alerts:
+            summaries.append(_summary_for_incident(incident, visible_alerts))
+
+    return summaries, total
 
 
 async def get_incident_handler(
@@ -377,7 +469,7 @@ async def get_incident_handler(
     if incident is None:
         raise HTTPException(
             status_code=404,
-            detail="Incident not found",
+            detail=INCIDENT_NOT_FOUND,
         )
 
     # Recheck membership against the incident's neighbourhood.
@@ -390,16 +482,34 @@ async def get_incident_handler(
     )
     property_obj = property_result.scalar_one_or_none()
 
+
     if property_obj is None or property_obj.neighbourhood_id is None:
         raise HTTPException(
             status_code=404,
-            detail="Incident not found",
+            detail=INCIDENT_NOT_FOUND,
         )
 
-    await _require_neighbourhood_membership(
+    membership = await _require_neighbourhood_membership(
         db,
         claims,
         property_obj.neighbourhood_id,
     )
 
-    return _detail_for_incident(incident)
+    property_ids: set[UUID] | None = None
+    if membership.role == NeighbourhoodRole.RESIDENT:
+        property_result = await db.execute(
+            select(PropertyUser.property_id).where(
+                PropertyUser.user_id == UUID(str(claims["id"])),
+            )
+        )
+        property_ids = set(property_result.scalars().all())
+
+    visible_alerts = _visible_incident_alerts(
+        incident,
+        role=membership.role,
+        property_ids=property_ids,
+    )
+    if not visible_alerts:
+        raise HTTPException(status_code=404, detail=INCIDENT_NOT_FOUND)
+
+    return _detail_for_incident(incident, visible_alerts)

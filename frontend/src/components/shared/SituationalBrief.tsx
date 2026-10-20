@@ -35,6 +35,7 @@ export function SituationalBrief({alertId, enabled, refreshKey = 0}: Situational
   const [brief, setBrief] = useState<SituationalBriefData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notAvailable, setNotAvailable] = useState(false);
 
   useEffect(() => {
     if (!enabled) {
@@ -46,12 +47,14 @@ export function SituationalBrief({alertId, enabled, refreshKey = 0}: Situational
     async function loadBrief() {
       setLoading(true);
       setError(null);
+      setNotAvailable(false);
 
       try {
         const result = await fetchSituationalBrief(alertId, controller.signal);
 
         if (!controller.signal.aborted) {
           setBrief(result);
+          setNotAvailable(false);
         }
       } catch (reason: unknown) {
         if (reason instanceof DOMException && reason.name === "AbortError") {
@@ -60,7 +63,7 @@ export function SituationalBrief({alertId, enabled, refreshKey = 0}: Situational
 
         if (reason instanceof ApiError && reason.statusCode === 404) {
           setBrief(null);
-          setError("The situational brief is not available yet.");
+          setNotAvailable(true);
           return;
         }
 
@@ -118,9 +121,18 @@ export function SituationalBrief({alertId, enabled, refreshKey = 0}: Situational
       )}
 
       {!loading && error && (
-        <p className="rounded-md border border-brand-caution/30 bg-brand-caution/10 px-3 py-2 text-xs text-brand-caution">
+        <p 
+          role="alert"
+          className="rounded-md border border-brand-caution/30 bg-brand-caution/10 px-3 py-2 text-xs text-brand-caution"
+          >
           {error}
         </p>
+      )}
+
+      {!loading && !error && notAvailable && (
+        <output className="block rounded-md border border-border px-3 py-2 text-xs text-brand-ash">
+          No situational brief is available for this alert yet.
+        </output>
       )}
 
       {!loading && !error && brief && (

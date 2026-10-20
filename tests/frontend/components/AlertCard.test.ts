@@ -175,6 +175,36 @@ describe("AlertCard rendered states", () => {
     expect(screen.getByLabelText("Status: Responding")).toBeInTheDocument();
   });
 
+  test("uses the detection label when no incident category list is supplied", () => {
+    render(
+      createElement(AlertCard, {
+        alert: makeAlert({ detection_type: "HUMAN_PRESENCE" }),
+        broadcasting: false,
+        canViewTracking: false,
+      }),
+    );
+
+    expect(screen.getByText("Person detected")).toBeInTheDocument();
+    expect(screen.queryByText("Incident")).not.toBeInTheDocument();
+  });
+
+  test("shows a neutral incident heading and every category for grouped alerts", () => {
+    render(
+      createElement(AlertCard, {
+        alert: makeAlert({ detection_type: "WEAPON_DETECTED" }),
+        detectionTypes: ["HUMAN_PRESENCE", "WEAPON_DETECTED"],
+        alertCount: 2,
+        broadcasting: false,
+        canViewTracking: false,
+      }),
+    );
+
+    expect(screen.getByText("Incident")).toBeInTheDocument();
+    expect(screen.getByText("Person detected")).toBeInTheDocument();
+    expect(screen.getByText("Weapon detected")).toBeInTheDocument();
+    expect(screen.getByLabelText("2 alerts in this incident")).toBeInTheDocument();
+  });
+
   test("renders new-alert actions and invokes their callbacks", async () => {
     const onBroadcast = jest.fn().mockResolvedValue(undefined);
     const onAcknowledge = jest.fn().mockResolvedValue(undefined);

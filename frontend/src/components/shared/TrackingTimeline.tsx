@@ -41,6 +41,7 @@ export function TrackingTimeline({
   const [timeline, setTimeline] = useState<TrackingTimelineData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notAvailable, setNotAvailable] = useState(false);
 
   useEffect(() => {
     if (!enabled) return;
@@ -50,6 +51,7 @@ export function TrackingTimeline({
     async function loadTimeline() {
         setLoading(true);
         setError(null);
+        setNotAvailable(false);
 
         try {
         const data = await fetchTrackingTimeline(
@@ -59,6 +61,7 @@ export function TrackingTimeline({
 
         if (!controller.signal.aborted) {
             setTimeline(data);
+            setNotAvailable(false);
         }
         } catch (reason: unknown) {
         if (
@@ -70,7 +73,7 @@ export function TrackingTimeline({
 
         if (reason instanceof ApiError && reason.statusCode === 404) {
             setTimeline(null);
-            setError("No tracking timeline is available for this alert.");
+            setNotAvailable(true);
             return;
         }
 
@@ -129,8 +132,17 @@ export function TrackingTimeline({
       )}
 
       {!loading && error && (
-        <output className="block rounded-md border border-brand-caution/30 bg-brand-caution/10 px-3 py-2 text-xs text-brand-caution">
+        <div 
+          role="alert"
+          className="rounded-md border border-brand-caution/30 bg-brand-caution/10 px-3 py-2 text-xs text-brand-caution"
+        >
           {error}
+        </div>
+      )}
+
+      {!loading && !error && notAvailable && (
+        <output className="block text-xs text-brand-ash">
+          Cross-camera tracking is not available for this alert.
         </output>
       )}
 

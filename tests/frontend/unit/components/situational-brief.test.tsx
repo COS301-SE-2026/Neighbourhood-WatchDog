@@ -91,17 +91,26 @@ describe("SituationalBrief", () => {
     expect(screen.getByText("Associated alerts")).toBeInTheDocument();
     expect(screen.getByText("Sightings")).toBeInTheDocument();
     expect(screen.getByTestId("print-template")).toBeInTheDocument();
+    expect(
+      screen.queryByText("No situational brief is available for this alert yet."),
+    ).not.toBeInTheDocument();
 
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Save as PDF" }));
     expect(print).toHaveBeenCalledTimes(1);
     print.mockRestore();
   });
 
-  test("renders the not-available message for a 404", async () => {
+  test("renders a neutral status when the brief is unavailable", async () => {
     mockFetchBrief.mockRejectedValue(new ApiError("not found", 404));
     render(<SituationalBrief alertId="a1" enabled />);
-    await waitFor(() => expect(screen.getByText("The situational brief is not available yet.")).toBeInTheDocument());
-    expect(screen.queryByText("Loading situational brief…")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText("No situational brief is available for this alert yet."),
+      ).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   test("renders a regular error message", async () => {

@@ -28,14 +28,11 @@ from app.schemas.tracking import (
 from app.services.situational_brief_service import maybe_generate_situational_brief
 from app.services.notifications.factory import NotificationPolicyFactory
 from app.schemas.notification import EventType
+from app.services.incident_policy import ACTIVE_ALERT_STATUSES
 
 logger = logging.getLogger(__name__)
 
-TRACKING_ACTIVE_ALERT_STATUSES = (
-    AlertStatus.OPEN.value,
-    AlertStatus.ACKNOWLEDGED.value,
-    AlertStatus.CONFIRMED.value,
-)
+TRACKING_ACTIVE_ALERT_STATUSES = ACTIVE_ALERT_STATUSES
 
 TRACKING_MATCH_MIN_SIMILARITY = float(os.getenv("TRACKING_MATCH_MIN_SIMILARITY", "0.75"))
 
@@ -84,6 +81,29 @@ def normalize_appearance_embedding(values: list[float] | None) -> list[float] | 
         )
 
     return [value / norm for value in embedding]
+
+
+async def next_tracking_sighting_sequence(
+    db: AsyncSession,
+    tracking_subject_id: UUID,
+) -> int:
+    """Allocate the next sequence while serializing writers per subject."""
+    lock_result = await db.execute(
+        select(TrackingSubject.id)
+        .where(TrackingSubject.id == tracking_subject_id)
+        .with_for_update()
+    )
+    if lock_result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=404, detail="Tracking subject not found")
+
+    sequence_result = await db.execute(
+        select(
+            func.coalesce(func.max(TrackingSighting.sequence_no), 0) + 1
+        ).where(
+            TrackingSighting.tracking_subject_id == tracking_subject_id
+        )
+    )
+    return int(sequence_result.scalar_one())
 
 
 async def record_tracking_sighting(*, db: AsyncSession, tracking_subject_id: UUID, camera_id: UUID, local_track_id: int, observed_at: datetime, match_confidence: float | None = None) -> TrackingSighting:
