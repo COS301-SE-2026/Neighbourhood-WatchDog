@@ -6,16 +6,9 @@ webrtcAddress: :8889
 api: yes
 apiAddress: :9997
 
-# MediaMTX calls the backend for every publish attempt.
-# The backend permits only the credential derived for the requested
-# cameras/<camera-uuid> path.
 authMethod: http
 
-# Preserve the current public dashboard/video-reading behaviour.
-# Publishing is deliberately NOT excluded and must pass HTTP auth.
 authHTTPExclude:
-  - action: read
-  - action: playback
   - action: api
 
 paths:

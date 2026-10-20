@@ -2,7 +2,12 @@ import asyncio
 import json
 from typing import Annotated
 from fastapi import APIRouter, Depends,WebSocket
+from uuid import UUID
+from fastapi import Query, status
 
+from app.auth.jwt import verify_jwt
+from app.auth.authorization import user_can_view_camera
+from app.core.database import DbSession
 from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.api.controllers.internal_cameras import get_authenticated_edge_agent
 from app.websocket.manager import ConnectionManager
@@ -22,7 +27,7 @@ async def broadcast_annotation(camera_id: str, annotation_data: dict) -> None: #
     await _manager.broadcast([camera_id], annotation_data)
 
 
-@router.post("/cameras/{camera_id}/annotations") #TODO: make private, only accessible by internal services
+@router.post("/cameras/{camera_id}/annotations")
 async def receive_annotation(
     camera_id: str,
     data: dict,
@@ -43,10 +48,25 @@ async def receive_annotation(
 
 
 @router.websocket("/cameras/{camera_id}/annotations/ws")
-async def camera_annotation_websocket(camera_id: str, websocket: WebSocket):
+async def camera_annotation_websocket(
+    camera_id: UUID, 
+    websocket: WebSocket,
+    db: DbSession,
+    token: Annotated[str, Query()],
+):
     """WebSocket endpoint for receiving annotation updates for a specific camera"""
+    try:
+        claims = verify_jwt(token)
+        if not await user_can_view_camera(db, claims, camera_id):
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+    except Exception:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    connection_key = str(camera_id)
     await websocket.accept()
-    register_camera_connection(camera_id, websocket)
+    register_camera_connection(connection_key, websocket)
 
     try:
         while True:
@@ -57,4 +77,4 @@ async def camera_annotation_websocket(camera_id: str, websocket: WebSocket):
     except Exception:
         pass
     finally:
-        remove_camera_connection(camera_id, websocket)
+        remove_camera_connection(connection_key, websocket)
