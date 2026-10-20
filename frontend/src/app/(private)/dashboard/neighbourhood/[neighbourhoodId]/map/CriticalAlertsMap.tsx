@@ -326,7 +326,33 @@ function AlertPropertyMarker({
     </CircleMarker>
   );
 }
+function MapResizeHandler() {
+  const map = useMap();
 
+  useEffect(() => {
+    let frameId = 0;
+
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frameId);
+
+      frameId = requestAnimationFrame(() => {
+        map.invalidateSize({
+          pan: false,
+          debounceMoveend: true,
+        });
+      });
+    });
+
+    observer.observe(map.getContainer());
+
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frameId);
+    };
+  }, [map]);
+
+  return null;
+}
 function FitPropertyBounds({
   properties,
 }: {
@@ -499,6 +525,7 @@ export function CriticalAlertsMap({
         scrollWheelZoom
         className="relative z-0 min-h-[24rem] w-full flex-1"
       >
+        <MapResizeHandler />
         <FitPropertyBounds
           properties={fitProperties}
         />
