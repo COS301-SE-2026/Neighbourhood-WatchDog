@@ -139,7 +139,7 @@ function connectionStatusLabel(
 
 function MapLoadingState() {
   return (
-    <div className="flex min-h-[24rem] flex-1 items-center justify-center rounded-lg border border-border bg-brand-depth">
+    <div className="flex h-[clamp(32rem,72vh,70rem)] items-center justify-center rounded-lg border border-border bg-brand-depth">
       <RefreshCw className="size-5 animate-spin text-brand-green" />
     </div>
   );

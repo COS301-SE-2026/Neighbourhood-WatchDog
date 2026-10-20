@@ -523,7 +523,7 @@ export function CriticalAlertsMap({
         minZoom={3}
         maxZoom={19}
         scrollWheelZoom
-        className="relative z-0 min-h-[24rem] w-full flex-1"
+        className="relative z-0 h-[clamp(32rem,72vh,70rem)] w-full"
       >
         <MapResizeHandler />
         <FitPropertyBounds
