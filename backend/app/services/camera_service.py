@@ -1,4 +1,3 @@
-from app.core.database import DbSession
 from app.auth.jwt import verify_jwt
 from app.auth.authorization import user_can_view_camera
 from app.schemas.camera import CameraRes, CameraListItemRes, CamerasRes, CameraEditReq
