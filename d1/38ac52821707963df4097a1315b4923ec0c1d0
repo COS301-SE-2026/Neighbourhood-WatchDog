@@ -1,0 +1,18 @@
+tests/backend/unit/authorization/mediamtx_auth_test.py
+  h_cf6208e37032c0 1-288
+tests/backend/unit/authorization/user_can_view_camera_test.py
+  h_cf6208e37032c0 1-101
+tests/backend/unit/api/stream_controller_test.py
+  h_cf6208e37032c0 1-145
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d138ac52821707963df4097a1315b4923ec0c1d0",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
