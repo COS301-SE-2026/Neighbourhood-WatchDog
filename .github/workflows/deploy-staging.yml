@@ -1,17 +1,21 @@
 name: Deploy to Staging
 
 on:
-  push:
-    branches: ["dev"]
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
+    branches: [dev]
 
 jobs: 
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
     runs-on: ubuntu-latest
     environment: Staging
-    needs: ci
     
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Create .env file
         env:

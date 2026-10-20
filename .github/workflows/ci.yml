@@ -1,7 +1,7 @@
 name: ci
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "dev"]
   pull_request:
     branches: ["main", "dev"]
 
@@ -202,7 +202,7 @@ jobs:
       - name: Type check backend
         run: cd backend && mypy . --ignore-missing-imports
 
-    :
+  security:
     runs-on: ubuntu-latest
 
     steps:
@@ -218,7 +218,7 @@ jobs:
         run: pip install --upgrade "setuptools>=83.0.0"
 
       - name: Install security tools
-        run: pip install bandit pip-audit
+        run: pip install "bandit==1.9.4" "pip-audit==2.10.1"
 
       - name: Run Bandit
         run: bandit -r backend/ -ll
@@ -240,6 +240,3 @@ jobs:
       - name: Audit frontend production dependencies
         working-directory: frontend
         run: pnpm audit --prod --audit-level high
-
-      - name: Check pip dependencies
-        run: pip-audit
