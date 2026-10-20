@@ -30,6 +30,7 @@ SECURITY_OFFICER_DETECTION_TYPES = {
     DetectionType.FALL_DETECTED,
 }
 
+INCIDENT_NOT_FOUND = "Incident not found"
 
 def _visible_incident_alerts(
     incident: Incident,
@@ -260,7 +261,7 @@ def _summary_for_incident(
 ) -> IncidentSummaryRes:
     alerts = _incident_alerts(incident) if alerts is None else alerts
     if not alerts:
-        raise HTTPException(status_code=404, detail="Incident not found")
+        raise HTTPException(status_code=404, detail=INCIDENT_NOT_FOUND)
 
     representative = alerts[-1]
     representative_type = (
@@ -288,7 +289,7 @@ def _detail_for_incident(
 ) -> IncidentDetailRes:
     alerts = _incident_alerts(incident) if alerts is None else alerts
     if not alerts:
-        raise HTTPException(status_code=404, detail="Incident not found")
+        raise HTTPException(status_code=404, detail=INCIDENT_NOT_FOUND)
 
     representative_type = (
         alerts[-1].detection_type.value
@@ -468,7 +469,7 @@ async def get_incident_handler(
     if incident is None:
         raise HTTPException(
             status_code=404,
-            detail="Incident not found",
+            detail=INCIDENT_NOT_FOUND,
         )
 
     # Recheck membership against the incident's neighbourhood.
@@ -485,7 +486,7 @@ async def get_incident_handler(
     if property_obj is None or property_obj.neighbourhood_id is None:
         raise HTTPException(
             status_code=404,
-            detail="Incident not found",
+            detail=INCIDENT_NOT_FOUND,
         )
 
     membership = await _require_neighbourhood_membership(
@@ -509,6 +510,6 @@ async def get_incident_handler(
         property_ids=property_ids,
     )
     if not visible_alerts:
-        raise HTTPException(status_code=404, detail="Incident not found")
+        raise HTTPException(status_code=404, detail=INCIDENT_NOT_FOUND)
 
     return _detail_for_incident(incident, visible_alerts)
