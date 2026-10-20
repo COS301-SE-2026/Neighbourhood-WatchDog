@@ -1,0 +1,19 @@
+frontend/src/components/shared/TrackingTimeline.tsx
+  h_cf6208e37032c0 135,137,140,144,146
+frontend/src/components/shared/SituationalBrief.tsx
+  h_cf6208e37032c0 133,135
+tests/backend/integration/api/incident_grouping_test.py
+  h_cf6208e37032c0 442,473
+  h_cf6208e37032c0 441,472
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4f2747172d226b105f79a7d85c3c7bdbdf506894",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
