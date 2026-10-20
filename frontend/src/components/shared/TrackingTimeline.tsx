@@ -132,21 +132,18 @@ export function TrackingTimeline({
       )}
 
       {!loading && error && (
-        <output 
+        <div 
           role="alert"
-          className="block rounded-md border border-brand-caution/30 bg-brand-caution/10 px-3 py-2 text-xs text-brand-caution"
+          className="rounded-md border border-brand-caution/30 bg-brand-caution/10 px-3 py-2 text-xs text-brand-caution"
         >
           {error}
-        </output>
+        </div>
       )}
 
       {!loading && !error && notAvailable && (
-        <p
-          role="status"
-          className="text-xs text-brand-ash"
-        >
+        <output className="block text-xs text-brand-ash">
           Cross-camera tracking is not available for this alert.
-        </p>
+        </output>
       )}
 
       {!loading && !error && timeline && (

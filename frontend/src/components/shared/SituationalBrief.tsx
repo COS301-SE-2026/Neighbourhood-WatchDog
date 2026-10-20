@@ -130,12 +130,9 @@ export function SituationalBrief({alertId, enabled, refreshKey = 0}: Situational
       )}
 
       {!loading && !error && notAvailable && (
-        <p
-          role="status"
-          className="rounded-md border border-border px-3 py-2 text-xs text-brand-ash"
-        >
+        <output className="block rounded-md border border-border px-3 py-2 text-xs text-brand-ash">
           No situational brief is available for this alert yet.
-        </p>
+        </output>
       )}
 
       {!loading && !error && brief && (

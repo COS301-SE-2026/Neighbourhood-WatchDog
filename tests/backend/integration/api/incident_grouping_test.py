@@ -438,7 +438,8 @@ async def test_cross_camera_grouping_accuracy_meets_75_percent(
             )
             async with SessionLocal() as verify_db:
                 alert = await verify_db.get(Alert, result.alert_id)
-                assert alert is not None and alert.incident_id is not None
+                assert alert is not None 
+                assert alert.incident_id is not None
                 seed_incidents.append(alert.incident_id)
 
         known_incidents = set(seed_incidents)
@@ -468,7 +469,8 @@ async def test_cross_camera_grouping_accuracy_meets_75_percent(
             )
             async with SessionLocal() as verify_db:
                 alert = await verify_db.get(Alert, result.alert_id)
-                assert alert is not None and alert.incident_id is not None
+                assert alert is not None 
+                assert alert.incident_id is not None
                 if expected_incident_id is None:
                     correct += alert.incident_id not in known_incidents
                 else:
