@@ -118,14 +118,14 @@ async def find_active_incident_for_embedding(
 
     cosine_distance = (TrackingSubject.reference_embedding.cosine_distance(embedding).label("cosine_distance"))
 
-    ActiveAlert = aliased(Alert)
+    active_alert = aliased(Alert)
 
     active_alert_exists = (
-        select(ActiveAlert.id)
-        .select_from(ActiveAlert)
+        select(active_alert.id)
+        .select_from(active_alert)
         .where(
-            ActiveAlert.incident_id == Incident.id,
-            ActiveAlert.status.in_(ACTIVE_ALERT_STATUSES),
+            active_alert.incident_id == Incident.id,
+            active_alert.status.in_(ACTIVE_ALERT_STATUSES),
         )
         .correlate(Incident)
         .exists()
