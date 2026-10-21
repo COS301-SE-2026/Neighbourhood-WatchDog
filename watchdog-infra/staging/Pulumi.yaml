@@ -1,0 +1,3 @@
+name: watchdog-infra-staging
+description: Watchdog staging environment
+runtime: python
