@@ -335,6 +335,31 @@ async def test_check_rbac_rejects_unknown_membership_role():
         "Insufficient permissions to view footage."
     )
 
+@pytest.mark.asyncio
+async def test_check_rbac_allows_non_admin_property_member_on_private_camera():
+    user = make_user()
+
+    db = Mock()
+    db.execute = AsyncMock(
+        side_effect=[
+            make_result(scalar=user),
+            make_result(scalar=SimpleNamespace(is_admin=False)),
+        ]
+    )
+
+    result = await clips._check_rbac(
+        claims={"sub": "member-sub"},
+        camera=make_camera(visibility=CameraVisibilityEnum.PRIVATE),
+        property_obj=make_property(),
+        db=db,
+    )
+
+    assert result is None
+    assert db.execute.await_count == 2
+
+    membership_filter = str(db.execute.await_args_list[1].args[0].whereclause)
+    assert "property_user.property_id" in membership_filter
+    assert "is_admin" not in membership_filter
 
 @pytest.mark.asyncio
 async def test_get_clip_url_rejects_unconfigured_s3_storage():

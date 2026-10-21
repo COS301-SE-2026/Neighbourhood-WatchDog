@@ -83,14 +83,13 @@ async def _check_rbac(claims: dict, camera: Camera, property_obj: Property, db: 
         return
 
     #property administrator may review footage from their own property.
-    property_admin_result = await db.execute(
+    property_member_result = await db.execute(
         select(PropertyUser).where(
             PropertyUser.user_id == user.id,
             PropertyUser.property_id == property_obj.id,
-            PropertyUser.is_admin.is_(True),
         )
     )
-    if property_admin_result.scalar_one_or_none() is not None:
+    if property_member_result.scalar_one_or_none() is not None:
         return
 
     #  all remaining access is governed by neighbourhood membership.
