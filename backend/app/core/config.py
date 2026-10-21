@@ -45,7 +45,7 @@ class Config(BaseSettings):
             raise ValueError(f"DEBUG must be false when APP_ENV={self.app_env}")
         if not self.refresh_cookie_secure:
             raise ValueError(f"REFRESH_COOKIE_SECURE must be true when APP_ENV={self.app_env}")
-        return self
         
+        return self
 
 config = Config()
