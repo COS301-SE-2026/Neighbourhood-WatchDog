@@ -19,3 +19,12 @@ SAFE = {
     "debug": False,
     "refresh_cookie_secure": True,
 }
+
+def make_config(**overrides) -> Config:
+    return Config(**{**REQUIRED, **SAFE, **overrides})
+
+@pytest.mark.parametrize("app_env", ["staging", "production"])
+def test_deployed_env_accepts_safe_settings(app_env):
+    config = make_config(app_env=app_env)
+
+    assert config.app_env == app_env
