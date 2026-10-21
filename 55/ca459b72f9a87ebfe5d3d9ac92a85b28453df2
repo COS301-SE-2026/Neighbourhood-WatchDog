@@ -1,0 +1,14 @@
+ai/requirements.txt
+  h_cf6208e37032c0 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "55ca459b72f9a87ebfe5d3d9ac92a85b28453df2",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
