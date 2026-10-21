@@ -1,8 +1,10 @@
 name: Deploy to Production AWS
 
 on:
-  push:
-    branches: [ "main" ]
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
+    branches: [main]
 
 concurrency:
   group: production-deploy
@@ -10,12 +12,19 @@ concurrency:
 
 jobs: 
   deploy:
+    if: >- 
+      ${{ 
+        github.event.workflow_run.conclusion == 'success' && 
+        github.event.workflow_run.event == 'push' && 
+        github.event.workflow_run.head_repository.full_name == github.repository 
+      }}
     runs-on: ubuntu-latest
     environment: Production
-    needs: ci
     
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c #v6.2.3

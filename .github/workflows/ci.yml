@@ -1,7 +1,7 @@
 name: ci
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "dev"]
   pull_request:
     branches: ["main", "dev"]
 
@@ -218,10 +218,25 @@ jobs:
         run: pip install --upgrade "setuptools>=83.0.0"
 
       - name: Install security tools
-        run: pip install bandit pip-audit
+        run: pip install "bandit==1.9.4" "pip-audit==2.10.1"
 
       - name: Run Bandit
         run: bandit -r backend/ -ll
 
-      - name: Check pip dependencies
-        run: pip-audit
+      - name: Audit backend Python dependencies
+        run: pip-audit -r backend/requirements.txt --disable-pip --no-deps # this last part is to make sure that it checks it w/o installing it
+
+      - name: Audit AI Python dependencies
+        run: pip-audit -r ai/requirements.txt --disable-pip --no-deps
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 #v7.1.0
+        with:
+          node-version: "20.9.0"
+
+      - name: Install pnpm
+        run: npm install -g pnpm@10.30.3
+
+      - name: Audit frontend production dependencies
+        working-directory: frontend
+        run: pnpm audit --prod --audit-level high
