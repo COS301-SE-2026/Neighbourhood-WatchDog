@@ -1,0 +1,21 @@
+.github/workflows/deploy-mediamtx-prod.yml
+  h_cf6208e37032c0 32
+  h_cf6208e37032c0 43-44
+.github/workflows/ci.yml
+  h_cf6208e37032c0 207-238,269
+docker-compose.prod.yml
+  h_cf6208e37032c0 7-9
+docker-compose.yml
+  h_cf6208e37032c0 60,68,93,121,138,140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c3c4f12ca7d02e25caa422cd46718aeaaad2c6f1",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
