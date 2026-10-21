@@ -29,7 +29,7 @@ jobs:
           host: ${{ secrets.MEDIAMTX_HOST }}
           username: ${{ secrets.MEDIAMTX_USER }}
           key: ${{ secrets.MEDIAMTX_SSH_KEY }}
-          source: "mediamtx,go2rtc,failover-controller,docker-compose.yml,docker-compose.prod.yml,docker-compose.failover.yml"
+          source: "mediamtx,docker-compose.prod.yml"
           target: "/home/ubuntu/app"
 
       - name: Redeploy mediamtx
@@ -40,5 +40,5 @@ jobs:
           key: ${{ secrets.MEDIAMTX_SSH_KEY }}
           script: |
             cd /home/ubuntu/app
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.failover.yml up -d --build mediamtx
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.failover.yml logs mediamtx --tail 30
+            docker compose -f docker-compose.prod.yml up -d --build mediamtx
+            docker compose -f docker-compose.prod.yml logs mediamtx --tail 30

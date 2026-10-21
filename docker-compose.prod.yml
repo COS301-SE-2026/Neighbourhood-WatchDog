@@ -1,46 +1,12 @@
 services:
-
-  backend:
-    build:
-      context: ./backend
-      target: production
-    environment:
-      APP_ENV: production
-      DEBUG: "false"
-      TESTING: "false"
-      DATABASE_URL: ${DATABASE_URL}
-      SECRET_KEY: ${SECRET_KEY}
-      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
-      AWS_REGION: ${AWS_REGION}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      COGNITO_REGION: ${COGNITO_REGION}
-      COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
-      COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
-      FRONTEND_URL: ${FRONTEND_URL}
-      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
-      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
-      TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM}
-      NOTIFICATION_ENABLED: ${NOTIFICATION_ENABLED}
-      SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL}
-      SMTP_APP_PASSWORD: ${SMTP_APP_PASSWORD}
-      RTSP_ENCRYPTION_KEY: ${RTSP_ENCRYPTION_KEY}
-      MEDIAMTX_PUBLISH_MASTER_KEY: ${MEDIAMTX_PUBLISH_MASTER_KEY}
-      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
-      WEAPON_INCIDENT_WINDOW_SECONDS: ${WEAPON_INCIDENT_WINDOW_SECONDS:-30}
-    restart: always
-    depends_on:
-      postgres:
-        condition: service_healthy
-
   mediamtx:
     environment:
       MTX_WEBRTCENCRYPTION: "yes"
       MTX_WEBRTCSERVERCERT: /certs/fullchain.pem
       MTX_WEBRTCSERVERKEY: /certs/privkey.pem
-      MTX_WEBRTCADDITIONALHOSTS: ${MTX_WEBRTCADDITIONALHOSTS}
-      MTX_WEBRTCALLOWORIGIN: ${MTX_WEBRTCALLOWORIGIN}
-      MTX_AUTHHTTPADDRESS: ${MTX_AUTHHTTPADDRESS}
+      MTX_WEBRTCADDITIONALHOSTS: ${MTX_WEBRTCADDITIONALHOSTS:?must be set}
+      MTX_WEBRTCALLOWORIGIN: ${MTX_WEBRTCALLOWORIGIN:?must be set}
+      MTX_AUTHHTTPADDRESS: ${MTX_AUTHHTTPADDRESS:?must be set}
     build:
       context: ./mediamtx
     ports: 
@@ -52,6 +18,3 @@ services:
       - ./mediamtx/mediamtx.yml:/mediamtx/mediamtx.yml
       - /opt/mediamtx-certs:/certs:ro
     restart: always
-
-volumes:
-  # redis_data:
