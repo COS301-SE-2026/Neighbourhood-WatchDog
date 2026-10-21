@@ -23,6 +23,7 @@ export function NoCandidatePopup({
           </span>
 
           <Button
+            type="button"
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-brand-ash hover:text-brand-frost"

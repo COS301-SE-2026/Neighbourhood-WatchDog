@@ -979,13 +979,20 @@ class TestRespondToDispatchHandler:
             notified_at=datetime.now(timezone.utc) - timedelta(seconds=5),
         )
         next_candidate = make_dispatch_row(DispatchStatus.PENDING, officer_id=next_officer_id, rank=2)
+        alert_info_result = MagicMock()
+        alert_info_result.one_or_none.return_value = (
+            "WEAPON_DETECTED",
+            0.95,
+            "http://localhost:3000/logo.png",
+            FIXED_NOW,
+        )
         mock_db = _respond_db(
             officer=officer,
             dispatch=dispatch,
             extra=[
                 make_scalars_result([dispatch, next_candidate]),
                 make_scalar_result(str(uuid4())),
-                make_scalar_result("WEAPON_DETECTED"),
+                alert_info_result,
                 make_scalar_result(uuid4())
             ],
         )

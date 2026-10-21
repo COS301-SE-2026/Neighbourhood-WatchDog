@@ -16,11 +16,10 @@ import {
   type DispatchNotification,
 } from "@/hooks/use-dispatch";
 
-
 const RESPONSE_WINDOW = 120;
 
 const DETECTION_LABELS: Record<string, string> = {
-  WEAPON_DETECTED: "Weapon detected",
+  WEAPON_DETECTED: "Possible Weapon detected",
   FALL_DETECTED: "Fall detected",
 };
 
@@ -65,6 +64,8 @@ function RequestCard({
   onDecline: () => void;
 }) {
   const secondsLeft = useCountdown(notification.expiresAt);
+
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const progressPercent = Math.max(
     0,
@@ -129,6 +130,55 @@ function RequestCard({
             <MapPin className="h-3 w-3" />
             {locationInfo}
           </p>
+        )}
+
+        <p className="mb-3 text-xs text-brand-caution">
+          Camera detected a possible weapon.
+        </p>
+
+        <button
+          type="button"
+          aria-expanded={detailsOpen}
+          aria-controls={`dispatch-details-${notification.dispatchId}`}
+          onClick={() => setDetailsOpen((open) => !open)}
+          className="mb-3 text-xs font-semibold text-brand-green underline underline-offset-2 hover:text-brand-frost"
+        >
+          {detailsOpen ? "Hide details" : "More details"}
+        </button>
+
+        {detailsOpen && (
+          <div
+            id={`dispatch-details-${notification.dispatchId}`}
+            className="mb-3 space-y-2 rounded-lg border border-border bg-brand-void p-3 text-xs text-brand-ash"
+          >
+            {notification.confidenceScore !== null && (
+              <p>
+                Detection confidence:{" "}
+                {Math.round(notification.confidenceScore * 100)}%
+              </p>
+            )}
+
+            {notification.frameTimestamp && (
+              <p>
+                Detection time:{" "}
+                {new Date(notification.frameTimestamp).toLocaleString()}
+              </p>
+            )}
+
+            {notification.thumbnailUrl && (
+              <img
+                src={notification.thumbnailUrl}
+                alt="Camera snapshot associated with this dispatch"
+                className="max-h-40 w-full rounded-md object-cover"
+              />
+            )}
+
+            {!notification.thumbnailUrl &&
+              notification.confidenceScore === null &&
+              !notification.frameTimestamp && (
+                <p>No additional alert details are available.</p>
+              )}
+          </div>
         )}
 
         <div className="mt-1 flex gap-2">
@@ -211,11 +261,10 @@ export function DispatchRequestPopup({
   const { notification, responding, outcome, accept, decline } =
     useDispatchNotification(neighbourhoodId);
 
-    const handleAccept = async () => {
+  const handleAccept = async () => {
     // Capture these before accept() clears the notification.
     const propertyId = notification?.propertyId;
-    const dispatchNeighbourhoodId =
-      notification?.neighbourhoodId;
+    const dispatchNeighbourhoodId = notification?.neighbourhoodId;
 
     if (!propertyId || !dispatchNeighbourhoodId) {
       console.error(
@@ -227,16 +276,10 @@ export function DispatchRequestPopup({
     const accepted = await accept();
     if (!accepted) return;
 
-    const destination = dispatchRouteUrl(
-      dispatchNeighbourhoodId,
-      propertyId,
-    );
-
+    const destination = dispatchRouteUrl(dispatchNeighbourhoodId, propertyId);
 
     window.location.assign(destination);
   };
-
-
 
   if (!notification && !outcome) {
     return null;
