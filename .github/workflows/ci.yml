@@ -116,11 +116,6 @@ jobs:
       - name: Run database migrations
         run: cd backend && alembic upgrade head
 
-      # - name: Seed test data (seed.sql)
-      #   env:
-      #     PGPASSWORD: test_password
-      #   run: psql -h localhost -U postgres -d watchdog -f seed.sql
-
       - name: Seed test data
         run: cd backend && python seed.py
 
@@ -208,6 +203,38 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+
+      - name: Check prod compose fails closed
+        run: |
+          if grep -nE '\$\{[A-Z_]*(SECRET|KEY|TOKEN|PASSWORD)[A-Z_]*:-' docker-compose*.yml; then
+            echo "Secret-named variables must not have defaults; use \${VAR:?must be set}"
+            exit 1
+          fi
+
+          if grep -nE ':-(false)?\}' docker-compose.prod.yml; then
+            echo "docker-compose.prod.yml must not default to false or empty"
+            exit 1
+          fi
+
+      - name: Check prod compose only publishes MediaMTX ports
+        env:
+          MTX_WEBRTCADDITIONALHOSTS: ci.invalid
+          MTX_WEBRTCALLOWORIGIN: https://ci.invalid
+          MTX_AUTHHTTPADDRESS: https://ci.invalid/internal/mediamtx/auth
+        run: |
+          published=$(docker compose -f docker-compose.prod.yml config --format json \
+            | jq -r '.services[] | .ports[]? | "\(.host_ip // "0.0.0.0"):\(.published)/\(.protocol)"' \
+            | sort)
+          allowed=$(printf '%s\n' \
+            "0.0.0.0:8189/udp" \
+            "0.0.0.0:8554/tcp" \
+            "0.0.0.0:8889/tcp" \
+            "127.0.0.1:9997/tcp" | sort)
+          echo "Published ports:"; echo "$published"
+          if [ "$published" != "$allowed" ]; then
+            echo "docker-compose.prod.yml publishes unexpected ports. Allowed:"; echo "$allowed"
+            exit 1
+          fi
 
       - name: Set up Python 3.11
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 #v7.0.0
