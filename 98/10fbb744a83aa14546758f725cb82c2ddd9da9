@@ -1,0 +1,14 @@
+backend/app/core/config.py
+  h_cf6208e37032c0 4,9-10,13,38-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9810fbb744a83aa14546758f725cb82c2ddd9da9",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
