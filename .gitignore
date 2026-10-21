@@ -28,6 +28,7 @@ backend/.pytest_cache/
 .python-version
 
 __pycache__/
+.idea/
 *.pyc
 .pytest_cache/
 .vercel
