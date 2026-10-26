@@ -46,19 +46,22 @@ jobs:
 
     env:
       DATABASE_URL: postgresql+asyncpg://postgres:test_password@localhost:5432/watchdog
-      REDIS_URL: ${{ secrets.REDIS_URL }}
-      SECRET_KEY: ${{ secrets.SECRET_KEY }}
-      AWS_REGION: ${{ secrets.AWS_REGION }}
-      COGNITO_REGION: ${{ secrets.COGNITO_REGION }}
-      COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
-      COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
-      RTSP_ENCRYPTION_KEY: ${{ secrets.RTSP_ENCRYPTION_KEY }}
+      REDIS_URL: redis://localhost:6379/0
+      SECRET_KEY: ci-test-secret-key
+      AWS_REGION: af-south-1
+      COGNITO_REGION: af-south-1
+      COGNITO_USER_POOL_ID: af-south-1_citest
+      COGNITO_CLIENT_ID: ci-test-client
       FRONTEND_URL: https://testserver
       TESTING: true
+
 
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+
+      - name: Generate test encryption key
+        run: echo "RTSP_ENCRYPTION_KEY=$(openssl rand -base64 32 | tr '+/' '-_')" >> "$GITHUB_ENV"
 
       - name: Build PostgreSQL test image
         run: docker build --tag watchdog-postgres ./postgres
