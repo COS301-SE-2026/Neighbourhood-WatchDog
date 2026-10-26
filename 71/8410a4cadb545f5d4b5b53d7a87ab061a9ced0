@@ -1,0 +1,14 @@
+frontend/src/lib/auth/auth-context.tsx
+  h_3555f7510a5ca8 7,33,82-87,89,93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "718410a4cadb545f5d4b5b53d7a87ab061a9ced0",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
