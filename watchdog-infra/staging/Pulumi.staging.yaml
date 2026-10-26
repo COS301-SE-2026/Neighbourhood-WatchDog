@@ -1,0 +1,6 @@
+encryptionsalt: v1:eoqKtzN3aXo=:v1:VtV3UO9rRMzD4gXh:1vFoMUIHSbL4EpiDZmVzq5xLvGWqkg==
+config:
+  aws:region: af-south-1
+  watchdog-infra-staging:prodStack: organization/watchdog-infra/prod
+  watchdog-infra-staging:imageTag: 3360a934b67166848917dbdaa77ea8cd9f17079a
+  watchdog-infra-staging:apiCertIssued: "true"
