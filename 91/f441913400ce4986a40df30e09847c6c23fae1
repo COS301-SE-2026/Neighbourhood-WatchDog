@@ -1,0 +1,15 @@
+frontend/src/lib/auth/cognito.ts
+  h_3555f7510a5ca8 5-29,103,231,309
+  h_3555f7510a5ca8 227
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "91f441913400ce4986a40df30e09847c6c23fae1",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
