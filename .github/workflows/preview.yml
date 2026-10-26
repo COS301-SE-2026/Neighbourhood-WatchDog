@@ -42,6 +42,8 @@ jobs:
       - name: Build
         run: vercel build --token=${VERCEL_TOKEN}
        
-      - name: Deploy 
-        run: vercel deploy --prebuilt --token=${VERCEL_TOKEN}
+      - name: Deploy
+        run: |
+          url=$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")
+          vercel alias set "$url" staging.neighbourhoodwatchdog.co.za --token="$VERCEL_TOKEN" --scope teamintrepid
       
