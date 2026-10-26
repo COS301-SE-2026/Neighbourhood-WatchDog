@@ -3,7 +3,7 @@ ultralytics==8.4.45
 ultralytics-thop==2.0.19
 torch==2.14.1
 torchvision==0.29.1
-opencv-python==4.13.0.92
+opencv-python==5.0.0.93
 numpy==2.2.6
 scipy==1.15.3
 pillow==13.0.0
