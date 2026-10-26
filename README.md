@@ -298,8 +298,8 @@ Demo 4
 <table width="100%">
   <tr>
     <td align="center" width="20%">
-      <a href="https://github.com/">
-        <img src="https://github.com/ghost.png?size=120" width="90" style="border-radius:50%" alt="Jared Williams"/>
+      <a href="https://github.com/JaredWilliams-1">
+        <img src="/docs/images/JW.png" width="90" style="border-radius:50%" alt="Jared Williams"/>
       </a>
       <br/><br/>
       <b>Jared Williams</b><br/>
@@ -307,60 +307,55 @@ Demo 4
       <img src="https://img.shields.io/badge/Team%20Lead-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <img src="https://img.shields.io/badge/Full--Stack%20Dev-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <br/><br/>
-      <sub>Python · FastAPI · React · Next.js · PostgreSQL · Docker</sub><br/><br/>
-      <a href="https://github.com/"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
+      <a href="https://github.com/JaredWilliams-1""><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
       <a href="https://www.linkedin.com/in/jared-williams-5286a6283/"><img src="https://img.shields.io/badge/LinkedIn-10B981?style=flat-square&logo=linkedin&logoColor=white&labelColor=0D1B2A"/></a>
     </td>
     <td align="center" width="20%">
-      <a href="https://github.com/">
-        <img src="https://github.com/ghost.png?size=120" width="90" style="border-radius:50%" alt="Ange Yehouessi"/>
+      <a href="https://github.com/cosmic-hero">
+        <img src="/docs/images/AY.png" width="90" style="border-radius:50%" alt="Ange Yehouessi"/>
       </a>
       <br/><br/>
       <b>Ange Yehouessi</b><br/>
       <sub><code>u24614484</code></sub><br/><br/>
       <img src="https://img.shields.io/badge/Backend%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <br/><br/>
-      <sub>Python · FastAPI · Node.js · PostgreSQL · REST API</sub><br/><br/>
-      <a href="https://github.com/"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
+      <a href="https://github.com/cosmic-hero"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
       <a href="https://www.linkedin.com/in/ange-yehouessi-624086376/"><img src="https://img.shields.io/badge/LinkedIn-10B981?style=flat-square&logo=linkedin&logoColor=white&labelColor=0D1B2A"/></a>
     </td>
     <td align="center" width="20%">
-      <a href="https://github.com/">
-        <img src="https://github.com/ghost.png?size=120" width="90" style="border-radius:50%" alt="Joshua Mahabeer"/>
+      <a href="https://github.com/hixeryDixery">
+        <img src="/docs/images/JM.png" width="90" style="border-radius:50%" alt="Joshua Mahabeer"/>
       </a>
       <br/><br/>
       <b>Joshua Mahabeer</b><br/>
       <sub><code>u24597092</code></sub><br/><br/>
       <img src="https://img.shields.io/badge/AI%2FML%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <br/><br/>
-      <sub>Python · OpenCV · YOLOv8 · React · Docker · C++</sub><br/><br/>
-      <a href="https://github.com/"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
+      <a href="https://github.com/hixeryDixery"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
       <a href="https://www.linkedin.com/in/joshua-mahabeer-286528269/"><img src="https://img.shields.io/badge/LinkedIn-10B981?style=flat-square&logo=linkedin&logoColor=white&labelColor=0D1B2A"/></a>
     </td>
     <td align="center" width="20%">
-      <a href="https://github.com/">
-        <img src="https://github.com/ghost.png?size=120" width="90" style="border-radius:50%" alt="Obed Edom Mbaya"/>
+      <a href="https://github.com/obedmbaya">
+        <img src="/docs/images/OEM.png" width="90" style="border-radius:50%" alt="Obed Edom Mbaya"/>
       </a>
       <br/><br/>
       <b>Obed Edom Mbaya</b><br/>
       <sub><code>u24595889</code></sub><br/><br/>
-      <img src="https://img.shields.io/badge/AI%2FML%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
+      <img src="https://img.shields.io/badge/Full--Stack%20Dev-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <br/><br/>
-      <sub>Python · FastAPI · LangGraph · Next.js · PostgreSQL · Docker</sub><br/><br/>
-      <a href="https://github.com/"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
+      <a href="https://github.com/obedmbaya"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
       <a href="https://www.linkedin.com/in/obed-edom-mbaya-01197423b/"><img src="https://img.shields.io/badge/LinkedIn-10B981?style=flat-square&logo=linkedin&logoColor=white&labelColor=0D1B2A"/></a>
     </td>
     <td align="center" width="20%">
-      <a href="https://github.com/">
-        <img src="https://github.com/ghost.png?size=120" width="90" style="border-radius:50%" alt="Zaman Bassa"/>
+      <a href="https://github.com/zamanbassa">
+        <img src="/docs/images/ZB.png" width="90" style="border-radius:50%" alt="Zaman Bassa"/>
       </a>
       <br/><br/>
       <b>Zaman Bassa</b><br/>
       <sub><code>u24744931</code></sub><br/><br/>
       <img src="https://img.shields.io/badge/DevOps%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <br/><br/>
-      <sub>TypeScript · Python · Docker · PostgreSQL · GitHub Actions</sub><br/><br/>
-      <a href="https://github.com/"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
+      <a href="https://github.com/zamanbassa"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
       <a href="https://www.linkedin.com/in/zaman-bassa-033673360/"><img src="https://img.shields.io/badge/LinkedIn-10B981?style=flat-square&logo=linkedin&logoColor=white&labelColor=0D1B2A"/></a>
     </td>
   </tr>
