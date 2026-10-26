@@ -18,7 +18,7 @@
     "@capgo/background-geolocation": "^8.4.14",
     "@serwist/next": "^9.5.13",
     "@tanstack/react-query": "^5.104.5",
-    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-table": "^9.3.1",
     "amazon-cognito-identity-js": "^6.3.22",
     "capacitor-native-settings": "^8.2.0",
     "chart.js": "^4.6.1",
