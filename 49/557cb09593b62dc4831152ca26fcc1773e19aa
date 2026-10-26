@@ -1,0 +1,20 @@
+frontend/src/hooks/use-critical-alerts.ts
+  h_3555f7510a5ca8 36,80,86
+tests/frontend/auth/auth.test.ts
+  h_3555f7510a5ca8 15,40-44,519-527,530-534,536-539,541-545
+  h_3555f7510a5ca8 535
+tests/frontend/unit/hooks/use-critical-alerts.test.ts
+  h_3555f7510a5ca8 32,186,210-213,286,293-298
+  h_3555f7510a5ca8 214
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "49557cb09593b62dc4831152ca26fcc1773e19aa",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
