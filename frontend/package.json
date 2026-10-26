@@ -83,7 +83,7 @@
       "handlebars@<4.7.10": "^4.7.10",
       "brace-expansion@<1.1.20": "^1.1.20",
       "body-parser@>=2.0.0 <2.4.0": "^2.4.0",
-      "zod@4.6.6": "^4.6.7"
+      "zod@<4.6.6": "^4.6.7"
     },
     "ignoredBuiltDependencies": [
       "sharp",
