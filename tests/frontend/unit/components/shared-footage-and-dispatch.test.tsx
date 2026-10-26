@@ -1,6 +1,15 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { AlertFootagePlayer } from "@/components/shared/AlertFootagePlayer";
-import { DispatchRequestPopup, dispatchRouteUrl } from "@/components/shared/DispatchRequestPopup";
+import {
+  DispatchRequestPopup,
+  dispatchRouteUrl,
+} from "@/components/shared/DispatchRequestPopup";
 import { SequencedFootagePlayer } from "@/components/shared/SequencedFootagePlayer";
 import { useClip } from "@/hooks/use-clip";
 import { fetchTrackingTimeline } from "@/lib/api/alert";
@@ -8,16 +17,24 @@ import { useDispatchNotification } from "@/hooks/use-dispatch";
 
 jest.mock("@/hooks/use-clip", () => ({ useClip: jest.fn() }));
 jest.mock("@/lib/api/alert", () => ({ fetchTrackingTimeline: jest.fn() }));
-jest.mock("@/hooks/use-dispatch", () => ({ useDispatchNotification: jest.fn() }));
-jest.mock("lucide-react", () => new Proxy({}, { get: () => (props: any) => <span {...props} /> }));
-
+jest.mock("@/hooks/use-dispatch", () => ({
+  useDispatchNotification: jest.fn(),
+}));
+jest.mock(
+  "lucide-react",
+  () => new Proxy({}, { get: () => (props: any) => <span {...props} /> }),
+);
 
 const mockUseClip = jest.mocked(useClip);
 const mockFetchTrackingTimeline = jest.mocked(fetchTrackingTimeline);
 const mockUseDispatch = jest.mocked(useDispatchNotification);
 
-
-const baseClip = { url: null, status: "idle" as const, errorMessage: null, loadClip: jest.fn() };
+const baseClip = {
+  url: null,
+  status: "idle" as const,
+  errorMessage: null,
+  loadClip: jest.fn(),
+};
 const notification = {
   dispatchId: "dispatch-1",
   alertId: "alert-1",
@@ -27,46 +44,44 @@ const notification = {
   distance: 1500,
   eta: 125,
   notifiedAt: "2026-09-30T08:00:00.000Z",
-  expiresAt: null
+  expiresAt: null,
 };
 
-
 const sightings = [
-    {
-        id: "sightings-b",
-        camera_id: "camera-b",
-        camera_name: "Back camera",
-        camera_location: "Back gate",
-        local_track_id: 2,
-        observed_at: "2026-09-30T08:02:00.000Z",
-        sequence_no: 2,
-        match_confidence: null,
-        clip_s3_key: "clip-b",
-        clip_expires_at: null,
-        latitude: -25.75,
-        longitude: 28.23
-    },
-    {
-        id: "sighting-a",
-        camera_id: "camera-a",
-        camera_name: "Front camera",
-        camera_location: "Front gate",
-        local_track_id: 1,
-        observed_at: "2026-09-30T08:01:00.000Z",
-        sequence_no: 1,
-        match_confidence: 0.9,
-        clip_s3_key: "clip-a",
-        clip_expires_at: null,
-        latitude: -25.74,
-        longitude: 28.22
-    }
+  {
+    id: "sightings-b",
+    camera_id: "camera-b",
+    camera_name: "Back camera",
+    camera_location: "Back gate",
+    local_track_id: 2,
+    observed_at: "2026-09-30T08:02:00.000Z",
+    sequence_no: 2,
+    match_confidence: null,
+    clip_s3_key: "clip-b",
+    clip_expires_at: null,
+    latitude: -25.75,
+    longitude: 28.23,
+  },
+  {
+    id: "sighting-a",
+    camera_id: "camera-a",
+    camera_name: "Front camera",
+    camera_location: "Front gate",
+    local_track_id: 1,
+    observed_at: "2026-09-30T08:01:00.000Z",
+    sequence_no: 1,
+    match_confidence: 0.9,
+    clip_s3_key: "clip-a",
+    clip_expires_at: null,
+    latitude: -25.74,
+    longitude: 28.22,
+  },
 ];
 
-
 beforeEach(() => {
-    jest.clearAllMocks();
-    mockUseClip.mockReturnValue(baseClip);
-     mockUseDispatch.mockReturnValue({
+  jest.clearAllMocks();
+  mockUseClip.mockReturnValue(baseClip);
+  mockUseDispatch.mockReturnValue({
     notification,
     responding: false,
     outcome: null,
@@ -75,8 +90,6 @@ beforeEach(() => {
   });
 });
 
-
-
 describe("DispatchRequestPopup", () => {
   test("renders nothing when there is no notification or outcome", () => {
     mockUseDispatch.mockReturnValue({
@@ -84,34 +97,49 @@ describe("DispatchRequestPopup", () => {
       responding: false,
       outcome: null,
       accept: jest.fn(),
-      decline: jest.fn()
+      decline: jest.fn(),
     });
-    const { container } = render(<DispatchRequestPopup neighbourhoodId={null} />);
+    const { container } = render(
+      <DispatchRequestPopup neighbourhoodId={null} />,
+    );
     expect(container).toBeEmptyDOMElement();
   });
 
   test("renders a weapon request with distance, ETA, and actions", () => {
     render(<DispatchRequestPopup neighbourhoodId="neighbourhood-1" />);
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
-    expect(screen.getByText("Weapon detected")).toBeInTheDocument();
+    expect(screen.getByText("Possible Weapon detected")).toBeInTheDocument();
     expect(screen.getByText("1.5 km away · ~2 min away")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Accept dispatch request" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Decline dispatch request" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Accept dispatch request" }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Decline dispatch request" }),
+    ).toBeEnabled();
   });
 
   test("renders fallback title, metre distance, short ETA, and disabled buttons", () => {
     mockUseDispatch.mockReturnValue({
-      notification: { ...notification, detectionType: "UNKNOWN", distance: 25, eta: 20 },
+      notification: {
+        ...notification,
+        detectionType: "UNKNOWN",
+        distance: 25,
+        eta: 20,
+      },
       responding: true,
       outcome: null,
       accept: jest.fn(),
-      decline: jest.fn()
+      decline: jest.fn(),
     });
     render(<DispatchRequestPopup neighbourhoodId="n1" />);
     expect(screen.getByText("New dispatch request")).toBeInTheDocument();
     expect(screen.getByText("25 m away · <1 min away")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Accept dispatch request" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Decline dispatch request" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Accept dispatch request" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Decline dispatch request" }),
+    ).toBeDisabled();
   });
 
   test("renders countdown progress and updates it for an expiring request", () => {
@@ -122,7 +150,7 @@ describe("DispatchRequestPopup", () => {
       responding: false,
       outcome: null,
       accept: jest.fn(),
-      decline: jest.fn()
+      decline: jest.fn(),
     });
     render(<DispatchRequestPopup neighbourhoodId="n1" />);
     expect(screen.getByText(/1:00|0:59/)).toBeInTheDocument();
@@ -135,14 +163,14 @@ describe("DispatchRequestPopup", () => {
   test.each([
     ["ACCEPTED", "Dispatch accepted"],
     ["DECLINED", "Dispatch declined"],
-    ["EXPIRED", "Request expired"]
+    ["EXPIRED", "Request expired"],
   ] as const)("renders the %s outcome", (outcome, text) => {
     mockUseDispatch.mockReturnValue({
       notification: null,
       responding: false,
       outcome,
       accept: jest.fn(),
-      decline: jest.fn()
+      decline: jest.fn(),
     });
     render(<DispatchRequestPopup neighbourhoodId="n1" />);
     expect(screen.getByRole("status")).toHaveTextContent(text);
@@ -152,22 +180,28 @@ describe("DispatchRequestPopup", () => {
     const decline = jest.fn();
     mockUseDispatch.mockReturnValue({ ...mockUseDispatch(), decline });
     render(<DispatchRequestPopup neighbourhoodId="n1" />);
-    fireEvent.click(screen.getByRole("button", { name: "Decline dispatch request" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Decline dispatch request" }),
+    );
     expect(decline).toHaveBeenCalledTimes(1);
   });
 
   test("logs an error instead of accepting when destination data is missing", async () => {
-    const error = jest.spyOn(console, "error").mockImplementation(() => undefined);
+    const error = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
     const accept = jest.fn();
     mockUseDispatch.mockReturnValue({
       notification: { ...notification, propertyId: null },
       responding: false,
       outcome: null,
       accept,
-      decline: jest.fn()
+      decline: jest.fn(),
     });
     render(<DispatchRequestPopup neighbourhoodId="n1" />);
-    fireEvent.click(screen.getByRole("button", { name: "Accept dispatch request" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Accept dispatch request" }),
+    );
     await waitFor(() => expect(error).toHaveBeenCalled());
     expect(accept).not.toHaveBeenCalled();
     error.mockRestore();
@@ -188,7 +222,7 @@ describe("AlertFootagePlayer", () => {
     ["expired", "The clip has expired"],
     ["forbidden", "You do not have permission to view this footage"],
     ["unavailable", "Clip storage is unavailable."],
-    ["error", "Failed to load footage"]
+    ["error", "Failed to load footage"],
   ] as const)("renders the %s state", (status, text) => {
     mockUseClip.mockReturnValue({
       ...baseClip,
@@ -196,13 +230,25 @@ describe("AlertFootagePlayer", () => {
       errorMessage: text,
     });
 
-    render(<AlertFootagePlayer alertId="a1" timestamp="2026-09-30T08:00:00.000Z" />);
+    render(
+      <AlertFootagePlayer alertId="a1" timestamp="2026-09-30T08:00:00.000Z" />,
+    );
     expect(screen.getByText(text)).toBeInTheDocument();
   });
 
   test("renders a ready video and applies half-speed playback", () => {
-    mockUseClip.mockReturnValue({ ...baseClip, status: "ready", url: "https://example.test/clip.mp4" });
-    render(<AlertFootagePlayer alertId="a1" timestamp="2026-09-30T08:00:00.000Z" clipKind="tracking-sighting" />);
+    mockUseClip.mockReturnValue({
+      ...baseClip,
+      status: "ready",
+      url: "https://example.test/clip.mp4",
+    });
+    render(
+      <AlertFootagePlayer
+        alertId="a1"
+        timestamp="2026-09-30T08:00:00.000Z"
+        clipKind="tracking-sighting"
+      />,
+    );
     const video = screen.getByLabelText(/Detection footage at/);
     expect(video).toHaveAttribute("src", "https://example.test/clip.mp4");
     fireEvent.loadedMetadata(video);
@@ -219,20 +265,37 @@ describe("SequencedFootagePlayer", () => {
     ["expired", "The clip has expired"],
     ["forbidden", "You do not have permission to view this footage"],
     ["unavailable", "Footage unavailable"],
-    ["error", "Footage unavailable"]
+    ["error", "Footage unavailable"],
   ] as const)("renders the %s state", (status, text) => {
-        mockUseClip.mockReturnValue({
+    mockUseClip.mockReturnValue({
       ...baseClip,
       status,
       errorMessage: text,
     });
-    render(<SequencedFootagePlayer alertId="a1" alertTimestamp="2026-09-30T08:00:00.000Z" enabled={false} />);
+    render(
+      <SequencedFootagePlayer
+        alertId="a1"
+        alertTimestamp="2026-09-30T08:00:00.000Z"
+        enabled={false}
+      />,
+    );
     expect(screen.getByText(text)).toBeInTheDocument();
   });
 
   test("sorts supplied sightings, renders the playlist, and advances on ended", () => {
-    mockUseClip.mockReturnValue({ ...baseClip, status: "ready", url: "clip.mp4" });
-    render(<SequencedFootagePlayer alertId="a1" alertTimestamp="2026-09-30T08:00:00.000Z" enabled sightings={sightings} />);
+    mockUseClip.mockReturnValue({
+      ...baseClip,
+      status: "ready",
+      url: "clip.mp4",
+    });
+    render(
+      <SequencedFootagePlayer
+        alertId="a1"
+        alertTimestamp="2026-09-30T08:00:00.000Z"
+        enabled
+        sightings={sightings}
+      />,
+    );
     expect(screen.getByText(/1 \/ 3/)).toBeInTheDocument();
     expect(screen.getByText(/Origin camera/)).toBeInTheDocument();
     const video = screen.getByLabelText(/Detection footage at/);
@@ -244,16 +307,41 @@ describe("SequencedFootagePlayer", () => {
 
   test("loads and filters sightings when none are supplied", async () => {
     mockFetchTrackingTimeline.mockResolvedValue({ sightings } as any);
-    mockUseClip.mockReturnValue({ ...baseClip, status: "ready", url: "clip.mp4" });
-    render(<SequencedFootagePlayer alertId="a1" alertTimestamp="2026-09-30T08:00:00.000Z" enabled />);
-    await waitFor(() => expect(mockFetchTrackingTimeline).toHaveBeenCalledWith("a1", expect.any(AbortSignal)));
+    mockUseClip.mockReturnValue({
+      ...baseClip,
+      status: "ready",
+      url: "clip.mp4",
+    });
+    render(
+      <SequencedFootagePlayer
+        alertId="a1"
+        alertTimestamp="2026-09-30T08:00:00.000Z"
+        enabled
+      />,
+    );
+    await waitFor(() =>
+      expect(mockFetchTrackingTimeline).toHaveBeenCalledWith(
+        "a1",
+        expect.any(AbortSignal),
+      ),
+    );
     await waitFor(() => expect(screen.getByText(/1 \/ 3/)).toBeInTheDocument());
   });
 
   test("keeps the origin clip when the timeline request fails", async () => {
     mockFetchTrackingTimeline.mockRejectedValue(new Error("not ready"));
-    mockUseClip.mockReturnValue({ ...baseClip, status: "ready", url: "clip.mp4" });
-    render(<SequencedFootagePlayer alertId="a1" alertTimestamp="2026-09-30T08:00:00.000Z" enabled />);
+    mockUseClip.mockReturnValue({
+      ...baseClip,
+      status: "ready",
+      url: "clip.mp4",
+    });
+    render(
+      <SequencedFootagePlayer
+        alertId="a1"
+        alertTimestamp="2026-09-30T08:00:00.000Z"
+        enabled
+      />,
+    );
     await waitFor(() => expect(mockFetchTrackingTimeline).toHaveBeenCalled());
     expect(screen.getByText(/Origin camera/)).toBeInTheDocument();
   });
