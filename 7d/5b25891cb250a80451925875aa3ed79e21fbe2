@@ -1,0 +1,18 @@
+frontend/src/hooks/use-critical-alerts.ts
+  h_3555f7510a5ca8 23,36,126-137
+  h_3555f7510a5ca8 125
+frontend/src/lib/validators/alert.ts
+  h_3555f7510a5ca8 108-123,125-127,131
+  h_3555f7510a5ca8 124,128-130
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7d5b25891cb250a80451925875aa3ed79e21fbe2",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}

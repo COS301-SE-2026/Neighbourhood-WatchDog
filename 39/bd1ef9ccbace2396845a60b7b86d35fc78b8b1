@@ -1,0 +1,14 @@
+frontend/src/hooks/use-user-context.ts
+  h_3555f7510a5ca8 6,10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "39bd1ef9ccbace2396845a60b7b86d35fc78b8b1",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
