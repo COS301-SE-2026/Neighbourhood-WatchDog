@@ -190,6 +190,7 @@ def deploy_policy(cluster_name: str):
                 "ecs:RegisterTaskDefinition", "ecs:DescribeTaskDefinition",
                 "ecs:DescribeServices", "ecs:DescribeTasks",
                 "ecr:GetAuthorizationToken", "ecr:DescribeImages", "ecr:BatchGetImage",
+                "ecr:GetDownloadUrlForLayer",
             ]},
             {"Effect": "Allow", "Resource": "*",
              "Action": ["ecs:UpdateService", "ecs:RunTask"],
