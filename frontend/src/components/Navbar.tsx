@@ -3,7 +3,6 @@
 import { Bell, LogOut, Monitor, User, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React from "react";
 import { useUserContext } from "@/hooks/use-user-context";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -15,30 +14,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AUTH_EVENT, logout } from "@/lib/auth/cognito";
+import {logout } from "@/lib/auth/cognito";
 import { SidebarTrigger } from "./ui/sidebar";
 
 const Navbar = () => {
   const router = useRouter();
-  const [username, setUsername] = React.useState("");
   const { data: userContext } = useUserContext();
-  const displayName = userContext?.user.name ?? username;
-  React.useEffect(() => {
-    const syncUsername = () => {
-      setUsername(localStorage.getItem("fullname") ?? "");
-    };
-
-    syncUsername();
-    window.addEventListener(AUTH_EVENT, syncUsername);
-
-    return () => {
-      window.removeEventListener(AUTH_EVENT, syncUsername);
-    };
-  }, []);
+  const displayName = userContext?.user.name ?? "";
 
   const handleLogout = async () => {
-    localStorage.removeItem("fullname");
-
     await logout();
     router.push("/auth/login");
   };
