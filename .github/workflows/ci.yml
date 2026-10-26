@@ -242,10 +242,10 @@ jobs:
           python-version: "3.11"
 
       - name: Install setuptools
-        run: pip install --upgrade "setuptools>=84.1.0"
+        run: pip install --only-binary ":all:" "setuptools==84.1.0"
 
       - name: Install security tools
-        run: pip install "bandit==1.9.4" "pip-audit==2.10.1"
+        run: pip install --only-binary ":all:" "bandit==1.9.4" "pip-audit==2.10.1"
 
       - name: Run Bandit
         run: bandit -r backend/ -ll
