@@ -33,7 +33,7 @@ function getCacheKey(
   neighbourhoodId: string
 ) : string {
   return (
-    "watchdog:critical-alert-map:v2" + neighbourhoodId
+    "watchdog:critical-alert-map:v2:" + neighbourhoodId
   );
 }
 
@@ -77,13 +77,13 @@ export function useCriticalAlerts(
         return;
       }
 
-      const cacheState = {
+      const cacheState = CriticalAlertMapCacheSchema.parse({
         version: CACHE_VERSION,
         mapped_alerts: mapped,
         unlocated_alerts: unlocated,
         last_updated: updatedAt,
         cached_at: new Date().toISOString(),
-      };
+      });
 
       try {
         localStorage.setItem(
