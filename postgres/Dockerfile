@@ -1,4 +1,4 @@
-FROM postgis/postgis:15-3.4-alpine
+FROM postgis/postgis:18-3.6-alpine
 
 ARG PGVECTOR_VERSION=v0.8.0
 
