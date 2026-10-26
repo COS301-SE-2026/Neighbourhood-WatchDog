@@ -214,6 +214,55 @@ gha_prod_role = aws.iam.Role("gha-prod-role",
 aws.iam.RolePolicy("gha-prod-deploy", role=gha_prod_role.id,
     policy=deploy_policy("watchdog-prod-cluster"))
 
+# Staging deploy may run commands only on the staging Mediamtx host
+aws.iam.RolePolicy("gha-staging-mediamtx-ssm",
+    role=gha_staging_role.id,
+    policy=json.dumps({
+        "Version": "2012-10-17",
+        "Statement": [
+            {"Effect": "Allow", "Action": "ssm:SendCommand",
+             "Resource": f"arn:aws:ec2:af-south-1:{ACCOUNT_ID}:instance/*",
+             "Condition": {"StringEquals": {"ssm:resourceTag/Name": "watchdog-staging-mediamtx"}}},
+            {"Effect": "Allow", "Action": "ssm:SendCommand",
+             "Resource": "arn:aws:ssm:af-south-1::document/AWS-RunShellScript"},
+            {"Effect": "Allow", "Action": ["ssm:GetCommandInvocation", "ssm:ListCommandInvocations"],
+             "Resource": "*"},
+            {"Effect": "Allow", "Action": "ec2:DescribeInstances", "Resource": "*"},
+        ],
+    }))
+
+
+# --- MediaMTX 
+mediamtx_instance_id = pulumi.Config().require("mediamtxInstanceId")
+
+# Fixed IP so DNS survives stop/start and recovery
+mediamtx_eip = aws.ec2.Eip("watchdog-mediamtx-eip",
+    domain="vpc",
+    tags={"Name": "watchdog-mediamtx-eip"})
+aws.ec2.EipAssociation("watchdog-mediamtx-eip-assoc",
+    instance_id=mediamtx_instance_id,
+    allocation_id=mediamtx_eip.id)
+
+alerts_topic = aws.sns.Topic("watchdog-alerts", name="watchdog-alerts")
+aws.sns.TopicSubscription("watchdog-alerts-email",
+    topic=alerts_topic.arn,
+    protocol="email",
+    endpoint=pulumi.Config().require("alertEmail"))
+
+# Hardware failure is handled by EC2 automatic recovery (on by default);
+# this reboots when the OS itself stops responding
+aws.cloudwatch.MetricAlarm("watchdog-mediamtx-instance-check",
+    name="watchdog-mediamtx-instance-check",
+    namespace="AWS/EC2",
+    metric_name="StatusCheckFailed_Instance",
+    dimensions={"InstanceId": mediamtx_instance_id},
+    statistic="Maximum",
+    period=60,
+    evaluation_periods=3,
+    threshold=1,
+    comparison_operator="GreaterThanOrEqualToThreshold",
+    alarm_actions=["arn:aws:automate:af-south-1:ec2:reboot", alerts_topic.arn],
+    ok_actions=[alerts_topic.arn])
 
 pulumi.export("vpc_id", vpc.id)
 pulumi.export("subnet_ids", [subnet_a.id, subnet_b.id, subnet_c.id])
@@ -227,3 +276,4 @@ pulumi.export("rds_sg_id", rds_sg.id)
 pulumi.export("gha_ci_role_arn", gha_ci_role.arn)
 pulumi.export("gha_staging_role_arn", gha_staging_role.arn)
 pulumi.export("gha_prod_role_arn", gha_prod_role.arn)
+pulumi.export("mediamtx_public_ip", mediamtx_eip.public_ip)
