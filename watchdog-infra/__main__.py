@@ -97,7 +97,7 @@ redis_sg = aws.ec2.SecurityGroup("watchdog-redis-sg",
 ecr_repo = aws.ecr.Repository("watchdog-backend-repo",
     name="watchdog-backend",
     image_tag_mutability="IMMUTABLE_WITH_EXCLUSION",
-    image_tag_mutability_exclusion_filters=[{"filter": "sha-256-*", "filter_type": "WILDCARD"}],
+    image_tag_mutability_exclusion_filters=[{"filter": "sha256-*", "filter_type": "WILDCARD"}],
     image_scanning_configuration={"scan_on_push": True},
     tags={"Name": "watchdog-backend"})
 
