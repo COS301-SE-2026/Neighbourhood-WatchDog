@@ -2,9 +2,7 @@ import { storeAccessToken, clearAccessToken } from "../../../frontend/src/lib/au
 import {AUTH_EVENT, setSession, getAccessToken, logout, login, signUp, confirmSignUp, resendConfirmationCode, verifyMfa} from "../../../frontend/src/lib/auth/cognito";
 import {getAuthHeaders, getAuthToken,} from "../../../frontend/src/lib/api/auth";
 import {
-  getStoredUser,
   isAuthenticated,
-  updateStoredFullName,
   clearSession,
   refreshSession
 } from "../../../frontend/src/lib/auth/cognito";
@@ -14,6 +12,7 @@ const TEST_ID_TOKEN =
 
 
 beforeEach(() => {
+  sessionStorage.clear();
   localStorage.clear();
   clearAccessToken();
   jest.clearAllMocks();
@@ -38,9 +37,11 @@ describe("session storage", () => {
   expect(localStorage.getItem("idToken")).toBeNull();
   expect(localStorage.getItem("refreshToken")).toBeNull();
 
-  expect(localStorage.getItem("userSub")).toBe("test-user-123");
-  expect(localStorage.getItem("fullname")).toBe("Test User");
-  expect(localStorage.getItem("email")).toBe("test@example.com");
+  for (const key of ["userSub", "fullname", "email", "address"]) {
+    expect(localStorage.getItem(key)).toBeNull();
+    expect(sessionStorage.getItem(key)).toBeNull();
+  }
+
   });
 
 
@@ -97,35 +98,6 @@ describe("authentication state", () => {
     storeAccessToken("valid-token", 3600);
 
     expect(isAuthenticated()).toBe(true);
-  });
-
-  test("returns stored user when authenticated", () => {
-    storeAccessToken("valid-token", 3600);
-
-    localStorage.setItem("userSub", "user-123");
-    localStorage.setItem("fullname", "Test User");
-    localStorage.setItem("email", "test@example.com");
-    localStorage.setItem("address", "123 Main Street");
-
-    expect(getStoredUser()).toEqual({
-      sub: "user-123",
-      fullname: "Test User",
-      email: "test@example.com",
-      address: "123 Main Street",
-    });
-  });
-
-  test("returns null when profile exists without access token", () => {
-    localStorage.setItem("userSub", "user-123");
-    localStorage.setItem("fullname", "Test User");
-
-    expect(getStoredUser()).toBeNull();
-  });
-
-  test("returns null when user sub is missing", () => {
-    storeAccessToken("valid-token", 3600);
-
-    expect(getStoredUser()).toBeNull();
   });
 
 });
@@ -544,20 +516,33 @@ describe("auth headers", () => {
 });
 
 describe("profile updates", () => {
-  test("updates fullname and emits auth event", () => {
-    const listener = jest.fn();
+  test("setSession removes profile data left by older versions", () => {
+    for (const key of ["userSub", "fullname", "email", "address"]) {
+      localStorage.setItem(key, "old personal data");
+      sessionStorage.setItem(key, "old personal data");
+    }
 
-    window.addEventListener(AUTH_EVENT, listener);
-
-    updateStoredFullName("Updated User");
-
-    expect(localStorage.getItem("fullname")).toBe(
-      "Updated User",
+    localStorage.setItem(
+      "watchdog:critical-alert-map:old-neighbourhood",
+      '{"property_address":"123 Test Street"}',
     );
 
-    expect(listener).toHaveBeenCalledTimes(1);
+    setSession({
+      accessToken: "access-token",
+      idToken: TEST_ID_TOKEN,
+      expiresIn: 3600,
+    });
 
-    window.removeEventListener(AUTH_EVENT, listener);
+    for (const key of ["userSub", "fullname", "email", "address"]) {
+      expect(localStorage.getItem(key)).toBeNull();
+      expect(sessionStorage.getItem(key)).toBeNull();
+    }
+
+    expect(
+      localStorage.getItem(
+        "watchdog:critical-alert-map:old-neighbourhood",
+      ),
+    ).toBeNull();
   });
 
   test("clearSession clears access token and profile", () => {

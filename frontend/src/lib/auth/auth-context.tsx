@@ -1,56 +1,104 @@
 "use client";
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { AUTH_EVENT, clearSession, refreshSession, getStoredUser, type StoredUser } from "./cognito";
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useUserContext } from "@/hooks/use-user-context";
+import type { CurrentUserSummary } from "@/lib/validators/user";
+import {
+  AUTH_EVENT,
+  clearLegacyProfileStorage,
+  clearSession,
+  getAccessToken,
+  refreshSession,
+} from "./cognito";
 
 interface AuthContextValue {
-    user: StoredUser | null;
-    isLoggedIn: boolean;
-    isLoading: boolean
+  user: CurrentUserSummary | null;
+  isLoggedIn: boolean;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+export default function AuthProvider({
+  children,
+}: {
+  readonly children: ReactNode;
+}) {
+  const queryClient = useQueryClient();
+  const [sessionReady, setSessionReady] = useState(false);
+  const [restoring, setRestoring] = useState(true);
 
-export default function AuthProvider({children}: {children: ReactNode}) {
-    const [user, setUser] = useState<StoredUser | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+  const profile = useUserContext(sessionReady && !restoring);
 
-    useEffect(() => {
-        const sync = () => {
-        setUser(getStoredUser());
-        };
+  useEffect(() => {
+    let mounted = true;
 
-        const restore = async () => {
-        try {
-            await refreshSession();
-            sync();
-        } catch {
-            clearSession();
-            setUser(null);
-        } finally {
-            setIsLoading(false);
+    const syncSession = () => {
+      const hasToken = Boolean(getAccessToken());
+
+      if (!hasToken) {
+        queryClient.removeQueries({ queryKey: ["userContext"] });
+      }
+
+      if (mounted) {
+        setSessionReady(hasToken);
+      }
+    };
+
+    window.addEventListener(AUTH_EVENT, syncSession);
+    clearLegacyProfileStorage();
+
+    const restore = async () => {
+      try {
+        await refreshSession();
+      } catch {
+        clearSession();
+      } finally {
+        if (mounted) {
+          setRestoring(false);
         }
-        };
+      }
+    };
 
-        void restore();
+    void restore();
 
-        window.addEventListener(AUTH_EVENT, sync);
+    return () => {
+      mounted = false;
+      window.removeEventListener(AUTH_EVENT, syncSession);
+    };
+  }, [queryClient]);
 
-        return () => {
-        window.removeEventListener(AUTH_EVENT, sync);
-        };
-    }, []);
+  const isLoading =
+    restoring || (sessionReady && profile.isPending);
 
+  const user = profile.data?.user ?? null;
+  const contextValue = useMemo<AuthContextValue>(
+    () => ({ user, isLoggedIn: sessionReady, isLoading }),
+    [user, sessionReady, isLoading],
+  );
 
-    return(
-        <AuthContext.Provider value={{user, isLoggedIn: Boolean(user), isLoading}}>
-            {children}
-        </AuthContext.Provider>
-    )
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
+
 }
 
 export function useAuth() {
-    const ctx = useContext(AuthContext);
-    if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
-    return ctx;
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth must be used inside AuthProvider");
+  }
+
+  return context;
 }

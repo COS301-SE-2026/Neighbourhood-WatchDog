@@ -1,8 +1,32 @@
 import { getApiBaseUrl } from '@/lib/api/auth';
-import { jwtDecode } from 'jwt-decode';
 
 export const AUTH_EVENT = 'watchdog-auth-changed';
 import { storeAccessToken, readAccessToken, clearAccessToken } from './token_store';
+
+
+
+export const clearLegacyProfileStorage = () => {
+  if (typeof window === "undefined") return;
+
+  for (const key of ["userSub", "fullname", "email", "address"]) {
+    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
+  }
+
+  // Remove old offline caches that contained property addresses.
+  for (let index = localStorage.length - 1; index >= 0; index--) {
+    const key = localStorage.key(index);
+
+    if (
+      key?.startsWith("watchdog:critical-alert-map:") &&
+      !key.startsWith("watchdog:critical-alert-map:v2:")
+    ) {
+      localStorage.removeItem(key);
+    }
+  }
+};
+
+
 // Types for API responses
 interface SignUpResponse {
   success: boolean,
@@ -76,12 +100,7 @@ interface RefreshResponse {
 let refreshPromise: Promise<string> | null = null;
 
 
-export interface StoredUser {
-  sub: string;
-  fullname: string;
-  email: string;
-  address: string;
-}
+
 
 // API Client with error handling
 const apiClient = async <T>(
@@ -205,31 +224,18 @@ export const setSession = (tokens: {
     throw new Error('Cannot store empty auth tokens');
   }
 
-  const claims = jwtDecode<{
-    sub: string;
-    name?: string;
-    email?: string;
-    address?: { formatted?: string };
-  }>(tokens.idToken);
+
 
   storeAccessToken(tokens.accessToken, tokens.expiresIn ?? 3600);
 
-  localStorage.setItem('userSub', claims.sub);
-  localStorage.setItem('fullname', claims.name ?? '');
-  localStorage.setItem('email', claims.email ?? '');
-  localStorage.setItem('address', claims.address?.formatted ?? '');
+  clearLegacyProfileStorage();
 
 
   window.dispatchEvent(new Event(AUTH_EVENT));
   
 };
 
-export const updateStoredFullName = (fullname: string) => {
-  if (typeof window === "undefined") return;
 
-  localStorage.setItem("fullname", fullname);
-  window.dispatchEvent(new Event(AUTH_EVENT));
-}
 // Get token
 export const getAccessToken = (): string | null => {
   return readAccessToken();
@@ -242,20 +248,7 @@ export const isAuthenticated = (): boolean => {
 
 
 
-export const getStoredUser = (): StoredUser | null => {
-  if (typeof window === 'undefined') return null;
-  if (!isAuthenticated()) return null;
 
-  const sub = localStorage.getItem('userSub');
-  if (!sub) return null;
-
-  return {
-    sub,
-    fullname: localStorage.getItem('fullname') ?? '',
-    email: localStorage.getItem('email') ?? '',
-    address: localStorage.getItem('address') ?? '',
-  }
-}
 
 export const verifyMfa = async (
   email: string,
@@ -313,11 +306,7 @@ export const clearSession = (): void => {
   clearAccessToken();
 
   if (typeof window !== "undefined") {
-    localStorage.removeItem("userSub");
-    localStorage.removeItem("fullname");
-    localStorage.removeItem("email");
-    localStorage.removeItem("address");
-
+    clearLegacyProfileStorage();
     window.dispatchEvent(new Event(AUTH_EVENT));
   }
 };

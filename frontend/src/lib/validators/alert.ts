@@ -105,22 +105,30 @@ export const UnlocatedCriticalAlertsResSchema = z.object({
   data: UnlocatedCriticalAlertsDataSchema
 })
 
-export const CriticalAlertMapCacheSchema =
-  z.object({
-    version: z.literal(1),
-    mapped_alerts: z.array(
-      CriticalAlertMapItemSchema,
-    ),
-    unlocated_alerts: z.array(
-      UnlocatedCriticalAlertItemSchema,
-    ),
-    last_updated: z
-      .string()
-      .datetime({ offset: true }),
-    cached_at: z
-      .string()
-      .datetime({ offset: true }),
-  });
+const CachedAlertBaseSchema =
+  CriticalAlertBaseSchema.omit({ property_address: true });
+
+const CachedMappedAlertSchema = CachedAlertBaseSchema.extend({
+  latitude: z.number().finite().min(-90).max(90),
+  longitude: z.number().finite().min(-180).max(180),
+});
+
+const CachedUnlocatedAlertSchema = CachedAlertBaseSchema.extend({
+  latitude: z.number().finite().min(-90).max(90).nullable(),
+  longitude: z.number().finite().min(-180).max(180).nullable(),
+}).refine(
+  (alert) => alert.latitude === null || alert.longitude === null,
+  { message: "An unlocated alert must have a missing coordinate" },
+);
+
+export const CriticalAlertMapCacheSchema = z.object({
+  version: z.literal(2),
+  mapped_alerts: z.array(CachedMappedAlertSchema),
+  unlocated_alerts: z.array(CachedUnlocatedAlertSchema),
+  last_updated: z.string().datetime({ offset: true }),
+  cached_at: z.string().datetime({ offset: true }),
+});
+
 
 
 
