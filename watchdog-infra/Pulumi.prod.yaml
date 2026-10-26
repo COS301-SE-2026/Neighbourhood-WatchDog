@@ -3,3 +3,6 @@ config:
   aws:region: af-south-1
   watchdog-infra:db_password:
     secure: v1:P3JbqQmMM9t/x/d2:nIBRYvzmkLMO4HPvtQ8kCCQFm0nJN69JQe1Rkj3x
+  watchdog-infra:mediamtxInstanceId: i-0f4e231de1d1f88b3
+  watchdog-infra:alertEmail:
+    secure: v1:iOG48/OECAZHMAty:HWQWp0BFJap5dYmjX8OtUs/tLoQ0S3bxM6t29DZ+ZZB3OOleqQ3IWBEUaw==
