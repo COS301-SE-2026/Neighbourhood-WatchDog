@@ -314,7 +314,8 @@ jobs:
             redis@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
 
           for i in {1..30}; do
-            docker exec db pg_isready -U postgres -d watchdog && break
+            docker exec db pg_isready -h 127.0.0.1 -U postgres -d watchdog && break
+            if [ "$i" = 30 ]; then docker logs db; exit 1; fi
             sleep 2
           done
 
