@@ -1,0 +1,16 @@
+frontend/package.json
+  h_cf6208e37032c0 86
+frontend/pnpm-lock.yaml
+  h_cf6208e37032c0 21,7219,7238,7257
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a6c59bd4a5f28b361ee9e17b70d3a5cd921c242d",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
