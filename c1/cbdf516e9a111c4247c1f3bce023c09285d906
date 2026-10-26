@@ -1,0 +1,25 @@
+watchdog-infra/staging/__main__.py
+  h_cf6208e37032c0 19,146-151,154,173,180,188,195,200-210,222-230,316,342
+  s_4b1d2b5ac0ec4c::t_cb5f53095fef53 152,211-212,231
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c1cbdf516e9a111c4247c1f3bce023c09285d906",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_4b1d2b5ac0ec4c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2fabd77a-cb2d-48a5-be14-69faabcc6778",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
