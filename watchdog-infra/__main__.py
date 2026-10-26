@@ -96,7 +96,8 @@ redis_sg = aws.ec2.SecurityGroup("watchdog-redis-sg",
 
 ecr_repo = aws.ecr.Repository("watchdog-backend-repo",
     name="watchdog-backend",
-    image_tag_mutability="IMMUTABLE",
+    image_tag_mutability="IMMUTABLE_WITH_EXCLUSION",
+    image_tag_mutability_exclusion_filters=[{"filter": "sha-256-*", "filter_type": "WILDCARD"}],
     image_scanning_configuration={"scan_on_push": True},
     tags={"Name": "watchdog-backend"})
 
@@ -177,7 +178,7 @@ aws.iam.RolePolicy("gha-ci-ecr-push",
             {"Effect": "Allow", "Resource": repo_arn, "Action": [
                 "ecr:BatchCheckLayerAvailability", "ecr:InitiateLayerUpload",
                 "ecr:UploadLayerPart", "ecr:CompleteLayerUpload", "ecr:PutImage",
-                "ecr:BatchGetImage", "ecr:DescribeImages",
+                "ecr:BatchGetImage", "ecr:DescribeImages", "ecr:GetDownloadUrlForLayer",
             ]},
         ],
     })))
@@ -190,6 +191,7 @@ def deploy_policy(cluster_name: str):
                 "ecs:RegisterTaskDefinition", "ecs:DescribeTaskDefinition",
                 "ecs:DescribeServices", "ecs:DescribeTasks",
                 "ecr:GetAuthorizationToken", "ecr:DescribeImages", "ecr:BatchGetImage",
+                "ecr:GetDownloadUrlForLayer",
             ]},
             {"Effect": "Allow", "Resource": "*",
              "Action": ["ecs:UpdateService", "ecs:RunTask"],

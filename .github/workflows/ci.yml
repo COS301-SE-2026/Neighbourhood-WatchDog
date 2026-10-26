@@ -267,3 +267,150 @@ jobs:
       - name: Audit frontend production dependencies
         working-directory: frontend
         run: pnpm audit --prod --audit-level high
+
+  image:
+    needs: [python-lint, type-check, tests, security]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # OIDC: assume the AWS role and sign keylessly with cosign
+
+    env:
+      AWS_REGION: af-south-1
+      ECR_REPOSITORY: watchdog-backend
+      LOCAL_IMAGE: watchdog-backend:ci
+      # Only pushes to dev publish an image; main promotes the digest staging is running
+      PUBLISH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/dev' }}
+
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 #v4.4.1
+
+      - name: Build backend production image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc #v7.4.0
+        with:
+          context: ./backend
+          target: production
+          load: true
+          tags: ${{ env.LOCAL_IMAGE }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+      - name: Smoke test the built image
+        run: |
+          docker network create smoke
+          docker build --tag watchdog-postgres ./postgres
+          docker run --detach --name db --network smoke \
+            --env POSTGRES_USER=postgres --env POSTGRES_PASSWORD=smoke --env POSTGRES_DB=watchdog \
+            watchdog-postgres
+          # redis:7-alpine, the same digest as in the docker-compose.yml 
+          docker run --detach --name redis --network smoke \
+            redis@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+
+          for i in {1..30}; do
+            docker exec db pg_isready -h 127.0.0.1 -U postgres -d watchdog && break
+            if [ "$i" = 30 ]; then docker logs db; exit 1; fi
+            sleep 2
+          done
+
+          # APP_ENV=staging so the fail-closed config guard runs against this image
+          cat > smoke.env <<EOF
+          APP_ENV=staging
+          DEBUG=false
+          TESTING=false
+          REFRESH_COOKIE_SECURE=true
+          DATABASE_URL=postgresql+asyncpg://postgres:smoke@db:5432/watchdog
+          REDIS_URL=redis://redis:6379/0
+          SECRET_KEY=ci-smoke-test
+          AWS_REGION=af-south-1
+          COGNITO_REGION=af-south-1
+          COGNITO_USER_POOL_ID=af-south-1_smoketest
+          COGNITO_CLIENT_ID=smoke-test
+          RTSP_ENCRYPTION_KEY=$(openssl rand -base64 32 | tr '+/' '-_')
+          MEDIAMTX_PUBLISH_MASTER_KEY=ci-smoke-test
+          EOF
+
+          docker run --rm --network smoke --env-file smoke.env "$LOCAL_IMAGE" alembic upgrade head
+          docker run --detach --name api --network smoke --env-file smoke.env --publish 8000:8000 "$LOCAL_IMAGE"
+
+          if ! curl --fail --silent --show-error --retry 15 --retry-delay 2 --retry-all-errors http://localhost:8000/health; then
+            docker logs api
+            exit 1
+          fi
+
+      - name: Scan image for CRITICAL vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 #v0.36.0
+        with:
+          image-ref: ${{ env.LOCAL_IMAGE }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Report HIGH vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 #v0.36.0
+        with:
+          image-ref: ${{ env.LOCAL_IMAGE }}
+          severity: HIGH
+          ignore-unfixed: true
+          exit-code: "0"
+          skip-setup-trivy: true
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c #v0.24.3
+        with:
+          image: ${{ env.LOCAL_IMAGE }}
+          format: spdx-json
+          output-file: sbom-backend.spdx.json
+          artifact-name: sbom-backend.spdx.json
+
+      - name: Configure AWS credentials
+        if: env.PUBLISH == 'true'
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd #v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::778312248988:role/watchdog-gha-ci
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to ECR
+        if: env.PUBLISH == 'true'
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd #v2.1.7
+
+      - name: Push image tagged with the commit SHA
+        if: env.PUBLISH == 'true'
+        id: push
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          REMOTE="$REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA"
+
+          # Tags are immutable, so a re-run of the same commit reuses the existing image
+          if ! aws ecr describe-images --repository-name "$ECR_REPOSITORY" --image-ids imageTag="$GITHUB_SHA" >/dev/null 2>&1; then
+            docker tag "$LOCAL_IMAGE" "$REMOTE"
+            docker push "$REMOTE"
+          fi
+
+          DIGEST=$(aws ecr describe-images --repository-name "$ECR_REPOSITORY" \
+            --image-ids imageTag="$GITHUB_SHA" --query 'imageDetails[0].imageDigest' --output text)
+
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "image=$REGISTRY/$ECR_REPOSITORY@$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "Pushed \`$REMOTE\` → \`$DIGEST\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install cosign
+        if: env.PUBLISH == 'true'
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 #v4.1.2
+
+      - name: Sign image and attach SBOM
+        if: env.PUBLISH == 'true'
+        env:
+          IMAGE: ${{ steps.push.outputs.image }}
+        run: |
+          cosign sign --yes "$IMAGE"
+          cosign attest --yes --type spdxjson --predicate sbom-backend.spdx.json "$IMAGE"
+
