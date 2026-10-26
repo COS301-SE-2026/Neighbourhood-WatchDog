@@ -19,20 +19,6 @@ services:
       retries: 10
       start_period: 10s
 
-  caddy:
-    # caddy:2-alpine
-    image: caddy@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - /var/www/certbot:/var/www/certbot
-    depends_on:
-      - backend
-
   redis:
     # redis:7-alpine
     image: redis@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
@@ -215,6 +201,5 @@ services:
 
 volumes:
   postgres_data:
-  caddy_data:
   redis_data:
   # frontend_node_modules:
