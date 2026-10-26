@@ -1,6 +1,4 @@
-import os
-
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from typing import Annotated
 
 from app.core.database import DbSession
@@ -10,17 +8,6 @@ from app.models.edge_agent_credentials import EdgeAgentCredential
 from app.services.detection_service import ingest_detection_handler
 
 router = APIRouter(prefix="/internal", tags=["internal"])
-#TODO: This needs to be private but NOT rate limited
-INTERNAL_TOKEN = os.getenv("INTERNAL_API_TOKEN", "dev-token")
-
-
-def verify_internal_token(x_internal_token: str = Header(...)) -> None:
-    if x_internal_token != INTERNAL_TOKEN:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid internal token",
-        )
-
 
 @router.post(
     "/detections",

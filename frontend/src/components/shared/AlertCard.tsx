@@ -456,9 +456,10 @@ export interface AlertCardProps {
   readonly trackingRefreshKey?: number;
   readonly canViewTracking: boolean;
   readonly alertCount?: number;
+  readonly detectionTypes?: string[];
 }
 
-export function AlertCard({alert, onAcknowledge, onResolve, onDismissAlert, onBroadcast, broadcasting, canViewTracking, trackingRefreshKey = 0, alertCount}: AlertCardProps) {
+export function AlertCard({alert, onAcknowledge, onResolve, onDismissAlert, onBroadcast, broadcasting, canViewTracking, trackingRefreshKey = 0, alertCount, detectionTypes}: AlertCardProps) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
   const [closingStatus, setClosingStatus] = useState<"RESOLVED" | "DISMISSED" | null>(null);
@@ -552,9 +553,25 @@ export function AlertCard({alert, onAcknowledge, onResolve, onDismissAlert, onBr
               </span>
             )}
           </div>
-          <p className="text-base font-semibold text-brand-frost leading-snug truncate">
-            {detectionLabel(alert.detection_type)}
-          </p>
+            <p className="text-base font-semibold text-brand-frost leading-snug truncate">
+              {detectionTypes?.length ? "Incident" : detectionLabel(alert.detection_type)}
+            </p>
+
+            {detectionTypes && detectionTypes.length > 0 && (
+              <div
+                className="mt-1 flex flex-wrap gap-1"
+                aria-label="Detection types in this incident"
+              >
+                {detectionTypes.map((type) => (
+                  <span
+                    key={type}
+                    className="rounded-full border border-border bg-brand-slate px-2 py-0.5 text-xs text-brand-ash"
+                  >
+                    {detectionLabel(type)}
+                  </span>
+                ))}
+              </div>
+            )}
           <div className="flex flex-wrap items-center gap-3 mt-1">
             <span className="flex items-center gap-1 text-xs text-brand-ash font-mono">
               <Camera className="h-3 w-3" />

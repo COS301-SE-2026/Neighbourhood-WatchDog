@@ -21,6 +21,8 @@ class PushChannel(NotificationChannel):
         title, body_template = _PUSHES[context["event_type"]]
 
         format_context = dict(context)
+        if "alert_type" in format_context:
+            format_context["alert_type"] = _friendly_alert_type(format_context["alert_type"])
         if "approved" in format_context:
             format_context["outcome"] = "approved" if format_context["approved"] else "denied"
 
@@ -43,12 +45,21 @@ class PushChannel(NotificationChannel):
 
 _PUSHES: dict[str, tuple[str, str]] = {
     # event_type: (title, body template)
-    "WEAPON_DETECTED": ("New alert", "{alert_type} detected"), #noqa
-    "GENERAL_DETECTION": ("New alert", "{alert_type} detected"),
+    "WEAPON_DETECTED": ("New alert", "{alert_type}"), #noqa
+    "GENERAL_DETECTION": ("New alert", "{alert_type}"),
     "TRACKING_MATCH": ("Cross-property match", "A tracked identity was seen on another property"),
     "PROPERTY_INVITE": ("Property invite", "You've been added to a property"),
     "JOIN_REQUEST": ("New join request", "{property_address} wants to join {neighbourhood_name}"),
     "JOIN_REQUEST_RESOLVED": ("Join request resolved", "Your request for {property_address} was {outcome}"),
-    "NEIGHBOURHOOD_BROADCAST": ("New alert", "{alert_type} detected"),
+    "NEIGHBOURHOOD_BROADCAST": ("New alert", "{alert_type}"),
 }
 
+_DETECTION_LABELS: dict[str, str] = {
+    "WEAPON_DETECTED": "Weapon detected",
+    "HUMAN_PRESENCE": "Person detected",
+}
+
+def _friendly_alert_type(raw: str) -> str:
+    """Takes the raw version of the string and returns a more human readable format
+        like if we have WEAPON_DETECTED -> WEAPON DETECTED"""
+    return _DETECTION_LABELS.get(raw, raw.replace("_", " ").title())

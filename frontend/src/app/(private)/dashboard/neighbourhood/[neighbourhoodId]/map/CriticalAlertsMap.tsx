@@ -326,7 +326,33 @@ function AlertPropertyMarker({
     </CircleMarker>
   );
 }
+function MapResizeHandler() {
+  const map = useMap();
 
+  useEffect(() => {
+    let frameId = 0;
+
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frameId);
+
+      frameId = requestAnimationFrame(() => {
+        map.invalidateSize({
+          pan: false,
+          debounceMoveend: true,
+        });
+      });
+    });
+
+    observer.observe(map.getContainer());
+
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frameId);
+    };
+  }, [map]);
+
+  return null;
+}
 function FitPropertyBounds({
   properties,
 }: {
@@ -467,9 +493,9 @@ export function CriticalAlertsMap({
   return (
     <section
       aria-label="Critical alert map"
-      className="overflow-hidden rounded-lg border border-border bg-brand-depth"
+      className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-brand-depth"
     >
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
         <div>
           <h2 className="text-sm font-semibold text-brand-frost">
             Neighbourhood map
@@ -497,8 +523,9 @@ export function CriticalAlertsMap({
         minZoom={3}
         maxZoom={19}
         scrollWheelZoom
-        className="relative z-0 h-[34rem] w-full"
+        className="relative z-0 h-[clamp(32rem,72vh,70rem)] w-full"
       >
+        <MapResizeHandler />
         <FitPropertyBounds
           properties={fitProperties}
         />

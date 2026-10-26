@@ -126,18 +126,6 @@ async def create_alert(
 ):
     return await alert_service.create_alert(db, alert)
 
-@router.post("/dev/broadcast") #TODO: remove before production
-async def dev_broadcast_alert(data: dict):
-    """Dev-only: broadcast alert without DB. Remove before production."""
-    await broadcast([], {
-        "event": "new_alert",
-        "camera_id": data.get("camera_id", "unknown"),
-        "detection_type": data.get("detection_type", "HUMAN_PRESENCE"),
-        "confidence": data.get("confidence", 0.0),
-    })
-    return {"status": "broadcasted"}
-
-
 
 @router.get("/trends", response_model=TrendResponse)
 async def get_alert_trends(

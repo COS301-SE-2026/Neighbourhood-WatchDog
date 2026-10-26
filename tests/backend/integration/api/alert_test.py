@@ -31,14 +31,6 @@ async def test_create_alert(async_client, system_admin_headers):
 
 
 @pytest.mark.asyncio
-async def test_dev_broadcast(async_client, system_admin_headers):
-    payload = {"neighbourhood_id": "5555", "camera_id": "2222", "detection_type": "HUMAN_PRESENCE", "confidence": 0.5}
-    r = await async_client.post("/alerts/dev/broadcast", json=payload, headers=system_admin_headers)
-    assert r.status_code == 200
-    assert r.json() == {"status": "broadcasted"}
-
-
-@pytest.mark.asyncio
 async def test_list_and_acknowledge(async_client, system_admin_headers):
     alert_item = {
         "id": "77777777-7777-7777-7777-777777777777",

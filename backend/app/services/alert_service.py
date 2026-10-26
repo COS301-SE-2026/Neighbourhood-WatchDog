@@ -55,15 +55,22 @@ from app.models.alert import Alert, DetectionType, AlertStatus
 from app.models.neighbourhood import Neighbourhood
 
 from app.models.tracking import TrackingSighting, TrackingSubject
-from app.services.tracking_service import normalize_appearance_embedding
+from app.services.tracking_service import (
+    next_tracking_sighting_sequence,
+    normalize_appearance_embedding,
+)
 from app.services.situational_brief_service import maybe_generate_situational_brief
+from app.services.incident_policy import (
+    ACTIVE_ALERT_STATUSES,
+    tracked_alert_duplicate_stmt,
+)
 from app.services.notifications.factory import NotificationPolicyFactory
 from app.schemas.notification import EventType
 from app.models.incident import Incident
 from app.services.incident_service import (
     create_incident_for_alert,
     ensure_incident_for_alert,
-    end_incident_if_representative,
+    end_incident_if_no_active_alerts,
     find_active_incident_for_embedding
 )
 
@@ -81,12 +88,7 @@ CLIP_RETENTION_DAYS = int(os.getenv("CLIP_RETENTION_DAYS", "7"))
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "")
 AWS_REGION = os.getenv("AWS_REGION", "af-south-1")
 WEAPON_INCIDENT_WINDOW_SECONDS = int(os.getenv("WEAPON_INCIDENT_WINDOW_SECONDS") or "30")
-
-WEAPON_ACTIVE_STATUSES = (
-    AlertStatus.OPEN.value,
-    AlertStatus.ACKNOWLEDGED.value,
-    AlertStatus.CONFIRMED.value,
-)
+WEAPON_ACTIVE_STATUSES = ACTIVE_ALERT_STATUSES
 
 WEAPON_CLOSED_STATUSES = (
     AlertStatus.RESOLVED.value, 
@@ -177,7 +179,7 @@ def _clip_s3_key(alert: Alert, timestamp: datetime) -> str:
 
 
 def _neighbourhood_alert_stmt(neighbourhood_id: UUID):
-    """Build the base alert query scoped through Camera → Property."""
+    """Build the base alert query scoped through Camera to Property."""
     return (
         select(Alert)
         .options(
@@ -673,7 +675,7 @@ async def update_alert_status_handler(
             alert.resolved_by = None
             alert.resolved_at = None
 
-        await end_incident_if_representative(
+        await end_incident_if_no_active_alerts(
             db=db,
             alert=alert,
             ended_at=now,
@@ -1446,7 +1448,7 @@ async def _find_recent_weapon_alert(
         .where(
             Alert.camera_id == camera_id,
             Alert.detection_type == DetectionType.WEAPON_DETECTED,
-            Alert.status.in_(WEAPON_ACTIVE_STATUSES),
+            Alert.status.in_(ACTIVE_ALERT_STATUSES),
             Alert.frame_timestamp >= incident_window_start,
             Alert.frame_timestamp <= frame_timestamp,
         )
@@ -1535,6 +1537,12 @@ async def create_alert_for_agent_handler(
 
         _validate_tracking_payload(body, det_type)
 
+        candidate_embedding = None
+        if body.local_track_id is not None and body.appearance_embedding is not None:
+            candidate_embedding = normalize_appearance_embedding(
+                body.appearance_embedding
+            )
+
         neighbourhood_id = (
             camera.property.neighbourhood_id
             if camera.property is not None
@@ -1543,58 +1551,43 @@ async def create_alert_for_agent_handler(
 
         matched_incident = None
 
-        # For tracked weapon detections, try to match against a person
-        # already being tracked by an active incident before falling back
-        # to the old time-window grouping (which only applies to
-        # untracked detections, where there's no identity to compare).
         if (
-            det_type == DetectionType.WEAPON_DETECTED
-            and body.local_track_id is not None
-            and body.appearance_embedding is not None
+            body.local_track_id is not None
+            and candidate_embedding is not None
             and body.embedding_model is not None
             and neighbourhood_id is not None
         ):
-            candidate_embedding = normalize_appearance_embedding(body.appearance_embedding)
-            assert candidate_embedding is not None
-
             matched_incident = await find_active_incident_for_embedding(
                 db=db,
                 neighbourhood_id=neighbourhood_id,
                 embedding=candidate_embedding,
                 embedding_model=body.embedding_model,
+                observed_at=frame_timestamp,
             )
 
         if matched_incident is not None:
-            # Same tracked person, same camera, still within this incident:
-            # reuse the alert already recorded for this camera instead of
-            # spamming a new one every frame.
-            existing_stmt = (
-                select(Alert)
-                .where(
-                    Alert.incident_id == matched_incident.id,
-                    Alert.camera_id == camera_id,
-                )
-                .order_by(Alert.frame_timestamp.desc())
-                .limit(1)
+            duplicate_stmt = tracked_alert_duplicate_stmt(
+                incident_id=matched_incident.id,
+                camera_id=camera_id,
+                detection_type=det_type,
+                observed_at=frame_timestamp,
             )
-            existing_result = await db.execute(existing_stmt)
-            existing_alert = existing_result.scalar_one_or_none()
 
-            if existing_alert is not None:
-                matched_incident.last_seen_at = frame_timestamp
+            duplicate_result = await db.execute(duplicate_stmt)
+            duplicate_alert = duplicate_result.scalar_one_or_none()
+
+            if duplicate_alert is not None:
+                matched_incident.last_seen_at = max(matched_incident.last_seen_at, frame_timestamp)
                 await db.commit()
 
                 return InternalAlertCreateRes(
-                    alert_id=existing_alert.id,
+                    alert_id=duplicate_alert.id,
                     sighting_id=None,
                     is_new_alert=False,
-                    clip_required=not bool(
-                        getattr(existing_alert, "clip_s3_key", None)
-                    ),
+                    clip_required=not bool(getattr(duplicate_alert, "clip_s3_key", None))
+
                 )
 
-            # New camera for this incident's tracked person: create a new
-            # alert, attached to the existing incident and tracking subject.
             alert = Alert(
                 camera_id=camera_id,
                 frame_timestamp=frame_timestamp,
@@ -1603,47 +1596,67 @@ async def create_alert_for_agent_handler(
                 thumbnail_url=body.thumbnail_url,
                 processed=True,
                 status=AlertStatus.OPEN.value,
+                incident_id=matched_incident.id
+
             )
             db.add(alert)
             await db.flush()
 
-            alert.incident_id = matched_incident.id
-            alert.incident = matched_incident
-            matched_incident.last_seen_at = frame_timestamp
+            matched_incident.last_seen_at = max(matched_incident.last_seen_at, frame_timestamp,
+)
 
-            tracking_subject = matched_incident.tracking_subject
-            initial_sighting = None
+            tracking_subject_id = matched_incident.tracking_subject_id
+            sighting_id = None
 
-            if tracking_subject is not None:
-                initial_sighting = TrackingSighting(
-                    tracking_subject_id=tracking_subject.id,
-                    camera_id=alert.camera_id,
-                    local_track_id=body.local_track_id,
-                    observed_at=alert.frame_timestamp,
-                    sequence_no=1,
-                    match_confidence=None,
+            if tracking_subject_id is not None:
+                next_sequence = await next_tracking_sighting_sequence(
+                    db,
+                    tracking_subject_id,
                 )
-                db.add(initial_sighting)
+
+                sighting = TrackingSighting(
+                    tracking_subject_id=tracking_subject_id,
+                    camera_id=camera_id,
+                    local_track_id=body.local_track_id,
+                    observed_at=frame_timestamp,
+                    sequence_no=next_sequence,
+                    match_confidence=None
+
+                )
+                db.add(sighting)
+                await db.flush()
+                sighting_id = sighting.id
 
             await db.commit()
             await db.refresh(alert)
-            alert.tracking_subject = tracking_subject
 
             logger.info(
-                "Attached new weapon alert alert_id=%s to existing "
-                "tracked incident_id=%s for camera_id=%s",
+                "Attached detection type %s alert %s to matched incident %s",
+                det_type,
                 alert.id,
-                matched_incident.id,
-                camera_id,
+                matched_incident.id
+
             )
 
             return InternalAlertCreateRes(
                 alert_id=alert.id,
-                sighting_id=(
-                    initial_sighting.id if initial_sighting is not None else None
-                ),
+                sighting_id=sighting_id,
                 is_new_alert=True,
-                clip_required=True,
+                clip_required=True
+            
+            )
+
+        if (
+            matched_incident is None
+            and body.local_track_id is not None
+            and body.appearance_embedding is not None
+        ):
+            logger.debug(
+                "No active incident matched tracked detection camera=%s "
+                "neighbourhood=%s type=%s",
+                camera_id,
+                neighbourhood_id,
+                det_type,
             )
 
         # Untracked weapon detections (no local_track_id) have no identity
@@ -1707,7 +1720,7 @@ async def create_alert_for_agent_handler(
         # Trackless weapon detections are valid. They create an alert but
         # deliberately do not create tracking rows.
         if body.local_track_id is not None:
-            reference_embedding = normalize_appearance_embedding(body.appearance_embedding)
+            reference_embedding = candidate_embedding
 
             tracking_subject = TrackingSubject(
                 alert_id=alert.id,
@@ -1742,6 +1755,22 @@ async def create_alert_for_agent_handler(
 
         alert.tracking_subject = tracking_subject
 
+        situational_summary = None
+        if generate_brief and tracking_subject is not None:
+            try:
+                brief = await maybe_generate_situational_brief(
+                    db=db,
+                    tracking_subject_id=tracking_subject.id,
+                )
+                if brief is not None:
+                    situational_summary = brief.summary
+            except Exception:
+                logger.exception(
+                    "create_alert_for_agent_handler: situational "
+                    "brief generation failed for alert_id=%s",
+                    alert.id,
+                )
+
         if neighbourhood_id is not None:
             if alert.detection_type == DetectionType.WEAPON_DETECTED:
                 event_context = {
@@ -1763,6 +1792,7 @@ async def create_alert_for_agent_handler(
                     "websocket_payload": _build_alert_res(
                         alert
                     ).model_dump(mode="json"),
+                    "situational_summary": situational_summary,
                 }
 
                 await (
@@ -1801,19 +1831,6 @@ async def create_alert_for_agent_handler(
                         "Dispatch failed for critical "
                         "alert %s"
                     ),
-                    alert.id,
-                )
-
-        if generate_brief and tracking_subject is not None:
-            try:
-                await maybe_generate_situational_brief(
-                    db=db,
-                    tracking_subject_id=tracking_subject.id,
-                )
-            except Exception:
-                logger.exception(
-                    "create_alert_for_agent_handler: situational "
-                    "brief generation failed for alert_id=%s",
                     alert.id,
                 )
 

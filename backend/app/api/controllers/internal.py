@@ -22,14 +22,14 @@ from app.services.alert_service import (
     _read_clip_with_limit,
 )
 from app.tasks.clip_tasks import MAX_CLIP_SIZE_BYTES, upload_alert_clip_task, upload_tracking_sighting_clip_task
-from app.schemas.tracking import MatchTrackingEmbeddingRequest, RecordTrackingSightingRequest, TrackingMatchResponse, TrackingSightingCreateResponse, TrackingSightingClipUploadAcceptedRes
+from app.schemas.tracking import MatchTrackingEmbeddingRequest, RecordTrackingSightingRequest, TrackingMatchResponse, TrackingSightingClipUploadAcceptedRes
 from app.services.tracking_service import match_tracking_embedding, record_tracking_sighting_for_agent, get_tracking_sighting_for_agent
 
 
 
 router = APIRouter(prefix="/internal", tags=["internal"])
 
-
+VIDEO_MP4 = "video/mp4"
 
 @router.post("/alerts",
     status_code=201,
@@ -46,7 +46,7 @@ async def create_alert(
     db: DbSession,
     credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)],
       # this line ^ is in charge of checking whether there is a valid api key associated with this or not
-) -> InternalAlertCreateRes:
+):
     """Create an alert from an authenticated AI edge-agent detection."""
 
     return await create_alert_for_agent_handler(
@@ -61,14 +61,22 @@ async def create_alert(
 @router.post(
     "/tracking/sightings/{sighting_id}/clip",
     status_code=202,
-    response_model=TrackingSightingClipUploadAcceptedRes
-
+    response_model=TrackingSightingClipUploadAcceptedRes,
+    responses={
+        400: {"description": "camera_id is not a valid UUID, or frame_timestamp is not a valid IOS datetime"},
+        404: {"description": "Camera not found"}, 
+    },
 )
-async def upload_tracking_sighting_clip(sighting_id: str, db: DbSession, credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)], clip: Annotated[UploadFile, File(...)]) -> TrackingSightingClipUploadAcceptedRes:
+async def upload_tracking_sighting_clip(
+    sighting_id: str, 
+    db: DbSession, 
+    credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)], 
+    clip: Annotated[UploadFile, File(...)]
+):
 
-    content_type = clip.content_type or "video/mp4"
+    content_type = clip.content_type or VIDEO_MP4
 
-    if content_type not in {"video/mp4", "application/octet-stream"}:   
+    if content_type not in {VIDEO_MP4, "application/octet-stream"}:   
         raise HTTPException(
             status_code=400,
             detail="Clip upload must use video/mp4 content type"
@@ -121,7 +129,7 @@ async def update_clip(
     body: UpdateAlertClipRequest, 
     db: DbSession,
     credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)],
-) -> AlertClipUpdateRes:
+):
     """updating s3 clip key and expiry on a detection event after ai uploads the clip"""
 
     return await update_alert_clip_for_agent_handler(
@@ -148,11 +156,11 @@ async def upload_clip(
     db: DbSession,
     credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)],
     clip: Annotated[UploadFile, File(...)]
-) -> ClipUploadAcceptedRes:
+):
     """Receive an H.264 MP4 from an authenticated Edge Agent and queue it for upload."""
-    content_type = clip.content_type or "video/mp4"
+    content_type = clip.content_type or VIDEO_MP4
 
-    if content_type not in {"video/mp4", "application/octet-stream"}:
+    if content_type not in {VIDEO_MP4, "application/octet-stream"}:
         raise HTTPException(status_code=400, detail="Clip upload must use video/mp4 content type")
 
     clip_bytes = await _read_clip_with_limit(clip, MAX_CLIP_SIZE_BYTES)
@@ -203,12 +211,13 @@ async def match_tracking(body: MatchTrackingEmbeddingRequest, db: DbSession, cre
         403: {"description": "The edge agent is not authorized for this camera"},
         404: {"description": "Camera or tracking subject not found"},
         409: {"description": "Duplicate sighting or terminated tracking sequence"}
-
-
     }
-
 )
-async def record_tracking_sighting(body: RecordTrackingSightingRequest, db: DbSession, credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)]) -> TrackingSightingCreateResponse:
+async def record_tracking_sighting(
+    body: RecordTrackingSightingRequest,
+    db: DbSession,
+    credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)]
+):
     """
     Record a cross-camera tracking sighting after the AI matcher has returned a validated subject.
     """

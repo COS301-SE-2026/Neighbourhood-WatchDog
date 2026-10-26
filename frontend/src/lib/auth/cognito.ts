@@ -136,34 +136,31 @@ export const login = async (
   email: string,
   password: string
 ): Promise<LoginResult> => {
-  try {
-    const response = await apiClient<LoginResponse>("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
 
-    const data = response.data;
+  const response = await apiClient<LoginResponse>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
 
-    // MFA required
-    if (data.mfa_required) {
-      return {
-        mfaRequired: true,
-        session: data.session,
-        delivery: data.delivery,
-      };
-    }
+  const data = response.data;
 
-    // Login complete
+  // MFA required
+  if (data.mfa_required) {
     return {
-      mfaRequired: false,
-      accessToken: data.access_token,
-      idToken: data.id_token,
-      expiresIn: data.expires_in ?? 0,
+      mfaRequired: true,
+      session: data.session,
+      delivery: data.delivery,
     };
-  } catch (error) {
-    console.error("Login error:", error);
-    throw error;
   }
+
+  // Login complete
+  return {
+    mfaRequired: false,
+    accessToken: data.access_token,
+    idToken: data.id_token,
+    expiresIn: data.expires_in ?? 0,
+  };
+
 };
 
 // Confirm Signup function to backend 

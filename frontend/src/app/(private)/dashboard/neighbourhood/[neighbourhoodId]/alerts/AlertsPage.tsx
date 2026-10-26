@@ -529,13 +529,16 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
 
   const filteredIncidents = useMemo(
     () =>
-      incidents.filter((incident) =>
-        selectedSeverities.has(
-          getSeverity(
-            incident.representative_alert.detection_type,
-          ),
-        ),
-      ),
+      incidents.filter((incident) => {
+        const categories =
+          incident.detection_types.length
+            ? incident.detection_types
+            : [incident.representative_alert.detection_type];
+
+        return categories.some((type) =>
+          selectedSeverities.has(getSeverity(type)),
+        );
+      }),
     [incidents, selectedSeverities],
   );
 
@@ -755,6 +758,7 @@ export default function AlertsPage({ neighbourhoodId }: Props) {
                         key={incident.id}
                         alert={representativeAlert}
                         alertCount={incident.alert_count}
+                        detectionTypes={incident.detection_types}
                         onResolve={
                           canResolve
                             ? (id) => handleCloseAlert(id, "RESOLVED")

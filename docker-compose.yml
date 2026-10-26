@@ -20,7 +20,8 @@ services:
       start_period: 10s
 
   caddy:
-    image: caddy:2-alpine
+    # caddy:2-alpine
+    image: caddy@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
     restart: always
     ports:
       - "80:80"
@@ -33,7 +34,8 @@ services:
       - backend
 
   redis:
-    image: redis:7-alpine
+    # redis:7-alpine
+    image: redis@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
     container_name: redis_cache
     restart: always
     ports:
@@ -55,7 +57,7 @@ services:
       APP_ENV: development
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
-      SECRET_KEY: ${SECRET_KEY}
+      SECRET_KEY: ${SECRET_KEY:?must be set}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME}
       AWS_REGION: ${AWS_REGION}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
@@ -63,7 +65,7 @@ services:
       COGNITO_REGION: ${COGNITO_REGION}
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
       COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
-      RTSP_ENCRYPTION_KEY: ${RTSP_ENCRYPTION_KEY}
+      RTSP_ENCRYPTION_KEY: ${RTSP_ENCRYPTION_KEY:?must be set}
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
       TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM}
@@ -88,7 +90,7 @@ services:
       APP_ENV: development
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
-      SECRET_KEY: ${SECRET_KEY}
+      SECRET_KEY: ${SECRET_KEY:?must be set}
       AWS_REGION: ${AWS_REGION}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
@@ -116,7 +118,7 @@ services:
       TESTING: "false"
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
-      SECRET_KEY: ${SECRET_KEY}
+      SECRET_KEY: ${SECRET_KEY:?must be set}
 
       AWS_REGION: ${AWS_REGION}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
@@ -133,10 +135,9 @@ services:
       NOTIFICATION_ENABLED: ${NOTIFICATION_ENABLED}
       SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL}
       SMTP_APP_PASSWORD: ${SMTP_APP_PASSWORD}
-      RTSP_ENCRYPTION_KEY: ${RTSP_ENCRYPTION_KEY}
+      RTSP_ENCRYPTION_KEY: ${RTSP_ENCRYPTION_KEY:?must be set}
       SKIP_DB_INIT: "true"
-      MEDIAMTX_PUBLISH_MASTER_KEY: ${MEDIAMTX_PUBLISH_MASTER_KEY}
-      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
+      MEDIAMTX_PUBLISH_MASTER_KEY: ${MEDIAMTX_PUBLISH_MASTER_KEY:?must be set}
 
       FIREBASE_CREDENTIALS_JSON: ${FIREBASE_CREDENTIALS_JSON}
 

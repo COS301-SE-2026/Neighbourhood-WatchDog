@@ -13,7 +13,11 @@ from app.services.alert_service import _build_alert_res
 from app.services.dispatch_service import dispatch_alert
 from app.services.notifications.factory import NotificationPolicyFactory
 from app.models.tracking import TrackingSubject, TrackingSighting
-from app.services.tracking_service import normalize_appearance_embedding
+from app.services.tracking_service import (
+    next_tracking_sighting_sequence,
+    normalize_appearance_embedding,
+)
+from app.services.incident_policy import tracked_alert_duplicate_stmt
 from app.services.incident_service import create_incident_for_alert, find_active_incident_for_embedding
 from app.schemas.notification import EventType
 
@@ -104,26 +108,33 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
                 neighbourhood_id=neighbourhood_id,
                 embedding=candidate_embedding,
                 embedding_model=data.embedding_model,
+                observed_at=data.frame_timestamp,
             )
 
         if matched_incident is not None:
+            logger.info(
+                "Detection matched active incident=%s camera=%s type=%s",
+                matched_incident.id,
+                data.camera_id,
+                data.detection_type,
+            )
             # A person already tracked by an active incident was seen
             # again - bypasses the normal confidence threshold, since we
             # already know who they are from a strong embedding match.
-            existing_stmt = (
-                select(Alert)
-                .where(
-                    Alert.incident_id == matched_incident.id,
-                    Alert.camera_id == data.camera_id,
-                )
-                .order_by(Alert.frame_timestamp.desc())
-                .limit(1)
+            existing_stmt = tracked_alert_duplicate_stmt(
+                incident_id=matched_incident.id,
+                camera_id=data.camera_id,
+                detection_type=data.detection_type,
+                observed_at=data.frame_timestamp,
             )
             existing_result = await db.execute(existing_stmt)
             existing_alert = existing_result.scalar_one_or_none()
 
             if existing_alert is not None:
-                matched_incident.last_seen_at = data.frame_timestamp
+                matched_incident.last_seen_at = max(
+                    matched_incident.last_seen_at,
+                    data.frame_timestamp,
+                )
                 await db.commit()
 
                 return DetectionIngestRes(
@@ -153,21 +164,37 @@ async def ingest_detection_handler(data: DetectionIngestReq, db: DbSession, clai
 
             alert.incident_id = matched_incident.id
             alert.incident = matched_incident
-            matched_incident.last_seen_at = data.frame_timestamp
+            matched_incident.last_seen_at = max(
+                matched_incident.last_seen_at,
+                data.frame_timestamp,
+            )
 
             tracking_subject = matched_incident.tracking_subject
 
             if tracking_subject is not None:
+                next_sequence = await next_tracking_sighting_sequence(
+                    db,
+                    tracking_subject.id,
+                )
+
                 db.add(TrackingSighting(
                     tracking_subject_id=tracking_subject.id,
                     camera_id=alert.camera_id,
                     local_track_id=data.local_track_id,
                     observed_at=alert.frame_timestamp,
-                    sequence_no=1,
+                    sequence_no=next_sequence,
                     match_confidence=None,
                 ))
 
-        elif data.confidence_score >= threshold:
+        else:
+            logger.debug(
+                "No active incident matched detection camera=%s neighbourhood=%s type=%s",
+                data.camera_id,
+                neighbourhood_id,
+                data.detection_type,
+            )
+
+        if matched_incident is None and data.confidence_score >= threshold:
             alert = Alert(
                 camera_id=data.camera_id,
                 frame_timestamp=data.frame_timestamp,

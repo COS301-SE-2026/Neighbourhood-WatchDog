@@ -3,12 +3,8 @@
 interface DateRangePickerProps {
   readonly startDate: string;
   readonly endDate: string;
-  readonly onStartDateChange: (
-    value: string,
-  ) => void;
-  readonly onEndDateChange: (
-    value: string,
-  ) => void;
+  readonly onStartDateChange: (value: string) => void;
+  readonly onEndDateChange: (value: string) => void;
 }
 
 export function DateRangePicker({
@@ -17,79 +13,35 @@ export function DateRangePicker({
   onStartDateChange,
   onEndDateChange,
 }: DateRangePickerProps) {
-  const validRange =
-    startDate.length > 0 &&
-    endDate.length > 0 &&
-    startDate <= endDate;
+  const hasBothDates =
+    startDate.length > 0 && endDate.length > 0;
 
   const hasInvalidRange =
-    startDate.length > 0 &&
-    endDate.length > 0 &&
-    startDate > endDate;
+    hasBothDates && startDate > endDate;
+
+  const isValidRange =
+    hasBothDates && !hasInvalidRange;
 
   const inputClassName =
-    "h-11 w-full rounded-md border " +
-    "border-border bg-brand-abyss px-3 " +
-    "text-sm text-brand-frost " +
-    "outline-none transition-colors " +
-    "[color-scheme:dark] " +
+    "watchdog-date-input h-9 w-full min-w-0 rounded-md border " +
+    "border-border bg-brand-abyss px-2 text-xs text-brand-frost " +
+    "outline-none transition-colors [color-scheme:dark] " +
     "hover:border-brand-gunmetal/70 " +
     "focus-visible:border-brand-green/70 " +
-    "focus-visible:ring-2 " +
-    "focus-visible:ring-brand-green/20";
+    "focus-visible:ring-2 focus-visible:ring-brand-green/20";
 
   return (
     <section
       aria-label="Incident date range"
-      className={
-        "rounded-xl border border-border " +
-        "bg-brand-depth px-5 py-5 " +
-        "shadow-sm"
-      }
+      className="rounded-lg border border-border bg-brand-depth px-3 py-3 shadow-sm"
     >
-      <div
-        className={
-          "mb-5 flex flex-col gap-2 " +
-          "border-b border-border/70 pb-4"
-        }
-      >
-        <div className="flex items-center gap-2">
-          <span
-            aria-hidden="true"
-            className={
-              "flex size-7 items-center " +
-              "justify-center rounded-md " +
-              "border border-brand-green/30 " +
-              "bg-brand-green/10 text-brand-green"
-            }
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              className="size-4"
-            >
-              <rect
-                x="3"
-                y="4"
-                width="18"
-                height="17"
-                rx="2"
-              />
-              <path d="M16 2v4M8 2v4M3 10h18" />
-            </svg>
-          </span>
+      <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-sm font-semibold text-brand-frost">
+          Incident date range
+        </h2>
 
-          <h2 className="text-sm font-semibold text-brand-frost">
-            Incident date range
-          </h2>
-        </div>
-
-        <p className="max-w-2xl text-xs leading-relaxed text-brand-ash">
-          Choose the period used for historical incident
-          contours. The selected range does not change live
-          alerts or danger-zone scores.
+        <p className="text-xs text-brand-ash">
+          Applies to the incident heatmap and contours.
         </p>
       </div>
 
@@ -98,10 +50,10 @@ export function DateRangePicker({
           Select incident date range
         </legend>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="grid gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-ash/80">
-              Start date
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className="flex items-center gap-2">
+            <span className="w-10 shrink-0 text-xs text-brand-ash">
+              Start
             </span>
 
             <input
@@ -109,31 +61,21 @@ export function DateRangePicker({
               value={startDate}
               max={endDate || undefined}
               onChange={(event) =>
-                onStartDateChange(
-                  event.target.value,
-                )
+                onStartDateChange(event.target.value)
               }
               aria-label="Start date"
-              aria-invalid={
+              aria-invalid={hasInvalidRange}
+              className={`${inputClassName} ${
                 hasInvalidRange
-              }
-              className={
-                `watchdog-date-input ${inputClassName} ${
-                  hasInvalidRange
-                    ? "border-brand-threat/70 focus-visible:border-brand-threat focus-visible:ring-brand-threat/20"
-                    : ""
-                }`
-              }
+                  ? "border-brand-threat/70 focus-visible:border-brand-threat focus-visible:ring-brand-threat/20"
+                  : ""
+              }`}
             />
-
-            <span className="text-[11px] text-brand-ash/60">
-              Earliest incident date
-            </span>
           </label>
 
-          <label className="grid gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-ash/80">
-              End date
+          <label className="flex items-center gap-2">
+            <span className="w-10 shrink-0 text-xs text-brand-ash">
+              End
             </span>
 
             <input
@@ -141,26 +83,16 @@ export function DateRangePicker({
               value={endDate}
               min={startDate || undefined}
               onChange={(event) =>
-                onEndDateChange(
-                  event.target.value,
-                )
+                onEndDateChange(event.target.value)
               }
               aria-label="End date"
-              aria-invalid={
+              aria-invalid={hasInvalidRange}
+              className={`${inputClassName} ${
                 hasInvalidRange
-              }
-              className={
-                `watchdog-date-input ${inputClassName} ${
-                  hasInvalidRange
-                    ? "border-brand-threat/70 focus-visible:border-brand-threat focus-visible:ring-brand-threat/20"
-                    : ""
-                }`
-              }
+                  ? "border-brand-threat/70 focus-visible:border-brand-threat focus-visible:ring-brand-threat/20"
+                  : ""
+              }`}
             />
-
-            <span className="text-[11px] text-brand-ash/60">
-              Latest incident date
-            </span>
           </label>
         </div>
       </fieldset>
@@ -169,32 +101,19 @@ export function DateRangePicker({
         <p
           role="alert"
           aria-live="polite"
-          className={
-            "mt-4 rounded-md border " +
-            "border-brand-threat/30 " +
-            "bg-brand-threat/10 px-3 py-2 " +
-            "text-xs text-brand-threat"
-          }
+          className="mt-2 text-xs text-brand-threat"
         >
-          The start date must be before or equal
-          to the end date.
+          The start date must be before or equal to the end date.
         </p>
       )}
 
-      {validRange && (
+      {isValidRange && (
         <p
           role="status"
           aria-live="polite"
-          className={
-            "mt-4 flex items-center gap-2 " +
-            "text-xs text-brand-green/80"
-          }
+          className="mt-2 text-xs text-brand-green/80"
         >
-          <span
-            aria-hidden="true"
-            className="size-1.5 rounded-full bg-brand-green"
-          />
-          Historical contour range is ready.
+          Historical incident range is ready.
         </p>
       )}
     </section>

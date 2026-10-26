@@ -1233,6 +1233,10 @@ async def test_create_alert_for_agent_persists_initial_tracking_sighting():
             "app.services.alert_service.normalize_appearance_embedding",
             return_value=[0.5] + [0.0] * 1279,
         ) as normalise_embedding,
+        patch(
+            "app.services.alert_service.find_active_incident_for_embedding",
+            new=AsyncMock(return_value=None),
+        ),
     ):
         response = await service.create_alert_for_agent_handler(
             body,

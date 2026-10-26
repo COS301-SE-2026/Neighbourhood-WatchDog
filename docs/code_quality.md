@@ -443,7 +443,7 @@ pip-audit
 ### 9.3 Docker Images
 
 - Pin all Docker base images to a specific version tag - never use `:latest`
-- Example: `FROM alpine:3.21` not `FROM alpine:latest`
+- Example: `FROM alpine@sha256:ce64758a109eb420d874a118f87920e625e12d3634e03b4a5573fd9f6e5d3507` not `FROM alpine:latest`
 - This ensures reproducible builds and prevents silent base-image changes
 
 ### 9.4 RBAC - Footage & Stream Access

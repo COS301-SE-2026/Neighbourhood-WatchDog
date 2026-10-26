@@ -28,6 +28,7 @@ backend/.pytest_cache/
 .python-version
 
 __pycache__/
+.idea/
 *.pyc
 .pytest_cache/
 .vercel
@@ -63,3 +64,5 @@ docker-compose.override.yml
 /ai/installer-output/
 
 .gitleaksignore
+
+.DS_Store

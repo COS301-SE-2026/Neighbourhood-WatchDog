@@ -396,9 +396,30 @@ async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
             )
             return
 
-        detection_type = (
-            await db.execute(select(Alert.detection_type).where(Alert.id == dispatch.alert_id))
-        ).scalar_one_or_none()
+        alert_result = await db.execute(
+            select(
+                Alert.detection_type,
+                Alert.confidence_score,
+                Alert.thumbnail_url,
+                Alert.frame_timestamp,
+            ).where(Alert.id == dispatch.alert_id)
+        )
+        alert_info = alert_result.one_or_none()
+
+        if alert_info is None:
+            logger.warning(
+                "dispatch: alert %s not found for dispatch %s",
+                dispatch.alert_id,
+                dispatch.id,
+            )
+            return
+
+        (
+            detection_type,
+            confidence_score,
+            thumbnail_url,
+            frame_timestamp,
+        ) = alert_info
 
         property_id = await _dispatch_destination_property_id(db, dispatch)
 
@@ -420,6 +441,13 @@ async def _notify_officer(db: DbSession, dispatch: Dispatch) -> None:
                         else None
                     ),
                     "detection_type": detection_type,
+                    "confidence_score": confidence_score,
+                    "thumbnail_url": thumbnail_url,
+                    "frame_timestamp": (
+                        frame_timestamp.isoformat()
+                        if frame_timestamp is not None
+                        else None
+                    ),
                     "distance": dispatch.distance,
                     "eta": dispatch.eta,
                     "notified_at": now.isoformat(),

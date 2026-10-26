@@ -1,325 +1,158 @@
 name: Deploy to Production AWS
 
 on:
-  push:
-    branches: [ "main" ]
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
+    branches: [main]
 
 concurrency:
   group: production-deploy
   cancel-in-progress: false
 
-jobs: 
-  deploy:
+env:
+  AWS_REGION: af-south-1
+  ECR_REPOSITORY: watchdog-backend
+  CLUSTER: watchdog-prod-cluster
+  SIGNER: https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/.github/workflows/ci.yml@refs/heads/dev
+
+jobs:
+  promote:
+    if: >-
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository
+      }}
     runs-on: ubuntu-latest
     environment: Production
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c #v6.2.3
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd #v6.3.0
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: arn:aws:iam::778312248988:role/watchdog-gha-prod
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Update secret in Secrets Manager
-        env: 
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          REDIS_URL: ${{ secrets.REDIS_URL }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-          COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
-          COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
-          COGNITO_REGION: ${{ secrets.COGNITO_REGION }}
-          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
-          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
-          TWILIO_WHATSAPP_FROM: ${{ secrets.TWILIO_WHATSAPP_FROM }}
-          NOTIFICATION_ENABLED: ${{ secrets.NOTIFICATION_ENABLED }}
-          RTSP_ENCRYPTION_KEY: ${{ secrets.RTSP_ENCRYPTION_KEY }}
-          MEDIAMTX_PUBLISH_MASTER_KEY: ${{ secrets.MEDIAMTX_PUBLISH_MASTER_KEY }}
-          TESTING: ${{ secrets.TESTING }}
-          DEBUG: ${{ secrets.DEBUG }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
-          DETECTION_CONFIDENCE_THRESHOLD: ${{ secrets.DETECTION_CONFIDENCE_THRESHOLD }}
-          GO2RTC_API_USERNAME: ${{ secrets.GO2RTC_API_USERNAME }}
-          GO2RTC_API_PASSWORD: ${{ secrets.GO2RTC_API_PASSWORD }}
-          FAILOVER_POLL_SECONDS: ${{ secrets.FAILOVER_POLL_SECONDS }}
-          FAILOVER_FAILURE_PROBES: ${{ secrets.FAILOVER_FAILURE_PROBES }}
-          SMTP_SENDER_EMAIL: ${{ secrets.SMTP_SENDER_EMAIL }}
-          SMTP_APP_PASSWORD: ${{ secrets.SMTP_APP_PASSWORD }}
-          REFRESH_COOKIE_SECURE: ${{ secrets.REFRESH_COOKIE_SECURE }}
-          REFRESH_COOKIE_SAMESITE: ${{ secrets.REFRESH_COOKIE_SAMESITE }}
-          REFRESH_COOKIE_MAX_AGE: ${{ secrets.REFRESH_COOKIE_MAX_AGE }}
-          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
-          WEAPON_INCIDENT_WINDOW_SECONDS: ${{ secrets.WEAPON_INCIDENT_WINDOW_SECONDS }}
+      - name: Log in to ECR
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd #v2.1.7
+
+      - name: Find the image staging is running
+        id: image
         run: |
-          jq -n \
-              --arg "SECRET_KEY" "$SECRET_KEY" \
-              --arg "DATABASE_URL" "$DATABASE_URL" \
-              --arg "REDIS_URL" "$REDIS_URL" \
-              --arg "AWS_REGION" "$AWS_REGION" \
-              --arg "S3_BUCKET_NAME" "$S3_BUCKET_NAME" \
-              --arg "COGNITO_USER_POOL_ID" "$COGNITO_USER_POOL_ID" \
-              --arg "COGNITO_CLIENT_ID" "$COGNITO_CLIENT_ID" \
-              --arg "COGNITO_REGION" "$COGNITO_REGION" \
-              --arg "TWILIO_ACCOUNT_SID" "$TWILIO_ACCOUNT_SID" \
-              --arg "TWILIO_AUTH_TOKEN" "$TWILIO_AUTH_TOKEN" \
-              --arg "TWILIO_WHATSAPP_FROM" "$TWILIO_WHATSAPP_FROM" \
-              --arg "NOTIFICATION_ENABLED" "$NOTIFICATION_ENABLED" \
-              --arg "RTSP_ENCRYPTION_KEY" "$RTSP_ENCRYPTION_KEY" \
-              --arg "MEDIAMTX_PUBLISH_MASTER_KEY" "$MEDIAMTX_PUBLISH_MASTER_KEY" \
-              --arg "TESTING" "$TESTING" \
-              --arg "DEBUG" "$DEBUG" \
-              --arg "POSTGRES_PASSWORD" "$POSTGRES_PASSWORD" \
-              --arg "POSTGRES_USER" "$POSTGRES_USER" \
-              --arg "POSTGRES_DB" "$POSTGRES_DB" \
-              --arg "FRONTEND_URL" "$FRONTEND_URL" \
-              --arg "DETECTION_CONFIDENCE_THRESHOLD" "$DETECTION_CONFIDENCE_THRESHOLD" \
-              --arg "GO2RTC_API_USERNAME" "$GO2RTC_API_USERNAME" \
-              --arg "GO2RTC_API_PASSWORD" "$GO2RTC_API_PASSWORD" \
-              --arg "FAILOVER_POLL_SECONDS" "$FAILOVER_POLL_SECONDS" \
-              --arg "FAILOVER_FAILURE_PROBES" "$FAILOVER_FAILURE_PROBES" \
-              --arg "SMTP_SENDER_EMAIL" "$SMTP_SENDER_EMAIL" \
-              --arg "SMTP_APP_PASSWORD" "$SMTP_APP_PASSWORD" \
-              --arg "REFRESH_COOKIE_SECURE" "$REFRESH_COOKIE_SECURE" \
-              --arg "REFRESH_COOKIE_SAMESITE" "$REFRESH_COOKIE_SAMESITE" \
-              --arg "REFRESH_COOKIE_MAX_AGE" "$REFRESH_COOKIE_MAX_AGE" \
-              --arg "FIREBASE_CREDENTIALS_JSON" "$FIREBASE_CREDENTIALS_JSON" \
-              --arg "WEAPON_INCIDENT_WINDOW_SECONDS" "$WEAPON_INCIDENT_WINDOW_SECONDS" \
-              '{
-                SECRET_KEY: $SECRET_KEY,
-                DATABASE_URL: $DATABASE_URL,
-                REDIS_URL: $REDIS_URL,
-                AWS_REGION: $AWS_REGION,
-                S3_BUCKET_NAME: $S3_BUCKET_NAME,
-                COGNITO_USER_POOL_ID: $COGNITO_USER_POOL_ID,
-                COGNITO_CLIENT_ID: $COGNITO_CLIENT_ID,
-                COGNITO_REGION: $COGNITO_REGION,
-                TWILIO_ACCOUNT_SID: $TWILIO_ACCOUNT_SID,
-                TWILIO_AUTH_TOKEN: $TWILIO_AUTH_TOKEN,
-                TWILIO_WHATSAPP_FROM: $TWILIO_WHATSAPP_FROM,
-                NOTIFICATION_ENABLED: $NOTIFICATION_ENABLED,
-                RTSP_ENCRYPTION_KEY: $RTSP_ENCRYPTION_KEY,
-                MEDIAMTX_PUBLISH_MASTER_KEY: $MEDIAMTX_PUBLISH_MASTER_KEY,
-                TESTING: $TESTING,
-                DEBUG: $DEBUG,
-                POSTGRES_PASSWORD: $POSTGRES_PASSWORD,
-                POSTGRES_USER: $POSTGRES_USER,
-                POSTGRES_DB: $POSTGRES_DB,
-                FRONTEND_URL: $FRONTEND_URL,
-                DETECTION_CONFIDENCE_THRESHOLD: $DETECTION_CONFIDENCE_THRESHOLD,
-                GO2RTC_API_USERNAME: $GO2RTC_API_USERNAME,
-                GO2RTC_API_PASSWORD: $GO2RTC_API_PASSWORD,
-                FAILOVER_POLL_SECONDS: $FAILOVER_POLL_SECONDS,
-                FAILOVER_FAILURE_PROBES: $FAILOVER_FAILURE_PROBES,
-                SMTP_SENDER_EMAIL: $SMTP_SENDER_EMAIL,
-                SMTP_APP_PASSWORD: $SMTP_APP_PASSWORD,
-                REFRESH_COOKIE_SECURE: $REFRESH_COOKIE_SECURE,
-                REFRESH_COOKIE_SAMESITE: $REFRESH_COOKIE_SAMESITE,
-                REFRESH_COOKIE_MAX_AGE: $REFRESH_COOKIE_MAX_AGE,
-                FIREBASE_CREDENTIALS_JSON: $FIREBASE_CREDENTIALS_JSON,
-                WEAPON_INCIDENT_WINDOW_SECONDS: $WEAPON_INCIDENT_WINDOW_SECONDS,
-              }' > secret-payload.json
-          
-          aws secretsmanager put-secret-value \
-            --secret-id watchdog/prod/env \
-            --secret-string file://secret-payload.json
+          STAGING_TASK_DEF=$(aws ecs describe-services --cluster watchdog-staging-cluster \
+            --services watchdog-staging-service --query 'services[0].taskDefinition' --output text)
+          IMAGE=$(aws ecs describe-task-definition --task-definition "$STAGING_TASK_DEF" \
+            --query "taskDefinition.containerDefinitions[?name=='backend'].image | [0]" --output text)
 
-      - name: Build, tag, and push image to ECR
-        env: 
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          case "$IMAGE" in
+            *@sha256:*) ;;
+            *) echo "Staging is not running a digest-pinned image ($IMAGE); deploy to staging first"; exit 1 ;;
+          esac
+
+          DIGEST="${IMAGE##*@}"
+          SOURCE_SHA=$(aws ecr describe-images --repository-name "$ECR_REPOSITORY" \
+            --image-ids imageDigest="$DIGEST" --query 'imageDetails[0].imageTags[0]' --output text)
+
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "Promoting \`$SOURCE_SHA\` → \`$DIGEST\` from staging" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check main matches the code staging tested
+        env:
+          SOURCE_SHA: ${{ steps.image.outputs.source_sha }}
+          MAIN_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          aws ecr get-login-password --region ${AWS_REGION} \
-            | docker login --username AWS --password-stdin 778312248988.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          STAGING_TREE=$(git rev-parse "$SOURCE_SHA^{tree}")
+          MAIN_TREE=$(git rev-parse "$MAIN_SHA^{tree}")
+          if [ "$STAGING_TREE" != "$MAIN_TREE" ]; then
+            echo "main ($MAIN_SHA) differs from the commit staging tested ($SOURCE_SHA)."
+            echo "Merge dev into main only after staging has deployed it."
+            exit 1
+          fi
 
-          IMAGE_TAG="${{ github.sha }}"
-          docker build -t watchdog-backend ./backend
-          docker tag watchdog-backend:latest 778312248988.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:$IMAGE_TAG
-          docker push 778312248988.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/watchdog-backend:$IMAGE_TAG
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 #v4.1.2
 
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-
-      - name: Register new task definition with SHA-tagged image
-        env: 
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+      - name: Verify the image was signed by CI on dev
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
         run: |
-          aws ecs describe-task-definition \
-            --task-definition watchdog-backend-task \
-            --query 'taskDefinition' \
-            --region ${AWS_REGION} > task-def.json
+          cosign verify "$IMAGE" \
+            --certificate-identity "$SIGNER" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
 
-            NEW_TASK_DEF=$(jq --arg IMAGE "778312248988.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${{ env.IMAGE_TAG }}" \
-              --arg REGION "${AWS_REGION}" \
-              '.containerDefinitions[0].image = $IMAGE
-              | .containerDefinitions[0].secrets = (
-                (.containerDefinitions[0].secrets // [])
-                | map(select(.name != "FAILOVER_CONTROLLER_TOKEN" and .name != "GO2RTC_API_USERNAME" and .name != "GO2RTC_API_PASSWORD" and .name != "SMTP_SENDER_EMAIL" and .name != "SMTP_APP_PASSWORD" and .name != "REFRESH_COOKIE_SECURE" and .name != "REFRESH_COOKIE_SAMESITE" and .name != "REFRESH_COOKIE_MAX_AGE" and .name != "FIREBASE_CREDENTIALS_JSON" and .name != "WEAPON_INCIDENT_WINDOW_SECONDS"))
-                + [
-                    {"name": "GO2RTC_API_USERNAME", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:GO2RTC_API_USERNAME::"},
-                    {"name": "GO2RTC_API_PASSWORD", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:GO2RTC_API_PASSWORD::"},
-                    {"name": "SMTP_SENDER_EMAIL", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:SMTP_SENDER_EMAIL::"},
-                    {"name": "SMTP_APP_PASSWORD", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:SMTP_APP_PASSWORD::"},
-                    {"name": "REFRESH_COOKIE_SECURE", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:REFRESH_COOKIE_SECURE::"},
-                    {"name": "REFRESH_COOKIE_SAMESITE", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:REFRESH_COOKIE_SAMESITE::"},
-                    {"name": "REFRESH_COOKIE_MAX_AGE", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:REFRESH_COOKIE_MAX_AGE::"},
-                    {"name": "FIREBASE_CREDENTIALS_JSON", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:FIREBASE_CREDENTIALS_JSON::"},
-                    {"name": "WEAPON_INCIDENT_WINDOW_SECONDS", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:WEAPON_INCIDENT_WINDOW_SECONDS::"}
-                  ]
-              )
-              | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
-              task-def.json)
-
-            echo "$NEW_TASK_DEF" > new-task-def.json
-
-            NEW_REVISION=$(aws ecs register-task-definition \
-              --cli-input-json file://new-task-def.json \
-              --region ${AWS_REGION} \
-              --query 'taskDefinition.revision' \
-              --output text)
-            
-            echo "NEW_REVISION=$NEW_REVISION" >> $GITHUB_ENV
-            echo "Registered task definition revision: $NEW_REVISION"
-
-      - name: Register Celery worker task definition with SHA-tagged image
-        env: 
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+      - name: Register production task definitions with the same image
+        id: taskdefs
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
         run: |
-          aws ecs describe-task-definition \
-            --task-definition watchdog-celery-worker-task \
-            --query 'taskDefinition' \
-            --region ${AWS_REGION} > worker-task-def.json
+          register() {
+            aws ecs describe-task-definition --task-definition "$1" --query taskDefinition > current.json
+            jq --arg IMAGE "$IMAGE" '
+              .containerDefinitions[0].image = $IMAGE
+              | .containerDefinitions[0].environment =
+                  ([(.containerDefinitions[0].environment // [])[]
+                    | select(.name as $n | ["APP_ENV", "TESTING", "DEBUG", "REFRESH_COOKIE_SECURE"] | index($n) | not)]
+                   + [{"name": "APP_ENV", "value": "production"},
+                      {"name": "TESTING", "value": "false"},
+                      {"name": "DEBUG", "value": "false"},
+                      {"name": "REFRESH_COOKIE_SECURE", "value": "true"}])
+              | .containerDefinitions[0].secrets =
+                  [(.containerDefinitions[0].secrets // [])[]
+                    | select(.name as $n | ["APP_ENV", "TESTING", "DEBUG", "REFRESH_COOKIE_SECURE"] | index($n) | not)]
+              | del(.taskDefinitionArn, .revision, .status, .requiresAttributes,
+                    .compatibilities, .registeredAt, .registeredBy)' current.json > next.json
+            aws ecs register-task-definition --cli-input-json file://next.json \
+              --query 'taskDefinition.taskDefinitionArn' --output text
+          }
 
-          NEW_WORKER_TASK_DEF=$(jq --arg IMAGE "778312248988.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
-            --arg REGION "${AWS_REGION}" \
-            '.containerDefinitions[0].image = $IMAGE
-            | .containerDefinitions[0].command = ["celery", "-A", "app.core.celery_app", "worker", "--loglevel=info", "--pool=threads", "--concurrency=4"]
-            | .containerDefinitions[0].secrets = (
-                (.containerDefinitions[0].secrets // [])
-                | map(select(.name != "S3_BUCKET_NAME" and .name != "FIREBASE_CREDENTIALS_JSON" and .name != "COGNITO_REGION" and .name != "COGNITO_USER_POOL_ID" and .name != "COGNITO_CLIENT_ID" and .name != "SMTP_SENDER_EMAIL" and .name != "SMTP_APP_PASSWORD" and .name != "TWILIO_ACCOUNT_SID" and .name != "TWILIO_AUTH_TOKEN" and .name != "TWILIO_WHATSAPP_FROM" and .name != "WEAPON_INCIDENT_WINDOW_SECONDS"))
-                + [{"name": "S3_BUCKET_NAME", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:S3_BUCKET_NAME::"}]
-                + [{"name": "FIREBASE_CREDENTIALS_JSON", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:FIREBASE_CREDENTIALS_JSON::"}]
-                + [{"name": "COGNITO_REGION", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_REGION::"}]
-                + [{"name": "COGNITO_USER_POOL_ID", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_USER_POOL_ID::"}]
-                + [{"name": "COGNITO_CLIENT_ID", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_CLIENT_ID::"}]
-                + [{"name": "SMTP_SENDER_EMAIL", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:SMTP_SENDER_EMAIL::"}]
-                + [{"name": "SMTP_APP_PASSWORD", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:SMTP_APP_PASSWORD::"}]
-                + [{"name": "TWILIO_ACCOUNT_SID", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:TWILIO_ACCOUNT_SID::"}]
-                + [{"name": "TWILIO_AUTH_TOKEN", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:TWILIO_AUTH_TOKEN::"}]
-                + [{"name": "TWILIO_WHATSAPP_FROM", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:TWILIO_WHATSAPP_FROM::"}]
-                + [{"name": "WEAPON_INCIDENT_WINDOW_SECONDS", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:WEAPON_INCIDENT_WINDOW_SECONDS::"}]
-              )
-            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
-            worker-task-def.json)
-
-          echo "$NEW_WORKER_TASK_DEF" > new-worker-task-def.json
-
-          NEW_WORKER_REVISION=$(aws ecs register-task-definition \
-            --cli-input-json file://new-worker-task-def.json \
-            --region ${AWS_REGION} \
-            --query 'taskDefinition.revision' \
-            --output text)
-
-          echo "NEW_WORKER_REVISION=$NEW_WORKER_REVISION" >> $GITHUB_ENV
-
-      - name: Register Celery beat task definition with SHA-tagged image
-        env: 
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
-        run: |
-          aws ecs describe-task-definition \
-            --task-definition watchdog-celery-beat-task \
-            --query 'taskDefinition' \
-            --region ${AWS_REGION} > beat-task-def.json
-
-          NEW_BEAT_TASK_DEF=$(jq --arg IMAGE "778312248988.dkr.ecr.${AWS_REGION}.amazonaws.com/watchdog-backend:${IMAGE_TAG}" \
-            --arg REGION "${AWS_REGION}" \
-            '.containerDefinitions[0].image = $IMAGE 
-            | .containerDefinitions[0].secrets = (
-                (.containerDefinitions[0].secrets // [])
-                | map(select(.name != "COGNITO_REGION" and .name != "COGNITO_USER_POOL_ID" and .name != "COGNITO_CLIENT_ID"))
-                + [{"name": "COGNITO_REGION", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_REGION::"}]
-                + [{"name": "COGNITO_USER_POOL_ID", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_USER_POOL_ID::"}]
-                + [{"name": "COGNITO_CLIENT_ID", "valueFrom": "arn:aws:secretsmanager:\($REGION):778312248988:secret:watchdog/prod/env-wgseNY:COGNITO_CLIENT_ID::"}]
-              )
-            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
-            beat-task-def.json)
-
-          echo "$NEW_BEAT_TASK_DEF" > new-beat-task-def.json
-
-          NEW_BEAT_REVISION=$(aws ecs register-task-definition \
-            --cli-input-json file://new-beat-task-def.json \
-            --region ${AWS_REGION} \
-            --query 'taskDefinition.revision' \
-            --output text)
-
-          echo "NEW_BEAT_REVISION=$NEW_BEAT_REVISION" >> $GITHUB_ENV
+          echo "backend=$(register watchdog-backend-task)" >> "$GITHUB_OUTPUT"
+          echo "worker=$(register watchdog-celery-worker-task)" >> "$GITHUB_OUTPUT"
+          echo "beat=$(register watchdog-celery-beat-task)" >> "$GITHUB_OUTPUT"
 
       - name: Run database migrations
+        env:
+          BACKEND_TASK_DEF: ${{ steps.taskdefs.outputs.backend }}
         run: |
-          RESULT=$(aws ecs run-task \
-            --cluster watchdog-prod-cluster \
-            --task-definition watchdog-backend-task:${{ env.NEW_REVISION }} \
-            --launch-type EC2 \
-            --overrides '{"containerOverrides":[{"name":"backend","memory":256,"command":["alembic","upgrade","head"]}]}')
-
-          TASK_ARN=$(echo "$RESULT" | jq -r '.tasks[0].taskArn // empty')
-
-          if [ -z "$TASK_ARN" ]; then
-            echo "Migration task failed to start. Failure:"
-            echo "$RESULT" | jq -r '.failures'
+          TASK=$(aws ecs run-task --cluster "$CLUSTER" --task-definition "$BACKEND_TASK_DEF" --launch-type EC2 \
+            --overrides '{"containerOverrides":[{"name":"backend","memory":256,"command":["alembic","upgrade","head"]}]}' \
+            --query 'tasks[0].taskArn' --output text)
+          if [ -z "$TASK" ] || [ "$TASK" = "None" ]; then
+            echo "Migration task failed to start (is the prod ASG scaled up?)"
             exit 1
           fi
 
-          echo "Migration task: $TASK_ARN"
-
-          aws ecs wait tasks-stopped \
-            --cluster watchdog-prod-cluster \
-            --tasks "$TASK_ARN"
-
-          EXIT_CODE=$(aws ecs describe-tasks \
-            --cluster watchdog-prod-cluster \
-            --tasks "$TASK_ARN" \
-            --query 'tasks[0].containers[0].exitCode' \
-            --output text)
-
+          aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$TASK"
+          EXIT_CODE=$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$TASK" \
+            --query 'tasks[0].containers[0].exitCode' --output text)
           echo "Migration exit code: $EXIT_CODE"
-          if [ "$EXIT_CODE" != "0" ]; then
-            echo "Migration failed"
-            exit 1
-          fi
+          [ "$EXIT_CODE" = "0" ]
 
       - name: Deploy Celery worker and beat
+        env:
+          WORKER_TASK_DEF: ${{ steps.taskdefs.outputs.worker }}
+          BEAT_TASK_DEF: ${{ steps.taskdefs.outputs.beat }}
         run: |
-          aws ecs update-service \
-            --cluster watchdog-prod-cluster \
-            --service watchdog-celery-worker-service \
-            --task-definition watchdog-celery-worker-task:${{ env.NEW_WORKER_REVISION }} \
-            --force-new-deployment
-
-          aws ecs update-service \
-            --cluster watchdog-prod-cluster \
-            --service watchdog-celery-beat-service \
-            --task-definition watchdog-celery-beat-task:${{ env.NEW_BEAT_REVISION }} \
-            --force-new-deployment
-
-          aws ecs wait services-stable \
-            --cluster watchdog-prod-cluster \
+          aws ecs update-service --cluster "$CLUSTER" --service watchdog-celery-worker-service \
+            --task-definition "$WORKER_TASK_DEF" > /dev/null
+          aws ecs update-service --cluster "$CLUSTER" --service watchdog-celery-beat-service \
+            --task-definition "$BEAT_TASK_DEF" > /dev/null
+          aws ecs wait services-stable --cluster "$CLUSTER" \
             --services watchdog-celery-worker-service watchdog-celery-beat-service
 
-      - name: Deploy new task definition to service
-        run: | 
-          aws ecs update-service \
-            --cluster watchdog-prod-cluster \
-            --service watchdog-backend-service \
-            --task-definition watchdog-backend-task:${{ env.NEW_REVISION }} \
-            --force-new-deployment
-
-          aws ecs wait services-stable \
-            --cluster watchdog-prod-cluster \
-            --services watchdog-backend-service
+      - name: Deploy backend
+        env:
+          BACKEND_TASK_DEF: ${{ steps.taskdefs.outputs.backend }}
+        run: |
+          aws ecs update-service --cluster "$CLUSTER" --service watchdog-backend-service \
+            --task-definition "$BACKEND_TASK_DEF" > /dev/null
+          aws ecs wait services-stable --cluster "$CLUSTER" --services watchdog-backend-service

@@ -1,130 +1,115 @@
 name: Deploy to Staging
 
 on:
-  push:
-    branches: ["dev"]
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
+    branches: [dev]
 
-jobs: 
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: af-south-1
+  ECR_REPOSITORY: watchdog-backend
+  CLUSTER: watchdog-staging-cluster
+  SERVICE: watchdog-staging-service
+  TASK_FAMILY: watchdog-staging-task
+  MIGRATE_FAMILY: watchdog-staging-migrate
+  SIGNER: https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/.github/workflows/ci.yml@refs/heads/dev
+
+jobs:
   deploy:
+    if: >-
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository
+      }}
     runs-on: ubuntu-latest
     environment: Staging
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd #v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::778312248988:role/watchdog-gha-staging
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Create .env file
+      - name: Log in to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd #v2.1.7
+
+      - name: Resolve the image CI built for this commit
+        id: image
         env:
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          REDIS_URL: ${{ secrets.REDIS_URL }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-          COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
-          COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
-          COGNITO_REGION: ${{ secrets.COGNITO_REGION }}
-          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
-          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
-          TWILIO_WHATSAPP_FROM: ${{ secrets.TWILIO_WHATSAPP_FROM }}
-          NOTIFICATION_ENABLED: ${{ secrets.NOTIFICATION_ENABLED }}
-          RTSP_ENCRYPTION_KEY: ${{ secrets.RTSP_ENCRYPTION_KEY }}
-          MEDIAMTX_PUBLISH_MASTER_KEY: ${{ secrets.MEDIAMTX_PUBLISH_MASTER_KEY }}
-          MTX_WEBRTCADDITIONALHOSTS: ${{ secrets.MTX_WEBRTCADDITIONALHOSTS }}
-          MTX_WEBRTCALLOWORIGIN: ${{ secrets.MTX_WEBRTCALLOWORIGIN }}
-          MTX_AUTHHTTPADDRESS: ${{ secrets.MTX_AUTHHTTPADDRESS }}
-          TESTING: ${{ secrets.TESTING }}
-          DEBUG: ${{ secrets.DEBUG }}
-          GO2RTC_API_USERNAME: ${{ secrets.GO2RTC_API_USERNAME }}
-          GO2RTC_API_PASSWORD: ${{ secrets.GO2RTC_API_PASSWORD }}
-          FAILOVER_POLL_SECONDS: ${{ secrets.FAILOVER_POLL_SECONDS }}
-          FAILOVER_FAILURE_PROBES: ${{ secrets.FAILOVER_FAILURE_PROBES }}
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          cat > .env << EOF
-          POSTGRES_USER=${POSTGRES_USER}
-          POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-          POSTGRES_DB=${POSTGRES_DB}
-          SECRET_KEY=${SECRET_KEY}
-          FRONTEND_URL=${FRONTEND_URL}
-          DATABASE_URL=${DATABASE_URL}
-          REDIS_URL=${REDIS_URL}
-          AWS_REGION=${AWS_REGION}
-          AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-          AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-          S3_BUCKET_NAME=${S3_BUCKET_NAME}
-          COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
-          COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
-          COGNITO_REGION=${COGNITO_REGION}
-          TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
-          TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
-          TWILIO_WHATSAPP_FROM=${TWILIO_WHATSAPP_FROM}
-          NOTIFICATION_ENABLED=${NOTIFICATION_ENABLED}
-          RTSP_ENCRYPTION_KEY=${RTSP_ENCRYPTION_KEY}
-          MEDIAMTX_PUBLISH_MASTER_KEY=${MEDIAMTX_PUBLISH_MASTER_KEY}
-          TESTING=${TESTING}
-          DEBUG=${DEBUG}
-          MTX_WEBRTCADDITIONALHOSTS=${MTX_WEBRTCADDITIONALHOSTS}
-          MTX_WEBRTCALLOWORIGIN=${MTX_WEBRTCALLOWORIGIN}
-          MTX_AUTHHTTPADDRESS=${MTX_AUTHHTTPADDRESS}
-          DETECTION_CONFIDENCE_THRESHOLD=0.6
-          GO2RTC_API_USERNAME=${GO2RTC_API_USERNAME}
-          GO2RTC_API_PASSWORD=${GO2RTC_API_PASSWORD}
-          FAILOVER_POLL_SECONDS=${FAILOVER_POLL_SECONDS}
-          FAILOVER_FAILURE_PROBES=${FAILOVER_FAILURE_PROBES}
-          EOF
-      
-      - name: Copy files to EC2
-        uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345 #v1.0.0
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: ".,!frontend"
-          target: "/home/ubuntu/app"
+          DIGEST=$(aws ecr describe-images --repository-name "$ECR_REPOSITORY" \
+            --image-ids imageTag="$SOURCE_SHA" --query 'imageDetails[0].imageDigest' --output text)
+          echo "image=$REGISTRY/$ECR_REPOSITORY@$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "Deploying \`$SOURCE_SHA\` → \`$DIGEST\`" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Deploy on EC2
-        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 #1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd /home/ubuntu/app
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 #v4.1.2
 
-            COMPOSE="docker compose \
-              -f docker-compose.yml \
-              -f docker-compose.prod.yml \
-              -f docker-compose.failover.yml"
+      - name: Verify the image was signed by CI on dev
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
+        run: |
+          cosign verify "$IMAGE" \
+            --certificate-identity "$SIGNER" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
 
-            $COMPOSE pull \
-              backend \
-              celery_worker \
-              celery_beat \
-              mediamtx \
-              go2rtc
+      - name: Register task definitions with the new image
+        id: taskdefs
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
+        run: |
+          register() {
+            aws ecs describe-task-definition --task-definition "$1" --query taskDefinition > current.json
+            jq --arg IMAGE "$IMAGE" '
+              .containerDefinitions |= map(if .name == "redis" then . else .image = $IMAGE end)
+              | del(.taskDefinitionArn, .revision, .status, .requiresAttributes,
+                    .compatibilities, .registeredAt, .registeredBy)' current.json > next.json
+            aws ecs register-task-definition --cli-input-json file://next.json \
+              --query 'taskDefinition.taskDefinitionArn' --output text
+          }
 
-            $COMPOSE build \
-              backend \
-              celery_worker \
-              celery_beat \
-              mediamtx \
-              stream_failover
+          echo "app=$(register "$TASK_FAMILY")" >> "$GITHUB_OUTPUT"
+          echo "migrate=$(register "$MIGRATE_FAMILY")" >> "$GITHUB_OUTPUT"
 
-            $COMPOSE up -d \
-              postgres \
-              redis \
-              backend \
-              caddy \
-              celery_worker \
-              celery_beat \
-              mediamtx \
-              go2rtc \
-              stream_failover
+      - name: Run database migrations
+        env:
+          MIGRATE_TASK_DEF: ${{ steps.taskdefs.outputs.migrate }}
+        run: |
+          TASK=$(aws ecs run-task --cluster "$CLUSTER" --task-definition "$MIGRATE_TASK_DEF" \
+            --launch-type EC2 --query 'tasks[0].taskArn' --output text)
+          if [ -z "$TASK" ] || [ "$TASK" = "None" ]; then
+            echo "Migration task failed to start"
+            exit 1
+          fi
 
-            $COMPOSE exec -T backend alembic upgrade head
+          aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$TASK"
+          EXIT_CODE=$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$TASK" \
+            --query 'tasks[0].containers[0].exitCode' --output text)
+          echo "Migration exit code: $EXIT_CODE"
+          [ "$EXIT_CODE" = "0" ]
 
-            $COMPOSE ps
+      - name: Deploy to the staging service
+        env:
+          APP_TASK_DEF: ${{ steps.taskdefs.outputs.app }}
+        run: |
+          aws ecs update-service --cluster "$CLUSTER" --service "$SERVICE" \
+            --task-definition "$APP_TASK_DEF" > /dev/null
+          aws ecs wait services-stable --cluster "$CLUSTER" --services "$SERVICE"
+
+      - name: Check staging is healthy
+        run: |
+          curl --fail --silent --show-error --retry 10 --retry-delay 6 --retry-all-errors \
+            https://api-staging.neighbourhoodwatchdog.co.za/health

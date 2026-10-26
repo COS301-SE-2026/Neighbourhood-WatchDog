@@ -6,22 +6,32 @@ env:
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
 on:
-  push:
-    branches: [ "dev" ]
-  pull_request:
-    branches: [ "dev"]
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
+    branches: [dev]
+
 
 jobs:
   Deploy-Preview:
+    if: >- 
+      ${{ 
+        github.event.workflow_run.conclusion == 'success' && 
+        github.event.workflow_run.event == 'push' && 
+        github.event.workflow_run.head_repository.full_name == github.repository 
+      }}
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 #v4
         with:
-          version: 10
+          version: 10.30.3
 
       - name: Install Vercel client 
         run: npm install --global vercel
@@ -32,6 +42,8 @@ jobs:
       - name: Build
         run: vercel build --token=${VERCEL_TOKEN}
        
-      - name: Deploy 
-        run: vercel deploy --prebuilt --token=${VERCEL_TOKEN}
+      - name: Deploy
+        run: |
+          url=$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")
+          vercel alias set "$url" staging.neighbourhoodwatchdog.co.za --token="$VERCEL_TOKEN" --scope teamintrepid
       

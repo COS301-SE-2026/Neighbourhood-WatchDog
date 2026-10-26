@@ -16,6 +16,9 @@ export interface DispatchNotification {
   propertyId: string | null;
   neighbourhoodId: string | null;
   detectionType: string | null;
+  confidenceScore: number | null;
+  thumbnailUrl: string | null;
+  frameTimestamp: string | null;
   distance: number | null;
   eta: number | null;
   notifiedAt: string;
@@ -32,6 +35,9 @@ interface DispatchSocketEvent {
     property_id?: string | null;
     neighbourhood_id?: string | null;
     detection_type?: string;
+    confidence_score?: number;
+    thumbnail_url?: string | null;
+    frame_timestamp?: string | null;
     distance?: number;
     eta?: number;
     notified_at?: string;
@@ -106,6 +112,9 @@ export function useDispatchNotification(neighbourhoodId: string | null) {
         property_id,
         neighbourhood_id,
         detection_type,
+        confidence_score,
+        thumbnail_url,
+        frame_timestamp,
         distance,
         eta,
         notified_at,
@@ -121,6 +130,9 @@ export function useDispatchNotification(neighbourhoodId: string | null) {
         propertyId: property_id ?? null,
         neighbourhoodId: neighbourhood_id ?? null,
         detectionType: detection_type ?? null,
+        confidenceScore: confidence_score ?? null,
+        thumbnailUrl: thumbnail_url ?? null,
+        frameTimestamp: frame_timestamp ?? null,
         distance: distance ?? null,
         eta: eta ?? null,
         notifiedAt: notified_at ?? new Date().toISOString(),
@@ -218,9 +230,7 @@ export function useDispatchNotification(neighbourhoodId: string | null) {
   ]);
 
   const respond = useCallback(
-    async (
-      action: DispatchAction,
-    ): Promise<boolean> => {
+    async (action: DispatchAction): Promise<boolean> => {
       if (!notification || responding) {
         return false;
       }
@@ -228,24 +238,20 @@ export function useDispatchNotification(neighbourhoodId: string | null) {
       setResponding(true);
 
       try {
-        await respondToDispatch(
-          notification.dispatchId,
-          action,
-        );
+        await respondToDispatch(notification.dispatchId, action);
 
-        showOutcome(
-          action === "ACCEPT"
-            ? "ACCEPTED"
-            : "DECLINED",
-        );
+        showOutcome(action === "ACCEPT" ? "ACCEPTED" : "DECLINED");
 
         return true;
       } catch (error) {
-        if (error instanceof ApiError && error.statusCode === 409){
+        if (error instanceof ApiError && error.statusCode === 409) {
           showOutcome("EXPIRED");
         } else {
-          const message = error instanceof Error ? error.message : "Unknown error";
-          toast.error("Failed to respond to dispatch", { description: message });
+          const message =
+            error instanceof Error ? error.message : "Unknown error";
+          toast.error("Failed to respond to dispatch", {
+            description: message,
+          });
           showOutcome("EXPIRED");
         }
         return false;
@@ -253,11 +259,7 @@ export function useDispatchNotification(neighbourhoodId: string | null) {
         setResponding(false);
       }
     },
-    [
-      notification,
-      responding,
-      showOutcome,
-    ],
+    [notification, responding, showOutcome],
   );
 
   return {

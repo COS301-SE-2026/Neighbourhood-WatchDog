@@ -22,7 +22,6 @@
 
 [![CI Pipeline](https://img.shields.io/github/actions/workflow/status/COS301-SE-2026/Neighbourhood-WatchDog/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI&labelColor=0D1B2A&color=10B981)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions/workflows/ci.yml)
 [![CD Pipeline](https://img.shields.io/github/actions/workflow/status/COS301-SE-2026/Neighbourhood-WatchDog/deploy-production.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CD&labelColor=0D1B2A&color=10B981)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/actions/workflows/deploy-production.yml)
-[![Quality Gate](https://img.shields.io/sonar/quality_gate/COS301-SE-2026_Neighbourhood-WatchDog?server=https%3A%2F%2Fsonarcloud.io&style=for-the-badge&logo=sonarcloud&logoColor=white&label=Quality+Gate&labelColor=0D1B2A&color=10B981)](https://sonarcloud.io/summary/new_code?id=COS301-SE-2026_Neighbourhood-WatchDog)
 [![Coverage](https://img.shields.io/codecov/c/github/COS301-SE-2026/Neighbourhood-WatchDog?style=for-the-badge&logo=codecov&logoColor=white&label=Coverage&labelColor=0D1B2A&color=10B981&token=28L6HTN8XV)](https://codecov.io/github/COS301-SE-2026/Neighbourhood-WatchDog)
 [![Commit Activity](https://img.shields.io/github/commit-activity/m/COS301-SE-2026/Neighbourhood-WatchDog/dev?style=for-the-badge&logo=git&logoColor=white&label=Commits&labelColor=0D1B2A&color=10B981)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/commits/dev)
 [![Open Issues](https://img.shields.io/github/issues-raw/COS301-SE-2026/Neighbourhood-WatchDog?style=for-the-badge&logo=github&logoColor=white&label=Issues&labelColor=0D1B2A&color=10B981)](https://github.com/COS301-SE-2026/Neighbourhood-WatchDog/issues)
@@ -283,8 +282,8 @@ Neighbourhood-WatchDog/
 
 
 Demo 4 
-[![Slides](https://img.shields.io/badge/Slides_4-View-0A0A0A?style=flat-square&logo=googleslides&logoColor=white&labelColor=0D1B2A)](/docs/demo_4_slides.pdf) 
-[![Video](https://img.shields.io/badge/Video_4-Watch-0A0A0A?style=flat-square&logo=youtube&logoColor=white&labelColor=0D1B2A)](/docs/Demo4.mp4)
+[![Slides](https://img.shields.io/badge/Slides_4-View-0A0A0A?style=flat-square&logo=googleslides&logoColor=white&labelColor=0D1B2A)](/docs/demo-videos/demo_4_slides.pdf) 
+[![Video](https://img.shields.io/badge/Video_4-Watch-0A0A0A?style=flat-square&logo=youtube&logoColor=white&labelColor=0D1B2A)](/docs/demo-videos/Demo%204.mp4)
 
 </div>
 
@@ -296,11 +295,11 @@ Demo 4
 
 <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=500&size=14&pause=1000&color=90E0EF&center=true&vCenter=true&width=700&lines=Five+engineers+%C2%B7+One+mission+%C2%B7+Safer+communities" alt="Team tagline"/>
 
-<table width="100%">
+<table width="100%" style="table-layout:fixed">
   <tr>
-    <td align="center" width="20%">
-      <a href="https://github.com/">
-        <img src="https://github.com/ghost.png?size=120" width="90" style="border-radius:50%" alt="Jared Williams"/>
+    <td align="center" valign="top" width="20%">
+      <a href="https://github.com/JaredWilliams-1">
+        <img src="/docs/images/JW.png" width="90" height="90" style="width:90px;height:90px;object-fit:cover;border-radius:50%" alt="Jared Williams"/>
       </a>
       <br/><br/>
       <b>Jared Williams</b><br/>
@@ -308,60 +307,55 @@ Demo 4
       <img src="https://img.shields.io/badge/Team%20Lead-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <img src="https://img.shields.io/badge/Full--Stack%20Dev-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <br/><br/>
-      <sub>Python · FastAPI · React · Next.js · PostgreSQL · Docker</sub><br/><br/>
-      <a href="https://github.com/"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
+      <a href="https://github.com/JaredWilliams-1"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
       <a href="https://www.linkedin.com/in/jared-williams-5286a6283/"><img src="https://img.shields.io/badge/LinkedIn-10B981?style=flat-square&logo=linkedin&logoColor=white&labelColor=0D1B2A"/></a>
     </td>
-    <td align="center" width="20%">
-      <a href="https://github.com/">
-        <img src="https://github.com/ghost.png?size=120" width="90" style="border-radius:50%" alt="Ange Yehouessi"/>
+    <td align="center" valign="top" width="20%">
+      <a href="https://github.com/cosmic-hero">
+        <img src="/docs/images/AY.png" width="90" height="90" style="width:90px;height:90px;object-fit:cover;border-radius:50%" alt="Ange Yehouessi"/>
       </a>
       <br/><br/>
       <b>Ange Yehouessi</b><br/>
       <sub><code>u24614484</code></sub><br/><br/>
       <img src="https://img.shields.io/badge/Backend%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <br/><br/>
-      <sub>Python · FastAPI · Node.js · PostgreSQL · REST API</sub><br/><br/>
-      <a href="https://github.com/"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
+      <a href="https://github.com/cosmic-hero"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
       <a href="https://www.linkedin.com/in/ange-yehouessi-624086376/"><img src="https://img.shields.io/badge/LinkedIn-10B981?style=flat-square&logo=linkedin&logoColor=white&labelColor=0D1B2A"/></a>
     </td>
-    <td align="center" width="20%">
-      <a href="https://github.com/">
-        <img src="https://github.com/ghost.png?size=120" width="90" style="border-radius:50%" alt="Joshua Mahabeer"/>
+    <td align="center" valign="top" width="20%">
+      <a href="https://github.com/hixeryDixery">
+        <img src="/docs/images/JM.png" width="90" height="90" style="width:90px;height:90px;object-fit:cover;border-radius:50%" alt="Joshua Mahabeer"/>
       </a>
       <br/><br/>
       <b>Joshua Mahabeer</b><br/>
       <sub><code>u24597092</code></sub><br/><br/>
       <img src="https://img.shields.io/badge/AI%2FML%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <br/><br/>
-      <sub>Python · OpenCV · YOLOv8 · React · Docker · C++</sub><br/><br/>
-      <a href="https://github.com/"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
+      <a href="https://github.com/hixeryDixery"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
       <a href="https://www.linkedin.com/in/joshua-mahabeer-286528269/"><img src="https://img.shields.io/badge/LinkedIn-10B981?style=flat-square&logo=linkedin&logoColor=white&labelColor=0D1B2A"/></a>
     </td>
-    <td align="center" width="20%">
-      <a href="https://github.com/">
-        <img src="https://github.com/ghost.png?size=120" width="90" style="border-radius:50%" alt="Obed Edom Mbaya"/>
+    <td align="center" valign="top" width="20%">
+      <a href="https://github.com/obedmbaya">
+        <img src="/docs/images/OEM.png" width="90" height="90" style="width:90px;height:90px;object-fit:cover;border-radius:50%" alt="Obed Edom Mbaya"/>
       </a>
       <br/><br/>
       <b>Obed Edom Mbaya</b><br/>
       <sub><code>u24595889</code></sub><br/><br/>
-      <img src="https://img.shields.io/badge/AI%2FML%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
+      <img src="https://img.shields.io/badge/Full--Stack%20Dev-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <br/><br/>
-      <sub>Python · FastAPI · LangGraph · Next.js · PostgreSQL · Docker</sub><br/><br/>
-      <a href="https://github.com/"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
+      <a href="https://github.com/obedmbaya"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
       <a href="https://www.linkedin.com/in/obed-edom-mbaya-01197423b/"><img src="https://img.shields.io/badge/LinkedIn-10B981?style=flat-square&logo=linkedin&logoColor=white&labelColor=0D1B2A"/></a>
     </td>
-    <td align="center" width="20%">
-      <a href="https://github.com/">
-        <img src="https://github.com/ghost.png?size=120" width="90" style="border-radius:50%" alt="Zaman Bassa"/>
+    <td align="center" valign="top" width="20%">
+      <a href="https://github.com/zamanbassa">
+        <img src="/docs/images/ZB.png" width="90" height="90" style="width:90px;height:90px;object-fit:cover;border-radius:50%" alt="Zaman Bassa"/>
       </a>
       <br/><br/>
       <b>Zaman Bassa</b><br/>
       <sub><code>u24744931</code></sub><br/><br/>
       <img src="https://img.shields.io/badge/DevOps%20Engineer-10B981?style=flat-square&logoColor=white&labelColor=0D1B2A"/>
       <br/><br/>
-      <sub>TypeScript · Python · Docker · PostgreSQL · GitHub Actions</sub><br/><br/>
-      <a href="https://github.com/"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
+      <a href="https://github.com/zamanbassa"><img src="https://img.shields.io/badge/GitHub-0D1B2A?style=flat-square&logo=github&logoColor=white"/></a>
       <a href="https://www.linkedin.com/in/zaman-bassa-033673360/"><img src="https://img.shields.io/badge/LinkedIn-10B981?style=flat-square&logo=linkedin&logoColor=white&labelColor=0D1B2A"/></a>
     </td>
   </tr>

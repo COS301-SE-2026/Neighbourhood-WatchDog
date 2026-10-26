@@ -85,6 +85,37 @@ async def is_property_member(
 
     return result.scalar_one_or_none() is not None
 
+async def user_can_view_camera(
+    db: DbSession,
+    claims: dict,
+    camera_id: UUID
+):
+    """Members of the camera's property and system admins can view it,
+    mathcing the rule for listing a property's cameras."""
+    user_sub = claims.get("sub") if claims else None
+    if not user_sub:
+        return False
+    
+    user = (
+        await db.execute(select(User).where(User.cognito_sub == user_sub))
+    ).scalar_one_or_none()
+
+    if user is None:
+        return False
+
+    if user.system_role.value == "SYSTEM_ADMIN":
+        return True
+
+    camera = (
+        await db.execute(select(Camera).where(Camera.id == camera_id))
+    ).scalar_one_or_none()
+
+    if camera is None:
+        return False
+
+    return await is_property_member(camera.property_id, claims, db)
+
+
 def require_property_member():
     """
     Create a FastAPI dependency for endpoints that contain

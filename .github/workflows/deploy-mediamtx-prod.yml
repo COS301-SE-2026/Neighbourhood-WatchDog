@@ -1,24 +1,27 @@
 name: Deploy mediamtx to Production
 
 on:
-  push:
-    branches: [ "main" ]
-    paths:
-      - 'mediamtx/**'
-      - 'go2rtc/**'
-      - 'failover-controller/**'
-      - 'docker-compose.yml'
-      - 'docker-compose.prod.yml'
-      - 'docker-compose.failover.yml'
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
+    branches: [main]
 
 jobs:
   deploy:
+    if: >- 
+      ${{ 
+        github.event.workflow_run.conclusion == 'success' && 
+        github.event.workflow_run.event == 'push' && 
+        github.event.workflow_run.head_repository.full_name == github.repository 
+      }}
     runs-on: ubuntu-latest
     environment: Production
-
+    
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Copy mediamtx files to instance
         uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345 #v1.0.0
@@ -26,16 +29,16 @@ jobs:
           host: ${{ secrets.MEDIAMTX_HOST }}
           username: ${{ secrets.MEDIAMTX_USER }}
           key: ${{ secrets.MEDIAMTX_SSH_KEY }}
-          source: "mediamtx,go2rtc,failover-controller,docker-compose.yml,docker-compose.prod.yml,docker-compose.failover.yml"
+          source: "mediamtx,docker-compose.prod.yml"
           target: "/home/ubuntu/app"
 
       - name: Redeploy mediamtx
-        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 #1.0.3
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 #v1.0.3
         with:
           host: ${{ secrets.MEDIAMTX_HOST }}
           username: ${{ secrets.MEDIAMTX_USER }}
           key: ${{ secrets.MEDIAMTX_SSH_KEY }}
           script: |
             cd /home/ubuntu/app
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.failover.yml up -d --build mediamtx
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.failover.yml logs mediamtx --tail 30
+            docker compose -f docker-compose.prod.yml up -d --build mediamtx
+            docker compose -f docker-compose.prod.yml logs mediamtx --tail 30

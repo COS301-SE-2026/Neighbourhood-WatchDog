@@ -325,6 +325,7 @@ class IncidentDensityRes(BaseModel):
 class IncidentSummaryRes(BaseModel):
     id: UUID
     detection_type: str
+    detection_types: list[str] = Field(default_factory=list)
     started_at: datetime
     last_seen_at: datetime
     alert_count: int
@@ -338,6 +339,7 @@ class IncidentSummaryRes(BaseModel):
 class IncidentDetailRes(BaseModel):
     id: UUID
     detection_type: str
+    detection_types: list[str] = Field(default_factory=list)
     started_at: datetime
     last_seen_at: datetime
     alert_count: int
