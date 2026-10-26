@@ -16,7 +16,7 @@ cycler==0.12.1
 fonttools==4.62.1
 kiwisolver==1.5.0
 pyparsing==3.3.2
-filelock==3.29.0
+filelock==4.2.1
 fsspec==2026.6.0
 polars==1.40.1
 polars-runtime-32==1.40.1
