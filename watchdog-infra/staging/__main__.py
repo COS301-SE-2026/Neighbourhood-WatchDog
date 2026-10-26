@@ -16,7 +16,7 @@ API_DOMAIN = "api-staging.neighbourhoodwatchdog.co.za"
 
 REDIS_IMAGE = "redis@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499"
 
-ALL_EGRESS = [{"protocol": "-1", "from_port": 0, "to_port": 0, "cidr_blocks": ["0.0.0.0/0"]}]
+ALL_EGRESS = [{"protocol": "-1", "from_port": 0, "to_port": 0, "cidr_blocks": ["0.0.0.0/0"]}] #noqa
 
 vpc_id = prod.get_output("vpc_id")
 subnet_ids = prod.get_output("subnet_ids")
@@ -143,13 +143,15 @@ ENVIRONMENT = {
 }
 
 
-def container_definitions(image: str, secret_arn: str, log_group_name: str) -> str:
-    def logs(prefix: str) -> dict:
-        return {"logDriver": "awslogs", "options": {
-            "awslogs-group": log_group_name,
-            "awslogs-region": REGION,
-            "awslogs-stream-prefix": prefix}}
+def logs(log_group_name: str, prefix: str) -> dict:
+    return {"logDriver": "awslogs", "options": {
+        "awslogs-group": log_group_name,
+        "awslogs-region": REGION,
+        "awslogs-stream-prefix": prefix
+    }}
 
+
+def container_definitions(image: str, secret_arn: str, log_group_name: str) -> str:
     app = {
         "image": image,
         "essential": True,
@@ -168,14 +170,14 @@ def container_definitions(image: str, secret_arn: str, log_group_name: str) -> s
             "entryPoint": ["sh", "-c"],
             "command": ['exec docker-entrypoint.sh redis-server --requirepass "$REDIS_PASSWORD" --save ""'],
             "secrets": [{"name": "REDIS_PASSWORD", "valueFrom": f"{secret_arn}:REDIS_PASSWORD::"}],
-            "logConfiguration": logs("redis"),
+            "logConfiguration": logs(log_group_name, "redis"),
         },
         {
             **app,
             "name": "backend",
             "memoryReservation": 512,
             "portMappings": [{"containerPort": 8000, "hostPort": 8000, "protocol": "tcp"}],
-            "logConfiguration": logs("backend"),
+            "logConfiguration": logs(log_group_name, "backend"),
         },
         {
             **app,
@@ -183,16 +185,29 @@ def container_definitions(image: str, secret_arn: str, log_group_name: str) -> s
             "memoryReservation": 384,
             "command": ["celery", "-A", "app.core.celery_app", "worker",
                         "--loglevel=info", "--pool=threads", "--concurrency=2"],
-            "logConfiguration": logs("worker"),
+            "logConfiguration": logs(log_group_name, "worker"),
         },
         {
             **app,
             "name": "beat",
             "memoryReservation": 128,
             "command": ["celery", "-A", "app.core.celery_app", "beat", "--loglevel=info"],
-            "logConfiguration": logs("beat"),
+            "logConfiguration": logs(log_group_name, "beat"),
         },
     ])
+
+
+def migrate_container_definitions(image: str, secret_arn: str, log_group_name: str) -> str:
+    return json.dumps([{
+        "name": "migrate",
+        "image": image,
+        "essential": True,
+        "memoryReservation": 256,
+        "command": ["alembic", "upgrade", "head"],
+        "environment": [{"name": k, "value": v} for k, v in ENVIRONMENT.items()],
+        "secrets": [{"name": k, "valueFrom": f"{secret_arn}:{k}::"} for k in SECRET_KEYS],
+        "logConfiguration": logs(log_group_name, "migrate"),
+    }])
 
 
 task_definition = aws.ecs.TaskDefinition(f"{PREFIX}-task",
@@ -203,6 +218,16 @@ task_definition = aws.ecs.TaskDefinition(f"{PREFIX}-task",
     task_role_arn=task_role.arn,
     container_definitions=pulumi.Output.all(ecr_repo_url, env_secret.arn, log_group.name).apply(
         lambda args: container_definitions(f"{args[0]}:{image_tag}", args[1], args[2])))
+
+# One-off tasks (migrations, seeding), there's no port so it can run beside the service on one host
+migrate_task_definition = aws.ecs.TaskDefinition(f"{PREFIX}-migrate",
+    family=f"{PREFIX}-migrate",
+    network_mode="bridge",
+    requires_compatibilities=["EC2"],
+    execution_role_arn=execution_role.arn,
+    task_role_arn=task_role.arn,
+    container_definitions=pulumi.Output.all(ecr_repo_url, env_secret.arn, log_group.name).apply(
+        lambda args: migrate_container_definitions(f"{args[0]}:{image_tag}", args[1], args[2])))
 
 # --- Load balancing: host rule for api-staging on the shared ALB
 target_group = aws.lb.TargetGroup(f"{PREFIX}-tg",
@@ -288,7 +313,7 @@ chown ubuntu:ubuntu /home/ubuntu/app
 
 mediamtx = aws.ec2.Instance(f"{PREFIX}-mediamtx",
     ami=ubuntu_arm_ami,
-    instance_type="t4g.nano",
+    instance_type="t4g.micro",
     subnet_id=subnet_ids.apply(lambda ids: ids[0]),
     vpc_security_group_ids=[mediamtx_sg.id],
     iam_instance_profile=mediamtx_profile.name,
@@ -314,3 +339,4 @@ pulumi.export("service_name", f"{PREFIX}-service")
 pulumi.export("task_family", task_definition.family)
 pulumi.export("env_secret_arn", env_secret.arn)
 pulumi.export("clips_bucket", clips_bucket.bucket)
+pulumi.export("migrate_family", migrate_task_definition.family)
