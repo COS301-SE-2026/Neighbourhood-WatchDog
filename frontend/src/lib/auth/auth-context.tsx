@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -29,7 +30,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export default function AuthProvider({
   children,
 }: {
-  children: ReactNode;
+  readonly children: ReactNode;
 }) {
   const queryClient = useQueryClient();
   const [sessionReady, setSessionReady] = useState(false);
@@ -78,17 +79,18 @@ export default function AuthProvider({
   const isLoading =
     restoring || (sessionReady && profile.isPending);
 
+  const user = profile.data?.user ?? null;
+  const contextValue = useMemo<AuthContextValue>(
+    () => ({ user, isLoggedIn: sessionReady, isLoading }),
+    [user, sessionReady, isLoading],
+  );
+
   return (
-    <AuthContext.Provider
-      value={{
-        user: profile.data?.user ?? null,
-        isLoggedIn: sessionReady,
-        isLoading,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
+
 }
 
 export function useAuth() {
