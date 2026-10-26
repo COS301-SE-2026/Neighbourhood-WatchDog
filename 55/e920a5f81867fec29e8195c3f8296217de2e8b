@@ -1,0 +1,18 @@
+ai/requirements.txt
+  h_cf6208e37032c0 39
+.github/workflows/ci.yml
+  h_cf6208e37032c0 245
+backend/requirements.txt
+  h_cf6208e37032c0 102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "55e920a5f81867fec29e8195c3f8296217de2e8b",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
