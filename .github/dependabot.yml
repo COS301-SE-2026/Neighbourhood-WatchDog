@@ -2,6 +2,7 @@ version: 2
 updates:
   # Actions pinned to SHAs, updated while keeping the "#vX" comments
   - package-ecosystem: "github-actions"
+    target-branch: "dev"
     directory: "/"
     schedule:
       interval: "weekly"
@@ -12,6 +13,7 @@ updates:
 
   # Dockerfiles with FROM lines (none at the root)
   - package-ecosystem: "docker"
+    target-branch: "dev"
     directories:
       - "/ai"
       - "/backend"
@@ -27,10 +29,12 @@ updates:
 
   # requirements.txt files
   - package-ecosystem: "pip"
+    target-branch: "dev"
     directories:
       - "/ai"
       - "/backend"
       - "/watchdog-infra"
+      - "/watchdog-infra/staging"
     schedule:
       interval: "weekly"
     groups:
@@ -43,6 +47,7 @@ updates:
 
   # package.json files and their lockfiles
   - package-ecosystem: "npm"
+    target-branch: "dev"
     directories:
       - "/"
       - "/frontend"
