@@ -242,7 +242,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install setuptools
-        run: pip install --upgrade "setuptools>=83.0.0"
+        run: pip install --upgrade "setuptools>=84.1.0"
 
       - name: Install security tools
         run: pip install "bandit==1.9.4" "pip-audit==2.10.1"
