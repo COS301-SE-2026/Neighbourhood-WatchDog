@@ -339,7 +339,7 @@ jobs:
           docker run --rm --network smoke --env-file smoke.env "$LOCAL_IMAGE" alembic upgrade head
           docker run --detach --name api --network smoke --env-file smoke.env --publish 8000:8000 "$LOCAL_IMAGE"
 
-          if ! curl --fail --silent --show-error --retry 15 --retry-connrefused --retry-delay 2 http://localhost:8000/health; then
+          if ! curl --fail --silent --show-error --retry 15 --retry-delay 2 --retry-all-errors http://localhost:8000/health; then
             docker logs api
             exit 1
           fi
