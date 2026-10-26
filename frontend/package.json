@@ -46,7 +46,7 @@
     "@capacitor/cli": "^8.5.3",
     "@capacitor/core": "^8.5.3",
     "@tailwindcss/postcss": "^4",
-    "@testing-library/jest-dom": "^6",
+    "@testing-library/jest-dom": "^7",
     "@testing-library/react": "^16",
     "@types/d3-contour": "^3.0.6",
     "@types/geojson": "^7946.0.16",
