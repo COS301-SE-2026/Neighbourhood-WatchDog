@@ -13,6 +13,13 @@ if (!(Test-Path $python)) {
     throw "Packaging Python was not found at: $python"
 }
 
+$ffmpegSourceRoot = Join-Path $PSScriptRoot "ffmpeg"
+$ffmpegSourceExe = Join-Path $ffmpegSourceRoot "bin\ffmpeg.exe"
+
+if (!(Test-Path -LiteralPath $ffmpegSourceExe -PathType Leaf)) {
+    throw "FFmpeg is missing. Place the Windows x64 distribution at ai\ffmpeg, with ffmpeg.exe at ai\ffmpeg\bin\ffmpeg.exe."
+}
+
 Write-Host "Cleaning previous generated builds..."
 
 Remove-Item $serviceBuild -Recurse -Force -ErrorAction SilentlyContinue
@@ -99,12 +106,28 @@ Copy-Item `
     (Join-Path $weightsDestination "yolov8n.pt") `
     -Force
 
+Write-Host "Bundling FFmpeg..."
+
+$ffmpegDestination = Join-Path $finalBuild "resources\ffmpeg"
+
+New-Item `
+    -ItemType Directory `
+    -Force `
+    -Path $ffmpegDestination | Out-Null
+
+Copy-Item `
+    -Path (Join-Path $ffmpegSourceRoot "*") `
+    -Destination $ffmpegDestination `
+    -Recurse `
+    -Force
+
 $requiredFiles = @(
     (Join-Path $finalBuild "WatchDog.exe"),
     (Join-Path $finalBuild "service\WatchDogService.exe"),
     (Join-Path $finalBuild "resources\assets\clear-presence.mp4"),
     (Join-Path $finalBuild "resources\pipeline\models\weights\best.pt"),
-    (Join-Path $finalBuild "resources\pipeline\models\weights\yolov8n.pt")
+    (Join-Path $finalBuild "resources\pipeline\models\weights\yolov8n.pt"),
+    (Join-Path $finalBuild "resources\ffmpeg\bin\ffmpeg.exe")
 )
 
 foreach ($file in $requiredFiles) {
