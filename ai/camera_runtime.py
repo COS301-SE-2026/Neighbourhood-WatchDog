@@ -13,6 +13,7 @@ from keyring.errors import NoKeyringError
 
 import httpx
 import keyring
+from runtime.paths import get_ffmpeg_executable
 
 
 
@@ -202,7 +203,7 @@ class CameraSupervisor:
         publisher_url = self._authenticated_publish_rtsp_url(runtime.spec)
 
         command = [
-            "ffmpeg",
+            get_ffmpeg_executable(),
             "-hide_banner",
             "-loglevel",
             "warning",
@@ -233,6 +234,11 @@ class CameraSupervisor:
                 )
             else:
                 popen_options["start_new_session"] = True
+
+            logger.info(
+                "Launching FFmpeg executable: %s",
+                command[0],
+            )
 
             runtime.ffmpeg_process = subprocess.Popen(
                 command,
