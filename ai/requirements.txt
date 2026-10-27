@@ -9,7 +9,7 @@ scipy==1.18.1
 pillow==13.0.0
 matplotlib==3.11.2
 sympy==1.14.0
-mpmath==1.4.1
+mpmath==1.3.0
 networkx==3.7
 contourpy==1.4.0
 cycler==0.12.1
@@ -36,7 +36,7 @@ httpx==0.28.1
 
 # ── Config ────────────────────────────────────────────────────────
 python-dotenv==1.2.4
-setuptools==84.2.1
+setuptools==80.9.0
 geoalchemy2==0.20.0
 keyring==25.7.0
 
