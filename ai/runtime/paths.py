@@ -88,3 +88,26 @@ def get_venv_python() -> Path:
         return VENV_DIR / "Scripts" / "python.exe"
 
     return VENV_DIR / "bin" / "python"
+
+def get_ffmpeg_executable() -> str:
+    """
+    Use bundled FFmpeg for the installed Windows application.
+
+    Development mode can use either ai/ffmpeg/bin/ffmpeg.exe
+    or an FFmpeg installation available on PATH.
+    Linux continues to use its system FFmpeg installation.
+    """
+    if sys.platform == "win32":
+        bundled_ffmpeg = (
+            get_resource_dir()
+            / "ffmpeg"
+            / "bin"
+            / "ffmpeg.exe"
+        )
+
+        # Packaged Windows installs must use their bundled copy,
+        # rather than depend on the user's PATH.
+        if is_packaged() or bundled_ffmpeg.is_file():
+            return str(bundled_ffmpeg)
+
+    return "ffmpeg"
