@@ -16,8 +16,9 @@ PUBLIC_EXACT = frozenset({
 
 PUBLIC_PATTERNS = [
     re.compile(r"/pairing-token/token/[^/]+"),
-    # Edge-agent routes. Ech one authenticates itself with X-internal-token
+    # Edge-agent routes. Each one authenticates itself with X-internal-token
     re.compile(r"/internal/.+"),
+    re.compile(r"/api/stream/cameras/[^/]+/annotations"),
 ]
 
 def is_public_path(path: str) -> bool:
