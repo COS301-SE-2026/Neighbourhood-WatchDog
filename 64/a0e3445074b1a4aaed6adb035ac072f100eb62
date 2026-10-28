@@ -1,0 +1,22 @@
+ai/app.py
+  h_cf6208e37032c0 188
+tests/backend/unit/api/stream_controller_test.py
+  h_cf6208e37032c0 2,124-128,137-138,143,147-148,152-157,159-161,163-176,178-180
+  h_cf6208e37032c0 131,158,162
+backend/app/auth/middleware.py
+  h_cf6208e37032c0 19,21
+backend/app/api/controllers/stream.py
+  h_cf6208e37032c0 4-5,13,34,36-37,39-41,43-44,47,50
+  h_cf6208e37032c0 42,51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "64a0e3445074b1a4aaed6adb035ac072f100eb62",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
