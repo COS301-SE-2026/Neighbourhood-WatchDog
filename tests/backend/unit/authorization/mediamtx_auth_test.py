@@ -171,6 +171,47 @@ async def test_publish_with_valid_camera_credentials_returns_204():
 
 
 @pytest.mark.asyncio
+async def test_read_with_camera_publish_credentials_returns_204():
+    with (
+        patch(
+            "app.services.camera_service._enabled_camera_from_path",
+            new=AsyncMock(return_value=make_camera()),
+        ),
+        patch(
+            "app.services.camera_service._camera_publish_credentials",
+            return_value=("camera-user", "camera-password"),
+        ),
+    ):
+        response = await authorize_mediamtx_for_agent_handler(
+            make_request(action="read", user="camera-user", password="camera-password", protocol="rtsp"),
+            MagicMock(),
+        )
+
+    assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_read_with_wrong_camera_password_returns_401():
+    request = make_request(action="read", user="camera-user", password="wrong", protocol="rtsp")
+    db = MagicMock()
+
+    with (
+        patch(
+            "app.services.camera_service._enabled_camera_from_path",
+            new=AsyncMock(return_value=make_camera()),
+        ),
+        patch(
+            "app.services.camera_service._camera_publish_credentials",
+            return_value=("camera-user", "camera-password"),
+        ),
+    ):
+        with pytest.raises(HTTPException) as exc:
+            await authorize_mediamtx_for_agent_handler(request, db)
+
+    assert exc.value.status_code == 401
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("user", "password"),
     [

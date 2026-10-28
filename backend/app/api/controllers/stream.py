@@ -1,7 +1,8 @@
 import asyncio
 import json
 from typing import Annotated
-from fastapi import APIRouter, Depends,WebSocket
+from fastapi import APIRouter, Depends, WebSocket, HTTPException
+from sqlalchemy import select
 from uuid import UUID
 from fastapi import Query, status
 
@@ -9,6 +10,7 @@ from app.auth.jwt import verify_jwt
 from app.auth.authorization import user_can_view_camera
 from app.core.database import DbSession
 from app.models.edge_agent_credentials import EdgeAgentCredential
+from app.models.camera import Camera
 from app.api.controllers.internal_cameras import get_authenticated_edge_agent
 from app.websocket.manager import ConnectionManager
 
@@ -29,18 +31,24 @@ async def broadcast_annotation(camera_id: str, annotation_data: dict) -> None: #
 
 @router.post("/cameras/{camera_id}/annotations")
 async def receive_annotation(
-    camera_id: str,
+    camera_id: UUID,
     data: dict,
-    x_internal_token: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)],
+    db: DbSession,
+    credential: Annotated[EdgeAgentCredential, Depends(get_authenticated_edge_agent)],
 ) -> dict:
-    
+    owned_camera = await db.scalar(
+        select(Camera.id).where(Camera.id == camera_id, Camera.property_id == credential.property_id)
+    )
+
+    if owned_camera is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Camera not found for this agent.")
 
     await broadcast_annotation(
-        camera_id,
+        str(camera_id),
         {
-            "camera_id": camera_id,
-            "event": "annotation",
             **data,
+            "camera_id": str(camera_id),
+            "event": "annotation",
         },
     )
 

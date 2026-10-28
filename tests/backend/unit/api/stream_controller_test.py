@@ -1,4 +1,5 @@
 import asyncio
+from fastapi import HTTPException
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -120,26 +121,60 @@ async def test_annotation_websocket_sends_ping_when_idle():
    websocket.send_text.assert_awaited_once_with('{"event": "ping"}')
    remove.assert_called_once_with(str(CAMERA_ID), websocket)
 
+def make_db(owned_camera_id):
+   db = MagicMock()
+   db.scalar = AsyncMock(return_value=owned_camera_id)
+   return db
+
 @pytest.mark.asyncio
 async def test_receive_annotation_broadcasts_to_camera_viewers():
-   camera_id = str(uuid4())
+   camera_id = uuid4()
 
    with patch.object(stream, "broadcast_annotation", new=AsyncMock()) as broadcast:
        result = await stream.receive_annotation(
            camera_id,
            {"tracks": [], "timestamp": "2026-10-20T10:00:00Z"},
-           MagicMock(),
+           make_db(camera_id),
+           MagicMock(property_id=uuid4()),
        )
 
    assert result == {"status": "broadcasted"}
    broadcast.assert_awaited_once_with(
-       camera_id,
+       str(camera_id),
        {
-           "camera_id": camera_id,
-           "event": "annotation",
            "tracks": [],
            "timestamp": "2026-10-20T10:00:00Z",
+           "camera_id": str(camera_id),
+           "event": "annotation",
        },
    )
 
+@pytest.mark.asyncio
+async def test_receive_annotation_rejects_camera_from_another_property():
+   camera_id = uuid4()
+   data = {"tracks": [], "timestamp": "2026-10-20T10:00:00Z"}
+   db = make_db(None)
+   credential = MagicMock(property_id=uuid4())
 
+   with patch.object(stream, "broadcast_annotation", new=AsyncMock()) as broadcast:
+       with pytest.raises(HTTPException) as exc:
+           await stream.receive_annotation(camera_id, data, db, credential)
+
+   assert exc.value.status_code == 404
+   broadcast.assert_not_awaited()
+
+@pytest.mark.asyncio
+async def test_receive_annotation_cannot_override_event_or_camera_id():
+   camera_id = uuid4()
+
+   with patch.object(stream, "broadcast_annotation", new=AsyncMock()) as broadcast:
+       await stream.receive_annotation(
+           camera_id,
+           {"event": "alert", "camera_id": "someone-else"},
+           make_db(camera_id),
+           MagicMock(property_id=uuid4()),
+       )
+
+   sent = broadcast.await_args.args[1]
+   assert sent["event"] == "annotation"
+   assert sent["camera_id"] == str(camera_id)
