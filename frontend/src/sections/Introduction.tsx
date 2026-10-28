@@ -10,7 +10,7 @@ export default function Introduction() {
     const scrollTarget = useRef<HTMLDivElement>(null);
     const {scrollYProgress} = useScroll({target: scrollTarget, offset: ['start end', 'end end']})
     const [currentWord, setCurrentWord] = useState(0);
-    const wordIndex = useTransform(scrollYProgress, [0, 1], [0, words.length])
+    const wordIndex = useTransform(scrollYProgress, [0.12, 0.78], [0, words.length]);
 
     useEffect(() => {
         const unsubscribe = wordIndex.on("change", (latest) => {
@@ -24,30 +24,41 @@ export default function Introduction() {
       <div className="container mx-auto">
         <div className="sticky top-24">
           <div className="flex justify-center">
-            <Tag>Introducing Neighbourhood WatchDog</Tag>
+            <Tag>
+              <span className="sm:hidden">Introducing WatchDog</span>
+              <span className="hidden sm:inline">Introducing Neighbourhood WatchDog</span>
+            </Tag>
           </div>
 
-          <div className="mt-10 text-center text-2xl font-medium md:text-5xl lg:text-7xl">
+          <div className="mx-auto mt-10 max-w-6xl px-4 text-center text-3xl font-medium leading-[1.15] sm:text-4xl lg:text-6xl">
             <span>Your neighbourhood deserves better security.</span>{" "}
 
-            <span className="text-brand-frost/15">
+            <span className="text-brand-frost/35">
               {words.map((word, index) => (
                 <span
                   key={`${word}-${index}`}
-                  className={twMerge("transition duration-500 text-brand-frost/15", index < currentWord && "text-brand-frost")}
+                  className={twMerge(
+                    "text-brand-frost/35 transition-colors duration-300",
+                    index < currentWord && "text-brand-frost"
+                  )}
                 >
                   {word}{" "}
                 </span>
               ))}
             </span>
 
-            <span className="block text-brand-green">
+            <span
+              className={twMerge(
+                "mt-6 block text-3xl text-brand-green transition-opacity duration-500 sm:text-4xl lg:text-5xl",
+                currentWord >= words.length ? "opacity-100" : "opacity-0"
+              )}
+            >
               That&apos;s why we built Neighbourhood WatchDog.
             </span>
           </div>
         </div>
 
-        <div className="h-[150vh]" />
+        <div className="h-[90vh] lg:h-[110vh]" />
       </div>
     </section>);
 }
