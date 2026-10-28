@@ -72,14 +72,6 @@ export default function Hero() {
                 real-time visibility and peace of mind, 
                 powered by AI that never sleeps.
             </p>
-            <form className="flex border border-brand-gunmetal/20 rounded-full p-2 mt-8 max-w-lg mx-auto">
-                <input 
-                    type="email" 
-                    placeholder="Enter your email" 
-                    className="bg-transparent px-4 md:flex-1 w-full"
-                />
-                <Button variant="default" className="whitespace-nowrap rounded-full" size="xs">Sign Up</Button>
-            </form>
         </div>
     </section>
     );

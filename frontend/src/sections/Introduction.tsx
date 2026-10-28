@@ -25,9 +25,9 @@ export default function Introduction() {
         <div className="sticky top-24">
           <div className="flex justify-center">
             <Tag>
-  <span className="sm:hidden">Introducing WatchDog</span>
-  <span className="hidden sm:inline">Introducing Neighbourhood WatchDog</span>
-</Tag>
+              <span className="sm:hidden">Introducing WatchDog</span>
+              <span className="hidden sm:inline">Introducing Neighbourhood WatchDog</span>
+            </Tag>
           </div>
 
           <div className="mx-auto mt-10 max-w-6xl px-4 text-center text-3xl font-medium leading-[1.15] sm:text-4xl lg:text-6xl">
