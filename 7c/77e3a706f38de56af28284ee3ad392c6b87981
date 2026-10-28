@@ -1,0 +1,18 @@
+tests/backend/unit/core/app_logging_test.py
+  h_cf6208e37032c0 1-59
+ai/requirements.txt
+  h_cf6208e37032c0 7-8,13-14
+.github/dependabot.yml
+  h_cf6208e37032c0 50-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7c77e3a706f38de56af28284ee3ad392c6b87981",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
