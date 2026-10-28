@@ -261,7 +261,7 @@ class CameraSupervisor:
             )
 
     def _start_detection_thread(self, runtime: CameraRuntime) -> None:
-        published_url = self._published_rtsp_url(runtime.spec.id)
+        published_url = self._authenticated_publish_rtsp_url(runtime.spec)
 
         runtime.detection_thread = threading.Thread(
             target=self.detection_target,
