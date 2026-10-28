@@ -1,6 +1,3 @@
-"use client";
-
-import { usePropertyContext } from "@/hooks/use-property-context";
 import Link from "next/link";
 import {
     ArrowRight,
@@ -41,7 +38,38 @@ const quickLinks = [
         description: "Connect the trusted WatchDog Agent to a property.",
         href: "#agent-tutorial",
         icon: KeyRound
+    },
+    {
+        title: "Property administrators",
+        description: "Manage property members and cameras.",
+        href: "#property-admin",
+        icon: Camera
+    },
+    {
+        title: "Neighbourhood administrators",
+        description: "Manage membership and neighbourhood activity.",
+        href: "#neighbourhood-admin",
+        icon: ShieldCheck
+    },
+    {
+        title: "Security officers",
+        description: "Respond to critical dispatches.",
+        href: "#security-officer",
+        icon: BellRing
+    },
+    {
+        title: "Notifications",
+        description: "Set up and troubleshoot alerts.",
+        href: "#notifications",
+        icon: BellRing
+    },
+    {
+        title: "Privacy",
+        description: "Understand camera and footage access.",
+        href: "#privacy",
+        icon: KeyRound
     }
+
 ];
 
 
@@ -60,12 +88,13 @@ const faqs = [
     {
         question: "What should I do when I receive an alert?",
         answer:
-            "Read the severity, detection type, camera, confidence, and time. Open Details when you need more information, follow the neighbourhood response procedure, and acknowledge the alert only when a responsible person is handling it."
+            "Check the detection type, severity, camera, confidence, and time. Open Details for available evidence and follow your role’s response procedure. Only accept or close an alert when you are authorised to do so."
     },
+
     {
         question: "Does acknowledging an alert resolve the incident?",
         answer:
-            "No. Acknowledging tells other responders that someone has seen and is handling the alert. Continue following the applicable safety procedure until the incident is resolved."
+            "No. Accepting an officer dispatch acknowledges the alert and indicates that a responder is handling it. The incident remains active until an authorised responder resolves or dismisses it."
     },
     {
         question: "Why is a camera clip or thumbnail unavailable?",
@@ -139,12 +168,9 @@ function TutorialCard({id, icon: Icon, title, summary, steps}: {
 }
 
 export default function HelpPage() {
-    const { activeContext } = usePropertyContext();
-
-    const dashboardHref = activeContext ? `/dashboard/properties/${activeContext.propertyId}/cameras` : "/dashboard";
 
     return (
-        <main className="min-h-full w-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
+        <main className="dark min-h-full w-full bg-brand-void px-6 py-7 text-brand-frost md:px-8">
             <div className="mx-auto max-w-5xl">
                 <header className="border-b border-border pb-7">
                     <div className="flex items-start gap-4">
@@ -194,7 +220,7 @@ export default function HelpPage() {
                     />
                     <div className="rounded-xl border border-border bg-brand-abyss p-5">
                         <ol className="space-y-4 text-sm text-brand-ash">
-                            <li><strong className="text-brand-frost">1. Create and confirm your account.</strong> Use your email address and enter the confirmation code sent to you.</li>
+                            <li><strong className="text-brand-frost">1. Create and confirm your account.</strong> Use your email address, enter the confirmation code, and complete MFA when prompted.</li>
                             <li><strong className="text-brand-frost">2. Create a property.</strong> Search for and select the correct property address.</li>
                             <li><strong className="text-brand-frost">3. Create or join a neighbourhood.</strong> Administrators create a neighbourhood; residents submit a join request with the administrator&apos;s join code.</li>
                             <li><strong className="text-brand-frost">4. Add cameras.</strong> Register the camera name, physical location, and connection information supplied by the deployment operator.</li>
@@ -217,11 +243,13 @@ export default function HelpPage() {
                             summary="Add a camera, understand its status, and open its live view."
                             steps={[
                                 "Open My cameras for the correct property.",
-                                "Select Add camera and complete the camera name, location, and connection fields.",
-                                "Read the status on the camera card: Live, Connecting, Unavailable, or Disabled.",
-                                "Select an enabled camera to open the live view; close the view when finished." 
-
+                                "Select Add camera and enter the camera details supplied by the deployment operator.",
+                                "Choose Private, Neighbourhood, or Public visibility for the intended audience.",
+                                "Configure detection zones for areas the camera should monitor.",
+                                "Open Members to invite people who need access to the property.",
+                                "Check whether the camera is Live, Connecting, Unavailable, or Disabled, then open its live view when available."
                             ]}
+
                         />
                         <TutorialCard
                             id="alert-tutorial"
@@ -229,14 +257,13 @@ export default function HelpPage() {
                             title="Respond to an alert"
                             summary="Review the evidence and communicate responsibly."
                             steps={[
-                                "Open Live alerts and check the severity, detection type, camera, confidence, and time.",
-                                "Select Details when you need the thumbnail, clip, or full alert information.",
-                                "Follow the neighbourhood response procedure.",
-                                "Select Acknowledge only when a responsible person is handling the alert.",
-                                "Use Broadcast only for an active alert that is appropriate for neighbourhood-wide communication."
-
-
+                                "Open Live alerts or Critical alerts and check the detection type, severity, camera, confidence, and time.",
+                                "Select Details to review the available thumbnail, clip, and alert information.",
+                                "Follow your neighbourhood’s response procedure for weapon or fall detections.",
+                                "Accepting an officer dispatch acknowledges that alert; authorised responders can later resolve or dismiss it.",
+                                "Use Broadcast only for an active alert appropriate for neighbourhood-wide communication."
                             ]}
+
                         />
                         <TutorialCard
                             id="agent-tutorial"
@@ -244,12 +271,14 @@ export default function HelpPage() {
                             title="Pair the WatchDog Agent"
                             summary="Connect the trusted local Agent to the selected property."
                             steps={[
-                                "Open Connect agent and confirm the property address.",
-                                "Select Generate pairing token, then Copy token.",
-                                "Enter the token in the trusted Agent setup application before it expires.",
-                                "Confirm that the Agent is paired, then enable the required camera.",
-                                "Never include the token or camera connection details in screenshots or reports."
+                                "Download the Windows WatchDog Agent from the Downloads section on the landing page.",
+                                "Open Connect agent and confirm the correct property.",
+                                "Generate a pairing token and enter it in the trusted Agent setup application before it expires.",
+                                "Confirm that the Agent is paired and the required camera is enabled.",
+                                "If the Agent is offline or the stream is unavailable, check its connection, camera configuration, and network before trying again.",
+                                "Never include pairing tokens or camera connection details in screenshots or reports."
                             ]}
+
                         />
                         <TutorialCard
                             id="settings-tutorial"
@@ -263,6 +292,69 @@ export default function HelpPage() {
                                 "Select Save changes and wait for the confirmation message." 
                             ]}
                         />
+                        <TutorialCard
+                            id="property-admin"
+                            icon={Camera}
+                            title="Property administrators"
+                            summary="Manage the people and cameras connected to your property."
+                            steps={[
+                                "Select the correct property in the dashboard.",
+                                "Open Members to invite or remove property members.",
+                                "Open My cameras to register a camera and choose its visibility.",
+                                "Configure detection zones and review camera status.",
+                                "Use Connect agent to generate a pairing token for the trusted operator."
+                            ]}
+                        />
+                        <TutorialCard
+                            id="neighbourhood-admin"
+                            icon={ShieldCheck}
+                            title="Neighbourhood administrators"
+                            summary="Manage membership and review neighbourhood activity."
+                            steps={[
+                                "Share the neighbourhood join code through an approved channel.",
+                                "Review join requests before approving membership.",
+                                "Use Critical alerts and the Map to review active incidents.",
+                                "Use Dispatches and Analytics to review response activity and trends."
+                            ]}
+                        />
+                        <TutorialCard
+                            id="security-officer"
+                            icon={BellRing}
+                            title="Security officers"
+                            summary="Respond to critical alerts assigned to you."
+                            steps={[
+                                "Go on duty and allow location access before responding.",
+                                "Review a dispatch request and accept or decline it.",
+                                "After accepting, review the selected alert and route on the security map.",
+                                "Review available footage, tracking history, and the situational brief.",
+                                "Resolve or dismiss the alert when your response is complete."
+                            ]}
+                        />
+                        <TutorialCard
+                            id="notifications"
+                            icon={BellRing}
+                            title="Notifications"
+                            summary="Understand how to receive and verify alerts."
+                            steps={[
+                                "Allow device notifications if you want push alerts.",
+                                "Keep your account contact details up to date.",
+                                "If notifications stop, check device permissions and connectivity.",
+                                "Open the dashboard to verify an alert’s current state before acting."
+                            ]}
+                        />
+                        <TutorialCard
+                            id="privacy"
+                            icon={KeyRound}
+                            title="Camera and footage privacy"
+                            summary="Understand visibility and handle evidence carefully."
+                            steps={[
+                                "Choose Private, Neighbourhood, or Public visibility for the intended audience.",
+                                "Only authorised users should access restricted cameras and footage.",
+                                "Never publish clips, home addresses, pairing tokens, or camera credentials.",
+                                "Report unexpected access to your administrator."
+                            ]}
+                        />
+
                     </div>
                 </section>
 
@@ -299,7 +391,7 @@ export default function HelpPage() {
                             </div>
                         </div>
                         <Link
-                            href={dashboardHref}
+                            href="/"
                             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-brand-gunmetal/20 px-3.5 py-2 text-sm font-medium text-brand-ash transition-colors hover:bg-brand-slate hover:text-brand-frost"
                         >
                             Back to dashboard

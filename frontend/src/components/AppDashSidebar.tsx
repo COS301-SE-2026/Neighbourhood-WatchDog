@@ -259,7 +259,7 @@ function addAccountGroup(groups: SidebarGroupData[]) {
     items: [
       {
         title: "Help",
-        url: "/dashboard/help",
+        url: "/help",
         icon: CircleHelp,
       },
       {
