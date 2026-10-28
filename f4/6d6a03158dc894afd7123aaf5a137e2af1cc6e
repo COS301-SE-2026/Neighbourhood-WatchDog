@@ -1,0 +1,15 @@
+frontend/src/sections/Introduction.tsx
+  h_3555f7510a5ca8 13,28-29,33,36,41,51-54,61
+  h_3555f7510a5ca8 27,30,40,42-43,50,55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f46d6a03158dc894afd7123aaf5a137e2af1cc6e",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
