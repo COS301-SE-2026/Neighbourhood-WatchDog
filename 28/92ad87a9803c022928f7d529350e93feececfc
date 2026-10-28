@@ -1,0 +1,24 @@
+frontend/src/components/AppDashSidebar.tsx
+  h_3555f7510a5ca8 262
+frontend/src/components/Navbar.tsx
+  h_3555f7510a5ca8 35
+tests/e2e/tests/e2e/public-help.spec.ts
+  h_3555f7510a5ca8 1-23
+frontend/src/app/(public)/help/page.tsx
+  h_3555f7510a5ca8 91,93,97,223,246-250,252,260-264,266,274-279,281,295-357
+  h_3555f7510a5ca8 41-70,72,173,394
+frontend/src/sections/Navbar.tsx
+  h_3555f7510a5ca8 27,40,47,63-64
+  h_3555f7510a5ca8 15,48-54,56-62,65-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2892ad87a9803c022928f7d529350e93feececfc",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
