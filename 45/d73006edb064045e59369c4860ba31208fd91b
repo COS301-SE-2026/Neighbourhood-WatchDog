@@ -1,0 +1,29 @@
+backend/app/services/camera_service.py
+  h_cf6208e37032c0 391-396
+ai/camera_runtime.py
+  h_cf6208e37032c0 264
+tests/backend/unit/authorization/mediamtx_auth_test.py
+  h_cf6208e37032c0 174,186,192-213
+  s_4b1d2b5ac0ec4c::t_fc80abb99a4edf 173,175-185,187-191
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "45d73006edb064045e59369c4860ba31208fd91b",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_4b1d2b5ac0ec4c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2fabd77a-cb2d-48a5-be14-69faabcc6778",
+        "model": "unknown"
+      },
+      "human_author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
