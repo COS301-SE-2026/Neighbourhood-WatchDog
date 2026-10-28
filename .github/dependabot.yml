@@ -44,6 +44,9 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      - dependency-name: "mpmath"
+        versions: [">=1.4"]
 
   # package.json files and their lockfiles
   - package-ecosystem: "npm"
