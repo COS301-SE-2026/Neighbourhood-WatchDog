@@ -1,0 +1,24 @@
+README.md
+  h_cf6208e37032c0 70-72
+docs/sas.md
+  h_cf6208e37032c0 46-47,57,294,296,300-301
+"docs/images/Architecture Diagramv4.svg"
+  h_cf6208e37032c0 1-99
+"docs/images/CI_CD Pipeline Diagramv2.svg"
+  h_cf6208e37032c0 1-98
+"docs/images/Prod Deployment Diagramv4.svg"
+  h_cf6208e37032c0 1-124
+"docs/images/Staging Deployment Diagramv4.svg"
+  h_cf6208e37032c0 1-112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4be0afa586c624c64088c0f5b6e1de71735fc180",
+  "prompts": {},
+  "humans": {
+    "h_cf6208e37032c0": {
+      "author": "JaredWilliams-1 <jaredluke3@gmail.com>"
+    }
+  }
+}
