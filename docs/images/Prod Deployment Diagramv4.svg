@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1090" viewBox="0 0 1700 1090" font-family="Helvetica, Arial, sans-serif">
+<rect width="1700" height="1090" fill="#FFFFFF"/>
+<text x="40" y="52" font-size="26" font-weight="700" fill="#0D1B2A">Production Deployment</text>
+<rect x="40" y="64" width="64" height="4" fill="#10B981"/>
+<text x="1660" y="1074" font-size="12" fill="#475569" text-anchor="end">Neighbourhood WatchDog · Team Intrepid · updated 29 Oct 2026</text>
+<rect x="300" y="200" width="1370" height="800" rx="8" fill="#FFFFFF" stroke="#0D1B2A" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="312" y="220" font-size="13" font-weight="700" fill="#0D1B2A">AWS · af-south-1</text>
+<rect x="330" y="250" width="960" height="720" rx="8" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="342" y="270" font-size="13" font-weight="700" fill="#475569">VPC · public subnets in 1a / 1b / 1c</text>
+<rect x="650" y="280" width="610" height="260" rx="8" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="662" y="300" font-size="13" font-weight="700" fill="#475569">ECS cluster · watchdog-prod-cluster</text>
+<rect x="1320" y="250" width="330" height="720" rx="8" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1332" y="270" font-size="13" font-weight="700" fill="#475569">Regional services</text>
+<rect x="400" y="80" width="300" height="80" rx="8" fill="#F1F5F9" stroke="#64748B" stroke-width="1.5"/>
+<text x="550.0" y="117.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Frontend · Vercel</text>
+<text x="550.0" y="135.5" font-size="12" fill="#475569" text-anchor="middle">neighbourhoodwatchdog.co.za</text>
+<rect x="40" y="230" width="220" height="120" rx="8" fill="#F1F5F9" stroke="#64748B" stroke-width="1.5"/>
+<text x="150.0" y="280.0" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Users&#x27; browsers</text>
+<text x="150.0" y="298.0" font-size="12" fill="#475569" text-anchor="middle">residents · admins</text>
+<text x="150.0" y="313.0" font-size="12" fill="#475569" text-anchor="middle">security officers</text>
+<rect x="40" y="800" width="220" height="110" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="150.0" y="845.0" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Edge agent</text>
+<text x="150.0" y="863.0" font-size="12" fill="#475569" text-anchor="middle">resident&#x27;s PC</text>
+<text x="150.0" y="878.0" font-size="12" fill="#475569" text-anchor="middle">connected to cameras</text>
+<rect x="360" y="300" width="250" height="130" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="485.0" y="347.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Application Load Balancer</text>
+<text x="485.0" y="365.5" font-size="12" fill="#475569" text-anchor="middle">HTTPS :443 · ACM certificate</text>
+<text x="485.0" y="380.5" font-size="12" fill="#475569" text-anchor="middle">api. → production</text>
+<text x="485.0" y="395.5" font-size="12" fill="#475569" text-anchor="middle">api-staging. → staging</text>
+<rect x="680" y="330" width="180" height="80" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="770.0" y="367.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">backend</text>
+<text x="770.0" y="385.5" font-size="12" fill="#475569" text-anchor="middle">FastAPI :8000</text>
+<rect x="880" y="330" width="170" height="80" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="965.0" y="367.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">celery-worker</text>
+<text x="965.0" y="385.5" font-size="12" fill="#475569" text-anchor="middle">notifications, jobs</text>
+<rect x="1070" y="330" width="170" height="80" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="1155.0" y="367.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">celery-beat</text>
+<text x="1155.0" y="385.5" font-size="12" fill="#475569" text-anchor="middle">scheduler</text>
+<text x="960.0" y="475.5" font-size="12" fill="#475569" text-anchor="middle">EC2 Auto Scaling group (t3.small, ECS-optimised AMI)</text>
+<text x="960.0" y="490.5" font-size="12" fill="#475569" text-anchor="middle">capacity provider with managed scaling</text>
+<text x="960.0" y="505.5" font-size="12" fill="#475569" text-anchor="middle">scales out for rolling deploys</text>
+<rect x="650" y="600" width="290" height="120" rx="8" fill="#FFFFFF" stroke="#0D1B2A" stroke-width="1.5"/>
+<text x="795.0" y="642.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Amazon RDS · PostgreSQL 16</text>
+<text x="795.0" y="660.5" font-size="12" fill="#475569" text-anchor="middle">db.t3.micro · private</text>
+<text x="795.0" y="675.5" font-size="12" fill="#475569" text-anchor="middle">watchdog_production DB</text>
+<text x="795.0" y="690.5" font-size="12" fill="#475569" text-anchor="middle">(+ watchdog_staging DB)</text>
+<rect x="970" y="600" width="290" height="120" rx="8" fill="#FFFFFF" stroke="#0D1B2A" stroke-width="1.5"/>
+<text x="1115.0" y="642.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">ElastiCache · Redis 7.1</text>
+<text x="1115.0" y="660.5" font-size="12" fill="#475569" text-anchor="middle">cache.t4g.micro · private</text>
+<text x="1115.0" y="675.5" font-size="12" fill="#475569" text-anchor="middle">cache, rate limits,</text>
+<text x="1115.0" y="690.5" font-size="12" fill="#475569" text-anchor="middle">Celery broker</text>
+<rect x="360" y="600" width="250" height="175" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="485.0" y="647.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">MediaMTX · EC2</text>
+<text x="485.0" y="665.5" font-size="12" fill="#475569" text-anchor="middle">t4g.small · Docker</text>
+<text x="485.0" y="680.5" font-size="12" fill="#475569" text-anchor="middle">Elastic IP 15.240.148.92</text>
+<text x="485.0" y="695.5" font-size="12" fill="#475569" text-anchor="middle">stream.neighbourhoodwatchdog.co.za</text>
+<text x="485.0" y="710.5" font-size="12" fill="#475569" text-anchor="middle">Let&#x27;s Encrypt TLS</text>
+<text x="485.0" y="725.5" font-size="12" fill="#475569" text-anchor="middle">:8554 RTSP · :8889 WebRTC</text>
+<text x="485.0" y="740.5" font-size="12" fill="#475569" text-anchor="middle">:8189/udp ICE</text>
+<rect x="360" y="820" width="250" height="100" rx="8" fill="#F1F5F9" stroke="#64748B" stroke-width="1.5"/>
+<text x="485.0" y="860.0" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">CloudWatch alarm</text>
+<text x="485.0" y="878.0" font-size="12" fill="#475569" text-anchor="middle">instance status check failed</text>
+<text x="485.0" y="893.0" font-size="12" fill="#475569" text-anchor="middle">→ auto-reboot + SNS email</text>
+<rect x="1340" y="290" width="290" height="90" rx="8" fill="#FFFFFF" stroke="#0D1B2A" stroke-width="1.5"/>
+<text x="1485.0" y="325.0" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Amazon Cognito + SES</text>
+<text x="1485.0" y="343.0" font-size="12" fill="#475569" text-anchor="middle">user pool · email delivery</text>
+<text x="1485.0" y="358.0" font-size="12" fill="#475569" text-anchor="middle">pre sign-up Lambda</text>
+<rect x="1340" y="400" width="290" height="90" rx="8" fill="#FFFFFF" stroke="#0D1B2A" stroke-width="1.5"/>
+<text x="1485.0" y="435.0" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Amazon ECR</text>
+<text x="1485.0" y="453.0" font-size="12" fill="#475569" text-anchor="middle">watchdog-backend · immutable tags</text>
+<text x="1485.0" y="468.0" font-size="12" fill="#475569" text-anchor="middle">cosign-signed images + SBOM</text>
+<rect x="1340" y="510" width="290" height="90" rx="8" fill="#FFFFFF" stroke="#0D1B2A" stroke-width="1.5"/>
+<text x="1485.0" y="552.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Secrets Manager</text>
+<text x="1485.0" y="570.5" font-size="12" fill="#475569" text-anchor="middle">watchdog/prod/env</text>
+<rect x="1340" y="620" width="290" height="90" rx="8" fill="#FFFFFF" stroke="#0D1B2A" stroke-width="1.5"/>
+<text x="1485.0" y="662.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Amazon S3</text>
+<text x="1485.0" y="680.5" font-size="12" fill="#475569" text-anchor="middle">incident clips</text>
+<rect x="1340" y="730" width="290" height="90" rx="8" fill="#FFFFFF" stroke="#0D1B2A" stroke-width="1.5"/>
+<text x="1485.0" y="772.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">CloudWatch Logs</text>
+<text x="1485.0" y="790.5" font-size="12" fill="#475569" text-anchor="middle">container logs</text>
+<rect x="1340" y="840" width="290" height="100" rx="8" fill="#FFFFFF" stroke="#0D1B2A" stroke-width="1.5"/>
+<text x="1485.0" y="880.0" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">IAM · GitHub OIDC roles</text>
+<text x="1485.0" y="898.0" font-size="12" fill="#475569" text-anchor="middle">gha-ci · gha-staging · gha-prod</text>
+<text x="1485.0" y="913.0" font-size="12" fill="#475569" text-anchor="middle">no long-lived access keys</text>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0D1B2A"/></marker></defs>
+<polyline points="150,230 150,120 400,120" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="260,340 360,340" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="110,350 110,650 360,650" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="260,830 320,830 320,730 360,730" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="200,800 200,395 360,395" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="150,910 150,1020 1660,1020 1660,665 1630,665" fill="none" stroke="#0D1B2A" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#a)"/>
+<polyline points="610,370 680,370" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="485,600 485,430" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="485,820 485,775" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="795,540 795,600" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="1115,540 1115,600" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="1260,335 1340,335" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="1260,445 1340,445" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="1260,520 1300,520 1300,555 1340,555" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="1250,540 1250,580 1310,580 1310,665 1340,665" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="254.0" y="110.5" width="42.0" height="19" rx="3" fill="#FFFFFF" opacity="0.95"/>
+<text x="275.0" y="124.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">HTTPS</text>
+<rect x="273.0" y="330.5" width="74.0" height="19" rx="3" fill="#FFFFFF" opacity="0.95"/>
+<text x="310.0" y="344.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">REST · WSS</text>
+<rect x="66.6" y="490.5" width="86.80000000000001" height="19" rx="3" fill="#FFFFFF" opacity="0.95"/>
+<text x="110.0" y="504.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">WebRTC :8889</text>
+<rect x="283.0" y="770.5" width="74.0" height="19" rx="3" fill="#FFFFFF" opacity="0.95"/>
+<text x="320.0" y="784.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">RTSP :8554</text>
+<rect x="159.8" y="580.5" width="80.4" height="34" rx="3" fill="#FFFFFF" opacity="0.95"/>
+<text x="200.0" y="594.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">HTTPS</text>
+<text x="200.0" y="609.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">agent token</text>
+<rect x="864.8" y="1010.5" width="80.4" height="19" rx="3" fill="#FFFFFF" opacity="0.95"/>
+<text x="905.0" y="1024.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">clip upload</text>
+<rect x="624.0" y="360.5" width="42.0" height="19" rx="3" fill="#FFFFFF" opacity="0.95"/>
+<text x="645.0" y="374.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">:8000</text>
+<rect x="451.2" y="505.5" width="67.6" height="19" rx="3" fill="#FFFFFF" opacity="0.95"/>
+<text x="485.0" y="519.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">auth hook</text>
+<rect x="1282.2" y="325.5" width="35.6" height="19" rx="3" fill="#FFFFFF" opacity="0.95"/>
+<text x="1300.0" y="339.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">auth</text>
+<rect x="1282.2" y="435.5" width="35.6" height="19" rx="3" fill="#FFFFFF" opacity="0.95"/>
+<text x="1300.0" y="449.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">pull</text>
+<rect x="1265.4" y="510.5" width="29.200000000000003" height="19" rx="3" fill="#FFFFFF" opacity="0.95"/>
+<text x="1280.0" y="524.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">env</text>
+</svg>
