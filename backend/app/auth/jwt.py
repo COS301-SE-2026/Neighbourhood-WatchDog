@@ -37,12 +37,18 @@ def get_jwks() -> list[dict]:
     return JWKS
 
 def verify_jwt(token: str) -> dict:
-    """Verifies the JWT and returns the claims (data from JWT)"""
-    headers = jwt.get_unverified_header(token) #decode JWT headers
-    kid = headers.get("kid") #key id to find which public key used
+    """Verify a Cognito access token issued for the WatchDog app client."""
+    if not config.cognito_client_id:
+        raise jwt.PyJWTError("Cognito app client ID is not configured.")
+
+    headers = jwt.get_unverified_header(token)
+    kid = headers.get("kid")
+
+    if not isinstance(kid, str) or not kid:
+        raise jwt.PyJWTError("Token is missing a valid signing key ID.")
 
     jwks = get_jwks()
-    jwk = next((k for k in jwks if k["kid"] == kid), None) #find which primary key was used
+    jwk = next((key for key in jwks if key.get("kid") == kid), None)
 
     if jwk is None:
         raise jwt.PyJWTError("Unable to find matching public key.")
@@ -56,9 +62,26 @@ def verify_jwt(token: str) -> dict:
         leeway=30,
         issuer=ISSUER,
         options={
-            "verify_aud": False
+            # Cognito access tokens identify the app client with client_id.
+            # Validate that claim explicitly below instead of using aud.
+            "verify_aud": False,
+            "require": [
+                "exp",
+                "iss",
+                "sub",
+                "token_use",
+                "client_id",
+            ],
         },
     )
+
+    if claims["token_use"] != "access":
+        raise jwt.InvalidTokenError("An access token is required.")
+
+    if claims["client_id"] != config.cognito_client_id:
+        raise jwt.InvalidAudienceError(
+            "Token was not issued for the WatchDog app client."
+        )
 
     return claims
 
