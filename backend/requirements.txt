@@ -48,7 +48,7 @@ email-validator==2.3.0
 # Video Processing
 ffmpeg-python==0.2.0
 future==1.0.0
-opencv-python-headless==4.14.0.94
+opencv-python-headless==5.0.0.93
 
 # WebSocket
 websockets==16.0
