@@ -1,0 +1,14 @@
+frontend/src/components/AppDashSidebar.tsx
+  h_3555f7510a5ca8 183,215
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "69314e33eb3076c3fab53173ddadddd41a61f6b5",
+  "prompts": {},
+  "humans": {
+    "h_3555f7510a5ca8": {
+      "author": "obedmbaya <obed.mbaya@yahoo.com>"
+    }
+  }
+}
