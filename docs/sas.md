@@ -43,7 +43,8 @@ The purpose of this document is to communicate the architectural structure of th
 - Services must support horizontal scalability where appropriate.
 
 ### 2.4 Architectural Diagram
-![Architecture Diagramv2](/docs/images/Architecture%20Diagramv3.svg)
+![Architecture Diagram](/docs/images/Architecture%20Diagramv4.svg)
+
 
 ### 2.5 Mapping Quality Requirements to Architectural Decisions
 |Quality Requirement|Architectural Decision|
@@ -53,7 +54,7 @@ The purpose of this document is to communicate the architectural structure of th
 |Data encryption for sensitve information|Use of AWS RDS and AWS Secrets Manager both of which encrypt data at rest using AES-256 and TLS 1.3 for secure communication between services. Moreover, MFA is used through AWS Cognito|
 |Reliability: Recovery within 5 minutes after failure|Automated backups, failover replication, and monitoring with automated recovery scripts.|
 |Scalability: support for up to 200% workload increase without major architectural changes|ECS with an Application Load Balancer allows horizontal scaling by increasing the service's desired task count with no architecture changes. The underlying EC2 ASG (auto scalaing group) scales out to provide for additional tasks|
-|Maintainability: new features/fixes deployable within 2 hours|CI/CD via GitHub Actions automates images build, ECR push and ECS service update on every push to the `main` branch of the repository. Deployments complete within a matter of minutes|
+|Maintainability: new features/fixes deployable within 2 hours|CI/CD via GitHub Actions builds, scans and signs the backend image once on every push to `dev` and deploys it to staging; merging to `main` promotes that same image to production with no rebuild. Deployments complete within minutes|
 
 # 3. Technology Requirements
 
@@ -290,13 +291,14 @@ The system supports rollback in the following ways:
 
 ### Deployment Diagram
 
-![Prod Deployment Diagram](/docs/images/Prod%20Deployment%20Diagram%20v3.png)
+![Prod Deployment Diagram](/docs/images/Prod%20Deployment%20Diagramv4.svg)
 
-![Staging Deployment Diagram](/docs/images/Staging%20Deployment%20Diagramv3.drawio.svg)
+![Staging Deployment Diagram](/docs/images/Staging%20Deployment%20Diagramv4.svg)
 
 ### CI/CD Pipeline Diagram
 
-![CI/CD Pipeline Diagram](/docs/images/CI_CD%20Pipeline%20Diagramv1.drawio.svg)
+![CI/CD Pipeline Diagram](/docs/images/CI_CD%20Pipeline%20Diagramv2.svg)
+
 
 
 # 8. NFR Testing
