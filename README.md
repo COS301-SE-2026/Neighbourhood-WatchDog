@@ -84,14 +84,12 @@ The platform consists of six primary subsystems:
 flowchart TD
     subgraph VI["Video Ingestion"]
         CAM(["IP Cameras RTSP"])
-        MTX(["MediaMTX Relay"])
         FF(["FFmpeg Frame Extractor"])
-        KAF(["Apache Kafka"])
+        MTX(["MediaMTX Relay"])
     end
     subgraph AI["AI Detection Engine"]
         YOLO(["YOLOv8 Detection"])
         DS(["DeepSORT Tracking"])
-        BC(["Behaviour Classifier"])
     end
     subgraph AE["Alert & Event Management"]
         AT(["Alert Threshold Engine"])
@@ -108,8 +106,8 @@ flowchart TD
         PG(["PostgreSQL + Row-Level Security"])
         S3B(["S3 Tiered Storage"])
     end
-    CAM --> MTX --> FF --> KAF --> YOLO --> DS --> BC
-    BC --> AT --> WS --> NEXT
+    CAM --> FF --> MTX --> YOLO --> DS
+    DS --> AT --> WS --> NEXT
     AT --> S3A --> S3B
     NEXT --> COG
     AT --> PG
@@ -276,14 +274,13 @@ Neighbourhood-WatchDog/
 
 ---
 
-## Demo & Presentation
+## NWD Trailer
 
 <div align="center">
 
 
-Demo 4 
-[![Slides](https://img.shields.io/badge/Slides_4-View-0A0A0A?style=flat-square&logo=googleslides&logoColor=white&labelColor=0D1B2A)](/docs/demo-videos/demo_4_slides.pdf) 
-[![Video](https://img.shields.io/badge/Video_4-Watch-0A0A0A?style=flat-square&logo=youtube&logoColor=white&labelColor=0D1B2A)](/docs/demo-videos/Demo%204.mp4)
+Offical NWD Trailer
+[![Video](https://img.shields.io/badge/NWD-Watch-0A0A0A?style=flat-square&logo=youtube&logoColor=white&labelColor=0D1B2A)](https://www.youtube.com/watch?v=HhXawXhQVYE)
 
 </div>
 
@@ -398,7 +395,6 @@ Demo 4
 | ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white) | REST API and WebSocket server |
 | ![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white) | Primary backend language |
 | ![Celery](https://img.shields.io/badge/Celery-37814A?style=flat-square&logoColor=white) | Distributed task queue |
-| ![Kafka](https://img.shields.io/badge/Apache_Kafka-231F20?style=flat-square&logo=apachekafka&logoColor=white) | Frame event streaming pipeline |
 | WebSocket | Real-time alert push delivery |
 
 </details>

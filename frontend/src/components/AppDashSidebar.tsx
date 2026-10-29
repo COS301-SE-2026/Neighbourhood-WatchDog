@@ -180,8 +180,7 @@ function getSidebarGroups(
           ? "Critical alerts"
           : "Live alerts",
       url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/alerts`,
-      icon: BellRing,
-      badge: 3,
+      icon: BellRing
     });
   }
 
@@ -213,8 +212,7 @@ function getSidebarGroups(
         {
           title: "Join requests",
           url: `/dashboard/neighbourhood/${activeContext.neighbourhoodId}/join-requests`,
-          icon: ClipboardList,
-          badge: 2,
+          icon: ClipboardList
         },
         {
           title: "Risk thresholds",
