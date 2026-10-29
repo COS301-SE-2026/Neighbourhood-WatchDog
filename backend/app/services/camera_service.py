@@ -388,6 +388,12 @@ async def authorize_mediamtx_for_agent_handler(request: MediaMtxAuthRequest, db:
     if request.action == "read":
         camera = await _enabled_camera_from_path(request.path, db)
 
+        if request.user.startswith("camera-"):
+            expected_username, expected_password = _camera_publish_credentials(str(camera.id))
+            if hmac.compare_digest(request.user, expected_username) and hmac.compare_digest(request.password, expected_password):
+                return Response(status_code=status.HTTP_204_NO_CONTENT)
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid camera credential for the requested path.")
+
         if request.user != "jwt" or not request.password:
             # RTSP clients send empty credentials first and need a 401 before sending real ones.
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Viewer token required.")

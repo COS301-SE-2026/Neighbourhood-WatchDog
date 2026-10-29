@@ -20,7 +20,7 @@ import type {
 } from "@/lib/validators/alert";
 
 
-const CACHE_VERSION = 1 as const;
+const CACHE_VERSION = 2 as const;
 const RECONNECT_DELAY_MS = 3_000;
 
 const LIVE_ALERT_STATUSES = new Set([
@@ -33,7 +33,7 @@ function getCacheKey(
   neighbourhoodId: string
 ) : string {
   return (
-    "watchdog:critical-alert-map:" + neighbourhoodId
+    "watchdog:critical-alert-map:v2:" + neighbourhoodId
   );
 }
 
@@ -77,13 +77,13 @@ export function useCriticalAlerts(
         return;
       }
 
-      const cacheState = {
+      const cacheState = CriticalAlertMapCacheSchema.parse({
         version: CACHE_VERSION,
         mapped_alerts: mapped,
         unlocated_alerts: unlocated,
         last_updated: updatedAt,
         cached_at: new Date().toISOString(),
-      };
+      });
 
       try {
         localStorage.setItem(
@@ -122,17 +122,20 @@ export function useCriticalAlerts(
       }
 
       // Only open alerts belong on this map.
-      const mapped =
-        parsed.data.mapped_alerts.filter(
-          (alert) =>
-            LIVE_ALERT_STATUSES.has(alert.status),
-        );
+      const mapped = parsed.data.mapped_alerts
+        .filter((alert) => LIVE_ALERT_STATUSES.has(alert.status))
+        .map((alert) => ({
+          ...alert,
+          property_address: "Address unavailable offline",
+        }));
 
-      const unlocated =
-        parsed.data.unlocated_alerts.filter(
-          (alert) =>
-            LIVE_ALERT_STATUSES.has(alert.status),
-        );
+      const unlocated = parsed.data.unlocated_alerts
+        .filter((alert) => LIVE_ALERT_STATUSES.has(alert.status))
+        .map((alert) => ({
+          ...alert,
+          property_address: "Address unavailable offline",
+        }));
+
 
       setMappedAlerts(mapped);
       setUnlocatedAlerts(unlocated);

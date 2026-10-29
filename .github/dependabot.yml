@@ -44,6 +44,18 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      - dependency-name: "mpmath"
+        versions: [">=1.4"]
+      # Newer releases require Python >= 3.12; CI and the AI image use 3.11
+      - dependency-name: "numpy"
+        versions: [">=2.5"]
+      - dependency-name: "scipy"
+        versions: [">=1.18"]
+      - dependency-name: "networkx"
+        versions: [">=3.7"]
+      - dependency-name: "contourpy"
+        versions: [">=1.4"]
 
   # package.json files and their lockfiles
   - package-ecosystem: "npm"

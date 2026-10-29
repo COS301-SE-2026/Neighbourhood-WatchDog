@@ -259,7 +259,7 @@ function addAccountGroup(groups: SidebarGroupData[]) {
     items: [
       {
         title: "Help",
-        url: "/dashboard/help",
+        url: "/help",
         icon: CircleHelp,
       },
       {
@@ -293,7 +293,7 @@ const AppDashSidebar = () => {
   const { user: authUser } = useAuth();
   const { data: userContext } = useUserContext();
   const systemRole = userContext?.user.system_role ?? null;
-  const displayName = userContext?.user.name ?? authUser?.fullname ?? "";
+  const displayName = userContext?.user.name ?? authUser?.name ?? "";
 
   const { setOpenMobile, isMobile } = useSidebar();
 

@@ -10,10 +10,6 @@ from app.core.database import DbSession
 from app.auth.jwt import get_authenticated_claims
 from app.models.edge_agent_credentials import EdgeAgentCredential
 
-# default mock identity
-# TODO: remove mock when Cognito is live
-# change these to test different baseline states without touching headers
-
 logger = logging.getLogger(__name__)
 
 TESTING = os.environ.get("TESTING", "false").lower() == "true"

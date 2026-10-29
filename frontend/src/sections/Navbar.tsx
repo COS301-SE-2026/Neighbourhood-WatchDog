@@ -12,7 +12,7 @@ const navLinks = [
     {label: "Features", href: "#features"},
     {label: "Integrations", href: "#integrations"},
     {label: "FAQs", href: "#faqs"},
-    {label: "Help", href: "/dashboard/help"}
+    {label: "Help", href: "/help"}
 
 ]
 
@@ -24,7 +24,7 @@ export default function Navbar() {
             <section className="py-4 flex justify-center lg:py-8 fixed w-full top-0 z-50">
                     <div className="container max-w-5xl px-4 lg:px-0">
                         <div className="border border-brand-gunmetal/20 rounded-[27px] md:rounded-full bg-brand-abyss/70 backdrop-blur">
-                            <div className="grid grid-cols-2 lg:grid-cols-3   p-2 px-4 md:pr-2 items-center ">
+                            <div className="flex items-center justify-between gap-4 p-2 px-4 md:pr-2">
                                 <Link
                                 href="/"
                                 aria-label="WatchDog home"
@@ -37,28 +37,37 @@ export default function Navbar() {
                                 />
                                 <span className="font-bold text-lg">Watchdog</span>
                                 </Link>
-                                <div className="lg:flex justify-center items-center gap-8 hidden">
+                                <div className="hidden lg:flex items-center gap-6">
                                     {navLinks.map(link => (
                                         <a href={link.href} key={link.label}>
                                             {link.label}
                                         </a>
                                     ))}
                                 </div>
-                                <div className="flex items-center justify-end gap-2">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="24" height="24" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        className="feather feather-menu md:hidden"
-                                        onClick={() => setIsOpen(!isOpen)}
+                                <div className="flex shrink-0 items-center justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        aria-label={isOpen ? "Close menu" : "Open menu"}
+                                        aria-expanded={isOpen}
+                                        onClick={() => setIsOpen((open) => !open)}
+                                        className="lg:hidden"
+
                                     >
-                                        <line x1="3" y1="6" x2="21" y2="6" className={twMerge("origin-left transition",isOpen && "rotate-45 -translate-y-1")}></line>
-                                        <line x1="3" y1="12" x2="21" y2="12" className={twMerge("transition", isOpen && "opacity-0")}></line>
-                                        <line x1="3" y1="18" x2="21" y2="18" className={twMerge("origin-left transition",isOpen && "-rotate-45 translate-y-1")}></line>
-                                    </svg>
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="24" height="24" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className="feather feather-menu"
+                                            aria-hidden="true"
+                                        >
+                                            <line x1="3" y1="6" x2="21" y2="6" className={twMerge("origin-left transition",isOpen && "rotate-45 -translate-y-1")}></line>
+                                            <line x1="3" y1="12" x2="21" y2="12" className={twMerge("transition", isOpen && "opacity-0")}></line>
+                                            <line x1="3" y1="18" x2="21" y2="18" className={twMerge("origin-left transition",isOpen && "-rotate-45 translate-y-1")}></line>
+                                        </svg>
+                                    </button>
                                     <Button asChild variant="ghost" className="hidden md:inline-flex border border-brand-gunmetal h-10 rounded-full px-6 font-medium items-center"><Link href="/auth/login">Log In</Link></Button>
                                     <Button asChild variant="default" className="hidden md:inline-flex h-10 rounded-full px-6 font-medium items-center"><Link href="/auth/signup">Sign Up</Link></Button>
                                 </div>

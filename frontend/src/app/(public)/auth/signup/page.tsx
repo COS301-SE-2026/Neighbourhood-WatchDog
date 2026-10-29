@@ -54,16 +54,15 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      await signUp(email, password, firstName, lastName, address);
-  
-      
+      const { confirmed } = await signUp(email, password, firstName, lastName, address);
+
       //clear data
       setPassword("");
       setConfirmPassword("");
-      
-      // Redirect to confirmation afterr delay
+
+      // Auto-confirmed users (pre sign-up trigger) can log in straight away
       setTimeout(() => {
-        router.push("/auth/confirm");
+        router.push(confirmed ? "/auth/login" : "/auth/confirm");
       }, 2000);
       
     } catch (err) {

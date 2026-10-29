@@ -5,7 +5,6 @@ import { Bell, Loader2, Shield, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
 import { fetchUserSettings, updateUserSettings } from "@/lib/api/userSettings";
 import { useQueryClient } from "@tanstack/react-query";
-import { updateStoredFullName } from "@/lib/auth/cognito";
 import Link from "next/link";
 
 const PHONE_PATTERN = /^\+?[0-9\s\-()]{7,20}$/;
@@ -79,9 +78,6 @@ export default function SettingsPage() {
       setLastName(data.last_name ?? "");
       setPhoneNumber(data.phone_number ?? "");
 
-      const fullName =
-        `${data.first_name ?? ""} ${data.last_name ?? ""}`.trim();
-      updateStoredFullName(fullName);
       queryClient.invalidateQueries({ queryKey: ["userContext"] });
       toast.success("Settings updated");
     } catch (error) {

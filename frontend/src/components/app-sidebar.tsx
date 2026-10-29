@@ -3,6 +3,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import * as React from "react"
 import Image from "next/image"
+import { useUserContext } from "@/hooks/use-user-context";
 import {
   LayoutDashboard,
   User,
@@ -275,7 +276,8 @@ export function AppSidebar() {
   const { properties, addProperty } = useProperties()
   const pathname = usePathname()
   const router = useRouter();
-  const [username, setUsername] = React.useState("");
+  const {data: userContext} = useUserContext();
+  const username = userContext?.user.name ?? "";
 
   // pinned = sidebar is locked open; unpinned = hover-to-expand mode
   const [pinned, setPinned] = React.useState(true)
@@ -374,10 +376,6 @@ export function AppSidebar() {
     router.push("/auth/login");
   };
 
-  React.useEffect(() => {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setUsername(localStorage.getItem("fullname") ?? "");
-  }, []);
 
   return (
 

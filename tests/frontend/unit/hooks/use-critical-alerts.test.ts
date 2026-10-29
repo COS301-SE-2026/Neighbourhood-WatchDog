@@ -29,7 +29,7 @@ jest.mock("@/lib/api/alert", () => ({
 
 const NEIGHBOURHOOD_ID = "40a3036a-99ed-455f-891b-166826ff0886";
 
-const CACHE_KEY = `watchdog:critical-alert-map:${NEIGHBOURHOOD_ID}`;
+const CACHE_KEY = `watchdog:critical-alert-map:v2:${NEIGHBOURHOOD_ID}`;
 
 const LAST_UPDATED = "2026-09-17T10:00:00.000Z";
 
@@ -183,7 +183,7 @@ describe("useCriticalAlerts offline cache", () => {
     localStorage.setItem(
       CACHE_KEY,
       JSON.stringify({
-        version: 1,
+        version: 2,
         mapped_alerts: [MAPPED_ALERT],
         unlocated_alerts: [],
         last_updated: LAST_UPDATED,
@@ -206,6 +206,11 @@ describe("useCriticalAlerts offline cache", () => {
     expect(
       result.current.mappedAlerts[0].id,
     ).toBe(MAPPED_ALERT.id);
+
+    expect(result.current.mappedAlerts[0].property_address).toBe(
+      "Address unavailable offline",
+    );
+
 
     expect(result.current.isOnline).toBe(
       false
@@ -278,13 +283,19 @@ describe("useCriticalAlerts offline cache", () => {
       last_updated: string;
     };
 
-    expect(cached.version).toBe(1);
+    expect(cached.version).toBe(2);
     expect(cached.mapped_alerts).toHaveLength(
       2,
     );
     expect(cached.last_updated).toBe(
       LAST_UPDATED,
     );
+
+    const rawCache = localStorage.getItem(CACHE_KEY);
+
+    expect(rawCache).not.toContain("property_address");
+    expect(rawCache).not.toContain(MAPPED_ALERT.property_address);
+
   });
 
   test("keeps existing alerts when WebSocket disconnects", async () => {
