@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="880" viewBox="0 0 1800 880" font-family="Helvetica, Arial, sans-serif">
+<rect width="1800" height="880" fill="#FFFFFF"/>
+<text x="40" y="52" font-size="26" font-weight="700" fill="#0D1B2A">CI/CD Pipeline · build once, promote</text>
+<rect x="40" y="64" width="64" height="4" fill="#10B981"/>
+<text x="1760" y="864" font-size="12" fill="#475569" text-anchor="end">Neighbourhood WatchDog · Team Intrepid · updated 29 Oct 2026</text>
+<rect x="480" y="100" width="540" height="330" rx="8" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="492" y="120" font-size="13" font-weight="700" fill="#475569">CI · ci.yml (every PR and push)</text>
+<rect x="1120" y="100" width="660" height="330" rx="8" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1132" y="120" font-size="13" font-weight="700" fill="#475569">On push to dev · after CI passes</text>
+<rect x="1120" y="500" width="660" height="300" rx="8" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1132" y="520" font-size="13" font-weight="700" fill="#475569">On merge to main · after CI passes</text>
+<rect x="40" y="140" width="180" height="80" rx="8" fill="#F1F5F9" stroke="#64748B" stroke-width="1.5"/>
+<text x="130.0" y="177.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Developer</text>
+<text x="130.0" y="195.5" font-size="12" fill="#475569" text-anchor="middle">feature branch</text>
+<rect x="260" y="140" width="180" height="80" rx="8" fill="#F1F5F9" stroke="#64748B" stroke-width="1.5"/>
+<text x="350.0" y="177.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Pull request → dev</text>
+<text x="350.0" y="195.5" font-size="12" fill="#475569" text-anchor="middle">source-branch check</text>
+<rect x="500" y="140" width="240" height="60" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="620.0" y="167.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">python-lint · frontend-lint</text>
+<text x="620.0" y="185.5" font-size="12" fill="#475569" text-anchor="middle">ruff · ESLint</text>
+<rect x="760" y="140" width="240" height="60" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="880.0" y="167.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">type-check</text>
+<text x="880.0" y="185.5" font-size="12" fill="#475569" text-anchor="middle">static type checks</text>
+<rect x="500" y="215" width="240" height="75" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="620.0" y="242.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">tests</text>
+<text x="620.0" y="260.5" font-size="12" fill="#475569" text-anchor="middle">backend + frontend unit tests</text>
+<text x="620.0" y="275.5" font-size="12" fill="#475569" text-anchor="middle">Playwright E2E · Codecov</text>
+<rect x="760" y="215" width="240" height="75" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="880.0" y="242.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">security</text>
+<text x="880.0" y="260.5" font-size="12" fill="#475569" text-anchor="middle">Bandit · pip-audit · pnpm audit</text>
+<text x="880.0" y="275.5" font-size="12" fill="#475569" text-anchor="middle">compose port checks</text>
+<rect x="500" y="305" width="240" height="55" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="620.0" y="330.0" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">build</text>
+<text x="620.0" y="348.0" font-size="12" fill="#475569" text-anchor="middle">frontend production build</text>
+<rect x="760" y="305" width="240" height="110" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="880.0" y="335.0" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">image</text>
+<text x="880.0" y="353.0" font-size="12" fill="#475569" text-anchor="middle">Docker build → smoke test</text>
+<text x="880.0" y="368.0" font-size="12" fill="#475569" text-anchor="middle">Trivy (fails on CRITICAL) · SBOM</text>
+<text x="880.0" y="383.0" font-size="12" fill="#475569" text-anchor="middle">on dev: push to ECR</text>
+<text x="880.0" y="398.0" font-size="12" fill="#475569" text-anchor="middle">+ cosign signature</text>
+<text x="750.0" y="475.5" font-size="12" fill="#475569" text-anchor="middle">SonarCloud and Codecov report on every pull request</text>
+<rect x="1140" y="140" width="310" height="150" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="1295.0" y="182.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Deploy to Staging</text>
+<text x="1295.0" y="200.5" font-size="12" fill="#475569" text-anchor="middle">resolve image built for this commit</text>
+<text x="1295.0" y="215.5" font-size="12" fill="#475569" text-anchor="middle">verify cosign signature</text>
+<text x="1295.0" y="230.5" font-size="12" fill="#475569" text-anchor="middle">register task definitions</text>
+<text x="1295.0" y="245.5" font-size="12" fill="#475569" text-anchor="middle">run migrations · deploy</text>
+<text x="1295.0" y="260.5" font-size="12" fill="#475569" text-anchor="middle">health check</text>
+<rect x="1470" y="140" width="290" height="70" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="1615.0" y="172.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Deploy MediaMTX (staging)</text>
+<text x="1615.0" y="190.5" font-size="12" fill="#475569" text-anchor="middle">SSM Run Command</text>
+<rect x="1470" y="225" width="290" height="65" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="1615.0" y="255.0" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Vercel preview</text>
+<text x="1615.0" y="273.0" font-size="12" fill="#475569" text-anchor="middle">staging frontend</text>
+<rect x="1140" y="320" width="310" height="80" rx="8" fill="#FFFFFF" stroke="#0D1B2A" stroke-width="1.5"/>
+<text x="1295.0" y="350.0" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Amazon ECR</text>
+<text x="1295.0" y="368.0" font-size="12" fill="#475569" text-anchor="middle">image tagged with commit SHA</text>
+<text x="1295.0" y="383.0" font-size="12" fill="#475569" text-anchor="middle">signature + SBOM attached</text>
+<rect x="260" y="560" width="180" height="80" rx="8" fill="#F1F5F9" stroke="#64748B" stroke-width="1.5"/>
+<text x="350.0" y="597.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Pull request dev → main</text>
+<text x="350.0" y="615.5" font-size="12" fill="#475569" text-anchor="middle">after staging is verified</text>
+<rect x="1140" y="540" width="310" height="200" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="1295.0" y="600.0" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Deploy to Production</text>
+<text x="1295.0" y="618.0" font-size="12" fill="#475569" text-anchor="middle">find the image staging is running</text>
+<text x="1295.0" y="633.0" font-size="12" fill="#475569" text-anchor="middle">check main = code staging tested</text>
+<text x="1295.0" y="648.0" font-size="12" fill="#475569" text-anchor="middle">verify cosign signature</text>
+<text x="1295.0" y="663.0" font-size="12" fill="#475569" text-anchor="middle">register prod task definitions</text>
+<text x="1295.0" y="678.0" font-size="12" fill="#475569" text-anchor="middle">(same image, no rebuild)</text>
+<text x="1295.0" y="693.0" font-size="12" fill="#475569" text-anchor="middle">migrate · worker + beat → backend</text>
+<rect x="1470" y="540" width="290" height="70" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="1615.0" y="572.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Deploy MediaMTX (production)</text>
+<text x="1615.0" y="590.5" font-size="12" fill="#475569" text-anchor="middle">SSH + docker compose</text>
+<rect x="1470" y="625" width="290" height="65" rx="8" fill="#E7F8F1" stroke="#10B981" stroke-width="1.5"/>
+<text x="1615.0" y="655.0" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">Vercel production</text>
+<text x="1615.0" y="673.0" font-size="12" fill="#475569" text-anchor="middle">neighbourhoodwatchdog.co.za</text>
+<rect x="40" y="720" width="400" height="80" rx="8" fill="#F1F5F9" stroke="#64748B" stroke-width="1.5"/>
+<text x="240.0" y="757.5" font-size="14" font-weight="700" fill="#0D1B2A" text-anchor="middle">ZAP baseline scan</text>
+<text x="240.0" y="775.5" font-size="12" fill="#475569" text-anchor="middle">manual workflow · authenticated scan of the API</text>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0D1B2A"/></marker></defs>
+<polyline points="220,180 260,180" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="440,180 480,180" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="1020,215 1120,215" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="1000,360 1140,360" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="1295,320 1295,290" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="130,220 130,600 260,600" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="440,600 1120,600" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<polyline points="1420,400 1420,540" fill="none" stroke="#0D1B2A" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="1029.8" y="205.5" width="80.4" height="19" rx="3" fill="#FFFFFF" opacity="0.95"/>
+<text x="1070.0" y="219.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">push to dev</text>
+<rect x="1029.8" y="350.5" width="80.4" height="19" rx="3" fill="#FFFFFF" opacity="0.95"/>
+<text x="1070.0" y="364.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">push + sign</text>
+<rect x="93.0" y="400.5" width="74.0" height="19" rx="3" fill="#FFFFFF" opacity="0.95"/>
+<text x="130.0" y="414.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">when ready</text>
+<rect x="685.4" y="590.5" width="189.20000000000002" height="19" rx="3" fill="#FFFFFF" opacity="0.95"/>
+<text x="780.0" y="604.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">push to main → CI runs again</text>
+<rect x="1379.8" y="460.5" width="80.4" height="19" rx="3" fill="#FFFFFF" opacity="0.95"/>
+<text x="1420.0" y="474.5" font-size="11.5" fill="#0D1B2A" text-anchor="middle">same digest</text>
+</svg>
