@@ -1,5 +1,5 @@
 # alpine:3.21
-FROM alpine@sha256:ce64758a109eb420d874a118f87920e625e12d3634e03b4a5573fd9f6e5d3507
+FROM alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
 
 ARG TARGETARCH
 RUN apk add --no-cache ca-certificates curl
