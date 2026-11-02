@@ -1,6 +1,6 @@
 #Build stage
 # node:20-slim
-FROM node@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS builder
+FROM node@sha256:6d2c7d5d074bf72f81ddc252b4fbb5d625bc028eeda49cb4b8c2ff8eda1ee617 AS builder
 WORKDIR /app
 
 RUN npm install -g pnpm@10.30.3
@@ -13,7 +13,7 @@ RUN pnpm build
 
 #Development stage
 # node:20-slim
-FROM node@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS development
+FROM node@sha256:6d2c7d5d074bf72f81ddc252b4fbb5d625bc028eeda49cb4b8c2ff8eda1ee617 AS development
 WORKDIR /app
 RUN npm install -g pnpm@10.30.3
 COPY package.json pnpm-lock.yaml /app/
@@ -23,7 +23,7 @@ CMD ["pnpm", "dev"]
 
 #Runtime stage
 # node:20-slim
-FROM node@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS production
+FROM node@sha256:6d2c7d5d074bf72f81ddc252b4fbb5d625bc028eeda49cb4b8c2ff8eda1ee617 AS production
 WORKDIR /app
 RUN npm install -g pnpm@10.30.3 \
     && addgroup --system usergroup && adduser --system --no-create-home --ingroup usergroup appuser 
