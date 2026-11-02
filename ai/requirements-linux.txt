@@ -3,9 +3,9 @@
 
 # ── CUDA / GPU (Linux only) ───────────────────────────────────────
 cuda-bindings==13.4.4
-cuda-pathfinder==1.8.4
+cuda-pathfinder==1.8.5
 cuda-toolkit==13.4.3
-nvidia-cublas==13.8.1.7
+nvidia-cublas==13.8.2.12
 nvidia-cuda-cupti==13.4.92
 nvidia-cuda-nvrtc==13.4.92
 nvidia-cuda-runtime==13.4.92
