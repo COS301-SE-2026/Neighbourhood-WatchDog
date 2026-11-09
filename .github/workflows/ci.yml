@@ -156,7 +156,7 @@ jobs:
         run: cd tests/e2e && pnpm test
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 #v6.0.1
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 #v7.1.1
         with:
           files: tests/frontend/coverage/lcov.info,tests/backend/coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -410,7 +410,7 @@ jobs:
 
       - name: Install cosign
         if: env.PUBLISH == 'true'
-        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 #v4.1.2
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 #v4.1.3
 
       - name: Sign image and attach SBOM
         if: env.PUBLISH == 'true'
