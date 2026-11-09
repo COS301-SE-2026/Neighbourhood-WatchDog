@@ -2,21 +2,21 @@
 -r requirements.txt
 
 # ── CUDA / GPU (Linux only) ───────────────────────────────────────
-cuda-bindings==13.4.4
-cuda-pathfinder==1.8.4
-cuda-toolkit==13.4.3
-nvidia-cublas==13.8.1.7
-nvidia-cuda-cupti==13.4.92
-nvidia-cuda-nvrtc==13.4.92
-nvidia-cuda-runtime==13.4.92
-nvidia-cudnn-cu13==9.27.0.42
-nvidia-cufft==12.4.0.43
-nvidia-cufile==1.19.1.55
-nvidia-curand==10.4.4.72
-nvidia-cusolver==12.3.5.3
-nvidia-cusparse==12.8.6.72
+cuda-bindings==13.5.0
+cuda-pathfinder==1.8.6
+cuda-toolkit==13.5.0
+nvidia-cublas==13.10.0.20
+nvidia-cuda-cupti==13.5.25
+nvidia-cuda-nvrtc==13.5.37
+nvidia-cuda-runtime==13.5.37
+nvidia-cudnn-cu13==9.28.0.42
+nvidia-cufft==12.5.0.14
+nvidia-cufile==1.20.0.107
+nvidia-curand==10.4.5.25
+nvidia-cusolver==12.4.1.2
+nvidia-cusparse==12.9.4.2
 nvidia-cusparselt-cu13==0.10.0
 nvidia-nccl-cu13==2.32.3
-nvidia-nvjitlink==13.4.92
+nvidia-nvjitlink==13.5.37
 nvidia-nvshmem-cu13==3.8.0
-nvidia-nvtx==13.4.92
+nvidia-nvtx==13.5.25
